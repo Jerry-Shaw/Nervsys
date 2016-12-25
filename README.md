@@ -1,3 +1,1 @@
-# ooBase
-Based on PHP7
-Still under construction, give me some more time to finish it.
+A simple Neuron Model controller and Nervous System for data processing based on php7.
