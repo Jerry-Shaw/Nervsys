@@ -1,0 +1,39 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh_CN\n"
+"X-Generator: Poedit 1.8.2\n"
+
+msgid "upload_done"
+msgstr "上传完成！"
+
+msgid "upload_failed"
+msgstr "上传失败！"
+
+msgid "upload_err_format"
+msgstr "对不起，我们不允许上传此类文件！"
+
+msgid "upload_err_size"
+msgstr "对不起，您要上传的文件太大！"
+
+msgid "upload_err_path"
+msgstr "对不起，我们无法保存您的文件，请重试！"
+
+msgid "upload_err_crc"
+msgstr "对不起，您上传的文件不完整，请重试！"
+
+msgid "upload_err_empty"
+msgstr "对不起，您要上传的文件是空文件，请检查文件！"
+
+msgid "upload_err_receive"
+msgstr "对不起，我们无法接收您的文件！"
+
+msgid "upload_err_save"
+msgstr "对不起，文件保存时发生错误，请重试！"
