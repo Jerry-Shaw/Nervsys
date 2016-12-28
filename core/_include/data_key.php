@@ -55,28 +55,28 @@ class data_key
             //Detect requests
             switch (self::$client) {
                 //For localhost requests
-                case 'WEB':
+                case 'LOCAL':
                     if (!empty($_SESSION)) self::map_sess();
                     break;
                 //For third party requests
-                case 'APP':
+                case 'REMOTE':
                     if (isset($_SERVER['HTTP_ACCESS_KEY'])) self::map_key();
                     break;
                 //Auto Detect
                 default:
                     //Detect requested client type
-                    if (isset($_SERVER['HTTP_ORIGIN'])) self::$client = $Server_HOST === $_SERVER['HTTP_ORIGIN'] ? self::chk_cookie() : 'APP';
+                    if (isset($_SERVER['HTTP_ORIGIN'])) self::$client = $Server_HOST === $_SERVER['HTTP_ORIGIN'] ? self::chk_cookie() : 'REMOTE';
                     elseif (isset($_SERVER['HTTP_REFERER'])) {
-                        $referer = get_url_parts($_SERVER['HTTP_REFERER']);
-                        self::$client = !empty($referer) && $Server_HOST === $referer['scheme'] . '://' . $referer['host'] . $referer['port'] ? self::chk_cookie() : 'APP';
+                        $referer = parse_url($_SERVER['HTTP_REFERER']);
+                        self::$client = false !== $referer && isset($referer['scheme']) && isset($referer['host']) && $Server_HOST === $referer['scheme'] . '://' . $referer['host'] . (!isset($referer['port']) || 80 === $referer['port'] ? '' : ':' . $referer['port']) ? self::chk_cookie() : 'REMOTE';
                         unset($referer);
-                    } else self::$client = 'APP';
+                    } else self::$client = 'REMOTE';
                     //Process Access-Key
-                    if ('WEB' === self::$client) {
+                    if ('LOCAL' === self::$client) {
                         //Extract data from SESSION or Access-Key
                         if (!empty($_SESSION)) self::map_sess();
                         elseif (isset($_SERVER['HTTP_ACCESS_KEY'])) self::map_key();
-                    } elseif ('APP' === self::$client && isset($_SERVER['HTTP_ACCESS_KEY'])) {
+                    } elseif ('REMOTE' === self::$client && isset($_SERVER['HTTP_ACCESS_KEY'])) {
                         //Extract data from Access-Key
                         self::map_key();
                         //Check Access-Key content
@@ -121,10 +121,10 @@ class data_key
         if (!empty(self::$key)) {
             if ($ExpireAt > time()) {
                 self::$key['ExpireAt'] = &$ExpireAt;
-                if ('WEB' === self::$client) $_SESSION['ExpireAt'] = &$ExpireAt;
+                if ('LOCAL' === self::$client) $_SESSION['ExpireAt'] = &$ExpireAt;
             } else {
                 self::$key = [];
-                if ('WEB' === self::$client) {
+                if ('LOCAL' === self::$client) {
                     $_SESSION = [];
                     session_destroy();
                 }
@@ -147,7 +147,7 @@ class data_key
         if ('' !== $key) {
             if ($is_int) $value = (int)$value;
             self::$key[$key] = &$value;
-            if ('WEB' === self::$client) $_SESSION[$key] = &$value;
+            if ('LOCAL' === self::$client) $_SESSION[$key] = &$value;
         }
         unset($key, $value, $is_int);
         return self::get_key();
@@ -163,10 +163,10 @@ class data_key
     {
         if ('' !== $key) {
             unset(self::$key[$key]);
-            if ('WEB' === self::$client) unset($_SESSION[$key]);
+            if ('LOCAL' === self::$client) unset($_SESSION[$key]);
         } else {
             self::$key = [];
-            if ('WEB' === self::$client) {
+            if ('LOCAL' === self::$client) {
                 $_SESSION = [];
                 session_destroy();
             }
@@ -189,7 +189,7 @@ class data_key
      */
     private static function map_key()
     {
-        self::$client = 'APP';
+        self::$client = 'REMOTE';
         $content = user_crypt::validate_key($_SERVER['HTTP_ACCESS_KEY']);
         if (!empty($content) && isset($content['ExpireAt']) && time() < $content['ExpireAt']) self::$key = &$content;
         unset($content);
@@ -200,7 +200,7 @@ class data_key
      */
     private static function map_sess()
     {
-        self::$client = 'WEB';
+        self::$client = 'LOCAL';
         if (!empty($_SESSION)) self::$key = &$_SESSION;
     }
 
@@ -211,7 +211,7 @@ class data_key
     private static function chk_cookie(): string
     {
         $session_name = session_name();
-        $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'WEB' : 'APP';
+        $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
         unset($session_name);
         return $client;
     }

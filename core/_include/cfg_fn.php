@@ -138,24 +138,6 @@ function get_char(string $uuid, int $len = 1): string
 }
 
 /**
- * Check and get the parts from an url
- * Missing scheme or host is not allowed here
- * @param string $url
- * @return array
- */
-function get_url_parts(string $url): array
-{
-    $url_parts = parse_url($url);
-    if (false !== $url_parts && isset($url_parts['scheme']) && isset($url_parts['host'])) {
-        $url_parts['port'] = !isset($url_parts['port']) || 80 === $url_parts['port'] ? '' : ':' . $url_parts['port'];
-        $url_parts['path'] = $url_parts['path'] ?? '/';
-        $url_parts['query'] = isset($url_parts['query']) ? '?' . $url_parts['query'] : '';
-    } else $url_parts = [];
-    unset($url);
-    return $url_parts;
-}
-
-/**
  * Get the IP and Language from the client
  * @return array
  */
@@ -194,16 +176,16 @@ function get_client_info(): array
  */
 function curl_request(string $url, array $data = [], string $access_key = ''): string
 {
-    $url_parts = get_url_parts($url);
-    if (!empty($url_parts)) {
+    $url_parts = parse_url($url);
+    if (false !== $url_parts && isset($url_parts['scheme']) && isset($url_parts['host'])) {
         //Request Method (Depends on requested data)
         $method = !empty($data) ? 'POST' : 'GET';
         //Request User-Agent
         $user_agent = 'Mozilla/5.0 (Compatible; ooBase Data API 1.0.0; Permission Granted by ooBase Data Center)';
         //Format HTTP REQUEST Header
         $request = [];
-        $request[] = $method . ' ' . $url_parts['path'] . $url_parts['query'] . ' HTTP/1.1';
-        $request[] = 'Host: ' . $url_parts['host'] . $url_parts['port'];
+        $request[] = $method . ' ' . $url_parts['path'] ?? '/' . !isset($url_parts['query']) ? '' : '?' . $url_parts['query'] . ' HTTP/1.1';
+        $request[] = 'Host: ' . $url_parts['host'] . !isset($url_parts['port']) || 80 === $url_parts['port'] ? ('https' === $url_parts['scheme'] ? ':443' : '') : ':' . $url_parts['port'];
         $request[] = 'Accept: text/plain,text/html,text/xml,application/json,*;q=0';
         $request[] = 'Accept-Charset: UTF-8,*;q=0';
         $request[] = 'Accept-Encoding: identity,*;q=0';

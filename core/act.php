@@ -39,8 +39,8 @@ require __DIR__ . '/_include/cfg.php';
 
 //Load data_key as an overall module and start it.
 load_lib('core', 'data_key');
-//Define client to 'WEB'
-data_key::$client = 'WEB';
+//Define client to 'LOCAL'
+data_key::$client = 'LOCAL';
 //Start data_key process
 data_key::start();
 
