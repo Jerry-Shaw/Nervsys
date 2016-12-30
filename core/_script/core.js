@@ -194,13 +194,13 @@ if (null !== phone_menu) {
 function TimeToDate(Timestamp, hasTime, hasSec) {
     var Time = new Date(Timestamp * 1000);
     var Month = Time.getMonth() + 1;
-    var Date = Time.getDate();
+    var Day = Time.getDate();
     var Hour = Time.getHours();
     var Min = Time.getMinutes();
     var Sec = Time.getSeconds();
     var DateTime = Time.getFullYear() + '-';
     DateTime += (Month < 10 ? '0' + Month : Month) + '-';
-    DateTime += Date >= 10 ? Date : '0' + Date;
+    DateTime += Day >= 10 ? Day : '0' + Day;
     if (hasTime === true) {
         DateTime += ' ' + (Hour >= 10 ? Hour : '0' + Hour) + ':';
         DateTime += Min >= 10 ? Min : '0' + Min;
