@@ -278,7 +278,7 @@ header, #header {
         min-width: 320px;
         left: 0;
         bottom: 0;
-        z-index: 100;
+        z-index: 1000;
         position: fixed;
         background: #e6e6e6;
         border-top: 1px solid #d6d6d6;

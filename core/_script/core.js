@@ -5,6 +5,7 @@
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  * Author 淡薄 <1227710457@qq.com>
+ * Author 李盛青 <happyxiaohang@163.com>
  * Author 牟佳 <824762665@qq.com>
  * Author 禹赛 <783324154@qq.com>
  * Author 小丑路人 <2278757482@qq.com>
@@ -12,6 +13,7 @@
  * Copyright 2015-2016 Jerry Shaw
  * Copyright 2016 秋水之冰
  * Copyright 2016 淡薄
+ * Copyright 2016 李盛青
  * Copyright 2016 牟佳
  * Copyright 2016 禹赛
  * Copyright 2016 小丑路人
@@ -146,6 +148,14 @@ function set_lang() {
                 }
             }, false);
         });
+    }
+}
+
+function readFile(object, callback) {
+    var reader = new FileReader();
+    reader.readAsDataURL(object.files[0]);
+    reader.onload = function () {
+        if ('undefined' !== typeof(callback)) callback(this.result);
     }
 }
 
