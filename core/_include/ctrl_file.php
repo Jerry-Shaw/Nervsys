@@ -236,22 +236,23 @@ class ctrl_file
     }
 
     /**
-     * Resize an image to a giving size
+     * Resize/Crop an image to a giving size
      * @param string $file
      * @param int $width
      * @param int $height
+     * @param bool $crop
      */
-    public static function image_resize(string $file, int $width, int $height)
+    public static function image_resize(string $file, int $width, int $height, bool $crop = false)
     {
         $img_info = getimagesize($file);
         if (array_key_exists($img_info[2], self::img_type)) {
-            $img_size = self::new_img_size($img_info[0], $img_info[1], $width, $height);
-            if ($img_info[0] !== $img_size['width'] || $img_info[1] !== $img_size['height']) {
+            $img_size = $crop ? self::new_img_crop($img_info[0], $img_info[1], $width, $height) : self::new_img_size($img_info[0], $img_info[1], $width, $height);
+            if ($img_info[0] !== $img_size['img_w'] || $img_info[1] !== $img_size['img_h']) {
                 $type = self::img_type[$img_info[2]];
                 $img_create = 'imagecreatefrom' . $type;
                 $img_func = 'image' . $type;
                 $img_source = $img_create($file);
-                $img_thumb = imagecreatetruecolor($img_size['width'], $img_size['height']);
+                $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
                 switch ($img_info[2]) {
                     case 1://Deal with the transparent color in a GIF
                         $transparent = imagecolorallocate($img_thumb, 0, 0, 0);
@@ -265,7 +266,7 @@ class ctrl_file
                         imagesavealpha($img_thumb, true);
                         break;
                 }
-                imagecopyresampled($img_thumb, $img_source, 0, 0, 0, 0, $img_size['width'], $img_size['height'], $img_info[0], $img_info[1]);
+                imagecopyresampled($img_thumb, $img_source, 0, 0, $img_size['img_x'], $img_size['img_y'], $img_size['img_w'], $img_size['img_h'], $img_size['src_w'], $img_size['src_h']);
                 $img_func($img_thumb, $file);
                 imagedestroy($img_source);
                 imagedestroy($img_thumb);
@@ -273,7 +274,7 @@ class ctrl_file
             }
             unset($img_size);
         }
-        unset($file, $width, $height, $img_info);
+        unset($file, $width, $height, $crop, $img_info);
     }
 
     /**
@@ -323,7 +324,42 @@ class ctrl_file
     }
 
     /**
-     * Get the new image size according to the giving size
+     * Get cropped image coordinates according to the giving size
+     * @param int $img_width //Original width
+     * @param int $img_height //Original height
+     * @param int $need_width //Needed width
+     * @param int $need_height //Needed height
+     * @return array
+     */
+    private static function new_img_crop(int $img_width, int $img_height, int $need_width, int $need_height): array
+    {
+        $img_x = $img_y = 0;
+        $src_w = $img_width;
+        $src_h = $img_height;
+        if (0 < $img_width && 0 < $img_height) {
+            $ratio_img = $img_width / $img_height;
+            $ratio_need = $need_width / $need_height;
+            $ratio_diff = round($ratio_img - $ratio_need, 2);
+            if (0 < $ratio_diff && $img_height > $need_height) {
+                $crop_w = (int)($img_width - $img_height * $ratio_need);
+                $img_x = (int)($crop_w / 2);
+                $src_w = $img_width - $crop_w;
+                unset($crop_w);
+            } elseif (0 > $ratio_diff && $img_width > $need_width) {
+                $crop_h = (int)($img_height - $img_width / $ratio_need);
+                $img_y = (int)($crop_h / 2);
+                $src_h = $img_height - $img_y * 2;
+                unset($crop_h);
+            }
+            unset($ratio_img, $ratio_need, $ratio_diff);
+        }
+        $img_data = ['img_x' => &$img_x, 'img_y' => &$img_y, 'img_w' => &$need_width, 'img_h' => &$need_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
+        unset($img_width, $img_height, $need_width, $need_height, $img_x, $img_y, $src_w, $src_h);
+        return $img_data;
+    }
+
+    /**
+     * Get new image size according to the giving size
      * @param int $img_width //Original width
      * @param int $img_height //Original height
      * @param int $need_width //Needed width
@@ -332,33 +368,29 @@ class ctrl_file
      */
     private static function new_img_size(int $img_width, int $img_height, int $need_width, int $need_height): array
     {
+        $src_w = $img_width;
+        $src_h = $img_height;
         if (0 < $img_width && 0 < $img_height) {
             $ratio_img = $img_width / $img_height;
             $ratio_need = $need_width / $need_height;
             $ratio_diff = round($ratio_img - $ratio_need, 2);
-            if (0 < $ratio_diff) {
-                if ($img_width > $need_width) {
-                    $img_width = &$need_width;
-                    $img_height = round($need_width / $ratio_img);
-                }
-            } elseif (0 > $ratio_diff) {
-                if ($img_height > $need_height) {
-                    $img_height = &$need_height;
-                    $img_width = round($need_height * $ratio_img);
-                }
-            } else {
-                if ($img_width > $need_width) {
-                    $img_width = &$need_width;
-                    $img_height = &$need_height;
-                }
+            if (0 < $ratio_diff && $img_width > $need_width) {
+                $img_width = &$need_width;
+                $img_height = (int)($need_width / $ratio_img);
+            } elseif (0 > $ratio_diff && $img_height > $need_height) {
+                $img_height = &$need_height;
+                $img_width = (int)($need_height * $ratio_img);
+            } elseif (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
+                $img_width = &$need_width;
+                $img_height = &$need_height;
             }
             unset($ratio_img, $ratio_need, $ratio_diff);
         } else {
             $img_width = &$need_width;
             $img_height = &$need_height;
         }
-        $img_data = ['width' => $img_width, 'height' => $img_height];
-        unset($img_width, $img_height, $need_width, $need_height);
+        $img_data = ['img_x' => 0, 'img_y' => 0, 'img_w' => &$img_width, 'img_h' => &$img_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
+        unset($img_width, $img_height, $need_width, $need_height, $src_w, $src_h);
         return $img_data;
     }
 
