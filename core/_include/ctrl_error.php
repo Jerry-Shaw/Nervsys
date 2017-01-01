@@ -5,33 +5,29 @@
  * Version 2.6.0
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
- * Author 彼岸花开 <330931138@qq.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author 彼岸花开 <330931138@qq.com>
  * Author newblash <752050750@qq.com>
- * Author 陈随意 <24323626@qq.com>
- * Author Loofer <loofer@yeah.net>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 彼岸花开
- * Copyright 2016 秋水之冰
+ * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2016-2017 秋水之冰
+ * Copyright 2016-2017 彼岸花开
  * Copyright 2016 newblash
- * Copyright 2016 陈随意
- * Copyright 2016 Loofer
  *
- * This file is part of ooBase Core System.
+ * This file is part of ooBase Core.
  *
- * ooBase SDK is free software: you can redistribute it and/or modify
+ * ooBase Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase SDK is distributed in the hope that it will be useful,
+ * ooBase Core is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core System. If not, see <http://www.gnu.org/licenses/>.
+ * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
  */
 class ctrl_error
 {
@@ -85,10 +81,9 @@ class ctrl_error
     /**
      * Get all the errors
      * Language pack needs to be loaded before getting error messages
-     * @param string $language
      * @return array
      */
-    public static function get_all_errors(string $language = 'en-US'): array
+    public static function get_all_errors(): array
     {
         $errors = [];
         load_lib('core', 'ctrl_file');
@@ -102,7 +97,7 @@ class ctrl_error
                     if (self::$need_lang && isset($error_content['Lang'])) {
                         $lang_file = false !== strpos($error_content['Lang'], ', ') ? explode(', ', $error_content['Lang']) : [$error_content['Lang']];
                         foreach ($lang_file as $lang) {
-                            ctrl_language::load($lang, $error_content['Module'], $language);//Load defined language pack
+                            ctrl_language::load($lang, $error_content['Module']);//Load defined language pack
                             $errors[$error_content['CodeRange']] = [];
                             $errors[$error_content['CodeRange']]['Name'] = $error_content['Name'];
                             $errors[$error_content['CodeRange']]['Module'] = '' !== $error_content['Module'] ? $error_content['Module'] : 'core';
@@ -129,7 +124,7 @@ class ctrl_error
             }
         }
         ksort($errors);
-        unset($language, $error_files, $file, $json_content, $error_content, $lang_file, $lang, $code, $error, $error_text);
+        unset($error_files, $file, $json_content, $error_content, $lang_file, $lang, $code, $error, $error_text);
         return $errors;
     }
 }

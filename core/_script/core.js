@@ -4,34 +4,34 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author 彼岸花开 <330931138@qq.com>
  * Author 淡薄 <1227710457@qq.com>
  * Author 李盛青 <happyxiaohang@163.com>
- * Author 牟佳 <824762665@qq.com>
  * Author 禹赛 <783324154@qq.com>
  * Author 小丑路人 <2278757482@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 秋水之冰
+ * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2016-2017 秋水之冰
+ * Copyright 2016-2017 彼岸花开
  * Copyright 2016 淡薄
  * Copyright 2016 李盛青
- * Copyright 2016 牟佳
  * Copyright 2016 禹赛
  * Copyright 2016 小丑路人
  *
- * This file is part of ooBase Core System.
+ * This file is part of ooBase Core.
  *
- * ooBase SDK is free software: you can redistribute it and/or modify
+ * ooBase Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase SDK is distributed in the hope that it will be useful,
+ * ooBase Core is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core System. If not, see <http://www.gnu.org/licenses/>.
+ * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
  */
 
 var IEAgent = /(msie) ([\w.]+)/.exec(navigator.userAgent.toLowerCase());

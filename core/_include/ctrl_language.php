@@ -8,24 +8,24 @@
  * Author 彼岸花开 <330931138@qq.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 彼岸花开
- * Copyright 2016 秋水之冰
+ * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2016-2017 彼岸花开
+ * Copyright 2016-2017 秋水之冰
  *
- * This file is part of ooBase Core System.
+ * This file is part of ooBase Core.
  *
- * ooBase SDK is free software: you can redistribute it and/or modify
+ * ooBase Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase SDK is distributed in the hope that it will be useful,
+ * ooBase Core is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core System. If not, see <http://www.gnu.org/licenses/>.
+ * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
  */
 class ctrl_language
 {
@@ -61,15 +61,11 @@ class ctrl_language
      * Load a language pack file from project
      * @param string $file
      * @param string $project
-     * @param string $language
      */
-    public static function load(string $file, string $project = '', string $language = '')
+    public static function load(string $file, string $project = '')
     {
-        load_lib('core', 'data_key');
-        data_key::start();
-        if ('' !== $language) $lang = &$language;
+        if (isset($_GET['lang'])) $lang = &$_GET['lang'];
         elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
-        elseif (isset(data_key::$key['lang'])) $lang = data_key::$key['lang'];
         elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
             setcookie('lang', $lang, time() + 2592000, '/');
@@ -81,7 +77,7 @@ class ctrl_language
         setlocale(LC_ALL, $lang);
         bindtextdomain($file, $path);
         textdomain($file);
-        unset($file, $project, $language, $lang, $path);
+        unset($file, $project, $lang, $path);
     }
 
     /**

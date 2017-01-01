@@ -7,23 +7,23 @@
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2015 Jerry Shaw
- * Copyright 2016 秋水之冰
+ * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2016-2017 秋水之冰
  *
- * This file is part of ooBase Core System.
+ * This file is part of ooBase Core.
  *
- * ooBase SDK is free software: you can redistribute it and/or modify
+ * ooBase Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase SDK is distributed in the hope that it will be useful,
+ * ooBase Core is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core System. If not, see <http://www.gnu.org/licenses/>.
+ * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
  */
 class data_key
 {

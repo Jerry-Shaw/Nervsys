@@ -6,22 +6,22 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  *
- * Copyright 2015 Jerry Shaw
+ * Copyright 2015-2016 Jerry Shaw
  *
- * This file is part of ooBase SDK.
+ * This file is part of ooBase Core.
  *
- * ooBase SDK is free software: you can redistribute it and/or modify
+ * ooBase Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase SDK is distributed in the hope that it will be useful,
+ * ooBase Core is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase SDK. If not, see <http://www.gnu.org/licenses/>.
+ * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
  */
 declare(strict_types = 1);
 
