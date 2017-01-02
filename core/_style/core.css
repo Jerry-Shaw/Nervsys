@@ -36,7 +36,7 @@ ul, ol {
     list-style: none;
 }
 
-button, input, select, option {
+button, input, select, option, textarea {
     font-family: "Microsoft YaHei Light", "Microsoft YaHei", Verdana, Arial, Tahoma, Georgia, SimSun, NSimSun, sans-serif, serif;
 }
 
