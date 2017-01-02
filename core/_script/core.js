@@ -244,7 +244,23 @@ function saveAs(Name, Value, Type) {
     else location.href = BlobURL;
 }
 
-function popup_top(msg) {
+function popup_top(msg, style) {
+    var color, bg_img, border;
+    if ('undefined' !== typeof(style)) {
+        if ('ok' === style) {
+            color = '#b6c9e9';
+            border = '1px solid #74a3f0';
+            bg_img = '/core/_image/common/icon_ok.png';
+        } else {
+            color = '#ffc6c6';
+            border = '1px solid #ff7878';
+            bg_img = '/core/_image/common/icon_no.png';
+        }
+    } else {
+        color = '#ffc6c6';
+        border = '1px solid #ff7878';
+        bg_img = '/core/_image/common/icon_no.png';
+    }
     var timer, notice_div, notice_id = 'notice_' + Math.random();
     var notice = document.createElement('div');
     notice.id = notice_id;
@@ -252,21 +268,21 @@ function popup_top(msg) {
     notice.style.width = '100%';
     notice.style.padding = '10px 36px';
     notice.style.lineHeight = '16px';
-    notice.style.background = '#ffc6c6';
-    notice.style.borderBottom = '1px solid #ff7878';
+    notice.style.background = color;
+    notice.style.borderBottom = border;
     notice.style.textAlign = 'center';
     notice.style.top = '0';
     notice.style.left = '0';
-    notice.style.zIndex = '100';
+    notice.style.zIndex = '1000';
     notice.style.position = 'fixed';
     var notice_close = document.createElement('img');
-    notice_close.src = '/_image/common/icon_no.png';
+    notice_close.src = bg_img;
     notice_close.style.width = '28px';
     notice_close.style.height = '28px';
     notice_close.style.cursor = 'pointer';
     notice_close.style.top = '22px';
     notice_close.style.right = '5px';
-    notice_close.style.zIndex = '101';
+    notice_close.style.zIndex = '1000';
     notice_close.style.position = 'fixed';
     notice.appendChild(notice_close);
     document.body.appendChild(notice);
