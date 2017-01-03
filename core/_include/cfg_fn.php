@@ -138,6 +138,26 @@ function get_char(string $uuid, int $len = 1): string
 }
 
 /**
+ * Sort data by list order (Key mapped)
+ * @param array $data
+ * @param array $list
+ * @return array
+ */
+function sort_list(array $data, array $list): array
+{
+    $result = [];
+    if (!empty($list) && !empty($data)) {
+        foreach ($list as $item) {
+            if (isset($data[$item])) $result[$item] = $data[$item];
+            else continue;
+        }
+        unset($item);
+    }
+    unset($list, $data);
+    return $result;
+}
+
+/**
  * Get the IP and Language from the client
  * @return array
  */
