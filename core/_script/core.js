@@ -245,23 +245,13 @@ function saveAs(Name, Value, Type) {
 }
 
 function popup_top(msg, style) {
-    var color, bg_img, border;
-    if ('undefined' !== typeof(style)) {
-        if ('ok' === style) {
-            color = '#b6c9e9';
-            border = '1px solid #74a3f0';
-            bg_img = '/core/_image/common/icon_ok.png';
-        } else {
-            color = '#ffc6c6';
-            border = '1px solid #ff7878';
-            bg_img = '/core/_image/common/icon_no.png';
-        }
-    } else {
-        color = '#ffc6c6';
-        border = '1px solid #ff7878';
-        bg_img = '/core/_image/common/icon_no.png';
-    }
     var timer, notice_div, notice_id = 'notice_' + Math.random();
+    var color = '#ffc6c6', border = '1px solid #ff7878', bg_img = '/core/_image/common/icon_no.png';
+    if ('undefined' !== typeof(style) && 'ok' === style) {
+        color = '#b6c9e9';
+        border = '1px solid #74a3f0';
+        bg_img = '/core/_image/common/icon_ok.png';
+    }
     var notice = document.createElement('div');
     notice.id = notice_id;
     notice.innerText = msg;
