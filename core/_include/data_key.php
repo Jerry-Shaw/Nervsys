@@ -205,12 +205,15 @@ class data_key
     }
 
     /**
-     * Check COOKIE Key and value with SESSION data
+     * Check COOKIE Key and Value with SESSION data
      * @return string
      */
     private static function chk_cookie(): string
     {
-        return !empty($_COOKIE) ? 'LOCAL' : 'REMOTE';
+        $session_name = session_name();
+        $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
+        unset($session_name);
+        return $client;
     }
 
     /**
