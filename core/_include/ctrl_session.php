@@ -2,7 +2,7 @@
 
 /**
  * Session Controlling Module - Store sessions with Redis
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -45,8 +45,8 @@ class ctrl_session
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
             load_lib('core', 'db_redis');
-            db_redis::$redis_db = 15;
-            self::$db_redis = db_redis::connect();
+            \db_redis::$redis_db = 0;
+            self::$db_redis = \db_redis::connect();
             ini_set('session.gc_divisor', 100);
             ini_set('session.gc_probability', 100);
             ini_set('session.save_handler', 'user');

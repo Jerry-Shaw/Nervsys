@@ -1,6 +1,6 @@
 <?php
 load_lib('core', 'ctrl_language');
-$lang_common = ctrl_language::get_common();
+$lang_common = \ctrl_language::get_common();
 ?>
 <header id="header" class="clear">
     <div class="left clear">
@@ -27,10 +27,10 @@ $lang_common = ctrl_language::get_common();
         <div class="btn_lang">
             <ul id="lang_section" class="clear">
                 <li class="section">
-                    <a data="zh-CN" <?= 'zh-CN' === ctrl_language::$lang ? 'class="curr_lang"' : ''; ?>>中</a>
+                    <a data="zh-CN" <?= 'zh-CN' === \ctrl_language::$lang ? 'class="curr_lang"' : ''; ?>>中</a>
                 </li>
                 <li class="section">
-                    <a data="en-US" <?= 'en-US' === ctrl_language::$lang ? 'class="curr_lang"' : ''; ?>>EN</a>
+                    <a data="en-US" <?= 'en-US' === \ctrl_language::$lang ? 'class="curr_lang"' : ''; ?>>EN</a>
                 </li>
             </ul>
         </div>

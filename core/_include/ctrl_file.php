@@ -2,7 +2,7 @@
 
 /**
  * File Controlling Module
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -160,8 +160,8 @@ class ctrl_file
     {
         load_lib('core', 'ctrl_language');
         load_lib('core', 'ctrl_error');
-        ctrl_language::load('ctrl_file', 'core');
-        ctrl_error::load('core', 'ctrl_file');
+        \ctrl_language::load('ctrl_file', 'core');
+        \ctrl_error::load('core', 'ctrl_file');
         if (!empty(self::$file)) {
             if (0 === self::$file['error']) {//Upload success
                 $file_size = self::chk_size(self::$file['size']);//Get the file size
@@ -173,19 +173,19 @@ class ctrl_file
                             $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
                             $url = self::save_file(self::$file['tmp_name'], $save_path, $file_name, $file_ext);//Save file
                             if ('' !== $url) {//Done
-                                $result = ctrl_error::get_error(10000);//Upload finished
+                                $result = \ctrl_error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url;
                                 $result['file_size'] = &$file_size;
-                            } else $result = ctrl_error::get_error(10001);//Failed to move/copy from the tmp file
+                            } else $result = \ctrl_error::get_error(10001);//Failed to move/copy from the tmp file
                             unset($file_name, $url);
-                        } else $result = ctrl_error::get_error(10002);//Upload path Error
+                        } else $result = \ctrl_error::get_error(10002);//Upload path Error
                         unset($save_path);
-                    } else $result = ctrl_error::get_error(10003);//Extension not allowed
+                    } else $result = \ctrl_error::get_error(10003);//Extension not allowed
                     unset($file_ext);
-                } else $result = ctrl_error::get_error(10004);//File too large
+                } else $result = \ctrl_error::get_error(10004);//File too large
                 unset($file_size);
             } else $result = self::get_error(self::$file['error']);//Upload failed when uploading, returned from server
-        } else $result = ctrl_error::get_error(10007);//Empty $_FILES['file']
+        } else $result = \ctrl_error::get_error(10007);//Empty $_FILES['file']
         return $result;
     }
 
@@ -197,8 +197,8 @@ class ctrl_file
     {
         load_lib('core', 'ctrl_language');
         load_lib('core', 'ctrl_error');
-        ctrl_language::load('ctrl_file', 'core');
-        ctrl_error::load('core', 'ctrl_file');
+        \ctrl_language::load('ctrl_file', 'core');
+        \ctrl_error::load('core', 'ctrl_file');
         $base64_pos = strpos(self::$base64, 'base64,');//Get the position
         if (0 === strpos(self::$base64, 'data:image/') && false !== $base64_pos) {//Check the canvas data, must be an image
             $data = substr(self::$base64, $base64_pos + 7);//Get the base64 data of the image
@@ -217,20 +217,20 @@ class ctrl_file
                             if (is_file($file_path)) unlink($file_path);//Delete the file if existing
                             $save_file = self::put_content($file_path, $img_data);//Write to file
                             if (0 < $save_file) {//Done
-                                $result = ctrl_error::get_error(10000);//Upload finished
+                                $result = \ctrl_error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url_path;
                                 $result['file_size'] = &$file_size;
-                            } else $result = ctrl_error::get_error(10001);//Failed to write
+                            } else $result = \ctrl_error::get_error(10001);//Failed to write
                             unset($file_name, $url_path, $file_path, $save_file);
-                        } else $result = ctrl_error::get_error(10002);//Upload path Error
+                        } else $result = \ctrl_error::get_error(10002);//Upload path Error
                         unset($file_ext, $save_path);
-                    } else $result = ctrl_error::get_error(10003);//Extension not allowed
+                    } else $result = \ctrl_error::get_error(10003);//Extension not allowed
                     unset($img_info);
-                } else $result = ctrl_error::get_error(10004);//File too large
+                } else $result = \ctrl_error::get_error(10004);//File too large
                 unset($file_size);
-            } else $result = ctrl_error::get_error(10006);//Image data error
+            } else $result = \ctrl_error::get_error(10006);//Image data error
             unset($data, $img_data);
-        } else $result = ctrl_error::get_error(10003);//Extension not allowed
+        } else $result = \ctrl_error::get_error(10003);//Extension not allowed
         unset($base64_pos);
         return $result;
     }
@@ -403,25 +403,25 @@ class ctrl_file
     {
         switch ($error_code) {
             case 1:
-                $result = ctrl_error::get_error(10004);
+                $result = \ctrl_error::get_error(10004);
                 break;
             case 2:
-                $result = ctrl_error::get_error(10004);
+                $result = \ctrl_error::get_error(10004);
                 break;
             case 3:
-                $result = ctrl_error::get_error(10006);
+                $result = \ctrl_error::get_error(10006);
                 break;
             case 4:
-                $result = ctrl_error::get_error(10007);
+                $result = \ctrl_error::get_error(10007);
                 break;
             case 6:
-                $result = ctrl_error::get_error(10005);
+                $result = \ctrl_error::get_error(10005);
                 break;
             case 7:
-                $result = ctrl_error::get_error(10008);
+                $result = \ctrl_error::get_error(10008);
                 break;
             default:
-                $result = ctrl_error::get_error(10001);
+                $result = \ctrl_error::get_error(10001);
                 break;
         }
         unset($error_code);

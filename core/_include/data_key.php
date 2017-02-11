@@ -2,7 +2,7 @@
 
 /**
  * Access-Key Controlling Module
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -48,10 +48,14 @@ class data_key
         $Origin_HOST = $_SERVER['HTTP_ORIGIN'] ?? $Server_HOST;
         //Process HTTP requests
         if ('OPTIONS' !== $_SERVER['REQUEST_METHOD']) {
-            //Load user_crypt and SESSION module
+            //Load user_crypt module from defined module path
             load_lib(CRYPT_PATH, 'user_crypt');
-            load_lib('core', 'ctrl_session');
-            ctrl_session::start();
+            //Start SESSION
+            if (Redis_SESSION) {
+                //Load Redis SESSION Controller
+                load_lib('core', 'ctrl_session');
+                \ctrl_session::start();
+            } else session_start();
             //Detect requests
             switch (self::$client) {
                 //For localhost requests
@@ -181,7 +185,7 @@ class data_key
      */
     private static function get_key(): string
     {
-        return !empty(self::$key) ? user_crypt::create_key(self::$key) : '';
+        return !empty(self::$key) ? \user_crypt::create_key(self::$key) : '';
     }
 
     /**
@@ -190,7 +194,7 @@ class data_key
     private static function map_key()
     {
         self::$client = 'REMOTE';
-        $content = user_crypt::validate_key($_SERVER['HTTP_ACCESS_KEY']);
+        $content = \user_crypt::validate_key($_SERVER['HTTP_ACCESS_KEY']);
         if (!empty($content) && isset($content['ExpireAt']) && time() < $content['ExpireAt']) self::$key = &$content;
         unset($content);
     }

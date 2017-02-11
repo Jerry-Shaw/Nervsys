@@ -2,7 +2,7 @@
 
 /**
  * Authority Code Image
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  *
@@ -78,7 +78,8 @@ imagegif($image);
 imagedestroy($image);
 
 load_lib('core', 'db_redis');
-$db_redis = db_redis::connect();
+\db_redis::$redis_db = 0;
+$db_redis = \db_redis::connect();
 $db_redis->set(get_uuid(get_client_info()['ip']), $auth_code, 180);
 
 ob_flush();

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ooBase ACT Script
+ * ooBase API Script
  * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
@@ -27,22 +27,38 @@
  */
 
 /**
- * This script is made for special GET Requests.
- * Running Access-Key check firstly is recommended for higher security.
- * Don't make it as the same as API script, it is for known GET Requests only.
+ * This script is an universal API script.
+ * Access-Key check is recommended for higher security.
+ * Enable GET Method can be controlled by "\data_pool::$enable_get".
+ * But it is strongly not recommended to enable GET Method.
+ * Just simply leave it as it is for system security.
+ * Or, only enable it when debug is needed.
  */
 
 declare(strict_types = 1);
 
 //Load CFG file (basic function script is loaded in the cfg file as also).
-require __DIR__ . '/_include/cfg.php';
+include __DIR__ . '/_include/cfg.php';
 
 //Load data_key as an overall module and start it.
 load_lib('core', 'data_key');
+//Copy passable data if needed
+\data_key::$key = &$data_key;
 //Define client to 'LOCAL'
 \data_key::$client = 'LOCAL';
 //Start data_key process
 \data_key::start();
+
+//Load data_pool as an overall module and start it.
+load_lib('core', 'data_pool');
+//Copy passable data if needed
+\data_pool::$module = &$data_module;
+\data_pool::$method = &$data_method;
+\data_pool::$pool = &$data_pool;
+\data_pool::$mapping = &$data_mapping;
+\data_pool::$format = &$data_format;
+//Start data_pool process
+\data_pool::start();
 
 //Check requested Access-Key
 //This part should be modified to fit your own system
@@ -50,19 +66,10 @@ load_lib('core', 'data_key');
 load_lib('user', 'user_acc');
 \user_acc::init();
 
-//Set default values
-$act = '';
-
-//Extract GET values
-extract($_GET);
-
-//Load language package without affecting COOKIE
-\ctrl_language::load('act', 'user');
-
-//Run Methods dependently
-switch ($act) {
-    default:
-        $header_content = false !== strpos($_SERVER['REQUEST_URI'], '&amp;') ? 'Location: ' . htmlspecialchars_decode($_SERVER['REQUEST_URI']) : 'HTTP/1.0 404 Not Found';
-        header($header_content);
-        break;
+//"json" is the default output format, "raw" data will be kept if no "cmd" is detected
+//Keep running the rest script if user needs raw data which is kept in the data pool
+if ('json' === \data_pool::$format) {
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo json_encode(\data_pool::$data);
+    exit;
 }

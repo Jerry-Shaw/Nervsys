@@ -2,7 +2,7 @@
 
 /**
  * Data Controlling Module
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -80,7 +80,7 @@ class data_pool
                     //Check the methods and call it if it is public and static
                     foreach ($methods_need as $method) {
                         //Get a reflection object for the class method
-                        $reflect = new ReflectionMethod($class, $method);
+                        $reflect = new \ReflectionMethod($class, $method);
                         //Check the visibility and property of the method
                         if ($reflect->isPublic() && $reflect->isStatic()) {
                             //Try to call the method and catch the Exceptions or Errors
@@ -116,7 +116,7 @@ class data_pool
                                         if (isset($result)) self::$pool[self::$mapping[$module . '/' . $class . '/' . $method]['to']] = $result;
                                     }
                                 } else continue;
-                            } catch (Throwable | Exception $exception) {
+                            } catch (\Throwable | \Exception $exception) {
                                 //Save the Exception or Error Message to the result data pool instead
                                 self::$data[$module . '/' . $class . '/' . $method] = $exception->getMessage();
                             }

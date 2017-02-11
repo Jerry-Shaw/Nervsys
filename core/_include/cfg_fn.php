@@ -2,7 +2,7 @@
 
 /**
  * Basic Functions
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -60,11 +60,11 @@ function load_api(string $module, string $library, string $method): array
     if ('' !== $class) {
         $methods_api = isset($class::$api) && is_array($class::$api) && !empty($class::$api) ? $class::$api : [];
         if (in_array($method, $methods_api, true) && method_exists($library, $method)) {
-            $reflect = new ReflectionMethod($class, $method);
+            $reflect = new \ReflectionMethod($class, $method);
             if ($reflect->isPublic() && $reflect->isStatic()) {
                 try {
                     $result['data'] = $class::$method();
-                } catch (Throwable | Exception $exception) {
+                } catch (\Throwable | \Exception $exception) {
                     $result['data'] = $exception->getMessage();
                 }
             }
@@ -251,7 +251,7 @@ function send_email(string $address, string $title, string $content, string $sen
     //Load the class file
     load_lib('core', 'sys_mailer');
     //Create a new Mailer instance
-    $mailer = new sys_mailer();
+    $mailer = new \sys_mailer();
     //Tell PHPMailer to use SMTP
     $mailer->isSMTP();
     //Enable SMTP debugging

@@ -2,7 +2,7 @@
 
 /**
  * Error Controlling Module
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -53,7 +53,7 @@ class ctrl_error
     public static function load(string $module, string $file)
     {
         load_lib('core', 'ctrl_file');
-        $json_content = ctrl_file::get_content(ROOT . '/' . $module . '/_error/' . $file . '.json');
+        $json_content = \ctrl_file::get_content(ROOT . '/' . $module . '/_error/' . $file . '.json');
         if ('' !== $json_content) {
             $error_content = json_decode($json_content, true);
             if (isset($error_content)) {
@@ -88,16 +88,16 @@ class ctrl_error
         $errors = [];
         load_lib('core', 'ctrl_file');
         if (self::$need_lang) load_lib('core', 'ctrl_language');
-        $error_files = ctrl_file::get_list(ROOT, '*.json', true);//Get all the json formatted error files from all modules
+        $error_files = \ctrl_file::get_list(ROOT, '*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $file) {
-            $json_content = ctrl_file::get_content($file);
+            $json_content = \ctrl_file::get_content($file);
             if ('' !== $json_content) {
                 $error_content = json_decode($json_content, true);
                 if (isset($error_content)) {
                     if (self::$need_lang && isset($error_content['Lang'])) {
                         $lang_file = false !== strpos($error_content['Lang'], ', ') ? explode(', ', $error_content['Lang']) : [$error_content['Lang']];
                         foreach ($lang_file as $lang) {
-                            ctrl_language::load($lang, $error_content['Module']);//Load defined language pack
+                            \ctrl_language::load($lang, $error_content['Module']);//Load defined language pack
                             $errors[$error_content['CodeRange']] = [];
                             $errors[$error_content['CodeRange']]['Name'] = $error_content['Name'];
                             $errors[$error_content['CodeRange']]['Module'] = '' !== $error_content['Module'] ? $error_content['Module'] : 'core';

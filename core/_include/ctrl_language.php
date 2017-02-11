@@ -2,7 +2,7 @@
 
 /**
  * Language Controlling Module
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 彼岸花开 <330931138@qq.com>

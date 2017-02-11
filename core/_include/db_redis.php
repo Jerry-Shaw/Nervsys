@@ -2,7 +2,7 @@
 
 /**
  * Redis Connection Module
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 彼岸花开 <330931138@qq.com>
@@ -52,7 +52,7 @@ class db_redis
         $redis_auth = self::$redis_auth ?? Redis_AUTH;
         //Try to connect Redis Server
         try {
-            $db_redis = new Redis();
+            $db_redis = new \Redis();
             $connect = (self::$redis_persistent ?? Redis_PERSISTENT) ? 'pconnect' : 'connect';
             $db_redis->$connect($redis_host, $redis_port);
             if (!is_null($redis_auth) && '' !== $redis_auth) $db_redis->auth($redis_auth);

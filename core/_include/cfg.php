@@ -2,30 +2,30 @@
 
 /**
  * Basic Configurations
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 彼岸花开 <330931138@qq.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 彼岸花开
- * Copyright 2016 秋水之冰
+ * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2016-2017 彼岸花开
+ * Copyright 2016-2017 秋水之冰
  *
- * This file is part of ooBase Core System.
+ * This file is part of ooBase Core.
  *
- * ooBase SDK is free software: you can redistribute it and/or modify
+ * ooBase Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase SDK is distributed in the hope that it will be useful,
+ * ooBase Core is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core System. If not, see <http://www.gnu.org/licenses/>.
+ * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
  */
 
 //Basic Settings
@@ -60,9 +60,10 @@ define('MySQL_PERSISTENT', true);
 //Redis Settings
 define('Redis_HOST', 'localhost');
 define('Redis_PORT', 6379);
-define('Redis_DB', 15);
+define('Redis_DB', 0);
 define('Redis_AUTH', '');
 define('Redis_PERSISTENT', true);
+define('Redis_SESSION', true);
 
 //SMTP Mail Settings
 define('SMTP_HOST', 'SMTP HOST');

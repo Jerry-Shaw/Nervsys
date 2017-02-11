@@ -2,7 +2,7 @@
 
 /**
  * ooBase API Script
- * Version 2.6.0
+ * Version 2.6.1
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -29,7 +29,7 @@
 /**
  * This script is an universal API script.
  * Access-Key check is recommended for higher security.
- * Enable GET Method can be controlled by "data_pool::$enable_get".
+ * Enable GET Method can be controlled by "\data_pool::$enable_get".
  * But it is strongly not recommended to enable GET Method.
  * Just simply leave it as it is for system security.
  * Or, only enable it when debug is needed.
@@ -43,23 +43,23 @@ require __DIR__ . '/_include/cfg.php';
 //Load data_key as an overall module and start it.
 load_lib('core', 'data_key');
 //Start data_key process
-data_key::start();
+\data_key::start();
 
 //Load data_pool as an overall module and start it.
 load_lib('core', 'data_pool');
 //Start data_pool process
-data_pool::start();
+\data_pool::start();
 
 //Check requested Access-Key
 //This part should be modified to fit your own system
 //Any unvalidated requests with wrong Access-Key should be blocked for security
 load_lib('user', 'user_acc');
-user_acc::init();
+\user_acc::init();
 
 //"json" is the default output format, "raw" data will be kept if no "cmd" is detected
 //Keep running the rest script if user needs raw data which is kept in the data pool
-if ('json' === data_pool::$format) {
+if ('json' === \data_pool::$format) {
     header('Content-Type: text/plain; charset=UTF-8');
-    echo json_encode(data_pool::$data);
+    echo json_encode(\data_pool::$data);
     exit;
 }
