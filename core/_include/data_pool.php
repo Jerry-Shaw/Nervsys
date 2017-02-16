@@ -178,7 +178,8 @@ class data_pool
             //Check "map" value which should contain both "/" and ":" when the "cmd" is validated
             //"map" value format should be some string like but no need to be exact as, example as follows:
             //"module_1/library_1/method_1:key_1,module_2/library_2/method_2/result_key:key_2,module_2/library_2/method_3/result_key_1/result_key_2:key_3,..."
-            //Inner Format: Module/Class/Methods(/result_key(/deeper_key/...)):data_key_name.
+            //Modules with namespace: "module_1/\namespace\library_1/method_1:key_1,module_2/\namespace\library_2/method_2/result_key:key_2,..."
+            //Inner Format: Module/\namespace\Class/Methods(/result_key(/deeper_key/...)):data_key_name.
             //API runs according to the input sequence, the former data_key will be replaced with new content if exists.
             if (isset($data['map']) && false !== strpos($data['map'], '/') && false !== strpos($data['map'], ':')) {
                 //Extract "map" values and clean them up
