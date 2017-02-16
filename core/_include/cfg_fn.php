@@ -2,7 +2,7 @@
 
 /**
  * Basic Functions
- * Version 2.6.1
+ * Version 2.6.5
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -32,15 +32,18 @@
  * Load library file
  * @param string $module
  * @param string $library
- * @return string library file name, should be the same as the class name
+ * @return string library name when loaded or empty string when load failed
  */
 function load_lib(string $module, string $library): string
 {
     if (!class_exists($library, false)) {
-        $library_file = ROOT . '/' . $module . '/_include/' . $library . '.php';
-        if (is_file($library_file)) require $library_file;
-        else $library = '';
-        unset($library_file);
+        $position = strrpos($library, '\\');
+        $library_file = ROOT . '/' . $module . '/_include/' . (false === $position ? $library : substr($library, $position)) . '.php';
+        if (is_file($library_file)) {
+            require $library_file;
+            if (!class_exists($library, false)) $library = '';
+        } else $library = '';
+        unset($position, $library_file);
     }
     unset($module);
     return $library;

@@ -2,7 +2,7 @@
 
 /**
  * Authority Code Image
- * Version 2.6.1
+ * Version 2.6.5
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  *

@@ -1,6 +1,6 @@
 /**
  * ooBase core JavaScript
- * Version 2.6.1
+ * Version 2.6.5
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>

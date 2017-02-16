@@ -2,7 +2,7 @@
 
 /**
  * Data Controlling Module
- * Version 2.6.1
+ * Version 2.6.5
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -123,6 +123,8 @@ class data_pool
                         } else continue;
                     }
                 } else continue;
+
+
             }
         }
         unset($module, $libraries, $library, $class, $methods_api, $methods_all, $methods_need, $method, $reflect, $result, $key, $tmp);
@@ -135,27 +137,29 @@ class data_pool
     {
         //Get date from HTTP Request
         $data = !self::$enable_get ? $_POST : $_REQUEST;
-        //Check "cmd" value which should contain both "/" and ","
+        //Check "cmd" value which should at least contain "/", or with "," for specific methods calling
         //"cmd" value format should be some string like but no need to be exact as, example as follows:
-        //"module_1/library_1,module_2/library_2,module_2/library_3,...,method_1,method_2,method_3,method_4,..."
-        //"module_1/library_1,method_1,method_2,method_3,module_1/library_2,method_4,method_5,module_2/library_3,method_6,..."
-        //Inner Format: Module/Class,Methods. API runs Module/Class according to the input sequence, but Methods' order will be ignored.
-        if (isset($data['cmd']) && false !== strpos($data['cmd'], '/') && false !== strpos($data['cmd'], ',')) {
+        //One module calling: "module_1/library_1"
+        //One module calling with one method or multiple methods: "module_1/library_1,method_1" or "module_1/library_1,method_1,method_2,method_3,method_4,..."
+        //Multiple modules calling: "module_1/library_1,module_2/library_2,..."
+        //Multiple modules calling with methods: "module_1/library_1,module_2/library_2,...,method_1,method_2,method_3,method_4,..."
+        //Modules with namespace: "module_1/\namespace\library_1" or "module_1/\namespace\library_1,method_1,method_2,method_3,method_4,..."
+        //Notice: The key to calling a method in a module is the structure of data. All/Specific methods will only run with the matched data structure.
+        if (isset($data['cmd']) && false !== strpos($data['cmd'], '/')) {
             //Set result data format according to the request
             if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
-            //Extract "cmd" values and clean them up
-            $cmd = explode(',', $data['cmd']);
-            $cmd = array_filter($cmd);
-            $cmd = array_unique($cmd);
+            //Extract "cmd" values
+            if (false !== strpos($data['cmd'], ',')) {
+                //Spilt "cmd" value if multiple modules/methods exist with "," and clean them up
+                $cmd = explode(',', $data['cmd']);
+                $cmd = array_filter($cmd);
+                $cmd = array_unique($cmd);
+            } else $cmd = [$data['cmd']];
             //Parse "cmd" values
             foreach ($cmd as $item) {
                 //Get the position of module path
                 $position = strpos($item, '/');
-                if (false === $position) {
-                    //Method goes here
-                    //Add to "self::$method" if not added
-                    if (!in_array($item, self::$method, true)) self::$method[] = $item;
-                } else {
+                if (false !== $position) {
                     //Module goes here
                     //Get module and library names
                     $module = substr($item, 0, $position);
@@ -167,6 +171,10 @@ class data_pool
                         //Add library to "self::$module" if not added
                         if (!in_array($library, self::$module[$module], true)) self::$module[$module][] = $library;
                     } else continue;
+                } else {
+                    //Method goes here
+                    //Add to "self::$method" if not added
+                    if (!in_array($item, self::$method, true)) self::$method[] = $item;
                 }
             }
             //Check "map" value which should contain both "/" and ":" when the "cmd" is validated
