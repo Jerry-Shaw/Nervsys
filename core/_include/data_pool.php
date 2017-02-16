@@ -123,8 +123,6 @@ class data_pool
                         } else continue;
                     }
                 } else continue;
-
-
             }
         }
         unset($module, $libraries, $library, $class, $methods_api, $methods_all, $methods_need, $method, $reflect, $result, $key, $tmp);
