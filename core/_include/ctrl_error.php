@@ -2,17 +2,17 @@
 
 /**
  * Error Controlling Module
- * Version 2.6.5
+ * Version 2.7.0 (Nerve Cell)
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  * Author 彼岸花开 <330931138@qq.com>
- * Author newblash <752050750@qq.com>
+ * Author 杨晶 <752050750@qq.com>
  *
  * Copyright 2015-2017 Jerry Shaw
  * Copyright 2016-2017 秋水之冰
  * Copyright 2016-2017 彼岸花开
- * Copyright 2016 newblash
+ * Copyright 2016 杨晶
  *
  * This file is part of ooBase Core.
  *
@@ -74,8 +74,8 @@ class ctrl_error
     public static function get_error(int $error_code): array
     {
         return array_key_exists($error_code, self::$error_storage)
-            ? ['err' => $error_code, 'msg' => self::$need_lang ? gettext(self::$error_storage[$error_code]) : self::$error_storage[$error_code]]
-            : ['err' => $error_code, 'msg' => 'Error code NOT found!'];
+            ? ['code' => $error_code, 'msg' => self::$need_lang ? gettext(self::$error_storage[$error_code]) : self::$error_storage[$error_code]]
+            : ['code' => $error_code, 'msg' => 'Error code NOT found!'];
     }
 
     /**

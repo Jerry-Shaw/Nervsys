@@ -2,7 +2,7 @@
 
 /**
  * Authority Code Image
- * Version 2.6.5
+ * Version 2.7.0 (Nerve Cell)
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  *

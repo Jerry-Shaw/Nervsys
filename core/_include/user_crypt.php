@@ -2,7 +2,7 @@
 
 /**
  * Encrypt/Decrypt Controlling Module
- * Version 2.6.5
+ * Version 2.7.0 (Nerve Cell)
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>

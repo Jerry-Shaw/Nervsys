@@ -2,7 +2,7 @@
 
 /**
  * Basic Configurations
- * Version 2.6.5
+ * Version 2.7.0 (Nerve Cell)
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 彼岸花开 <330931138@qq.com>
@@ -45,7 +45,7 @@ define('CRYPT_PATH', 'user');
 define('ONLINE_TAGS', ['uuid', 'char']);
 
 //File Storage Server Settings
-define('FILE_PATH', '/var/www/file.oobase.com/');
+define('FILE_PATH', 'E:/Sites/file.oobase.com/');
 define('FILE_DOMAIN', 'https://file.oobase.com/');
 
 //MySQL Settings

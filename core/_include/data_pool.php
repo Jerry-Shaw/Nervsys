@@ -2,14 +2,16 @@
 
 /**
  * Data Controlling Module
- * Version 2.6.5
+ * Version 2.7.0 (Nerve Cell)
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author 杨晶 <752050750@qq.com>
  * Author 风雨凌芸 <tianpapawo@live.com>
  *
  * Copyright 2015-2017 Jerry Shaw
  * Copyright 2016-2017 秋水之冰
+ * Copyright 2017 杨晶
  * Copyright 2016 风雨凌芸
  *
  * This file is part of ooBase Core.
@@ -29,15 +31,6 @@
  */
 class data_pool
 {
-    //Module list
-    public static $module = [];
-
-    //Method list
-    public static $method = [];
-
-    //Mapping list
-    public static $mapping = [];
-
     //Original data pool
     public static $pool = [];
 
@@ -53,12 +46,23 @@ class data_pool
     //Enable/Disable mapping result data to original data pool
     public static $enable_mapping = true;
 
+    //Module list
+    private static $module = [];
+
+    //Method list
+    private static $method = [];
+
+    //Mapping list
+    private static $mapping = [];
+
     //Initial Data Controlling Module
     //Only static methods are supported
     public static function start()
     {
         //Parse data from HTTP Request
         self::parse_data();
+        //Build data structure
+        $structure = array_keys(self::$pool);
         //Parse Module & Method list
         foreach (self::$module as $module => $libraries) {
             //Load Module CFG file for the first time
@@ -67,18 +71,28 @@ class data_pool
             foreach ($libraries as $library) {
                 //Load library file
                 $class = load_lib($module, $library);
-                //Check the existence of the class
-                if ('' !== $class) {
-                    //Get the allowed methods for API
-                    $methods_api = isset($class::$api) && is_array($class::$api) && !empty($class::$api) ? $class::$api : [];
-                    //Get all the methods from the class
-                    $methods_all = get_class_methods($class);
-                    //Get the needed methods according to the request
-                    $methods_need = array_intersect(self::$method, $methods_api, $methods_all);
-                    //Prepend "init" method which should always run first if exists
-                    if (in_array('init', $methods_api, true) && in_array('init', $methods_all, true) && !in_array('init', $methods_need, true)) array_unshift($methods_need, 'init');
-                    //Check the methods and call it if it is public and static
-                    foreach ($methods_need as $method) {
+                //Check the existence of the class and its API content
+                if ('' !== $class && isset($class::$api) && is_array($class::$api) && !empty($class::$api)) {
+                    //Get api list from API content
+                    $api_list = array_keys($class::$api);
+                    //Get method list from the class
+                    $method_list = get_class_methods($class);
+                    //Get the api methods according to the request
+                    //All methods will be stored in the intersect list if no method is provided
+                    $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
+                    //Compare data structure with the requirement of every method
+                    foreach ($method_api as $key => $method) {
+                        //Get the intersect list of the data requirement structure
+                        $intersect = array_intersect($structure, $class::$api[$method]);
+                        //Get the different list of the data requirement structure
+                        $difference = array_diff($class::$api[$method], $intersect);
+                        //Remove the api method if the data structure is not matched
+                        if (!empty($difference)) unset($method_api[$key]);
+                    }
+                    //Prepend "init" method which should always run at the first place if exists
+                    if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) array_unshift($method_api, 'init');
+                    //Check the property of every method and call it if it is public and static
+                    foreach ($method_api as $method) {
                         //Get a reflection object for the class method
                         $reflect = new \ReflectionMethod($class, $method);
                         //Check the visibility and property of the method
@@ -125,7 +139,7 @@ class data_pool
                 } else continue;
             }
         }
-        unset($module, $libraries, $library, $class, $methods_api, $methods_all, $methods_need, $method, $reflect, $result, $key, $tmp);
+        unset($structure, $module, $libraries, $library, $class, $api_list, $method_list, $method_api, $intersect, $difference, $method, $reflect, $result, $key, $tmp);
     }
 
     /**
@@ -177,10 +191,9 @@ class data_pool
             }
             //Check "map" value which should contain both "/" and ":" when the "cmd" is validated
             //"map" value format should be some string like but no need to be exact as, example as follows:
-            //"module_1/library_1/method_1:key_1,module_2/library_2/method_2/result_key:key_2,module_2/library_2/method_3/result_key_1/result_key_2:key_3,..."
-            //Modules with namespace: "module_1/\namespace\library_1/method_1:key_1,module_2/\namespace\library_2/method_2/result_key:key_2,..."
-            //Inner Format: Module/\namespace\Class/Methods(/result_key(/deeper_key/...)):data_key_name.
-            //API runs according to the input sequence, the former data_key will be replaced with new content if exists.
+            //Example: "module_1/library_1/method_1:key_1,module_2/library_2/method_2/result_key:key_2,module_2/library_2/method_3/result_key_1/result_key_2:key_3,..."
+            //Example with namespace: "module_1/\namespace\library_1/method_1:key_1,module_2/\namespace\library_2/method_2/result_key:key_2,..."
+            //Notice: API running follows the input sequence, the former content will be replaced if the coming one has the same key.
             if (isset($data['map']) && false !== strpos($data['map'], '/') && false !== strpos($data['map'], ':')) {
                 //Extract "map" values and clean them up
                 if (false !== strpos($data['map'], ',')) {
@@ -218,7 +231,7 @@ class data_pool
             //Mapping data values
             self::$pool = &$data;
             //Merge "$_FILES" into data pool if exists
-            if (!empty($_FILES)) self::$pool['FILES'] = &$_FILES;
+            if (!empty($_FILES)) self::$pool = array_merge(self::$pool, $_FILES);
         } else self::$format = 'raw';//Set result data format to "raw" if "cmd" value is not detected
         unset($data);
     }
