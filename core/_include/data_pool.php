@@ -88,7 +88,7 @@ class data_pool
                         $intersect = array_intersect($structure, $class::$api[$method]);
                         //Get the different list of the data requirement structure
                         $difference = array_diff($class::$api[$method], $intersect);
-                        //Remove the api method if the data structure is not matched
+                        //Continue running the api method if the data structure is matched
                         if (empty($difference)) {
                             //Get a reflection object for the class method
                             $reflect = new \ReflectionMethod($class, $method);
