@@ -64,7 +64,6 @@ function load_api(string $module, string $library, string $method): array
         $api_list = array_keys($class::$api);
         $method_list = get_class_methods($class);
         $methods_api = array_intersect($api_list, $method_list);
-        if (in_array('init', $method_list, true) && !in_array('init', $methods_api, true)) array_unshift($methods_api, 'init');
         if (in_array($method, $methods_api, true) && method_exists($class, $method)) {
             $reflect = new \ReflectionMethod($class, $method);
             if ($reflect->isPublic() && $reflect->isStatic()) {
