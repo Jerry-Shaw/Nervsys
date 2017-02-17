@@ -80,60 +80,62 @@ class data_pool
                     //Get the api methods according to the request
                     //All methods will be stored in the intersect list if no method is provided
                     $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
-                    //Compare data structure with the requirement of every method
-                    foreach ($method_api as $key => $method) {
+                    //Prepend "init" method which should always run at the first place if exists
+                    if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) array_unshift($method_api, 'init');
+                    //Check the property of every method and call it if it is public and static
+                    foreach ($method_api as $method) {
                         //Get the intersect list of the data requirement structure
                         $intersect = array_intersect($structure, $class::$api[$method]);
                         //Get the different list of the data requirement structure
                         $difference = array_diff($class::$api[$method], $intersect);
                         //Remove the api method if the data structure is not matched
-                        if (!empty($difference)) unset($method_api[$key]);
-                    }
-                    //Prepend "init" method which should always run at the first place if exists
-                    if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) array_unshift($method_api, 'init');
-                    //Check the property of every method and call it if it is public and static
-                    foreach ($method_api as $method) {
-                        //Get a reflection object for the class method
-                        $reflect = new \ReflectionMethod($class, $method);
-                        //Check the visibility and property of the method
-                        if ($reflect->isPublic() && $reflect->isStatic()) {
-                            //Try to call the method and catch the Exceptions or Errors
-                            try {
-                                //Calling method
-                                $result = $class::$method();
-                                //Merge result
-                                if (isset($result)) {
-                                    //Save result data
-                                    self::$data[$module . '/' . $class . '/' . $method] = $result;
-                                    //Check mapping request
-                                    if (self::$enable_mapping && isset(self::$mapping[$module . '/' . $class . '/' . $method])) {
-                                        //Processing array result to get the final data
-                                        if (!empty(self::$mapping[$module . '/' . $class . '/' . $method]['from']) && is_array($result)) {
-                                            //Check every key in mapping from request
-                                            foreach (self::$mapping[$module . '/' . $class . '/' . $method]['from'] as $key) {
-                                                //Check key's existence
-                                                if (isset($result[$key])) {
-                                                    //Switch result data to where we find
-                                                    unset($tmp);
-                                                    $tmp = $result[$key];
-                                                    unset($result);
-                                                    $result = $tmp;
-                                                } else {
-                                                    //Unset result data if requested key does not exist
-                                                    unset($result);
-                                                    break;
+                        if (empty($difference)) {
+                            //Get a reflection object for the class method
+                            $reflect = new \ReflectionMethod($class, $method);
+                            //Check the visibility and property of the method
+                            if ($reflect->isPublic() && $reflect->isStatic()) {
+                                //Try to call the method and catch the Exceptions or Errors
+                                try {
+                                    //Calling method
+                                    $result = $class::$method();
+                                    //Merge result
+                                    if (isset($result)) {
+                                        //Save result data
+                                        self::$data[$module . '/' . $class . '/' . $method] = $result;
+                                        //Check mapping request
+                                        if (self::$enable_mapping && isset(self::$mapping[$module . '/' . $class . '/' . $method])) {
+                                            //Processing array result to get the final data
+                                            if (!empty(self::$mapping[$module . '/' . $class . '/' . $method]['from']) && is_array($result)) {
+                                                //Check every key in mapping from request
+                                                foreach (self::$mapping[$module . '/' . $class . '/' . $method]['from'] as $key) {
+                                                    //Check key's existence
+                                                    if (isset($result[$key])) {
+                                                        //Switch result data to where we find
+                                                        unset($tmp);
+                                                        $tmp = $result[$key];
+                                                        unset($result);
+                                                        $result = $tmp;
+                                                    } else {
+                                                        //Unset result data if requested key does not exist
+                                                        unset($result);
+                                                        break;
+                                                    }
                                                 }
                                             }
+                                            //Mapping processed result data to data pool if not null
+                                            if (isset($result)) {
+                                                //Caution: The data with the same key in data pool will be overwritten if exists
+                                                self::$pool[self::$mapping[$module . '/' . $class . '/' . $method]['to']] = $result;
+                                                //Rebuild data structure
+                                                $structure = array_keys(self::$pool);
+                                            }
                                         }
-                                        //Mapping processed result data to data pool if not null
-                                        //Caution: The data with the same key in data pool will be overwritten if exists
-                                        if (isset($result)) self::$pool[self::$mapping[$module . '/' . $class . '/' . $method]['to']] = $result;
-                                    }
-                                } else continue;
-                            } catch (\Throwable | \Exception $exception) {
-                                //Save the Exception or Error Message to the result data pool instead
-                                self::$data[$module . '/' . $class . '/' . $method] = $exception->getMessage();
-                            }
+                                    } else continue;
+                                } catch (\Throwable | \Exception $exception) {
+                                    //Save the Exception or Error Message to the result data pool instead
+                                    self::$data[$module . '/' . $class . '/' . $method] = $exception->getMessage();
+                                }
+                            } else continue;
                         } else continue;
                     }
                 } else continue;
