@@ -60,11 +60,10 @@ function load_api(string $module, string $library, string $method): array
 {
     $result = [];
     $class = load_lib($module, $library);
-    if ('' !== $class && isset($class::$api) && is_array($class::$api) && !empty($class::$api)) {
-        $api_list = array_keys($class::$api);
+    if ('' !== $class) {
+        $api_list = isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
         $method_list = get_class_methods($class);
-        $methods_api = array_intersect($api_list, $method_list);
-        if (in_array($method, $methods_api, true) && method_exists($class, $method)) {
+        if (in_array($method, $method_list, true) && (in_array($method, $api_list, true) || 'init' === $method)) {
             $reflect = new \ReflectionMethod($class, $method);
             if ($reflect->isPublic() && $reflect->isStatic()) {
                 try {
@@ -75,7 +74,7 @@ function load_api(string $module, string $library, string $method): array
             }
             unset($reflect);
         }
-        unset($methods_api);
+        unset($api_list, $method_list);
     }
     unset($module, $library, $method, $class);
     return $result;

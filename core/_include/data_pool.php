@@ -91,18 +91,18 @@ class data_pool
                 foreach ($libraries as $library) {
                     //Load library file
                     $class = load_lib($module, $library);
-                    //Check the existence of the class and its API content
-                    if ('' !== $class && isset($class::$api) && is_array($class::$api) && !empty($class::$api)) {
+                    //Check the load status of the class
+                    if ('' !== $class) {
                         //Get api list from API content
-                        $api_list = array_keys($class::$api);
+                        $api_list = isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
                         //Get method list from the class
                         $method_list = get_class_methods($class);
                         //Get the api methods according to the request
                         //All methods will be stored in the intersect list if no method is provided
                         $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
-                        //Calling "init" method at the first place without API permission if exists in class
+                        //Calling "init" method at the first place if exists without API permission and data structure comparison
                         if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($module, $class, 'init');
-                        //Go through every method in method api list
+                        //Go through every method in the method api list
                         foreach ($method_api as $method) {
                             //Get the intersect list of the data requirement structure
                             $intersect = array_intersect(self::$structure, $class::$api[$method]);
