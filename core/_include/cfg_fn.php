@@ -12,20 +12,20 @@
  * Copyright 2016-2017 秋水之冰
  * Copyright 2016-2017 彼岸花开
  *
- * This file is part of ooBase Core.
+ * This file is part of NervSys.
  *
- * ooBase Core is free software: you can redistribute it and/or modify
+ * NervSys is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase Core is distributed in the hope that it will be useful,
+ * NervSys is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
+ * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -205,7 +205,7 @@ function curl_request(string $url, array $data = [], string $access_key = ''): s
         //Request Method (Depends on requested data)
         $method = !empty($data) ? 'POST' : 'GET';
         //Request User-Agent
-        $user_agent = 'Mozilla/5.0 (Compatible; ooBase Data API 1.0.0; Permission Granted by ooBase Data Center)';
+        $user_agent = 'Mozilla/5.0 (Compatible; NervSys Data API 1.0.0; Permission Granted by NervSys Data Center)';
         //Format HTTP REQUEST Header
         $request = [];
         $request[] = $method . ' ' . $url_parts['path'] ?? '/' . !isset($url_parts['query']) ? '' : '?' . $url_parts['query'] . ' HTTP/1.1';

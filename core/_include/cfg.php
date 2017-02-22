@@ -12,20 +12,20 @@
  * Copyright 2016-2017 彼岸花开
  * Copyright 2016-2017 秋水之冰
  *
- * This file is part of ooBase Core.
+ * This file is part of NervSys.
  *
- * ooBase Core is free software: you can redistribute it and/or modify
+ * NervSys is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase Core is distributed in the hope that it will be useful,
+ * NervSys is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
+ * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
 //Basic Settings
@@ -45,13 +45,13 @@ define('CRYPT_PATH', 'user');
 define('ONLINE_TAGS', ['uuid', 'char']);
 
 //File Storage Server Settings
-define('FILE_PATH', 'E:/Sites/file.oobase.com/');
+define('FILE_PATH', '/var/www/files/');
 define('FILE_DOMAIN', 'https://file.oobase.com/');
 
 //MySQL Settings
 define('MySQL_HOST', 'localhost');
 define('MySQL_PORT', 3306);
-define('MySQL_DB', 'oobase');
+define('MySQL_DB', 'DB NAME');
 define('MySQL_USER', 'root');
 define('MySQL_PWD', '');
 define('MySQL_CHARSET', 'utf8mb4');

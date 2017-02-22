@@ -14,20 +14,20 @@
  * Copyright 2017 杨晶
  * Copyright 2016 风雨凌芸
  *
- * This file is part of ooBase Core.
+ * This file is part of NervSys.
  *
- * ooBase Core is free software: you can redistribute it and/or modify
+ * NervSys is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * ooBase Core is distributed in the hope that it will be useful,
+ * NervSys is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ooBase Core. If not, see <http://www.gnu.org/licenses/>.
+ * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 class data_pool
 {
@@ -79,8 +79,8 @@ class data_pool
         self::$pool = &$data;
         //Merge "$_FILES" into data pool if exists
         if (!empty($_FILES)) self::$pool = array_merge(self::$pool, $_FILES);
-        //Continue running when requested module list is not empty
-        if (!empty(self::$module)) {
+        //Continue running if requested data is ready
+        if (!empty(self::$module) && (!empty(self::$method) || !empty(self::$pool))) {
             //Build data structure
             self::$structure = array_keys(self::$pool);
             //Parse Module & Method list
