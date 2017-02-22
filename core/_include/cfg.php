@@ -38,6 +38,10 @@ header('Content-Type:text/html; charset=utf-8');
 //Document Root Definition
 define('ROOT', substr(__DIR__, 0, -14));
 
+//Enable/Disable HTTP GET Method
+//Helpful for debugging with custom URL parameters
+define('ENABLE_GET', false);
+
 //Define the path containing Encrypt/Decrypt module
 define('CRYPT_PATH', 'user');
 

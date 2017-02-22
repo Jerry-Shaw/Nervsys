@@ -40,13 +40,6 @@ class data_pool
     //Result data format (json/raw)
     public static $format = 'json';
 
-    //Enable/Disable GET Method via HTTP Request
-    //Helpful for debugging with custom URL parameters
-    public static $enable_get = false;
-
-    //Enable/Disable mapping result data to request data pool
-    public static $enable_mapping = true;
-
     //Module list
     private static $module = [];
 
@@ -66,7 +59,7 @@ class data_pool
     public static function start()
     {
         //Get date from HTTP Request
-        $data = !self::$enable_get ? $_POST : $_REQUEST;
+        $data = !ENABLE_GET ? $_POST : $_REQUEST;
         //Set result data format according to the request
         if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
         //Parse "cmd" data from HTTP Request
@@ -236,8 +229,8 @@ class data_pool
                 if (isset($result)) {
                     //Save result to the result data pool
                     self::$data[$module . '/' . $class . '/' . $method] = $result;
-                    //Check mapping request
-                    if (self::$enable_mapping && isset(self::$mapping[$module . '/' . $class . '/' . $method])) {
+                    //Check mapping request with result data
+                    if (isset(self::$mapping[$module . '/' . $class . '/' . $method])) {
                         //Processing array result to get the final data
                         if (!empty(self::$mapping[$module . '/' . $class . '/' . $method]['from']) && is_array($result)) {
                             //Check every key in mapping from request
