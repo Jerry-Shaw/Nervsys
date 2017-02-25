@@ -31,16 +31,8 @@
  */
 class ctrl_error
 {
-    /**
-     * The switcher of using language pack
-     */
-    public static $need_lang = true;
-
-    /**
-     * Error content storage, Mapping from JSON to ARRAY
-     * @var array
-     */
-    private static $error_storage = [];
+    //Error message pool
+    private static $error_pool = [];
 
     /**
      * Load an error file from module
@@ -57,8 +49,8 @@ class ctrl_error
         if ('' !== $json_content) {
             $error_content = json_decode($json_content, true);
             if (isset($error_content)) {
-                self::$error_storage = &$error_content;
-                if (self::$need_lang) load_lib('core', 'ctrl_language');
+                self::$error_pool = &$error_content;
+                if (ERROR_LANG) load_lib('core', 'ctrl_language');
             }
             unset($error_content);
         }
@@ -73,8 +65,8 @@ class ctrl_error
      */
     public static function get_error(int $error_code): array
     {
-        return array_key_exists($error_code, self::$error_storage)
-            ? ['code' => $error_code, 'msg' => self::$need_lang ? gettext(self::$error_storage[$error_code]) : self::$error_storage[$error_code]]
+        return array_key_exists($error_code, self::$error_pool)
+            ? ['code' => $error_code, 'msg' => ERROR_LANG ? gettext(self::$error_pool[$error_code]) : self::$error_pool[$error_code]]
             : ['code' => $error_code, 'msg' => 'Error code NOT found!'];
     }
 
@@ -87,14 +79,14 @@ class ctrl_error
     {
         $errors = [];
         load_lib('core', 'ctrl_file');
-        if (self::$need_lang) load_lib('core', 'ctrl_language');
+        if (ERROR_LANG) load_lib('core', 'ctrl_language');
         $error_files = \ctrl_file::get_list(ROOT, '*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $file) {
             $json_content = \ctrl_file::get_content($file);
             if ('' !== $json_content) {
                 $error_content = json_decode($json_content, true);
                 if (isset($error_content)) {
-                    if (self::$need_lang && isset($error_content['Lang'])) {
+                    if (ERROR_LANG && isset($error_content['Lang'])) {
                         $lang_file = false !== strpos($error_content['Lang'], ', ') ? explode(', ', $error_content['Lang']) : [$error_content['Lang']];
                         foreach ($lang_file as $lang) {
                             \ctrl_language::load($lang, $error_content['Module']);//Load defined language pack

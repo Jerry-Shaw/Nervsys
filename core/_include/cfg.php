@@ -42,6 +42,9 @@ define('ROOT', substr(__DIR__, 0, -14));
 //Helpful for debugging with custom URL parameters
 define('ENABLE_GET', false);
 
+//Enable/Disable Language Module for Error Controlling Module
+define('ERROR_LANG', true);
+
 //Define the path containing Encrypt/Decrypt module
 define('CRYPT_PATH', 'user');
 
