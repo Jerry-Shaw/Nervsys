@@ -37,7 +37,7 @@ class data_key
     public static $online = false;
 
     /**
-     * Mapping all the SESSION/Access-Key data to a static variable
+     * Map all the SESSION/Access-Key data to a static variable
      * Get the online status by checking the online tags
      * Grant permission for Cross-Domain request
      */

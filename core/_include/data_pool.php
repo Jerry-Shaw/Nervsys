@@ -46,11 +46,11 @@ class data_pool
     //Method list
     private static $method = [];
 
-    //Mapping list
-    private static $mapping = [];
+    //Keymap list
+    private static $keymap = [];
 
     //Data Structure
-    private static $structure = [];
+    private static $struct = [];
 
     /**
      * Initial Data Controlling Module
@@ -75,7 +75,7 @@ class data_pool
         //Continue running if requested data is ready
         if (!empty(self::$module) && (!empty(self::$method) || !empty(self::$pool))) {
             //Build data structure
-            self::$structure = array_keys(self::$pool);
+            self::$struct = array_keys(self::$pool);
             //Parse Module & Method list
             foreach (self::$module as $module => $libraries) {
                 //Load Module CFG file for the first time
@@ -98,7 +98,7 @@ class data_pool
                         //Go through every method in the method api list
                         foreach ($method_api as $method) {
                             //Get the intersect list of the data requirement structure
-                            $intersect = array_intersect(self::$structure, $class::$api[$method]);
+                            $intersect = array_intersect(self::$struct, $class::$api[$method]);
                             //Get the different list of the data requirement structure
                             $difference = array_diff($class::$api[$method], $intersect);
                             //Calling the api method if the data structure is matched
@@ -200,8 +200,8 @@ class data_pool
                         unset($keys[0], $keys[1], $keys[2]);
                         $data_from = [];
                         foreach ($keys as $key) $data_from[] = $key;
-                        //Save to Mapping List
-                        self::$mapping[$key_from] = ['from' => $data_from, 'to' => $map_to];
+                        //Save to keymap List
+                        self::$keymap[$key_from] = ['from' => $data_from, 'to' => $map_to];
                     } else continue;
                 } else continue;
             } else continue;
@@ -229,12 +229,12 @@ class data_pool
                 if (isset($result)) {
                     //Save result to the result data pool
                     self::$data[$module . '/' . $class . '/' . $method] = $result;
-                    //Check mapping request with result data
-                    if (isset(self::$mapping[$module . '/' . $class . '/' . $method])) {
+                    //Check keymap request with result data
+                    if (isset(self::$keymap[$module . '/' . $class . '/' . $method])) {
                         //Processing array result to get the final data
-                        if (!empty(self::$mapping[$module . '/' . $class . '/' . $method]['from']) && is_array($result)) {
-                            //Check every key in mapping from request
-                            foreach (self::$mapping[$module . '/' . $class . '/' . $method]['from'] as $key) {
+                        if (!empty(self::$keymap[$module . '/' . $class . '/' . $method]['from']) && is_array($result)) {
+                            //Check every key in keymap from request
+                            foreach (self::$keymap[$module . '/' . $class . '/' . $method]['from'] as $key) {
                                 //Check key's existence
                                 if (isset($result[$key])) {
                                     //Switch result data to where we find
@@ -249,12 +249,12 @@ class data_pool
                                 }
                             }
                         }
-                        //Mapping processed result data to request data pool if not null
+                        //Map processed result data to request data pool if isset
                         if (isset($result)) {
                             //Caution: The data with the same key in data pool will be overwritten if exists
-                            self::$pool[self::$mapping[$module . '/' . $class . '/' . $method]['to']] = $result;
+                            self::$pool[self::$keymap[$module . '/' . $class . '/' . $method]['to']] = $result;
                             //Rebuild data structure
-                            self::$structure = array_keys(self::$pool);
+                            self::$struct = array_keys(self::$pool);
                         }
                     }
                 }

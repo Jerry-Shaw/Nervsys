@@ -32,42 +32,42 @@
 class ctrl_error
 {
     //Error message pool
-    private static $error_pool = [];
+    private static $pool = [];
 
     /**
      * Load an error file from module
      * Storage the array content into $error_storage
      * The content of the error file should be format to JSON
-     * The structure should be "integer ERROR CODE":"string ERROR LANGUAGE MAPPING MESSAGE"
+     * The structure should be "integer ERROR CODE":"string ERROR LANGUAGE MAPPED MESSAGE"
      * @param string $module
      * @param string $file
      */
     public static function load(string $module, string $file)
     {
         load_lib('core', 'ctrl_file');
-        $json_content = \ctrl_file::get_content(ROOT . '/' . $module . '/_error/' . $file . '.json');
-        if ('' !== $json_content) {
-            $error_content = json_decode($json_content, true);
-            if (isset($error_content)) {
-                self::$error_pool = &$error_content;
+        $json = \ctrl_file::get_content(ROOT . '/' . $module . '/_error/' . $file . '.json');
+        if ('' !== $json) {
+            $error = json_decode($json, true);
+            if (isset($error)) {
+                self::$pool = &$error;
                 if (ERROR_LANG) load_lib('core', 'ctrl_language');
             }
-            unset($error_content);
+            unset($error);
         }
-        unset($module, $file, $json_content);
+        unset($module, $file, $json);
     }
 
     /**
      * Get a standard error result
      * Language pack needs to be loaded before getting an error message
-     * @param int $error_code
+     * @param int $code
      * @return array
      */
-    public static function get_error(int $error_code): array
+    public static function get_error(int $code): array
     {
-        return array_key_exists($error_code, self::$error_pool)
-            ? ['code' => $error_code, 'msg' => ERROR_LANG ? gettext(self::$error_pool[$error_code]) : self::$error_pool[$error_code]]
-            : ['code' => $error_code, 'msg' => 'Error code NOT found!'];
+        return array_key_exists($code, self::$pool)
+            ? ['code' => $code, 'msg' => ERROR_LANG ? gettext(self::$pool[$code]) : self::$pool[$code]]
+            : ['code' => $code, 'msg' => 'Error code NOT found!'];
     }
 
     /**
@@ -81,34 +81,34 @@ class ctrl_error
         load_lib('core', 'ctrl_file');
         if (ERROR_LANG) load_lib('core', 'ctrl_language');
         $error_files = \ctrl_file::get_list(ROOT, '*.json', true);//Get all the json formatted error files from all modules
-        foreach ($error_files as $file) {
-            $json_content = \ctrl_file::get_content($file);
-            if ('' !== $json_content) {
-                $error_content = json_decode($json_content, true);
-                if (isset($error_content)) {
-                    if (ERROR_LANG && isset($error_content['Lang'])) {
-                        $lang_file = false !== strpos($error_content['Lang'], ', ') ? explode(', ', $error_content['Lang']) : [$error_content['Lang']];
-                        foreach ($lang_file as $lang) {
-                            \ctrl_language::load($lang, $error_content['Module']);//Load defined language pack
-                            $errors[$error_content['CodeRange']] = [];
-                            $errors[$error_content['CodeRange']]['Name'] = $error_content['Name'];
-                            $errors[$error_content['CodeRange']]['Module'] = '' !== $error_content['Module'] ? $error_content['Module'] : 'core';
-                            $errors[$error_content['CodeRange']]['CodeRange'] = $error_content['CodeRange'];
-                            foreach ($error_content as $code => $error) {
+        foreach ($error_files as $error_file) {
+            $json = \ctrl_file::get_content($error_file);
+            if ('' !== $json) {
+                $error = json_decode($json, true);
+                if (isset($error)) {
+                    if (ERROR_LANG && isset($error['Lang'])) {
+                        $lang_files = false !== strpos($error['Lang'], ', ') ? explode(', ', $error['Lang']) : [$error['Lang']];
+                        foreach ($lang_files as $lang_file) {
+                            \ctrl_language::load($lang_file, $error['Module']);//Load defined language pack
+                            $errors[$error['CodeRange']] = [];
+                            $errors[$error['CodeRange']]['Name'] = $error['Name'];
+                            $errors[$error['CodeRange']]['Module'] = '' !== $error['Module'] ? $error['Module'] : 'core';
+                            $errors[$error['CodeRange']]['CodeRange'] = $error['CodeRange'];
+                            foreach ($error as $code => $msg) {
                                 if (is_int($code)) {
-                                    $error_text = gettext($error);
-                                    $error_content[$code] = $error_text;
-                                    $errors[$error_content['CodeRange']]['Errors'][$code] = $error_text;
+                                    $error_text = gettext($msg);
+                                    $error[$code] = $error_text;
+                                    $errors[$error['CodeRange']]['Errors'][$code] = $error_text;
                                 } else continue;
                             }
                         }
                     } else {
-                        $errors[$error_content['CodeRange']] = [];
-                        $errors[$error_content['CodeRange']]['Name'] = $error_content['Name'];
-                        $errors[$error_content['CodeRange']]['Module'] = '' !== $error_content['Module'] ? $error_content['Module'] : 'core';
-                        $errors[$error_content['CodeRange']]['CodeRange'] = $error_content['CodeRange'];
-                        foreach ($error_content as $code => $error) {
-                            if (is_int($code)) $errors[$error_content['CodeRange']]['Errors'][$code] = $error;
+                        $errors[$error['CodeRange']] = [];
+                        $errors[$error['CodeRange']]['Name'] = $error['Name'];
+                        $errors[$error['CodeRange']]['Module'] = '' !== $error['Module'] ? $error['Module'] : 'core';
+                        $errors[$error['CodeRange']]['CodeRange'] = $error['CodeRange'];
+                        foreach ($error as $code => $msg) {
+                            if (is_int($code)) $errors[$error['CodeRange']]['Errors'][$code] = $msg;
                             else continue;
                         }
                     }
@@ -116,7 +116,7 @@ class ctrl_error
             }
         }
         ksort($errors);
-        unset($error_files, $file, $json_content, $error_content, $lang_file, $lang, $code, $error, $error_text);
+        unset($error_files, $error_file, $json, $error, $lang_files, $lang_file, $code, $msg, $error_text);
         return $errors;
     }
 }
