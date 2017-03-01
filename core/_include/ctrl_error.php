@@ -38,7 +38,7 @@ class ctrl_error
      * Load an error file from module
      * Storage the array content into $error_storage
      * The content of the error file should be format to JSON
-     * The structure should be "integer ERROR CODE":"string ERROR LANGUAGE MAPPED MESSAGE"
+     * The structure should be "integer [ERROR CODE]":"string [LANGUAGE MAPPED MESSAGE]"
      * @param string $module
      * @param string $file
      */
