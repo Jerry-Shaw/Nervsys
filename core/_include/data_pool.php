@@ -87,15 +87,15 @@ class data_pool
                     if ('' !== $class) {
                         //Get method list from the class
                         $method_list = get_class_methods($class);
-                        //Check API Safe Zone support
+                        //Security Checking
                         if (SECURE_API) {
-                            //Get api list from API content
+                            //Checking API Safe Zone
                             $api_list = isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
-                            //Get the api methods according to the request or all methods will be stored in the intersect list if no method is provided
+                            //Get api methods according to requested methods or all methods will be stored in the intersect list if no method is provided
                             $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
                             if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($module, $class, 'init');
-                            //Go through every method in the api list with API Safe Zone checked
+                            //Go through every method in the api list with API Safe Zone checking
                             foreach ($method_api as $method) {
                                 //Get the intersect list of the data requirement structure
                                 $intersect = array_intersect(self::$struct, $class::$api[$method]);
@@ -104,9 +104,9 @@ class data_pool
                                 //Calling the api method if the data structure is matched
                                 if (empty($difference)) self::call_method($module, $class, $method);
                             }
-                        } else {
-                            //Get the api methods according to the request or all methods will be stored in the intersect list if no method is provided
-                            $method_api = !empty(self::$method) ? array_intersect(self::$method, $method_list) : $method_list;
+                        } elseif (!empty(self::$method)) {
+                            //Requested methods is needed when API Safe Zone checking is turned off
+                            $method_api = array_intersect(self::$method, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
                             if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($module, $class, 'init');
                             //Calling the api method without API Safe Zone checking
