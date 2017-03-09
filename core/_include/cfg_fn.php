@@ -60,8 +60,8 @@ function load_api(string $module, string $library, string $method): array
     $result = [];
     $class = load_lib($module, $library);
     if ('' !== $class) {
-        $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
         $method_list = get_class_methods($class);
+        $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
         if (in_array($method, $method_list, true) && (in_array($method, $api_list, true) || 'init' === $method || !SECURE_API)) {
             $reflect = new \ReflectionMethod($class, $method);
             if ($reflect->isPublic() && $reflect->isStatic()) {
