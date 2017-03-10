@@ -48,7 +48,7 @@ define('SECURE_API', true);
 define('ERROR_LANG', true);
 
 //Define the path containing Encrypt/Decrypt module
-define('CRYPT_PATH', 'user');
+define('CRYPT_PATH', 'core');
 
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);
