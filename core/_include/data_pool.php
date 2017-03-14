@@ -30,11 +30,11 @@
  */
 class data_pool
 {
-    //Request data pool
-    public static $pool = [];
-
-    //Result data content
+    //data package
     public static $data = [];
+
+    //Result data pool
+    public static $pool = [];
 
     //Result data format (json/raw)
     public static $format = 'json';
@@ -68,13 +68,13 @@ class data_pool
         //Unset "format" & "cmd" & "map" from request data package
         unset($data['format'], $data['cmd'], $data['map']);
         //Store data package to data pool
-        self::$pool = &$data;
+        self::$data = &$data;
         //Merge "$_FILES" into data pool if exists
-        if (!empty($_FILES)) self::$pool = array_merge(self::$pool, $_FILES);
+        if (!empty($_FILES)) self::$data = array_merge(self::$data, $_FILES);
         //Continue running if requested data is ready
-        if (!empty(self::$module) && (!empty(self::$method) || !empty(self::$pool))) {
+        if (!empty(self::$module) && (!empty(self::$method) || !empty(self::$data))) {
             //Build data structure
-            self::$struct = array_keys(self::$pool);
+            self::$struct = array_keys(self::$data);
             //Parse Module & Method list
             foreach (self::$module as $module => $libraries) {
                 //Load Module CFG file for the first time
@@ -236,7 +236,7 @@ class data_pool
                 //Merge result
                 if (isset($result)) {
                     //Save result to the result data pool
-                    self::$data[$module . '/' . $class . '/' . $method] = $result;
+                    self::$pool[$module . '/' . $class . '/' . $method] = $result;
                     //Check keymap request with result data
                     if (isset(self::$keymap[$module . '/' . $class . '/' . $method])) {
                         //Processing array result to get the final data
@@ -260,15 +260,15 @@ class data_pool
                         //Map processed result data to request data pool if isset
                         if (isset($result)) {
                             //Caution: The data with the same key in data pool will be overwritten if exists
-                            self::$pool[self::$keymap[$module . '/' . $class . '/' . $method]['to']] = $result;
+                            self::$data[self::$keymap[$module . '/' . $class . '/' . $method]['to']] = $result;
                             //Rebuild data structure
-                            self::$struct = array_keys(self::$pool);
+                            self::$struct = array_keys(self::$data);
                         }
                     }
                 }
             } catch (\Throwable | \Exception $exception) {
                 //Save the Exception or Error Message to the result data pool instead
-                self::$data[$module . '/' . $class . '/' . $method] = $exception->getMessage();
+                self::$pool[$module . '/' . $class . '/' . $method] = $exception->getMessage();
             }
         }
     }

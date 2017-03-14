@@ -53,6 +53,6 @@ load_lib('core', 'data_pool');
 //Keep running the rest script if user needs raw data which is kept in the data pool
 if ('json' === \data_pool::$format) {
     header('Content-Type: text/plain; charset=UTF-8');
-    echo json_encode(\data_pool::$data);
+    echo json_encode(\data_pool::$pool);
     exit;
 }

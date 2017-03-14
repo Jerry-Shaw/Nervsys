@@ -11,16 +11,7 @@ $lang_keys = [
     'nav_login',
     'nav_join',
     'footer_credits',
-    'footer_contribute',
-    'menu_panel',
-    'menu_message',
-    'menu_petition',
-    'menu_watch',
-    'menu_project',
-    'menu_profile',
-    'menu_security',
-    'menu_module',
-    'menu_access_key'
+    'footer_contribute'
 ];
 load_lib('core', 'ctrl_language');
 \ctrl_language::load('output_common');
@@ -30,7 +21,7 @@ $lang_common = \ctrl_language::get_text($lang_keys);
     <div class="left clear">
         <div class="logo">
             <a href="/">
-                <img class="img_logo" src="/core/_image/logo.png">
+                <img class="img_logo" src="/_image/logo.png">
             </a>
         </div>
         <nav id="nav">
@@ -70,13 +61,13 @@ $lang_common = \ctrl_language::get_text($lang_keys);
         </div>
         <div class="avatar">
             <a id="user_home">
-                <img id="user_head" class="img_avatar" src="/core/_image/header/img_mascot.png">
+                <img id="user_head" class="img_avatar" src="/_image/header/img_mascot.png">
             </a>
         </div>
         <div class="search">
             <form action="/search/" method="get">
                 <input type="text" class="search_text" placeholder="<?= $lang_common['nav_seek']; ?>">
-                <input type="image" class="search_icon" src="/core/_image/header/icon_search.png">
+                <input type="image" class="search_icon" src="/_image/header/icon_search.png">
             </form>
         </div>
     </div>
@@ -85,7 +76,7 @@ $lang_common = \ctrl_language::get_text($lang_keys);
             <li>
                 <a href="/">
                     <div>
-                        <img src="/core/_image/header/icon_home.png">
+                        <img src="/_image/header/icon_home.png">
                     </div>
                     <?= $lang_common['nav_home']; ?>
                 </a>
@@ -93,7 +84,7 @@ $lang_common = \ctrl_language::get_text($lang_keys);
             <li>
                 <a href="/project/">
                     <div>
-                        <img src="/core/_image/header/icon_project.png">
+                        <img src="/_image/header/icon_project.png">
                     </div>
                     <?= $lang_common['nav_project']; ?>
                 </a>
@@ -101,7 +92,7 @@ $lang_common = \ctrl_language::get_text($lang_keys);
             <li>
                 <a href="/petition/">
                     <div>
-                        <img src="/core/_image/header/icon_petition.png">
+                        <img src="/_image/header/icon_petition.png">
                     </div>
                     <?= $lang_common['nav_petition']; ?>
                 </a>
@@ -109,7 +100,7 @@ $lang_common = \ctrl_language::get_text($lang_keys);
             <li>
                 <a href="/user">
                     <div>
-                        <img src="/core/_image/header/icon_panel.png">
+                        <img src="/_image/header/icon_panel.png">
                     </div>
                     <?= $lang_common['nav_panel']; ?>
                 </a>
