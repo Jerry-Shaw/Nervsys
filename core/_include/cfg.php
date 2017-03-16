@@ -60,6 +60,12 @@ define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 define('FILE_PATH', '/usr/files/file.oobase.com/');
 define('FILE_DOMAIN', 'https://file.oobase.com/');
 
+//CLI Settings
+define('CLI_CFG', ROOT . '/_cli/cfg.json');
+define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
+define('CLI_WORKING_PATH', ROOT . '/_cli/_temp/');
+define('CLI_DEBUG_MODE', 0);//0: No log; 1: Log errors; 2: Log details
+
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');
 define('MySQL_PORT', 3306);
