@@ -32,17 +32,60 @@
 
 declare(strict_types = 1);
 
-//Detect PHP_SAPI
+//Detect PHP SAPI
 if ('cli' !== PHP_SAPI) exit;
 
 //Load CFG file (basic function script is loaded in the cfg file as also).
 require __DIR__ . '/core/_include/cfg.php';
 
-//Load CLI Controlling Module
-load_lib('core', 'ctrl_cli');
+//Force to show in text/plain encoding in UTF-8
+header('Content-Type: text/plain; charset=UTF-8');
 
-//Pass variables
-\ctrl_cli::$var = &$argv;
+//Try to get options
+$option = getopt('', CLI_RUN_OPTION, $optind);
 
-//Run CLI and get result
-$result = \ctrl_cli::run_cli();
+//Parse options
+if (!empty($option) && isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
+    //Internal calling
+
+    //Clean options
+    if (isset($option['map']) && (false === $option['map'] || '' === $option['map'])) unset($option['map']);
+    if (isset($option['data']) && (false === $option['data'] || '' === $option['data'])) unset($option['data']);
+
+    //Regroup CLI data
+    $cli_data = ['cmd' => $option['cmd']];
+    if (isset($option['map'])) $cli_data['map'] = &$option['map'];
+
+    //Parse data content
+    $data = [];
+    if (isset($option['data'])) {
+        parse_str($option['data'], $data);
+        if (!empty($data)) $cli_data = array_merge($cli_data, $data);
+    }
+
+    //Load Data Controlling Module
+    load_lib('core', 'data_pool');
+
+    //Pass data to Data Controlling Module
+    \data_pool::$cli = &$cli_data;
+
+    //Start data_pool process
+    \data_pool::start();
+
+    //Show result in JSON
+    echo json_encode(\data_pool::$pool);
+} else {
+    //External calling
+
+    //Load CLI Controlling Module
+    load_lib('core', 'ctrl_cli');
+
+    //Pass variables
+    \ctrl_cli::$var = &$argv;
+
+    //Run CLI and get result
+    $result = \ctrl_cli::run_cli();
+
+    //Show result in JSON
+    echo json_encode($result);
+}

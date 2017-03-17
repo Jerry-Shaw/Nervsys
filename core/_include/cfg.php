@@ -65,6 +65,7 @@ define('CLI_CFG', ROOT . '/_cli/cfg.json');
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
 define('CLI_WORKING_PATH', ROOT . '/_cli/_temp/');
 define('CLI_DEBUG_MODE', 0);//0: No log; 1: Log errors; 2: Log details
+define('CLI_RUN_OPTION', ['cmd:', 'map:', 'data:']);//Required options for internal calling
 
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');

@@ -30,7 +30,10 @@
  */
 class data_pool
 {
-    //data package
+    //CLI data
+    public static $cli = [];
+
+    //Data package
     public static $data = [];
 
     //Result data pool
@@ -57,8 +60,8 @@ class data_pool
      */
     public static function start()
     {
-        //Get date from HTTP Request
-        $data = !ENABLE_GET ? $_POST : $_REQUEST;
+        //Get date from HTTP Request or CLI variables
+        $data = 'cli' !== PHP_SAPI ? (!ENABLE_GET ? $_POST : $_REQUEST) : self::$cli;
         //Set result data format according to the request
         if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
         //Parse "cmd" data from HTTP Request

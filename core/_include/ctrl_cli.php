@@ -36,8 +36,9 @@ class ctrl_cli
     private static $cfg = [];
 
     //PHP Pipe settings
-    private static $setting = [
+    const setting = [
         ['pipe', 'r'],
+        ['pipe', 'w'],
         ['pipe', 'w']
     ];
 
@@ -48,8 +49,6 @@ class ctrl_cli
     {
         //Load File Controlling Module
         load_lib('core', 'ctrl_file');
-        //Set Pipe log mode
-        self::$setting[] = 0 < CLI_DEBUG_MODE ? ['file', CLI_LOG_PATH . 'CLI_ERROR_' . date('Y-m-d', time()) . '.txt', 'a'] : ['pipe', 'w'];
     }
 
     /**
@@ -74,7 +73,7 @@ class ctrl_cli
      */
     private static function get_cmd()
     {
-        if (!empty(self::$var)) {
+        if (!empty(self::$var) && 1 < count(self::$var)) {
             //Escape the first variable
             $var = array_slice(self::$var, 1);
             //Check specific language in CFG
@@ -132,7 +131,7 @@ class ctrl_cli
         //Check command
         if ('' !== self::$cmd) {
             //Run process
-            $process = proc_open(self::$cmd, self::$setting, $pipe, CLI_WORKING_PATH);
+            $process = proc_open(self::$cmd, self::setting, $pipe, CLI_WORKING_PATH);
             //Parse result
             if (is_resource($process)) {
                 //Get details

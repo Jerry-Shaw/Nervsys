@@ -1,3 +1,4 @@
 {
-  "py": "D:/Programs/Python/python.exe"
+  "py": "/usr/local/python/python",
+  "php": "/usr/local/php/php"
 }
