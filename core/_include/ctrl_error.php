@@ -79,7 +79,7 @@ class ctrl_error
         $errors = [];
         load_lib('core', 'ctrl_file');
         if (ERROR_LANG) load_lib('core', 'ctrl_language');
-        $error_files = \ctrl_file::get_list(ROOT, '*.json', true);//Get all the json formatted error files from all modules
+        $error_files = \ctrl_file::get_list(ROOT, '/_error/*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $error_file) {
             $json = \ctrl_file::get_content($error_file);
             if ('' !== $json) {
