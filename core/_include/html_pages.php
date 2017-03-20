@@ -43,7 +43,7 @@ class html_pages
     {
         if (0 < self::$data_total) {
             load_lib('core', 'ctrl_language');
-            \ctrl_language::load('html_pages', 'core');//Load the language pack
+            \ctrl_language::load('core', 'html_pages');//Load the language pack
             //Get the path and the proper query from the url
             if ('' !== self::$page_url) {
                 $url_parts = parse_url(self::$page_url);

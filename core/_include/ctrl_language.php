@@ -32,11 +32,11 @@ class ctrl_language
     public static $lang = 'en-US';
 
     /**
-     * Load a language pack from project
+     * Load language pack from module
+     * @param string $module
      * @param string $file
-     * @param string $project
      */
-    public static function load(string $file, string $project = '')
+    public static function load(string $module = '', string $file)
     {
         if (isset($_GET['lang'])) $lang = &$_GET['lang'];
         elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
@@ -46,12 +46,12 @@ class ctrl_language
         } else $lang = 'en-US';
         if (!in_array($lang, LANGUAGE_LIST, true)) $lang = 'en-US';
         if ('en-US' !== $lang) self::$lang = &$lang;
-        $path = '' === $project ? ROOT . '/_language/' : ROOT . '/' . $project . '/_language/';
+        $path = '' === $module || '/' === $module ? ROOT . '/_language/' : ROOT . '/' . $module . '/_language/';
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
         bindtextdomain($file, $path);
         textdomain($file);
-        unset($file, $project, $lang, $path);
+        unset($module, $file, $lang, $path);
     }
 
     /**

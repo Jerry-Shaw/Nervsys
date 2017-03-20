@@ -34,7 +34,7 @@ class ctrl_error
     private static $pool = [];
 
     /**
-     * Load an error file from module
+     * Load error file from module
      * Storage the array content into $error_storage
      * The content of the error file should be format to JSON
      * The structure should be "integer [ERROR CODE]":"string [LANGUAGE MAPPED MESSAGE]"
@@ -88,7 +88,7 @@ class ctrl_error
                     if (ERROR_LANG && isset($error['Lang'])) {
                         $lang_files = false !== strpos($error['Lang'], ', ') ? explode(', ', $error['Lang']) : [$error['Lang']];
                         foreach ($lang_files as $lang_file) {
-                            \ctrl_language::load($lang_file, $error['Module']);//Load defined language pack
+                            \ctrl_language::load($error['Module'], $lang_file);//Load defined language pack
                             $errors[$error['CodeRange']] = [];
                             $errors[$error['CodeRange']]['Name'] = $error['Name'];
                             $errors[$error['CodeRange']]['Module'] = '' !== $error['Module'] ? $error['Module'] : 'core';

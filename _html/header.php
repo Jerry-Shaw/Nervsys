@@ -14,7 +14,7 @@ $lang_keys = [
     'footer_contribute'
 ];
 load_lib('core', 'ctrl_language');
-\ctrl_language::load('output_common');
+\ctrl_language::load('', 'output_common');
 $lang_common = \ctrl_language::get_text($lang_keys);
 ?>
 <header id="header" class="clear">
