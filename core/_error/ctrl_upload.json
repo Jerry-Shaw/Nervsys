@@ -1,6 +1,6 @@
 {
-  "Name": "ctrl_file",
-  "Lang": "ctrl_file",
+  "Name": "ctrl_upload",
+  "Lang": "ctrl_upload",
   "Module": "core",
   "CodeRange": "10000-10099",
   "10000": "upload_done",
