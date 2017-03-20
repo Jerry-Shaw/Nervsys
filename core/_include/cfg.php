@@ -39,7 +39,7 @@ define('ROOT', substr(__DIR__, 0, -14));
 
 //Enable/Disable HTTP GET Method
 //Helpful for debugging with custom URL parameters
-define('ENABLE_GET', false);
+define('ENABLE_GET', true);
 
 //Enable/Disable API Safe Zone
 define('SECURE_API', true);
@@ -64,7 +64,7 @@ define('FILE_DOMAIN', 'https://file.oobase.com/');
 define('CLI_CFG', ROOT . '/_cli/cfg.json');
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
 define('CLI_WORKING_PATH', ROOT . '/_cli/_temp/');
-define('CLI_DEBUG_MODE', 0);//0: No log; 1: Log errors; 2: Log details
+define('CLI_DEBUG_MODE', 2);//0: No log; 1: Log errors; 2: Log details
 define('CLI_RUN_OPTION', ['cmd:', 'map:', 'data:']);//Required options for internal calling
 
 //MySQL Settings
