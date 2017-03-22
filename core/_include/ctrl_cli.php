@@ -5,9 +5,11 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author Yara <314850412@qq.com>
  *
  * Copyright 2015-2017 Jerry Shaw
  * Copyright 2017 秋水之冰
+ * Copyright 2017 Yara
  *
  * This file is part of NervSys.
  *
@@ -78,7 +80,7 @@ class ctrl_cli
             $var = array_slice(self::$var, 1);
             //Check specific language in CFG
             if (isset(self::$cfg[$var[0]])) {
-                //Change to full executing path
+                //Rebuild all commands
                 foreach ($var as $k => $v) if (isset(self::$cfg[$v])) $var[$k] = self::$cfg[$v];
                 //Create command
                 self::$cmd = implode(' ', $var);
