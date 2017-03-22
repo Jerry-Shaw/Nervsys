@@ -79,7 +79,7 @@ class ctrl_cli
             //Check specific language in CFG
             if (isset(self::$cfg[$var[0]])) {
                 //Change to full executing path
-                $var[0] = self::$cfg[$var[0]];
+                foreach ($var as $k => $v) if (isset(self::$cfg[$v])) $var[$k] = self::$cfg[$v];
                 //Create command
                 self::$cmd = implode(' ', $var);
             }
