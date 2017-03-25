@@ -1,4 +1,6 @@
 **NervSys** is a simple Neuron Model controller and Nervous System for data processing based on php7.
+
+Requirements: PHP7.1 and above. Any kind of web server. MySQL, Redis and redis extention for PHP depand on yourself.
  
 Web Site and Datacenter are under construction, coming soon...
 
