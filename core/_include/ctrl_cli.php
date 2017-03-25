@@ -172,7 +172,7 @@ class ctrl_cli
         //Check command
         if ('' !== self::$cmd) {
             //Run process
-            $process = proc_open(self::$cmd, self::setting, $pipe, CLI_WORKING_PATH);
+            $process = proc_open(self::$cmd, self::setting, $pipe, CLI_WORK_PATH);
             //Parse result
             if (is_resource($process)) {
                 //Parse details

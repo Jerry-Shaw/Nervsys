@@ -63,7 +63,8 @@ define('FILE_DOMAIN', 'https://file.oobase.com/');
 //CLI Settings
 define('CLI_CFG', ROOT . '/_cli/cfg.json');
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
-define('CLI_WORKING_PATH', ROOT . '/_cli/_temp/');
+define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');
+define('CLI_EXEC_PATH', '/usr/local/php/php');//CLI executable binary path
 define('CLI_RUN_OPTIONS', 'd::l::w');//CLI options (d: onscreen debug; l: log files. Valid values are "cmd", "err", "all", not supported by internal calling. w: wait for return.)
 define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Required options for internal calling
 
