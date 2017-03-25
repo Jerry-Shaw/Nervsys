@@ -79,7 +79,7 @@ class ctrl_cli
      */
     private static function get_cmd()
     {
-        if (!empty(self::$var) && 1 < count(self::$var)) {
+        if (!empty(self::$var)) {
             //Check specific language in CFG
             if (isset(self::$cfg[self::$var[0]])) {
                 //Rebuild all commands
