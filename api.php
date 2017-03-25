@@ -34,7 +34,7 @@
  * Or, only enable it when debug is needed.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 //Load CFG file (basic function script is loaded in the cfg file as also).
 require __DIR__ . '/core/_include/cfg.php';

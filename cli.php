@@ -30,7 +30,7 @@
  * Only trusted languages and modules should be allowed to be calling
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 //Detect PHP SAPI
 if ('cli' !== PHP_SAPI) exit;
@@ -41,51 +41,76 @@ require __DIR__ . '/core/_include/cfg.php';
 //Force to show in text/plain encoding in UTF-8
 header('Content-Type: text/plain; charset=UTF-8');
 
+//Default wait value, debug type and level values
+$wait = false;
+$log = $debug = '';
+
 //Try to get options
-$option = getopt('', CLI_RUN_OPTION, $optind);
+$option = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
 
 //Parse options
-if (!empty($option) && isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
-    //Internal calling
+if (!empty($option)) {
+    //Get wait type
+    if (isset($option['w'])) $wait = true;
 
-    //Clean options
-    if (isset($option['map']) && (false === $option['map'] || '' === $option['map'])) unset($option['map']);
-    if (isset($option['data']) && (false === $option['data'] || '' === $option['data'])) unset($option['data']);
+    //Running process
+    if (!empty($option) && isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
+        //Internal calling
 
-    //Regroup CLI data
-    $cli_data = ['cmd' => $option['cmd']];
-    if (isset($option['map'])) $cli_data['map'] = &$option['map'];
+        //Regroup CLI data
+        $cli_data = ['cmd' => $option['cmd']];
+        if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $cli_data['map'] = &$option['map'];
 
-    //Parse data content
-    $data = [];
-    if (isset($option['data'])) {
-        parse_str($option['data'], $data);
-        if (!empty($data)) $cli_data = array_merge($cli_data, $data);
+        //Parse data content
+        if (isset($option['data']) && false !== $option['data'] && '' !== $option['data']) {
+            $data = [];
+            parse_str($option['data'], $data);
+            if (!empty($data)) $cli_data = array_merge($cli_data, $data);
+        }
+
+        //Load Data Controlling Module
+        load_lib('core', 'data_pool');
+
+        //Pass data to Data Controlling Module
+        \data_pool::$cli = &$cli_data;
+
+        //Start data_pool process
+        \data_pool::start();
+
+        //Get raw result
+        $result = \data_pool::$pool;
+    } else {
+        //External calling with debug type and level required
+
+        //Get debug type and level from options
+        if (isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all'])) $log = &$option['l'];
+        if (isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all'])) $debug = &$option['d'];
+
+        //Load CLI Controlling Module
+        load_lib('core', 'ctrl_cli');
+
+        //Pass debug type and level
+        \ctrl_cli::$log = &$log;
+        \ctrl_cli::$debug = &$debug;
+
+        //Pass variables
+        \ctrl_cli::$var = array_slice($argv, $optind);
+
+        //Run CLI and get raw result
+        $result = \ctrl_cli::run_cli();
     }
 
-    //Load Data Controlling Module
-    load_lib('core', 'data_pool');
-
-    //Pass data to Data Controlling Module
-    \data_pool::$cli = &$cli_data;
-
-    //Start data_pool process
-    \data_pool::start();
-
-    //Show result in JSON
-    echo json_encode(\data_pool::$pool);
+    //Show JSON formatted result
+    if ($wait) echo json_encode($result);
 } else {
-    //External calling
+    //External calling quietly
 
     //Load CLI Controlling Module
     load_lib('core', 'ctrl_cli');
 
     //Pass variables
-    \ctrl_cli::$var = &$argv;
+    \ctrl_cli::$var = array_slice($argv, 1);
 
-    //Run CLI and get result
-    $result = \ctrl_cli::run_cli();
-
-    //Show result in JSON
-    echo json_encode($result);
+    //Run CLI
+    \ctrl_cli::run_cli();
 }

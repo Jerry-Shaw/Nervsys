@@ -33,6 +33,7 @@ class ctrl_language
 
     /**
      * Load language pack from module
+     *
      * @param string $module
      * @param string $file
      */
@@ -56,7 +57,9 @@ class ctrl_language
 
     /**
      * Get text by language from an array
+     *
      * @param array $keys
+     *
      * @return array
      */
     public static function get_text(array $keys): array

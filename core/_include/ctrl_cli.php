@@ -28,8 +28,12 @@
  */
 class ctrl_cli
 {
-    //variables
+    //Variables
     public static $var = [];
+
+    //Debug type and level
+    public static $log = '';
+    public static $debug = '';
 
     //CLI Command
     private static $cmd = '';
@@ -76,48 +80,83 @@ class ctrl_cli
     private static function get_cmd()
     {
         if (!empty(self::$var) && 1 < count(self::$var)) {
-            //Escape the first variable
-            $var = array_slice(self::$var, 1);
             //Check specific language in CFG
-            if (isset(self::$cfg[$var[0]])) {
+            if (isset(self::$cfg[self::$var[0]])) {
                 //Rebuild all commands
-                foreach ($var as $k => $v) if (isset(self::$cfg[$v])) $var[$k] = self::$cfg[$v];
+                foreach (self::$var as $k => $v) if (isset(self::$cfg[$v])) self::$var[$k] = self::$cfg[$v];
                 //Create command
-                self::$cmd = implode(' ', $var);
+                self::$cmd = implode(' ', self::$var);
             }
-            unset($var);
         }
     }
 
     /**
-     * Save Logs
+     * Save Log
+     *
      * @param array $data
      */
-    private static function save_log(array $data)
+    private static function cli_log(array $data)
     {
         $logs = [date('Y-m-d H:i:s', time())];
-        switch (CLI_DEBUG_MODE) {
-            //Log errors
-            case 1:
-                if ('' !== $data[2]) {
+        switch (self::$log) {
+            //Log cmd
+            case 'cmd':
+                $logs[] = "\t" . 'CMD: ' . self::$cmd;
+                \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, $logs) . PHP_EOL . PHP_EOL);
+                break;
+            //Log err
+            case 'err':
+                if ('' !== $data['ERR']) {
                     $logs[] = "\t" . 'CMD: ' . self::$cmd;
-                    $logs[] = "\t" . 'ERR: ' . $data[2];
+                    $logs[] = "\t" . 'ERR: ' . $data['ERR'];
                     \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, $logs) . PHP_EOL . PHP_EOL);
                 }
                 break;
-            //Log details
-            case 2:
+            //Log all
+            case 'all':
                 $logs[] = "\t" . 'CMD: ' . self::$cmd;
-                $logs[] = "\t" . 'IN:  ' . $data[0];
-                $logs[] = "\t" . 'OUT: ' . $data[1];
-                $logs[] = "\t" . 'ERR: ' . $data[2];
+                $logs[] = "\t" . 'OUT: ' . $data['OUT'];
+                $logs[] = "\t" . 'ERR: ' . $data['ERR'];
                 \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, $logs) . PHP_EOL . PHP_EOL);
                 break;
             //No log
             default:
                 break;
         }
-        unset($logs);
+        unset($data, $logs);
+    }
+
+    /**
+     * Show debug
+     *
+     * @param array $data
+     */
+    private static function cli_debug(array $data)
+    {
+        echo PHP_EOL . PHP_EOL . date('Y-m-d H:i:s', time()) . PHP_EOL . PHP_EOL;
+        switch (self::$debug) {
+            //Show cmd
+            case 'cmd':
+                echo 'CMD: ' . self::$cmd . PHP_EOL . PHP_EOL . PHP_EOL;
+                break;
+            //Show err
+            case 'err':
+                if ('' !== $data['ERR']) {
+                    echo 'CMD: ' . self::$cmd . PHP_EOL . PHP_EOL;
+                    echo 'ERR: ' . $data['ERR'] . PHP_EOL . PHP_EOL . PHP_EOL;
+                }
+                break;
+            //Show all
+            case 'all':
+                echo 'CMD: ' . self::$cmd . PHP_EOL . PHP_EOL;
+                echo 'OUT: ' . $data['OUT'] . PHP_EOL . PHP_EOL;
+                echo 'ERR: ' . $data['ERR'] . PHP_EOL . PHP_EOL . PHP_EOL;
+                break;
+            //No debug
+            default:
+                break;
+        }
+        unset($data);
     }
 
     /**
@@ -136,20 +175,20 @@ class ctrl_cli
             $process = proc_open(self::$cmd, self::setting, $pipe, CLI_WORKING_PATH);
             //Parse result
             if (is_resource($process)) {
-                //Get details
-                $data = [];
-                $data[] = isset($pipe[0]) ? trim(stream_get_contents($pipe[0])) : '';
-                $data[] = isset($pipe[1]) ? trim(stream_get_contents($pipe[1])) : '';
-                $data[] = isset($pipe[2]) ? trim(stream_get_contents($pipe[2])) : '';
+                //Parse details
+                $data = ['OUT' => '', 'ERR' => ''];
+                if (!isset($pipe[2])) $data['OUT'] = isset($pipe[1]) ? trim(stream_get_contents($pipe[1])) : '';
+                else $data['ERR'] = trim(stream_get_contents($pipe[2]));
                 //Save executed result
-                $result = ['data' => $data[1]];
-                //Save log
-                self::save_log($data);
+                $result = ['data' => $data['OUT']];
+                //Process debug and log
+                if ('' !== self::$log) self::cli_log($data);
+                if ('' !== self::$debug) self::cli_debug($data);
                 unset($data);
-            } else $result = ['data' => 'Command ERROR!'];
+            } else $result = ['data' => 'Process ERROR!'];
             //Close process
             $result['code'] = proc_close($process);
-            unset($process);
+            unset($process, $pipe);
         } else $result = ['data' => 'Command ERROR!', 'code' => -1];
         return $result;
     }

@@ -126,7 +126,9 @@ class html_pages
 
     /**
      * Get the URL QUERY that with page param but without the page value
+     *
      * @param array $query
+     *
      * @return string
      */
     private static function merge_query(array $query): string

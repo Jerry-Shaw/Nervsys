@@ -31,7 +31,7 @@
  * Don't make it as the same as API script, it is for known GET Requests only.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 //Load CFG file (basic function script is loaded in the cfg file as also).
 require __DIR__ . '/core/_include/cfg.php';

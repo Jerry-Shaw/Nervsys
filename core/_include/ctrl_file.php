@@ -30,7 +30,9 @@ class ctrl_file
 {
     /**
      * Get the content from a file
+     *
      * @param string $file
+     *
      * @return string
      */
     public static function get_content(string $file): string
@@ -51,8 +53,10 @@ class ctrl_file
 
     /**
      * Put the content to a file
+     *
      * @param string $file
      * @param string $data
+     *
      * @return int
      */
     public static function put_content(string $file, string $data): int
@@ -67,8 +71,10 @@ class ctrl_file
 
     /**
      * Append the content to a file
+     *
      * @param string $file
      * @param string $data
+     *
      * @return int
      */
     public static function append_content(string $file, string $data): int
@@ -83,7 +89,9 @@ class ctrl_file
 
     /**
      * Get the extension of a file
+     *
      * @param string $path
+     *
      * @return string
      */
     public static function get_ext(string $path): string
@@ -96,7 +104,9 @@ class ctrl_file
 
     /**
      * Check and create the directory if not exists, return a relative path
+     *
      * @param string $path
+     *
      * @return string
      */
     public static function get_path(string $path): string
@@ -116,9 +126,11 @@ class ctrl_file
     /**
      * Get a list of files in a directory or recursively
      * Target extension can be passed by $pattern parameter
+     *
      * @param string $path
      * @param string $pattern
      * @param bool $recursive
+     *
      * @return array
      */
     public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array

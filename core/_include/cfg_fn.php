@@ -29,8 +29,10 @@
 
 /**
  * Load library file
+ *
  * @param string $module
  * @param string $library
+ *
  * @return string library name when loaded or empty string when load failed
  */
 function load_lib(string $module, string $library): string
@@ -50,9 +52,11 @@ function load_lib(string $module, string $library): string
 
 /**
  * Cross module api loader
+ *
  * @param string $module
  * @param string $library
  * @param string $method
+ *
  * @return array
  */
 function load_api(string $module, string $library, string $method): array
@@ -91,7 +95,9 @@ function escape_request()
 
 /**
  * Provides escaping filter for escape_request
+ *
  * @param array $requests
+ *
  * @return array
  */
 function escape_requests(array $requests): array
@@ -104,7 +110,9 @@ function escape_requests(array $requests): array
 /**
  * Generates UUID for strings
  * UUID Format: 8-4-4-4-12
+ *
  * @param string $string
+ *
  * @return string
  */
 function get_uuid(string $string = ''): string
@@ -128,8 +136,10 @@ function get_uuid(string $string = ''): string
 
 /**
  * Provides the CHAR from an UUID
+ *
  * @param string $uuid
  * @param int $len
+ *
  * @return string
  */
 function get_char(string $uuid, int $len = 1): string
@@ -142,8 +152,10 @@ function get_char(string $uuid, int $len = 1): string
 
 /**
  * Sort data by list order (Key mapped)
+ *
  * @param array $data
  * @param array $list
+ *
  * @return array
  */
 function sort_list(array $data, array $list): array
@@ -192,9 +204,11 @@ function get_client_info(): array
 
 /**
  * GET the content of a url / POST some data to a url
+ *
  * @param string $url
  * @param array $data
  * @param string $access_key
+ *
  * @return string
  */
 function curl_request(string $url, array $data = [], string $access_key = ''): string

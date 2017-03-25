@@ -38,6 +38,7 @@ class ctrl_error
      * Storage the array content into $error_storage
      * The content of the error file should be format to JSON
      * The structure should be "integer [ERROR CODE]":"string [LANGUAGE MAPPED MESSAGE]"
+     *
      * @param string $module
      * @param string $file
      */
@@ -59,7 +60,9 @@ class ctrl_error
     /**
      * Get a standard error result
      * Language pack needs to be loaded before getting an error message
+     *
      * @param int $code
+     *
      * @return array
      */
     public static function get_error(int $code): array

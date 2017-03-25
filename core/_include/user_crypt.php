@@ -52,7 +52,9 @@ class user_crypt
 
     /**
      * Encrypt a string using crypt key codes, and return it in base64 encode
+     *
      * @param string $string
+     *
      * @return string
      */
     public static function encode(string $string): string
@@ -62,7 +64,9 @@ class user_crypt
 
     /**
      * Decrypt a string using crypt key codes, need to decode from base64 first
+     *
      * @param string $string
+     *
      * @return string
      */
     public static function decode(string $string): string
@@ -72,7 +76,9 @@ class user_crypt
 
     /**
      * Get an encrypt key from an array
+     *
      * @param array $key_data
+     *
      * @return string
      */
     public static function create_key(array $key_data): string
@@ -82,7 +88,9 @@ class user_crypt
 
     /**
      * Check and extract all the data from a key
+     *
      * @param string $access_key
+     *
      * @return array
      */
     public static function validate_key(string $access_key): array

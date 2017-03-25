@@ -125,6 +125,7 @@ class data_pool
 
     /**
      * "cmd" value parser
+     *
      * @param string $data
      *
      * "cmd" value should at least contain "/", or with "," for specific methods calling
@@ -175,6 +176,7 @@ class data_pool
 
     /**
      * "map" value parser
+     *
      * @param string $data
      *
      * "map" value should at least contain "/" and ":", or with "," for multiple result mapping
@@ -222,6 +224,7 @@ class data_pool
 
     /**
      * Call method and store the result for using/mapping
+     *
      * @param string $module
      * @param string $class
      * @param string $method

@@ -116,7 +116,9 @@ class data_key
     /**
      * Renew Access-Key to a new timestamp, or, make it expired by passing a passed timestamp
      * Return new Access-Key content after renewing
+     *
      * @param int $ExpireAt
+     *
      * @return string
      */
     public static function renew(int $ExpireAt): string
@@ -140,9 +142,11 @@ class data_key
     /**
      * Add a key => value pair to Access-Key
      * Return new Access-Key content after adding
+     *
      * @param string $key
      * @param string $value
      * @param bool $is_int
+     *
      * @return string
      */
     public static function add(string $key, string $value, bool $is_int = false): string
@@ -159,7 +163,9 @@ class data_key
     /**
      * Remove a/all content value from Access-Key
      * Return new Access-Key content after removing
+     *
      * @param string $key
+     *
      * @return string
      */
     public static function remove(string $key = ''): string

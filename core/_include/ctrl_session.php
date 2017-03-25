@@ -64,6 +64,7 @@ class ctrl_session
     /**
      * @param string $session_path
      * @param string $session_name
+     *
      * @return bool
      */
     public static function session_open(string $session_path, string $session_name): bool
@@ -81,6 +82,7 @@ class ctrl_session
 
     /**
      * @param string $session_id
+     *
      * @return string
      */
     public static function session_read(string $session_id): string
@@ -91,6 +93,7 @@ class ctrl_session
     /**
      * @param string $session_id
      * @param string $session_data
+     *
      * @return bool
      */
     public static function session_write(string $session_id, string $session_data): bool
@@ -100,6 +103,7 @@ class ctrl_session
 
     /**
      * @param string $session_id
+     *
      * @return bool
      */
     public static function session_destroy(string $session_id): bool
@@ -110,6 +114,7 @@ class ctrl_session
 
     /**
      * @param int $gc_lifetime
+     *
      * @return bool
      */
     public static function session_gc(int $gc_lifetime): bool

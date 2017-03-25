@@ -125,6 +125,7 @@ class ctrl_upload
 
     /**
      * Resize/Crop an image to a giving size
+     *
      * @param string $file
      * @param int $width
      * @param int $height
@@ -167,7 +168,9 @@ class ctrl_upload
 
     /**
      * Get and check the file size
+     *
      * @param int $file_size
+     *
      * @return int
      */
     private static function chk_size(int $file_size): int
@@ -177,7 +180,9 @@ class ctrl_upload
 
     /**
      * Get and check the file extension
+     *
      * @param string $file_name
+     *
      * @return string
      */
     private static function chk_ext(string $file_name): string
@@ -190,10 +195,12 @@ class ctrl_upload
 
     /**
      * Save the file from the tmp file
+     *
      * @param string $file
      * @param string $save_path
      * @param string $file_name
      * @param string $file_ext
+     *
      * @return string
      */
     private static function save_file(string $file, string $save_path, string $file_name, string $file_ext): string
@@ -212,10 +219,12 @@ class ctrl_upload
 
     /**
      * Get cropped image coordinates according to the giving size
+     *
      * @param int $img_width //Original width
      * @param int $img_height //Original height
      * @param int $need_width //Needed width
      * @param int $need_height //Needed height
+     *
      * @return array
      */
     private static function new_img_crop(int $img_width, int $img_height, int $need_width, int $need_height): array
@@ -247,10 +256,12 @@ class ctrl_upload
 
     /**
      * Get new image size according to the giving size
+     *
      * @param int $img_width //Original width
      * @param int $img_height //Original height
      * @param int $need_width //Needed width
      * @param int $need_height //Needed height
+     *
      * @return array
      */
     private static function new_img_size(int $img_width, int $img_height, int $need_width, int $need_height): array
@@ -283,7 +294,9 @@ class ctrl_upload
 
     /**
      * Get the error code from the Server
+     *
      * @param int $error_code
+     *
      * @return array
      */
     private static function get_error(int $error_code): array
