@@ -26,12 +26,8 @@
  */
 
 /**
- * This script is an universal API script.
- * Access-Key check is recommended for higher security.
- * Enable GET Method can be controlled by "\data_pool::$enable_get".
- * But it is strongly not recommended to enable GET Method.
- * Just simply leave it as it is for system security.
- * Or, only enable it when debug is needed.
+ * This script is an universal API script for NervSys.
+ * Authentication is recommended for security before running "data_pool::start()".
  */
 
 declare(strict_types=1);
@@ -39,20 +35,94 @@ declare(strict_types=1);
 //Load CFG file (basic function script is loaded in the cfg file as also).
 require __DIR__ . '/core/_include/cfg.php';
 
-//Load data_key as an overall module and start it.
-load_lib('core', 'data_key');
-//Start data_key process
-\data_key::start();
+//Detect PHP SAPI
+if ('cli' !== PHP_SAPI) {
+    //Code Block for CGI Mode
 
-//Load data_pool as an overall module and start it.
-load_lib('core', 'data_pool');
-//Start data_pool process
-\data_pool::start();
+    //Load data_key as an overall module and start it.
+    load_lib('core', 'data_key');
+    //Start data_key process
+    \data_key::start();
 
-//Valid values for "data_pool::$format" are "json" and "raw", which should be changed via GET or POST
-//All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "raw"
-if ('json' === \data_pool::$format) {
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo json_encode(\data_pool::$pool);
-    exit;
+    //Load data_pool as an overall module and start it.
+    load_lib('core', 'data_pool');
+    //Start data_pool process
+    \data_pool::start();
+
+    //Valid values for "data_pool::$format" are "json" and "raw", which should be changed via GET or POST
+    //All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "raw"
+    if ('json' === \data_pool::$format) {
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo json_encode(\data_pool::$pool);
+        exit;
+    }
+} else {
+    //Code Block for CLI Mode
+
+    //Try to get options
+    $option = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
+
+    //Parse options
+    if (!empty($option)) {
+        //Running process
+        if (isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
+            //Internal calling
+
+            //Regroup CLI data
+            $cli_data = ['cmd' => $option['cmd']];
+            if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $cli_data['map'] = &$option['map'];
+
+            //Parse data content
+            if (isset($option['data']) && false !== $option['data'] && '' !== $option['data']) {
+                $data = [];
+                parse_str($option['data'], $data);
+                if (!empty($data)) $cli_data = array_merge($cli_data, $data);
+            }
+
+            //Load Data Controlling Module
+            load_lib('core', 'data_pool');
+
+            //Pass data to Data Controlling Module
+            \data_pool::$cli = &$cli_data;
+
+            //Start data_pool process
+            \data_pool::start();
+
+            //Get raw result
+            $result = \data_pool::$pool;
+        } else {
+            //External calling
+
+            //Load CLI Controlling Module
+            load_lib('core', 'ctrl_cli');
+
+            //Pass debug type and level
+            \ctrl_cli::$log = isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all']) ? $option['l'] : '';
+            \ctrl_cli::$debug = isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all']) ? $option['d'] : '';
+
+            //Pass variables
+            \ctrl_cli::$var = array_slice($argv, $optind);
+
+            //Run CLI and get raw result
+            $result = \ctrl_cli::run_cli();
+        }
+
+        //Detect "w" option of "wait for return"
+        if (isset($option['w'])) {
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo json_encode($result);
+            exit;
+        }
+    } else {
+        //External calling quietly
+
+        //Load CLI Controlling Module
+        load_lib('core', 'ctrl_cli');
+
+        //Pass variables
+        \ctrl_cli::$var = array_slice($argv, 1);
+
+        //Run CLI
+        \ctrl_cli::run_cli();
+    }
 }
