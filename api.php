@@ -49,8 +49,8 @@ load_lib('core', 'data_pool');
 //Start data_pool process
 \data_pool::start();
 
-//"json" is the default output format, "raw" data will be kept if no "cmd" is detected
-//Keep running the rest script if user needs raw data which is kept in the data pool
+//Valid values for "data_pool::$format" are "json" and "raw", which should be changed via GET or POST
+//All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "raw"
 if ('json' === \data_pool::$format) {
     header('Content-Type: text/plain; charset=UTF-8');
     echo json_encode(\data_pool::$pool);
