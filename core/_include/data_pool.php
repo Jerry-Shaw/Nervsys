@@ -65,9 +65,9 @@ class data_pool
         //Set result data format according to the request
         if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
         //Parse "cmd" data from HTTP Request
-        if (isset($data['cmd']) && is_string($data['cmd']) && false !== strpos($data['cmd'], '/')) self::data_cmd($data['cmd']);
+        if (isset($data['cmd']) && is_string($data['cmd']) && false !== strpos($data['cmd'], '/')) self::parse_cmd($data['cmd']);
         //Parse "map" data from HTTP Request
-        if (isset($data['map']) && is_string($data['map']) && false !== strpos($data['map'], '/') && false !== strpos($data['map'], ':')) self::data_map($data['map']);
+        if (isset($data['map']) && is_string($data['map']) && false !== strpos($data['map'], '/') && false !== strpos($data['map'], ':')) self::parse_map($data['map']);
         //Unset "format" & "cmd" & "map" from request data package
         unset($data['format'], $data['cmd'], $data['map']);
         //Store data package to data pool
@@ -140,7 +140,7 @@ class data_pool
      * All mixed: "module_1/\namespace\library_1,method_1,method_2,module_2/library_2,method_3,method_4,..."
      * Notice: The key to calling a method in a module is the structure of data. All/Specific methods will only run with the matched data structure.
      */
-    private static function data_cmd(string $data)
+    private static function parse_cmd(string $data)
     {
         //Extract "cmd" values
         if (false !== strpos($data, ',')) {
@@ -187,7 +187,7 @@ class data_pool
      * Module with namespace: "module_1/\namespace\library_1/method_1:key_1,module_2/\namespace\library_2/method_2/result_key:key_2,..."
      * Notice: API running follows the input sequence, the former content will be replaced if the coming one has the same key.
      */
-    private static function data_map(string $data)
+    private static function parse_map(string $data)
     {
         //Extract "map" values
         if (false !== strpos($data, ',')) {
