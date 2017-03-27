@@ -176,11 +176,10 @@ class ctrl_cli
             //Parse result
             if (is_resource($process)) {
                 //Parse details
-                $data = ['OUT' => '', 'ERR' => ''];
-                if (!isset($pipe[2])) $data['OUT'] = isset($pipe[1]) ? trim(stream_get_contents($pipe[1])) : '';
-                else $data['ERR'] = trim(stream_get_contents($pipe[2]));
+                $data = ['OUT' => '', 'ERR' => stream_get_contents($pipe[2])];
+                if ('' === $data['ERR']) $data['OUT'] = stream_get_contents($pipe[1]);
                 //Save executed result
-                $result = ['data' => $data['OUT']];
+                $result = ['data' => &$data['OUT']];
                 //Process debug and log
                 if ('' !== self::$log) self::cli_log($data);
                 if ('' !== self::$debug) self::cli_debug($data);
