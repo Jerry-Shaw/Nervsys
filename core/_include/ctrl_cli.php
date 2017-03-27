@@ -191,4 +191,20 @@ class ctrl_cli
         } else $result = ['data' => 'Command ERROR!', 'code' => -1];
         return $result;
     }
+
+    /**
+     * Call API
+     * @return array
+     */
+    public static function call_api(): array
+    {
+        //Load Data Controlling Module
+        load_lib('core', 'data_pool');
+        //Pass data to Data Controlling Module
+        \data_pool::$cli = self::$var;
+        //Start data_pool process
+        \data_pool::start();
+        //Get raw result
+        return \data_pool::$pool;
+    }
 }
