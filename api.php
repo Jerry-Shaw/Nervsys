@@ -55,8 +55,6 @@ if ('cli' !== PHP_SAPI) {
     }
 } else {
     //Code Block for CLI Mode
-    //Load CLI Controlling Module
-    load_lib('core', 'ctrl_cli');
     //Try to get options
     $option = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
     //Parse options
@@ -75,27 +73,37 @@ if ('cli' !== PHP_SAPI) {
                 parse_str($option['data'], $data);
                 if (!empty($data)) $cli_data = array_merge($cli_data, $data);
             }
-            //Pass variables
-            \ctrl_cli::$var = &$cli_data;
-            //Call API and get raw result
-            $result = \ctrl_cli::call_api();
+            //Load Data Controlling Module
+            load_lib('core', 'data_pool');
+            //Pass data to Data Controlling Module
+            \data_pool::$cli = &$cli_data;
+            //Start data_pool process
+            \data_pool::start();
+            //Get raw result
+            $result = \data_pool::$pool;
         } else {
             //External calling
+            //Load CLI Controlling Module
+            load_lib('core', 'ctrl_cli');
             //Pass debug type and level
-            \ctrl_cli::$log = isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all']) ? $option['l'] : '';
-            \ctrl_cli::$debug = isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all']) ? $option['d'] : '';
+            if (isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all'])) \ctrl_cli::$log = &$option['l'];
+            if (isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all'])) \ctrl_cli::$debug = &$option['d'];
+            //Pass STDIN data
+            if (isset($option['i']) && false !== $option['i'] && '' !== $option['i']) \ctrl_cli::$stdin = &$option['i'];
             //Pass variables
             \ctrl_cli::$var = array_slice($argv, $optind);
             //Run CLI and get raw result
             $result = \ctrl_cli::run_cli();
         }
-        //Detect "w" option of "wait for return"
+        //Detect "w" option of "wait for output"
         if (isset($option['w'])) {
-            echo json_encode($result);
+            fwrite(STDOUT, json_encode($result));
             exit;
         }
     } else {
         //External calling quietly
+        //Load CLI Controlling Module
+        load_lib('core', 'ctrl_cli');
         //Pass variables
         \ctrl_cli::$var = array_slice($argv, 1);
         //Run CLI

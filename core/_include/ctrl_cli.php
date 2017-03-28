@@ -35,6 +35,9 @@ class ctrl_cli
     public static $log = '';
     public static $debug = '';
 
+    //STDIN data
+    public static $stdin = '';
+
     //CLI Command
     private static $cmd = '';
 
@@ -49,23 +52,18 @@ class ctrl_cli
     ];
 
     /**
-     * Initial function
-     */
-    private static function cli_init()
-    {
-        //Load File Controlling Module
-        load_lib('core', 'ctrl_file');
-    }
-
-    /**
      * Load CLI Configuration
      */
     private static function load_cfg()
     {
+        //Check CFG file
         if (is_file(CLI_CFG)) {
-            //Get CFG content
+            //Load File Controlling Module
+            load_lib('core', 'ctrl_file');
+            //Get CFG file content
             $json = \ctrl_file::get_content(CLI_CFG);
             if ('' !== $json) {
+                //Decode file content and map to CFG
                 $data = json_decode($json, true);
                 if (isset($data)) self::$cfg = &$data;
                 unset($data);
@@ -77,8 +75,9 @@ class ctrl_cli
     /**
      * Create CMD
      */
-    private static function get_cmd()
+    private static function build_cmd()
     {
+        //Check variables
         if (!empty(self::$var)) {
             //Check specific language in CFG
             if (isset(self::$cfg[self::$var[0]])) {
@@ -86,77 +85,45 @@ class ctrl_cli
                 foreach (self::$var as $k => $v) if (isset(self::$cfg[$v])) self::$var[$k] = self::$cfg[$v];
                 //Create command
                 self::$cmd = implode(' ', self::$var);
+                unset($k, $v);
             }
         }
     }
 
     /**
-     * Save Log
+     * Get Logs
      *
+     * @param string $level
      * @param array $data
+     *
+     * @return array
      */
-    private static function cli_log(array $data)
+    private static function get_logs(string $level, array $data): array
     {
-        $logs = [date('Y-m-d H:i:s', time())];
-        switch (self::$log) {
+        $logs = [PHP_EOL . date('Y-m-d H:i:s', time())];
+        switch ($level) {
             //Log cmd
             case 'cmd':
-                $logs[] = "\t" . 'CMD: ' . self::$cmd;
-                \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, $logs) . PHP_EOL . PHP_EOL);
+                $logs[] = 'CMD: ' . self::$cmd;
                 break;
             //Log err
             case 'err':
-                if ('' !== $data['ERR']) {
-                    $logs[] = "\t" . 'CMD: ' . self::$cmd;
-                    $logs[] = "\t" . 'ERR: ' . $data['ERR'];
-                    \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, $logs) . PHP_EOL . PHP_EOL);
-                }
+                $logs[] = 'CMD: ' . self::$cmd;
+                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NO ERROR!';
                 break;
             //Log all
             case 'all':
-                $logs[] = "\t" . 'CMD: ' . self::$cmd;
-                $logs[] = "\t" . 'OUT: ' . $data['OUT'];
-                $logs[] = "\t" . 'ERR: ' . $data['ERR'];
-                \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, $logs) . PHP_EOL . PHP_EOL);
+                $logs[] = 'CMD: ' . self::$cmd;
+                $logs[] = '' !== $data['IN'] ? 'IN:  ' . $data['IN'] : 'IN:  NO INPUT!';
+                $logs[] = '' !== $data['OUT'] ? 'OUT: ' . $data['OUT'] : 'OUT: NO OUTPUT!';
+                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NO ERROR!';
                 break;
-            //No log
+            //No detailed logs
             default:
                 break;
         }
-        unset($data, $logs);
-    }
-
-    /**
-     * Show debug
-     *
-     * @param array $data
-     */
-    private static function cli_debug(array $data)
-    {
-        echo PHP_EOL . PHP_EOL . date('Y-m-d H:i:s', time()) . PHP_EOL . PHP_EOL;
-        switch (self::$debug) {
-            //Show cmd
-            case 'cmd':
-                echo 'CMD: ' . self::$cmd . PHP_EOL . PHP_EOL . PHP_EOL;
-                break;
-            //Show err
-            case 'err':
-                if ('' !== $data['ERR']) {
-                    echo 'CMD: ' . self::$cmd . PHP_EOL . PHP_EOL;
-                    echo 'ERR: ' . $data['ERR'] . PHP_EOL . PHP_EOL . PHP_EOL;
-                }
-                break;
-            //Show all
-            case 'all':
-                echo 'CMD: ' . self::$cmd . PHP_EOL . PHP_EOL;
-                echo 'OUT: ' . $data['OUT'] . PHP_EOL . PHP_EOL;
-                echo 'ERR: ' . $data['ERR'] . PHP_EOL . PHP_EOL . PHP_EOL;
-                break;
-            //No debug
-            default:
-                break;
-        }
-        unset($data);
+        unset($level, $data);
+        return $logs;
     }
 
     /**
@@ -166,45 +133,30 @@ class ctrl_cli
     public static function run_cli(): array
     {
         //Prepare
-        self::cli_init();
         self::load_cfg();
-        self::get_cmd();
+        self::build_cmd();
         //Check command
         if ('' !== self::$cmd) {
             //Run process
-            $process = proc_open(self::$cmd, self::setting, $pipe, CLI_WORK_PATH);
+            $process = proc_open(self::$cmd, self::setting, $pipes, CLI_WORK_PATH);
             //Parse result
             if (is_resource($process)) {
-                //Parse details
-                $data = ['OUT' => '', 'ERR' => stream_get_contents($pipe[2])];
-                if ('' === $data['ERR']) $data['OUT'] = stream_get_contents($pipe[1]);
+                //Process STDIN data
+                if ('' !== self::$stdin) fwrite($pipes[0], self::$stdin);
+                //Parse detailed process data
+                $data = ['IN' => self::$stdin, 'OUT' => '', 'ERR' => stream_get_contents($pipes[2])];
+                if ('' === $data['ERR']) $data['OUT'] = stream_get_contents($pipes[1]);
                 //Save executed result
                 $result = ['data' => &$data['OUT']];
                 //Process debug and log
-                if ('' !== self::$log) self::cli_log($data);
-                if ('' !== self::$debug) self::cli_debug($data);
+                if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL . PHP_EOL);
+                if ('' !== self::$debug) fwrite(STDOUT, implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL . PHP_EOL);
                 unset($data);
             } else $result = ['data' => 'Process ERROR!'];
             //Close process
             $result['code'] = proc_close($process);
-            unset($process, $pipe);
+            unset($process, $pipes);
         } else $result = ['data' => 'Command ERROR!', 'code' => -1];
         return $result;
-    }
-
-    /**
-     * Call API
-     * @return array
-     */
-    public static function call_api(): array
-    {
-        //Load Data Controlling Module
-        load_lib('core', 'data_pool');
-        //Pass data to Data Controlling Module
-        \data_pool::$cli = self::$var;
-        //Start data_pool process
-        \data_pool::start();
-        //Get raw result
-        return \data_pool::$pool;
     }
 }
