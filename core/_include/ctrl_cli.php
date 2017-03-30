@@ -100,7 +100,7 @@ class ctrl_cli
      */
     private static function get_logs(string $level, array $data): array
     {
-        $logs = [PHP_EOL . date('Y-m-d H:i:s', time())];
+        $logs = [date('Y-m-d H:i:s', time())];
         switch ($level) {
             //Log cmd
             case 'cmd':
@@ -141,33 +141,22 @@ class ctrl_cli
             $process = proc_open(self::$cmd, self::setting, $pipes, CLI_WORK_PATH);
             //Parse process data
             if (is_resource($process)) {
-                //Process STDIN data
-                if ('' !== self::$stdin) {
-                    //Write STDIN data to "$pipes[0]"
-                    fwrite($pipes[0], self::$stdin);
-                    //Close "$pipes[0]"
-                    fclose($pipes[0]);
-                }
-                //Build detailed process data
-                $data = [
-                    'IN' => self::$stdin,
-                    'OUT' => stream_get_contents($pipes[1]),
-                    'ERR' => stream_get_contents($pipes[2])
-                ];
-                //Close "$pipes[1]" and "$pipes[2]"
-                fclose($pipes[1]);
-                fclose($pipes[2]);
+                //Process STDIO data
+                if ('' !== self::$stdin) fwrite($pipes[0], self::$stdin);
+                $stderr = stream_get_contents($pipes[2]);
+                $stdout = '' === $stderr ? stream_get_contents($pipes[1]) : '';
+                //Close all STDIO pipes
+                foreach ($pipes as $pipe) fclose($pipe);
+                //Build detailed STDIO data
+                $data = ['IN' => self::$stdin, 'OUT' => &$stdout, 'ERR' => &$stderr];
                 //Save STDOUT data to result
-                $result = ['data' => &$data['OUT']];
+                $result = ['data' => &$stdout];
                 //Process log and debug
-                if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'LOG_' . date('Y-m-d', time()) . '.log', implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL . PHP_EOL);
-                if ('' !== self::$debug) {
-                    fwrite(STDOUT, implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL . PHP_EOL);
-                    fclose(STDOUT);
-                }
+                if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'LOG_' . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL);
+                if ('' !== self::$debug) fwrite(STDOUT, PHP_EOL . implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL);
                 //Close process
                 $result['code'] = proc_close($process);
-                unset($data);
+                unset($stderr, $stdout, $pipe, $data);
             } else $result = ['data' => 'Process ERROR!', 'code' => -2];
             unset($process, $pipes);
         } else $result = ['data' => 'Command ERROR!', 'code' => -1];
