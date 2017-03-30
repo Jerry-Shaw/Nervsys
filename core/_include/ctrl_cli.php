@@ -142,7 +142,7 @@ class ctrl_cli
             //Parse process data
             if (is_resource($process)) {
                 //Process STDIO data
-                if ('' !== self::$stdin) fwrite($pipes[0], self::$stdin);
+                if ('' !== self::$stdin) fwrite($pipes[0], self::$stdin . PHP_EOL);
                 $stderr = stream_get_contents($pipes[2]);
                 $stdout = '' === $stderr ? stream_get_contents($pipes[1]) : '';
                 //Close all STDIO pipes
