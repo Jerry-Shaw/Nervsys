@@ -109,14 +109,14 @@ class ctrl_cli
             //Log err
             case 'err':
                 $logs[] = 'CMD: ' . self::$cmd;
-                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NO ERROR!';
+                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NONE!';
                 break;
             //Log all
             case 'all':
                 $logs[] = 'CMD: ' . self::$cmd;
-                $logs[] = '' !== $data['IN'] ? 'IN:  ' . $data['IN'] : 'IN:  NO INPUT!';
-                $logs[] = '' !== $data['OUT'] ? 'OUT: ' . $data['OUT'] : 'OUT: NO OUTPUT!';
-                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NO ERROR!';
+                $logs[] = '' !== $data['IN'] ? 'IN:  ' . $data['IN'] : 'IN:  NONE!';
+                $logs[] = '' !== $data['OUT'] ? 'OUT: ' . $data['OUT'] : 'OUT: NONE!';
+                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NONE!';
                 break;
             //No detailed logs
             default:
@@ -139,22 +139,36 @@ class ctrl_cli
         if ('' !== self::$cmd) {
             //Run process
             $process = proc_open(self::$cmd, self::setting, $pipes, CLI_WORK_PATH);
-            //Parse result
+            //Parse process data
             if (is_resource($process)) {
                 //Process STDIN data
-                if ('' !== self::$stdin) fwrite($pipes[0], self::$stdin);
-                //Parse detailed process data
-                $data = ['IN' => self::$stdin, 'OUT' => '', 'ERR' => stream_get_contents($pipes[2])];
-                if ('' === $data['ERR']) $data['OUT'] = stream_get_contents($pipes[1]);
-                //Save executed result
+                if ('' !== self::$stdin) {
+                    //Write STDIN data to "$pipes[0]"
+                    fwrite($pipes[0], self::$stdin);
+                    //Close "$pipes[0]"
+                    fclose($pipes[0]);
+                }
+                //Build detailed process data
+                $data = [
+                    'IN' => self::$stdin,
+                    'OUT' => stream_get_contents($pipes[1]),
+                    'ERR' => stream_get_contents($pipes[2])
+                ];
+                //Close "$pipes[1]" and "$pipes[2]"
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                //Save STDOUT data to result
                 $result = ['data' => &$data['OUT']];
-                //Process debug and log
-                if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'CLI_LOG_' . date('Y-m-d', time()) . '.txt', implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL . PHP_EOL);
-                if ('' !== self::$debug) fwrite(STDOUT, implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL . PHP_EOL);
+                //Process log and debug
+                if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'LOG_' . date('Y-m-d', time()) . '.log', implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL . PHP_EOL);
+                if ('' !== self::$debug) {
+                    fwrite(STDOUT, implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL . PHP_EOL);
+                    fclose(STDOUT);
+                }
+                //Close process
+                $result['code'] = proc_close($process);
                 unset($data);
-            } else $result = ['data' => 'Process ERROR!'];
-            //Close process
-            $result['code'] = proc_close($process);
+            } else $result = ['data' => 'Process ERROR!', 'code' => -2];
             unset($process, $pipes);
         } else $result = ['data' => 'Command ERROR!', 'code' => -1];
         return $result;

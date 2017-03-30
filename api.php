@@ -69,7 +69,6 @@ if ('cli' !== PHP_SAPI) {
             if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $cli_data['map'] = &$option['map'];
             //Parse data content
             if (isset($option['data']) && false !== $option['data'] && '' !== $option['data']) {
-                $data = [];
                 parse_str($option['data'], $data);
                 if (!empty($data)) $cli_data = array_merge($cli_data, $data);
             }
@@ -98,6 +97,7 @@ if ('cli' !== PHP_SAPI) {
         //Detect "w" option of "wait for output"
         if (isset($option['w'])) {
             fwrite(STDOUT, json_encode($result));
+            fclose(STDOUT);
             exit;
         }
     } else {

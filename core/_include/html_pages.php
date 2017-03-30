@@ -48,9 +48,8 @@ class html_pages
             if ('' !== self::$page_url) {
                 $url_parts = parse_url(self::$page_url);
                 if (isset($url_parts['path'])) {
-                    if (isset($url_parts['query'])) {
-                        parse_str($url_parts['query'], $query);
-                    } else $query = [];
+                    if (isset($url_parts['query'])) parse_str($url_parts['query'], $query);
+                    else $query = [];
                     $url = $url_parts['path'] . self::merge_query($query);
                     unset($query);
                 } else $url = '';
