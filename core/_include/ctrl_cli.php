@@ -144,7 +144,7 @@ class ctrl_cli
                 //Process STDIO data
                 if ('' !== self::$input) fwrite($pipes[0], self::$input . PHP_EOL);
                 $stderr = stream_get_contents($pipes[2]);
-                $stdout = '' === $stderr ? stream_get_contents($pipes[1]) : '';
+                $stdout = '' === $stderr ? trim(stream_get_contents($pipes[1])) : '';
                 //Close all STDIO pipes
                 foreach ($pipes as $pipe) fclose($pipe);
                 //Build detailed STDIO data
