@@ -18,3 +18,5 @@ We could be very grateful for you if you donate your modules to ooBase.
 NervSys is still going on its way, so we are sorry not to have the document done ready for developers.
 
 Demo module is out and opened here https://github.com/Jerry-Shaw/fruit_picker. You can try it with NervSys with detailed comments in the picker.php
+
+There is a document about java link to NervSys here: https://github.com/muyinchen/woker/tree/master/%E7%A5%9E%E7%BB%8F%E5%85%83%E5%9D%91. Keeps updating.
