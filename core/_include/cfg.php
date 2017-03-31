@@ -65,8 +65,8 @@ define('CLI_CFG', ROOT . '/_cli/cfg.json');
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
 define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');
 define('CLI_EXEC_PATH', 'D:/Programs/iisExpress/Programs/PHP/php.exe');//CLI executable binary path
-define('CLI_RUN_OPTIONS', 'd::l::i::w');//CLI options (d: onscreen debug; l: log files. Valid values are "cmd", "err", "all", not supported by internal calling. i: STDIN data; w: wait for output.)
-define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Required options for internal calling
+define('CLI_RUN_OPTIONS', 'd::l::w');//CLI options (d/l: debug/log options, valid values are "cmd", "err", "all", not supported by internal calling. w: wait for output)
+define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Data options (cmd/map: Required for internal calling; data: HTTP query data for internal calling or other strings for External calling via STDIN communication)
 
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');

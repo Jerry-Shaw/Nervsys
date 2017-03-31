@@ -35,8 +35,8 @@ class ctrl_cli
     public static $log = '';
     public static $debug = '';
 
-    //STDIN data
-    public static $stdin = '';
+    //Input data
+    public static $input = '';
 
     //CLI Command
     private static $cmd = '';
@@ -142,13 +142,13 @@ class ctrl_cli
             //Parse process data
             if (is_resource($process)) {
                 //Process STDIO data
-                if ('' !== self::$stdin) fwrite($pipes[0], self::$stdin . PHP_EOL);
+                if ('' !== self::$input) fwrite($pipes[0], self::$input . PHP_EOL);
                 $stderr = stream_get_contents($pipes[2]);
                 $stdout = '' === $stderr ? stream_get_contents($pipes[1]) : '';
                 //Close all STDIO pipes
                 foreach ($pipes as $pipe) fclose($pipe);
                 //Build detailed STDIO data
-                $data = ['IN' => self::$stdin, 'OUT' => &$stdout, 'ERR' => &$stderr];
+                $data = ['IN' => self::$input, 'OUT' => &$stdout, 'ERR' => &$stderr];
                 //Save STDOUT data to result
                 $result = ['data' => &$stdout];
                 //Process log and debug

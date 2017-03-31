@@ -61,15 +61,16 @@ if ('cli' !== PHP_SAPI) {
     if (!empty($option)) {
         //Force output content to UTF-8 formatted plain text
         header('Content-Type: text/plain; charset=UTF-8');
+        //Get input data from option/STDIN
+        $input = isset($option['data']) && false !== $option['data'] && '' !== $option['data'] ? $option['data'] : (!feof(STDIN) ? stream_get_contents(STDIN) : '');
         //Running process
         if (isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
             //Internal calling
-            //Regroup CLI data
+            //Regroup request data
             $cli_data = ['cmd' => $option['cmd']];
             if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $cli_data['map'] = &$option['map'];
-            //Parse data content
-            if (isset($option['data']) && false !== $option['data'] && '' !== $option['data']) {
-                parse_str($option['data'], $data);
+            if ('' !== $input) {
+                parse_str($input, $data);
                 if (!empty($data)) $cli_data = array_merge($cli_data, $data);
             }
             //Load Data Controlling Module
@@ -84,11 +85,11 @@ if ('cli' !== PHP_SAPI) {
             //External calling
             //Load CLI Controlling Module
             load_lib('core', 'ctrl_cli');
-            //Pass debug type and level
-            if (isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all'])) \ctrl_cli::$log = &$option['l'];
+            //Pass debug/log options
             if (isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all'])) \ctrl_cli::$debug = &$option['d'];
-            //Pass STDIN data
-            if (isset($option['i']) && false !== $option['i'] && '' !== $option['i']) \ctrl_cli::$stdin = &$option['i'];
+            if (isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all'])) \ctrl_cli::$log = &$option['l'];
+            //Pass input data
+            if ('' !== $input) \ctrl_cli::$input = &$input;
             //Pass variables
             \ctrl_cli::$var = array_slice($argv, $optind);
             //Run CLI and get raw result
@@ -96,6 +97,7 @@ if ('cli' !== PHP_SAPI) {
         }
         //Detect "w" option of "wait for output"
         if (isset($option['w'])) {
+            //Output JSON formatted result via STDOUT
             fwrite(STDOUT, json_encode($result));
             fclose(STDOUT);
             exit;
