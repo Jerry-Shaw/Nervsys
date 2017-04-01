@@ -55,41 +55,44 @@ if ('cli' !== PHP_SAPI) {
     }
 } else {
     //Code Block for CLI Mode
+    //Load CLI Controlling Module
+    load_lib('core', 'ctrl_cli');
     //Try to get options
     $option = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
     //Parse options
     if (!empty($option)) {
         //Force output content to UTF-8 formatted plain text
         header('Content-Type: text/plain; charset=UTF-8');
-        //Get input data from option/STDIN
-        $input = isset($option['data']) && false !== $option['data'] && '' !== $option['data'] ? $option['data'] : (!feof(STDIN) ? stream_get_contents(STDIN) : '');
+        //Check STDIN existence
+        if (isset($option['i'])) \ctrl_cli::$input = true;
+        //Pass try option
+        if (isset($option['t'])) {
+            $option['t'] = (int)$option['t'];
+            if (0 < $option['t']) \ctrl_cli::$try = &$option['t'];
+        }
+        //Pass wait option
+        if (isset($option['w'])) {
+            \ctrl_cli::$output = true;
+            $option['w'] = (int)$option['w'];
+            if (0 < $option['w']) \ctrl_cli::$wait = &$option['w'];
+        }
+        //Pass input data from option
+        if (isset($option['data']) && false !== $option['data'] && '' !== $option['data']) \ctrl_cli::$data = &$option['data'];
         //Running process
         if (isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
             //Internal calling
             //Regroup request data
-            $cli_data = ['cmd' => $option['cmd']];
-            if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $cli_data['map'] = &$option['map'];
-            if ('' !== $input) {
-                parse_str($input, $data);
-                if (!empty($data)) $cli_data = array_merge($cli_data, $data);
-            }
-            //Load Data Controlling Module
-            load_lib('core', 'data_pool');
-            //Pass data to Data Controlling Module
-            \data_pool::$cli = &$cli_data;
-            //Start data_pool process
-            \data_pool::start();
-            //Get raw result
-            $result = \data_pool::$pool;
+            $api_data = ['cmd' => $option['cmd']];
+            if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $api_data['map'] = &$option['map'];
+            //Pass variables
+            \ctrl_cli::$var = &$api_data;
+            //Call API
+            $result = \ctrl_cli::call_api();
         } else {
             //External calling
-            //Load CLI Controlling Module
-            load_lib('core', 'ctrl_cli');
             //Pass debug/log options
             if (isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all'])) \ctrl_cli::$debug = &$option['d'];
             if (isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all'])) \ctrl_cli::$log = &$option['l'];
-            //Pass input data
-            if ('' !== $input) \ctrl_cli::$input = &$input;
             //Pass variables
             \ctrl_cli::$var = array_slice($argv, $optind);
             //Run CLI and get raw result
@@ -104,8 +107,6 @@ if ('cli' !== PHP_SAPI) {
         }
     } else {
         //External calling quietly
-        //Load CLI Controlling Module
-        load_lib('core', 'ctrl_cli');
         //Pass variables
         \ctrl_cli::$var = array_slice($argv, 1);
         //Run CLI

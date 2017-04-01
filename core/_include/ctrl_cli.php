@@ -31,12 +31,24 @@ class ctrl_cli
     //Variables
     public static $var = [];
 
-    //Debug type and level
+    //Input data
+    public static $data = '';
+
+    //Debug/Log options
     public static $log = '';
     public static $debug = '';
 
-    //Input data
-    public static $input = '';
+    //STDIN data status
+    public static $input = false;
+
+    //wait for output
+    public static $output = false;
+
+    //Stream check retry times
+    public static $try = CLI_STREAM_TRY;
+
+    //Stream check wait time
+    public static $wait = CLI_STREAM_WAIT;
 
     //CLI Command
     private static $cmd = '';
@@ -45,11 +57,7 @@ class ctrl_cli
     private static $cfg = [];
 
     //PHP Pipe settings
-    const setting = [
-        ['pipe', 'r'],
-        ['pipe', 'w'],
-        ['pipe', 'w']
-    ];
+    const setting = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
 
     /**
      * Load CLI Configuration
@@ -73,7 +81,7 @@ class ctrl_cli
     }
 
     /**
-     * Create CMD
+     * Build CMD
      */
     private static function build_cmd()
     {
@@ -88,6 +96,37 @@ class ctrl_cli
                 unset($k, $v);
             }
         }
+    }
+
+    /**
+     * Check the stat of current stream
+     *
+     * @param array $stream
+     *
+     * @return bool
+     */
+    private static function wait_stream(array $stream): bool
+    {
+        $times = 0;
+        $result = false;
+        //Get the resource
+        $resource = current($stream);
+        //Keep checking the stat of stream
+        while ($times < self::$try) {
+            ++$times;
+            //Wait for process
+            usleep(self::$wait);
+            //Get the stat of stream
+            $stat = fstat($resource);
+            //Check the stat of stream
+            if (false !== $stat && 0 < $stat['size']) {
+                $result = true;
+                break;
+            }
+        }
+        //Return false once the elapsed time reaches the limit
+        unset($stream, $times, $resource, $stat);
+        return $result;
     }
 
     /**
@@ -141,25 +180,56 @@ class ctrl_cli
             $process = proc_open(self::$cmd, self::setting, $pipes, CLI_WORK_PATH);
             //Parse process data
             if (is_resource($process)) {
-                //Process STDIO data
-                if ('' !== self::$input) fwrite($pipes[0], self::$input . PHP_EOL);
-                $stderr = stream_get_contents($pipes[2]);
-                $stdout = '' === $stderr ? trim(stream_get_contents($pipes[1])) : '';
-                //Close all STDIO pipes
+                //Process input data
+                if ('' === self::$data && self::$input && self::wait_stream([STDIN])) self::$data = trim(stream_get_contents(STDIN));
+                if ('' !== self::$data) fwrite($pipes[0], self::$data . PHP_EOL);
+                //Build detailed STDIO data when needed
+                if (self::$output || '' !== self::$debug || '' !== self::$log) {
+                    //Add input data
+                    $data = ['IN' => self::$data];
+                    //Process STDOUT/STDERR data
+                    $data['OUT'] = self::wait_stream([$pipes[1]]) ? trim(stream_get_contents($pipes[1])) : '';
+                    $data['ERR'] = self::wait_stream([$pipes[2]]) ? trim(stream_get_contents($pipes[2])) : '';
+                    //Process debug and log
+                    if ('' !== self::$debug) fwrite(STDOUT, PHP_EOL . implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL);
+                    if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'LOG_' . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL);
+                    //Save output data to result when needed
+                    $result = self::$output ? ['data' => &$data['OUT'], 'error' => &$data['ERR']] : ['data' => 'NOT Requested!', 'error' => 'NOT Requested!'];
+                    unset($data);
+                } else $result = ['data' => 'NOT Requested!', 'error' => 'NOT Requested!'];
+                //Close all pipes
                 foreach ($pipes as $pipe) fclose($pipe);
-                //Build detailed STDIO data
-                $data = ['IN' => self::$input, 'OUT' => &$stdout, 'ERR' => &$stderr];
-                //Save STDOUT data to result
-                $result = ['data' => &$stdout];
-                //Process log and debug
-                if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . 'LOG_' . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL);
-                if ('' !== self::$debug) fwrite(STDOUT, PHP_EOL . implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL);
                 //Close process
                 $result['code'] = proc_close($process);
-                unset($stderr, $stdout, $pipe, $data);
-            } else $result = ['data' => 'Process ERROR!', 'code' => -2];
+                unset($pipe);
+            } else $result = ['error' => 'Process ERROR!', 'code' => -2];
             unset($process, $pipes);
-        } else $result = ['data' => 'Command ERROR!', 'code' => -1];
+        } else $result = ['error' => 'Command ERROR!', 'code' => -1];
         return $result;
+    }
+
+    /**
+     * Call API
+     *
+     * @return array
+     */
+    public static function call_api(): array
+    {
+        //Load Data Controlling Module
+        load_lib('core', 'data_pool');
+        //Process input data
+        if ('' === self::$data && self::$input && self::wait_stream([STDIN])) self::$data = trim(stream_get_contents(STDIN));
+        if ('' !== self::$data) {
+            //Parse HTTP query data
+            parse_str(self::$data, $data);
+            if (!empty($data)) self::$var = array_merge(self::$var, $data);
+            unset($data);
+        }
+        //Pass data to Data Controlling Module
+        \data_pool::$cli = self::$var;
+        //Start data_pool process
+        \data_pool::start();
+        //Get raw result
+        return \data_pool::$pool;
     }
 }
