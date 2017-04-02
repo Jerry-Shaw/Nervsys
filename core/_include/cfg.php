@@ -67,7 +67,7 @@ define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');
 define('CLI_EXEC_PATH', 'D:/Programs/iisExpress/Programs/PHP/php.exe');//CLI executable binary path
 define('CLI_RUN_OPTIONS', 'd::l::t::w::i');//CLI options (d/l: debug/log options, valid values are "cmd", "err", "all", not supported by internal calling. t: stream check times; w: wait time for output; i: STDIN data input)
 define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Data options (cmd/map: Required for internal calling; data: HTTP query data for internal calling or other strings for External calling via STDIN communication)
-define('CLI_STREAM_TRY', 10);//Default retry times for stream checking
+define('CLI_STREAM_TRY', 100);//Default retry times for stream checking
 define('CLI_STREAM_WAIT', 10);//Default time wait for stream checking (in microseconds)
 
 //MySQL Settings
