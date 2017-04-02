@@ -9,7 +9,7 @@
  *
  * Copyright 2015-2017 Jerry Shaw
  * Copyright 2016-2017 秋水之冰
- * Copyright 2016-2017 彼岸花开
+ * Copyright 2016 彼岸花开
  *
  * This file is part of NervSys.
  *

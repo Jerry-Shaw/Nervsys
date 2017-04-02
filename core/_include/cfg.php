@@ -4,12 +4,12 @@
  * Basic Configurations
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
- * Author 彼岸花开 <330931138@qq.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author 彼岸花开 <330931138@qq.com>
  *
  * Copyright 2015-2017 Jerry Shaw
- * Copyright 2016-2017 彼岸花开
  * Copyright 2016-2017 秋水之冰
+ * Copyright 2016 彼岸花开
  *
  * This file is part of NervSys.
  *
@@ -65,10 +65,10 @@ define('CLI_CFG', ROOT . '/_cli/cfg.json');
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
 define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');
 define('CLI_EXEC_PATH', 'D:/Programs/iisExpress/Programs/PHP/php.exe');//CLI executable binary path
-define('CLI_RUN_OPTIONS', 'd::l::t::w::i');//CLI options (d/l: debug/log options, valid values are "cmd", "err", "all", not supported by internal calling. t: stream check times; w: wait time for output; i: STDIN data input)
-define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Data options (cmd/map: Required for internal calling; data: HTTP query data for internal calling or other strings for External calling via STDIN communication)
-define('CLI_STREAM_TRY', 100);//Default retry times for stream checking
-define('CLI_STREAM_WAIT', 10);//Default time wait for stream checking (in microseconds)
+define('CLI_RUN_OPTIONS', 'c::d::l::t::w::i');//CLI options (c: config file path; d/l: debug/log options, valid values are "cmd", "err", "all", not supported by Internal Mode. t: stream check times; w: wait time for output; i: STDIN data input)
+define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Data options (cmd/map: Required for Internal Mode; data: HTTP query data for Internal Mode or other strings for External Mode via STDIN communication)
+define('CLI_STREAM_TRY', 10);//Default retry times for stream checking
+define('CLI_STREAM_WAIT', 5);//Default time wait for stream checking (in microseconds)
 
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');

@@ -49,67 +49,30 @@ if ('cli' !== PHP_SAPI) {
     //Valid values for "data_pool::$format" are "json" and "raw", which should be changed via GET or POST
     //All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "raw"
     if ('json' === \data_pool::$format) {
+        //Force output content to UTF-8 formatted plain text
         header('Content-Type: text/plain; charset=UTF-8');
+        //Output JSON formatted result
         echo json_encode(\data_pool::$pool);
         exit;
     }
 } else {
     //Code Block for CLI Mode
+    //Force output content to UTF-8 formatted plain text
+    header('Content-Type: text/plain; charset=UTF-8');
     //Load CLI Controlling Module
     load_lib('core', 'ctrl_cli');
-    //Try to get options
-    $option = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
-    //Parse options
-    if (!empty($option)) {
-        //Force output content to UTF-8 formatted plain text
-        header('Content-Type: text/plain; charset=UTF-8');
-        //Check STDIN existence
-        if (isset($option['i'])) \ctrl_cli::$input = true;
-        //Pass try option
-        if (isset($option['t'])) {
-            $option['t'] = (int)$option['t'];
-            if (0 < $option['t']) \ctrl_cli::$try = &$option['t'];
-        }
-        //Pass wait option
-        if (isset($option['w'])) {
-            \ctrl_cli::$output = true;
-            $option['w'] = (int)$option['w'];
-            if (0 < $option['w']) \ctrl_cli::$wait = &$option['w'];
-        }
-        //Pass input data from option
-        if (isset($option['data']) && false !== $option['data'] && '' !== $option['data']) \ctrl_cli::$data = &$option['data'];
-        //Running process
-        if (isset($option['cmd']) && false !== $option['cmd'] && '' !== $option['cmd']) {
-            //Internal calling
-            //Regroup request data
-            $api_data = ['cmd' => $option['cmd']];
-            if (isset($option['map']) && false !== $option['map'] && '' !== $option['map']) $api_data['map'] = &$option['map'];
-            //Pass variables
-            \ctrl_cli::$var = &$api_data;
-            //Call API
-            $result = \ctrl_cli::call_api();
-        } else {
-            //External calling
-            //Pass debug/log options
-            if (isset($option['d']) && in_array($option['d'], ['cmd', 'err', 'all'])) \ctrl_cli::$debug = &$option['d'];
-            if (isset($option['l']) && in_array($option['l'], ['cmd', 'err', 'all'])) \ctrl_cli::$log = &$option['l'];
-            //Pass variables
-            \ctrl_cli::$var = array_slice($argv, $optind);
-            //Run CLI and get raw result
-            $result = \ctrl_cli::run_cli();
-        }
-        //Detect "w" option of "wait for output"
-        if (isset($option['w'])) {
-            //Output JSON formatted result via STDOUT
-            fwrite(STDOUT, json_encode($result));
-            fclose(STDOUT);
-            exit;
-        }
-    } else {
-        //External calling quietly
-        //Pass variables
-        \ctrl_cli::$var = array_slice($argv, 1);
-        //Run CLI
-        \ctrl_cli::run_cli();
+    //Pass options
+    \ctrl_cli::$opt = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
+    //Pass variables
+    \ctrl_cli::$var = array_slice($argv, $optind);
+    //Start CLI
+    $result = \ctrl_cli::start();
+    //Detect "w" option of "wait for output"
+    if (isset(\ctrl_cli::$opt['w'])) {
+        //Output JSON formatted result via STDOUT
+        fwrite(STDOUT, json_encode($result));
+        //Close STDOUT stream
+        fclose(STDOUT);
+        exit;
     }
 }
