@@ -34,9 +34,6 @@ class ctrl_cli
     //Variables
     public static $var = [];
 
-    //STDIN data status
-    private static $input = false;
-
     //wait for output
     private static $output = false;
 
@@ -71,28 +68,24 @@ class ctrl_cli
     private static function load_opt()
     {
         if (!empty(self::$opt)) {
-            //Get STDIN existence
-            if (isset(self::$opt['i'])) self::$input = true;
-            //Parse CFG option
+            //Get CFG option
             if (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$cfg = self::$opt['c'];
-            //Parse input data content
-            if (isset(self::$opt['data']) && false !== self::$opt['data'] && '' !== self::$opt['data']) self::$data = self::$opt['data'];
-            //Parse debug/log options
+            //Get input data from option/STDIN
+            self::$data = isset(self::$opt['data']) && false !== self::$opt['data'] && '' !== self::$opt['data'] ? self::$opt['data'] : self::get_stream([STDIN]);
+            //Get debug/log options
             if (isset(self::$opt['d']) && in_array(self::$opt['d'], ['cmd', 'err', 'all'], true)) self::$debug = self::$opt['d'];
             if (isset(self::$opt['l']) && in_array(self::$opt['l'], ['cmd', 'err', 'all'], true)) self::$log = self::$opt['l'];
-            //Parse retry option
+            //Get retry option
             if (isset(self::$opt['t'])) {
                 self::$opt['t'] = (int)self::$opt['t'];
                 if (0 < self::$opt['t']) self::$try = self::$opt['t'];
             }
-            //Parse wait option
+            //Get wait option
             if (isset(self::$opt['w'])) {
                 self::$output = true;
                 self::$opt['w'] = (int)self::$opt['w'];
                 if (0 < self::$opt['w']) self::$wait = self::$opt['w'];
             }
-            //Get STDIN data instead of input data
-            if ('' === self::$data && self::$input && self::wait_stream([STDIN])) self::$data = trim(stream_get_contents(STDIN));
         }
     }
 
@@ -155,33 +148,35 @@ class ctrl_cli
     }
 
     /**
-     * Check the stat of current stream
+     * Get the content of current stream
      *
      * @param array $stream
      *
-     * @return bool
+     * @return string
      */
-    private static function wait_stream(array $stream): bool
+    private static function get_stream(array $stream): string
     {
-        $times = 0;
-        $result = false;
+        $try = 0;
+        $result = '';
         //Get the resource
         $resource = current($stream);
         //Keep checking the stat of stream
-        while ($times < self::$try) {
-            ++$times;
-            //Wait for process
-            usleep(self::$wait);
+        while ($try < self::$try) {
             //Get the stat of stream
             $stat = fstat($resource);
             //Check the stat of stream
             if (false !== $stat && 0 < $stat['size']) {
-                $result = true;
+                //Get trimmed content
+                $result = trim(stream_get_contents($resource));
                 break;
+            } else {
+                //Wait for process
+                usleep(self::$wait);
+                ++$try;
             }
         }
         //Return false once the elapsed time reaches the limit
-        unset($stream, $times, $resource, $stat);
+        unset($stream, $try, $resource, $stat);
         return $result;
     }
 
@@ -241,8 +236,8 @@ class ctrl_cli
                     //Add input data
                     $data = ['IN' => self::$data];
                     //Process STDOUT/STDERR data
-                    $data['OUT'] = self::wait_stream([$pipes[1]]) ? trim(stream_get_contents($pipes[1])) : '';
-                    $data['ERR'] = self::wait_stream([$pipes[2]]) ? trim(stream_get_contents($pipes[2])) : '';
+                    $data['OUT'] = self::get_stream([$pipes[1]]);
+                    $data['ERR'] = self::get_stream([$pipes[2]]);
                     //Process debug and log
                     if ('' !== self::$debug) fwrite(STDOUT, PHP_EOL . implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL);
                     if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL);
