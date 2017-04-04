@@ -67,8 +67,8 @@ if ('cli' !== PHP_SAPI) {
     \ctrl_cli::$var = array_slice($argv, $optind);
     //Start CLI
     $result = \ctrl_cli::start();
-    //Detect "w" option of "wait for output"
-    if (isset(\ctrl_cli::$opt['w'])) {
+    //Output Result
+    if (!empty($result)) {
         //Output JSON formatted result via STDOUT
         fwrite(STDOUT, json_encode($result));
         //Close STDOUT stream

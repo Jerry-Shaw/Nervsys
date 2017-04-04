@@ -59,6 +59,13 @@ define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 define('FILE_PATH', 'E:/Sites/Files/');
 define('FILE_DOMAIN', 'https://file.oobase.com/');
 
+//CLI Settings
+define('CLI_LOG_PATH', ROOT . '/_cli/_log/');//Log path
+define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');//Working path
+define('CLI_EXEC_PATH', 'D:/Programs/iisExpress/Programs/PHP/php.exe');//PHP executable binary path
+define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Options)
+define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'path:', 'log']);//Long options (Preferred)
+
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');
 define('MySQL_PORT', 3306);
@@ -82,26 +89,6 @@ define('SMTP_PORT', 465);
 define('SMTP_USER', 'SMTP_USER');
 define('SMTP_PWD', 'SMTP_PWD');
 define('SMTP_SENDER', 'SMTP_SENDER');
-
-/**
- * CLI Options
- *
- * c: Config file path
- * d/l: Debug/Log options, valid values are "cmd", "err", "all", not supported by Internal Mode.
- * t: Stream content check retry times
- * w: Wait time for output
- *
- * cmd/map: Data to request an internal API
- * data: HTTP query data for Internal Mode or other strings for External Mode via STDIN communication
- */
-define('CLI_CFG', ROOT . '/_cli/cfg.json');
-define('CLI_LOG_PATH', ROOT . '/_cli/_log/');
-define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');
-define('CLI_EXEC_PATH', 'D:/Programs/iisExpress/Programs/PHP/php.exe');//CLI executable binary path
-define('CLI_RUN_OPTIONS', 'c::d::l::t::w::');//CLI options
-define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:']);//Data options
-define('CLI_STREAM_TRY', 20);//Default retry times for stream checking
-define('CLI_STREAM_WAIT', 5);//Default time wait for stream checking (in microseconds)
 
 //Load basic function script
 require __DIR__ . '/cfg_fn.php';

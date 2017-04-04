@@ -34,33 +34,19 @@ class ctrl_cli
     //Variables
     public static $var = [];
 
-    //wait for output
-    private static $output = false;
+    //Option Details
+    private static $opt_cmd = '';//Option for Internal Mode
+    private static $opt_map = '';//Option for Internal Mode
+    private static $opt_get = '';//Result (Valid values: "cmd", "data", "error", "result" or "cmd", "map", "data", "result"; empty: no returns)
+    private static $opt_log = false;//Log setting, set to true to log all ("time", "cmd", "data", "error", "result" or "time", "cmd", "map", "data", "result")
+    private static $opt_try = 100;//Default try times for stream checking
+    private static $opt_wait = 2;//Default time wait for stream checking (in microseconds)
+    private static $opt_data = '';//Request data, will try to read STDIN when empty
+    private static $opt_path = ROOT . '/_cli/cfg.json';//Default CFG file path
 
-    //Debug/Log options
-    private static $debug = '';
-    private static $log = '';
-
-    //Input data
-    private static $data = '';
-
-    //CLI Config file path
-    private static $cfg = CLI_CFG;
-
-    //Stream check retry times
-    private static $try = CLI_STREAM_TRY;
-
-    //Stream check wait time
-    private static $wait = CLI_STREAM_WAIT;
-
-    //CLI Command
-    private static $cmd = '';
-
-    //Configurations
-    private static $setting = [];
-
-    //PHP Pipe settings
-    const setting = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
+    //CLI Runtime Settings
+    private static $cli_cmd = '';//CLI Command
+    private static $cli_cfg = [];//CLI Configurations
 
     /**
      * Load options
@@ -68,42 +54,58 @@ class ctrl_cli
     private static function load_opt()
     {
         if (!empty(self::$opt)) {
-            //Get CFG option
-            if (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$cfg = self::$opt['c'];
-            //Get input data from option/STDIN
-            self::$data = isset(self::$opt['data']) && false !== self::$opt['data'] && '' !== self::$opt['data'] ? self::$opt['data'] : self::get_stream([STDIN]);
-            //Get debug/log options
-            if (isset(self::$opt['d']) && in_array(self::$opt['d'], ['cmd', 'err', 'all'], true)) self::$debug = self::$opt['d'];
-            if (isset(self::$opt['l']) && in_array(self::$opt['l'], ['cmd', 'err', 'all'], true)) self::$log = self::$opt['l'];
-            //Get retry option
-            if (isset(self::$opt['t'])) {
+            //Get "log" option
+            if (isset(self::$opt['log']) || isset(self::$opt['l'])) self::$opt_log = true;
+            //Get "cmd" option
+            if (isset(self::$opt['cmd']) && false !== self::$opt['cmd'] && '' !== self::$opt['cmd']) self::$opt_cmd = self::$opt['cmd'];
+            elseif (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$opt_cmd = self::$opt['c'];
+            //Get "map" option
+            if (isset(self::$opt['map']) && false !== self::$opt['map'] && '' !== self::$opt['map']) self::$opt_map = self::$opt['map'];
+            elseif (isset(self::$opt['m']) && false !== self::$opt['m'] && '' !== self::$opt['m']) self::$opt_map = self::$opt['m'];
+            //Get "get" option
+            if (isset(self::$opt['get']) && false !== self::$opt['get'] && '' !== self::$opt['get']) self::$opt_get = self::$opt['get'];
+            elseif (isset(self::$opt['g']) && false !== self::$opt['g'] && '' !== self::$opt['g']) self::$opt_get = self::$opt['g'];
+            //Get "path" option
+            if (isset(self::$opt['path']) && false !== self::$opt['path'] && '' !== self::$opt['path']) self::$opt_path = self::$opt['path'];
+            elseif (isset(self::$opt['p']) && false !== self::$opt['p'] && '' !== self::$opt['p']) self::$opt_path = self::$opt['p'];
+            //Get "data" from option/STDIN
+            if (isset(self::$opt['data']) && false !== self::$opt['data'] && '' !== self::$opt['data']) self::$opt_data = self::$opt['data'];
+            elseif (isset(self::$opt['d']) && false !== self::$opt['d'] && '' !== self::$opt['d']) self::$opt_data = self::$opt['d'];
+            else self::$opt_data = self::get_stream([STDIN]);
+            //Get "try" option
+            if (isset(self::$opt['try'])) {
+                self::$opt['try'] = (int)self::$opt['try'];
+                if (0 < self::$opt['try']) self::$opt_try = self::$opt['try'];
+            } elseif (isset(self::$opt['t'])) {
                 self::$opt['t'] = (int)self::$opt['t'];
-                if (0 < self::$opt['t']) self::$try = self::$opt['t'];
+                if (0 < self::$opt['t']) self::$opt_try = self::$opt['t'];
             }
-            //Get wait option
-            if (isset(self::$opt['w'])) {
-                self::$output = true;
+            //Get "wait" option
+            if (isset(self::$opt['wait'])) {
+                self::$opt['wait'] = (int)self::$opt['wait'];
+                if (0 < self::$opt['wait']) self::$opt_wait = self::$opt['wait'];
+            } elseif (isset(self::$opt['w'])) {
                 self::$opt['w'] = (int)self::$opt['w'];
-                if (0 < self::$opt['w']) self::$wait = self::$opt['w'];
+                if (0 < self::$opt['w']) self::$opt_wait = self::$opt['w'];
             }
         }
     }
 
     /**
-     * Load CFG settings
+     * Load configurations
      */
     private static function load_cfg()
     {
         //Check CFG file
-        if (is_file(self::$cfg)) {
+        if (is_file(self::$opt_path)) {
             //Load File Controlling Module
             load_lib('core', 'ctrl_file');
             //Get CFG file content
-            $json = \ctrl_file::get_content(self::$cfg);
+            $json = \ctrl_file::get_content(self::$opt_path);
             if ('' !== $json) {
                 //Decode file content and map to CFG
                 $data = json_decode($json, true);
-                if (isset($data)) self::$setting = &$data;
+                if (isset($data)) self::$cli_cfg = &$data;
                 unset($data);
             }
             unset($json);
@@ -116,13 +118,13 @@ class ctrl_cli
     private static function build_var()
     {
         //Regroup request data
-        self::$var = ['cmd' => self::$opt['cmd']];
+        self::$var = ['cmd' => self::$opt_cmd];
         //Merge "map" data when exists
-        if (isset(self::$opt['map']) && false !== self::$opt['map'] && '' !== self::$opt['map']) self::$var['map'] = self::$opt['map'];
+        if ('' !== self::$opt_map) self::$var['map'] = self::$opt_map;
         //Process input data
-        if ('' !== self::$data) {
+        if ('' !== self::$opt_data) {
             //Parse HTTP query data
-            parse_str(self::$data, $data);
+            parse_str(self::$opt_data, $data);
             //Merge input data when exists
             if (!empty($data)) self::$var = array_merge(self::$var, $data);
             unset($data);
@@ -136,15 +138,28 @@ class ctrl_cli
     {
         //Check variables
         if (!empty(self::$var)) {
-            //Check specific language in CFG
-            if (isset(self::$setting[self::$var[0]])) {
+            //Check specific language in configurations
+            if (isset(self::$cli_cfg[self::$var[0]])) {
                 //Rebuild all commands
-                foreach (self::$var as $k => $v) if (isset(self::$setting[$v])) self::$var[$k] = self::$setting[$v];
+                foreach (self::$var as $k => $v) if (isset(self::$cli_cfg[$v])) self::$var[$k] = self::$cli_cfg[$v];
                 //Create command
-                self::$cmd = implode(' ', self::$var);
+                self::$cli_cmd = implode(' ', self::$var);
                 unset($k, $v);
             }
         }
+    }
+
+    /**
+     * Save logs
+     *
+     * @param array $data
+     */
+    private static function save_log(array $data)
+    {
+        $logs = array_merge(['time' => date('Y-m-d H:i:s', time())], $data);
+        foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
+        \ctrl_file::append_content(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL);
+        unset($data, $logs, $key, $value);
     }
 
     /**
@@ -161,17 +176,17 @@ class ctrl_cli
         //Get the resource
         $resource = current($stream);
         //Keep checking the stat of stream
-        while ($try < self::$try) {
+        while ($try < self::$opt_try) {
             //Get the stat of stream
             $stat = fstat($resource);
             //Check the stat of stream
             if (false !== $stat && 0 < $stat['size']) {
-                //Get trimmed content
+                //Get trimmed stream content
                 $result = trim(stream_get_contents($resource));
                 break;
             } else {
                 //Wait for process
-                usleep(self::$wait);
+                usleep(self::$opt_wait);
                 ++$try;
             }
         }
@@ -181,80 +196,80 @@ class ctrl_cli
     }
 
     /**
-     * Get Logs
-     *
-     * @param string $level
-     * @param array $data
-     *
+     * Call Internal API
      * @return array
      */
-    private static function get_logs(string $level, array $data): array
+    private static function call_api(): array
     {
-        $logs = [date('Y-m-d H:i:s', time())];
-        switch ($level) {
-            //Log cmd
-            case 'cmd':
-                $logs[] = 'CMD: ' . self::$cmd;
-                break;
-            //Log err
-            case 'err':
-                $logs[] = 'CMD: ' . self::$cmd;
-                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NONE!';
-                break;
-            //Log all
-            case 'all':
-                $logs[] = 'CMD: ' . self::$cmd;
-                $logs[] = '' !== $data['IN'] ? 'IN:  ' . $data['IN'] : 'IN:  NONE!';
-                $logs[] = '' !== $data['OUT'] ? 'OUT: ' . $data['OUT'] : 'OUT: NONE!';
-                $logs[] = '' !== $data['ERR'] ? 'ERR: ' . $data['ERR'] : 'ERR: NONE!';
-                break;
-            //No detailed logs
-            default:
-                break;
+        $result = [];
+        //Load Data Controlling Module
+        load_lib('core', 'data_pool');
+        //Pass data to Data Controlling Module
+        \data_pool::$cli = self::$var;
+        //Start data_pool process
+        \data_pool::start();
+        //Get API Result
+        $data = \data_pool::$pool;
+        //Save logs
+        if (self::$opt_log) {
+            $logs = ['cmd' => self::$opt_cmd];
+            $logs['map'] = self::$opt_map;
+            $logs['data'] = self::$opt_data;
+            $logs['result'] = &$data;
+            self::save_log($logs);
+            unset($logs);
         }
-        unset($level, $data);
-        return $logs;
+        //Build results
+        if ('' !== self::$opt_get) {
+            if (false !== strpos(self::$opt_get, 'cmd')) $result['cmd'] = self::$opt_cmd;
+            if (false !== strpos(self::$opt_get, 'map')) $result['map'] = self::$opt_map;
+            if (false !== strpos(self::$opt_get, 'data')) $result['data'] = self::$opt_data;
+            if (false !== strpos(self::$opt_get, 'result')) $result['result'] = &$data;
+        }
+        unset($data);
+        return $result;
     }
 
     /**
-     * Run external process
+     * Run External Process
      *
      * @return array
      */
     private static function run_exec(): array
     {
         //Check command
-        if ('' !== self::$cmd) {
+        if ('' !== self::$cli_cmd) {
             //Run process
-            $process = proc_open(self::$cmd, self::setting, $pipes, CLI_WORK_PATH);
+            $process = proc_open(self::$cli_cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, CLI_WORK_PATH);
             //Parse process data
             if (is_resource($process)) {
                 //Process input data
-                if ('' !== self::$data) fwrite($pipes[0], self::$data . PHP_EOL);
-                //Build detailed STDIO data when needed
-                if (self::$output || '' !== self::$debug || '' !== self::$log) {
-                    //Add input data
-                    $data = ['IN' => self::$data];
-                    //Process STDOUT/STDERR data
-                    $data['OUT'] = self::get_stream([$pipes[1]]);
-                    $data['ERR'] = self::get_stream([$pipes[2]]);
-                    //Process debug and log
-                    if ('' !== self::$debug) fwrite(STDOUT, PHP_EOL . implode(PHP_EOL, self::get_logs(self::$debug, $data)) . PHP_EOL);
-                    if ('' !== self::$log) \ctrl_file::append_content(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, self::get_logs(self::$log, $data)) . PHP_EOL);
-                    //Save output data when needed
-                    $output = self::$output ? ['data' => &$data['OUT'], 'error' => &$data['ERR']] : ['data' => 'NOT Requested!', 'error' => 'NOT Requested!'];
-                    unset($data);
-                } else $output = ['data' => 'NOT Requested!', 'error' => 'NOT Requested!'];
+                if ('' !== self::$opt_data) fwrite($pipes[0], self::$opt_data . PHP_EOL);
+                //Build detailed results/logs
+                $result = $logs = [];
+                //Save logs
+                if (self::$opt_log) {
+                    $logs['cmd'] = self::$cli_cmd;
+                    $logs['data'] = self::$opt_data;
+                    $logs['error'] = self::get_stream([$pipes[2]]);
+                    $logs['result'] = self::get_stream([$pipes[1]]);
+                    self::save_log($logs);
+                }
+                //Build results
+                if ('' !== self::$opt_get) {
+                    if (false !== strpos(self::$opt_get, 'cmd')) $result['cmd'] = self::$cli_cmd;
+                    if (false !== strpos(self::$opt_get, 'data')) $result['data'] = self::$opt_data;
+                    if (false !== strpos(self::$opt_get, 'error')) $result['error'] = $logs['error'] ?? self::get_stream([$pipes[2]]);
+                    if (false !== strpos(self::$opt_get, 'result')) $result['result'] = $logs['result'] ?? self::get_stream([$pipes[1]]);
+                }
                 //Close all pipes
                 foreach ($pipes as $pipe) fclose($pipe);
-                //Close process
-                $result['code'] = proc_close($process);
-                //Merge result
-                $result = array_merge($result, $output);
-                unset($pipe, $output);
-            } else $result = ['code' => -2, 'error' => 'Process ERROR!'];
+                //Close Process
+                proc_close($process);
+                unset($logs, $pipe);
+            } else $result = ['error' => 'Process ERROR!'];
             unset($process, $pipes);
-        } else $result = ['code' => -1, 'error' => 'Command ERROR!'];
+        } else $result = ['error' => 'Command ERROR!'];
         return $result;
     }
 
@@ -268,18 +283,12 @@ class ctrl_cli
         //Parse options
         self::load_opt();
         //Detect CLI Mode
-        if (isset(self::$opt['cmd']) && false !== self::$opt['cmd'] && '' !== self::$opt['cmd']) {
+        if ('' !== self::$opt_cmd) {
             //Internal Mode
             //Build internal var
             self::build_var();
-            //Load Data Controlling Module
-            load_lib('core', 'data_pool');
-            //Pass data to Data Controlling Module
-            \data_pool::$cli = self::$var;
-            //Start data_pool process
-            \data_pool::start();
-            //Get raw result
-            return \data_pool::$pool;
+            //Call API
+            return self::call_api();
         } else {
             //External Mode
             //Load CFG setting
