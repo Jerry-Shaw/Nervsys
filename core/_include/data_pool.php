@@ -272,7 +272,7 @@ class data_pool
                         }
                     }
                 }
-            } catch (\Throwable | \Exception $exception) {
+            } catch (\Throwable $exception) {
                 //Save the Exception or Error Message to the result data pool instead
                 self::$pool[$module . '/' . $class . '/' . $method] = $exception->getMessage();
             }
