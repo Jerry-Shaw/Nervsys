@@ -43,7 +43,7 @@ class data_key
     public static function start()
     {
         //Get HTTP HOST and HTTP ORIGIN ready for Cross-Domain permission detection
-        $Server_HOST = isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'] ? 'https' : 'http' . '://' . $_SERVER['HTTP_HOST'];
+        $Server_HOST = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'] ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
         $Origin_HOST = $_SERVER['HTTP_ORIGIN'] ?? $Server_HOST;
         //Process HTTP requests
         if ('OPTIONS' !== $_SERVER['REQUEST_METHOD']) {
