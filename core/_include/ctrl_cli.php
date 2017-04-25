@@ -156,6 +156,8 @@ class ctrl_cli
      */
     private static function save_log(array $data)
     {
+        //Load File Controlling Module
+        load_lib('core', 'ctrl_file');
         $logs = array_merge(['time' => date('Y-m-d H:i:s', time())], $data);
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
         \ctrl_file::append_content(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL);
