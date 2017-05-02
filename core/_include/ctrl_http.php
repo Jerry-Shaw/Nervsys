@@ -29,42 +29,166 @@ class ctrl_http
     //Request URL
     public static $url = '';
 
-
-    public static $cookie = '';
+    //Access Key
     public static $key = '';
-    public static $data = '';
-    public static $method = '';
-    public static $protocol = '';
-    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys Data API 1.0.0; Permission Granted by NervSys Data Center)';
 
+    //Protocol Version
+    public static $ver = '2.0';
 
+    //Request Data
+    public static $data = [];
+
+    //File Path
+    public static $file = [];
+
+    //ETag
+    public static $ETag = '';
+
+    //Cookie
+    public static $cookie = '';
+
+    //Last-Modified
+    public static $Modified = '';
+
+    //SSL KEY
+    public static $ssl_key = '';
+
+    //SSL CERT
+    public static $ssl_cert = '';
+
+    //Return with body
+    public static $with_body = true;
+
+    //Return with header
+    public static $with_header = false;
+
+    //HTTP Accept
+    public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
+
+    //User-Agent
+    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys Data API 2.0.0; Granted by NervSys Data Center)';
+
+    //URL unit
+    private static $unit = [];
+
+    //HTTP Header
+    private static $header = [];
+
+    //Request Method
+    private static $method = 'GET';
+
+    /**
+     * Prepare HTTP Request
+     */
     public static function init()
     {
-        //Process URL
-
-
-        $url_parts = parse_url(self::$url);
-
-
+        if ('' !== self::$url) {
+            $unit = parse_url(self::$url);
+            if (false !== $unit && isset($unit['scheme']) && isset($unit['host'])) {
+                //Prepare URL unit
+                if (!isset($unit['path'])) $unit['path'] = '/';
+                $unit['query'] = !isset($unit['query']) ? '' : '?' . $unit['query'];
+                if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+                self::$unit = &$unit;
+                //Prepare HTTP Method
+                if (!empty(self::$data) || !empty(self::$file)) self::$method = 'POST';
+                //Prepare HTTP Header
+                $header = [];
+                $header[] = self::$method . ' ' . $unit['path'] . $unit['query'] . ' HTTP/' . self::$ver;
+                $header[] = 'Host: ' . $unit['host'] . ':' . $unit['port'];
+                $header[] = 'Accept: ' . self::$accept;
+                $header[] = 'Accept-Charset: UTF-8,*;q=0';
+                $header[] = 'Accept-Encoding: identity,*;q=0';
+                $header[] = 'Accept-Language: en-US,en,zh-CN,zh,*;q=0';
+                $header[] = 'Connection: keep-alive';
+                $header[] = 'User-Agent: ' . self::$user_agent;
+                if ('' !== self::$key) $header[] = 'KEY: ' . self::$key;
+                if ('' !== self::$cookie) $header[] = 'Cookie: ' . self::$cookie;
+                if ('' !== self::$Modified) $header[] = 'If-Modified-Since: ' . self::$Modified;
+                if ('' !== self::$ETag) $header[] = 'If-None-Match: ' . self::$ETag;
+                self::$header = &$header;
+                unset($header);
+            } else self::$url = '';
+            unset($unit);
+        }
     }
 
-
-    public static function get()
+    /**
+     * Run CURL
+     *
+     * @return string
+     */
+    public static function request(): string
     {
-
+        if ('' !== self::$url) {
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, self::$url);
+            curl_setopt($curl, CURLOPT_PORT, self::$unit['port']);
+            curl_setopt($curl, CURLOPT_TIMEOUT, 60);
+            curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
+            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($curl, CURLOPT_AUTOREFERER, true);
+            curl_setopt($curl, CURLOPT_COOKIESESSION, true);
+            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curl, CURLOPT_HTTPHEADER, self::$header);
+            curl_setopt($curl, CURLOPT_USERAGENT, self::$user_agent);
+            curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
+            if (!self::$with_body) curl_setopt($curl, CURLOPT_NOBODY, true);
+            if (self::$with_header) curl_setopt($curl, CURLOPT_HEADER, true);
+            if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
+            if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT,  self::$ssl_cert);
+            if ('POST' === self::$method) {
+                curl_setopt($curl, CURLOPT_POST, true);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query(self::$data));
+            }
+            $response = curl_exec($curl);
+            curl_close($curl);
+            unset($curl);
+        } else $response = '';
+        return (string)$response;
     }
 
-
-    public static function post()
-    {
-
-    }
-
-
+    /**
+     * Run CURLFile
+     *
+     * @return string
+     */
     public static function upload()
     {
-
+        if ('' !== self::$url && !empty(self::$file)) {
+            $files = [];
+            foreach (self::$file as $key => $item) if (is_file($item)) $files[$key] = new \CURLFile($item);
+            if (!empty($files)) {
+                self::$data = array_merge(self::$data, $files);
+                self::$header = 'Content-Type: multipart/form-data';
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_URL, self::$url);
+                curl_setopt($curl, CURLOPT_PORT, self::$unit['port']);
+                curl_setopt($curl, CURLOPT_TIMEOUT, 60);
+                curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($curl, CURLOPT_AUTOREFERER, true);
+                curl_setopt($curl, CURLOPT_COOKIESESSION, true);
+                curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curl, CURLOPT_HTTPHEADER, self::$header);
+                curl_setopt($curl, CURLOPT_USERAGENT, self::$user_agent);
+                curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
+                if (!self::$with_body) curl_setopt($curl, CURLOPT_NOBODY, true);
+                if (self::$with_header) curl_setopt($curl, CURLOPT_HEADER, true);
+                if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
+                if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT,  self::$ssl_cert);
+                curl_setopt($curl, CURLOPT_POST, true);
+                curl_setopt($curl, CURLOPT_POSTFIELDS, self::$data);
+                $response = curl_exec($curl);
+                curl_close($curl);
+                unset($curl);
+            } else $response = '';
+            unset($files, $key, $item);
+        } else $response = '';
+        return (string)$response;
     }
-
-
 }

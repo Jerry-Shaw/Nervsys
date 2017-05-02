@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Access-Key Module
+ * KEY Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -36,7 +36,7 @@ class data_key
     public static $online = false;
 
     /**
-     * Map all the SESSION/Access-Key data to a static variable
+     * Map all the SESSION/KEY data to a static variable
      * Get the online status by checking the online tags
      * Grant permission for Cross-Domain request
      */
@@ -63,7 +63,7 @@ class data_key
                     break;
                 //For third party requests
                 case 'REMOTE':
-                    if (isset($_SERVER['HTTP_ACCESS_KEY'])) self::map_key();
+                    if (isset($_SERVER['HTTP_KEY'])) self::map_key();
                     break;
                 //Auto Detect
                 default:
@@ -74,39 +74,39 @@ class data_key
                         self::$client = false !== $referer && isset($referer['scheme']) && isset($referer['host']) && $Server_HOST === $referer['scheme'] . '://' . $referer['host'] . (!isset($referer['port']) || 80 === $referer['port'] ? '' : ':' . $referer['port']) ? self::chk_cookie() : 'REMOTE';
                         unset($referer);
                     } else self::$client = 'REMOTE';
-                    //Process Access-Key
+                    //Process KEY
                     if ('LOCAL' === self::$client) {
-                        //Extract data from SESSION or Access-Key
+                        //Extract data from SESSION or KEY
                         if (!empty($_SESSION)) self::map_sess();
-                        elseif (isset($_SERVER['HTTP_ACCESS_KEY'])) self::map_key();
-                    } elseif ('REMOTE' === self::$client && isset($_SERVER['HTTP_ACCESS_KEY'])) {
-                        //Extract data from Access-Key
+                        elseif (isset($_SERVER['HTTP_KEY'])) self::map_key();
+                    } elseif ('REMOTE' === self::$client && isset($_SERVER['HTTP_KEY'])) {
+                        //Extract data from KEY
                         self::map_key();
-                        //Check Access-Key content
+                        //Check KEY content
                         if (!empty(self::$key)) {
                             //Check Cross-Domain request permission for Javascript
                             if (isset(self::$key['JS-DEV']) && 'on' === self::$key['JS-DEV']) {
-                                //Provide Cross-Domain permission support for correct Access-Key request
+                                //Provide Cross-Domain permission support for correct KEY request
                                 header('Access-Control-Allow-Origin: ' . $Origin_HOST);
                                 header('Access-Control-Allow-Methods: GET, POST');
-                                header('Access-Control-Allow-Headers: Access-Key');
+                                header('Access-Control-Allow-Headers: KEY');
                             } else {
-                                //Remove Cross-Domain permission support when the Access-Key is incorrect
+                                //Remove Cross-Domain permission support when the KEY is incorrect
                                 header('Access-Control-Allow-Origin: ' . $Server_HOST);
                                 header('Access-Control-Allow-Methods: GET, POST');
                                 header('Access-Control-Allow-Headers: Accept');
                             }
-                        } else exit;//Exit running if Access-Key content is empty
+                        } else exit;//Exit running if KEY content is empty
                     }
                     break;
             }
             //Get the online status
             self::$online = self::chk_online();
         } else {
-            //Grant basic Cross-Domain request permission for HTTP OPTIONS Request and allow HTTP Header "Access-Key"
+            //Grant basic Cross-Domain request permission for HTTP OPTIONS Request and allow HTTP Header "KEY"
             header('Access-Control-Allow-Origin: ' . $Origin_HOST);
             header('Access-Control-Allow-Methods: OPTIONS');
-            header('Access-Control-Allow-Headers: Access-Key');
+            header('Access-Control-Allow-Headers: KEY');
             //Exit running after basic Cross-Domain request permission was granted
             exit;
         }
@@ -114,8 +114,8 @@ class data_key
     }
 
     /**
-     * Renew Access-Key to a new timestamp, or, make it expired by passing a passed timestamp
-     * Return new Access-Key content after renewing
+     * Renew KEY to a new timestamp, or, make it expired by passing a passed timestamp
+     * Return new KEY content after renewing
      *
      * @param int $ExpireAt
      *
@@ -140,8 +140,8 @@ class data_key
     }
 
     /**
-     * Add a key => value pair to Access-Key
-     * Return new Access-Key content after adding
+     * Add a key => value pair to KEY
+     * Return new KEY content after adding
      *
      * @param string $key
      * @param string $value
@@ -161,8 +161,8 @@ class data_key
     }
 
     /**
-     * Remove a/all content value from Access-Key
-     * Return new Access-Key content after removing
+     * Remove a/all content value from KEY
+     * Return new KEY content after removing
      *
      * @param string $key
      *
@@ -185,7 +185,7 @@ class data_key
     }
 
     /**
-     * Get Access-Key encrypted content
+     * Get KEY encrypted content
      * @return string
      */
     private static function get_key(): string
@@ -194,12 +194,12 @@ class data_key
     }
 
     /**
-     * Map Access-Key content to key
+     * Map KEY content to key
      */
     private static function map_key()
     {
         self::$client = 'REMOTE';
-        $content = \user_crypt::validate_key($_SERVER['HTTP_ACCESS_KEY']);
+        $content = \user_crypt::validate_key($_SERVER['HTTP_KEY']);
         if (!empty($content) && isset($content['ExpireAt']) && time() < $content['ExpireAt']) self::$key = &$content;
         unset($content);
     }
@@ -226,7 +226,7 @@ class data_key
     }
 
     /**
-     * Get the online status by checking the online tags in Access-Key
+     * Get the online status by checking the online tags in KEY
      */
     private static function chk_online(): bool
     {
