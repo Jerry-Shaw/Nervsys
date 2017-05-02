@@ -1,7 +1,7 @@
 <?php
 
 /**
- * File Upload Controlling Module
+ * File Upload Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -101,7 +101,7 @@ class ctrl_upload
                             $url_path = $save_path . $file_name . '.' . $file_ext;//Get URL path
                             $file_path = FILE_PATH . $url_path;//Get real upload path
                             if (is_file($file_path)) unlink($file_path);//Delete the file if existing
-                            $save_file = \ctrl_file::put_content($file_path, $img_data);//Write to file
+                            $save_file = (int)file_put_contents($file_path, $img_data);//Write to file
                             if (0 < $save_file) {//Done
                                 $result = \ctrl_error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url_path;

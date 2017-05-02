@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Error Controlling Module
+ * Error Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -42,8 +42,7 @@ class ctrl_error
      */
     public static function load(string $module, string $file)
     {
-        load_lib('core', 'ctrl_file');
-        $json = \ctrl_file::get_content(ROOT . '/' . $module . '/_error/' . $file . '.json');
+        $json = (string)file_get_contents(ROOT . '/' . $module . '/_error/' . $file . '.json');
         if ('' !== $json) {
             $error = json_decode($json, true);
             if (isset($error)) {
@@ -82,7 +81,7 @@ class ctrl_error
         if (ERROR_LANG) load_lib('core', 'ctrl_language');
         $error_files = \ctrl_file::get_list(ROOT, '/_error/*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $error_file) {
-            $json = \ctrl_file::get_content($error_file);
+            $json = (string)file_get_contents($error_file);
             if ('' !== $json) {
                 $error = json_decode($json, true);
                 if (isset($error)) {

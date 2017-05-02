@@ -1,7 +1,7 @@
 <?php
 
 /**
- * HTML Page Section Controlling Module
+ * HTML Page Section Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 彼岸花开 <330931138@qq.com>

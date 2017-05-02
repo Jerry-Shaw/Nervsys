@@ -38,12 +38,12 @@ header('Content-Type:text/html; charset=utf-8');
 define('ROOT', substr(__DIR__, 0, -14));
 
 //Enable/Disable HTTP GET Method
-define('ENABLE_GET', false);
+define('ENABLE_GET', true);
 
 //Enable/Disable API Safe Zone
 define('SECURE_API', true);
 
-//Enable/Disable Language Module for Error Controlling Module
+//Enable/Disable Language Module for Error Module
 define('ERROR_LANG', true);
 
 //Define the path containing Encrypt/Decrypt module

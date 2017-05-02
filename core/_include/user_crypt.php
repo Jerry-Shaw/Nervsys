@@ -89,15 +89,15 @@ class user_crypt
     /**
      * Check and extract all the data from a key
      *
-     * @param string $access_key
+     * @param string $key
      *
      * @return array
      */
-    public static function validate_key(string $access_key): array
+    public static function validate_key(string $key): array
     {
-        $access_key = self::decode($access_key);
-        $key_data = json_decode($access_key, true);
-        unset($access_key);
+        $key = self::decode($key);
+        $key_data = json_decode($key, true);
+        unset($key);
         return $key_data ?? [];
     }
 }

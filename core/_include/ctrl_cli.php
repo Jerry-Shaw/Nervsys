@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CLI Controlling Module
+ * CLI Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -100,10 +100,8 @@ class ctrl_cli
     {
         //Check CFG file
         if (is_file(self::$opt_path)) {
-            //Load File Controlling Module
-            load_lib('core', 'ctrl_file');
             //Get CFG file content
-            $json = \ctrl_file::get_content(self::$opt_path);
+            $json = (string)file_get_contents(self::$opt_path);
             if ('' !== $json) {
                 //Decode file content and map to CFG
                 $data = json_decode($json, true);
@@ -158,11 +156,9 @@ class ctrl_cli
      */
     private static function save_log(array $data)
     {
-        //Load File Controlling Module
-        load_lib('core', 'ctrl_file');
         $logs = array_merge(['time' => date('Y-m-d H:i:s', time())], $data);
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
-        \ctrl_file::append_content(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL);
+        file_put_contents(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
         unset($data, $logs, $key, $value);
     }
 
@@ -206,9 +202,9 @@ class ctrl_cli
     private static function call_api(): array
     {
         $result = [];
-        //Load Data Controlling Module
+        //Load Data Module
         load_lib('core', 'data_pool');
-        //Pass data to Data Controlling Module
+        //Pass data to Data Module
         \data_pool::$cli = self::$var;
         //Start data_pool process
         \data_pool::start();
