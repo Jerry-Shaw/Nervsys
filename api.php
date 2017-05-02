@@ -59,7 +59,7 @@ if ('cli' !== PHP_SAPI) {
     //Code Block for CLI Mode
     //Force output content to UTF-8 formatted plain text
     header('Content-Type: text/plain; charset=UTF-8');
-    //Load CLI Controlling Module
+    //Load CLI Module
     load_lib('core', 'ctrl_cli');
     //Pass options
     \ctrl_cli::$opt = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);

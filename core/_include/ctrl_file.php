@@ -1,7 +1,7 @@
 <?php
 
 /**
- * File I/O Controlling Module
+ * File I/O Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -28,65 +28,6 @@
  */
 class ctrl_file
 {
-    /**
-     * Get the content from a file
-     *
-     * @param string $file
-     *
-     * @return string
-     */
-    public static function get_content(string $file): string
-    {
-        $handle = fopen($file, 'rb');
-        if (false !== $handle) {
-            $file_size = filesize($file);
-            if (false !== $file_size && 0 < $file_size) {
-                $content = fread($handle, $file_size);
-                if (false === $content) $content = file_get_contents($file);
-            } else $content = '';
-            fclose($handle);
-            unset($file_size);
-        } else $content = '';
-        unset($file, $handle);
-        return (string)$content;
-    }
-
-    /**
-     * Put the content to a file
-     *
-     * @param string $file
-     * @param string $data
-     *
-     * @return int
-     */
-    public static function put_content(string $file, string $data): int
-    {
-        $handle = fopen($file, 'wb');
-        $result = false !== $handle ? fwrite($handle, $data) : false;
-        fclose($handle);
-        if (false === $result) $result = file_put_contents($file, $data);
-        unset($file, $data, $handle);
-        return (int)$result;
-    }
-
-    /**
-     * Append the content to a file
-     *
-     * @param string $file
-     * @param string $data
-     *
-     * @return int
-     */
-    public static function append_content(string $file, string $data): int
-    {
-        $handle = fopen($file, 'ab');
-        $result = false !== $handle ? fwrite($handle, $data) : false;
-        fclose($handle);
-        if (false === $result) $result = file_put_contents($file, $data, FILE_APPEND);
-        unset($file, $data, $handle);
-        return (int)$result;
-    }
-
     /**
      * Get the extension of a file
      *

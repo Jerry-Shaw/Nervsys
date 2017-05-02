@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Data Controlling Module
+ * Data Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -55,7 +55,7 @@ class data_pool
     private static $struct = [];
 
     /**
-     * Initial Data Controlling Module
+     * Initial Data Module
      * Only static methods are supported
      */
     public static function start()

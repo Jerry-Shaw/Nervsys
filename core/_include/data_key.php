@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Access-Key Controlling Module
+ * Access-Key Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
