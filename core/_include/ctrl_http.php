@@ -26,11 +26,12 @@
  */
 class ctrl_http
 {
-
+    //Request URL
     public static $url = '';
 
+
     public static $cookie = '';
-    public static $access_key = '';
+    public static $key = '';
     public static $data = '';
     public static $method = '';
     public static $protocol = '';
@@ -39,6 +40,11 @@ class ctrl_http
 
     public static function init()
     {
+        //Process URL
+
+
+        $url_parts = parse_url(self::$url);
+
 
     }
 

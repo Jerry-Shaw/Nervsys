@@ -207,11 +207,11 @@ function get_client_info(): array
  *
  * @param string $url
  * @param array $data
- * @param string $access_key
+ * @param string $key
  *
  * @return string
  */
-function curl_request(string $url, array $data = [], string $access_key = ''): string
+function curl_request(string $url, array $data = [], string $key = ''): string
 {
     $url_parts = parse_url($url);
     if (false !== $url_parts && isset($url_parts['scheme']) && isset($url_parts['host'])) {
@@ -229,7 +229,7 @@ function curl_request(string $url, array $data = [], string $access_key = ''): s
         $request[] = 'Accept-Language: en-US,en,zh-CN,zh,*;q=0';
         $request[] = 'Connection: keep-alive';
         $request[] = 'User-Agent: ' . $user_agent;
-        if ('' !== $access_key) $request[] = 'Access-Key: ' . $access_key;
+        if ('' !== $key) $request[] = 'KEY: ' . $key;
         //Initial cURL request
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_AUTOREFERER, true);
@@ -250,6 +250,6 @@ function curl_request(string $url, array $data = [], string $access_key = ''): s
         curl_close($curl);
         unset($method, $user_agent, $request, $curl);
     } else $response = '';
-    unset($url, $data, $access_key, $url_parts);
+    unset($url, $data, $key, $url_parts);
     return (string)$response;
 }

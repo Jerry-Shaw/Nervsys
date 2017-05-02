@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function AJAX(object) {
     var url = object.url || API;
     var data = object.data || null;
-    var access_key = object.key || null;
+    var key = object.key || null;
     var callback = object.callback || null;
     var dataType = object.dataType || 'json';
     var type = object.type ? object.type : (data ? 'POST' : 'GET');
@@ -99,7 +99,7 @@ function AJAX(object) {
 
         HttpRequest.open(type, url, true);
 
-        if (null !== access_key) HttpRequest.setRequestHeader('Access-Key', access_key);
+        if (null !== key) HttpRequest.setRequestHeader('KEY', key);
         if ('POST' === type) HttpRequest.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
         HttpRequest.onreadystatechange = function () {

@@ -12,7 +12,7 @@ We need designers, web builders, programmers of all languages, and those who hav
 
 Notice: No more pages and functions are there, except "Sign Up", "Sign In", "Reset PWD" and few functions in user's panel after login.
 
-You can sign your own Access-Key after login and go here "https://dev.oobase.com/panel/?action=access_key"
+You can sign your own KEY after login and go here "https://dev.oobase.com/panel/?action=access_key"
 
 You can develop your own modules offline for ooBase or make fully functional pages according to the simple API Document.
 We could be very grateful for you if you donate your modules to ooBase.
