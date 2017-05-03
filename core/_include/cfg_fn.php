@@ -71,7 +71,7 @@ function load_api(string $module, string $library, string $method): array
             if ($reflect->isPublic() && $reflect->isStatic()) {
                 try {
                     $result['data'] = $class::$method();
-                } catch (\Throwable | \Exception $exception) {
+                } catch (\Throwable $exception) {
                     $result['data'] = $exception->getMessage();
                 }
             }
