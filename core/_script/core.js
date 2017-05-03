@@ -47,8 +47,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function AJAX(object) {
     var url = object.url || API;
-    var data = object.data || null;
     var key = object.key || null;
+    var data = object.data || null;
     var callback = object.callback || null;
     var dataType = object.dataType || 'json';
     var type = object.type ? object.type : (data ? 'POST' : 'GET');
