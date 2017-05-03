@@ -62,5 +62,5 @@ msgstr "Security"
 msgid "menu_module"
 msgstr "Modules"
 
-msgid "menu_access_key"
+msgid "menu_key"
 msgstr "Access Key"

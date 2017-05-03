@@ -62,5 +62,5 @@ msgstr "账号安全"
 msgid "menu_module"
 msgstr "底层模块"
 
-msgid "menu_access_key"
+msgid "menu_key"
 msgstr "开发者密钥"
