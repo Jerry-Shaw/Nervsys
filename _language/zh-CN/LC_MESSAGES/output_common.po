@@ -41,8 +41,8 @@ msgstr "感谢那些在这里贡献出力量的人们，不管是过去，现在
 msgid "menu_panel"
 msgstr "面板"
 
-msgid "menu_message"
-msgstr "消息"
+msgid "menu_alert"
+msgstr "提醒"
 
 msgid "menu_petition"
 msgstr "我的请愿"

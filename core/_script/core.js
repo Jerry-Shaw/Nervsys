@@ -310,8 +310,8 @@ function keep_alive() {
                     if (null !== user_head) user_head.src = data['user/user_acc/key_detail']['head'];
                     var sign_in = document.getElementById('sign_in');
                     if (null !== sign_in) {
-                        sign_in.href = data['user/user_output/get_user_menu']['message']['url'];
-                        sign_in.innerText = data['user/user_output/get_user_menu']['message']['text'];
+                        sign_in.href = data['user/user_output/get_user_menu']['alert']['url'];
+                        sign_in.innerText = data['user/user_output/get_user_menu']['alert']['text'];
                     }
                     var sign_up = document.getElementById('sign_up');
                     if (null !== sign_up) {

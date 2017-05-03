@@ -155,7 +155,7 @@ class ctrl_http
      *
      * @return string
      */
-    public static function upload()
+    public static function upload(): string
     {
         if ('' !== self::$url && !empty(self::$file)) {
             $files = [];
