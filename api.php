@@ -30,7 +30,7 @@
  * Authentication is recommended for security before running "data_pool::start()".
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 //Load CFG file (basic function script is loaded in the cfg file as also).
 require __DIR__ . '/core/_include/cfg.php';

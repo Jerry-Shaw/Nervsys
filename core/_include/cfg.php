@@ -55,6 +55,9 @@ define('ONLINE_TAGS', ['uuid', 'char']);
 //Define Available languages
 define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 
+//Define Crypt KEY Path
+define('KEY_PATH', 'E:/Sites/Keys/');
+
 //File Storage Server Settings
 define('FILE_PATH', 'E:/Sites/Files/');
 define('FILE_DOMAIN', 'https://file.oobase.com/');
@@ -81,7 +84,7 @@ define('Redis_PORT', 6379);
 define('Redis_DB', 0);
 define('Redis_AUTH', '');
 define('Redis_PERSISTENT', true);
-define('Redis_SESSION', true);
+define('Redis_SESSION', false);
 
 //SMTP Mail Settings
 define('SMTP_HOST', 'SMTP_HOST');
