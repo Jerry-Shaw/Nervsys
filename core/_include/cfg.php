@@ -46,8 +46,9 @@ define('SECURE_API', true);
 //Enable/Disable Language Module for Error Module
 define('ERROR_LANG', true);
 
-//Define the path containing Encrypt/Decrypt module
+//Define Encrypt/Decrypt module properties
 define('CRYPT_PATH', 'core');
+define('CRYPT_NAME', 'ctrl_key');
 
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);

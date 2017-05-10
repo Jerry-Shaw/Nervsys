@@ -45,7 +45,7 @@ class ctrl_http
     public static $ETag = '';
 
     //Cookie
-    public static $cookie = '';
+    public static $Cookie = '';
 
     //Last-Modified
     public static $Modified = '';
@@ -102,7 +102,7 @@ class ctrl_http
             $header[] = 'Connection: keep-alive';
             $header[] = 'User-Agent: ' . self::$user_agent;
             if ('' !== self::$key) $header[] = 'KEY: ' . self::$key;
-            if ('' !== self::$cookie) $header[] = 'Cookie: ' . self::$cookie;
+            if ('' !== self::$Cookie) $header[] = 'Cookie: ' . self::$Cookie;
             if ('' !== self::$Modified) $header[] = 'If-Modified-Since: ' . self::$Modified;
             if ('' !== self::$ETag) $header[] = 'If-None-Match: ' . self::$ETag;
             self::$header = &$header;
@@ -137,6 +137,7 @@ class ctrl_http
                 curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
                 if (!self::$with_body) curl_setopt($curl, CURLOPT_NOBODY, true);
                 if (self::$with_header) curl_setopt($curl, CURLOPT_HEADER, true);
+                if ('' !== self::$Cookie) curl_setopt($curl, CURLOPT_COOKIE, self::$Cookie);
                 if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
                 if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT,  self::$ssl_cert);
                 if ('POST' === self::$method) {
@@ -182,6 +183,7 @@ class ctrl_http
                     curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
                     if (!self::$with_body) curl_setopt($curl, CURLOPT_NOBODY, true);
                     if (self::$with_header) curl_setopt($curl, CURLOPT_HEADER, true);
+                    if ('' !== self::$Cookie) curl_setopt($curl, CURLOPT_COOKIE, self::$Cookie);
                     if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
                     if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT,  self::$ssl_cert);
                     curl_setopt($curl, CURLOPT_POST, true);

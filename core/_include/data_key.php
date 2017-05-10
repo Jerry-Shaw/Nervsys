@@ -190,7 +190,7 @@ class data_key
      */
     private static function get_key(): string
     {
-        return !empty(self::$key) ? \user_crypt::create_key(self::$key) : '';
+        return !empty(self::$key) ? \data_crypt::create_key(self::$key) : '';
     }
 
     /**
@@ -199,7 +199,7 @@ class data_key
     private static function map_key()
     {
         self::$client = 'REMOTE';
-        $content = \user_crypt::validate_key($_SERVER['HTTP_KEY']);
+        $content = \data_crypt::validate_key($_SERVER['HTTP_KEY']);
         if (!empty($content) && isset($content['ExpireAt']) && time() < $content['ExpireAt']) self::$key = &$content;
         unset($content);
     }

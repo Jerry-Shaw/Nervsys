@@ -26,31 +26,115 @@
  */
 class data_crypt
 {
+    //Crypt methods
+    const method = ['AES-256-CTR', 'CAMELLIA-256-CFB'];
 
+    /**
+     * Encrypt
+     *
+     * @param string $string
+     * @param array $keys
+     *
+     * @return string
+     */
+    public static function encode(string $string, array $keys): string
+    {
+        $string = openssl_encrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
+        if (false === $string) $string = '';
+        unset($keys);
+        return $string;
+    }
 
-    //对方提供密钥和加密方式，本地生成uuid绑定返回数据
+    /**
+     * Decrypt
+     *
+     * @param string $string
+     * @param array $keys
+     *
+     * @return string
+     */
+    public static function decode(string $string, array $keys): string
+    {
+        $string = openssl_decrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
+        if (false === $string) $string = '';
+        unset($keys);
+        return $string;
+    }
 
+    /**
+     * Hash Password
+     *
+     * @param string $string
+     * @param string $codes
+     *
+     * @return string
+     */
+    public static function hash_pwd(string $string, string $codes): string
+    {
+        $noises = str_split($codes, 16);
+        $string = 0 === ord(substr($codes, 0, 1)) & 1 ? $noises[0] . ':' . $string . ':' . $noises[2] : $noises[1] . ':' . $string . ':' . $noises[3];
+        $string = substr(hash('sha1', $string), 4, 32);
+        unset($codes, $noises);
+        return $string;
+    }
 
-    const method = [
-        'AES-128-CBC',
-        'AES-128-CFB',
-        'AES-128-CFB1',
-        'AES-128-CFB8',
-        'AES-128-ECB',
-        'AES-128-OFB',
-        'AES-192-CBC',
-        'AES-192-CFB',
-        'AES-192-CFB1',
-        'AES-192-CFB8',
-        'AES-192-ECB',
-        'AES-192-OFB',
-        'AES-256-CBC',
-        'AES-256-CFB',
-        'AES-256-CFB1',
-        'AES-256-CFB8',
-        'AES-256-ECB',
-        'AES-256-OFB'
-    ];
+    /**
+     * Check Password
+     *
+     * @param string $input
+     * @param string $codes
+     * @param string $hash
+     *
+     * @return bool
+     */
+    public static function check_pwd(string $input, string $codes, string $hash): bool
+    {
+        $result = self::hash_pwd($input, $codes) === $hash ? true : false;
+        unset($input, $codes, $hash);
+        return $result;
+    }
 
+    /**
+     * Create encrypted content
+     *
+     * @param array $data
+     *
+     * @return string
+     */
+    public static function create_key(array $data): string
+    {
+        if (!empty($data)) {
+            load_lib(CRYPT_PATH, CRYPT_NAME);
+            $key = \CRYPT_NAME::get_key();
+            $keys = \CRYPT_NAME::get_keys($key);
+            $mixed = \CRYPT_NAME::mixed_key($key);
+            $signature = base64_encode($mixed) . '-' . self::encode(json_encode($data), $keys);
+            unset($key, $keys, $mixed);
+        } else $signature = '';
+        unset($data);
+        return $signature;
+    }
 
+    /**
+     * Get decrypted content
+     *
+     * @param string $signature
+     *
+     * @return array
+     */
+    public static function validate_key(string $signature): array
+    {
+        if (!empty($signature) && false !== strpos($signature, '-')) {
+            $codes = explode('-', $signature, 2);
+            $mixed = base64_decode($codes[0], true);
+            load_lib(CRYPT_PATH, CRYPT_NAME);
+            $key = \CRYPT_NAME::clear_key($mixed);
+            $keys = \CRYPT_NAME::get_keys($key);
+            $content = self::decode($codes[1], $keys);
+            $data = '' !== $content ? json_decode($content, true) : [];
+            unset($codes, $mixed, $key, $keys, $content);
+        } else $data = [];
+        unset($signature);
+        return $data ?? [];
+    }
 }
