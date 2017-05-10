@@ -38,22 +38,26 @@ header('Content-Type:text/html; charset=utf-8');
 define('ROOT', substr(__DIR__, 0, -14));
 
 //Enable/Disable HTTP GET Method
-define('ENABLE_GET', false);
+define('ENABLE_GET', true);
 
 //Enable/Disable API Safe Zone
 define('SECURE_API', true);
 
-//Enable/Disable Language Module for Error Controlling Module
+//Enable/Disable Language Module for Error Module
 define('ERROR_LANG', true);
 
-//Define the path containing Encrypt/Decrypt module
+//Define Encrypt/Decrypt module properties
 define('CRYPT_PATH', 'core');
+define('CRYPT_NAME', 'ctrl_key');
 
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);
 
 //Define Available languages
 define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
+
+//Define Crypt KEY Path
+define('KEY_PATH', 'E:/Sites/Keys/');
 
 //File Storage Server Settings
 define('FILE_PATH', 'E:/Sites/Files/');
@@ -81,7 +85,7 @@ define('Redis_PORT', 6379);
 define('Redis_DB', 0);
 define('Redis_AUTH', '');
 define('Redis_PERSISTENT', true);
-define('Redis_SESSION', true);
+define('Redis_SESSION', false);
 
 //SMTP Mail Settings
 define('SMTP_HOST', 'SMTP_HOST');

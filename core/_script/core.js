@@ -47,8 +47,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function AJAX(object) {
     var url = object.url || API;
+    var key = object.key || null;
     var data = object.data || null;
-    var access_key = object.key || null;
     var callback = object.callback || null;
     var dataType = object.dataType || 'json';
     var type = object.type ? object.type : (data ? 'POST' : 'GET');
@@ -99,7 +99,7 @@ function AJAX(object) {
 
         HttpRequest.open(type, url, true);
 
-        if (null !== access_key) HttpRequest.setRequestHeader('Access-Key', access_key);
+        if (null !== key) HttpRequest.setRequestHeader('KEY', key);
         if ('POST' === type) HttpRequest.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
         HttpRequest.onreadystatechange = function () {
@@ -310,8 +310,8 @@ function keep_alive() {
                     if (null !== user_head) user_head.src = data['user/user_acc/key_detail']['head'];
                     var sign_in = document.getElementById('sign_in');
                     if (null !== sign_in) {
-                        sign_in.href = data['user/user_output/get_user_menu']['message']['url'];
-                        sign_in.innerText = data['user/user_output/get_user_menu']['message']['text'];
+                        sign_in.href = data['user/user_output/get_user_menu']['alert']['url'];
+                        sign_in.innerText = data['user/user_output/get_user_menu']['alert']['text'];
                     }
                     var sign_up = document.getElementById('sign_up');
                     if (null !== sign_up) {

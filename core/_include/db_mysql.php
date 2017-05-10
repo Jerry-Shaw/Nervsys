@@ -58,7 +58,7 @@ class db_mysql
             $dsn = 'mysql:host=' . $mysql_host . ';port=' . $mysql_port . ';dbname=' . $mysql_db . ';charset=' . $mysql_charset;
             $options = [
                 \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . $mysql_charset,
-                \PDO::ATTR_PERSISTENT => self::$mysql_persistent ?? MySQL_PERSISTENT
+                \PDO::ATTR_PERSISTENT         => self::$mysql_persistent ?? MySQL_PERSISTENT
             ];
             $db_mysql = new \PDO($dsn, $mysql_user, $mysql_pwd, $options);
             $db_mysql->exec('SET NAMES ' . $mysql_charset);

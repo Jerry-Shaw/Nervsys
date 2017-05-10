@@ -71,7 +71,7 @@ function load_api(string $module, string $library, string $method): array
             if ($reflect->isPublic() && $reflect->isStatic()) {
                 try {
                     $result['data'] = $class::$method();
-                } catch (\Throwable | \Exception $exception) {
+                } catch (\Throwable $exception) {
                     $result['data'] = $exception->getMessage();
                 }
             }
@@ -200,56 +200,4 @@ function get_client_info(): array
     $client_info = ['ip' => &$client_ip, 'lang' => &$client_lang, 'agent' => &$client_agent];
     unset($client_ip, $client_lang);
     return $client_info;
-}
-
-/**
- * GET the content of a url / POST some data to a url
- *
- * @param string $url
- * @param array $data
- * @param string $access_key
- *
- * @return string
- */
-function curl_request(string $url, array $data = [], string $access_key = ''): string
-{
-    $url_parts = parse_url($url);
-    if (false !== $url_parts && isset($url_parts['scheme']) && isset($url_parts['host'])) {
-        //Request Method (Depends on requested data)
-        $method = !empty($data) ? 'POST' : 'GET';
-        //Request User-Agent
-        $user_agent = 'Mozilla/5.0 (Compatible; NervSys Data API 1.0.0; Permission Granted by NervSys Data Center)';
-        //Format HTTP REQUEST Header
-        $request = [];
-        $request[] = $method . ' ' . $url_parts['path'] ?? '/' . !isset($url_parts['query']) ? '' : '?' . $url_parts['query'] . ' HTTP/1.1';
-        $request[] = 'Host: ' . $url_parts['host'] . !isset($url_parts['port']) || 80 === $url_parts['port'] ? ('https' === $url_parts['scheme'] ? ':443' : '') : ':' . $url_parts['port'];
-        $request[] = 'Accept: text/plain,text/html,text/xml,application/json,*;q=0';
-        $request[] = 'Accept-Charset: UTF-8,*;q=0';
-        $request[] = 'Accept-Encoding: identity,*;q=0';
-        $request[] = 'Accept-Language: en-US,en,zh-CN,zh,*;q=0';
-        $request[] = 'Connection: keep-alive';
-        $request[] = 'User-Agent: ' . $user_agent;
-        if ('' !== $access_key) $request[] = 'Access-Key: ' . $access_key;
-        //Initial cURL request
-        $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_AUTOREFERER, true);
-        curl_setopt($curl, CURLOPT_COOKIESESSION, true);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 60);
-        curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
-        curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
-        curl_setopt($curl, CURLOPT_USERAGENT, $user_agent);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $request);
-        if ('POST' === $method) {
-            curl_setopt($curl, CURLOPT_POST, true);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
-        }
-        $response = curl_exec($curl);
-        curl_close($curl);
-        unset($method, $user_agent, $request, $curl);
-    } else $response = '';
-    unset($url, $data, $access_key, $url_parts);
-    return (string)$response;
 }

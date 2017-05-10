@@ -41,8 +41,8 @@ msgstr "Thanks to people who have made or would like to make contributions here.
 msgid "menu_panel"
 msgstr "Panel"
 
-msgid "menu_message"
-msgstr "Message"
+msgid "menu_alert"
+msgstr "Alerts"
 
 msgid "menu_petition"
 msgstr "Petition"
@@ -62,5 +62,5 @@ msgstr "Security"
 msgid "menu_module"
 msgstr "Modules"
 
-msgid "menu_access_key"
+msgid "menu_key"
 msgstr "Access Key"
