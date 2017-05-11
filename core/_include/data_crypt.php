@@ -112,7 +112,7 @@ class data_crypt
             $keys = $crypt::get_keys($key);
             $mixed = $crypt::mixed_key($key);
             $signature = base64_encode($mixed) . '-' . self::encode(json_encode($data), $keys);
-            unset($key, $keys, $mixed);
+            unset($crypt, $key, $keys, $mixed);
         } else $signature = '';
         unset($data);
         return $signature;
@@ -136,7 +136,7 @@ class data_crypt
             $keys = $crypt::get_keys($key);
             $content = self::decode($codes[1], $keys);
             $data = '' !== $content ? json_decode($content, true) : [];
-            unset($codes, $mixed, $key, $keys, $content);
+            unset($codes, $mixed, $crypt, $key, $keys, $content);
         } else $data = [];
         unset($signature);
         return $data ?? [];
