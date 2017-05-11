@@ -105,9 +105,10 @@ class data_crypt
     {
         if (!empty($data)) {
             load_lib(CRYPT_PATH, CRYPT_NAME);
-            $key = \CRYPT_NAME::get_key();
-            $keys = \CRYPT_NAME::get_keys($key);
-            $mixed = \CRYPT_NAME::mixed_key($key);
+            $cryrt_name = '\\' .CRYPT_NAME;
+            $key = $cryrt_name::get_key();
+            $keys = $cryrt_name::get_keys($key);
+            $mixed = $cryrt_name::mixed_key($key);
             $signature = base64_encode($mixed) . '-' . self::encode(json_encode($data), $keys);
             unset($key, $keys, $mixed);
         } else $signature = '';
@@ -128,8 +129,9 @@ class data_crypt
             $codes = explode('-', $signature, 2);
             $mixed = base64_decode($codes[0], true);
             load_lib(CRYPT_PATH, CRYPT_NAME);
-            $key = \CRYPT_NAME::clear_key($mixed);
-            $keys = \CRYPT_NAME::get_keys($key);
+            $cryrt_name = '\\' .CRYPT_NAME;
+            $key = $cryrt_name::clear_key($mixed);
+            $keys = $cryrt_name::get_keys($key);
             $content = self::decode($codes[1], $keys);
             $data = '' !== $content ? json_decode($content, true) : [];
             unset($codes, $mixed, $key, $keys, $content);
