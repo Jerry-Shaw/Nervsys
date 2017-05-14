@@ -63,6 +63,16 @@ define('KEY_PATH', 'E:/Sites/Keys/');
 define('FILE_PATH', 'E:/Sites/Files/');
 define('FILE_DOMAIN', 'https://file.oobase.com/');
 
+//OpenSSL Settings
+define('OpenSSL_CFG',
+       [
+           'config'           => 'D:/Programs/iisExpress/Programs/PHP/extras/ssl/openssl.cnf',
+           'digest_alg'       => 'sha256',
+           'private_key_bits' => 2048,
+           'private_key_type' => OPENSSL_KEYTYPE_RSA
+       ]
+);
+
 //CLI Settings
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');//Log path
 define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');//Working path

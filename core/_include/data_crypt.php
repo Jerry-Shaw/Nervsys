@@ -64,6 +64,46 @@ class data_crypt
     }
 
     /**
+     * Encrypt with PKey
+     *
+     * @param string $string
+     * @param string $key
+     * @param string $type
+     *
+     * @return string
+     */
+    public static function encrypt(string $string, string $key, string $type = 'public'): string
+    {
+        if (in_array($type, ['public', 'private'], true)) {
+            $encrypt = 'openssl_' . $type . '_encrypt';
+            if ('' === $string || '' === $key || !$encrypt($string, $string, $key)) $string = '';
+            unset($encrypt);
+        }
+        unset($key, $type);
+        return $string;
+    }
+
+    /**
+     * Decrypt with PKey
+     *
+     * @param string $string
+     * @param string $key
+     * @param string $type
+     *
+     * @return string
+     */
+    public static function decrypt(string $string, string $key, string $type = 'private'): string
+    {
+        if (in_array($type, ['public', 'private'], true)) {
+            $decrypt = 'openssl_' . $type . '_decrypt';
+            if ('' === $string || '' === $key || !$decrypt($string, $string, $key)) $string = '';
+            unset($decrypt);
+        }
+        unset($key, $type);
+        return $string;
+    }
+
+    /**
      * Hash Password
      *
      * @param string $string
@@ -99,22 +139,22 @@ class data_crypt
     /**
      * Create encrypted content
      *
-     * @param array $data
+     * @param string $string
      *
      * @return string
      */
-    public static function create_key(array $data): string
+    public static function create_key(string $string): string
     {
-        if (!empty($data)) {
+        if ('' !== $string) {
             load_lib(CRYPT_PATH, CRYPT_NAME);
             $crypt = '\\' . CRYPT_NAME;
             $key = $crypt::get_key();
             $keys = $crypt::get_keys($key);
             $mixed = $crypt::mixed_key($key);
-            $signature = base64_encode($mixed) . '-' . self::encode(json_encode($data), $keys);
+            $signature = base64_encode($mixed) . '-' . self::encode($string, $keys);
             unset($crypt, $key, $keys, $mixed);
         } else $signature = '';
-        unset($data);
+        unset($string);
         return $signature;
     }
 
