@@ -77,6 +77,7 @@ class data_crypt
         if (in_array($type, ['public', 'private'], true)) {
             $encrypt = 'openssl_' . $type . '_encrypt';
             if ('' === $string || '' === $key || !$encrypt($string, $string, $key)) $string = '';
+            if ('' !== $string) $string = base64_encode($string);
             unset($encrypt);
         }
         unset($key, $type);
@@ -96,7 +97,8 @@ class data_crypt
     {
         if (in_array($type, ['public', 'private'], true)) {
             $decrypt = 'openssl_' . $type . '_decrypt';
-            if ('' === $string || '' === $key || !$decrypt($string, $string, $key)) $string = '';
+            if ('' !== $string) $string = base64_decode($string, true);
+            if (false === $string || '' === $string || '' === $key || !$decrypt($string, $string, $key)) $string = '';
             unset($decrypt);
         }
         unset($key, $type);
