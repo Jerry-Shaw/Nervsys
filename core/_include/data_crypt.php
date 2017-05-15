@@ -64,19 +64,38 @@ class data_crypt
     }
 
     /**
+     * Get the type of RSA Key
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    public static function get_type(string $key): string
+    {
+        if ('' !== $key) {
+            $start = strlen('-----BEGIN ');
+            $end = strpos($key, ' KEY-----', $start);
+            $type = false !== $end ? strtolower(substr($key, $start, $end)) : '';
+            unset($start, $end);
+        } else $type = '';
+        unset($key);
+        return $type;
+    }
+
+    /**
      * Encrypt with PKey
      *
      * @param string $string
      * @param string $key
-     * @param string $type
      *
      * @return string
      */
-    public static function encrypt(string $string, string $key, string $type = 'public'): string
+    public static function encrypt(string $string, string $key): string
     {
+        $type = self::get_type($key);
         if (in_array($type, ['public', 'private'], true)) {
             $encrypt = 'openssl_' . $type . '_encrypt';
-            if ('' === $string || '' === $key || !$encrypt($string, $string, $key)) $string = '';
+            if ('' === $string || !$encrypt($string, $string, $key)) $string = '';
             if ('' !== $string) $string = base64_encode($string);
             unset($encrypt);
         }
@@ -89,16 +108,16 @@ class data_crypt
      *
      * @param string $string
      * @param string $key
-     * @param string $type
      *
      * @return string
      */
-    public static function decrypt(string $string, string $key, string $type = 'private'): string
+    public static function decrypt(string $string, string $key): string
     {
+        $type = self::get_type($key);
         if (in_array($type, ['public', 'private'], true)) {
             $decrypt = 'openssl_' . $type . '_decrypt';
             if ('' !== $string) $string = base64_decode($string, true);
-            if (false === $string || '' === $string || '' === $key || !$decrypt($string, $string, $key)) $string = '';
+            if (false === $string || '' === $string || !$decrypt($string, $string, $key)) $string = '';
             unset($decrypt);
         }
         unset($key, $type);
