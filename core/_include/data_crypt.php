@@ -5,9 +5,11 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author Yara <314850412@qq.com>
  *
  * Copyright 2017 Jerry Shaw
  * Copyright 2017 秋水之冰
+ * Copyright 2017 Yara
  *
  * This file is part of NervSys.
  *
@@ -62,6 +64,67 @@ class data_crypt
     }
 
     /**
+     * Get the type of RSA Key
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    public static function get_type(string $key): string
+    {
+        if ('' !== $key) {
+            $start = strlen('-----BEGIN ');
+            $end = strpos($key, ' KEY-----', $start);
+            $type = false !== $end ? strtolower(substr($key, $start, $end)) : '';
+            unset($start, $end);
+        } else $type = '';
+        unset($key);
+        return $type;
+    }
+
+    /**
+     * Encrypt with PKey
+     *
+     * @param string $string
+     * @param string $key
+     *
+     * @return string
+     */
+    public static function encrypt(string $string, string $key): string
+    {
+        $type = self::get_type($key);
+        if (in_array($type, ['public', 'private'], true)) {
+            $encrypt = 'openssl_' . $type . '_encrypt';
+            if ('' === $string || !$encrypt($string, $string, $key)) $string = '';
+            if ('' !== $string) $string = base64_encode($string);
+            unset($encrypt);
+        }
+        unset($key, $type);
+        return $string;
+    }
+
+    /**
+     * Decrypt with PKey
+     *
+     * @param string $string
+     * @param string $key
+     *
+     * @return string
+     */
+    public static function decrypt(string $string, string $key): string
+    {
+        $type = self::get_type($key);
+        if (in_array($type, ['public', 'private'], true)) {
+            $decrypt = 'openssl_' . $type . '_decrypt';
+            if ('' !== $string) $string = base64_decode($string, true);
+            if (false === $string || '' === $string || !$decrypt($string, $string, $key)) $string = '';
+            unset($decrypt);
+        }
+        unset($key, $type);
+        return $string;
+    }
+
+    /**
      * Hash Password
      *
      * @param string $string
@@ -97,21 +160,22 @@ class data_crypt
     /**
      * Create encrypted content
      *
-     * @param array $data
+     * @param string $string
      *
      * @return string
      */
-    public static function create_key(array $data): string
+    public static function create_key(string $string): string
     {
-        if (!empty($data)) {
+        if ('' !== $string) {
             load_lib(CRYPT_PATH, CRYPT_NAME);
-            $key = \CRYPT_NAME::get_key();
-            $keys = \CRYPT_NAME::get_keys($key);
-            $mixed = \CRYPT_NAME::mixed_key($key);
-            $signature = base64_encode($mixed) . '-' . self::encode(json_encode($data), $keys);
-            unset($key, $keys, $mixed);
+            $crypt = '\\' . CRYPT_NAME;
+            $key = $crypt::get_key();
+            $keys = $crypt::get_keys($key);
+            $mixed = $crypt::mixed_key($key);
+            $signature = base64_encode($mixed) . '-' . self::encode($string, $keys);
+            unset($crypt, $key, $keys, $mixed);
         } else $signature = '';
-        unset($data);
+        unset($string);
         return $signature;
     }
 
@@ -128,11 +192,12 @@ class data_crypt
             $codes = explode('-', $signature, 2);
             $mixed = base64_decode($codes[0], true);
             load_lib(CRYPT_PATH, CRYPT_NAME);
-            $key = \CRYPT_NAME::clear_key($mixed);
-            $keys = \CRYPT_NAME::get_keys($key);
+            $crypt = '\\' . CRYPT_NAME;
+            $key = $crypt::clear_key($mixed);
+            $keys = $crypt::get_keys($key);
             $content = self::decode($codes[1], $keys);
             $data = '' !== $content ? json_decode($content, true) : [];
-            unset($codes, $mixed, $key, $keys, $content);
+            unset($codes, $mixed, $crypt, $key, $keys, $content);
         } else $data = [];
         unset($signature);
         return $data ?? [];

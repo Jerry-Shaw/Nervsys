@@ -37,6 +37,26 @@ class ctrl_key
     }
 
     /**
+     * Get RSA Key-Pairs (Public Key & Private Key)
+     *
+     * @return array
+     */
+    public static function get_pkey(): array
+    {
+        $keys = ['public' => '', 'private' => ''];
+        $ssl = openssl_pkey_new(OpenSSL_CFG);
+        if (false !== $ssl) {
+            $public = openssl_pkey_get_details($ssl);
+            if (false !== $public) $keys['public'] = &$public['key'];
+            if (openssl_pkey_export($ssl, $private, null, OpenSSL_CFG)) $keys['private'] = &$private;
+            openssl_pkey_free($ssl);
+            unset($public, $private);
+        }
+        unset($ssl);
+        return $keys;
+    }
+
+    /**
      * Get Keys from Crypt Key
      *
      * @param string $key (64 bits)
