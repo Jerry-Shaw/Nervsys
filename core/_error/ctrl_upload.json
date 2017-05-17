@@ -1,0 +1,15 @@
+{
+  "Name": "ctrl_upload",
+  "Lang": "ctrl_upload",
+  "Module": "core",
+  "CodeRange": "10000-10099",
+  "10000": "upload_done",
+  "10001": "upload_failed",
+  "10002": "upload_err_path",
+  "10003": "upload_err_format",
+  "10004": "upload_err_size",
+  "10005": "upload_err_receive",
+  "10006": "upload_err_crc",
+  "10007": "upload_err_empty",
+  "10008": "upload_err_save"
+}
