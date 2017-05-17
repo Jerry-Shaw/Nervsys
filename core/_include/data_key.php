@@ -57,15 +57,15 @@ class data_key
             } else session_start();
             //Detect requests
             switch (self::$client) {
-                //For 127.0.0.1 requests
+                //Local request
                 case 'LOCAL':
                     if (!empty($_SESSION)) self::map_sess();
                     break;
-                //For third party requests
+                //Remote request
                 case 'REMOTE':
                     if (isset($_SERVER['HTTP_KEY'])) self::map_key();
                     break;
-                //Auto Detect
+                //Auto detect
                 default:
                     //Detect requested client type
                     if (isset($_SERVER['HTTP_ORIGIN'])) self::$client = $Server_HOST === $_SERVER['HTTP_ORIGIN'] ? self::chk_cookie() : 'REMOTE';
