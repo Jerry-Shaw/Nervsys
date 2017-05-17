@@ -115,15 +115,12 @@ function AJAX(object) {
 }
 
 function getCookie(Name) {
-    if (document.cookie.length > 0) {
-        var start = document.cookie.indexOf(Name + '=');
-        if (start != -1) {
-            start = start + Name.length + 1;
-            var end = document.cookie.indexOf(';', start);
-            if (end == -1) end = document.cookie.length;
-            return unescape(document.cookie.substring(start, end));
-        } else return '';
-    } else return '';
+    var i, arrCookie = document.cookie.replace(/[ ]/g,"").split(";");
+    for (i = 0; i < arrCookie.length; i++) {
+        var cookie = arrCookie[i].split("=");
+        if(Name === cookie[0]) return cookie[1];
+    }
+    return '';
 }
 
 function setCookie(Name, Value, ExpireDays) {
