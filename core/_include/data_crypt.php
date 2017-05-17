@@ -185,9 +185,9 @@ class data_crypt
      * @param string $signature
      * @param string $rsa_key
      *
-     * @return array
+     * @return string
      */
-    public static function validate_key(string $signature, string $rsa_key = ''): array
+    public static function validate_key(string $signature, string $rsa_key = ''): string
     {
         if (!empty($signature) && false !== strpos($signature, '-')) {
             $codes = explode('-', $signature, 2);
@@ -197,13 +197,12 @@ class data_crypt
                 $crypt = '\\' . CRYPT_NAME;
                 $key = $crypt::clear_key($mixed);
                 $keys = $crypt::get_keys($key);
-                $content = self::decode($codes[1], $keys);
-                $data = '' !== $content ? json_decode($content, true) : [];
-                unset($crypt, $key, $keys, $content);
-            } else $data = [];
+                $data = self::decode($codes[1], $keys);
+                unset($crypt, $key, $keys);
+            } else $data = '';
             unset($codes, $mixed);
-        } else $data = [];
+        } else $data = '';
         unset($signature, $rsa_key);
-        return $data ?? [];
+        return $data;
     }
 }
