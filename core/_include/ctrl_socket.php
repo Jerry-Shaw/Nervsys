@@ -26,99 +26,91 @@
  */
 class ctrl_socket
 {
-    //Data to send
-    public static $data = '';
+    //UDP Settings
+    public static $udp_port = 64000;
+    public static $udp_address = '255.255.255.255';
+    public static $udp_broadcast = '255.255.255.255';
 
-    //Socket Variables
-    public static $address = '127.0.0.1';
-    public static $protocol = 'UDP';
-    public static $udp_port = 65000;
+    //TCP Settings
     public static $tcp_port = 60000;
-    public static $timeout = 600;
-
-    //Socket Properties
-    private static $socket_protocol = SOL_UDP;
-    private static $socket_domain = AF_INET;
-    private static $socket_type = SOCK_DGRAM;
+    public static $tcp_address = '127.0.0.1';
 
     /**
-     * Start Socket Server
+     * UDP Broadcast
      */
-    public static function server()
+    public static function udp_broadcast()
     {
-        switch (self::$protocol) {
-            case 'UDP':
-                self::$socket_protocol = SOL_UDP;
-                self::$socket_type = SOCK_DGRAM;
-                self::udp_server();
-                break;
-            case 'TCP':
-                self::$socket_protocol = SOL_TCP;
-                self::$socket_type = SOCK_STREAM;
-                self::tcp_server();
-                break;
-            default:
-                exit('Unsupported Protocol!');
-                break;
-        }
-    }
-
-    /**
-     * Start Socket Client
-     */
-    public static function client()
-    {
-        switch (self::$protocol) {
-            case 'UDP':
-                self::$socket_protocol = SOL_UDP;
-                self::$socket_type = SOCK_DGRAM;
-                self::udp_sender();
-                break;
-            case 'TCP':
-                self::$socket_protocol = SOL_TCP;
-                self::$socket_type = SOCK_STREAM;
-                self::tcp_sender();
-                break;
-            default:
-                exit('Unsupported Protocol!');
-                break;
-        }
-    }
-
-    /**
-     * UDP Server
-     */
-    private static function udp_server()
-    {
-        $start = true;
-        $lock_file = CLI_WORK_PATH . self::$protocol . self::$udp_port;
-        if (is_file($lock_file)) {
-            $lock_time = (int)file_get_contents($lock_file);
-            if (self::$timeout > time() - $lock_time) $start = false;
-        }
-        if ($start) {
-            $socket = socket_create(self::$socket_domain, self::$socket_type, self::$socket_protocol);
-            if (false !== $socket && socket_bind($socket, '0.0.0.0', self::$udp_port)) {
-                while (true) {
-                    if (0 < socket_recvfrom($socket, $data, 1024, 0, $from, $port)) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                    file_put_contents($lock_file, time());
-                    usleep(1000);
-                }
-                socket_close($socket);
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if (false !== $socket && socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1)) {
+            $identity = [
+                'os'   => $_SERVER['OS'],
+                'user' => $_SERVER['USERNAME'],
+                'name' => $_SERVER['COMPUTERNAME'],
+                'id_1' => $_SERVER['NUMBER_OF_PROCESSORS'],
+                'id_2' => $_SERVER['PROCESSOR_ARCHITECTURE'],
+                'id_3' => $_SERVER['PROCESSOR_IDENTIFIER'],
+                'id_4' => $_SERVER['PROCESSOR_LEVEL'],
+                'id_5' => $_SERVER['PROCESSOR_REVISION']
+            ];
+            $data = '--cmd="sensor/sensor,capture" --data="' . http_build_query($identity) . '"';
+            unset($identity);
+            while (true) {
+                if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
+                sleep(60);
             }
+            socket_close($socket);
         }
     }
 
     /**
      * UDP Sender
+     *
+     * @param string $data
      */
-    public static function udp_sender()
+    public static function udp_sender(string $data)
     {
-        $socket = socket_create(self::$socket_domain, self::$socket_type, self::$socket_protocol);
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false !== $socket) {
-            socket_sendto($socket, self::$data, strlen(self::$data), 0, self::$address, self::$udp_port);
+            if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_address, self::$udp_port)) echo 'UDP Send Error!';
             socket_close($socket);
         }
+        unset($data, $socket);
+    }
+
+    /**
+     * UDP Server
+     */
+    public static function udp_server()
+    {
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if (false !== $socket && socket_set_nonblock($socket) && socket_bind($socket, '0.0.0.0', self::$udp_port)) {
+            while (true) {
+                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from)) {
+                    exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php --cmd="sensor/sensor,record" --data="ip=' . $from . '&time=' . time() . '&data=' . $data . '"');
+                    exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                }
+                usleep(1000);
+            }
+            socket_close($socket);
+        }
+    }
+
+    /**
+     * TCP Sender
+     *
+     * @param string $data
+     */
+    public static function tcp_sender(string $data)
+    {
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        if (false !== $socket && socket_connect($socket, self::$tcp_address, self::$tcp_port)) {
+            if (0 === socket_write($socket, $data)) echo 'TCP Send Error!';
+            $data = (string)socket_read($socket, 4096);
+            if ('' !== $data) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+            socket_shutdown($socket);
+            socket_close($socket);
+        }
+        unset($data, $socket);
     }
 
     /**
@@ -126,46 +118,18 @@ class ctrl_socket
      */
     public static function tcp_server()
     {
-        $start = true;
-        $lock_file = CLI_WORK_PATH . self::$protocol . self::$tcp_port;
-        if (is_file($lock_file)) {
-            $lock_time = (int)file_get_contents($lock_file);
-            if (self::$timeout > time() - $lock_time) $start = false;
-        }
-        if ($start) {
-            ob_implicit_flush();
-            $socket = socket_create(self::$socket_domain, self::$socket_type, self::$socket_protocol);
-            if (false !== $socket && socket_bind($socket, '0.0.0.0', self::$tcp_port) && socket_listen($socket)) {
-                $accept = socket_accept($socket);
-                if (is_resource($accept)) {
-                    while (true) {
-                        socket_write($accept, self::$data);
-                        $data = (string)socket_read($accept, 1024);
-                        if ('' !== $data) $exec = exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                        if ('' !== $exec) socket_write($accept, $exec);
-                        file_put_contents($lock_file, time());
-                        usleep(1000);
-                    }
+        ob_implicit_flush();
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        if (false !== $socket && socket_bind($socket, '0.0.0.0', self::$tcp_port) && socket_listen($socket)) {
+            $accept = socket_accept($socket);
+            if (is_resource($accept)) {
+                while (true) {
+                    $data = (string)socket_read($accept, 4096);
+                    if ('' !== $data) $exec = exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                    if ('' !== $exec) socket_write($accept, $exec);
+                    usleep(1000);
                 }
-                socket_close($socket);
             }
-        }
-    }
-
-    /**
-     * Send via TCP
-     */
-    public static function tcp_sender()
-    {
-        $socket = socket_create(self::$socket_domain, self::$socket_type, self::$socket_protocol);
-        if (false !== $socket && socket_connect($socket, self::$address, self::$tcp_port)) {
-            while (true) {
-                socket_write($socket, self::$data);
-                $data = (string)socket_read($socket, 1024);
-                if ('' !== $data) $exec = exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                if ('' !== $exec) socket_write($socket, $exec);
-            }
-            socket_shutdown($socket);
             socket_close($socket);
         }
     }
