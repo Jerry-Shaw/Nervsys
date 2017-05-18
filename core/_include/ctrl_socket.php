@@ -66,7 +66,7 @@ class ctrl_socket
     {
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false !== $socket && socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1)) {
-            $data = '--cmd="sensor/sensor,capture" --data="id=' . http_build_query(['user' => $_SERVER['USERNAME'], 'name' => $_SERVER['COMPUTERNAME'], 'hash' => self::get_identity()]) . '"';
+            $data = '--cmd="sensor/sensor,capture" --data="' . http_build_query(['user' => $_SERVER['USERNAME'], 'name' => $_SERVER['COMPUTERNAME'], 'hash' => self::get_identity()]) . '"';
             while (true) {
                 if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
                 sleep(60);
