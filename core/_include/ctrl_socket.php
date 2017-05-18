@@ -85,8 +85,8 @@ class ctrl_socket
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false !== $socket && socket_set_nonblock($socket) && socket_bind($socket, '0.0.0.0', self::$udp_port)) {
             while (true) {
-                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from)) {
-                    exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php --cmd="sensor/sensor,record" --data="ip=' . $from . '&time=' . time() . '&data=' . $data . '"');
+                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
+                    exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php --cmd="sensor/sensor,record" --data="ip=' . $from . '&time=' . time() . '&data=' . base64_encode($data) . '"');
                     exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                 }
                 usleep(1000);
@@ -125,8 +125,8 @@ class ctrl_socket
             if (is_resource($accept)) {
                 while (true) {
                     $data = (string)socket_read($accept, 4096);
-                    if ('' !== $data) $exec = exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                    if ('' !== $exec) socket_write($accept, $exec);
+                    if ('' !== $data) $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                    if ('' !== $data) socket_write($accept, $data);
                     usleep(1000);
                 }
             }
