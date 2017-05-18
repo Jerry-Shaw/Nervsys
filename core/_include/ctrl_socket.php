@@ -36,24 +36,37 @@ class ctrl_socket
     public static $tcp_address = '127.0.0.1';
 
     /**
+     * Get Hardware & System Identity
+     *
+     * @return string
+     */
+    public static function get_identity(): string
+    {
+        $identity = [
+            $_SERVER['OS'],
+            $_SERVER['USERNAME'],
+            $_SERVER['COMPUTERNAME'],
+            $_SERVER['NUMBER_OF_PROCESSORS'],
+            $_SERVER['PROCESSOR_ARCHITECTURE'],
+            $_SERVER['PROCESSOR_IDENTIFIER'],
+            $_SERVER['PROCESSOR_LEVEL'],
+            $_SERVER['PROCESSOR_REVISION']
+        ];
+        exec(false !== stripos($_SERVER['OS'], 'windows') ? 'ipconfig /all' : 'ifconfig', $output);
+        $identity = array_merge($identity, array_filter($output));
+        $data = hash('sha256', implode($identity));
+        unset($identity, $output);
+        return $data;
+    }
+
+    /**
      * UDP Broadcast
      */
     public static function udp_broadcast()
     {
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false !== $socket && socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1)) {
-            $identity = [
-                'os'   => $_SERVER['OS'],
-                'user' => $_SERVER['USERNAME'],
-                'name' => $_SERVER['COMPUTERNAME'],
-                'id_1' => $_SERVER['NUMBER_OF_PROCESSORS'],
-                'id_2' => $_SERVER['PROCESSOR_ARCHITECTURE'],
-                'id_3' => $_SERVER['PROCESSOR_IDENTIFIER'],
-                'id_4' => $_SERVER['PROCESSOR_LEVEL'],
-                'id_5' => $_SERVER['PROCESSOR_REVISION']
-            ];
-            $data = '--cmd="sensor/sensor,capture" --data="' . http_build_query($identity) . '"';
-            unset($identity);
+            $data = '--cmd="sensor/sensor,capture" --data="id=' . http_build_query(['user' => $_SERVER['USERNAME'], 'name' => $_SERVER['COMPUTERNAME'], 'hash' => self::get_identity()]) . '"';
             while (true) {
                 if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
                 sleep(60);
@@ -85,10 +98,7 @@ class ctrl_socket
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false !== $socket && socket_set_nonblock($socket) && socket_bind($socket, '0.0.0.0', self::$udp_port)) {
             while (true) {
-                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
-                    exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php --cmd="sensor/sensor,record" --data="ip=' . $from . '&time=' . time() . '&data=' . base64_encode($data) . '"');
-                    exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                }
+                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                 usleep(1000);
             }
             socket_close($socket);
