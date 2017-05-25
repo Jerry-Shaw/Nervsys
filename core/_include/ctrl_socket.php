@@ -55,18 +55,22 @@ class ctrl_socket
 
     /**
      * UDP Broadcast
+     *
+     * @param string $data
      */
-    public static function udp_broadcast()
+    public static function udp_broadcast(string $data)
     {
-        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if (false !== $socket && socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1)) {
-            $data = '--cmd="sensor/sensor,capture" --data="' . http_build_query(['user' => $_SERVER['USERNAME'], 'name' => $_SERVER['COMPUTERNAME'], 'hash' => self::get_identity()]) . '"';
-            while (true) {
-                if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
-                sleep(60);
+        if ('' !== $data) {
+            $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+            if (false !== $socket) {
+                $length = strlen($data);
+                if (!socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) || $length > (int)socket_sendto($socket, $data, $length, 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
+                socket_close($socket);
+                unset($length);
             }
-            socket_close($socket);
+            unset($socket);
         }
+        unset($data);
     }
 
     /**
@@ -92,7 +96,13 @@ class ctrl_socket
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false !== $socket && socket_set_nonblock($socket) && socket_bind($socket, '0.0.0.0', self::$udp_port)) {
             while (true) {
-                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
+                    $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                    if ('' !== $data) {
+                        self::$udp_address = &$from;
+                        self::udp_sender($data);
+                    }
+                }
                 usleep(1000);
             }
             socket_close($socket);
