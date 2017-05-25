@@ -35,28 +35,22 @@ class ctrl_socket
     public static $tcp_port = 60000;
     public static $tcp_address = '127.0.0.1';
 
+    //Identity File Path
+    const identity = CLI_WORK_PATH . 'identity';
+
     /**
-     * Get Hardware & System Identity
+     * Get Identity
      *
      * @return string
      */
     public static function get_identity(): string
     {
-        $identity = [
-            $_SERVER['OS'],
-            $_SERVER['USERNAME'],
-            $_SERVER['COMPUTERNAME'],
-            $_SERVER['NUMBER_OF_PROCESSORS'],
-            $_SERVER['PROCESSOR_ARCHITECTURE'],
-            $_SERVER['PROCESSOR_IDENTIFIER'],
-            $_SERVER['PROCESSOR_LEVEL'],
-            $_SERVER['PROCESSOR_REVISION']
-        ];
-        exec(false !== stripos($_SERVER['OS'], 'windows') ? 'ipconfig /all' : 'ifconfig', $output);
-        $identity = array_merge($identity, array_filter($output));
-        $data = hash('sha256', implode($identity));
-        unset($identity, $output);
-        return $data;
+        if (is_file(self::identity)) $id = (string)file_get_contents(self::identity);
+        else {
+            $id = get_uuid();
+            if (0 === (int)file_put_contents(self::identity, $id)) $id = '';
+        }
+        return $id;
     }
 
     /**
