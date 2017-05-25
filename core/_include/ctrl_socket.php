@@ -64,7 +64,7 @@ class ctrl_socket
             $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
             if (false !== $socket) {
                 $length = strlen($data);
-                if (!socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) || $length > (int)socket_sendto($socket, $data, $length, 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
+                if (!socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) || $length !== (int)socket_sendto($socket, $data, $length, 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
                 socket_close($socket);
                 unset($length);
             }
