@@ -36,7 +36,7 @@ class ctrl_socket
     public static $tcp_address = '127.0.0.1';
 
     //Identity File Path
-    const identity = CLI_WORK_PATH . 'identity';
+    const identity = CLI_CAS_PATH . 'identity';
 
     /**
      * Get Identity
@@ -80,12 +80,15 @@ class ctrl_socket
      */
     public static function udp_sender(string $data)
     {
-        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if (false !== $socket) {
-            if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_address, self::$udp_port)) echo 'UDP Send Error!';
-            socket_close($socket);
+        if ('' !== $data) {
+            $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+            if (false !== $socket) {
+                if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_address, self::$udp_port)) echo 'UDP Send Error!';
+                socket_close($socket);
+            }
+            unset($socket);
         }
-        unset($data, $socket);
+        unset($data);
     }
 
     /**
@@ -98,9 +101,9 @@ class ctrl_socket
             while (true) {
                 if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
                     $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                    if ('' !== $data) {
+                    if (!empty($data) && isset($data['result']) && '' !== $data['result']) {
                         self::$udp_address = &$from;
-                        self::udp_sender($data);
+                        self::udp_sender($data['result']);
                     }
                 }
                 usleep(1000);
@@ -132,7 +135,6 @@ class ctrl_socket
      */
     public static function tcp_server()
     {
-        ob_implicit_flush();
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if (false !== $socket && socket_bind($socket, '0.0.0.0', self::$tcp_port) && socket_listen($socket)) {
             $accept = socket_accept($socket);
@@ -140,7 +142,7 @@ class ctrl_socket
                 while (true) {
                     $data = (string)socket_read($accept, 4096);
                     if ('' !== $data) $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                    if ('' !== $data) socket_write($accept, $data);
+                    if (!empty($data) && isset($data['result']) && '' !== $data['result']) socket_write($accept, $data['result']);
                     usleep(1000);
                 }
             }
