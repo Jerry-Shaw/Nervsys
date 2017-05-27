@@ -4,4 +4,4 @@ Requirements: PHP7.1 and above. Any kind of web server. MySQL, Redis and redis e
  
 Datacenter are under construction, coming soon...
 
-Demo module is out and opened here https://github.com/Jerry-Shaw/fruit_picker. You can try it with NervSys with detailed comments in the picker.php
+Demo module is out and opened here https://github.com/Jerry-Shaw/fruit. You can try it with NervSys with detailed comments in the picker.php
