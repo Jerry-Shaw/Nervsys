@@ -5,9 +5,11 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author Yara <314850412@qq.com>
  *
  * Copyright 2017 Jerry Shaw
  * Copyright 2017 秋水之冰
+ * Copyright 2017 Yara
  *
  * This file is part of NervSys.
  *
@@ -103,9 +105,9 @@ class ctrl_socket
                     $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
                         $result = json_decode($data, true);
-                        if (isset($result)){
-                            foreach($result as $value){
-                                if(isset($value['result']) && '' !== $value['result']){
+                        if (isset($result)) {
+                            foreach ($result as $value) {
+                                if (isset($value['result']) && '' !== $value['result']) {
                                     self::$udp_address = &$from;
                                     self::udp_sender($value['result']);
                                 }
@@ -153,10 +155,7 @@ class ctrl_socket
                     if ('' !== $data) $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
                         $result = json_decode($data, true);
-                        if(isset($result))
-                            foreach($result as $value)
-                                if(isset($value['result']) && '' !== $value['result'])
-                                    socket_write($accept, $value['result']);
+                        if (isset($result)) foreach ($result as $value) if (isset($value['result']) && '' !== $value['result']) socket_write($accept, $value['result']);
                     }
                     usleep(1000);
                 }
