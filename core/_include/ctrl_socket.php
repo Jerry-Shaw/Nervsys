@@ -101,10 +101,15 @@ class ctrl_socket
             while (true) {
                 if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
                     $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                    if (!empty($data) && isset($data['result']) && '' !== $data['result']) {
-                        self::$udp_address = &$from;
-                        self::udp_sender($data['result']);
+                    if ('' !== $data) {
+                        $result = json_decode($data, true);
+                        if (isset($result) && isset($result['result']) && '' !== $result['result']) {
+                            self::$udp_address = &$from;
+                            self::udp_sender($result['result']);
+                        }
+                        unset($result);
                     }
+                    unset($data);
                 }
                 usleep(1000);
             }
@@ -142,7 +147,10 @@ class ctrl_socket
                 while (true) {
                     $data = (string)socket_read($accept, 4096);
                     if ('' !== $data) $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
-                    if (!empty($data) && isset($data['result']) && '' !== $data['result']) socket_write($accept, $data['result']);
+                    if ('' !== $data) {
+                        $result = json_decode($data, true);
+                        if (isset($result) && isset($result['result']) && '' !== $result['result']) socket_write($accept, $result['result']);
+                    }
                     usleep(1000);
                 }
             }
