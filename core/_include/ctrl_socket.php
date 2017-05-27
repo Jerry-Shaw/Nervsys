@@ -103,9 +103,13 @@ class ctrl_socket
                     $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
                         $result = json_decode($data, true);
-                        if (isset($result) && isset($result['result']) && '' !== $result['result']) {
-                            self::$udp_address = &$from;
-                            self::udp_sender($result['result']);
+                        if (isset($result)){
+                            foreach($result as $value){
+                                if(isset($value['result']) && '' !== $value['result']){
+                                    self::$udp_address = &$from;
+                                    self::udp_sender($value['result']);
+                                }
+                            }
                         }
                         unset($result);
                     }
@@ -149,7 +153,10 @@ class ctrl_socket
                     if ('' !== $data) $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
                         $result = json_decode($data, true);
-                        if (isset($result) && isset($result['result']) && '' !== $result['result']) socket_write($accept, $result['result']);
+                        if(isset($result))
+                            foreach($result as $value)
+                                if(isset($value['result']) && '' !== $value['result'])
+                                    socket_write($accept, $value['result']);
                     }
                     usleep(1000);
                 }
