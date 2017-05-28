@@ -75,6 +75,7 @@ define('OpenSSL_CFG',
 
 //CLI Settings
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');//Log path
+define('CLI_CAS_PATH', ROOT . '/_cli/_cas/');//Cache path
 define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');//Working path
 define('CLI_EXEC_PATH', '"D:/Programs/iisExpress/Programs/PHP/php.exe"');//PHP executable binary path
 define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Options)
