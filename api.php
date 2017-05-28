@@ -70,7 +70,7 @@ if ('cli' !== PHP_SAPI) {
     //Output Result
     if (!empty($result)) {
         //Output JSON formatted result via STDOUT
-        fwrite(STDOUT, json_encode($result));
+        fwrite(STDOUT, json_encode($result) . PHP_EOL);
         //Close STDOUT stream
         fclose(STDOUT);
         exit;
