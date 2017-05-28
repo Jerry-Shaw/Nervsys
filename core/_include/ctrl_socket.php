@@ -104,16 +104,16 @@ class ctrl_socket
                 if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
                     $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
-                        $result = json_decode($data, true);
-                        if (isset($result)) {
-                            foreach ($result as $value) {
-                                if (isset($value['result']) && '' !== $value['result']) {
+                        $cmd = json_decode($data, true);
+                        if (isset($cmd) && isset($cmd['result'])) {
+                            foreach ($cmd['result'] as $value) {
+                                if (is_string($value) && '' !== $value) {
                                     self::$udp_address = &$from;
-                                    self::udp_sender($value['result']);
+                                    self::udp_sender($value);
                                 }
                             }
                         }
-                        unset($result);
+                        unset($cmd);
                     }
                     unset($data);
                 }
@@ -152,11 +152,15 @@ class ctrl_socket
             if (is_resource($accept)) {
                 while (true) {
                     $data = (string)socket_read($accept, 4096);
-                    if ('' !== $data) $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
-                        $result = json_decode($data, true);
-                        if (isset($result)) foreach ($result as $value) if (isset($value['result']) && '' !== $value['result']) socket_write($accept, $value['result']);
+                        $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                        if ('' !== $data) {
+                            $cmd = json_decode($data, true);
+                            if (isset($cmd) && isset($cmd['result'])) foreach ($cmd['result'] as $value) if (is_string($value) && '' !== $value) socket_write($accept, $value);
+                            unset($cmd);
+                        }
                     }
+                    unset($data);
                     usleep(1000);
                 }
             }
