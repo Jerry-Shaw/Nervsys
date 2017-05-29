@@ -37,24 +37,6 @@ class ctrl_socket
     public static $tcp_port = 60000;
     public static $tcp_address = '127.0.0.1';
 
-    //Identity File Path
-    const identity = CLI_CAS_PATH . 'identity';
-
-    /**
-     * Get Identity
-     *
-     * @return string
-     */
-    public static function get_identity(): string
-    {
-        if (is_file(self::identity)) $id = (string)file_get_contents(self::identity);
-        else {
-            $id = get_uuid();
-            if (0 === (int)file_put_contents(self::identity, $id)) $id = '';
-        }
-        return $id;
-    }
-
     /**
      * UDP Broadcast
      *
