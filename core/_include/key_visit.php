@@ -190,7 +190,7 @@ class key_visit
      */
     private static function get_key(): string
     {
-        return !empty(self::$key) ? \data_crypt::create_key(self::$key) : '';
+        return !empty(self::$key) ? \data_crypt::create_key(json_encode(self::$key)) : '';
     }
 
     /**
