@@ -5,9 +5,11 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author Yara <314850412@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 秋水之冰
+ * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
+ * Copyright 2017 Yara
  *
  * This file is part of NervSys.
  *
