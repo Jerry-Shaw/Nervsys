@@ -107,8 +107,7 @@ class key_visit
             header('Access-Control-Allow-Origin: ' . $Origin_HOST);
             header('Access-Control-Allow-Methods: OPTIONS');
             header('Access-Control-Allow-Headers: KEY');
-            //Exit running after basic Cross-Domain request permission was granted
-            exit;
+            exit;//Exit running after basic Cross-Domain request permission was granted
         }
         unset($Server_HOST, $Origin_HOST);
     }
@@ -161,7 +160,7 @@ class key_visit
     }
 
     /**
-     * Remove a/all content value from KEY
+     * Remove content from KEY
      * Return new KEY content after removing
      *
      * @param string $key
@@ -199,9 +198,13 @@ class key_visit
     private static function map_key()
     {
         self::$client = 'REMOTE';
-        $content = \data_crypt::validate_key($_SERVER['HTTP_KEY']);
-        if (!empty($content) && isset($content['ExpireAt']) && time() < $content['ExpireAt']) self::$key = &$content;
-        unset($content);
+        $data = \data_crypt::validate_key($_SERVER['HTTP_KEY']);
+        if ('' !== $data) {
+            $key = json_decode($data, true);
+            if (isset($key) && (!isset($key['ExpireAt']) || (isset($key['ExpireAt']) && time() < $key['ExpireAt']))) self::$key = &$key;
+            unset($key);
+        }
+        unset($data);
     }
 
     /**
