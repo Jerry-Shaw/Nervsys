@@ -42,15 +42,14 @@ class key_visit
      * Get the online status by checking the online tags
      * Grant permission for Cross-Domain request
      */
-    public static function start()
-    {
+    public static function start() {
         //Get HTTP HOST and HTTP ORIGIN ready for Cross-Domain permission detection
         $Server_HOST = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'] ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
         $Origin_HOST = $_SERVER['HTTP_ORIGIN'] ?? $Server_HOST;
         //Process HTTP requests
         if ('OPTIONS' !== $_SERVER['REQUEST_METHOD']) {
-            //Load user_crypt module from defined module path
-            load_lib(CRYPT_PATH, 'user_crypt');
+            //Load data_crypt module
+            load_lib('core', 'data_crypt');
             //Start SESSION
             if (Redis_SESSION) {
                 //Load Redis SESSION Controller
@@ -72,7 +71,7 @@ class key_visit
                     //Detect requested client type
                     if (isset($_SERVER['HTTP_ORIGIN'])) self::$client = $Server_HOST === $_SERVER['HTTP_ORIGIN'] ? self::chk_cookie() : 'REMOTE';
                     elseif (isset($_SERVER['HTTP_REFERER'])) {
-                        $referer = parse_url($_SERVER['HTTP_REFERER']);
+                        $referer      = parse_url($_SERVER['HTTP_REFERER']);
                         self::$client = false !== $referer && isset($referer['scheme']) && isset($referer['host']) && $Server_HOST === $referer['scheme'] . '://' . $referer['host'] . (!isset($referer['port']) || 80 === $referer['port'] ? '' : ':' . $referer['port']) ? self::chk_cookie() : 'REMOTE';
                         unset($referer);
                     } else self::$client = 'REMOTE';
@@ -122,8 +121,7 @@ class key_visit
      *
      * @return string
      */
-    public static function renew(int $ExpireAt): string
-    {
+    public static function renew(int $ExpireAt): string {
         if (!empty(self::$key)) {
             if ($ExpireAt > time()) {
                 self::$key['ExpireAt'] = &$ExpireAt;
@@ -146,12 +144,11 @@ class key_visit
      *
      * @param string $key
      * @param string $value
-     * @param bool $is_int
+     * @param bool   $is_int
      *
      * @return string
      */
-    public static function add(string $key, string $value, bool $is_int = false): string
-    {
+    public static function add(string $key, string $value, bool $is_int = false): string {
         if ('' !== $key) {
             if ($is_int) $value = (int)$value;
             self::$key[$key] = &$value;
@@ -169,8 +166,7 @@ class key_visit
      *
      * @return string
      */
-    public static function remove(string $key = ''): string
-    {
+    public static function remove(string $key = ''): string {
         if ('' !== $key) {
             unset(self::$key[$key]);
             if ('LOCAL' === self::$client) unset($_SESSION[$key]);
@@ -187,20 +183,19 @@ class key_visit
 
     /**
      * Get KEY encrypted content
+     *
      * @return string
      */
-    private static function get_key(): string
-    {
+    private static function get_key(): string {
         return !empty(self::$key) ? \data_crypt::create_key(json_encode(self::$key)) : '';
     }
 
     /**
      * Map KEY content to key
      */
-    private static function map_key()
-    {
+    private static function map_key() {
         self::$client = 'REMOTE';
-        $data = \data_crypt::validate_key($_SERVER['HTTP_KEY']);
+        $data         = \data_crypt::validate_key($_SERVER['HTTP_KEY']);
         if ('' !== $data) {
             $key = json_decode($data, true);
             if (isset($key) && (!isset($key['ExpireAt']) || (isset($key['ExpireAt']) && time() < $key['ExpireAt']))) self::$key = &$key;
@@ -212,20 +207,19 @@ class key_visit
     /**
      * Map SESSION content to key
      */
-    private static function map_sess()
-    {
+    private static function map_sess() {
         self::$client = 'LOCAL';
         if (!empty($_SESSION)) self::$key = &$_SESSION;
     }
 
     /**
      * Check COOKIE Key and Value with SESSION data
+     *
      * @return string
      */
-    private static function chk_cookie(): string
-    {
+    private static function chk_cookie(): string {
         $session_name = session_name();
-        $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
+        $client       = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
         unset($session_name);
         return $client;
     }
@@ -233,8 +227,7 @@ class key_visit
     /**
      * Get the online status by checking the online tags in KEY
      */
-    private static function chk_online(): bool
-    {
+    private static function chk_online(): bool {
         $online = true;
         foreach (ONLINE_TAGS as $tag) {
             if (!isset(self::$key[$tag])) {
