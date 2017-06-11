@@ -197,6 +197,7 @@ class ctrl_cli
 
     /**
      * Call Internal API
+     *
      * @return array
      */
     private static function call_api(): array

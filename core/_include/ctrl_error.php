@@ -72,6 +72,7 @@ class ctrl_error
     /**
      * Get all the errors
      * Language pack needs to be loaded before getting error messages
+     *
      * @return array
      */
     public static function get_all_errors(): array

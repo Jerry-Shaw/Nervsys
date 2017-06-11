@@ -174,6 +174,7 @@ function sort_list(array $data, array $list): array
 
 /**
  * Get the IP and Language from the client
+ *
  * @return array
  */
 function get_client_info(): array

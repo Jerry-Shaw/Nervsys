@@ -38,6 +38,7 @@ class ctrl_upload
 
     /**
      * Upload a file
+     *
      * @return array
      */
     public static function upload_file(): array
@@ -76,6 +77,7 @@ class ctrl_upload
 
     /**
      * Upload an image in base64 format
+     *
      * @return array
      */
     public static function upload_base64(): array
