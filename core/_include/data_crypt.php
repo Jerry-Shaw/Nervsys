@@ -88,7 +88,7 @@ class data_crypt
      *
      * @return string
      */
-    public static function get_type(string $key): string
+    private static function get_type(string $key): string
     {
         $start = strlen('-----BEGIN ');
         $end = strpos($key, ' KEY-----', $start);
