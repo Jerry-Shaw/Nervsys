@@ -57,7 +57,6 @@ class key_crypt
                 break;
         }
         unset($key);
-
         return $keys;
     }
 
@@ -78,7 +77,6 @@ class key_crypt
         }
         $key = implode($unit);
         unset($unit, $k, $v, $unit_key);
-
         return $key;
     }
 
@@ -99,7 +97,6 @@ class key_crypt
         }
         $key = implode($unit);
         unset($unit, $k, $v, $unit_key, $unit_item);
-
         return $key;
     }
 }

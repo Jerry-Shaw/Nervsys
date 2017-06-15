@@ -149,7 +149,6 @@ class ctrl_http
                 unset($curl);
             } else $response = '';
         } else $response = '';
-
         return (string) $response;
     }
 
@@ -196,7 +195,6 @@ class ctrl_http
                 unset($files, $key, $item);
             } else $response = '';
         } else $response = '';
-
         return (string) $response;
     }
 }

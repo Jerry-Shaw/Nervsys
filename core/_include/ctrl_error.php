@@ -65,14 +65,8 @@ class ctrl_error
     public static function get_error(int $code): array
     {
         return array_key_exists($code, self::$pool)
-            ? [
-                'code' => $code,
-                'msg'  => ERROR_LANG ? gettext(self::$pool[$code]) : self::$pool[$code]
-            ]
-            : [
-                'code' => $code,
-                'msg'  => 'Error code NOT found!'
-            ];
+            ? ['code' => $code, 'msg' => ERROR_LANG ? gettext(self::$pool[$code]) : self::$pool[$code]]
+            : ['code' => $code, 'msg' => 'Error message NOT found!'];
     }
 
     /**
@@ -123,7 +117,6 @@ class ctrl_error
         }
         ksort($errors);
         unset($error_files, $error_file, $json, $error, $lang_files, $lang_file, $code, $msg, $error_text);
-
         return $errors;
     }
 }

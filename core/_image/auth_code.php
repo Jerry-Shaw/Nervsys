@@ -22,14 +22,12 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
+
 declare(strict_types = 1);
 
 require __DIR__ . '/../_include/cfg.php';
 
-$operator = [
-    '+',
-    '*'
-];
+$operator = ['+', '*'];
 
 $codes = [];
 $codes[] = (string) mt_rand(0, 9);
@@ -79,10 +77,19 @@ header('Content-type: image/gif');
 imagegif($image);
 imagedestroy($image);
 
-load_lib('core', 'db_redis');
-\db_redis::$redis_db = 0;
-$db_redis = \db_redis::connect();
-$db_redis->set(get_uuid(get_client_info()['ip']), $auth_code, 180);
+$uuid = get_uuid(get_client_info()['ip']);
+
+if (Redis_SESSION) {
+    //Use Redis
+    load_lib('core', 'db_redis');
+    \db_redis::$redis_db = 0;
+    $db_redis = \db_redis::connect();
+    $db_redis->set($uuid, $auth_code, 180);
+} else {
+    //Use Session
+    session_start();
+    $_SESSION[$uuid] = &$auth_code;
+}
 
 ob_flush();
 flush();

@@ -61,7 +61,6 @@ class db_redis
             exit('Failed to connect Redis Server! ' . $error->getMessage());
         }
         unset($redis_host, $redis_port, $redis_db, $redis_auth);
-
         //Return the Redis instance
         return $db_redis;
     }

@@ -33,18 +33,8 @@ class ctrl_upload
     public static $file_size = 20971520;//Allowed File size: 20MB by default
     public static $save_path = '';//Upload path
 
-    const img_type = [
-        1 => 'gif',
-        2 => 'jpeg',
-        3 => 'png',
-        6 => 'bmp'
-    ];//MINE Types of allowed images
-    const img_ext = [
-        1 => 'gif',
-        2 => 'jpg',
-        3 => 'png',
-        6 => 'bmp'
-    ];//Extensions of allowed images
+    const img_type = [1 => 'gif', 2 => 'jpeg', 3 => 'png', 6 => 'bmp'];//MINE Types of allowed images
+    const img_ext = [1 => 'gif', 2 => 'jpg', 3 => 'png', 6 => 'bmp'];//Extensions of allowed images
 
     /**
      * Upload a file
@@ -130,7 +120,6 @@ class ctrl_upload
             unset($data, $img_data);
         } else $result = \ctrl_error::get_error(10003);//Extension not allowed
         unset($base64_pos);
-
         return $result;
     }
 
@@ -201,7 +190,6 @@ class ctrl_upload
         $ext = \ctrl_file::get_ext($file_name);
         if ('' !== $ext && !empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) $ext = '';//File extension not allowed, set to empty string
         unset($file_name);
-
         return $ext;
     }
 
@@ -226,7 +214,6 @@ class ctrl_upload
             if (!$move) $url_path = '';//Return empty path if failed to copy the file
         }
         unset($file, $save_path, $file_name, $file_ext, $file_path, $move);
-
         return $url_path;
     }
 
@@ -262,17 +249,8 @@ class ctrl_upload
             }
             unset($ratio_img, $ratio_need, $ratio_diff);
         }
-        $img_data = [
-            'img_x' => &$img_x,
-            'img_y' => &$img_y,
-            'img_w' => &$need_width,
-            'img_h' => &$need_height,
-            'src_w' => &$src_w,
-            'src_h' => &$src_h
-        ];
-        unset($img_width, $img_height, $need_width, $need_height, $img_x, $img_y, $src_w, $src_h);
-
-        return $img_data;
+        unset($img_width, $img_height);
+        return ['img_x' => &$img_x, 'img_y' => &$img_y, 'img_w' => &$need_width, 'img_h' => &$need_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
     }
 
     /**
@@ -308,17 +286,8 @@ class ctrl_upload
             $img_width = &$need_width;
             $img_height = &$need_height;
         }
-        $img_data = [
-            'img_x' => 0,
-            'img_y' => 0,
-            'img_w' => &$img_width,
-            'img_h' => &$img_height,
-            'src_w' => &$src_w,
-            'src_h' => &$src_h
-        ];
-        unset($img_width, $img_height, $need_width, $need_height, $src_w, $src_h);
-
-        return $img_data;
+        unset($need_width, $need_height);
+        return ['img_x' => 0, 'img_y' => 0, 'img_w' => &$img_width, 'img_h' => &$img_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
     }
 
     /**
@@ -354,7 +323,6 @@ class ctrl_upload
                 break;
         }
         unset($error_code);
-
         return $result;
     }
 }

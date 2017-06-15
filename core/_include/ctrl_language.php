@@ -68,7 +68,6 @@ class ctrl_language
         //Go over every language key to get the text
         foreach ($keys as $key) $data[$key] = gettext($key);
         unset($keys, $key);
-
         return $data;
     }
 }

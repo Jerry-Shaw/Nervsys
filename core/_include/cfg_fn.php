@@ -47,7 +47,6 @@ function load_lib(string $module, string $library): string
         unset($position, $library_file);
     }
     unset($module);
-
     return $library;
 }
 
@@ -81,7 +80,6 @@ function load_api(string $module, string $library, string $method): array
         unset($api_list, $method_list);
     }
     unset($module, $library, $method, $class);
-
     return $result;
 }
 
@@ -106,7 +104,6 @@ function escape_requests(array $requests): array
 {
     foreach ($requests as $key => $value) $requests[$key] = !is_array($value) ? urlencode($value) : escape_requests($value);
     unset($key, $value);
-
     return $requests;
 }
 
@@ -134,7 +131,6 @@ function get_uuid(string $string = ''): string
     $uuid .= substr($code, 28, 12);
     $uuid = strtoupper($uuid);
     unset($string, $code);
-
     return $uuid;
 }
 
@@ -149,17 +145,8 @@ function get_uuid(string $string = ''): string
 function get_char(string $uuid, int $len = 1): string
 {
     $uuid = substr($uuid, 0, $len);
-    $char = strtr($uuid, [
-        'A' => '0',
-        'B' => '1',
-        'C' => '2',
-        'D' => '3',
-        'E' => '4',
-        'F' => '5',
-        '-' => '6'
-    ]);
+    $char = strtr($uuid, ['A' => '0', 'B' => '1', 'C' => '2', 'D' => '3', 'E' => '4', 'F' => '5', '-' => '6']);
     unset($uuid, $len);
-
     return $char;
 }
 
@@ -182,7 +169,6 @@ function sort_list(array $data, array $list): array
         unset($item);
     }
     unset($list, $data);
-
     return $result;
 }
 
@@ -212,12 +198,5 @@ function get_client_info(): array
     else $client_ip = '0.0.0.0';
     $client_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $client_lang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 5) : '';
-    $client_info = [
-        'ip'    => &$client_ip,
-        'lang'  => &$client_lang,
-        'agent' => &$client_agent
-    ];
-    unset($client_ip, $client_lang);
-
-    return $client_info;
+    return ['ip' => &$client_ip, 'lang' => &$client_lang, 'agent' => &$client_agent];
 }

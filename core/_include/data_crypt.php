@@ -29,10 +29,7 @@
 class data_crypt
 {
     //Crypt methods
-    const method = [
-        'AES-256-CTR',
-        'CAMELLIA-256-CFB'
-    ];
+    const method = ['AES-256-CTR', 'CAMELLIA-256-CFB'];
 
     /**
      * Get RSA Key-Pairs (Public Key & Private Key)
@@ -41,10 +38,7 @@ class data_crypt
      */
     public static function get_pkey(): array
     {
-        $keys = [
-            'public'  => '',
-            'private' => ''
-        ];
+        $keys = ['public' => '', 'private' => ''];
         $openssl = openssl_pkey_new(OpenSSL_CFG);
         if (false !== $openssl) {
             $public = openssl_pkey_get_details($openssl);
@@ -54,7 +48,6 @@ class data_crypt
             unset($public, $private);
         }
         unset($openssl);
-
         return $keys;
     }
 
@@ -69,10 +62,8 @@ class data_crypt
     public static function encode(string $string, array $keys): string
     {
         $string = openssl_encrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
-        if (false === $string) $string = '';
         unset($keys);
-
-        return $string;
+        return (string) $string;
     }
 
     /**
@@ -86,10 +77,8 @@ class data_crypt
     public static function decode(string $string, array $keys): string
     {
         $string = openssl_decrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
-        if (false === $string) $string = '';
         unset($keys);
-
-        return $string;
+        return (string) $string;
     }
 
     /**
@@ -104,9 +93,7 @@ class data_crypt
         $start = strlen('-----BEGIN ');
         $end = strpos($key, ' KEY-----', $start);
         $type = false !== $end ? strtolower(substr($key, $start, $end)) : '';
-        unset($start, $end);
-        unset($key);
-
+        unset($key, $start, $end);
         return $type;
     }
 
@@ -121,18 +108,13 @@ class data_crypt
     public static function encrypt(string $string, string $key): string
     {
         $type = '' !== $key ? self::get_type($key) : '';
-        if ('' !== $type && in_array($type, [
-                'public',
-                'private'
-            ], true)
-        ) {
+        if ('' !== $type && in_array($type, ['public', 'private'], true)) {
             $encrypt = 'openssl_' . $type . '_encrypt';
             if ('' === $string || !$encrypt($string, $string, $key)) $string = '';
             if ('' !== $string) $string = base64_encode($string);
             unset($encrypt);
         }
         unset($key, $type);
-
         return $string;
     }
 
@@ -147,18 +129,13 @@ class data_crypt
     public static function decrypt(string $string, string $key): string
     {
         $type = '' !== $key ? self::get_type($key) : '';
-        if ('' !== $type && in_array($type, [
-                'public',
-                'private'
-            ], true)
-        ) {
+        if ('' !== $type && in_array($type, ['public', 'private'], true)) {
             $decrypt = 'openssl_' . $type . '_decrypt';
             if ('' !== $string) $string = base64_decode($string, true);
             if (false === $string || '' === $string || !$decrypt($string, $string, $key)) $string = '';
             unset($decrypt);
         }
         unset($key, $type);
-
         return $string;
     }
 
@@ -176,7 +153,6 @@ class data_crypt
         $string = 0 === ord(substr($codes, 0, 1)) & 1 ? $noises[0] . ':' . $string . ':' . $noises[2] : $noises[1] . ':' . $string . ':' . $noises[3];
         $string = substr(hash('sha1', $string), 4, 32);
         unset($codes, $noises);
-
         return $string;
     }
 
@@ -193,7 +169,6 @@ class data_crypt
     {
         $result = self::hash_pwd($input, $codes) === $hash ? true : false;
         unset($input, $codes, $hash);
-
         return $result;
     }
 
@@ -218,7 +193,6 @@ class data_crypt
             unset($crypt, $key, $keys, $mixed);
         } else $signature = '';
         unset($string, $rsa_key);
-
         return $signature;
     }
 
@@ -246,7 +220,6 @@ class data_crypt
             unset($codes, $mixed);
         } else $data = '';
         unset($signature, $rsa_key);
-
         return $data;
     }
 }

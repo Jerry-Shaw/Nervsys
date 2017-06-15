@@ -40,7 +40,6 @@ class ctrl_file
         $ext = pathinfo($path, PATHINFO_EXTENSION);
         if ('' !== $ext && 1 === preg_match('/[A-Z]/', $ext)) $ext = strtolower($ext);
         unset($path);
-
         return $ext;
     }
 
@@ -62,7 +61,6 @@ class ctrl_file
         }
         $file_path = is_readable($real_path) ? $path . '/' : ':';
         unset($path, $real_path);
-
         return $file_path;
     }
 
@@ -93,7 +91,6 @@ class ctrl_file
             }
         }
         unset($path, $pattern, $recursive);
-
         return $list;
     }
 }

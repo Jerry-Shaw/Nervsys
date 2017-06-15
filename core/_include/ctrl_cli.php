@@ -192,7 +192,6 @@ class ctrl_cli
         }
         //Return false once the elapsed time reaches the limit
         unset($stream, $try, $resource, $stat);
-
         return $result;
     }
 
@@ -229,7 +228,6 @@ class ctrl_cli
             if (false !== strpos(self::$opt_get, 'result')) $result['result'] = &$data;
         }
         unset($data);
-
         return $result;
     }
 
@@ -243,20 +241,7 @@ class ctrl_cli
         //Check command
         if ('' !== self::$cli_cmd) {
             //Run process
-            $process = proc_open(self::$cli_cmd, [
-                [
-                    'pipe',
-                    'r'
-                ],
-                [
-                    'pipe',
-                    'w'
-                ],
-                [
-                    'pipe',
-                    'w'
-                ]
-            ], $pipes, CLI_WORK_PATH);
+            $process = proc_open(self::$cli_cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, CLI_WORK_PATH);
             //Parse process data
             if (is_resource($process)) {
                 //Process input data
@@ -286,7 +271,6 @@ class ctrl_cli
             } else $result = ['error' => 'Process ERROR!'];
             unset($process, $pipes);
         } else $result = ['error' => 'Command ERROR!'];
-
         return $result;
     }
 
@@ -304,7 +288,6 @@ class ctrl_cli
             //Internal Mode
             //Build internal var
             self::build_var();
-
             //Call API
             return self::call_api();
         } else {
@@ -313,7 +296,6 @@ class ctrl_cli
             self::load_cfg();
             //Build external CMD
             self::build_cmd();
-
             //Run process
             return self::run_exec();
         }

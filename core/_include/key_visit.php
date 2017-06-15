@@ -137,7 +137,6 @@ class key_visit
             }
         }
         unset($ExpireAt);
-
         return self::get_key();
     }
 
@@ -159,7 +158,6 @@ class key_visit
             if ('LOCAL' === self::$client) $_SESSION[$key] = &$value;
         }
         unset($key, $value, $is_int);
-
         return self::get_key();
     }
 
@@ -184,7 +182,6 @@ class key_visit
             }
         }
         unset($key);
-
         return self::get_key();
     }
 
@@ -232,7 +229,6 @@ class key_visit
         $session_name = session_name();
         $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
         unset($session_name);
-
         return $client;
     }
 
@@ -249,7 +245,6 @@ class key_visit
             } else continue;
         }
         unset($tag);
-
         return $online;
     }
 }
