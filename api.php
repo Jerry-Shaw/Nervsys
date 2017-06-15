@@ -38,9 +38,9 @@ require __DIR__ . '/core/_include/cfg.php';
 //Detect PHP SAPI
 if ('cli' !== PHP_SAPI) {
     //Code Block for CGI Mode
-    //Load data_key as an overall module and start it.
+    //Load key_visit as an overall module and start it.
     load_lib('core', 'key_visit');
-    //Start data_key process
+    //Start key_visit process
     \key_visit::start();
     //Load data_pool as an overall module and start it.
     load_lib('core', 'data_pool');
