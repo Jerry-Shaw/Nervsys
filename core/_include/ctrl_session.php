@@ -48,12 +48,30 @@ class ctrl_session
             ini_set('session.gc_probability', 100);
             ini_set('session.save_handler', 'user');
             session_set_save_handler(
-                [__CLASS__, 'session_open'],
-                [__CLASS__, 'session_close'],
-                [__CLASS__, 'session_read'],
-                [__CLASS__, 'session_write'],
-                [__CLASS__, 'session_destroy'],
-                [__CLASS__, 'session_gc']
+                [
+                    __CLASS__,
+                    'session_open'
+                ],
+                [
+                    __CLASS__,
+                    'session_close'
+                ],
+                [
+                    __CLASS__,
+                    'session_read'
+                ],
+                [
+                    __CLASS__,
+                    'session_write'
+                ],
+                [
+                    __CLASS__,
+                    'session_destroy'
+                ],
+                [
+                    __CLASS__,
+                    'session_gc'
+                ]
             );
             session_start();
         }
@@ -85,7 +103,7 @@ class ctrl_session
      */
     public static function session_read(string $session_id): string
     {
-        return (string)self::$db_redis->get(self::prefix . $session_id);
+        return (string) self::$db_redis->get(self::prefix . $session_id);
     }
 
     /**
@@ -107,6 +125,7 @@ class ctrl_session
     public static function session_destroy(string $session_id): bool
     {
         self::$db_redis->del(self::prefix . $session_id);
+
         return true;
     }
 

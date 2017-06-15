@@ -40,8 +40,8 @@ class ctrl_language
     public static function load(string $module = '', string $file)
     {
         if (isset($_GET['lang'])) $lang = &$_GET['lang'];
-        elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
-        elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+        else if (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
+        else if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
             setcookie('lang', $lang, time() + 2592000, '/');
         } else $lang = 'en-US';
@@ -68,6 +68,7 @@ class ctrl_language
         //Go over every language key to get the text
         foreach ($keys as $key) $data[$key] = gettext($key);
         unset($keys, $key);
+
         return $data;
     }
 }

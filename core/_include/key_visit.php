@@ -71,7 +71,7 @@ class key_visit
                 default:
                     //Detect requested client type
                     if (isset($_SERVER['HTTP_ORIGIN'])) self::$client = $Server_HOST === $_SERVER['HTTP_ORIGIN'] ? self::chk_cookie() : 'REMOTE';
-                    elseif (isset($_SERVER['HTTP_REFERER'])) {
+                    else if (isset($_SERVER['HTTP_REFERER'])) {
                         $referer = parse_url($_SERVER['HTTP_REFERER']);
                         self::$client = false !== $referer && isset($referer['scheme']) && isset($referer['host']) && $Server_HOST === $referer['scheme'] . '://' . $referer['host'] . (!isset($referer['port']) || 80 === $referer['port'] ? '' : ':' . $referer['port']) ? self::chk_cookie() : 'REMOTE';
                         unset($referer);
@@ -80,8 +80,8 @@ class key_visit
                     if ('LOCAL' === self::$client) {
                         //Extract data from SESSION or KEY
                         if (!empty($_SESSION)) self::map_sess();
-                        elseif (isset($_SERVER['HTTP_KEY'])) self::map_key();
-                    } elseif ('REMOTE' === self::$client && isset($_SERVER['HTTP_KEY'])) {
+                        else if (isset($_SERVER['HTTP_KEY'])) self::map_key();
+                    } else if ('REMOTE' === self::$client && isset($_SERVER['HTTP_KEY'])) {
                         //Extract data from KEY
                         self::map_key();
                         //Check KEY content
@@ -137,6 +137,7 @@ class key_visit
             }
         }
         unset($ExpireAt);
+
         return self::get_key();
     }
 
@@ -146,18 +147,19 @@ class key_visit
      *
      * @param string $key
      * @param string $value
-     * @param bool $is_int
+     * @param bool   $is_int
      *
      * @return string
      */
     public static function add(string $key, string $value, bool $is_int = false): string
     {
         if ('' !== $key) {
-            if ($is_int) $value = (int)$value;
+            if ($is_int) $value = (int) $value;
             self::$key[$key] = &$value;
             if ('LOCAL' === self::$client) $_SESSION[$key] = &$value;
         }
         unset($key, $value, $is_int);
+
         return self::get_key();
     }
 
@@ -182,6 +184,7 @@ class key_visit
             }
         }
         unset($key);
+
         return self::get_key();
     }
 
@@ -229,6 +232,7 @@ class key_visit
         $session_name = session_name();
         $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
         unset($session_name);
+
         return $client;
     }
 
@@ -245,6 +249,7 @@ class key_visit
             } else continue;
         }
         unset($tag);
+
         return $online;
     }
 }

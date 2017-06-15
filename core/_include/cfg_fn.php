@@ -47,6 +47,7 @@ function load_lib(string $module, string $library): string
         unset($position, $library_file);
     }
     unset($module);
+
     return $library;
 }
 
@@ -80,6 +81,7 @@ function load_api(string $module, string $library, string $method): array
         unset($api_list, $method_list);
     }
     unset($module, $library, $method, $class);
+
     return $result;
 }
 
@@ -104,6 +106,7 @@ function escape_requests(array $requests): array
 {
     foreach ($requests as $key => $value) $requests[$key] = !is_array($value) ? urlencode($value) : escape_requests($value);
     unset($key, $value);
+
     return $requests;
 }
 
@@ -118,7 +121,7 @@ function escape_requests(array $requests): array
 function get_uuid(string $string = ''): string
 {
     if ('' === $string) $string = uniqid(mt_rand(), true);
-    elseif (1 === preg_match('/[A-Z]/', $string)) $string = mb_strtolower($string, 'UTF-8');
+    else if (1 === preg_match('/[A-Z]/', $string)) $string = mb_strtolower($string, 'UTF-8');
     $code = hash('sha1', $string . ':UUID');
     $uuid = substr($code, 0, 8);
     $uuid .= '-';
@@ -131,6 +134,7 @@ function get_uuid(string $string = ''): string
     $uuid .= substr($code, 28, 12);
     $uuid = strtoupper($uuid);
     unset($string, $code);
+
     return $uuid;
 }
 
@@ -138,15 +142,24 @@ function get_uuid(string $string = ''): string
  * Provides the CHAR from an UUID
  *
  * @param string $uuid
- * @param int $len
+ * @param int    $len
  *
  * @return string
  */
 function get_char(string $uuid, int $len = 1): string
 {
     $uuid = substr($uuid, 0, $len);
-    $char = strtr($uuid, ['A' => '0', 'B' => '1', 'C' => '2', 'D' => '3', 'E' => '4', 'F' => '5', '-' => '6']);
+    $char = strtr($uuid, [
+        'A' => '0',
+        'B' => '1',
+        'C' => '2',
+        'D' => '3',
+        'E' => '4',
+        'F' => '5',
+        '-' => '6'
+    ]);
     unset($uuid, $len);
+
     return $char;
 }
 
@@ -169,6 +182,7 @@ function sort_list(array $data, array $list): array
         unset($item);
     }
     unset($list, $data);
+
     return $result;
 }
 
@@ -184,21 +198,26 @@ function get_client_info(): array
         $client_pos = strpos($XFF, ', ');
         $client_ip = false !== $client_pos ? substr($XFF, 0, $client_pos) : $XFF;
         unset($XFF, $client_pos);
-    } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) $client_ip = $_SERVER['HTTP_CLIENT_IP'];
-    elseif (isset($_SERVER['REMOTE_ADDR'])) $client_ip = $_SERVER['REMOTE_ADDR'];
-    elseif (isset($_SERVER['LOCAL_ADDR'])) $client_ip = $_SERVER['LOCAL_ADDR'];
-    elseif (false !== getenv('HTTP_X_FORWARDED_FOR')) {
+    } else if (isset($_SERVER['HTTP_CLIENT_IP'])) $client_ip = $_SERVER['HTTP_CLIENT_IP'];
+    else if (isset($_SERVER['REMOTE_ADDR'])) $client_ip = $_SERVER['REMOTE_ADDR'];
+    else if (isset($_SERVER['LOCAL_ADDR'])) $client_ip = $_SERVER['LOCAL_ADDR'];
+    else if (false !== getenv('HTTP_X_FORWARDED_FOR')) {
         $XFF = getenv('HTTP_X_FORWARDED_FOR');
         $client_pos = strpos($XFF, ', ');
         $client_ip = false !== $client_pos ? substr($XFF, 0, $client_pos) : $XFF;
         unset($XFF, $client_pos);
-    } elseif (false !== getenv('HTTP_CLIENT_IP')) $client_ip = getenv('HTTP_CLIENT_IP');
-    elseif (false !== getenv('REMOTE_ADDR')) $client_ip = getenv('REMOTE_ADDR');
-    elseif (false !== getenv('LOCAL_ADDR')) $client_ip = getenv('LOCAL_ADDR');
+    } else if (false !== getenv('HTTP_CLIENT_IP')) $client_ip = getenv('HTTP_CLIENT_IP');
+    else if (false !== getenv('REMOTE_ADDR')) $client_ip = getenv('REMOTE_ADDR');
+    else if (false !== getenv('LOCAL_ADDR')) $client_ip = getenv('LOCAL_ADDR');
     else $client_ip = '0.0.0.0';
     $client_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $client_lang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 5) : '';
-    $client_info = ['ip' => &$client_ip, 'lang' => &$client_lang, 'agent' => &$client_agent];
+    $client_info = [
+        'ip'    => &$client_ip,
+        'lang'  => &$client_lang,
+        'agent' => &$client_agent
+    ];
     unset($client_ip, $client_lang);
+
     return $client_info;
 }

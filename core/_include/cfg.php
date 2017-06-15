@@ -51,10 +51,16 @@ define('CRYPT_PATH', 'core');
 define('CRYPT_NAME', 'key_crypt');
 
 //Define Online State Tags
-define('ONLINE_TAGS', ['uuid', 'char']);
+define('ONLINE_TAGS', [
+    'uuid',
+    'char'
+]);
 
 //Define Available languages
-define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
+define('LANGUAGE_LIST', [
+    'en-US',
+    'zh-CN'
+]);
 
 //Define Crypt KEY Path
 define('KEY_PATH', 'E:/Sites/Keys/');
@@ -79,7 +85,16 @@ define('CLI_CAS_PATH', ROOT . '/_cli/_cas/');//Cache path
 define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');//Working path
 define('CLI_EXEC_PATH', '"D:/Programs/iisExpress/Programs/PHP/php.exe"');//PHP executable binary path
 define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Options)
-define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'path:', 'log']);//Long options (Preferred)
+define('CLI_LONG_OPTIONS', [
+    'cmd:',
+    'map:',
+    'data:',
+    'get:',
+    'try:',
+    'wait:',
+    'path:',
+    'log'
+]);//Long options (Preferred)
 
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');

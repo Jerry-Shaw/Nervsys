@@ -67,6 +67,7 @@ class db_mysql
             exit('Failed to connect MySQL Server! ' . $error->getMessage());
         }
         unset($mysql_host, $mysql_port, $mysql_db, $mysql_user, $mysql_pwd, $mysql_charset);
+
         //Return the PDO instance
         return $db_mysql;
     }

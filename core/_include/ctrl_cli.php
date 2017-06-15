@@ -60,34 +60,34 @@ class ctrl_cli
             if (isset(self::$opt['log']) || isset(self::$opt['l'])) self::$opt_log = true;
             //Get "cmd" option
             if (isset(self::$opt['cmd']) && false !== self::$opt['cmd'] && '' !== self::$opt['cmd']) self::$opt_cmd = self::$opt['cmd'];
-            elseif (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$opt_cmd = self::$opt['c'];
+            else if (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$opt_cmd = self::$opt['c'];
             //Get "map" option
             if (isset(self::$opt['map']) && false !== self::$opt['map'] && '' !== self::$opt['map']) self::$opt_map = self::$opt['map'];
-            elseif (isset(self::$opt['m']) && false !== self::$opt['m'] && '' !== self::$opt['m']) self::$opt_map = self::$opt['m'];
+            else if (isset(self::$opt['m']) && false !== self::$opt['m'] && '' !== self::$opt['m']) self::$opt_map = self::$opt['m'];
             //Get "get" option
             if (isset(self::$opt['get']) && false !== self::$opt['get'] && '' !== self::$opt['get']) self::$opt_get = self::$opt['get'];
-            elseif (isset(self::$opt['g']) && false !== self::$opt['g'] && '' !== self::$opt['g']) self::$opt_get = self::$opt['g'];
+            else if (isset(self::$opt['g']) && false !== self::$opt['g'] && '' !== self::$opt['g']) self::$opt_get = self::$opt['g'];
             //Get "path" option
             if (isset(self::$opt['path']) && false !== self::$opt['path'] && '' !== self::$opt['path']) self::$opt_path = self::$opt['path'];
-            elseif (isset(self::$opt['p']) && false !== self::$opt['p'] && '' !== self::$opt['p']) self::$opt_path = self::$opt['p'];
+            else if (isset(self::$opt['p']) && false !== self::$opt['p'] && '' !== self::$opt['p']) self::$opt_path = self::$opt['p'];
             //Get "data" from option/STDIN
             if (isset(self::$opt['data']) && false !== self::$opt['data'] && '' !== self::$opt['data']) self::$opt_data = self::$opt['data'];
-            elseif (isset(self::$opt['d']) && false !== self::$opt['d'] && '' !== self::$opt['d']) self::$opt_data = self::$opt['d'];
+            else if (isset(self::$opt['d']) && false !== self::$opt['d'] && '' !== self::$opt['d']) self::$opt_data = self::$opt['d'];
             else self::$opt_data = self::get_stream([STDIN]);
             //Get "try" option
             if (isset(self::$opt['try'])) {
-                self::$opt['try'] = (int)self::$opt['try'];
+                self::$opt['try'] = (int) self::$opt['try'];
                 if (0 < self::$opt['try']) self::$opt_try = self::$opt['try'];
-            } elseif (isset(self::$opt['t'])) {
-                self::$opt['t'] = (int)self::$opt['t'];
+            } else if (isset(self::$opt['t'])) {
+                self::$opt['t'] = (int) self::$opt['t'];
                 if (0 < self::$opt['t']) self::$opt_try = self::$opt['t'];
             }
             //Get "wait" option
             if (isset(self::$opt['wait'])) {
-                self::$opt['wait'] = (int)self::$opt['wait'];
+                self::$opt['wait'] = (int) self::$opt['wait'];
                 if (0 < self::$opt['wait']) self::$opt_wait = self::$opt['wait'];
-            } elseif (isset(self::$opt['w'])) {
-                self::$opt['w'] = (int)self::$opt['w'];
+            } else if (isset(self::$opt['w'])) {
+                self::$opt['w'] = (int) self::$opt['w'];
                 if (0 < self::$opt['w']) self::$opt_wait = self::$opt['w'];
             }
         }
@@ -101,7 +101,7 @@ class ctrl_cli
         //Check CFG file
         if (is_file(self::$opt_path)) {
             //Get CFG file content
-            $json = (string)file_get_contents(self::$opt_path);
+            $json = (string) file_get_contents(self::$opt_path);
             if ('' !== $json) {
                 //Decode file content and map to CFG
                 $data = json_decode($json, true);
@@ -192,6 +192,7 @@ class ctrl_cli
         }
         //Return false once the elapsed time reaches the limit
         unset($stream, $try, $resource, $stat);
+
         return $result;
     }
 
@@ -228,6 +229,7 @@ class ctrl_cli
             if (false !== strpos(self::$opt_get, 'result')) $result['result'] = &$data;
         }
         unset($data);
+
         return $result;
     }
 
@@ -241,7 +243,20 @@ class ctrl_cli
         //Check command
         if ('' !== self::$cli_cmd) {
             //Run process
-            $process = proc_open(self::$cli_cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, CLI_WORK_PATH);
+            $process = proc_open(self::$cli_cmd, [
+                [
+                    'pipe',
+                    'r'
+                ],
+                [
+                    'pipe',
+                    'w'
+                ],
+                [
+                    'pipe',
+                    'w'
+                ]
+            ], $pipes, CLI_WORK_PATH);
             //Parse process data
             if (is_resource($process)) {
                 //Process input data
@@ -271,6 +286,7 @@ class ctrl_cli
             } else $result = ['error' => 'Process ERROR!'];
             unset($process, $pipes);
         } else $result = ['error' => 'Command ERROR!'];
+
         return $result;
     }
 
@@ -288,6 +304,7 @@ class ctrl_cli
             //Internal Mode
             //Build internal var
             self::build_var();
+
             //Call API
             return self::call_api();
         } else {
@@ -296,6 +313,7 @@ class ctrl_cli
             self::load_cfg();
             //Build external CMD
             self::build_cmd();
+
             //Run process
             return self::run_exec();
         }

@@ -26,16 +26,19 @@ declare(strict_types = 1);
 
 require __DIR__ . '/../_include/cfg.php';
 
-$operator = ['+', '*'];
+$operator = [
+    '+',
+    '*'
+];
 
 $codes = [];
-$codes[] = (string)mt_rand(0, 9);
+$codes[] = (string) mt_rand(0, 9);
 $codes[] = $operator[mt_rand(0, 1)];
-$codes[] = (string)mt_rand(0, 9);
+$codes[] = (string) mt_rand(0, 9);
 $codes[] = $operator[mt_rand(0, 1)];
-$codes[] = (string)mt_rand(0, 9);
+$codes[] = (string) mt_rand(0, 9);
 
-$auth_code = (string)eval('return ' . implode($codes) . ';');
+$auth_code = (string) eval('return ' . implode($codes) . ';');
 
 $codes[] = '=';
 $codes[] = '?';

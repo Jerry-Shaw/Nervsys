@@ -63,7 +63,11 @@ class data_pool
         //Get date from HTTP Request or CLI variables
         $data = 'cli' !== PHP_SAPI ? (!ENABLE_GET ? $_POST : $_REQUEST) : self::$cli;
         //Set result data format according to the request
-        if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
+        if (isset($data['format']) && in_array($data['format'], [
+                'json',
+                'raw'
+            ], true)
+        ) self::$format = &$data['format'];
         //Parse "cmd" data from HTTP Request
         if (isset($data['cmd']) && is_string($data['cmd']) && false !== strpos($data['cmd'], '/')) self::parse_cmd($data['cmd']);
         //Parse "map" data from HTTP Request
@@ -107,7 +111,7 @@ class data_pool
                                 //Calling the api method if the data structure is matched
                                 if (empty($difference)) self::call_method($module, $class, $method);
                             }
-                        } elseif (!empty(self::$method)) {
+                        } else if (!empty(self::$method)) {
                             //Requested methods is needed when API Safe Zone checking is turned off
                             $method_api = array_intersect(self::$method, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
@@ -214,7 +218,10 @@ class data_pool
                         $data_from = [];
                         foreach ($keys as $key) $data_from[] = $key;
                         //Save to keymap List
-                        self::$keymap[$key_from] = ['from' => $data_from, 'to' => $map_to];
+                        self::$keymap[$key_from] = [
+                            'from' => $data_from,
+                            'to'   => $map_to
+                        ];
                     } else continue;
                 } else continue;
             } else continue;

@@ -48,7 +48,7 @@ class ctrl_socket
             $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
             if (false !== $socket) {
                 $length = strlen($data);
-                if (!socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) || $length !== (int)socket_sendto($socket, $data, $length, 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
+                if (!socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) || $length !== (int) socket_sendto($socket, $data, $length, 0, self::$udp_broadcast, self::$udp_port)) echo 'Broadcast Error!';
                 socket_close($socket);
                 unset($length);
             }
@@ -67,7 +67,7 @@ class ctrl_socket
         if ('' !== $data) {
             $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
             if (false !== $socket) {
-                if (0 === (int)socket_sendto($socket, $data, strlen($data), 0, self::$udp_address, self::$udp_port)) echo 'UDP Send Error!';
+                if (0 === (int) socket_sendto($socket, $data, strlen($data), 0, self::$udp_address, self::$udp_port)) echo 'UDP Send Error!';
                 socket_close($socket);
             }
             unset($socket);
@@ -84,7 +84,7 @@ class ctrl_socket
         if (false !== $socket && socket_set_nonblock($socket) && socket_bind($socket, '0.0.0.0', self::$udp_port)) {
             while (true) {
                 if (0 < socket_recvfrom($socket, $data, 4096, 0, $from, $port)) {
-                    $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                    $data = (string) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                     if ('' !== $data) {
                         $cmd = json_decode($data, true);
                         if (isset($cmd) && isset($cmd['result'])) {
@@ -115,7 +115,7 @@ class ctrl_socket
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if (false !== $socket && socket_connect($socket, self::$tcp_address, self::$tcp_port)) {
             if (0 === socket_write($socket, $data)) echo 'TCP Send Error!';
-            $data = (string)socket_read($socket, 4096);
+            $data = (string) socket_read($socket, 4096);
             if ('' !== $data) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
             socket_shutdown($socket);
             socket_close($socket);
@@ -133,9 +133,9 @@ class ctrl_socket
             $accept = socket_accept($socket);
             if (is_resource($accept)) {
                 while (true) {
-                    $data = (string)socket_read($accept, 4096);
+                    $data = (string) socket_read($accept, 4096);
                     if ('' !== $data) {
-                        $data = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
+                        $data = (string) exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data);
                         if ('' !== $data) {
                             $cmd = json_decode($data, true);
                             if (isset($cmd) && isset($cmd['result'])) foreach ($cmd['result'] as $value) if (is_string($value) && '' !== $value) socket_write($accept, $value);

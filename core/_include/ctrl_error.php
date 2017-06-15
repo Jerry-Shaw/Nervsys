@@ -42,7 +42,7 @@ class ctrl_error
      */
     public static function load(string $module, string $file)
     {
-        $json = (string)file_get_contents(ROOT . '/' . $module . '/_error/' . $file . '.json');
+        $json = (string) file_get_contents(ROOT . '/' . $module . '/_error/' . $file . '.json');
         if ('' !== $json) {
             $error = json_decode($json, true);
             if (isset($error)) {
@@ -65,8 +65,14 @@ class ctrl_error
     public static function get_error(int $code): array
     {
         return array_key_exists($code, self::$pool)
-            ? ['code' => $code, 'msg' => ERROR_LANG ? gettext(self::$pool[$code]) : self::$pool[$code]]
-            : ['code' => $code, 'msg' => 'Error code NOT found!'];
+            ? [
+                'code' => $code,
+                'msg'  => ERROR_LANG ? gettext(self::$pool[$code]) : self::$pool[$code]
+            ]
+            : [
+                'code' => $code,
+                'msg'  => 'Error code NOT found!'
+            ];
     }
 
     /**
@@ -82,7 +88,7 @@ class ctrl_error
         if (ERROR_LANG) load_lib('core', 'ctrl_language');
         $error_files = \ctrl_file::get_list(ROOT, '/_error/*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $error_file) {
-            $json = (string)file_get_contents($error_file);
+            $json = (string) file_get_contents($error_file);
             if ('' !== $json) {
                 $error = json_decode($json, true);
                 if (isset($error)) {
@@ -117,6 +123,7 @@ class ctrl_error
         }
         ksort($errors);
         unset($error_files, $error_file, $json, $error, $lang_files, $lang_file, $code, $msg, $error_text);
+
         return $errors;
     }
 }

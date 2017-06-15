@@ -33,8 +33,18 @@ class ctrl_upload
     public static $file_size = 20971520;//Allowed File size: 20MB by default
     public static $save_path = '';//Upload path
 
-    const img_type = [1 => 'gif', 2 => 'jpeg', 3 => 'png', 6 => 'bmp'];//MINE Types of allowed images
-    const img_ext = [1 => 'gif', 2 => 'jpg', 3 => 'png', 6 => 'bmp'];//Extensions of allowed images
+    const img_type = [
+        1 => 'gif',
+        2 => 'jpeg',
+        3 => 'png',
+        6 => 'bmp'
+    ];//MINE Types of allowed images
+    const img_ext = [
+        1 => 'gif',
+        2 => 'jpg',
+        3 => 'png',
+        6 => 'bmp'
+    ];//Extensions of allowed images
 
     /**
      * Upload a file
@@ -103,7 +113,7 @@ class ctrl_upload
                             $url_path = $save_path . $file_name . '.' . $file_ext;//Get URL path
                             $file_path = FILE_PATH . $url_path;//Get real upload path
                             if (is_file($file_path)) unlink($file_path);//Delete the file if existing
-                            $save_file = (int)file_put_contents($file_path, $img_data);//Write to file
+                            $save_file = (int) file_put_contents($file_path, $img_data);//Write to file
                             if (0 < $save_file) {//Done
                                 $result = \ctrl_error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url_path;
@@ -120,6 +130,7 @@ class ctrl_upload
             unset($data, $img_data);
         } else $result = \ctrl_error::get_error(10003);//Extension not allowed
         unset($base64_pos);
+
         return $result;
     }
 
@@ -127,9 +138,9 @@ class ctrl_upload
      * Resize/Crop an image to a giving size
      *
      * @param string $file
-     * @param int $width
-     * @param int $height
-     * @param bool $crop
+     * @param int    $width
+     * @param int    $height
+     * @param bool   $crop
      */
     public static function image_resize(string $file, int $width, int $height, bool $crop = false)
     {
@@ -190,6 +201,7 @@ class ctrl_upload
         $ext = \ctrl_file::get_ext($file_name);
         if ('' !== $ext && !empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) $ext = '';//File extension not allowed, set to empty string
         unset($file_name);
+
         return $ext;
     }
 
@@ -214,15 +226,16 @@ class ctrl_upload
             if (!$move) $url_path = '';//Return empty path if failed to copy the file
         }
         unset($file, $save_path, $file_name, $file_ext, $file_path, $move);
+
         return $url_path;
     }
 
     /**
      * Get cropped image coordinates according to the giving size
      *
-     * @param int $img_width //Original width
-     * @param int $img_height //Original height
-     * @param int $need_width //Needed width
+     * @param int $img_width   //Original width
+     * @param int $img_height  //Original height
+     * @param int $need_width  //Needed width
      * @param int $need_height //Needed height
      *
      * @return array
@@ -237,29 +250,37 @@ class ctrl_upload
             $ratio_need = $need_width / $need_height;
             $ratio_diff = round($ratio_img - $ratio_need, 2);
             if (0 < $ratio_diff && $img_height > $need_height) {
-                $crop_w = (int)($img_width - $img_height * $ratio_need);
-                $img_x = (int)($crop_w / 2);
+                $crop_w = (int) ($img_width - $img_height * $ratio_need);
+                $img_x = (int) ($crop_w / 2);
                 $src_w = $img_width - $crop_w;
                 unset($crop_w);
-            } elseif (0 > $ratio_diff && $img_width > $need_width) {
-                $crop_h = (int)($img_height - $img_width / $ratio_need);
-                $img_y = (int)($crop_h / 2);
+            } else if (0 > $ratio_diff && $img_width > $need_width) {
+                $crop_h = (int) ($img_height - $img_width / $ratio_need);
+                $img_y = (int) ($crop_h / 2);
                 $src_h = $img_height - $img_y * 2;
                 unset($crop_h);
             }
             unset($ratio_img, $ratio_need, $ratio_diff);
         }
-        $img_data = ['img_x' => &$img_x, 'img_y' => &$img_y, 'img_w' => &$need_width, 'img_h' => &$need_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
+        $img_data = [
+            'img_x' => &$img_x,
+            'img_y' => &$img_y,
+            'img_w' => &$need_width,
+            'img_h' => &$need_height,
+            'src_w' => &$src_w,
+            'src_h' => &$src_h
+        ];
         unset($img_width, $img_height, $need_width, $need_height, $img_x, $img_y, $src_w, $src_h);
+
         return $img_data;
     }
 
     /**
      * Get new image size according to the giving size
      *
-     * @param int $img_width //Original width
-     * @param int $img_height //Original height
-     * @param int $need_width //Needed width
+     * @param int $img_width   //Original width
+     * @param int $img_height  //Original height
+     * @param int $need_width  //Needed width
      * @param int $need_height //Needed height
      *
      * @return array
@@ -274,11 +295,11 @@ class ctrl_upload
             $ratio_diff = round($ratio_img - $ratio_need, 2);
             if (0 < $ratio_diff && $img_width > $need_width) {
                 $img_width = &$need_width;
-                $img_height = (int)($need_width / $ratio_img);
-            } elseif (0 > $ratio_diff && $img_height > $need_height) {
+                $img_height = (int) ($need_width / $ratio_img);
+            } else if (0 > $ratio_diff && $img_height > $need_height) {
                 $img_height = &$need_height;
-                $img_width = (int)($need_height * $ratio_img);
-            } elseif (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
+                $img_width = (int) ($need_height * $ratio_img);
+            } else if (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
                 $img_width = &$need_width;
                 $img_height = &$need_height;
             }
@@ -287,8 +308,16 @@ class ctrl_upload
             $img_width = &$need_width;
             $img_height = &$need_height;
         }
-        $img_data = ['img_x' => 0, 'img_y' => 0, 'img_w' => &$img_width, 'img_h' => &$img_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
+        $img_data = [
+            'img_x' => 0,
+            'img_y' => 0,
+            'img_w' => &$img_width,
+            'img_h' => &$img_height,
+            'src_w' => &$src_w,
+            'src_h' => &$src_h
+        ];
         unset($img_width, $img_height, $need_width, $need_height, $src_w, $src_h);
+
         return $img_data;
     }
 
@@ -325,6 +354,7 @@ class ctrl_upload
                 break;
         }
         unset($error_code);
+
         return $result;
     }
 }
