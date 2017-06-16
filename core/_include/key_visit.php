@@ -61,7 +61,7 @@ class key_visit
             switch (self::$client) {
                 //Local request
                 case 'LOCAL':
-                    if (!empty($_SESSION)) self::map_sess();
+                    if (!empty($_SESSION)) self::map_session();
                     break;
                 //Remote request
                 case 'REMOTE':
@@ -69,17 +69,14 @@ class key_visit
                     break;
                 //Auto detect
                 default:
-                    //Detect requested client type
-                    if (isset($_SERVER['HTTP_ORIGIN'])) self::$client = $Server_HOST === $_SERVER['HTTP_ORIGIN'] ? self::chk_cookie() : 'REMOTE';
-                    else if (isset($_SERVER['HTTP_REFERER'])) {
-                        $referer = parse_url($_SERVER['HTTP_REFERER']);
-                        self::$client = false !== $referer && isset($referer['scheme']) && isset($referer['host']) && $Server_HOST === $referer['scheme'] . '://' . $referer['host'] . (!isset($referer['port']) || 80 === $referer['port'] ? '' : ':' . $referer['port']) ? self::chk_cookie() : 'REMOTE';
-                        unset($referer);
-                    } else self::$client = 'REMOTE';
+                    //Detect REMOTE client
+                    self::chk_remote($Server_HOST);
+                    //Detect COOKIE when remote client is not detected
+                    if ('REMOTE' !== self::$client) self::$client = self::chk_session();
                     //Process KEY
                     if ('LOCAL' === self::$client) {
                         //Extract data from SESSION or KEY
-                        if (!empty($_SESSION)) self::map_sess();
+                        if (!empty($_SESSION)) self::map_session();
                         else if (isset($_SERVER['HTTP_KEY'])) self::map_key();
                     } else if ('REMOTE' === self::$client && isset($_SERVER['HTTP_KEY'])) {
                         //Extract data from KEY
@@ -102,8 +99,7 @@ class key_visit
                     }
                     break;
             }
-            //Get the online status
-            self::$online = self::chk_online();
+            self::$online = self::chk_online();//Get online status
         } else {
             //Grant basic Cross-Domain request permission for HTTP OPTIONS Request and allow HTTP Header "KEY"
             header('Access-Control-Allow-Origin: ' . $Origin_HOST);
@@ -211,12 +207,25 @@ class key_visit
     }
 
     /**
-     * Map SESSION content to key
+     * Check remote client
+     *
+     * @param string $Server_HOST
      */
-    private static function map_sess()
+    private static function chk_remote(string $Server_HOST)
     {
-        self::$client = 'LOCAL';
-        if (!empty($_SESSION)) self::$key = &$_SESSION;
+        if (isset($_SERVER['HTTP_ORIGIN']) && $Server_HOST !== $_SERVER['HTTP_ORIGIN']) self::$client = 'REMOTE';
+        else if (isset($_SERVER['HTTP_REFERER'])) {
+            $referer = parse_url($_SERVER['HTTP_REFERER']);
+            if (false === $referer || !isset($referer['scheme']) || !isset($referer['host'])) self::$client = 'REMOTE';
+            else {
+                $Referer_HOST = $referer['scheme'] . '://' . $referer['host'];
+                if (isset($referer['port']) && 80 !== $referer['port']) $Referer_HOST .= ':' . $referer['port'];
+                if ($Server_HOST !== $Referer_HOST) self::$client = 'REMOTE';
+                unset($Referer_HOST);
+            }
+            unset($referer);
+        }
+        unset($Server_HOST);
     }
 
     /**
@@ -224,12 +233,21 @@ class key_visit
      *
      * @return string
      */
-    private static function chk_cookie(): string
+    private static function chk_session(): string
     {
         $session_name = session_name();
         $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
         unset($session_name);
         return $client;
+    }
+
+    /**
+     * Map SESSION content to key
+     */
+    private static function map_session()
+    {
+        self::$client = 'LOCAL';
+        if (!empty($_SESSION)) self::$key = &$_SESSION;
     }
 
     /**
