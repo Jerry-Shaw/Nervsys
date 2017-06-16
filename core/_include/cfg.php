@@ -51,28 +51,22 @@ define('CRYPT_PATH', 'core');
 define('CRYPT_NAME', 'key_crypt');
 
 //Define Online State Tags
-define('ONLINE_TAGS', [
-    'uuid',
-    'char'
-]);
+define('ONLINE_TAGS', ['uuid', 'char']);
 
 //Define Available languages
-define('LANGUAGE_LIST', [
-    'en-US',
-    'zh-CN'
-]);
+define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 
 //Define Crypt KEY Path
 define('KEY_PATH', 'E:/Sites/Keys/');
 
 //File Storage Server Settings
-define('FILE_PATH', 'E:/Sites/Files/');
-define('FILE_DOMAIN', 'https://file.oobase.com/');
+define('FILE_PATH', 'E:/Sites/Storage/');
+define('FILE_DOMAIN', 'https://YOUR DOMAIN/');
 
 //OpenSSL Settings
 define('OpenSSL_CFG',
        [
-           'config'           => 'D:/Programs/iisExpress/Programs/PHP/extras/ssl/openssl.cnf',
+           'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
            'digest_alg'       => 'sha256',
            'private_key_bits' => 2048,
            'private_key_type' => OPENSSL_KEYTYPE_RSA
@@ -83,7 +77,7 @@ define('OpenSSL_CFG',
 define('CLI_LOG_PATH', ROOT . '/_cli/_log/');//Log path
 define('CLI_CAS_PATH', ROOT . '/_cli/_cas/');//Cache path
 define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');//Working path
-define('CLI_EXEC_PATH', '"D:/Programs/iisExpress/Programs/PHP/php.exe"');//PHP executable binary path
+define('CLI_EXEC_PATH', '"D:/Programs/WebServer/Programs/PHP/php.exe"');//PHP executable binary path
 define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Options)
 define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'path:', 'log']);//Long options (Preferred)
 

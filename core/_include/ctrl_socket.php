@@ -34,7 +34,7 @@ class ctrl_socket
     public static $udp_broadcast = '255.255.255.255';
 
     //TCP Settings
-    public static $tcp_port = 60000;
+    public static $tcp_port = 62000;
     public static $tcp_address = '127.0.0.1';
 
     /**
