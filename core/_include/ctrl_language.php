@@ -39,7 +39,7 @@ class ctrl_language
      */
     public static function load(string $module = '', string $file)
     {
-        if (isset($_GET['lang'])) $lang = &$_GET['lang'];
+        if (isset($_REQUEST['lang'])) $lang = &$_REQUEST['lang'];
         else if (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
         else if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
