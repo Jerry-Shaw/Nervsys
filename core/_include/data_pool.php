@@ -86,7 +86,7 @@ class data_pool
                 foreach ($libraries as $library) {
                     //Load library file
                     $class = load_lib($module, $library);
-                    //Check the load status of the class
+                    //Check the load status
                     if ('' !== $class) {
                         //Get method list from the class
                         $method_list = get_class_methods($class);

@@ -61,19 +61,23 @@ function load_lib(string $module, string $library): string
  */
 function load_api(string $module, string $library, string $method): array
 {
-    $api_list = SECURE_API && isset($library::$api) && is_array($library::$api) ? array_keys($library::$api) : [];
-    if (method_exists($library, $method) && (in_array($method, $api_list, true) || 'init' === $method || !SECURE_API)) {
-        $reflect = new \ReflectionMethod($library, $method);
-        if ($reflect->isPublic() && $reflect->isStatic()) {
-            try {
-                $result['data'] = $library::$method();
-            } catch (\Throwable $exception) {
-                $result['data'] = $exception->getMessage();
-            }
-        } else $result['data'] = 'Method NOT permitted!';
-        unset($reflect);
-    } else $result['data'] = 'Method NOT exist or NOT permitted!';
-    unset($module, $library, $method, $api_list);
+    $class = load_lib($module, $library);
+    if ('' !== $class) {
+        $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
+        if (method_exists($class, $method) && (in_array($method, $api_list, true) || 'init' === $method || !SECURE_API)) {
+            $reflect = new \ReflectionMethod($class, $method);
+            if ($reflect->isPublic() && $reflect->isStatic()) {
+                try {
+                    $result['data'] = $class::$method();
+                } catch (\Throwable $exception) {
+                    $result['data'] = $exception->getMessage();
+                }
+            } else $result['data'] = 'Method "' . $method . '" in "' . $library . '" NOT permitted!';
+            unset($reflect);
+        } else $result['data'] = 'Method "' . $method . '" in "' . $library . '" NOT exist or NOT permitted!';
+        unset($api_list);
+    } else $result['data'] = 'Class "' . $library . '" in "' . $module . '" NOT exist!';
+    unset($module, $library, $method, $class);
     return $result;
 }
 
