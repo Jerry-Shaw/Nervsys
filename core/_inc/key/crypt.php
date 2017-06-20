@@ -24,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class key_crypt
+
+namespace core\key;
+
+class crypt
 {
     /**
      * Generate Crypt Key

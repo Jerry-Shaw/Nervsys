@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Session Module
+ * Session Module (in Redis)
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 秋水之冰
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -24,7 +24,12 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class ctrl_session
+
+namespace core\ctrl;
+
+use \core\db\redis;
+
+class session
 {
     //Redis connection instance
     private static $db_redis;
@@ -41,9 +46,8 @@ class ctrl_session
     public static function start()
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
-            load_lib('core', 'db_redis');
-            \db_redis::$redis_db = 0;
-            self::$db_redis = \db_redis::connect();
+            redis::$redis_db = 0;
+            self::$db_redis = redis::connect();
             ini_set('session.gc_divisor', 100);
             ini_set('session.gc_probability', 100);
             ini_set('session.save_handler', 'user');
@@ -85,7 +89,7 @@ class ctrl_session
      */
     public static function session_read(string $session_id): string
     {
-        return (string) self::$db_redis->get(self::prefix . $session_id);
+        return (string)self::$db_redis->get(self::prefix . $session_id);
     }
 
     /**

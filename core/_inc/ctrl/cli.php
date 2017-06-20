@@ -5,13 +5,9 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author Yara <314850412@qq.com>
- * Author 李盛青 <happyxiaohang@163.com>
  *
- * Copyright 2016-2017 Jerry Shaw
+ * Copyright 2017 Jerry Shaw
  * Copyright 2017 秋水之冰
- * Copyright 2017 Yara
- * Copyright 2017 李盛青
  *
  * This file is part of NervSys.
  *
@@ -28,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class ctrl_cli
+
+namespace core\ctrl;
+
+class cli
 {
     //Options
     public static $opt = [];
@@ -76,18 +75,18 @@ class ctrl_cli
             else self::$opt_data = self::get_stream([STDIN]);
             //Get "try" option
             if (isset(self::$opt['try'])) {
-                self::$opt['try'] = (int) self::$opt['try'];
+                self::$opt['try'] = (int)self::$opt['try'];
                 if (0 < self::$opt['try']) self::$opt_try = self::$opt['try'];
             } else if (isset(self::$opt['t'])) {
-                self::$opt['t'] = (int) self::$opt['t'];
+                self::$opt['t'] = (int)self::$opt['t'];
                 if (0 < self::$opt['t']) self::$opt_try = self::$opt['t'];
             }
             //Get "wait" option
             if (isset(self::$opt['wait'])) {
-                self::$opt['wait'] = (int) self::$opt['wait'];
+                self::$opt['wait'] = (int)self::$opt['wait'];
                 if (0 < self::$opt['wait']) self::$opt_wait = self::$opt['wait'];
             } else if (isset(self::$opt['w'])) {
-                self::$opt['w'] = (int) self::$opt['w'];
+                self::$opt['w'] = (int)self::$opt['w'];
                 if (0 < self::$opt['w']) self::$opt_wait = self::$opt['w'];
             }
         }
@@ -101,7 +100,7 @@ class ctrl_cli
         //Check CFG file
         if (is_file(self::$opt_path)) {
             //Get CFG file content
-            $json = (string) file_get_contents(self::$opt_path);
+            $json = (string)file_get_contents(self::$opt_path);
             if ('' !== $json) {
                 //Decode file content and map to CFG
                 $data = json_decode($json, true);
@@ -203,20 +202,16 @@ class ctrl_cli
     private static function call_api(): array
     {
         $result = [];
-        //Load Data Module
-        load_lib('core', 'data_pool');
-        //Pass data to Data Module
-        \data_pool::$cli = self::$var;
-        //Start data_pool process
-        \data_pool::start();
-        //Get API Result
-        $data = \data_pool::$pool;
+        //Pass data to Data Pool Module
+        pool::$cli = self::$var;
+        //Start Data Pool Module
+        pool::start();
         //Save logs
         if (self::$opt_log) {
             $logs = ['cmd' => self::$opt_cmd];
             $logs['map'] = self::$opt_map;
             $logs['data'] = self::$opt_data;
-            $logs['result'] = json_encode($data);
+            $logs['result'] = json_encode(pool::$pool);
             self::save_log($logs);
             unset($logs);
         }
@@ -225,9 +220,8 @@ class ctrl_cli
             if (false !== strpos(self::$opt_get, 'cmd')) $result['cmd'] = self::$opt_cmd;
             if (false !== strpos(self::$opt_get, 'map')) $result['map'] = self::$opt_map;
             if (false !== strpos(self::$opt_get, 'data')) $result['data'] = self::$opt_data;
-            if (false !== strpos(self::$opt_get, 'result')) $result['result'] = &$data;
+            if (false !== strpos(self::$opt_get, 'result')) $result['result'] = pool::$pool;
         }
-        unset($data);
         return $result;
     }
 

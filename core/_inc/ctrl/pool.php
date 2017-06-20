@@ -1,17 +1,13 @@
 <?php
 
 /**
- * Data Module
+ * Data Pool Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author 杨晶 <752050750@qq.com>
- * Author 风雨凌芸 <tianpapawo@live.com>
  *
- * Copyright 2015-2017 Jerry Shaw
- * Copyright 2016-2017 秋水之冰
- * Copyright 2017 杨晶
- * Copyright 2016 风雨凌芸
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -28,7 +24,12 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class data_pool
+
+namespace core\ctrl;
+
+//todo this script needs fully rebuild for new structure
+
+class pool
 {
     //CLI data
     public static $cli = [];
@@ -61,7 +62,7 @@ class data_pool
     public static function start()
     {
         //Get date from HTTP Request or CLI variables
-        $data = 'cli' !== PHP_SAPI ? (!ENABLE_GET ? $_POST : $_REQUEST) : self::$cli;
+        $data = 'cli' !== PHP_SAPI ? (ENABLE_GET ? $_REQUEST : $_POST) : self::$cli;
         //Set result data format according to the request
         if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
         //Parse "cmd" data from HTTP Request

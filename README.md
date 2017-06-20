@@ -2,7 +2,9 @@
 
 Requirements: PHP7+ and above. Any kind of web server. MySQL, Redis and redis extention for PHP depand on yourself.
  
-Datacenter are under construction, coming soon...
+Version 3.0.0 is on going, and not compatible with versions before.
+ 
+Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/singlet
 
 Demo module is out and opened here https://github.com/Jerry-Shaw/fruit. You can try it with NervSys with detailed comments in the picker.php
 

@@ -5,11 +5,9 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author 彼岸花开 <330931138@qq.com>
  *
- * Copyright 2015 Jerry Shaw
- * Copyright 2015 秋水之冰
- * Copyright 2015 彼岸花开
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -26,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class db_redis
+
+namespace core\db;
+
+class redis
 {
     /**
      * Declare all the parameters for Redis instance
@@ -40,9 +41,9 @@ class db_redis
     public static $redis_persistent;
 
     /**
-     * @return Redis
+     * @return \Redis
      */
-    public static function connect(): Redis
+    public static function connect(): \Redis
     {
         //Parameters for Redis instance
         $redis_host = self::$redis_host ?? Redis_HOST;
@@ -57,7 +58,7 @@ class db_redis
             if (!is_null($redis_auth) && '' !== $redis_auth) $db_redis->auth($redis_auth);
             $db_redis->select($redis_db);
             unset($connect);
-        } catch (Exception $error) {
+        } catch (\Exception $error) {
             exit('Failed to connect Redis Server! ' . $error->getMessage());
         }
         unset($redis_host, $redis_port, $redis_db, $redis_auth);

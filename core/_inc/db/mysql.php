@@ -1,15 +1,13 @@
 <?php
 
 /**
- * PDO MySQL Module
+ * MySQL Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author 彼岸花开 <330931138@qq.com>
  *
- * Copyright 2015 Jerry Shaw
- * Copyright 2015 秋水之冰
- * Copyright 2015 彼岸花开
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -26,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class db_mysql
+
+namespace core\db;
+
+class mysql
 {
     /**
      * Declare all the parameters for PDO instance on MySQl Database
@@ -42,9 +43,9 @@ class db_mysql
     public static $mysql_persistent;
 
     /**
-     * @return PDO
+     * @return \PDO
      */
-    public static function connect(): PDO
+    public static function connect(): \PDO
     {
         //Parameters for PDO instance
         $mysql_host = self::$mysql_host ?? MySQL_HOST;
@@ -63,7 +64,7 @@ class db_mysql
             $db_mysql = new \PDO($dsn, $mysql_user, $mysql_pwd, $options);
             $db_mysql->exec('SET NAMES ' . $mysql_charset);
             unset($dsn, $options);
-        } catch (Exception $error) {
+        } catch (\Exception $error) {
             exit('Failed to connect MySQL Server! ' . $error->getMessage());
         }
         unset($mysql_host, $mysql_port, $mysql_db, $mysql_user, $mysql_pwd, $mysql_charset);

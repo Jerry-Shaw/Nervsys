@@ -1,15 +1,13 @@
 <?php
 
 /**
- * Key Visit Authority Module
+ * Visit Authority Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author Yara <314850412@qq.com>
  *
- * Copyright 2015-2017 Jerry Shaw
+ * Copyright 2017 Jerry Shaw
  * Copyright 2017 秋水之冰
- * Copyright 2017 Yara
  *
  * This file is part of NervSys.
  *
@@ -26,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class key_visit
+
+namespace core\ctrl;
+
+class visit
 {
     //Data pool
     public static $key = [];
@@ -49,14 +50,8 @@ class key_visit
         $Origin_HOST = $_SERVER['HTTP_ORIGIN'] ?? $Server_HOST;
         //Process HTTP requests
         if ('OPTIONS' !== $_SERVER['REQUEST_METHOD']) {
-            //Load data_crypt module
-            load_lib('core', 'data_crypt');
             //Start SESSION
-            if (Redis_SESSION) {
-                //Load SESSION module
-                load_lib('core', 'ctrl_session');
-                \ctrl_session::start();
-            } else session_start();
+            Redis_SESSION ? session::start() : session_start();
             //Detect requests
             switch (self::$client) {
                 //Local request
@@ -142,14 +137,14 @@ class key_visit
      *
      * @param string $key
      * @param string $value
-     * @param bool   $is_int
+     * @param bool $is_int
      *
      * @return string
      */
     public static function add(string $key, string $value, bool $is_int = false): string
     {
         if ('' !== $key) {
-            if ($is_int) $value = (int) $value;
+            if ($is_int) $value = (int)$value;
             self::$key[$key] = &$value;
             if ('LOCAL' === self::$client) $_SESSION[$key] = &$value;
         }
@@ -188,7 +183,7 @@ class key_visit
      */
     private static function get_key(): string
     {
-        return !empty(self::$key) ? \data_crypt::create_key(json_encode(self::$key)) : '';
+        return !empty(self::$key) ? crypt::create_key(json_encode(self::$key)) : '';
     }
 
     /**
@@ -197,7 +192,7 @@ class key_visit
     private static function map_key()
     {
         self::$client = 'REMOTE';
-        $data = \data_crypt::validate_key($_SERVER['HTTP_KEY']);
+        $data = crypt::validate_key($_SERVER['HTTP_KEY']);
         if ('' !== $data) {
             $key = json_decode($data, true);
             if (isset($key) && (!isset($key['ExpireAt']) || (isset($key['ExpireAt']) && time() < $key['ExpireAt']))) self::$key = &$key;

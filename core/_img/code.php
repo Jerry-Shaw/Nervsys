@@ -4,8 +4,10 @@
  * Authority Code Image
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
+ * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2015-2016 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -25,18 +27,18 @@
 
 declare(strict_types = 1);
 
-require __DIR__ . '/../_include/cfg.php';
+require __DIR__ . '/../_inc/cfg.php';
 
 $operator = ['+', '*'];
 
 $codes = [];
-$codes[] = (string) mt_rand(0, 9);
+$codes[] = (string)mt_rand(0, 9);
 $codes[] = $operator[mt_rand(0, 1)];
-$codes[] = (string) mt_rand(0, 9);
+$codes[] = (string)mt_rand(0, 9);
 $codes[] = $operator[mt_rand(0, 1)];
-$codes[] = (string) mt_rand(0, 9);
+$codes[] = (string)mt_rand(0, 9);
 
-$auth_code = (string) eval('return ' . implode($codes) . ';');
+$auth_code = (string)eval('return ' . implode($codes) . ';');
 
 $codes[] = '=';
 $codes[] = '?';
@@ -81,9 +83,8 @@ $uuid = get_uuid(get_client_info()['ip']);
 
 if (Redis_SESSION) {
     //Use Redis
-    load_lib('core', 'db_redis');
-    \db_redis::$redis_db = 0;
-    $db_redis = \db_redis::connect();
+    \core\db\redis::$redis_db = 0;
+    $db_redis = \core\db\redis::connect();
     $db_redis->set($uuid, $auth_code, 180);
 } else {
     //Use Session

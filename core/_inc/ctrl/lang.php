@@ -5,11 +5,9 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author 彼岸花开 <330931138@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2015-2016 秋水之冰
- * Copyright 2015-2016 彼岸花开
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -26,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class ctrl_language
+
+namespace core\ctrl;
+
+class lang
 {
     //Language
     public static $lang = 'en-US';
@@ -47,7 +48,7 @@ class ctrl_language
         } else $lang = 'en-US';
         if (!in_array($lang, LANGUAGE_LIST, true)) $lang = 'en-US';
         if ('en-US' !== $lang) self::$lang = &$lang;
-        $path = '' === $module || '/' === $module ? ROOT . '/_language/' : ROOT . '/' . $module . '/_language/';
+        $path = '' === $module || '/' === $module ? ROOT . '/_lang/' : ROOT . '/' . $module . '/_lang/';
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
         bindtextdomain($file, $path);

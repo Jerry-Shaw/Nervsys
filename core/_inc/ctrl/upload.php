@@ -1,13 +1,13 @@
 <?php
 
 /**
- * File Upload Module
+ * Upload Module
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2015-2016 Jerry Shaw
- * Copyright 2016 秋水之冰
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -24,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class ctrl_upload
+
+namespace core\ctrl;
+
+class upload
 {
     public static $file = [];//$_FILES['file']
     public static $base64 = '';//BASE64 content
@@ -43,35 +46,32 @@ class ctrl_upload
      */
     public static function upload_file(): array
     {
-        load_lib('core', 'ctrl_language');
-        load_lib('core', 'ctrl_error');
-        load_lib('core', 'ctrl_file');
-        \ctrl_language::load('core', 'ctrl_upload');
-        \ctrl_error::load('core', 'ctrl_upload');
+        lang::load('core', 'ctrl_upload');
+        error::load('core', 'ctrl_upload');
         if (!empty(self::$file)) {
             if (0 === self::$file['error']) {//Upload success
                 $file_size = self::chk_size(self::$file['size']);//Get the file size
                 if (0 < $file_size) {
                     $file_ext = self::chk_ext(self::$file['name']);//Check the file extension
                     if ('' !== $file_ext) {
-                        $save_path = \ctrl_file::get_path(self::$save_path);//Get the upload path
+                        $save_path = file::get_path(self::$save_path);//Get the upload path
                         if (':' !== $save_path) {
                             $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
                             $url = self::save_file(self::$file['tmp_name'], $save_path, $file_name, $file_ext);//Save file
                             if ('' !== $url) {//Done
-                                $result = \ctrl_error::get_error(10000);//Upload finished
+                                $result = error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url;
                                 $result['file_size'] = &$file_size;
-                            } else $result = \ctrl_error::get_error(10001);//Failed to move/copy from the tmp file
+                            } else $result = error::get_error(10001);//Failed to move/copy from the tmp file
                             unset($file_name, $url);
-                        } else $result = \ctrl_error::get_error(10002);//Upload path Error
+                        } else $result = error::get_error(10002);//Upload path Error
                         unset($save_path);
-                    } else $result = \ctrl_error::get_error(10003);//Extension not allowed
+                    } else $result = error::get_error(10003);//Extension not allowed
                     unset($file_ext);
-                } else $result = \ctrl_error::get_error(10004);//File too large
+                } else $result = error::get_error(10004);//File too large
                 unset($file_size);
             } else $result = self::get_error(self::$file['error']);//Upload failed when uploading, returned from server
-        } else $result = \ctrl_error::get_error(10007);//Empty $_FILES['file']
+        } else $result = error::get_error(10007);//Empty $_FILES['file']
         return $result;
     }
 
@@ -82,11 +82,8 @@ class ctrl_upload
      */
     public static function upload_base64(): array
     {
-        load_lib('core', 'ctrl_language');
-        load_lib('core', 'ctrl_error');
-        load_lib('core', 'ctrl_file');
-        \ctrl_language::load('core', 'ctrl_upload');
-        \ctrl_error::load('core', 'ctrl_upload');
+        lang::load('core', 'ctrl_upload');
+        error::load('core', 'ctrl_upload');
         $base64_pos = strpos(self::$base64, 'base64,');//Get the position
         if (0 === strpos(self::$base64, 'data:image/') && false !== $base64_pos) {//Check the canvas data, must be an image
             $data = substr(self::$base64, $base64_pos + 7);//Get the base64 data of the image
@@ -97,28 +94,28 @@ class ctrl_upload
                     $img_info = getimagesizefromstring($img_data);//Get the image information
                     if (array_key_exists($img_info[2], self::img_ext)) {
                         $file_ext = self::img_ext[$img_info[2]];//Get the extension
-                        $save_path = \ctrl_file::get_path(self::$save_path);//Get the upload path
+                        $save_path = file::get_path(self::$save_path);//Get the upload path
                         if (':' !== $save_path) {
                             $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
                             $url_path = $save_path . $file_name . '.' . $file_ext;//Get URL path
                             $file_path = FILE_PATH . $url_path;//Get real upload path
                             if (is_file($file_path)) unlink($file_path);//Delete the file if existing
-                            $save_file = (int) file_put_contents($file_path, $img_data);//Write to file
+                            $save_file = (int)file_put_contents($file_path, $img_data);//Write to file
                             if (0 < $save_file) {//Done
-                                $result = \ctrl_error::get_error(10000);//Upload finished
+                                $result = error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url_path;
                                 $result['file_size'] = &$file_size;
-                            } else $result = \ctrl_error::get_error(10001);//Failed to write
+                            } else $result = error::get_error(10001);//Failed to write
                             unset($file_name, $url_path, $file_path, $save_file);
-                        } else $result = \ctrl_error::get_error(10002);//Upload path Error
+                        } else $result = error::get_error(10002);//Upload path Error
                         unset($file_ext, $save_path);
-                    } else $result = \ctrl_error::get_error(10003);//Extension not allowed
+                    } else $result = error::get_error(10003);//Extension not allowed
                     unset($img_info);
-                } else $result = \ctrl_error::get_error(10004);//File too large
+                } else $result = error::get_error(10004);//File too large
                 unset($file_size);
-            } else $result = \ctrl_error::get_error(10006);//Image data error
+            } else $result = error::get_error(10006);//Image data error
             unset($data, $img_data);
-        } else $result = \ctrl_error::get_error(10003);//Extension not allowed
+        } else $result = error::get_error(10003);//Extension not allowed
         unset($base64_pos);
         return $result;
     }
@@ -127,9 +124,9 @@ class ctrl_upload
      * Resize/Crop an image to a giving size
      *
      * @param string $file
-     * @param int    $width
-     * @param int    $height
-     * @param bool   $crop
+     * @param int $width
+     * @param int $height
+     * @param bool $crop
      */
     public static function image_resize(string $file, int $width, int $height, bool $crop = false)
     {
@@ -187,7 +184,7 @@ class ctrl_upload
      */
     private static function chk_ext(string $file_name): string
     {
-        $ext = \ctrl_file::get_ext($file_name);
+        $ext = file::get_ext($file_name);
         if ('' !== $ext && !empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) $ext = '';//File extension not allowed, set to empty string
         unset($file_name);
         return $ext;
@@ -220,9 +217,9 @@ class ctrl_upload
     /**
      * Get cropped image coordinates according to the giving size
      *
-     * @param int $img_width   //Original width
-     * @param int $img_height  //Original height
-     * @param int $need_width  //Needed width
+     * @param int $img_width //Original width
+     * @param int $img_height //Original height
+     * @param int $need_width //Needed width
      * @param int $need_height //Needed height
      *
      * @return array
@@ -237,13 +234,13 @@ class ctrl_upload
             $ratio_need = $need_width / $need_height;
             $ratio_diff = round($ratio_img - $ratio_need, 2);
             if (0 < $ratio_diff && $img_height > $need_height) {
-                $crop_w = (int) ($img_width - $img_height * $ratio_need);
-                $img_x = (int) ($crop_w / 2);
+                $crop_w = (int)($img_width - $img_height * $ratio_need);
+                $img_x = (int)($crop_w / 2);
                 $src_w = $img_width - $crop_w;
                 unset($crop_w);
             } else if (0 > $ratio_diff && $img_width > $need_width) {
-                $crop_h = (int) ($img_height - $img_width / $ratio_need);
-                $img_y = (int) ($crop_h / 2);
+                $crop_h = (int)($img_height - $img_width / $ratio_need);
+                $img_y = (int)($crop_h / 2);
                 $src_h = $img_height - $img_y * 2;
                 unset($crop_h);
             }
@@ -256,9 +253,9 @@ class ctrl_upload
     /**
      * Get new image size according to the giving size
      *
-     * @param int $img_width   //Original width
-     * @param int $img_height  //Original height
-     * @param int $need_width  //Needed width
+     * @param int $img_width //Original width
+     * @param int $img_height //Original height
+     * @param int $need_width //Needed width
      * @param int $need_height //Needed height
      *
      * @return array
@@ -273,10 +270,10 @@ class ctrl_upload
             $ratio_diff = round($ratio_img - $ratio_need, 2);
             if (0 < $ratio_diff && $img_width > $need_width) {
                 $img_width = &$need_width;
-                $img_height = (int) ($need_width / $ratio_img);
+                $img_height = (int)($need_width / $ratio_img);
             } else if (0 > $ratio_diff && $img_height > $need_height) {
                 $img_height = &$need_height;
-                $img_width = (int) ($need_height * $ratio_img);
+                $img_width = (int)($need_height * $ratio_img);
             } else if (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
                 $img_width = &$need_width;
                 $img_height = &$need_height;
@@ -301,25 +298,25 @@ class ctrl_upload
     {
         switch ($error_code) {
             case 1:
-                $result = \ctrl_error::get_error(10004);
+                $result = error::get_error(10004);
                 break;
             case 2:
-                $result = \ctrl_error::get_error(10004);
+                $result = error::get_error(10004);
                 break;
             case 3:
-                $result = \ctrl_error::get_error(10006);
+                $result = error::get_error(10006);
                 break;
             case 4:
-                $result = \ctrl_error::get_error(10007);
+                $result = error::get_error(10007);
                 break;
             case 6:
-                $result = \ctrl_error::get_error(10005);
+                $result = error::get_error(10005);
                 break;
             case 7:
-                $result = \ctrl_error::get_error(10008);
+                $result = error::get_error(10008);
                 break;
             default:
-                $result = \ctrl_error::get_error(10001);
+                $result = error::get_error(10001);
                 break;
         }
         unset($error_code);

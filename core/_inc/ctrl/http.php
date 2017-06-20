@@ -24,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class ctrl_http
+
+namespace core\ctrl;
+
+class http
 {
     //Request URL
     public static $url = '';
@@ -149,7 +152,7 @@ class ctrl_http
                 unset($curl);
             } else $response = '';
         } else $response = '';
-        return (string) $response;
+        return (string)$response;
     }
 
     /**
@@ -195,6 +198,6 @@ class ctrl_http
                 unset($files, $key, $item);
             } else $response = '';
         } else $response = '';
-        return (string) $response;
+        return (string)$response;
     }
 }

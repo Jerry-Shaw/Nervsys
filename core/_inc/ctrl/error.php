@@ -5,11 +5,9 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author 杨晶 <752050750@qq.com>
  *
- * Copyright 2016-2017 Jerry Shaw
- * Copyright 2016-2017 秋水之冰
- * Copyright 2016 杨晶
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -26,7 +24,10 @@
  * You should have received a copy of the GNU General Public License
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
-class ctrl_error
+
+namespace core\ctrl;
+
+class error
 {
     //Error message pool
     private static $pool = [];
@@ -42,13 +43,10 @@ class ctrl_error
      */
     public static function load(string $module, string $file)
     {
-        $json = (string) file_get_contents(ROOT . '/' . $module . '/_error/' . $file . '.json');
+        $json = (string)file_get_contents(ROOT . '/' . $module . '/_err/' . $file . '.json');
         if ('' !== $json) {
             $error = json_decode($json, true);
-            if (isset($error)) {
-                self::$pool = &$error;
-                if (ERROR_LANG) load_lib('core', 'ctrl_language');
-            }
+            if (isset($error)) self::$pool = &$error;
             unset($error);
         }
         unset($module, $file, $json);
@@ -78,18 +76,16 @@ class ctrl_error
     public static function get_all_errors(): array
     {
         $errors = [];
-        load_lib('core', 'ctrl_file');
-        if (ERROR_LANG) load_lib('core', 'ctrl_language');
-        $error_files = \ctrl_file::get_list(ROOT, '/_error/*.json', true);//Get all the json formatted error files from all modules
+        $error_files = file::get_list(ROOT, '/_err/*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $error_file) {
-            $json = (string) file_get_contents($error_file);
+            $json = (string)file_get_contents($error_file);
             if ('' !== $json) {
                 $error = json_decode($json, true);
                 if (isset($error)) {
                     if (ERROR_LANG && isset($error['Lang'])) {
                         $lang_files = false !== strpos($error['Lang'], ', ') ? explode(', ', $error['Lang']) : [$error['Lang']];
                         foreach ($lang_files as $lang_file) {
-                            \ctrl_language::load($error['Module'], $lang_file);//Load defined language pack
+                            lang::load($error['Module'], $lang_file);//Load defined language pack
                             $errors[$error['CodeRange']] = [];
                             $errors[$error['CodeRange']]['Name'] = $error['Name'];
                             $errors[$error['CodeRange']]['Module'] = '' !== $error['Module'] ? $error['Module'] : 'core';

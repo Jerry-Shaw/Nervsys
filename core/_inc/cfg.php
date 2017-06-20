@@ -5,11 +5,9 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
- * Author 彼岸花开 <330931138@qq.com>
  *
- * Copyright 2015-2017 Jerry Shaw
- * Copyright 2016-2017 秋水之冰
- * Copyright 2016 彼岸花开
+ * Copyright 2017 Jerry Shaw
+ * Copyright 2017 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -35,7 +33,7 @@ date_default_timezone_set('PRC');
 header('Content-Type:text/html; charset=utf-8');
 
 //Document Root Definition
-define('ROOT', substr(__DIR__, 0, -14));
+define('ROOT', realpath(substr(__DIR__, 0, -10)));
 
 //Enable/Disable HTTP GET Method
 define('ENABLE_GET', true);
@@ -43,12 +41,11 @@ define('ENABLE_GET', true);
 //Enable/Disable API Safe Zone
 define('SECURE_API', true);
 
-//Enable/Disable Language Module for Error Module
+//Enable/Disable Language for Error Module
 define('ERROR_LANG', true);
 
 //Define Encrypt/Decrypt module properties
-define('CRYPT_PATH', 'core');
-define('CRYPT_NAME', 'key_crypt');
+define('CRYPT_NAME', '\\core\\key\\crypt');
 
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);
@@ -56,30 +53,9 @@ define('ONLINE_TAGS', ['uuid', 'char']);
 //Define Available languages
 define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 
-//Define Crypt KEY Path
-define('KEY_PATH', 'E:/Sites/Keys/');
-
 //File Storage Server Settings
 define('FILE_PATH', 'E:/Sites/Storage/');
 define('FILE_DOMAIN', 'https://YOUR DOMAIN/');
-
-//OpenSSL Settings
-define('OpenSSL_CFG',
-       [
-           'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
-           'digest_alg'       => 'sha256',
-           'private_key_bits' => 2048,
-           'private_key_type' => OPENSSL_KEYTYPE_RSA
-       ]
-);
-
-//CLI Settings
-define('CLI_LOG_PATH', ROOT . '/_cli/_log/');//Log path
-define('CLI_CAS_PATH', ROOT . '/_cli/_cas/');//Cache path
-define('CLI_WORK_PATH', ROOT . '/_cli/_temp/');//Working path
-define('CLI_EXEC_PATH', '"D:/Programs/WebServer/Programs/PHP/php.exe"');//PHP executable binary path
-define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Options)
-define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'path:', 'log']);//Long options (Preferred)
 
 //MySQL Settings
 define('MySQL_HOST', '127.0.0.1');
@@ -105,5 +81,36 @@ define('SMTP_USER', 'SMTP_USER');
 define('SMTP_PWD', 'SMTP_PWD');
 define('SMTP_SENDER', 'SMTP_SENDER');
 
+//CLI Settings
+define('CLI_LOG_PATH', ROOT . '/temp/cli/log/');//Log path
+define('CLI_WORK_PATH', ROOT . '/temp/cli/temp/');//Working path
+define('CLI_EXEC_PATH', '"D:/Programs/WebServer/Programs/PHP/php.exe"');//PHP executable binary path
+define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Options)
+define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'path:', 'log']);//Long options (Preferred)
+
+//OpenSSL Settings
+define('SSL_CFG',
+       [
+           'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
+           'digest_alg'       => 'sha256',
+           'private_key_bits' => 2048,
+           'private_key_type' => OPENSSL_KEYTYPE_RSA
+       ]
+);
+
+//Autoload function
+spl_autoload_register(function ($library) {
+    if (!class_exists($library, true) && false !== strpos($library, '\\')) {
+        $path = explode('\\', $library, 2);
+        $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . $path[1] . '.php');
+        if (false !== $file) {
+            require $file;
+            if (!class_exists($library, true)) exit('Library loaded, but not defined!');
+        } else exit('Library not exist!');
+        unset($path, $file);
+    }
+    unset($library);
+});
+
 //Load basic function script
-require __DIR__ . '/cfg_fn.php';
+require __DIR__ . '/fn.php';
