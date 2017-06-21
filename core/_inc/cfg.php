@@ -103,10 +103,7 @@ spl_autoload_register(function ($library) {
     if (!class_exists($library, true) && false !== strpos($library, '\\')) {
         $path = explode('\\', $library, 2);
         $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . $path[1] . '.php');
-        if (false !== $file) {
-            require $file;
-            if (!class_exists($library, true)) exit('Library loaded, but not defined!');
-        } else exit('Library not exist!');
+        if (false !== $file) require $file;
         unset($path, $file);
     }
     unset($library);

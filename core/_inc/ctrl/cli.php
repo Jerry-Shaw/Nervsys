@@ -203,7 +203,7 @@ class cli
     {
         $result = [];
         //Pass data to Data Pool Module
-        pool::$cli = self::$var;
+        pool::$data = self::$var;
         //Start Data Pool Module
         pool::start();
         //Save logs

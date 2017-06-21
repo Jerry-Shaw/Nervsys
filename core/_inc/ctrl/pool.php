@@ -27,13 +27,8 @@
 
 namespace core\ctrl;
 
-//todo this script needs fully rebuild for new structure
-
 class pool
 {
-    //CLI data
-    public static $cli = [];
-
     //Data package
     public static $data = [];
 
@@ -61,18 +56,16 @@ class pool
      */
     public static function start()
     {
-        //Get date from HTTP Request or CLI variables
-        $data = 'cli' !== PHP_SAPI ? (ENABLE_GET ? $_REQUEST : $_POST) : self::$cli;
-        //Set result data format according to the request
-        if (isset($data['format']) && in_array($data['format'], ['json', 'raw'], true)) self::$format = &$data['format'];
-        //Parse "cmd" data from HTTP Request
-        if (isset($data['cmd']) && is_string($data['cmd']) && false !== strpos($data['cmd'], '/')) self::parse_cmd($data['cmd']);
-        //Parse "map" data from HTTP Request
-        if (isset($data['map']) && is_string($data['map']) && false !== strpos($data['map'], '/') && false !== strpos($data['map'], ':')) self::parse_map($data['map']);
-        //Unset "format" & "cmd" & "map" from request data package
-        unset($data['format'], $data['cmd'], $data['map']);
-        //Store data package to data pool
-        self::$data = &$data;
+        //Get date from HTTP Request in CGI Mode
+        if ('cli' !== PHP_SAPI) self::$data = ENABLE_GET ? $_REQUEST : $_POST;
+        //Set result data format
+        if (isset(self::$data['format']) && in_array(self::$data['format'], ['json', 'raw'], true)) self::$format = self::$data['format'];
+        //Parse "cmd" data
+        if (isset(self::$data['cmd']) && is_string(self::$data['cmd']) && false !== strpos(self::$data['cmd'], '\\')) self::parse_cmd(self::$data['cmd']);
+        //Parse "map" data
+        if (isset(self::$data['map']) && is_string(self::$data['map']) && false !== strpos(self::$data['map'], '\\') && false !== strpos(self::$data['map'], ':')) self::parse_map(self::$data['map']);
+        //Unset "format" & "cmd" & "map" from data package
+        unset(self::$data['format'], self::$data['cmd'], self::$data['map']);
         //Merge "$_FILES" into data pool if exists
         if (!empty($_FILES)) self::$data = array_merge(self::$data, $_FILES);
         //Continue running if requested data is ready
@@ -82,14 +75,15 @@ class pool
             //Parse Module & Method list
             foreach (self::$module as $module => $libraries) {
                 //Load Module CFG file for the first time
-                load_lib($module, 'cfg');
-                //Load Libraries
+                $file = realpath(ROOT . '/' . $module . '/_inc/cfg.php');
+                if (false !== $file) require $file;
+                //Call Libraries
                 foreach ($libraries as $library) {
-                    //Load library file
-                    $class = load_lib($module, $library);
+                    //Point to root class
+                    $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
                     //Check the load status
-                    if ('' !== $class) {
-                        //Get method list from the class
+                    if (class_exists($class, true)) {
+                        //Get method list from the library
                         $method_list = get_class_methods($class);
                         //Security Checking
                         if (SECURE_API) {
@@ -98,7 +92,7 @@ class pool
                             //Get api methods according to requested methods or all methods will be stored in the intersect list if no method is provided
                             $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
-                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($module, $class, 'init');
+                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, 'init');
                             //Go through every method in the api list with API Safe Zone checking
                             foreach ($method_api as $method) {
                                 //Get the intersect list of the data requirement structure
@@ -106,132 +100,148 @@ class pool
                                 //Get the different list of the data requirement structure
                                 $difference = array_diff($class::$api[$method], $intersect);
                                 //Calling the api method if the data structure is matched
-                                if (empty($difference)) self::call_method($module, $class, $method);
+                                if (empty($difference)) self::call_method($library, $method);
                             }
                         } else if (!empty(self::$method)) {
                             //Requested methods is needed when API Safe Zone checking is turned off
                             $method_api = array_intersect(self::$method, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
-                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($module, $class, 'init');
+                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, 'init');
                             //Calling the api method without API Safe Zone checking
-                            foreach ($method_api as $method) self::call_method($module, $class, $method);
+                            foreach ($method_api as $method) self::call_method($library, $method);
                         }
-                    } else continue;
+                    }
                 }
             }
-            unset($module, $libraries, $library, $class, $api_list, $method_list, $method_api, $method, $intersect, $difference);
+            unset($module, $libraries, $file, $library, $class, $method_list, $api_list, $method_api, $method, $intersect, $difference);
         }
+    }
+
+    /**
+     * Get Method list
+     *
+     * @param string $data
+     *
+     * @return array
+     */
+    private static function get_list(string $data): array
+    {
+        if (false !== strpos($data, ',')) {
+            //Spilt data when multiple modules/methods exist with ","
+            $result = explode(',', $data);
+            $result = array_filter($result);
+            $result = array_unique($result);
+        } else $result = [$data];
         unset($data);
+        return $result;
     }
 
     /**
      * "cmd" value parser
      *
      * @param string $data
-     *
-     * "cmd" value should at least contain "/", or with "," for specific methods calling
-     * Format should be some string like but no need to be exact as, examples as follows:
-     * One module calling: "module_1/library_1"
-     * One module calling with one or more methods: "module_1/library_1,method_1" or "module_1/library_1,method_1,method_2,..."
-     * Multiple modules calling: "module_1/library_1,module_2/library_2,..."
-     * Multiple modules calling with methods: "module_1/library_1,module_2/library_2,...,method_1,method_2,method_3,method_4,..."
-     * Modules with namespace: "module_1/\namespace\library_1" or "module_1/\namespace\library_1,method_1,method_2,..."
-     * Mixed modules: "module_1/\namespace\library_1,module_2/library_2"
-     * Mixed modules with methods: "module_1/\namespace\library_1,module_2/library_2,...,method_1,method_2,method_3,method_4,..."
-     * All mixed: "module_1/\namespace\library_1,method_1,method_2,module_2/library_2,method_3,method_4,..."
-     * Notice: The key to calling a method in a module is the structure of data. All/Specific methods will only run with the matched data structure.
      */
     private static function parse_cmd(string $data)
     {
         //Extract "cmd" values
-        if (false !== strpos($data, ',')) {
-            //Spilt "cmd" value if multiple modules/methods exist with ","
-            $cmd = explode(',', $data);
-            $cmd = array_filter($cmd);
-            $cmd = array_unique($cmd);
-        } else $cmd = [$data];
+        $cmd = self::get_list($data);
         //Parse "cmd" values
         foreach ($cmd as $item) {
-            //Get the position of module path
-            $position = strpos($item, '/');
+            //Get the position
+            $position = strpos($item, '\\');
             if (false !== $position) {
                 //Module goes here
-                //Get module and library names
+                //Get module and library
                 $module = substr($item, 0, $position);
-                $library = substr($item, $position + 1);
                 //Make sure the parsed results are available
-                if (false !== $module && false !== $library) {
+                if (false !== $module && false !== substr($item, $position + 1)) {
                     //Add module to "self::$module" if not added
                     if (!isset(self::$module[$module])) self::$module[$module] = [];
                     //Add library to "self::$module" if not added
-                    if (!in_array($library, self::$module[$module], true)) self::$module[$module][] = $library;
-                } else continue;
+                    if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;
+                }
             } else {
                 //Method goes here
                 //Add to "self::$method" if not added
                 if (!in_array($item, self::$method, true)) self::$method[] = $item;
             }
         }
-        unset($data, $cmd, $item, $position, $module, $library);
+        unset($data, $cmd, $item, $position, $module);
+    }
+
+    /**
+     * Get Keymap result
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    private static function get_keymap(array $data): array
+    {
+        $result = [];
+        $module = array_shift($data);
+        //Module Key exists
+        if (isset(self::$module[$module])) {
+            //Check all the situations
+            $methods = [];
+            foreach ($data as $key => $value) {
+                $methods[] = $value;
+                $library = implode('\\', $methods);
+                //Store libraries existed under the same Module
+                if (in_array($library, self::$module[$module], true)) {
+                    $depth = array_slice($data, $key + 1);
+                    if (!empty($depth)) $result[$module . '\\' . $library] = $depth;
+                }
+            }
+            unset($methods, $key, $value, $library, $depth);
+        }
+        unset($data, $module);
+        return $result;
     }
 
     /**
      * "map" value parser
      *
      * @param string $data
-     *
-     * "map" value should at least contain "/" and ":", or with "," for multiple result mapping
-     * Format should be some string like but no need to be exact as, examples as follows:
-     * Full result mapping: "module_1/library_1/method_1:key_1,..."
-     * Deep structure mapping: "module_1/library_1/method_1/key_A/key_B/key_C:key_1,..."
-     * Mixed mapping: "module_1/library_1/method_1:key_1,module_1/library_1/method_1/key_A/key_B/key_C:key_1,..."
-     * Module with namespace: "module_1/\namespace\library_1/method_1:key_1,module_2/\namespace\library_2/method_2/result_key:key_2,..."
-     * Notice: API running follows the input sequence, the former content will be replaced if the coming one has the same key.
      */
     private static function parse_map(string $data)
     {
         //Extract "map" values
-        if (false !== strpos($data, ',')) {
-            //Spilt "map" value if multiple modules/methods exist with ","
-            $map = explode(',', $data);
-            $map = array_filter($map);
-            $map = array_unique($map);
-        } else $map = [$data];
-        //Deeply parse the map values
+        $map = self::get_list($data);
+        //Deeply parse map values
         foreach ($map as $value) {
-            //Every map value should contain both "/" and ":"
+            //Every map value should contain both "\" and ":"
             $position = strpos($value, ':');
-            if (false !== strpos($value, '/') && false !== $position) {
+            if (false !== $position && false !== strpos($value, '\\')) {
                 //Extract and get map "from" and "to"
                 $map_from = substr($value, 0, $position);
                 $map_to = substr($value, $position + 1);
                 //Deeply parse map "from"
-                if (false !== strpos($map_from, '/')) {
-                    $keys = explode('/', $map_from);
-                    //Map keys should always be greater than 3
+                if (false !== strpos($map_from, '\\')) {
+                    $keys = explode('\\', $map_from);
+                    //Map keys should always contain at least 3 elements
                     if (3 <= count($keys)) {
-                        $key_from = $keys[0] . '/' . $keys[1] . '/' . $keys[2];
-                        unset($keys[0], $keys[1], $keys[2]);
-                        $data_from = [];
-                        foreach ($keys as $key) $data_from[] = $key;
+                        //Get keymap results
+                        $keymap = self::get_keymap($keys);
                         //Save to keymap List
-                        self::$keymap[$key_from] = ['from' => $data_from, 'to' => $map_to];
-                    } else continue;
-                } else continue;
-            } else continue;
+                        foreach ($keymap as $key => $item) self::$keymap[$key] = ['from' => $item, 'to' => $map_to];
+                    }
+                }
+            }
         }
-        unset($data, $map, $value, $position, $map_from, $map_to, $keys, $key_from, $data_from, $key);
+        unset($data, $map, $value, $position, $map_from, $map_to, $keys, $keymap, $key, $item);
     }
 
     /**
-     * Call method and store the result for using/mapping
+     * Call method and store the result
      *
-     * @param string $module
-     * @param string $class
+     * @param string $library
      * @param string $method
      */
-    private static function call_method(string $module, string $class, string $method)
+    private static function call_method(string $library, string $method)
     {
+        //Point to root class
+        $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
         //Get a reflection object for the class method
         $reflect = new \ReflectionMethod($class, $method);
         //Check the visibility and property of the method
@@ -242,14 +252,14 @@ class pool
                 $result = $class::$method();
                 //Merge result
                 if (isset($result)) {
-                    //Save result to the result data pool
-                    self::$pool[$module . '/' . $class . '/' . $method] = $result;
-                    //Check keymap request with result data
-                    if (isset(self::$keymap[$module . '/' . $class . '/' . $method])) {
+                    //Save result to the result data pool with original library name
+                    self::$pool[$library . '\\' . $method] = $result;
+                    //Check keymap with result data
+                    if (isset(self::$keymap[$library . '\\' . $method])) {
                         //Processing array result to get the final data
-                        if (!empty(self::$keymap[$module . '/' . $class . '/' . $method]['from']) && is_array($result)) {
-                            //Check every key in keymap from request
-                            foreach (self::$keymap[$module . '/' . $class . '/' . $method]['from'] as $key) {
+                        if (!empty(self::$keymap[$library . '\\' . $method]['from']) && is_array($result)) {
+                            //Check every key in keymap for deeply mapping
+                            foreach (self::$keymap[$library . '\\' . $method]['from'] as $key) {
                                 //Check key's existence
                                 if (isset($result[$key])) {
                                     //Switch result data to where we find
@@ -263,20 +273,23 @@ class pool
                                     break;
                                 }
                             }
+                            unset($key, $tmp);
                         }
-                        //Map processed result data to request data pool if isset
+                        //Map result data to request data if isset
                         if (isset($result)) {
                             //Caution: The data with the same key in data pool will be overwritten if exists
-                            self::$data[self::$keymap[$module . '/' . $class . '/' . $method]['to']] = $result;
+                            self::$data[self::$keymap[$library . '\\' . $method]['to']] = $result;
                             //Rebuild data structure
                             self::$struct = array_keys(self::$data);
                         }
                     }
                 }
+                unset($result);
             } catch (\Throwable $exception) {
                 //Save the Exception or Error Message to the result data pool instead
-                self::$pool[$module . '/' . $class . '/' . $method] = $exception->getMessage();
+                self::$pool[$library . '\\' . $method] = $exception->getMessage();
             }
         }
+        unset($library, $method, $class, $reflect);
     }
 }

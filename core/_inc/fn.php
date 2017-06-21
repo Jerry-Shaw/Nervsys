@@ -26,41 +26,17 @@
  */
 
 /**
- * Load library file
- *
- * @param string $module
- * @param string $library
- *
- * @return string library name when loaded or empty string when load failed
- */
-function load_lib(string $module, string $library): string
-{
-    if (!class_exists($library, false)) {
-        $position = strrpos($library, '\\');
-        $library_file = ROOT . '/' . $module . '/_include/' . (false === $position ? $library : substr($library, $position)) . '.php';
-        if (is_file($library_file)) {
-            require $library_file;
-            if (!class_exists($library, false)) $library = '';
-        } else $library = '';
-        unset($position, $library_file);
-    }
-    unset($module);
-    return $library;
-}
-
-/**
  * Cross module api loader
  *
- * @param string $module
  * @param string $library
  * @param string $method
  *
  * @return array
  */
-function load_api(string $module, string $library, string $method): array
+function load_api(string $library, string $method): array
 {
-    $class = load_lib($module, $library);
-    if ('' !== $class) {
+    $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
+    if (class_exists($class, true)) {
         $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
         if (method_exists($class, $method) && (in_array($method, $api_list, true) || 'init' === $method || !SECURE_API)) {
             $reflect = new \ReflectionMethod($class, $method);
@@ -74,8 +50,8 @@ function load_api(string $module, string $library, string $method): array
             unset($reflect);
         } else $result['data'] = 'Method "' . $method . '" in "' . $library . '" NOT exist or NOT permitted!';
         unset($api_list);
-    } else $result['data'] = 'Class "' . $library . '" in "' . $module . '" NOT exist!';
-    unset($module, $library, $method, $class);
+    } else $result['data'] = 'Class "' . $library . '" NOT exist!';
+    unset($library, $method, $class);
     return $result;
 }
 
