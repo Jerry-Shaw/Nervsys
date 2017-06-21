@@ -40,11 +40,11 @@ class crypt
     public static function get_pkey(): array
     {
         $keys = ['public' => '', 'private' => ''];
-        $openssl = openssl_pkey_new(OpenSSL_CFG);
+        $openssl = openssl_pkey_new(SSL_CFG);
         if (false !== $openssl) {
             $public = openssl_pkey_get_details($openssl);
             if (false !== $public) $keys['public'] = &$public['key'];
-            if (openssl_pkey_export($openssl, $private, null, OpenSSL_CFG)) $keys['private'] = &$private;
+            if (openssl_pkey_export($openssl, $private, null, SSL_CFG)) $keys['private'] = &$private;
             openssl_pkey_free($openssl);
             unset($public, $private);
         }
