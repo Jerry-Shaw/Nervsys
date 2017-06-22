@@ -92,7 +92,7 @@ class pool
                             //Get api methods according to requested methods or all methods will be stored in the intersect list if no method is provided
                             $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
-                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, 'init');
+                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, $class, 'init');
                             //Go through every method in the api list with API Safe Zone checking
                             foreach ($method_api as $method) {
                                 //Get the intersect list of the data requirement structure
@@ -100,15 +100,15 @@ class pool
                                 //Get the different list of the data requirement structure
                                 $difference = array_diff($class::$api[$method], $intersect);
                                 //Calling the api method if the data structure is matched
-                                if (empty($difference)) self::call_method($library, $method);
+                                if (empty($difference)) self::call_method($library, $class, $method);
                             }
                         } else if (!empty(self::$method)) {
                             //Requested methods is needed when API Safe Zone checking is turned off
                             $method_api = array_intersect(self::$method, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison
-                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, 'init');
+                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, $class, 'init');
                             //Calling the api method without API Safe Zone checking
-                            foreach ($method_api as $method) self::call_method($library, $method);
+                            foreach ($method_api as $method) self::call_method($library, $class, $method);
                         }
                     }
                 }
@@ -137,6 +137,32 @@ class pool
     }
 
     /**
+     * Get module name
+     *
+     * @param string $module
+     * @param int $offset
+     *
+     * @return string
+     */
+    private static function get_module(string $module, int $offset): string
+    {
+        switch ($offset <=> 0) {
+            case 1:
+                $result = substr($module, 0, $offset);
+                break;
+            case 0:
+                $offset = strpos($module, '\\', 1);
+                $result = false !== $offset ? self::get_module(substr($module, 1), --$offset) : '';
+                break;
+            default:
+                $result = '';
+                break;
+        }
+        unset($module, $offset);
+        return $result;
+    }
+
+    /**
      * "cmd" value parser
      *
      * @param string $data
@@ -147,14 +173,14 @@ class pool
         $cmd = self::get_list($data);
         //Parse "cmd" values
         foreach ($cmd as $item) {
-            //Get the position
-            $position = strpos($item, '\\');
-            if (false !== $position) {
+            //Detect module and method
+            $offset = strpos($item, '\\');
+            if (false !== $offset) {
                 //Module goes here
-                //Get module and library
-                $module = substr($item, 0, $position);
+                //Get module name
+                $module = self::get_module($item, $offset);
                 //Make sure the parsed results are available
-                if (false !== $module && false !== substr($item, $position + 1)) {
+                if ('' !== $module && false !== substr($item, $offset + 1)) {
                     //Add module to "self::$module" if not added
                     if (!isset(self::$module[$module])) self::$module[$module] = [];
                     //Add library to "self::$module" if not added
@@ -166,36 +192,39 @@ class pool
                 if (!in_array($item, self::$method, true)) self::$method[] = $item;
             }
         }
-        unset($data, $cmd, $item, $position, $module);
+        unset($data, $cmd, $item, $offset, $module);
     }
 
     /**
      * Get Keymap result
      *
-     * @param array $data
+     * @param string $map
+     * @param string $module
      *
      * @return array
      */
-    private static function get_keymap(array $data): array
+    private static function get_keymap(string $map, string $module): array
     {
         $result = [];
-        $module = array_shift($data);
         //Module Key exists
         if (isset(self::$module[$module])) {
-            //Check all the situations
             $methods = [];
-            foreach ($data as $key => $value) {
+            //Get module keys
+            $keys = explode('\\', $map);
+            //Get all the conditions
+            foreach ($keys as $key => $value) {
                 $methods[] = $value;
                 $library = implode('\\', $methods);
                 //Store libraries existed under the same Module
                 if (in_array($library, self::$module[$module], true)) {
-                    $depth = array_slice($data, $key + 1);
-                    if (!empty($depth)) $result[$module . '\\' . $library] = $depth;
+                    //Save the rest keys as mapping depth
+                    $depth = array_slice($keys, $key + 1);
+                    if (!empty($depth)) $result[$library] = $depth;
                 }
             }
-            unset($methods, $key, $value, $library, $depth);
+            unset($methods, $keys, $key, $value, $library, $depth);
         }
-        unset($data, $module);
+        unset($map, $module);
         return $result;
     }
 
@@ -217,31 +246,31 @@ class pool
                 $map_from = substr($value, 0, $position);
                 $map_to = substr($value, $position + 1);
                 //Deeply parse map "from"
-                if (false !== strpos($map_from, '\\')) {
-                    $keys = explode('\\', $map_from);
-                    //Map keys should always contain at least 3 elements
-                    if (3 <= count($keys)) {
+                $offset = strpos($map_from, '\\');
+                if (false !== $offset) {
+                    //Get module name
+                    $module = self::get_module($map_from, $offset);
+                    if ('' !== $module) {
                         //Get keymap results
-                        $keymap = self::get_keymap($keys);
+                        $keymap = self::get_keymap($map_from, $module);
                         //Save to keymap List
                         foreach ($keymap as $key => $item) self::$keymap[$key] = ['from' => $item, 'to' => $map_to];
                     }
                 }
             }
         }
-        unset($data, $map, $value, $position, $map_from, $map_to, $keys, $keymap, $key, $item);
+        unset($data, $map, $value, $position, $map_from, $map_to, $offset, $module, $keymap, $key, $item);
     }
 
     /**
      * Call method and store the result
      *
      * @param string $library
+     * @param string $class
      * @param string $method
      */
-    private static function call_method(string $library, string $method)
+    private static function call_method(string $library, string $class, string $method)
     {
-        //Point to root class
-        $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
         //Get a reflection object for the class method
         $reflect = new \ReflectionMethod($class, $method);
         //Check the visibility and property of the method
@@ -253,13 +282,13 @@ class pool
                 //Merge result
                 if (isset($result)) {
                     //Save result to the result data pool with original library name
-                    self::$pool[$library . '\\' . $method] = $result;
+                    self::$pool[$library . '\\' . $method] = &$result;
                     //Check keymap with result data
-                    if (isset(self::$keymap[$library . '\\' . $method])) {
+                    if (isset(self::$keymap[$library])) {
                         //Processing array result to get the final data
-                        if (!empty(self::$keymap[$library . '\\' . $method]['from']) && is_array($result)) {
+                        if (!empty(self::$keymap[$library]['from']) && is_array($result)) {
                             //Check every key in keymap for deeply mapping
-                            foreach (self::$keymap[$library . '\\' . $method]['from'] as $key) {
+                            foreach (self::$keymap[$library]['from'] as $key) {
                                 //Check key's existence
                                 if (isset($result[$key])) {
                                     //Switch result data to where we find
@@ -278,7 +307,7 @@ class pool
                         //Map result data to request data if isset
                         if (isset($result)) {
                             //Caution: The data with the same key in data pool will be overwritten if exists
-                            self::$data[self::$keymap[$library . '\\' . $method]['to']] = $result;
+                            self::$data[self::$keymap[$library]['to']] = &$result;
                             //Rebuild data structure
                             self::$struct = array_keys(self::$data);
                         }
@@ -290,6 +319,6 @@ class pool
                 self::$pool[$library . '\\' . $method] = $exception->getMessage();
             }
         }
-        unset($library, $method, $class, $reflect);
+        unset($library, $class, $method, $reflect);
     }
 }
