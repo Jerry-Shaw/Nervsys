@@ -196,39 +196,6 @@ class pool
     }
 
     /**
-     * Get Keymap result
-     *
-     * @param string $map
-     * @param string $module
-     *
-     * @return array
-     */
-    private static function get_keymap(string $map, string $module): array
-    {
-        $result = [];
-        //Module Key exists
-        if (isset(self::$module[$module])) {
-            $methods = [];
-            //Get module keys
-            $keys = explode('\\', $map);
-            //Get all the conditions
-            foreach ($keys as $key => $value) {
-                $methods[] = $value;
-                $library = implode('\\', $methods);
-                //Store libraries existed under the same Module
-                if (in_array($library, self::$module[$module], true)) {
-                    //Save the rest keys as mapping depth
-                    $depth = array_slice($keys, $key + 1);
-                    if (!empty($depth)) $result[$library] = $depth;
-                }
-            }
-            unset($methods, $keys, $key, $value, $library, $depth);
-        }
-        unset($map, $module);
-        return $result;
-    }
-
-    /**
      * "map" value parser
      *
      * @param string $data
@@ -250,16 +217,27 @@ class pool
                 if (false !== $offset) {
                     //Get module name
                     $module = self::get_module($map_from, $offset);
-                    if ('' !== $module) {
-                        //Get keymap results
-                        $keymap = self::get_keymap($map_from, $module);
-                        //Save to keymap List
-                        foreach ($keymap as $key => $item) self::$keymap[$key] = ['from' => $item, 'to' => $map_to];
+                    //Module Key exists
+                    if ('' !== $module && isset(self::$module[$module])) {
+                        $depth = [];
+                        //Get map keys
+                        $keys = explode('\\', $map_from);
+                        //Find the deepest condition
+                        do {
+                            $library = implode('\\', $keys);
+                            //Save library existed under the same Module
+                            if (in_array($library, self::$module[$module], true)) {
+                                //Save final method to keymap list with popped keys as mapping depth
+                                self::$keymap[$library . '\\' . array_pop($depth)] = ['from' => array_reverse($depth), 'to' => &$map_to];
+                                break;
+                            } else $depth[] = array_pop($keys);
+                        } while (!empty($keys));
+                        unset($depth, $keys, $library);
                     }
                 }
             }
         }
-        unset($data, $map, $value, $position, $map_from, $map_to, $offset, $module, $keymap, $key, $item);
+        unset($data, $map, $value, $position, $map_from, $map_to, $offset, $module);
     }
 
     /**
@@ -275,6 +253,8 @@ class pool
         $reflect = new \ReflectionMethod($class, $method);
         //Check the visibility and property of the method
         if ($reflect->isPublic() && $reflect->isStatic()) {
+            //Get item key
+            $item = $library . '\\' . $method;
             //Try to call the method and catch the Exceptions or Errors
             try {
                 //Calling method
@@ -282,13 +262,13 @@ class pool
                 //Merge result
                 if (isset($result)) {
                     //Save result to the result data pool with original library name
-                    self::$pool[$library . '\\' . $method] = &$result;
+                    self::$pool[$item] = &$result;
                     //Check keymap with result data
-                    if (isset(self::$keymap[$library])) {
+                    if (isset(self::$keymap[$item])) {
                         //Processing array result to get the final data
-                        if (!empty(self::$keymap[$library]['from']) && is_array($result)) {
+                        if (!empty(self::$keymap[$item]['from']) && is_array($result)) {
                             //Check every key in keymap for deeply mapping
-                            foreach (self::$keymap[$library]['from'] as $key) {
+                            foreach (self::$keymap[$item]['from'] as $key) {
                                 //Check key's existence
                                 if (isset($result[$key])) {
                                     //Switch result data to where we find
@@ -307,7 +287,7 @@ class pool
                         //Map result data to request data if isset
                         if (isset($result)) {
                             //Caution: The data with the same key in data pool will be overwritten if exists
-                            self::$data[self::$keymap[$library]['to']] = &$result;
+                            self::$data[self::$keymap[$item]['to']] = &$result;
                             //Rebuild data structure
                             self::$struct = array_keys(self::$data);
                         }
@@ -316,8 +296,9 @@ class pool
                 unset($result);
             } catch (\Throwable $exception) {
                 //Save the Exception or Error Message to the result data pool instead
-                self::$pool[$library . '\\' . $method] = $exception->getMessage();
+                self::$pool[$item] = $exception->getMessage();
             }
+            unset($item);
         }
         unset($library, $class, $method, $reflect);
     }
