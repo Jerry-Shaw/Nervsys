@@ -37,8 +37,8 @@ if ('cli' !== PHP_SAPI) {
     \core\ctrl\visit::start();
     //Start \core\ctrl\pool
     \core\ctrl\pool::start();
-    //Valid values for "\core\ctrl\pool::$format" are "json" and "raw", which should be changed via GET or POST
-    //All returned data will be output in JSON by default, or, kept in "\core\ctrl\pool::$pool" for further use by setting to "raw"
+    //Valid values for "\core\ctrl\pool::$format" are "json" and "data", which should be changed via GET or POST
+    //All returned data will be output in JSON by default, or, kept in "\core\ctrl\pool::$pool" for further use by setting to "data"
     if ('json' === \core\ctrl\pool::$format) {
         //Force output content to UTF-8 formatted plain text
         header('Content-Type: text/plain; charset=UTF-8');

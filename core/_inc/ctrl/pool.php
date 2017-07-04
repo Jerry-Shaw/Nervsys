@@ -35,7 +35,7 @@ class pool
     //Result data pool
     public static $pool = [];
 
-    //Result data format (json/raw)
+    //Result data format (json/data)
     public static $format = 'json';
 
     //Module list
@@ -59,7 +59,7 @@ class pool
         //Get date from HTTP Request in CGI Mode
         if ('cli' !== PHP_SAPI) self::$data = ENABLE_GET ? $_REQUEST : $_POST;
         //Set result data format
-        if (isset(self::$data['format']) && in_array(self::$data['format'], ['json', 'raw'], true)) self::$format = self::$data['format'];
+        if (isset(self::$data['format']) && in_array(self::$data['format'], ['json', 'data'], true)) self::$format = self::$data['format'];
         //Parse "cmd" data
         if (isset(self::$data['cmd']) && is_string(self::$data['cmd']) && false !== strpos(self::$data['cmd'], '\\')) self::parse_cmd(self::$data['cmd']);
         //Parse "map" data
