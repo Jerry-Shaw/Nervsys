@@ -46,8 +46,8 @@ if ('cli' !== PHP_SAPI) {
     load_lib('core', 'data_pool');
     //Start data_pool process
     \data_pool::start();
-    //Valid values for "data_pool::$format" are "json" and "raw", which should be changed via GET or POST
-    //All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "raw"
+    //Valid values for "data_pool::$format" are "json" and "data", which should be changed via GET or POST
+    //All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "data"
     if ('json' === \data_pool::$format) {
         //Force output content to UTF-8 formatted plain text
         header('Content-Type: text/plain; charset=UTF-8');
