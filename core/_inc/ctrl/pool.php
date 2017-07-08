@@ -228,7 +228,7 @@ class pool
                             //Save library existed under the same Module
                             if (in_array($library, self::$module[$module], true)) {
                                 //Save final method to keymap list with popped keys as mapping depth
-                                self::$keymap[$library . '\\' . array_pop($depth)] = ['from' => array_reverse($depth), 'to' => &$map_to];
+                                self::$keymap[$library . '\\' . array_pop($depth)][] = ['from' => array_reverse($depth), 'to' => &$map_to];
                                 break;
                             } else $depth[] = array_pop($keys);
                         } while (!empty($keys));
@@ -265,32 +265,36 @@ class pool
                     self::$pool[$item] = &$result;
                     //Check keymap with result data
                     if (isset(self::$keymap[$item])) {
-                        //Processing array result to get the final data
-                        if (!empty(self::$keymap[$item]['from']) && is_array($result)) {
-                            //Check every key in keymap for deeply mapping
-                            foreach (self::$keymap[$item]['from'] as $key) {
-                                //Check key's existence
-                                if (isset($result[$key])) {
-                                    //Switch result data to where we find
-                                    unset($tmp);
-                                    $tmp = $result[$key];
-                                    unset($result);
-                                    $result = $tmp;
-                                } else {
-                                    //Unset result data if requested key does not exist
-                                    unset($result);
-                                    break;
+                        //Map related data
+                        foreach (self::$keymap[$item] as $keymap) {
+                            //Processing array result to get the final data
+                            if (!empty($keymap['from']) && is_array($result)) {
+                                //Check every key in keymap for deeply mapping
+                                foreach ($keymap['from'] as $key) {
+                                    //Check key's existence
+                                    if (isset($result[$key])) {
+                                        //Switch result data to where we find
+                                        unset($tmp);
+                                        $tmp = $result[$key];
+                                        unset($result);
+                                        $result = $tmp;
+                                    } else {
+                                        //Unset result data if requested key does not exist
+                                        unset($result);
+                                        break;
+                                    }
                                 }
+                                unset($key, $tmp);
                             }
-                            unset($key, $tmp);
+                            //Map result data to request data if isset
+                            if (isset($result)) {
+                                //Caution: The data with the same key in data pool will be overwritten if exists
+                                self::$data[$keymap['to']] = &$result;
+                                //Rebuild data structure
+                                self::$struct = array_keys(self::$data);
+                            }
                         }
-                        //Map result data to request data if isset
-                        if (isset($result)) {
-                            //Caution: The data with the same key in data pool will be overwritten if exists
-                            self::$data[self::$keymap[$item]['to']] = &$result;
-                            //Rebuild data structure
-                            self::$struct = array_keys(self::$data);
-                        }
+                        unset($keymap);
                     }
                 }
                 unset($result);
