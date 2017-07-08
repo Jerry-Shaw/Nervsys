@@ -228,7 +228,7 @@ class pool
                             //Save library existed under the same Module
                             if (in_array($library, self::$module[$module], true)) {
                                 //Save final method to keymap list with popped keys as mapping depth
-                                self::$keymap[$library . '\\' . array_pop($depth)][] = ['from' => array_reverse($depth), 'to' => &$map_to];
+                                self::$keymap[$library . '\\' . array_pop($depth)][] = ['from' => array_reverse($depth), 'to' => $map_to];
                                 break;
                             } else $depth[] = array_pop($keys);
                         } while (!empty($keys));
@@ -265,7 +265,7 @@ class pool
                     self::$pool[$item] = &$result;
                     //Check keymap with result data
                     if (isset(self::$keymap[$item])) {
-                        //Map related data
+                        //Map all related data
                         foreach (self::$keymap[$item] as $keymap) {
                             //Processing array result to get the final data
                             if (!empty($keymap['from']) && is_array($result)) {
