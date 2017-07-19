@@ -46,7 +46,7 @@ class upload
      */
     public static function upload_file(): array
     {
-        lang::load('core', 'ctrl_upload');
+        /*lang::load('core', 'ctrl_upload');
         error::load('core', 'ctrl_upload');
         if (!empty(self::$file)) {
             if (0 === self::$file['error']) {//Upload success
@@ -72,6 +72,25 @@ class upload
                 unset($file_size);
             } else $result = self::get_error(self::$file['error']);//Upload failed when uploading, returned from server
         } else $result = error::get_error(10007);//Empty $_FILES['file']
+        return $result;*/
+
+        lang::load('core', 'ctrl_upload');
+        error::load('core', 'ctrl_upload');
+        if (empty(self::$file)) return error::get_error(10007);  //Empty $_FILES['file']
+        if (0 !== self::$file['error']) return self::get_error(self::$file['error']);   //Upload failed when uploading, returned from server   //Upload success
+        $file_size = self::chk_size(self::$file['size']);               //Get the file size
+        if (0 >= $file_size) return error::get_error(10004);      //File too large
+        $file_ext = self::chk_ext(self::$file['name']);                 //Check the file extension
+        if ('' !== $file_ext) return error::get_error(10003);     //Extension not allowed
+        $save_path = file::get_path(self::$save_path);                  //Get the upload path
+        if (':' === $save_path) return error::get_error(10002);   //Upload path Error
+        $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));     //Get the file name
+        $url = self::save_file(self::$file['tmp_name'], $save_path, $file_name, $file_ext);     //Save file
+        if ('' === $url) return $result = error::get_error(10001);  //Failed to move/copy from the tmp file  //Done
+        $result = error::get_error(10000);                      //Upload finished
+        $result['file_url'] = &$url;
+        $result['file_size'] = &$file_size;
+        unset($file_size, $file_name, $url, $save_path, $file_ext);
         return $result;
     }
 
