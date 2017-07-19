@@ -91,12 +91,12 @@ class file
         //Get list
         $path .= '/';
         $list = glob($path . $pattern);
-        if ($recursive) {
-            $items = glob($path . '*');
-            foreach ($items as $item) if (is_dir($item)) $list = array_merge($list, self::get_list($item, $pattern, true));
-            unset($items, $item);
-        }
-        unset($path, $pattern, $recursive);
+        //Return list when non-recursive
+        if (!$recursive) return $list;
+        //Get list recursively
+        $items = glob($path . '*');
+        foreach ($items as $item) if (is_dir($item)) $list = array_merge($list, self::get_list($item, $pattern, true));
+        unset($path, $pattern, $recursive, $items, $item);
         return $list;
     }
 }
