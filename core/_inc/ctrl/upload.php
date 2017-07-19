@@ -101,7 +101,7 @@ class upload
      */
     public static function upload_base64(): array
     {
-        lang::load('core', 'ctrl_upload');
+        /*lang::load('core', 'ctrl_upload');
         error::load('core', 'ctrl_upload');
         $base64_pos = strpos(self::$base64, 'base64,');//Get the position
         if (0 === strpos(self::$base64, 'data:image/') && false !== $base64_pos) {//Check the canvas data, must be an image
@@ -136,6 +136,34 @@ class upload
             unset($data, $img_data);
         } else $result = error::get_error(10003);//Extension not allowed
         unset($base64_pos);
+        return $result;*/
+
+
+        lang::load('core', 'ctrl_upload');
+        error::load('core', 'ctrl_upload');
+        $base64_pos = strpos(self::$base64, 'base64,');//Get the position
+        //Extension not allowed    Check the canvas data, must be an image
+        if (0 !== strpos(self::$base64, 'data:image/') || false === $base64_pos) return error::get_error(10003);
+        $data = substr(self::$base64, $base64_pos + 7);             //Get the base64 data of the image
+        $img_data = base64_decode($data);                                 //Get the binary data of the image
+        if (false === $img_data) return error::get_error(10006);    //Image data error
+        $file_size = self::chk_size(strlen($img_data));                   //Get the file size
+        if (0 >= $file_size) return error::get_error(10004);        //File too large
+        $img_info = getimagesizefromstring($img_data);                    //Get the image information
+        if (!array_key_exists($img_info[2], self::img_ext)) return error::get_error(10003);  //Extension not allowed
+        $file_ext = self::img_ext[$img_info[2]];                          //Get the extension
+        $save_path = file::get_path(self::$save_path);                    //Get the upload path
+        if (':' === $save_path) return error::get_error(10002);     //Upload path Error
+        $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
+        $url_path = $save_path . $file_name . '.' . $file_ext;          //Get URL path
+        $file_path = FILE_PATH . $url_path;                             //Get real upload path
+        if (is_file($file_path)) unlink($file_path);                    //Delete the file if existing
+        $save_file = (int)file_put_contents($file_path, $img_data);     //Write to file
+        if (0 >= $save_file) return error::get_error(10001);      //Failed to write //Done
+        $result = error::get_error(10000);                        //Upload finished
+        $result['file_url'] = &$url_path;
+        $result['file_size'] = &$file_size;
+        unset($file_name, $url_path, $file_path, $save_file, $file_ext, $save_path, $img_info, $file_size, $data, $img_data, $base64_pos);
         return $result;
     }
 
@@ -149,7 +177,7 @@ class upload
      */
     public static function image_resize(string $file, int $width, int $height, bool $crop = false)
     {
-        $img_info = getimagesize($file);
+        /*$img_info = getimagesize($file);
         if (array_key_exists($img_info[2], self::img_type)) {
             $img_size = $crop ? self::new_img_crop($img_info[0], $img_info[1], $width, $height) : self::new_img_size($img_info[0], $img_info[1], $width, $height);
             if ($img_info[0] !== $img_size['img_w'] || $img_info[1] !== $img_size['img_h']) {
@@ -179,7 +207,35 @@ class upload
             }
             unset($img_size);
         }
-        unset($file, $width, $height, $crop, $img_info);
+        unset($file, $width, $height, $crop, $img_info);*/
+
+        $img_info = getimagesize($file);
+        if (!array_key_exists($img_info[2], self::img_type)) return;
+        $img_size = $crop ? self::new_img_crop($img_info[0], $img_info[1], $width, $height) : self::new_img_size($img_info[0], $img_info[1], $width, $height);
+        if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) return;
+        $type = self::img_type[$img_info[2]];
+        $img_create = 'imagecreatefrom' . $type;
+        $img_func = 'image' . $type;
+        $img_source = $img_create($file);
+        $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
+        switch ($img_info[2]) {
+            case 1://Deal with the transparent color in a GIF
+                $transparent = imagecolorallocate($img_thumb, 0, 0, 0);
+                imagefill($img_thumb, 0, 0, $transparent);
+                imagecolortransparent($img_thumb, $transparent);
+                break;
+            case 3://Deal with the transparent color in a PNG
+                $transparent = imagecolorallocatealpha($img_thumb, 0, 0, 0, 127);
+                imagealphablending($img_thumb, false);
+                imagefill($img_thumb, 0, 0, $transparent);
+                imagesavealpha($img_thumb, true);
+                break;
+        }
+        imagecopyresampled($img_thumb, $img_source, 0, 0, $img_size['img_x'], $img_size['img_y'], $img_size['img_w'], $img_size['img_h'], $img_size['src_w'], $img_size['src_h']);
+        $img_func($img_thumb, $file);
+        imagedestroy($img_source);
+        imagedestroy($img_thumb);
+        unset($file, $width, $height, $crop, $img_info, $type, $img_create, $img_func, $img_source, $img_thumb, $transparent, $img_size);
     }
 
     /**
@@ -340,5 +396,32 @@ class upload
         }
         unset($error_code);
         return $result;
+    }
+
+    /**
+     * @param string $filePath
+     */
+    private static function exif_img(string $filePath) {
+        $image = imagecreatefromstring(file_get_contents($filePath));
+        $exif = exif_read_data($filePath);
+        $type = $exif['MimeType'];
+        $outputFun = str_replace('/', '', $type);
+        if(!empty($exif['Orientation'])) {
+            $exif['Orientation'] = 8;
+            switch($exif['Orientation']) {
+                case 8:
+                    $image = imagerotate($image,90,0);
+                    break;
+                case 3:
+                    $image = imagerotate($image,180,0);
+                    break;
+                case 6:
+                    $image = imagerotate($image,-90,0);
+                    break;
+            }
+        }
+        header('Content-Type: ' . $type);
+        $outputFun($image);
+        imagedestroy($image);
     }
 }
