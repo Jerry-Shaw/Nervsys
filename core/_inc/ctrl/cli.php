@@ -43,7 +43,7 @@ class cli
     private static $opt_try = 200;//Default try times for stream checking
     private static $opt_wait = 1;//Default time wait for stream checking (in microseconds)
     private static $opt_data = '';//Request data, will try to read STDIN when empty
-    private static $opt_path = ROOT . '/_cli/cfg.json';//Default CFG file path
+    private static $opt_path = ROOT . '/core/_cli/cfg.json';//Default CFG file path
 
     //CLI Runtime Settings
     private static $cli_cmd = '';//CLI Command
