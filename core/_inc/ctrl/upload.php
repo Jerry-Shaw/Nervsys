@@ -59,7 +59,7 @@ class upload
         if (':' === $save_path) return error::get_error(10002);     //Upload path Error
         $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));     //Get the file name
         $url = self::save_file(self::$file['tmp_name'], $save_path, $file_name, $file_ext);     //Save file
-        if ('' === $url) return $result = error::get_error(10001);  //Failed to move/copy from the tmp file  //Done
+        if ('' === $url) return error::get_error(10001);  //Failed to move/copy from the tmp file  //Done
         $result = error::get_error(10000);                          //Upload finished
         $result['file_url'] = &$url;
         $result['file_size'] = &$file_size;
