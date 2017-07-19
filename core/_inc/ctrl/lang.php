@@ -40,6 +40,7 @@ class lang
      */
     public static function load(string $module = '', string $file): void
     {
+        //Language detection
         if (isset($_REQUEST['lang'])) $lang = &$_REQUEST['lang'];
         elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
         elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
@@ -47,13 +48,16 @@ class lang
             setcookie('lang', $lang, time() + 2592000, '/');
         } else $lang = 'en-US';
         if (!in_array($lang, LANGUAGE_LIST, true)) $lang = 'en-US';
+        //Change default language
         if ('en-US' !== $lang) self::$lang = &$lang;
-        $path = '' === $module || '/' === $module ? ROOT . '/_lang/' : ROOT . '/' . $module . '/_lang/';
+        //Alias module name to "core"
+        if ('' === $module || '/' === $module) $module = 'core';
+        //Load language file
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
-        bindtextdomain($file, $path);
+        bindtextdomain($file, ROOT . '/' . $module . '/_lang/');
         textdomain($file);
-        unset($module, $file, $lang, $path);
+        unset($module, $file, $lang);
     }
 
     /**
