@@ -102,7 +102,7 @@ class pool
                                 //Calling the api method if the data structure is matched
                                 if (empty($difference)) self::call_method($library, $class, $method);
                             }
-                        } else if (!empty(self::$method)) {
+                        } elseif (!empty(self::$method)) {
                             //Requested methods is needed when API Safe Zone checking is turned off
                             $method_api = array_intersect(self::$method, $method_list);
                             //Calling "init" method at the first place if exists without API permission and data structure comparison

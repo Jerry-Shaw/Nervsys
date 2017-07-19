@@ -36,29 +36,30 @@
 function load_api(string $library, string $method): array
 {
     $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
-    if (class_exists($class, true)) {
-        $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
-        if (method_exists($class, $method) && (in_array($method, $api_list, true) || 'init' === $method || !SECURE_API)) {
-            $reflect = new \ReflectionMethod($class, $method);
-            if ($reflect->isPublic() && $reflect->isStatic()) {
-                try {
-                    $result['data'] = $class::$method();
-                } catch (\Throwable $exception) {
-                    $result['data'] = $exception->getMessage();
-                }
-            } else $result['data'] = 'Method "' . $method . '" in "' . $library . '" NOT permitted!';
-            unset($reflect);
-        } else $result['data'] = 'Method "' . $method . '" in "' . $library . '" NOT exist or NOT permitted!';
-        unset($api_list);
-    } else $result['data'] = 'Class "' . $library . '" NOT exist!';
-    unset($library, $method, $class);
+    //Check class existence
+    if (!class_exists($class)) return ['data' => 'Class "' . $library . '" NOT exist!'];
+    //Check method existence
+    if (!method_exists($class, $method)) return ['data' => 'Method "' . $method . '" in "' . $library . '" NOT exist!'];
+    //Check method permission
+    $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
+    if (SECURE_API && 'init' !== $method && !in_array($method, $api_list, true)) return ['data' => 'Method "' . $method . '" in "' . $library . '" NOT permitted!'];
+    //Check method property
+    $reflect = new \ReflectionMethod($class, $method);
+    if (!$reflect->isPublic() || !$reflect->isStatic()) return ['data' => 'Method "' . $method . '" in "' . $library . '" NOT ready!'];
+    //Calling method
+    try {
+        $result['data'] = $class::$method();
+    } catch (\Throwable $exception) {
+        $result['data'] = $exception->getMessage();
+    }
+    unset($library, $method, $class, $api_list, $reflect);
     return $result;
 }
 
 /**
  * Escape all the passing variables and parameters
  */
-function escape_request()
+function escape_request(): void
 {
     if (isset($_GET) && !empty($_GET)) $_GET = escape_requests($_GET);
     if (isset($_POST) && !empty($_POST)) $_POST = escape_requests($_POST);
@@ -90,17 +91,13 @@ function escape_requests(array $requests): array
 function get_uuid(string $string = ''): string
 {
     if ('' === $string) $string = uniqid(mt_rand(), true);
-    else if (1 === preg_match('/[A-Z]/', $string)) $string = mb_strtolower($string, 'UTF-8');
+    elseif (1 === preg_match('/[A-Z]/', $string)) $string = mb_strtolower($string, 'UTF-8');
     $code = hash('sha1', $string . ':UUID');
-    $uuid = substr($code, 0, 8);
-    $uuid .= '-';
-    $uuid .= substr($code, 10, 4);
-    $uuid .= '-';
-    $uuid .= substr($code, 16, 4);
-    $uuid .= '-';
-    $uuid .= substr($code, 22, 4);
-    $uuid .= '-';
-    $uuid .= substr($code, 28, 12);
+    $uuid = substr($code, 0, 8) . '-';
+    $uuid .= substr($code, 10, 4) . '-';
+    $uuid .= substr($code, 16, 4) . '-';
+    $uuid .= substr($code, 22, 4) . '-';
+    $uuid .= substr($code, 28, 12) . '-';
     $uuid = strtoupper($uuid);
     unset($string, $code);
     return $uuid;
@@ -133,14 +130,9 @@ function get_char(string $uuid, int $len = 1): string
 function sort_list(array $data, array $list): array
 {
     $result = [];
-    if (!empty($list) && !empty($data)) {
-        foreach ($list as $item) {
-            if (isset($data[$item])) $result[$item] = $data[$item];
-            else continue;
-        }
-        unset($item);
-    }
-    unset($list, $data);
+    if (empty($data) || empty($list)) return $result;
+    foreach ($list as $item) if (isset($data[$item])) $result[$item] = $data[$item];
+    unset($data, $list, $item);
     return $result;
 }
 
@@ -152,23 +144,12 @@ function sort_list(array $data, array $list): array
 function get_client_info(): array
 {
     if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $XFF = &$_SERVER['HTTP_X_FORWARDED_FOR'];
+        $XFF = $_SERVER['HTTP_X_FORWARDED_FOR'];
         $client_pos = strpos($XFF, ', ');
         $client_ip = false !== $client_pos ? substr($XFF, 0, $client_pos) : $XFF;
         unset($XFF, $client_pos);
-    } else if (isset($_SERVER['HTTP_CLIENT_IP'])) $client_ip = $_SERVER['HTTP_CLIENT_IP'];
-    else if (isset($_SERVER['REMOTE_ADDR'])) $client_ip = $_SERVER['REMOTE_ADDR'];
-    else if (isset($_SERVER['LOCAL_ADDR'])) $client_ip = $_SERVER['LOCAL_ADDR'];
-    else if (false !== getenv('HTTP_X_FORWARDED_FOR')) {
-        $XFF = getenv('HTTP_X_FORWARDED_FOR');
-        $client_pos = strpos($XFF, ', ');
-        $client_ip = false !== $client_pos ? substr($XFF, 0, $client_pos) : $XFF;
-        unset($XFF, $client_pos);
-    } else if (false !== getenv('HTTP_CLIENT_IP')) $client_ip = getenv('HTTP_CLIENT_IP');
-    else if (false !== getenv('REMOTE_ADDR')) $client_ip = getenv('REMOTE_ADDR');
-    else if (false !== getenv('LOCAL_ADDR')) $client_ip = getenv('LOCAL_ADDR');
-    else $client_ip = '0.0.0.0';
-    $client_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    } else $client_ip = $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? $_SERVER['LOCAL_ADDR'] ?? '0.0.0.0';
     $client_lang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 5) : '';
+    $client_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     return ['ip' => &$client_ip, 'lang' => &$client_lang, 'agent' => &$client_agent];
 }

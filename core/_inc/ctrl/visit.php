@@ -36,78 +36,65 @@ class visit
     public static $client = '';
 
     //Online Status
-    public static $online = false;
+    public static $online = true;
+
+    //Online tags
+    public static $online_tags = [];
 
     /**
      * Map all the SESSION/KEY data to a static variable
      * Get the online status by checking the online tags
      * Grant permission for Cross-Domain request
      */
-    public static function start()
+    public static function start(): void
     {
-        //Get HTTP HOST and HTTP ORIGIN ready for Cross-Domain permission detection
+        //Get HTTP HOST and HTTP ORIGIN ready for Cross-Domain request detection
         $Server_HOST = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'] ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
         $Origin_HOST = $_SERVER['HTTP_ORIGIN'] ?? $Server_HOST;
-        //Process HTTP requests
-        if ('OPTIONS' !== $_SERVER['REQUEST_METHOD']) {
-            //Start SESSION
-            Redis_SESSION ? session::start() : session_start();
-            //Detect requests
-            switch (self::$client) {
-                //Local request
-                case 'LOCAL':
-                    if (!empty($_SESSION)) self::map_session();
-                    break;
-                //Remote request
-                case 'REMOTE':
-                    if (isset($_SERVER['HTTP_KEY'])) self::map_key();
-                    break;
-                //Auto detect
-                default:
-                    //Detect REMOTE client
-                    self::chk_remote($Server_HOST);
-                    //Detect COOKIE when remote client is not detected
-                    if ('REMOTE' !== self::$client) self::$client = self::chk_session();
-                    //Process KEY
-                    if ('LOCAL' === self::$client) {
-                        //Extract data from SESSION or KEY
-                        if (!empty($_SESSION)) self::map_session();
-                        else if (isset($_SERVER['HTTP_KEY'])) self::map_key();
-                    } else if ('REMOTE' === self::$client && isset($_SERVER['HTTP_KEY'])) {
-                        //Extract data from KEY
-                        self::map_key();
-                        //Check KEY content
-                        if (!empty(self::$key)) {
-                            //Check Cross-Domain request permission for Javascript
-                            if (isset(self::$key['JS-DEV']) && 'on' === self::$key['JS-DEV']) {
-                                //Provide Cross-Domain permission support for correct KEY request
-                                header('Access-Control-Allow-Origin: ' . $Origin_HOST);
-                                header('Access-Control-Allow-Methods: GET, POST');
-                                header('Access-Control-Allow-Headers: KEY');
-                            } else {
-                                //Remove Cross-Domain permission support when the KEY is incorrect
-                                header('Access-Control-Allow-Origin: ' . $Server_HOST);
-                                header('Access-Control-Allow-Methods: GET, POST');
-                                header('Access-Control-Allow-Headers: Accept');
-                            }
-                        } else exit;//Exit running if KEY content is empty
-                    }
-                    break;
-            }
-            self::$online = self::chk_online();//Get online status
-        } else {
-            //Grant basic Cross-Domain request permission for HTTP OPTIONS Request and allow HTTP Header "KEY"
+        //Grant permission for "OPTION" request
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+            //Grant basic Cross-Domain request permission for HTTP "OPTIONS" Request and allow HTTP Header "KEY"
             header('Access-Control-Allow-Origin: ' . $Origin_HOST);
             header('Access-Control-Allow-Methods: OPTIONS');
             header('Access-Control-Allow-Headers: KEY');
-            exit;//Exit running after basic Cross-Domain request permission was granted
+            //Exit when basic Cross-Domain request permission was granted
+            exit;
         }
+        //Start SESSION
+        Redis_SESSION ? session::start() : session_start();
+        //Detect requests
+        switch (self::$client) {
+            //Local request
+            case 'LOCAL':
+                if (!empty($_SESSION)) self::map_session();
+                break;
+            //Remote request
+            case 'REMOTE':
+                if (isset($_SERVER['HTTP_KEY'])) self::map_key();
+                break;
+            //Auto detect
+            default:
+                //Detect client type
+                self::$client = self::chk_client($Server_HOST);
+                //Process local request, extract data from SESSION or KEY
+                if ('LOCAL' === self::$client) !empty($_SESSION) ? self::map_session() : (isset($_SERVER['HTTP_KEY']) ? self::map_key() : '');
+                elseif ('REMOTE' === self::$client && isset($_SERVER['HTTP_KEY'])) {
+                    //Process remote request, extract data from KEY
+                    self::map_key();
+                    //Exit when KEY is empty
+                    if (empty(self::$key)) exit;
+                    //Hold Cross-domain response
+                    self::ctrl_CDS($Server_HOST, $Origin_HOST);
+                }
+                break;
+        }
+        self::chk_online();//Get online status
         unset($Server_HOST, $Origin_HOST);
     }
 
     /**
      * Renew KEY to a new timestamp, or, make it expired by passing a passed timestamp
-     * Return new KEY content after renewing
+     * Return encrypted KEY after renewing
      *
      * @param int $ExpireAt
      *
@@ -115,65 +102,109 @@ class visit
      */
     public static function renew(int $ExpireAt): string
     {
-        if (!empty(self::$key)) {
-            if ($ExpireAt > time()) {
-                self::$key['ExpireAt'] = &$ExpireAt;
-                if ('LOCAL' === self::$client) $_SESSION['ExpireAt'] = &$ExpireAt;
-            } else {
-                self::$key = [];
-                if ('LOCAL' === self::$client) {
-                    $_SESSION = [];
-                    session_destroy();
-                }
-            }
+        //Return encrypted key directly
+        if (empty(self::$key)) return self::get_key();
+        //Run expire time checking
+        if ($ExpireAt > time()) {
+            self::$key['ExpireAt'] = &$ExpireAt;
+            self::ctrl_session('add', ['ExpireAt' => &$ExpireAt]);
+        } else {
+            self::$key = [];
+            self::ctrl_session('empty');
         }
         unset($ExpireAt);
+        //Return encrypted key
         return self::get_key();
     }
 
     /**
-     * Add a key => value pair to KEY
-     * Return new KEY content after adding
+     * Add content to KEY
+     * Return encrypted KEY after adding
      *
-     * @param string $key
-     * @param string $value
-     * @param bool $is_int
+     * @param array $data
      *
      * @return string
      */
-    public static function add(string $key, string $value, bool $is_int = false): string
+    public static function add(array $data): string
     {
-        if ('' !== $key) {
-            if ($is_int) $value = (int)$value;
-            self::$key[$key] = &$value;
-            if ('LOCAL' === self::$client) $_SESSION[$key] = &$value;
-        }
-        unset($key, $value, $is_int);
+        //Return encrypted key directly
+        if (empty($data)) return self::get_key();
+        //Add data
+        self::$key = array_merge(self::$key, $data);
+        self::ctrl_session('add', $data);
+        unset($data);
+        //Return encrypted key
         return self::get_key();
     }
 
     /**
      * Remove content from KEY
-     * Return new KEY content after removing
+     * Return encrypted KEY after removing
      *
-     * @param string $key
+     * @param array $keys
      *
      * @return string
      */
-    public static function remove(string $key = ''): string
+    public static function remove(array $keys = []): string
     {
-        if ('' !== $key) {
-            unset(self::$key[$key]);
-            if ('LOCAL' === self::$client) unset($_SESSION[$key]);
+        if (!empty($keys)) {
+            foreach ($keys as $key) unset(self::$key[$key]);
+            self::ctrl_session('remove', $keys);
+            unset($key);
         } else {
             self::$key = [];
-            if ('LOCAL' === self::$client) {
-                $_SESSION = [];
-                session_destroy();
-            }
+            self::ctrl_session('empty');
         }
-        unset($key);
+        unset($keys);
+        //Return encrypted key
         return self::get_key();
+    }
+
+    /**
+     * Cross-Domain Security controller
+     *
+     * @param $Server_HOST
+     * @param $Origin_HOST
+     */
+    private static function ctrl_CDS($Server_HOST, $Origin_HOST): void
+    {
+        if (isset(self::$key['CDS']) && 'on' === self::$key['CDS']) {
+            //Provide Cross-Domain support for correct KEY request
+            header('Access-Control-Allow-Origin: ' . $Origin_HOST);
+            header('Access-Control-Allow-Methods: GET, POST');
+            header('Access-Control-Allow-Headers: KEY');
+        } else {
+            //Remove Cross-Domain support when KEY is incorrect
+            header('Access-Control-Allow-Origin: ' . $Server_HOST);
+            header('Access-Control-Allow-Methods: GET, POST');
+            header('Access-Control-Allow-Headers: Accept');
+        }
+        unset($Server_HOST, $Origin_HOST);
+    }
+
+    /**
+     * Control content from SESSION
+     *
+     * @param string $act
+     * @param array $data
+     */
+    private function ctrl_session(string $act, array $data = []): void
+    {
+        //Detect client type
+        if ('LOCAL' !== self::$client) return;
+        //Operation
+        switch ($act) {
+            case 'add':
+                $_SESSION = array_merge($_SESSION, $data);
+                break;
+            case 'remove':
+                foreach ($data as $key) unset($_SESSION[$key]);
+                break;
+            case 'empty':
+                $_SESSION = [];
+                break;
+        }
+        unset($act, $data);
     }
 
     /**
@@ -189,7 +220,7 @@ class visit
     /**
      * Map KEY content to key
      */
-    private static function map_key()
+    private static function map_key(): void
     {
         self::$client = 'REMOTE';
         $data = crypt::validate_key($_SERVER['HTTP_KEY']);
@@ -202,25 +233,39 @@ class visit
     }
 
     /**
-     * Check remote client
+     * Map SESSION content to key
+     */
+    private static function map_session(): void
+    {
+        self::$client = 'LOCAL';
+        if (!empty($_SESSION)) self::$key = &$_SESSION;
+    }
+
+    /**
+     * Check client type
      *
      * @param string $Server_HOST
+     *
+     * @return string
      */
-    private static function chk_remote(string $Server_HOST)
+    private static function chk_client(string $Server_HOST): string
     {
-        if (isset($_SERVER['HTTP_ORIGIN']) && $Server_HOST !== $_SERVER['HTTP_ORIGIN']) self::$client = 'REMOTE';
-        else if (isset($_SERVER['HTTP_REFERER'])) {
+        //Check "HTTP_ORIGIN"
+        if (isset($_SERVER['HTTP_ORIGIN']) && $Server_HOST !== $_SERVER['HTTP_ORIGIN']) return 'REMOTE';
+        //Check "HTTP_REFERER"
+        if (isset($_SERVER['HTTP_REFERER'])) {
             $referer = parse_url($_SERVER['HTTP_REFERER']);
-            if (false === $referer || !isset($referer['scheme']) || !isset($referer['host'])) self::$client = 'REMOTE';
-            else {
-                $Referer_HOST = $referer['scheme'] . '://' . $referer['host'];
-                if (isset($referer['port']) && 80 !== $referer['port']) $Referer_HOST .= ':' . $referer['port'];
-                if ($Server_HOST !== $Referer_HOST) self::$client = 'REMOTE';
-                unset($Referer_HOST);
-            }
-            unset($referer);
+            //Failed to get main components from "HTTP_REFERER"
+            if (false === $referer || !isset($referer['scheme']) || !isset($referer['host'])) return 'REMOTE';
+            //Deeply check the components from "HTTP_REFERER"
+            $Referer_HOST = $referer['scheme'] . '://' . $referer['host'];
+            if (isset($referer['port']) && 80 !== $referer['port']) $Referer_HOST .= ':' . $referer['port'];
+            if ($Server_HOST !== $Referer_HOST) return 'REMOTE';
+            unset($referer, $Referer_HOST);
         }
+        //Detect COOKIE when remote client is not detected
         unset($Server_HOST);
+        return self::chk_session();
     }
 
     /**
@@ -231,33 +276,21 @@ class visit
     private static function chk_session(): string
     {
         $session_name = session_name();
-        $client = isset($_COOKIE[$session_name]) && session_id() === $_COOKIE[$session_name] ? 'LOCAL' : 'REMOTE';
-        unset($session_name);
-        return $client;
-    }
-
-    /**
-     * Map SESSION content to key
-     */
-    private static function map_session()
-    {
-        self::$client = 'LOCAL';
-        if (!empty($_SESSION)) self::$key = &$_SESSION;
+        return isset($_COOKIE[$session_name]) && $_COOKIE[$session_name] === session_id() ? 'LOCAL' : 'REMOTE';
     }
 
     /**
      * Get the online status by checking the online tags in KEY
      */
-    private static function chk_online(): bool
+    private static function chk_online(): void
     {
-        $online = true;
-        foreach (ONLINE_TAGS as $tag) {
+        $tags = !empty(self::$online_tags) ? self::$online_tags : ONLINE_TAGS;
+        foreach ($tags as $tag) {
             if (!isset(self::$key[$tag])) {
-                $online = false;
-                break;
-            } else continue;
+                self::$online = false;
+                return;
+            }
         }
-        unset($tag);
-        return $online;
+        unset($tags, $tag);
     }
 }

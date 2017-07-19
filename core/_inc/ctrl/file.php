@@ -45,7 +45,8 @@ class file
     }
 
     /**
-     * Check and create the directory if not exists, return a relative path
+     * Check and create directory
+     * Return relative path
      *
      * @param string $path
      *
@@ -53,16 +54,23 @@ class file
      */
     public static function get_path(string $path): string
     {
-        $real_path = FILE_PATH;
-        if ('' !== $path) {
-            if (false !== strpos($path, '..')) $path = str_replace('..', '.', $path);//Parent directory is not allowed
-            if (false !== strpos($path, '\\')) $path = str_replace('\\', '/', $path);//Get a formatted url path with '/'
-            $real_path .= $path;
-            if (!is_dir($real_path)) mkdir($real_path, 0664, true);
-        }
-        $file_path = is_readable($real_path) ? $path . '/' : ':';
-        unset($path, $real_path);
-        return $file_path;
+        //Parent directory is not allowed
+        if (false !== strpos($path, '..')) $path = str_replace('..', '', $path);
+        //Format path with '/'
+        if (false !== strpos($path, '\\')) $path = str_replace('\\', '/', $path);
+        //Trim "/"
+        $path = time($path, '/');
+        //Return "/" when path is empty
+        if ('' === $path) return is_readable(FILE_PATH) ? '/' : '';
+        //Add "/" to the beginning
+        $path = '/' . $path;
+        //Create directories
+        $file_path = FILE_PATH . $path;
+        if (!is_dir($file_path)) mkdir($file_path, 0664, true);
+        //Check path property
+        $url_path = is_readable($file_path) ? $path . '/' : '';
+        unset($path, $file_path);
+        return $url_path;
     }
 
     /**
@@ -77,19 +85,16 @@ class file
      */
     public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array
     {
-        $list = [];
+        //Check path
         $path = realpath($path);
-        if (false !== $path) {
-            $path .= '/';
-            $list = glob($path . $pattern);
-            if ($recursive) {
-                $dir_list = glob($path . '*');
-                foreach ($dir_list as $dir) {
-                    if (is_dir($dir)) $list = array_merge($list, self::get_list($dir, $pattern, true));
-                    else continue;
-                }
-                unset($dir);
-            }
+        if (false === $path) return [];
+        //Get list
+        $path .= '/';
+        $list = glob($path . $pattern);
+        if ($recursive) {
+            $items = glob($path . '*');
+            foreach ($items as $item) if (is_dir($item)) $list = array_merge($list, self::get_list($item, $pattern, true));
+            unset($items, $item);
         }
         unset($path, $pattern, $recursive);
         return $list;

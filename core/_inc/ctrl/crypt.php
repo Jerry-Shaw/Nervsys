@@ -41,14 +41,13 @@ class crypt
     {
         $keys = ['public' => '', 'private' => ''];
         $openssl = openssl_pkey_new(SSL_CFG);
-        if (false !== $openssl) {
-            $public = openssl_pkey_get_details($openssl);
-            if (false !== $public) $keys['public'] = &$public['key'];
-            if (openssl_pkey_export($openssl, $private, null, SSL_CFG)) $keys['private'] = &$private;
-            openssl_pkey_free($openssl);
-            unset($public, $private);
-        }
-        unset($openssl);
+        //Return directly when create private key failed
+        if (false === $openssl) return $keys;
+        $public = openssl_pkey_get_details($openssl);
+        if (false !== $public) $keys['public'] = &$public['key'];
+        if (openssl_pkey_export($openssl, $private, null, SSL_CFG)) $keys['private'] = &$private;
+        openssl_pkey_free($openssl);
+        unset($openssl, $public, $private);
         return $keys;
     }
 
@@ -62,9 +61,7 @@ class crypt
      */
     public static function encode(string $string, array $keys): string
     {
-        $string = openssl_encrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
-        unset($keys);
-        return (string)$string;
+        return (string)openssl_encrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
     }
 
     /**
@@ -77,9 +74,7 @@ class crypt
      */
     public static function decode(string $string, array $keys): string
     {
-        $string = openssl_decrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
-        unset($keys);
-        return (string)$string;
+        return (string)openssl_decrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
     }
 
     /**
@@ -109,13 +104,12 @@ class crypt
     public static function encrypt(string $string, string $key): string
     {
         $type = '' !== $key ? self::get_type($key) : '';
-        if ('' !== $type && in_array($type, ['public', 'private'], true)) {
-            $encrypt = 'openssl_' . $type . '_encrypt';
-            if ('' === $string || !$encrypt($string, $string, $key)) $string = '';
-            if ('' !== $string) $string = base64_encode($string);
-            unset($encrypt);
-        }
-        unset($key, $type);
+        //Key incorrect, return empty directly
+        if ('' === $type || !in_array($type, ['public', 'private'], true)) return '';
+        $encrypt = 'openssl_' . $type . '_encrypt';
+        if ('' === $string || !$encrypt($string, $string, $key)) $string = '';
+        if ('' !== $string) $string = base64_encode($string);
+        unset($key, $type, $encrypt);
         return $string;
     }
 
@@ -130,13 +124,12 @@ class crypt
     public static function decrypt(string $string, string $key): string
     {
         $type = '' !== $key ? self::get_type($key) : '';
-        if ('' !== $type && in_array($type, ['public', 'private'], true)) {
-            $decrypt = 'openssl_' . $type . '_decrypt';
-            if ('' !== $string) $string = base64_decode($string, true);
-            if (false === $string || '' === $string || !$decrypt($string, $string, $key)) $string = '';
-            unset($decrypt);
-        }
-        unset($key, $type);
+        //Key incorrect, return empty directly
+        if ('' === $type || !in_array($type, ['public', 'private'], true)) return '';
+        $decrypt = 'openssl_' . $type . '_decrypt';
+        if ('' !== $string) $string = base64_decode($string, true);
+        if (false === $string || '' === $string || !$decrypt($string, $string, $key)) $string = '';
+        unset($key, $type, $decrypt);
         return $string;
     }
 
@@ -168,9 +161,7 @@ class crypt
      */
     public static function check_pwd(string $input, string $codes, string $hash): bool
     {
-        $result = self::hash_pwd($input, $codes) === $hash ? true : false;
-        unset($input, $codes, $hash);
-        return $result;
+        return self::hash_pwd($input, $codes) === $hash ? true : false;
     }
 
     /**
@@ -183,16 +174,17 @@ class crypt
      */
     public static function create_key(string $string, string $rsa_key = ''): string
     {
-        if ('' !== $string) {
-            $crypt = CRYPT_NAME;
-            $key = $crypt::get_key();
-            $keys = $crypt::get_keys($key);
-            $mixed = $crypt::get_mixed($key);
-            $mixed = '' !== $rsa_key ? self::encrypt($mixed, $rsa_key) : base64_encode($mixed);
-            $signature = '' !== $mixed ? $mixed . '-' . self::encode($string, $keys) : '';
-            unset($crypt, $key, $keys, $mixed);
-        } else $signature = '';
-        unset($string, $rsa_key);
+        //Return empty when string is empty
+        if ('' === $string) return '';
+        //Encode data
+        $crypt = CRYPT_NAME;
+        $key = $crypt::get_key();
+        $keys = $crypt::get_keys($key);
+        $mixed = $crypt::get_mixed($key);
+        //Create encrypted signature with build-in keys
+        $mixed = '' !== $rsa_key ? self::encrypt($mixed, $rsa_key) : (string)base64_encode($mixed);
+        $signature = '' !== $mixed ? $mixed . '-' . self::encode($string, $keys) : '';
+        unset($string, $rsa_key, $crypt, $key, $keys, $mixed);
         return $signature;
     }
 
@@ -206,19 +198,19 @@ class crypt
      */
     public static function validate_key(string $signature, string $rsa_key = ''): string
     {
-        if (!empty($signature) && false !== strpos($signature, '-')) {
-            $codes = explode('-', $signature, 2);
-            $mixed = '' !== $rsa_key ? self::decrypt($codes[0], $rsa_key) : base64_decode($codes[0], true);
-            if ('' !== $mixed) {
-                $crypt = CRYPT_NAME;
-                $key = $crypt::get_rebuilt($mixed);
-                $keys = $crypt::get_keys($key);
-                $data = self::decode($codes[1], $keys);
-                unset($crypt, $key, $keys);
-            } else $data = '';
-            unset($codes, $mixed);
-        } else $data = '';
-        unset($signature, $rsa_key);
+        //Return empty when signature is incorrect
+        if (empty($signature) || false === strpos($signature, '-')) return '';
+        //Decode signature
+        $codes = explode('-', $signature, 2);
+        $mixed = '' !== $rsa_key ? self::decrypt($codes[0], $rsa_key) : (string)base64_decode($codes[0], true);
+        //Return empty when decrypt failed
+        if ('' === $mixed) return '';
+        //Decrypt signature with build-in keys
+        $crypt = CRYPT_NAME;
+        $key = $crypt::get_rebuilt($mixed);
+        $keys = $crypt::get_keys($key);
+        $data = self::decode($codes[1], $keys);
+        unset($signature, $rsa_key, $codes, $mixed, $crypt, $key, $keys);
         return $data;
     }
 }

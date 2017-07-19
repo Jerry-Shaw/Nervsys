@@ -59,25 +59,25 @@ class cli
             if (isset(self::$opt['log']) || isset(self::$opt['l'])) self::$opt_log = true;
             //Get "cmd" option
             if (isset(self::$opt['cmd']) && false !== self::$opt['cmd'] && '' !== self::$opt['cmd']) self::$opt_cmd = self::$opt['cmd'];
-            else if (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$opt_cmd = self::$opt['c'];
+            elseif (isset(self::$opt['c']) && false !== self::$opt['c'] && '' !== self::$opt['c']) self::$opt_cmd = self::$opt['c'];
             //Get "map" option
             if (isset(self::$opt['map']) && false !== self::$opt['map'] && '' !== self::$opt['map']) self::$opt_map = self::$opt['map'];
-            else if (isset(self::$opt['m']) && false !== self::$opt['m'] && '' !== self::$opt['m']) self::$opt_map = self::$opt['m'];
+            elseif (isset(self::$opt['m']) && false !== self::$opt['m'] && '' !== self::$opt['m']) self::$opt_map = self::$opt['m'];
             //Get "get" option
             if (isset(self::$opt['get']) && false !== self::$opt['get'] && '' !== self::$opt['get']) self::$opt_get = self::$opt['get'];
-            else if (isset(self::$opt['g']) && false !== self::$opt['g'] && '' !== self::$opt['g']) self::$opt_get = self::$opt['g'];
+            elseif (isset(self::$opt['g']) && false !== self::$opt['g'] && '' !== self::$opt['g']) self::$opt_get = self::$opt['g'];
             //Get "path" option
             if (isset(self::$opt['path']) && false !== self::$opt['path'] && '' !== self::$opt['path']) self::$opt_path = self::$opt['path'];
-            else if (isset(self::$opt['p']) && false !== self::$opt['p'] && '' !== self::$opt['p']) self::$opt_path = self::$opt['p'];
+            elseif (isset(self::$opt['p']) && false !== self::$opt['p'] && '' !== self::$opt['p']) self::$opt_path = self::$opt['p'];
             //Get "data" from option/STDIN
             if (isset(self::$opt['data']) && false !== self::$opt['data'] && '' !== self::$opt['data']) self::$opt_data = self::$opt['data'];
-            else if (isset(self::$opt['d']) && false !== self::$opt['d'] && '' !== self::$opt['d']) self::$opt_data = self::$opt['d'];
+            elseif (isset(self::$opt['d']) && false !== self::$opt['d'] && '' !== self::$opt['d']) self::$opt_data = self::$opt['d'];
             else self::$opt_data = self::get_stream([STDIN]);
             //Get "try" option
             if (isset(self::$opt['try'])) {
                 self::$opt['try'] = (int)self::$opt['try'];
                 if (0 < self::$opt['try']) self::$opt_try = self::$opt['try'];
-            } else if (isset(self::$opt['t'])) {
+            } elseif (isset(self::$opt['t'])) {
                 self::$opt['t'] = (int)self::$opt['t'];
                 if (0 < self::$opt['t']) self::$opt_try = self::$opt['t'];
             }
@@ -85,7 +85,7 @@ class cli
             if (isset(self::$opt['wait'])) {
                 self::$opt['wait'] = (int)self::$opt['wait'];
                 if (0 < self::$opt['wait']) self::$opt_wait = self::$opt['wait'];
-            } else if (isset(self::$opt['w'])) {
+            } elseif (isset(self::$opt['w'])) {
                 self::$opt['w'] = (int)self::$opt['w'];
                 if (0 < self::$opt['w']) self::$opt_wait = self::$opt['w'];
             }

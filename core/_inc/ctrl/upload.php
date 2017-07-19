@@ -238,7 +238,7 @@ class upload
                 $img_x = (int)($crop_w / 2);
                 $src_w = $img_width - $crop_w;
                 unset($crop_w);
-            } else if (0 > $ratio_diff && $img_width > $need_width) {
+            } elseif (0 > $ratio_diff && $img_width > $need_width) {
                 $crop_h = (int)($img_height - $img_width / $ratio_need);
                 $img_y = (int)($crop_h / 2);
                 $src_h = $img_height - $img_y * 2;
@@ -271,10 +271,10 @@ class upload
             if (0 < $ratio_diff && $img_width > $need_width) {
                 $img_width = &$need_width;
                 $img_height = (int)($need_width / $ratio_img);
-            } else if (0 > $ratio_diff && $img_height > $need_height) {
+            } elseif (0 > $ratio_diff && $img_height > $need_height) {
                 $img_height = &$need_height;
                 $img_width = (int)($need_height * $ratio_img);
-            } else if (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
+            } elseif (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
                 $img_width = &$need_width;
                 $img_height = &$need_height;
             }

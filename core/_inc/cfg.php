@@ -54,7 +54,7 @@ define('ONLINE_TAGS', ['uuid', 'char']);
 define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 
 //File Storage Server Settings
-define('FILE_PATH', 'E:/Sites/Storage/');
+define('FILE_PATH', 'E:/Sites/Storage');
 define('FILE_DOMAIN', 'https://YOUR DOMAIN/');
 
 //MySQL Settings
@@ -90,16 +90,16 @@ define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'p
 
 //OpenSSL Settings
 define('SSL_CFG',
-       [
-           'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
-           'digest_alg'       => 'sha256',
-           'private_key_bits' => 2048,
-           'private_key_type' => OPENSSL_KEYTYPE_RSA
-       ]
+    [
+        'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
+        'digest_alg'       => 'sha256',
+        'private_key_bits' => 2048,
+        'private_key_type' => OPENSSL_KEYTYPE_RSA
+    ]
 );
 
 //Autoload function
-spl_autoload_register(function ($library) {
+spl_autoload_register(function ($library): void {
     if (!class_exists($library, true) && false !== strpos($library, '\\')) {
         $path = explode('\\', $library, 2);
         $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . $path[1] . '.php');

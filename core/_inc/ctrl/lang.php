@@ -38,11 +38,11 @@ class lang
      * @param string $module
      * @param string $file
      */
-    public static function load(string $module = '', string $file)
+    public static function load(string $module = '', string $file): void
     {
         if (isset($_REQUEST['lang'])) $lang = &$_REQUEST['lang'];
-        else if (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
-        else if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+        elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
+        elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
             setcookie('lang', $lang, time() + 2592000, '/');
         } else $lang = 'en-US';
