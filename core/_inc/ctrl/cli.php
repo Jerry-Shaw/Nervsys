@@ -65,7 +65,8 @@ class cli
         //Get "get" option
         self::$opt_get = self::get_opt(['get', 'g']);
         //Get "path" option
-        self::$opt_path = self::get_opt(['path', 'p']);
+        $path = realpath(self::get_opt(['path', 'p']));
+        if (false !== $path) self::$opt_path = &$path;
         //Get "data" from option/STDIN
         self::$opt_data = self::get_opt(['data', 'd']);
         if ('' === self::$opt_data) self::$opt_data = self::get_stream([STDIN]);
@@ -75,7 +76,7 @@ class cli
         //Get "wait" option
         $wait = (int)self::get_opt(['wait', 'w']);
         if (0 < $wait) self::$opt['wait'] = &$wait;
-        unset($try, $wait);
+        unset($path, $try, $wait);
     }
 
     /**
@@ -99,7 +100,7 @@ class cli
     private static function load_cfg(): void
     {
         //Check CFG file
-        if (!is_file(self::$opt_path)) return;
+        if ('' === self::$opt_path) return;
         //Get CFG file content
         $json = (string)file_get_contents(self::$opt_path);
         if ('' === $json) return;
@@ -136,11 +137,26 @@ class cli
         if (empty(self::$var)) return;
         //Check specific language in configurations
         if (!isset(self::$cli_cfg[self::$var[0]])) return;
+        //Add quotes to cmd
+        self::quote_cmd();
         //Rebuild all commands
         foreach (self::$var as $k => $v) if (isset(self::$cli_cfg[$v])) self::$var[$k] = self::$cli_cfg[$v];
         //Create command
         self::$cli_cmd = implode(' ', self::$var);
         unset($k, $v);
+    }
+
+    /**
+     * Add quotes to escape spaces in path
+     */
+    private static function quote_cmd(): void
+    {
+        //Return when no space in path
+        if (false === strpos(self::$cli_cfg[self::$var[0]], ' ')) return;
+        //Return when already quoted
+        if ('"' === substr(self::$cli_cfg[self::$var[0]], 0, 1) && '"' === substr(self::$cli_cfg[self::$var[0]], -1, 1)) return;
+        //Add quotes to cmd binary
+        self::$cli_cfg[self::$var[0]] = '"' . self::$cli_cfg[self::$var[0]] . '"';
     }
 
     /**
