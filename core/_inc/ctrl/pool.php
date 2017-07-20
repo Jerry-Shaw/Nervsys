@@ -297,7 +297,7 @@ class pool
                 $data = $result;
                 //Seek to get final data from array
                 if (!empty($keymap['from']) && is_array($data)) self::seek_data($keymap['from'], $data);
-                //Data is null
+                //Skip when data is null
                 if (is_null($data)) continue;
                 //Caution: Data with the same key will be overwritten
                 self::$data[$keymap['to']] = $data;
@@ -320,21 +320,16 @@ class pool
      */
     private static function seek_data(array $keymap, array &$data): void
     {
-        //Copy data
-        $copy = $data;
-        //Check every key in keymap
         foreach ($keymap as $key) {
-            if (!isset($copy[$key])) {
+            if (!isset($data[$key])) {
+                //Set data to null if not found
                 $data = null;
                 return;
             }
             //Switch result data
-            unset($tmp);
-            $tmp = $copy[$key];
-            unset($copy);
-            $copy = $tmp;
+            $copy = $data[$key];
+            $data = $copy;
         }
-        $data = $copy;
-        unset($keymap, $copy, $key, $tmp);
+        unset($keymap, $key, $copy);
     }
 }
