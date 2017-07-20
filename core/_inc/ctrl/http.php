@@ -65,6 +65,9 @@ class http
     //Return with header
     public static $with_header = false;
 
+    //Follow location level
+    public static $follow_location = 0;
+
     //HTTP Accept
     public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
 
@@ -125,12 +128,10 @@ class http
         curl_setopt($curl, CURLOPT_URL, self::$url);
         curl_setopt($curl, CURLOPT_PORT, self::$unit['port']);
         curl_setopt($curl, CURLOPT_TIMEOUT, 60);
-        curl_setopt($curl, CURLOPT_MAXREDIRS, 10);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_AUTOREFERER, true);
         curl_setopt($curl, CURLOPT_COOKIESESSION, true);
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_HTTPHEADER, self::$header);
         curl_setopt($curl, CURLOPT_USERAGENT, self::$user_agent);
@@ -140,6 +141,12 @@ class http
         if ('' !== self::$Cookie) curl_setopt($curl, CURLOPT_COOKIE, self::$Cookie);
         if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
         if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT, self::$ssl_cert);
+        //Follow settings
+        if (0 < self::$follow_location) {
+            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($curl, CURLOPT_MAXREDIRS, self::$follow_location);
+        }
+        //POST settings
         if ('POST' === self::$method) {
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_POSTFIELDS, empty(self::$file) ? http_build_query(self::$data) : self::$data);
