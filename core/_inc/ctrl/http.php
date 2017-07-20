@@ -59,14 +59,14 @@ class http
     //SSL CERT
     public static $ssl_cert = '';
 
+    //Max follow level
+    public static $max_follow = 0;
+
     //Return with body
     public static $with_body = true;
 
     //Return with header
     public static $with_header = false;
-
-    //Follow location level
-    public static $follow_location = 0;
 
     //HTTP Accept
     public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
@@ -142,9 +142,9 @@ class http
         if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
         if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT, self::$ssl_cert);
         //Follow settings
-        if (0 < self::$follow_location) {
+        if (0 < self::$max_follow) {
             curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($curl, CURLOPT_MAXREDIRS, self::$follow_location);
+            curl_setopt($curl, CURLOPT_MAXREDIRS, self::$max_follow);
         }
         //POST settings
         if ('POST' === self::$method) {
