@@ -125,7 +125,7 @@ class http
         curl_setopt($curl, CURLOPT_URL, self::$url);
         curl_setopt($curl, CURLOPT_PORT, self::$unit['port']);
         curl_setopt($curl, CURLOPT_TIMEOUT, 60);
-        curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
+        curl_setopt($curl, CURLOPT_MAXREDIRS, 10);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_AUTOREFERER, true);
