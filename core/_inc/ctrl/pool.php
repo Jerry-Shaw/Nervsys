@@ -51,70 +51,108 @@ class pool
     private static $struct = [];
 
     /**
-     * Initial Data Module
+     * Start Data Pool Module
      * Only static methods are supported
      */
-    public static function start()
+    public static function start(): void
     {
         //Get date from HTTP Request in CGI Mode
         if ('cli' !== PHP_SAPI) self::$data = ENABLE_GET ? $_REQUEST : $_POST;
+        //Parse "cmd" data
+        self::parse_cmd();
+        //Parse "map" data
+        self::parse_map();
         //Set result data format
         if (isset(self::$data['format']) && in_array(self::$data['format'], ['json', 'data'], true)) self::$format = self::$data['format'];
-        //Parse "cmd" data
-        if (isset(self::$data['cmd']) && is_string(self::$data['cmd']) && false !== strpos(self::$data['cmd'], '\\')) self::parse_cmd(self::$data['cmd']);
-        //Parse "map" data
-        if (isset(self::$data['map']) && is_string(self::$data['map']) && false !== strpos(self::$data['map'], '\\') && false !== strpos(self::$data['map'], ':')) self::parse_map(self::$data['map']);
-        //Unset "format" & "cmd" & "map" from data package
-        unset(self::$data['format'], self::$data['cmd'], self::$data['map']);
-        //Merge "$_FILES" into data pool if exists
+        //Unset "cmd" & "map" & "format" from data package
+        unset(self::$data['cmd'], self::$data['map'], self::$data['format']);
+        //Merge "$_FILES" into data pool when exist
         if (!empty($_FILES)) self::$data = array_merge(self::$data, $_FILES);
-        //Continue running if requested data is ready
-        if (!empty(self::$module) && (!empty(self::$method) || !empty(self::$data))) {
-            //Build data structure
-            self::$struct = array_keys(self::$data);
-            //Parse Module & Method list
-            foreach (self::$module as $module => $libraries) {
-                //Load Module CFG file for the first time
-                $file = realpath(ROOT . '/' . $module . '/_inc/cfg.php');
-                if (false !== $file) require $file;
-                //Call Libraries
-                foreach ($libraries as $library) {
-                    //Point to root class
-                    $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
-                    //Check the load status
-                    if (class_exists($class, true)) {
-                        //Get method list from the library
-                        $method_list = get_class_methods($class);
-                        //Security Checking
-                        if (SECURE_API) {
-                            //Checking API Safe Zone
-                            $api_list = isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
-                            //Get api methods according to requested methods or all methods will be stored in the intersect list if no method is provided
-                            $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $method_list) : array_intersect($api_list, $method_list);
-                            //Calling "init" method at the first place if exists without API permission and data structure comparison
-                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, $class, 'init');
-                            //Go through every method in the api list with API Safe Zone checking
-                            foreach ($method_api as $method) {
-                                //Get the intersect list of the data requirement structure
-                                $intersect = array_intersect(self::$struct, $class::$api[$method]);
-                                //Get the different list of the data requirement structure
-                                $difference = array_diff($class::$api[$method], $intersect);
-                                //Calling the api method if the data structure is matched
-                                if (empty($difference)) self::call_method($library, $class, $method);
-                            }
-                        } elseif (!empty(self::$method)) {
-                            //Requested methods is needed when API Safe Zone checking is turned off
-                            $method_api = array_intersect(self::$method, $method_list);
-                            //Calling "init" method at the first place if exists without API permission and data structure comparison
-                            if (in_array('init', $method_list, true) && !in_array('init', $method_api, true)) self::call_method($library, $class, 'init');
-                            //Calling the api method without API Safe Zone checking
-                            foreach ($method_api as $method) self::call_method($library, $class, $method);
-                        }
-                    }
-                }
-            }
-            unset($module, $libraries, $file, $library, $class, $method_list, $api_list, $method_api, $method, $intersect, $difference);
+        //Main data incorrect
+        if (empty(self::$module) || (empty(self::$method) && empty(self::$data))) return;
+        //Build data structure
+        self::$struct = array_keys(self::$data);
+        //Parse Module & Method list
+        foreach (self::$module as $module => $library) {
+            //Load Module CFG file for the first time
+            $file = realpath(ROOT . '/' . $module . '/_inc/cfg.php');
+            if (false !== $file) require $file;
+            //Call API
+            self::call_api($library);
         }
+        unset($module, $library, $file);
+    }
+
+    /**
+     * "cmd" value parser
+     */
+    private static function parse_cmd(): void
+    {
+        //Data incorrect
+        if (!isset(self::$data['cmd']) || !is_string(self::$data['cmd']) || false === strpos(self::$data['cmd'], '\\')) return;
+        //Extract "cmd" values
+        $cmd = self::get_list(self::$data['cmd']);
+        //Parse "cmd" values
+        foreach ($cmd as $item) {
+            //Detect module and method
+            $offset = strpos($item, '\\');
+            if (false !== $offset) {
+                //Module goes here
+                //Get module name
+                $module = self::get_module($item, $offset);
+                //Make sure the parsed results are available
+                if ('' === $module || false === substr($item, $offset + 1)) continue;
+                //Add module to "self::$module" if not added
+                if (!isset(self::$module[$module])) self::$module[$module] = [];
+                //Add library to "self::$module" if not added
+                if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;
+            } else {
+                //Method goes here
+                //Add to "self::$method" if not added
+                if (!in_array($item, self::$method, true)) self::$method[] = $item;
+            }
+        }
+        unset($cmd, $item, $offset, $module);
+    }
+
+    /**
+     * "map" value parser
+     */
+    private static function parse_map(): void
+    {
+        //Data incorrect
+        if (!isset(self::$data['map']) || !is_string(self::$data['map']) || false === strpos(self::$data['map'], '\\') || false === strpos(self::$data['map'], ':')) return;
+        //Extract "map" values
+        $map = self::get_list(self::$data['map']);
+        //Deeply parse map values
+        foreach ($map as $value) {
+            //Every map value should contain both "\" and ":"
+            $position = strpos($value, ':');
+            if (false === $position || false === strpos($value, '\\')) continue;
+            //Extract and get map "from" and "to"
+            $map_from = substr($value, 0, $position);
+            //Deeply parse map "from"
+            $offset = strpos($map_from, '\\');
+            if (false === $offset) continue;
+            //Get module name
+            $module = self::get_module($map_from, $offset);
+            //Module Key NOT exist
+            if ('' === $module || !isset(self::$module[$module])) continue;
+            $depth = [];
+            //Get map keys
+            $keys = explode('\\', $map_from);
+            //Find mapping path
+            do {
+                $library = implode('\\', $keys);
+                //Save library existed under the same Module
+                if (in_array($library, self::$module[$module], true)) {
+                    //Save final method to keymap list with popped keys as mapping depth
+                    self::$keymap[$library . '\\' . array_pop($depth)][] = ['from' => array_reverse($depth), 'to' => substr($value, $position + 1)];
+                    break;
+                } else $depth[] = array_pop($keys);
+            } while (!empty($keys));
+        }
+        unset($map, $value, $position, $map_from, $offset, $module, $depth, $keys, $library);
     }
 
     /**
@@ -126,12 +164,11 @@ class pool
      */
     private static function get_list(string $data): array
     {
-        if (false !== strpos($data, ',')) {
-            //Spilt data when multiple modules/methods exist with ","
-            $result = explode(',', $data);
-            $result = array_filter($result);
-            $result = array_unique($result);
-        } else $result = [$data];
+        if (false === strpos($data, ',')) return [$data];
+        //Spilt data when multiple modules/methods exist with ","
+        $result = explode(',', $data);
+        $result = array_filter($result);
+        $result = array_unique($result);
         unset($data);
         return $result;
     }
@@ -163,147 +200,141 @@ class pool
     }
 
     /**
-     * "cmd" value parser
+     * API Caller
      *
-     * @param string $data
+     * @param $library
      */
-    private static function parse_cmd(string $data)
+    private static function call_api(array $library): void
     {
-        //Extract "cmd" values
-        $cmd = self::get_list($data);
-        //Parse "cmd" values
-        foreach ($cmd as $item) {
-            //Detect module and method
-            $offset = strpos($item, '\\');
-            if (false !== $offset) {
-                //Module goes here
-                //Get module name
-                $module = self::get_module($item, $offset);
-                //Make sure the parsed results are available
-                if ('' !== $module && false !== substr($item, $offset + 1)) {
-                    //Add module to "self::$module" if not added
-                    if (!isset(self::$module[$module])) self::$module[$module] = [];
-                    //Add library to "self::$module" if not added
-                    if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;
-                }
-            } else {
-                //Method goes here
-                //Add to "self::$method" if not added
-                if (!in_array($item, self::$method, true)) self::$method[] = $item;
-            }
+        foreach ($library as $class) {
+            //Point to root class
+            $name = '\\' !== substr($class, 0, 1) ? '\\' . $class : $class;
+            //Check load status
+            if (!class_exists($name)) continue;
+            //Get method list from the class
+            $methods = get_class_methods($name);
+            //Call method
+            SECURE_API ? self::secure_call($name, $class, $methods) : self::insecure_call($name, $class, $methods);
         }
-        unset($data, $cmd, $item, $offset, $module);
+        unset($library, $class, $name, $methods);
     }
 
     /**
-     * "map" value parser
+     * Method Caller (Secure)
      *
-     * @param string $data
+     * @param $name
+     * @param $class
+     * @param $methods
      */
-    private static function parse_map(string $data)
+    private static function secure_call(string $name, string $class, array $methods): void
     {
-        //Extract "map" values
-        $map = self::get_list($data);
-        //Deeply parse map values
-        foreach ($map as $value) {
-            //Every map value should contain both "\" and ":"
-            $position = strpos($value, ':');
-            if (false !== $position && false !== strpos($value, '\\')) {
-                //Extract and get map "from" and "to"
-                $map_from = substr($value, 0, $position);
-                $map_to = substr($value, $position + 1);
-                //Deeply parse map "from"
-                $offset = strpos($map_from, '\\');
-                if (false !== $offset) {
-                    //Get module name
-                    $module = self::get_module($map_from, $offset);
-                    //Module Key exists
-                    if ('' !== $module && isset(self::$module[$module])) {
-                        $depth = [];
-                        //Get map keys
-                        $keys = explode('\\', $map_from);
-                        //Find the deepest condition
-                        do {
-                            $library = implode('\\', $keys);
-                            //Save library existed under the same Module
-                            if (in_array($library, self::$module[$module], true)) {
-                                //Save final method to keymap list with popped keys as mapping depth
-                                self::$keymap[$library . '\\' . array_pop($depth)][] = ['from' => array_reverse($depth), 'to' => $map_to];
-                                break;
-                            } else $depth[] = array_pop($keys);
-                        } while (!empty($keys));
-                        unset($depth, $keys, $library);
-                    }
-                }
-            }
+        //Get API Safe Zone list
+        $api_list = isset($name::$api) && is_array($name::$api) ? array_keys($name::$api) : [];
+        //Get request api methods, or, all methods in API Safe Zone
+        $method_api = !empty(self::$method) ? array_intersect(self::$method, $api_list, $methods) : array_intersect($api_list, $methods);
+        //Calling "init" method at the first place without any permission checking
+        if (in_array('init', $methods, true) && !in_array('init', $method_api, true)) self::call_method($name, $class, 'init');
+        //Go through every method in the api list with API Safe Zone checking
+        foreach ($method_api as $method) {
+            //Get the intersect list of the data requirement structure
+            $intersect = array_intersect(self::$struct, $name::$api[$method]);
+            //Get the different list of the data requirement structure
+            $difference = array_diff($name::$api[$method], $intersect);
+            //Calling api method if the data structure is matched
+            if (empty($difference)) self::call_method($name, $class, $method);
         }
-        unset($data, $map, $value, $position, $map_from, $map_to, $offset, $module);
+        unset($name, $class, $methods, $api_list, $method_api, $method, $intersect, $difference);
     }
 
     /**
-     * Call method and store the result
+     * Method Caller (Insecure)
      *
-     * @param string $library
+     * @param $name
+     * @param $class
+     * @param $methods
+     */
+    private static function insecure_call(string $name, string $class, array $methods): void
+    {
+        //Request api methods is needed in insecure mode
+        if (empty(self::$method)) return;
+        //Get request api methods
+        $method_api = array_intersect(self::$method, $methods);
+        //Calling "init" method at the first place without any permission checking
+        if (in_array('init', $methods, true) && !in_array('init', $method_api, true)) self::call_method($name, $class, 'init');
+        //Calling api method
+        foreach ($method_api as $method) self::call_method($name, $class, $method);
+        unset($name, $class, $methods, $method_api, $method);
+    }
+
+    /**
+     * Call method and capture result
+     *
+     * @param string $name
      * @param string $class
      * @param string $method
      */
-    private static function call_method(string $library, string $class, string $method)
+    private static function call_method(string $name, string $class, string $method): void
     {
         //Get a reflection object for the class method
-        $reflect = new \ReflectionMethod($class, $method);
+        $reflect = new \ReflectionMethod($name, $method);
         //Check the visibility and property of the method
-        if ($reflect->isPublic() && $reflect->isStatic()) {
-            //Get item key
-            $item = $library . '\\' . $method;
-            //Try to call the method and catch the Exceptions or Errors
-            try {
-                //Calling method
-                $result = $class::$method();
-                //Merge result
-                if (isset($result)) {
-                    //Save result to the result data pool with original library name
-                    self::$pool[$item] = &$result;
-                    //Check keymap with result data
-                    if (isset(self::$keymap[$item])) {
-                        //Map all related data
-                        foreach (self::$keymap[$item] as $keymap) {
-                            //Processing array result to get the final data
-                            if (!empty($keymap['from']) && is_array($result)) {
-                                //Check every key in keymap for deeply mapping
-                                foreach ($keymap['from'] as $key) {
-                                    //Check key's existence
-                                    if (isset($result[$key])) {
-                                        //Switch result data to where we find
-                                        unset($tmp);
-                                        $tmp = $result[$key];
-                                        unset($result);
-                                        $result = $tmp;
-                                    } else {
-                                        //Unset result data if requested key does not exist
-                                        unset($result);
-                                        break;
-                                    }
-                                }
-                                unset($key, $tmp);
-                            }
-                            //Map result data to request data if isset
-                            if (isset($result)) {
-                                //Caution: The data with the same key in data pool will be overwritten if exists
-                                self::$data[$keymap['to']] = &$result;
-                                //Rebuild data structure
-                                self::$struct = array_keys(self::$data);
-                            }
-                        }
-                        unset($keymap);
-                    }
-                }
-                unset($result);
-            } catch (\Throwable $exception) {
-                //Save the Exception or Error Message to the result data pool instead
-                self::$pool[$item] = $exception->getMessage();
+        if (!$reflect->isPublic() || !$reflect->isStatic()) return;
+        //Get item key
+        $item = $class . '\\' . $method;
+        //Try to call method
+        try {
+            //Calling method
+            $result = $name::$method();
+            //No result data
+            if (!isset($result)) return;
+            //Save result to data pool with original item key
+            self::$pool[$item] = $result;
+            //No need to map data
+            if (!isset(self::$keymap[$item])) return;
+            //Map result data
+            foreach (self::$keymap[$item] as $keymap) {
+                //Copy result
+                $data = $result;
+                //Seek to get final data from array
+                if (!empty($keymap['from']) && is_array($data)) self::seek_data($keymap['from'], $data);
+                //Data is null
+                if (is_null($data)) continue;
+                //Caution: Data with the same key will be overwritten
+                self::$data[$keymap['to']] = $data;
+                //Rebuild data structure
+                self::$struct = array_keys(self::$data);
             }
-            unset($item);
+            unset($result, $keymap, $data);
+        } catch (\Throwable $exception) {
+            //Save Exception Message to data pool instead
+            self::$pool[$item] = $exception->getMessage();
         }
-        unset($library, $class, $method, $reflect);
+        unset($name, $class, $method, $reflect, $item);
+    }
+
+    /**
+     * Seek for deep data
+     *
+     * @param $keymap
+     * @param $data
+     */
+    private static function seek_data(array $keymap, array &$data): void
+    {
+        //Copy data
+        $copy = $data;
+        //Check every key in keymap
+        foreach ($keymap as $key) {
+            if (!isset($copy[$key])) {
+                $data = null;
+                return;
+            }
+            //Switch result data
+            unset($tmp);
+            $tmp = $copy[$key];
+            unset($copy);
+            $copy = $tmp;
+        }
+        $data = $copy;
+        unset($keymap, $copy, $key, $tmp);
     }
 }

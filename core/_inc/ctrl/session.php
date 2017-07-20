@@ -43,7 +43,7 @@ class session
     /**
      * Initialize SESSION
      */
-    public static function start()
+    public static function start(): void
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
             redis::$redis_db = 0;
