@@ -116,9 +116,9 @@ class error
      *
      * @param array $errors
      * @param array $error
-     * @param string $lang_list
+     * @param array $lang_list
      */
-    private static function error_text(array &$errors, array $error, string $lang_list): void
+    private static function error_text(array &$errors, array $error, array $lang_list): void
     {
         foreach ($lang_list as $lang) {
             //Load defined language pack
