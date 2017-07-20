@@ -68,7 +68,7 @@ function AJAX(object) {
             else if ('object' === typeof data) {
                 var Key, Queries = [];
 
-                if ('[object Array]' !== Object.prototype.toString.call(data))for (Key in data) Queries.push(encodeURIComponent(Key) + '=' + encodeURIComponent(data[Key]));
+                if ('[object Array]' !== Object.prototype.toString.call(data)) for (Key in data) Queries.push(encodeURIComponent(Key) + '=' + encodeURIComponent(data[Key]));
                 else for (Key in data) if ('string' === typeof data[Key]['name']) Queries.push(encodeURIComponent(data[Key]['name']) + '=' + encodeURIComponent(data[Key]['value']));
 
                 Query = Queries.join('&');

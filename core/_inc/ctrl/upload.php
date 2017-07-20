@@ -29,116 +29,161 @@ namespace core\ctrl;
 
 class upload
 {
-    public static $file = [];//$_FILES['file']
-    public static $base64 = '';//BASE64 content
-    public static $file_ext = [];//Allowed extensions
-    public static $file_name = '';//File name without extension
-    public static $file_size = 20971520;//Allowed File size: 20MB by default
-    public static $save_path = '';//Upload path
+    //$_FILES['file']
+    public static $file = [];
 
-    const img_type = [1 => 'gif', 2 => 'jpeg', 3 => 'png', 6 => 'bmp'];//MINE Types of allowed images
-    const img_ext = [1 => 'gif', 2 => 'jpg', 3 => 'png', 6 => 'bmp'];//Extensions of allowed images
+    //BASE64 content
+    public static $base64 = '';
+
+    //Allowed extensions
+    public static $file_ext = [];
+
+    //File name without extension
+    public static $file_name = '';
+
+    //Allowed File size: 20MB by default
+    public static $file_size = 20971520;
+
+    //Upload path (Relative to "FILE_PATH")
+    public static $save_path = '';
+
+    //Allowed Extension/Mime-Type
+    const mime = [
+        //docs
+        '.xml'  => 'text/xml',
+        '.txt'  => 'text/plain',
+        '.rtf'  => 'application/rtf',
+        '.pdf'  => 'application/pdf',
+        '.doc'  => 'application/msword',
+        '.xls'  => 'application/vnd.ms-excel',
+        '.ppt'  => 'application/vnd.ms-powerpoint',
+        '.docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+
+        //image
+        '.gif'  => 'image/gif',
+        '.jpg'  => 'image/jpeg',
+        '.png'  => 'image/png',
+        '.bmp'  => 'image/bmp',
+
+        //video
+        '.avi'  => 'video/msvideo',
+        '.flv'  => 'video/x-flv',
+        '.mov'  => 'video/quicktime',
+        '.mp4'  => 'video/mp4',
+        '.mpeg' => 'video/mpeg',
+        '.wmv'  => 'video/x-ms-wmv',
+
+        //audio
+        '.aac'  => 'audio/aac',
+        '.m4a'  => 'audio/mp4',
+        '.mid'  => 'audio/mid',
+        '.mp3'  => 'audio/mpeg',
+        '.ogg'  => 'audio/ogg',
+        '.wav'  => 'audio/wav',
+
+        //package
+        '.7z'   => 'application/x-7z-compressed',
+        '.gz'   => 'application/x-gzip',
+        '.zip'  => 'application/x-zip-compressed',
+        '.rar'  => 'application/octet-stream',
+        '.tar'  => 'application/x-tar',
+
+        //misc
+        '.apk'  => 'application/vnd.android.package-archive'
+    ];
 
     /**
-     * Upload a file
+     * Upload file
      *
      * @return array
      */
-    public static function upload_file(): array
+    public static function file(): array
     {
-        lang::load('core', 'ctrl_upload');
-        error::load('core', 'ctrl_upload');
-        if (empty(self::$file)) return error::get_error(10007);   //Empty $_FILES['file']
-        //Upload failed when uploading, returned from server    Upload success
+        lang::load('core', 'upload');
+        error::load('core', 'upload');
+        //Empty $_FILES['file']
+        if (empty(self::$file)) return error::get_error(10007);
+        //Upload failed when uploading, returned from server
         if (0 !== self::$file['error']) return self::get_error(self::$file['error']);
-        $file_size = self::chk_size(self::$file['size']);                 //Get the file size
-        if (0 >= $file_size) return error::get_error(10004);        //File too large
-        $file_ext = self::chk_ext(self::$file['name']);                   //Check the file extension
-        if ('' !== $file_ext) return error::get_error(10003);       //Extension not allowed
-        $save_path = file::get_path(self::$save_path);                    //Get the upload path
-        if (':' === $save_path) return error::get_error(10002);     //Upload path Error
-        $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));     //Get the file name
-        $url = self::save_file(self::$file['tmp_name'], $save_path, $file_name, $file_ext);     //Save file
-        if ('' === $url) return error::get_error(10001);  //Failed to move/copy from the tmp file  //Done
-        $result = error::get_error(10000);                          //Upload finished
+        //Get file size
+        $file_size = self::chk_size(self::$file['size']);
+        //File too large
+        if (0 === $file_size) return error::get_error(10004);
+        //Check file extension
+        $file_ext = self::chk_ext(self::$file['name']);
+        //Extension not allowed
+        if ('' === $file_ext) return error::get_error(10003);
+        //Get upload path
+        $save_path = file::get_path(self::$save_path);
+        //Upload path Error
+        if ('' === $save_path) return error::get_error(10002);
+        //Get file name
+        $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
+        //Save file
+        $url = self::save_file($save_path, $file_name . '.' . $file_ext);
+        //Failed to move/copy from tmp file
+        if ('' === $url) return error::get_error(10001);
+        //Upload done
+        $result = error::get_error(10000);
         $result['file_url'] = &$url;
         $result['file_size'] = &$file_size;
-        unset($file_size, $file_name, $url, $save_path, $file_ext);
+        unset($file_size, $file_ext, $save_path, $file_name, $url);
         return $result;
     }
 
     /**
-     * Upload an image in base64 format
+     * Upload file via base64
      *
      * @return array
      */
-    public static function upload_base64(): array
+    public static function base64(): array
     {
-        lang::load('core', 'ctrl_upload');
-        error::load('core', 'ctrl_upload');
-        $base64_pos = strpos(self::$base64, 'base64,');            //Get the position
-        //Extension not allowed    Check the canvas data, must be an image
-        if (0 !== strpos(self::$base64, 'data:image/') || false === $base64_pos) return error::get_error(10003);
-        $data = substr(self::$base64, $base64_pos + 7);             //Get the base64 data of the image
-        $img_data = base64_decode($data);                                 //Get the binary data of the image
-        if (false === $img_data) return error::get_error(10006);    //Image data error
-        $file_size = self::chk_size(strlen($img_data));                   //Get the file size
-        if (0 >= $file_size) return error::get_error(10004);        //File too large
-        $img_info = getimagesizefromstring($img_data);                    //Get the image information
-        if (!array_key_exists($img_info[2], self::img_ext)) return error::get_error(10003);  //Extension not allowed
-        $file_ext = self::img_ext[$img_info[2]];                          //Get the extension
-        $save_path = file::get_path(self::$save_path);                    //Get the upload path
-        if (':' === $save_path) return error::get_error(10002);     //Upload path Error
-        $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
-        $url_path = $save_path . $file_name . '.' . $file_ext;           //Get URL path
-        $file_path = FILE_PATH . $url_path;                              //Get real upload path
-        if (is_file($file_path)) unlink($file_path);                     //Delete the file if existing
-        $save_file = (int)file_put_contents($file_path, $img_data);      //Write to file
-        if (0 >= $save_file) return error::get_error(10001);       //Failed to write //Done
-        $result = error::get_error(10000);                         //Upload finished
+        lang::load('core', 'upload');
+        error::load('core', 'upload');
+        //Get base64 position
+        $base64_pos = strpos(self::$base64, ';base64,');
+        //Mime-type not allowed
+        if (false === $base64_pos || 0 !== strpos(self::$base64, 'data:')) return error::get_error(10003);
+        //Get Mime-type
+        $mime_type = (string)substr(self::$base64, 5, $base64_pos - 5);
+        //Get extension from allowed Mime-type list
+        $file_ext = (string)array_search($mime_type, self::mime, true);
+        //Check file extension
+        $file_ext = self::chk_ext($file_ext);
+        //Extension not allowed
+        if ('' === $file_ext) return error::get_error(10003);
+        //Get binary data
+        $binary_data = base64_decode(substr(self::$base64, $base64_pos + 8));
+        //Image data error
+        if (false === $binary_data) return error::get_error(10006);
+        //Get file size
+        $file_size = self::chk_size(strlen($binary_data));
+        //File too large
+        if (0 === $file_size) return error::get_error(10004);
+        //Get upload path
+        $save_path = file::get_path(self::$save_path);
+        //Upload path Error
+        if ('' === $save_path) return error::get_error(10002);
+        //Get file name
+        $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
+        //Get URL path
+        $url_path = $save_path . $file_name . '.' . $file_ext;
+        //Get real upload path
+        $file_path = FILE_PATH . $url_path;
+        //Delete existing file
+        if (is_file($file_path)) unlink($file_path);
+        //Write to file
+        $save_file = (int)file_put_contents($file_path, $binary_data);
+        //File write failed
+        if (0 === $save_file) return error::get_error(10001);
+        //Upload done
+        $result = error::get_error(10000);
         $result['file_url'] = &$url_path;
         $result['file_size'] = &$file_size;
-        unset($file_name, $url_path, $file_path, $save_file, $file_ext, $save_path, $img_info, $file_size, $data, $img_data, $base64_pos);
+        unset($base64_pos, $mime_type, $file_ext, $binary_data, $file_size, $save_path, $file_name, $url_path, $file_path, $save_file);
         return $result;
-    }
-
-    /**
-     * Resize/Crop an image to a giving size
-     *
-     * @param string $file
-     * @param int $width
-     * @param int $height
-     * @param bool $crop
-     */
-    public static function image_resize(string $file, int $width, int $height, bool $crop = false)
-    {
-        $img_info = getimagesize($file);
-        if (!array_key_exists($img_info[2], self::img_type)) return;
-        $img_size = $crop ? self::new_img_crop($img_info[0], $img_info[1], $width, $height) : self::new_img_size($img_info[0], $img_info[1], $width, $height);
-        if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) return;
-        $type = self::img_type[$img_info[2]];
-        $img_create = 'imagecreatefrom' . $type;
-        $img_func = 'image' . $type;
-        $img_source = $img_create($file);
-        $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
-        switch ($img_info[2]) {
-            case 1://Deal with the transparent color in a GIF
-                $transparent = imagecolorallocate($img_thumb, 0, 0, 0);
-                imagefill($img_thumb, 0, 0, $transparent);
-                imagecolortransparent($img_thumb, $transparent);
-                break;
-            case 3://Deal with the transparent color in a PNG
-                $transparent = imagecolorallocatealpha($img_thumb, 0, 0, 0, 127);
-                imagealphablending($img_thumb, false);
-                imagefill($img_thumb, 0, 0, $transparent);
-                imagesavealpha($img_thumb, true);
-                break;
-        }
-        imagecopyresampled($img_thumb, $img_source, 0, 0, $img_size['img_x'], $img_size['img_y'], $img_size['img_w'], $img_size['img_h'], $img_size['src_w'], $img_size['src_h']);
-        $img_func($img_thumb, $file);
-        imagedestroy($img_source);
-        imagedestroy($img_thumb);
-        unset($file, $width, $height, $crop, $img_info, $type, $img_create, $img_func, $img_source, $img_thumb, $transparent, $img_size);
     }
 
     /**
@@ -163,7 +208,12 @@ class upload
     private static function chk_ext(string $file_name): string
     {
         $ext = file::get_ext($file_name);
-        if ('' !== $ext && !empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) $ext = '';//File extension not allowed, set to empty string
+        //Return empty when extension is empty
+        if ('' === $ext) return '';
+        //Check when defined
+        if (!empty(self::$file_ext) && !in_array($ext, self::$file_ext)) return '';
+        //Check allowed extension list when not defined
+        if (empty(self::$file_ext) && !isset(self::mime[$ext])) return '';
         unset($file_name);
         return $ext;
     }
@@ -171,98 +221,25 @@ class upload
     /**
      * Save the file from the tmp file
      *
-     * @param string $file
      * @param string $save_path
      * @param string $file_name
-     * @param string $file_ext
      *
      * @return string
      */
-    private static function save_file(string $file, string $save_path, string $file_name, string $file_ext): string
+    private static function save_file(string $save_path, string $file_name): string
     {
-        $url_path = $save_path . $file_name . '.' . $file_ext;//Get URL path
-        $file_path = FILE_PATH . $url_path;//Get real upload path
-        if (is_file($file_path)) unlink($file_path);//Delete the existing file
-        $move = move_uploaded_file($file, $file_path);//Move the tmp file to the right path
-        if (!$move) {
-            $move = copy($file, $file_path);//Failed to move, copy it
-            if (!$move) $url_path = '';//Return empty path if failed to copy the file
-        }
-        unset($file, $save_path, $file_name, $file_ext, $file_path, $move);
+        //Get URL path
+        $url_path = $save_path . $file_name;
+        //Get real upload path
+        $file_path = FILE_PATH . $url_path;
+        //Delete existing file
+        if (is_file($file_path)) unlink($file_path);
+        //Move tmp file
+        if (move_uploaded_file(self::$file['tmp_name'], $file_path)) return $url_path;
+        //Copy file when move failed, return empty when both failed
+        if (!copy(self::$file['tmp_name'], $file_path)) $url_path = '';
+        unset($save_path, $file_name, $file_path);
         return $url_path;
-    }
-
-    /**
-     * Get cropped image coordinates according to the giving size
-     *
-     * @param int $img_width //Original width
-     * @param int $img_height //Original height
-     * @param int $need_width //Needed width
-     * @param int $need_height //Needed height
-     *
-     * @return array
-     */
-    private static function new_img_crop(int $img_width, int $img_height, int $need_width, int $need_height): array
-    {
-        $img_x = $img_y = 0;
-        $src_w = $img_width;
-        $src_h = $img_height;
-        if (0 < $img_width && 0 < $img_height) {
-            $ratio_img = $img_width / $img_height;
-            $ratio_need = $need_width / $need_height;
-            $ratio_diff = round($ratio_img - $ratio_need, 2);
-            if (0 < $ratio_diff && $img_height > $need_height) {
-                $crop_w = (int)($img_width - $img_height * $ratio_need);
-                $img_x = (int)($crop_w / 2);
-                $src_w = $img_width - $crop_w;
-                unset($crop_w);
-            } elseif (0 > $ratio_diff && $img_width > $need_width) {
-                $crop_h = (int)($img_height - $img_width / $ratio_need);
-                $img_y = (int)($crop_h / 2);
-                $src_h = $img_height - $img_y * 2;
-                unset($crop_h);
-            }
-            unset($ratio_img, $ratio_need, $ratio_diff);
-        }
-        unset($img_width, $img_height);
-        return ['img_x' => &$img_x, 'img_y' => &$img_y, 'img_w' => &$need_width, 'img_h' => &$need_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
-    }
-
-    /**
-     * Get new image size according to the giving size
-     *
-     * @param int $img_width //Original width
-     * @param int $img_height //Original height
-     * @param int $need_width //Needed width
-     * @param int $need_height //Needed height
-     *
-     * @return array
-     */
-    private static function new_img_size(int $img_width, int $img_height, int $need_width, int $need_height): array
-    {
-        $src_w = $img_width;
-        $src_h = $img_height;
-        if (0 < $img_width && 0 < $img_height) {
-            $ratio_img = $img_width / $img_height;
-            $ratio_need = $need_width / $need_height;
-            $ratio_diff = round($ratio_img - $ratio_need, 2);
-            if (0 < $ratio_diff && $img_width > $need_width) {
-                $img_width = &$need_width;
-                $img_height = (int)($need_width / $ratio_img);
-            } elseif (0 > $ratio_diff && $img_height > $need_height) {
-                $img_height = &$need_height;
-                $img_width = (int)($need_height * $ratio_img);
-            } elseif (0 === $ratio_diff && $img_width > $need_width && $img_height > $need_height) {
-                $img_width = &$need_width;
-                $img_height = &$need_height;
-            }
-            unset($ratio_img, $ratio_need, $ratio_diff);
-        } else {
-            $img_width = &$need_width;
-            $img_height = &$need_height;
-        }
-        unset($need_width, $need_height);
-        return ['img_x' => 0, 'img_y' => 0, 'img_w' => &$img_width, 'img_h' => &$img_height, 'src_w' => &$src_w, 'src_h' => &$src_h];
     }
 
     /**
@@ -276,55 +253,18 @@ class upload
     {
         switch ($error_code) {
             case 1:
-                $result = error::get_error(10004);
-                break;
             case 2:
-                $result = error::get_error(10004);
-                break;
+                return error::get_error(10004);
             case 3:
-                $result = error::get_error(10006);
-                break;
+                return error::get_error(10006);
             case 4:
-                $result = error::get_error(10007);
-                break;
+                return error::get_error(10007);
             case 6:
-                $result = error::get_error(10005);
-                break;
+                return error::get_error(10005);
             case 7:
-                $result = error::get_error(10008);
-                break;
+                return error::get_error(10008);
             default:
-                $result = error::get_error(10001);
-                break;
+                return error::get_error(10001);
         }
-        unset($error_code);
-        return $result;
-    }
-
-    /**
-     * @param string $filePath
-     */
-    private static function exif_img(string $filePath) {
-        $image = imagecreatefromstring(file_get_contents($filePath));
-        $exif = exif_read_data($filePath);
-        $type = $exif['MimeType'];
-        $outputFun = str_replace('/', '', $type);
-        if(!empty($exif['Orientation'])) {
-            $exif['Orientation'] = 8;
-            switch($exif['Orientation']) {
-                case 8:
-                    $image = imagerotate($image,90,0);
-                    break;
-                case 3:
-                    $image = imagerotate($image,180,0);
-                    break;
-                case 6:
-                    $image = imagerotate($image,-90,0);
-                    break;
-            }
-        }
-        header('Content-Type: ' . $type);
-        $outputFun($image);
-        imagedestroy($image);
     }
 }
