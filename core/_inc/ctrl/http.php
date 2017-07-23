@@ -191,10 +191,8 @@ class http
             $curl = curl_multi_init();
             //Add handles
             foreach (self::$curl as $url => $res) curl_multi_add_handle($curl, $res);
-            do {
-                //execute handles
-                curl_multi_exec($curl, $running);
-            } while ($running > 0);
+            //execute handles
+            while (CURLM_OK === curl_multi_exec($curl, $running) && 0 < $running) ;
             //Merge response
             $response = [];
             foreach (self::$curl as $url => $res) {
