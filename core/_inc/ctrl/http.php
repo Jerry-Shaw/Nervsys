@@ -207,6 +207,8 @@ class http
             unset($url, $res);
         }
         unset($curl);
+        //Free CURL list
+        self::$curl = [];
         return $response;
     }
 
