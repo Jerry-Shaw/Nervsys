@@ -102,7 +102,7 @@ define('SSL_CFG',
 spl_autoload_register(function ($library): void {
     if (!class_exists($library, true) && false !== strpos($library, '\\')) {
         $path = explode('\\', $library, 2);
-        $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . $path[1] . '.php');
+        $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . strtr($path[1], '\\', '/') . '.php');
         if (false !== $file) require $file;
         unset($path, $file);
     }
