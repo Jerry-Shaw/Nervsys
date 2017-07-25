@@ -166,7 +166,7 @@ class ctrl_http
                 foreach (self::$file as $key => $item) if (is_file($item)) $files[$key] = new \CURLFile($item);
                 if (!empty($files)) {
                     self::$data = array_merge(self::$data, $files);
-                    self::$header = 'Content-Type: multipart/form-data';
+                    self::$header[] = 'Content-Type: multipart/form-data';
                     $curl = curl_init();
                     curl_setopt($curl, CURLOPT_URL, self::$url);
                     curl_setopt($curl, CURLOPT_PORT, self::$unit['port']);
