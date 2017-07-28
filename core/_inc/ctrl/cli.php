@@ -166,10 +166,11 @@ class cli
      */
     private static function save_log(array $data): void
     {
-        $logs = array_merge(['time' => date('Y-m-d H:i:s', time())], $data);
+        $time = time();
+        $logs = array_merge(['time' => date('Y-m-d H:i:s', $time)], $data);
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
-        file_put_contents(CLI_LOG_PATH . date('Y-m-d', time()) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
-        unset($data, $logs, $key, $value);
+        file_put_contents(CLI_LOG_PATH . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
+        unset($data, $time, $logs, $key, $value);
     }
 
     /**

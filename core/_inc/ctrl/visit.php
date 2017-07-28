@@ -105,7 +105,7 @@ class visit
         //Return encrypted key directly
         if (empty(self::$key)) return self::get_key();
         //Run expire time checking
-        if ($ExpireAt > time()) {
+        if ($ExpireAt > $_SERVER['REQUEST_TIME']) {
             self::$key['ExpireAt'] = &$ExpireAt;
             self::ctrl_session('add', ['ExpireAt' => &$ExpireAt]);
         } else {
@@ -226,7 +226,7 @@ class visit
         $data = crypt::validate_key($_SERVER['HTTP_KEY']);
         if ('' !== $data) {
             $key = json_decode($data, true);
-            if (isset($key) && (!isset($key['ExpireAt']) || (isset($key['ExpireAt']) && time() < $key['ExpireAt']))) self::$key = &$key;
+            if (isset($key) && (!isset($key['ExpireAt']) || (isset($key['ExpireAt']) && $_SERVER['REQUEST_TIME'] < $key['ExpireAt']))) self::$key = &$key;
             unset($key);
         }
         unset($data);

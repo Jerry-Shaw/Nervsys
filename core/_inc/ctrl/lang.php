@@ -45,7 +45,7 @@ class lang
         elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
         elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
-            setcookie('lang', $lang, time() + 2592000, '/');
+            setcookie('lang', $lang, $_SERVER['REQUEST_TIME'] + 2592000, '/');
         } else $lang = 'en-US';
         if (!in_array($lang, LANGUAGE_LIST, true)) $lang = 'en-US';
         //Change default language
