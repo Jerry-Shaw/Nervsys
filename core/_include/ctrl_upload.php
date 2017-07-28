@@ -30,8 +30,10 @@ class ctrl_upload
     public static $base64 = '';//BASE64 content
     public static $file_ext = [];//Allowed extensions
     public static $file_name = '';//File name without extension
+    public static $file_mode = 0664;//File permissions
     public static $file_size = 20971520;//Allowed File size: 20MB by default
     public static $save_path = '';//Upload path
+    public static $path_mode = 0764;//Path permissions
 
     const img_type = [1 => 'gif', 2 => 'jpeg', 3 => 'png', 6 => 'bmp'];//MINE Types of allowed images
     const img_ext = [1 => 'gif', 2 => 'jpg', 3 => 'png', 6 => 'bmp'];//Extensions of allowed images
@@ -54,7 +56,7 @@ class ctrl_upload
                 if (0 < $file_size) {
                     $file_ext = self::chk_ext(self::$file['name']);//Check the file extension
                     if ('' !== $file_ext) {
-                        $save_path = \ctrl_file::get_path(self::$save_path);//Get the upload path
+                        $save_path = \ctrl_file::get_path(self::$save_path, self::$path_mode);//Get the upload path
                         if (':' !== $save_path) {
                             $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
                             $url = self::save_file(self::$file['tmp_name'], $save_path, $file_name, $file_ext);//Save file
@@ -97,7 +99,7 @@ class ctrl_upload
                     $img_info = getimagesizefromstring($img_data);//Get the image information
                     if (array_key_exists($img_info[2], self::img_ext)) {
                         $file_ext = self::img_ext[$img_info[2]];//Get the extension
-                        $save_path = \ctrl_file::get_path(self::$save_path);//Get the upload path
+                        $save_path = \ctrl_file::get_path(self::$save_path, self::$path_mode);//Get the upload path
                         if (':' !== $save_path) {
                             $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));//Get the file name
                             $url_path = $save_path . $file_name . '.' . $file_ext;//Get URL path
@@ -105,6 +107,7 @@ class ctrl_upload
                             if (is_file($file_path)) unlink($file_path);//Delete the file if existing
                             $save_file = (int) file_put_contents($file_path, $img_data);//Write to file
                             if (0 < $save_file) {//Done
+                                chmod($file_path, self::$file_mode);//Set file permissions
                                 $result = \ctrl_error::get_error(10000);//Upload finished
                                 $result['file_url'] = &$url_path;
                                 $result['file_size'] = &$file_size;
@@ -212,7 +215,8 @@ class ctrl_upload
         if (!$move) {
             $move = copy($file, $file_path);//Failed to move, copy it
             if (!$move) $url_path = '';//Return empty path if failed to copy the file
-        }
+            else chmod($file_path, self::$file_mode);//Set file permissions
+        } else chmod($file_path, self::$file_mode);//Set file permissions
         unset($file, $save_path, $file_name, $file_ext, $file_path, $move);
         return $url_path;
     }
