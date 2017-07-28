@@ -97,7 +97,7 @@ function get_uuid(string $string = ''): string
     $uuid .= substr($code, 10, 4) . '-';
     $uuid .= substr($code, 16, 4) . '-';
     $uuid .= substr($code, 22, 4) . '-';
-    $uuid .= substr($code, 28, 12) . '-';
+    $uuid .= substr($code, 28, 12);
     $uuid = strtoupper($uuid);
     unset($string, $code);
     return $uuid;
