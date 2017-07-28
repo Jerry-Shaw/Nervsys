@@ -47,20 +47,24 @@ class ctrl_file
      * Check and create the directory if not exists, return a relative path
      *
      * @param string $path
+     * @param int $mode
      *
      * @return string
      */
-    public static function get_path(string $path): string
+    public static function get_path(string $path, int $mode = 0764): string
     {
         $real_path = FILE_PATH;
         if ('' !== $path) {
             if (false !== strpos($path, '..')) $path = str_replace('..', '.', $path);//Parent directory is not allowed
             if (false !== strpos($path, '\\')) $path = str_replace('\\', '/', $path);//Get a formatted url path with '/'
             $real_path .= $path;
-            if (!is_dir($real_path)) mkdir($real_path, 0664, true);
+            if (!is_dir($real_path)) {
+                mkdir($real_path, $mode, true);
+                chmod($real_path, $mode);
+            }
         }
         $file_path = is_readable($real_path) ? $path . '/' : ':';
-        unset($path, $real_path);
+        unset($path, $mode, $real_path);
         return $file_path;
     }
 
