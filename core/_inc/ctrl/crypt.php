@@ -177,7 +177,7 @@ class crypt
         //Return empty when string is empty
         if ('' === $string) return '';
         //Encode data
-        $crypt = CRYPT_NAME;
+        $crypt = GENERATOR;
         $key = $crypt::get_key();
         $keys = $crypt::get_keys($key);
         $mixed = $crypt::get_mixed($key);
@@ -206,7 +206,7 @@ class crypt
         //Return empty when decrypt failed
         if ('' === $mixed) return '';
         //Decrypt signature with build-in keys
-        $crypt = CRYPT_NAME;
+        $crypt = GENERATOR;
         $key = $crypt::get_rebuilt($mixed);
         $keys = $crypt::get_keys($key);
         $data = self::decode($codes[1], $keys);

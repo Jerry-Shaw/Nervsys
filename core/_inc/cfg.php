@@ -35,6 +35,9 @@ header('Content-Type:text/html; charset=utf-8');
 //Document Root Definition
 define('ROOT', realpath(substr(__DIR__, 0, -10)));
 
+//Define Key Generator module property
+define('GENERATOR', '\\core\\key\\generator');
+
 //Enable/Disable HTTP GET Method
 define('ENABLE_GET', true);
 
@@ -43,9 +46,6 @@ define('SECURE_API', true);
 
 //Enable/Disable Language for Error Module
 define('ERROR_LANG', true);
-
-//Define Encrypt/Decrypt module properties
-define('CRYPT_NAME', '\\core\\key\\crypt');
 
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);
