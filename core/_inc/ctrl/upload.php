@@ -104,29 +104,29 @@ class upload
         lang::load('core', 'upload');
         error::load('core', 'upload');
         //Empty $_FILES['file']
-        if (empty(self::$file)) return error::get_error(10007);
+        if (empty(self::$file)) return error::get(10007);
         //Upload failed when uploading, returned from server
         if (0 !== self::$file['error']) return self::get_error(self::$file['error']);
         //Get file size
         $file_size = self::chk_size(self::$file['size']);
         //File too large
-        if (0 === $file_size) return error::get_error(10004);
+        if (0 === $file_size) return error::get(10004);
         //Check file extension
         $file_ext = self::chk_ext(self::$file['name']);
         //Extension not allowed
-        if ('' === $file_ext) return error::get_error(10003);
+        if ('' === $file_ext) return error::get(10003);
         //Get upload path
         $save_path = file::get_path(self::$save_path);
         //Upload path Error
-        if ('' === $save_path) return error::get_error(10002);
+        if ('' === $save_path) return error::get(10002);
         //Get file name
         $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
         //Save file
         $url = self::save_file($save_path, $file_name . '.' . $file_ext);
         //Failed to move/copy from tmp file
-        if ('' === $url) return error::get_error(10001);
+        if ('' === $url) return error::get(10001);
         //Upload done
-        $result = error::get_error(10000);
+        $result = error::get(10000);
         $result['file_url'] = &$url;
         $result['file_size'] = &$file_size;
         unset($file_size, $file_ext, $save_path, $file_name, $url);
@@ -145,7 +145,7 @@ class upload
         //Get base64 position
         $base64_pos = strpos(self::$base64, ';base64,');
         //Mime-type not allowed
-        if (false === $base64_pos || 0 !== strpos(self::$base64, 'data:')) return error::get_error(10003);
+        if (false === $base64_pos || 0 !== strpos(self::$base64, 'data:')) return error::get(10003);
         //Get Mime-type
         $mime_type = (string)substr(self::$base64, 5, $base64_pos - 5);
         //Get extension from allowed Mime-type list
@@ -153,19 +153,19 @@ class upload
         //Check file extension
         $file_ext = self::chk_ext($file_ext);
         //Extension not allowed
-        if ('' === $file_ext) return error::get_error(10003);
+        if ('' === $file_ext) return error::get(10003);
         //Get binary data
         $binary_data = base64_decode(substr(self::$base64, $base64_pos + 8));
         //Image data error
-        if (false === $binary_data) return error::get_error(10006);
+        if (false === $binary_data) return error::get(10006);
         //Get file size
         $file_size = self::chk_size(strlen($binary_data));
         //File too large
-        if (0 === $file_size) return error::get_error(10004);
+        if (0 === $file_size) return error::get(10004);
         //Get upload path
         $save_path = file::get_path(self::$save_path);
         //Upload path Error
-        if ('' === $save_path) return error::get_error(10002);
+        if ('' === $save_path) return error::get(10002);
         //Get file name
         $file_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
         //Get URL path
@@ -177,9 +177,9 @@ class upload
         //Write to file
         $save_file = (int)file_put_contents($file_path, $binary_data);
         //File write failed
-        if (0 === $save_file) return error::get_error(10001);
+        if (0 === $save_file) return error::get(10001);
         //Upload done
-        $result = error::get_error(10000);
+        $result = error::get(10000);
         $result['file_url'] = &$url_path;
         $result['file_size'] = &$file_size;
         unset($base64_pos, $mime_type, $file_ext, $binary_data, $file_size, $save_path, $file_name, $url_path, $file_path, $save_file);
@@ -254,17 +254,17 @@ class upload
         switch ($error_code) {
             case 1:
             case 2:
-                return error::get_error(10004);
+                return error::get(10004);
             case 3:
-                return error::get_error(10006);
+                return error::get(10006);
             case 4:
-                return error::get_error(10007);
+                return error::get(10007);
             case 6:
-                return error::get_error(10005);
+                return error::get(10005);
             case 7:
-                return error::get_error(10008);
+                return error::get(10008);
             default:
-                return error::get_error(10001);
+                return error::get(10001);
         }
     }
 }

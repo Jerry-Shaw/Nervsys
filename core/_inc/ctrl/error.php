@@ -59,7 +59,7 @@ class error
      *
      * @return array
      */
-    public static function get_error(int $code): array
+    public static function get(int $code): array
     {
         return array_key_exists($code, self::$pool)
             ? ['code' => $code, 'msg' => ERROR_LANG ? gettext(self::$pool[$code]) : self::$pool[$code]]
@@ -72,7 +72,7 @@ class error
      *
      * @return array
      */
-    public static function get_all_errors(): array
+    public static function get_all(): array
     {
         $errors = [];
         $error_files = file::get_list(ROOT, '/_err/*.json', true);//Get all the json formatted error files from all modules
