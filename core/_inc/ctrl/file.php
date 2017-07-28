@@ -49,10 +49,11 @@ class file
      * Return relative path
      *
      * @param string $path
+     * @param int $mode
      *
      * @return string
      */
-    public static function get_path(string $path): string
+    public static function get_path(string $path, int $mode = 0764): string
     {
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) $path = str_replace('..', '', $path);
@@ -66,10 +67,15 @@ class file
         $path = '/' . $path;
         //Create directories
         $file_path = FILE_PATH . $path;
-        if (!is_dir($file_path)) mkdir($file_path, 0664, true);
+        if (!is_dir($file_path)) {
+            //Create directory recursively
+            mkdir($file_path, $mode, true);
+            //Set permissions to path
+            chmod($file_path, $mode);
+        }
         //Check path property
         $url_path = is_readable($file_path) ? $path . '/' : '';
-        unset($path, $file_path);
+        unset($path, $mode, $file_path);
         return $url_path;
     }
 

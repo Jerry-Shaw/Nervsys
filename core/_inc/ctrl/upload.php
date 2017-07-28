@@ -41,11 +41,17 @@ class upload
     //File name without extension
     public static $file_name = '';
 
+    //File permissions
+    public static $file_mode = 0664;
+
     //Allowed File size: 20MB by default
     public static $file_size = 20971520;
 
     //Upload path (Relative to "FILE_PATH")
     public static $save_path = '';
+
+    //Path permissions
+    public static $path_mode = 0764;
 
     //Allowed Extension/Mime-Type
     const mime = [
@@ -116,7 +122,7 @@ class upload
         //Extension not allowed
         if ('' === $file_ext) return error::get(10003);
         //Get upload path
-        $save_path = file::get_path(self::$save_path);
+        $save_path = file::get_path(self::$save_path, self::$path_mode);
         //Upload path Error
         if ('' === $save_path) return error::get(10002);
         //Get file name
@@ -163,7 +169,7 @@ class upload
         //File too large
         if (0 === $file_size) return error::get(10004);
         //Get upload path
-        $save_path = file::get_path(self::$save_path);
+        $save_path = file::get_path(self::$save_path, self::$path_mode);
         //Upload path Error
         if ('' === $save_path) return error::get(10002);
         //Get file name
@@ -178,6 +184,8 @@ class upload
         $save_file = (int)file_put_contents($file_path, $binary_data);
         //File write failed
         if (0 === $save_file) return error::get(10001);
+        //Set file permissions
+        chmod($file_path, self::$file_mode);
         //Upload done
         $result = error::get(10000);
         $result['file_url'] = &$url_path;
@@ -195,6 +203,7 @@ class upload
      */
     private static function chk_size(int $file_size): int
     {
+        //Return 0 when file size is over limit
         return $file_size <= self::$file_size ? $file_size : 0;
     }
 
@@ -235,11 +244,20 @@ class upload
         //Delete existing file
         if (is_file($file_path)) unlink($file_path);
         //Move tmp file
-        if (move_uploaded_file(self::$file['tmp_name'], $file_path)) return $url_path;
-        //Copy file when move failed, return empty when both failed
-        if (!copy(self::$file['tmp_name'], $file_path)) $url_path = '';
-        unset($save_path, $file_name, $file_path);
-        return $url_path;
+        if (move_uploaded_file(self::$file['tmp_name'], $file_path)) {
+            //Set file permissions
+            chmod($file_path, self::$file_mode);
+            return $url_path;
+        }
+        //Copy file when move failed
+        if (copy(self::$file['tmp_name'], $file_path)) {
+            //Set file permissions
+            chmod($file_path, self::$file_mode);
+            return $url_path;
+        }
+        //Return empty path when both methods failed
+        unset($save_path, $file_name, $url_path, $file_path);
+        return '';
     }
 
     /**
