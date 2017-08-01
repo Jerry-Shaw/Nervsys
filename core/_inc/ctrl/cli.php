@@ -124,7 +124,7 @@ class cli
         //Parse HTTP query data
         parse_str(self::$opt_data, $data);
         //Merge input data when exists
-        if (!empty($data)) self::$var = array_merge(self::$var, $data);
+        if (!empty($data)) self::$var += $data;
         unset($data);
     }
 
