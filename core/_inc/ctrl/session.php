@@ -50,7 +50,6 @@ class session
             self::$db_redis = redis::connect();
             ini_set('session.gc_divisor', 100);
             ini_set('session.gc_probability', 100);
-            ini_set('session.save_handler', 'user');
             session_set_save_handler(
                 [__CLASS__, 'session_open'],
                 [__CLASS__, 'session_close'],
