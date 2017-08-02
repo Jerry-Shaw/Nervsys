@@ -161,7 +161,7 @@ class crypt
      */
     public static function check_pwd(string $input, string $codes, string $hash): bool
     {
-        return self::hash_pwd($input, $codes) === $hash ? true : false;
+        return self::hash_pwd($input, $codes) === $hash;
     }
 
     /**
