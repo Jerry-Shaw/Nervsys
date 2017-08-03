@@ -71,7 +71,7 @@ class pool
         //Main data incorrect
         if (empty(self::$module) || (empty(self::$method) && empty(self::$data))) return;
         //Build data structure
-        self::$struct = array_keys(self::$data);
+        self::build_struct();
         //Parse Module & Method list
         foreach (self::$module as $module => $library) {
             //Load Module CFG file for the first time
@@ -81,6 +81,14 @@ class pool
             self::call_api($library);
         }
         unset($module, $library, $file);
+    }
+
+    /**
+     * Build data structure
+     */
+    public static function build_struct(): void
+    {
+        self::$struct = array_keys(self::$data);
     }
 
     /**
@@ -302,7 +310,7 @@ class pool
                 //Caution: Data with the same key will be overwritten
                 self::$data[$keymap['to']] = $data;
                 //Rebuild data structure
-                self::$struct = array_keys(self::$data);
+                self::build_struct();
             }
             unset($result, $keymap, $data);
         } catch (\Throwable $exception) {
@@ -322,7 +330,6 @@ class pool
     {
         foreach ($keymap as $key) {
             if (!isset($data[$key])) {
-                //Set data to null if not found
                 $data = null;
                 return;
             }
