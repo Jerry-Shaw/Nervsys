@@ -50,6 +50,9 @@ define('ERROR_LANG', true);
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);
 
+//Define Common Model List
+define('COMMON_LIST', ['com']);
+
 //Define Available languages
 define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 
@@ -90,14 +93,12 @@ define('CLI_RUN_OPTIONS', 'c:m:d:g:t:w:p:l');//Short options (Equal to Long Opti
 define('CLI_LONG_OPTIONS', ['cmd:', 'map:', 'data:', 'get:', 'try:', 'wait:', 'path:', 'log']);//Long options (Preferred)
 
 //OpenSSL Settings
-define('SSL_CFG',
-    [
-        'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
-        'digest_alg'       => 'sha256',
-        'private_key_bits' => 2048,
-        'private_key_type' => OPENSSL_KEYTYPE_RSA
-    ]
-);
+define('SSL_CFG', [
+    'config'           => 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf',
+    'digest_alg'       => 'sha256',
+    'private_key_bits' => 2048,
+    'private_key_type' => OPENSSL_KEYTYPE_RSA
+]);
 
 //Autoload function
 spl_autoload_register(function ($library): void {

@@ -361,23 +361,36 @@ class socket
         $data['cmd'] = trim($data['cmd']);
         if ('' === $data['cmd']) return '';
         if (false !== strpos($data['cmd'], '\\') && false === strpos($data['cmd'], ' ')) {
-            $var = ['cmd' => &$data['cmd']];
-            if (isset($data['map']) && '' !== $data['map']) $var['map'] = &$data['map'];
-            //Parse query data
-            parse_str($data['data'], $query);
-            //Merge input data when exists
-            if (!empty($query)) $var += $query;
-            //Merge data variables
-            pool::$data += $var;
-            //Start Module
-            pool::start();
-            //Get result
-            $result = pool::$pool;
-            //Reset pool
-            pool::$pool = [];
-            //Reset data
-            foreach ($var as $key => $value) unset(pool::$data[$key]);
-            unset($var, $query, $key, $value);
+            //Parse CMD
+            $model = explode('\\', $data['cmd']);
+            $model = array_filter($model, 'remove_empty');
+            //Check common model
+            if (in_array(current($model), COMMON_LIST, true)) {
+                $var = ['cmd' => &$data['cmd']];
+                if (isset($data['map']) && '' !== $data['map']) $var['map'] = &$data['map'];
+                //Parse query data
+                parse_str($data['data'], $query);
+                //Merge input data when exists
+                if (!empty($query)) $var += $query;
+                //Merge data variables
+                pool::$data += $var;
+                //Start Module
+                pool::start();
+                //Get result
+                $result = pool::$pool;
+                //Reset pool
+                pool::$pool = [];
+                //Reset data
+                foreach ($var as $key => $value) unset(pool::$data[$key]);
+                unset($var, $query, $key, $value);
+            } else {
+                //Internal calling
+                $cmd = ' --cmd="' . $data['cmd'] . '"';
+                if (isset($data['map']) && '' !== $data['map']) $cmd .= ' --map="' . $data['map'] . '"';
+                if (isset($data['data']) && '' !== $data['data']) $cmd .= ' --data="' . $data['data'] . '"';
+                $result = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $cmd);
+            }
+            unset($model);
         } else $result = (string)exec(CLI_EXEC_PATH . ' ' . ROOT . '/api.php ' . $data['cmd']);
         unset($data);
         return $result;

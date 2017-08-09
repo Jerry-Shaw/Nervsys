@@ -175,7 +175,7 @@ class pool
         if (false === strpos($data, ',')) return [$data];
         //Spilt data when multiple modules/methods exist with ","
         $result = explode(',', $data);
-        $result = array_filter($result);
+        $result = array_filter($result, 'remove_empty');
         $result = array_unique($result);
         unset($data);
         return $result;

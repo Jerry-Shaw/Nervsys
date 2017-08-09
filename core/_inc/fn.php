@@ -90,8 +90,7 @@ function escape_requests(array $requests): array
  */
 function get_uuid(string $string = ''): string
 {
-    if ('' === $string) $string = uniqid(mt_rand(), true);
-    elseif (1 === preg_match('/[A-Z]/', $string)) $string = mb_strtolower($string, 'UTF-8');
+    $string = '' === $string ? uniqid(mt_rand(), true) : (0 === (int)preg_match('/[A-Z]/', $string) ? $string : mb_strtolower($string, 'UTF-8'));
     $code = hash('sha1', $string . ':UUID');
     $uuid = substr($code, 0, 8) . '-';
     $uuid .= substr($code, 10, 4) . '-';
@@ -152,4 +151,16 @@ function get_client_info(): array
     $client_lang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 5) : '';
     $client_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     return ['ip' => &$client_ip, 'lang' => &$client_lang, 'agent' => &$client_agent];
+}
+
+/**
+ * Callable function for "array_filter" to remove empty string in array
+ *
+ * @param string $var
+ *
+ * @return bool
+ */
+function remove_empty(string $var): bool
+{
+    return '' !== $var;
 }
