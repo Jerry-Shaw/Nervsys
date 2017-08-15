@@ -183,7 +183,7 @@ class http
         //Run CURL
         if (1 === count(self::$curl)) {
             //Single CURL
-            $curl     = current(self::$curl);
+            $curl = current(self::$curl);
             $response = [key(self::$curl) => (string)curl_exec($curl)];
             curl_close($curl);
         } else {

@@ -132,8 +132,8 @@ class upload
         //Failed to move/copy from tmp file
         if ('' === $url) return error::get(10001);
         //Upload done
-        $result              = error::get(10000);
-        $result['file_url']  = &$url;
+        $result = error::get(10000);
+        $result['file_url'] = &$url;
         $result['file_size'] = &$file_size;
         unset($file_size, $file_ext, $save_path, $file_name, $url);
         return $result;
@@ -187,8 +187,8 @@ class upload
         //Set file permissions
         chmod($file_path, self::$file_mode);
         //Upload done
-        $result              = error::get(10000);
-        $result['file_url']  = &$url_path;
+        $result = error::get(10000);
+        $result['file_url'] = &$url_path;
         $result['file_size'] = &$file_size;
         unset($base64_pos, $mime_type, $file_ext, $binary_data, $file_size, $save_path, $file_name, $url_path, $file_path, $save_file);
         return $result;

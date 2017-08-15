@@ -47,7 +47,7 @@ class session
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
             redis::$redis_db = 0;
-            self::$db_redis  = redis::connect();
+            self::$db_redis = redis::connect();
             ini_set('session.gc_divisor', 100);
             ini_set('session.gc_probability', 100);
             session_set_save_handler(

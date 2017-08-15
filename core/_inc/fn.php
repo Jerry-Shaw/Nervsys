@@ -91,13 +91,13 @@ function escape_requests(array $requests): array
 function get_uuid(string $string = ''): string
 {
     $string = '' === $string ? uniqid(mt_rand(), true) : (0 === (int)preg_match('/[A-Z]/', $string) ? $string : mb_strtolower($string, 'UTF-8'));
-    $code   = hash('sha1', $string . ':UUID');
-    $uuid   = substr($code, 0, 8) . '-';
-    $uuid   .= substr($code, 10, 4) . '-';
-    $uuid   .= substr($code, 16, 4) . '-';
-    $uuid   .= substr($code, 22, 4) . '-';
-    $uuid   .= substr($code, 28, 12);
-    $uuid   = strtoupper($uuid);
+    $code = hash('sha1', $string . ':UUID');
+    $uuid = substr($code, 0, 8) . '-';
+    $uuid .= substr($code, 10, 4) . '-';
+    $uuid .= substr($code, 16, 4) . '-';
+    $uuid .= substr($code, 22, 4) . '-';
+    $uuid .= substr($code, 28, 12);
+    $uuid = strtoupper($uuid);
     unset($string, $code);
     return $uuid;
 }
@@ -143,12 +143,12 @@ function sort_list(array $data, array $list): array
 function get_client_info(): array
 {
     if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $XFF        = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        $XFF = $_SERVER['HTTP_X_FORWARDED_FOR'];
         $client_pos = strpos($XFF, ', ');
-        $client_ip  = false !== $client_pos ? substr($XFF, 0, $client_pos) : $XFF;
+        $client_ip = false !== $client_pos ? substr($XFF, 0, $client_pos) : $XFF;
         unset($XFF, $client_pos);
     } else $client_ip = $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? $_SERVER['LOCAL_ADDR'] ?? '0.0.0.0';
-    $client_lang  = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 5) : '';
+    $client_lang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 5) : '';
     $client_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
     return ['ip' => &$client_ip, 'lang' => &$client_lang, 'agent' => &$client_agent];
 }

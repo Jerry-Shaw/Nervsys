@@ -39,7 +39,7 @@ class crypt
      */
     public static function get_pkey(): array
     {
-        $keys    = ['public' => '', 'private' => ''];
+        $keys = ['public' => '', 'private' => ''];
         $openssl = openssl_pkey_new(SSL_CFG);
         //Return directly when create private key failed
         if (false === $openssl) return $keys;
@@ -87,8 +87,8 @@ class crypt
     private static function get_type(string $key): string
     {
         $start = strlen('-----BEGIN ');
-        $end   = strpos($key, ' KEY-----', $start);
-        $type  = false !== $end ? strtolower(substr($key, $start, $end)) : '';
+        $end = strpos($key, ' KEY-----', $start);
+        $type = false !== $end ? strtolower(substr($key, $start, $end)) : '';
         unset($key, $start, $end);
         return $type;
     }
@@ -178,11 +178,11 @@ class crypt
         if ('' === $string) return '';
         //Encode data
         $crypt = GENERATOR;
-        $key   = $crypt::get_key();
-        $keys  = $crypt::get_keys($key);
+        $key = $crypt::get_key();
+        $keys = $crypt::get_keys($key);
         $mixed = $crypt::get_mixed($key);
         //Create encrypted signature with build-in keys
-        $mixed     = '' !== $rsa_key ? self::encrypt($mixed, $rsa_key) : (string)base64_encode($mixed);
+        $mixed = '' !== $rsa_key ? self::encrypt($mixed, $rsa_key) : (string)base64_encode($mixed);
         $signature = '' !== $mixed ? $mixed . '-' . self::encode($string, $keys) : '';
         unset($string, $rsa_key, $crypt, $key, $keys, $mixed);
         return $signature;
@@ -207,9 +207,9 @@ class crypt
         if ('' === $mixed) return '';
         //Decrypt signature with build-in keys
         $crypt = GENERATOR;
-        $key   = $crypt::get_rebuilt($mixed);
-        $keys  = $crypt::get_keys($key);
-        $data  = self::decode($codes[1], $keys);
+        $key = $crypt::get_rebuilt($mixed);
+        $keys = $crypt::get_keys($key);
+        $data = self::decode($codes[1], $keys);
         unset($signature, $rsa_key, $codes, $mixed, $crypt, $key, $keys);
         return $data;
     }

@@ -223,7 +223,7 @@ class visit
     private static function map_key(): void
     {
         self::$client = 'REMOTE';
-        $data         = crypt::validate_key($_SERVER['HTTP_KEY']);
+        $data = crypt::validate_key($_SERVER['HTTP_KEY']);
         if ('' !== $data) {
             $key = json_decode($data, true);
             if (isset($key) && (!isset($key['ExpireAt']) || (isset($key['ExpireAt']) && $_SERVER['REQUEST_TIME'] < $key['ExpireAt']))) self::$key = &$key;
