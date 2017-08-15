@@ -50,9 +50,6 @@ define('ERROR_LANG', true);
 //Define Online State Tags
 define('ONLINE_TAGS', ['uuid', 'char']);
 
-//Define Common Model List
-define('COMMON_LIST', ['com']);
-
 //Define Available languages
 define('LANGUAGE_LIST', ['en-US', 'zh-CN']);
 

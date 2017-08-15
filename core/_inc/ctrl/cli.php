@@ -36,11 +36,11 @@ class cli
     public static $var = [];
 
     //Option Details
-    private static $opt_cmd = '';//Option for Internal Mode
-    private static $opt_map = '';//Option for Internal Mode
-    private static $opt_get = '';//Result (Valid values: "cmd", "data", "error", "result" or "cmd", "map", "data", "result"; empty: no returns)
-    private static $opt_log = false;//Log setting, set to true to log all ("time", "cmd", "data", "error", "result" or "time", "cmd", "map", "data", "result")
-    private static $opt_try = 200;//Default try times for stream checking
+    private static $opt_cmd  = '';//Option for Internal Mode
+    private static $opt_map  = '';//Option for Internal Mode
+    private static $opt_get  = '';//Result (Valid values: "cmd", "data", "error", "result" or "cmd", "map", "data", "result"; empty: no returns)
+    private static $opt_log  = false;//Log setting, set to true to log all ("time", "cmd", "data", "error", "result" or "time", "cmd", "map", "data", "result")
+    private static $opt_try  = 200;//Default try times for stream checking
     private static $opt_wait = 1;//Default time wait for stream checking (in microseconds)
     private static $opt_data = '';//Request data, will try to read STDIN when empty
     private static $opt_path = ROOT . '/core/_cli/cfg.json';//Default CFG file path
@@ -182,7 +182,7 @@ class cli
      */
     private static function get_stream(array $stream): string
     {
-        $try = 0;
+        $try    = 0;
         $result = '';
         //Get the resource
         $resource = current($stream);
@@ -219,9 +219,9 @@ class cli
         pool::start();
         //Save logs
         if (self::$opt_log) {
-            $logs = ['cmd' => self::$opt_cmd];
-            $logs['map'] = self::$opt_map;
-            $logs['data'] = self::$opt_data;
+            $logs           = ['cmd' => self::$opt_cmd];
+            $logs['map']    = self::$opt_map;
+            $logs['data']   = self::$opt_data;
             $logs['result'] = json_encode(pool::$pool);
             self::save_log($logs);
             unset($logs);
@@ -255,9 +255,9 @@ class cli
         $result = $logs = [];
         //Save logs
         if (self::$opt_log) {
-            $logs['cmd'] = self::$cli_cmd;
-            $logs['data'] = self::$opt_data;
-            $logs['error'] = self::get_stream([$pipes[2]]);
+            $logs['cmd']    = self::$cli_cmd;
+            $logs['data']   = self::$opt_data;
+            $logs['error']  = self::get_stream([$pipes[2]]);
             $logs['result'] = self::get_stream([$pipes[1]]);
             self::save_log($logs);
         }

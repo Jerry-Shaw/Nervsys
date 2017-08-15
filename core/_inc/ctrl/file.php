@@ -49,7 +49,7 @@ class file
      * Return relative path
      *
      * @param string $path
-     * @param int $mode
+     * @param int    $mode
      *
      * @return string
      */
@@ -85,7 +85,7 @@ class file
      *
      * @param string $path
      * @param string $pattern
-     * @param bool $recursive
+     * @param bool   $recursive
      *
      * @return array
      */

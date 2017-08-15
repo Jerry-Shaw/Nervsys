@@ -48,12 +48,12 @@ class redis
         //Parameters for Redis instance
         $redis_host = self::$redis_host ?? Redis_HOST;
         $redis_port = self::$redis_port ?? Redis_PORT;
-        $redis_db = self::$redis_db ?? Redis_DB;
+        $redis_db   = self::$redis_db ?? Redis_DB;
         $redis_auth = self::$redis_auth ?? Redis_AUTH;
         //Try to connect Redis Server
         try {
             $db_redis = new \Redis();
-            $connect = (self::$redis_persistent ?? Redis_PERSISTENT) ? 'pconnect' : 'connect';
+            $connect  = (self::$redis_persistent ?? Redis_PERSISTENT) ? 'pconnect' : 'connect';
             $db_redis->$connect($redis_host, $redis_port);
             if (!is_null($redis_auth) && '' !== $redis_auth) $db_redis->auth($redis_auth);
             $db_redis->select($redis_db);

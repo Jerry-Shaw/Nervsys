@@ -64,7 +64,7 @@ class socket
         while (true) {
             //Copy client list
             $write = $except = [];
-            $read = pool::$data['TCP'];
+            $read  = pool::$data['TCP'];
             //Select connections
             $select = socket_select($read, $write, $except, 0);
             if (false === $select || 0 === $select) continue;
@@ -184,8 +184,8 @@ class socket
      *
      * @param string $data
      * @param string $host
-     * @param int $port
-     * @param int $type
+     * @param int    $port
+     * @param int    $type
      * @param string $mark
      */
     public static function sender_tcp(string $data, string $host, int $port, int $type, string $mark = ''): void
@@ -212,8 +212,8 @@ class socket
      *
      * @param string $data
      * @param string $host
-     * @param int $port
-     * @param int $type
+     * @param int    $port
+     * @param int    $type
      * @param string $mark
      */
     public static function sender_udp(string $data, string $host, int $port, int $type, string $mark = ''): void
@@ -307,7 +307,7 @@ class socket
             return;
         }
         $identity = self::get_identity($mark, 'mrk');
-        $cmd = '' !== $identity ? 'delete:' : 'remove:';
+        $cmd      = '' !== $identity ? 'delete:' : 'remove:';
         //Send back
         self::sender_udp($cmd . $identity, $host, self::$udp_port, SO_REUSEADDR, '');
         unset($host, $mark, $file, $uuid, $pkey, $key, $identity, $cmd);
@@ -322,7 +322,7 @@ class socket
      */
     private static function parse_data(string $content): array
     {
-        $data = explode(':', $content, 2);
+        $data    = explode(':', $content, 2);
         $pub_key = self::get_identity($data[0], 'pub');
         if ('' === $pub_key) return [];
         $decrypt = crypt::decrypt($data[1], $pub_key);
@@ -343,7 +343,7 @@ class socket
      */
     private static function get_identity(string $mark, string $ext): string
     {
-        $file = realpath(CLI_CAS_PATH . $mark . '.' . $ext);
+        $file     = realpath(CLI_CAS_PATH . $mark . '.' . $ext);
         $identity = false !== $file ? (string)file_get_contents($file) : '';
         unset($mark, $ext, $file);
         return $identity;
@@ -365,7 +365,7 @@ class socket
             $model = explode('\\', $data['cmd']);
             $model = array_filter($model, 'remove_empty');
             //Check common model
-            if (in_array(current($model), COMMON_LIST, true)) {
+            if ('com' === current($model)) {
                 $var = ['cmd' => &$data['cmd']];
                 if (isset($data['map']) && '' !== $data['map']) $var['map'] = &$data['map'];
                 //Parse query data

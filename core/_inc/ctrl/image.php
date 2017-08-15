@@ -36,9 +36,9 @@ class image
      * Resize image to giving size
      *
      * @param string $file
-     * @param int $width
-     * @param int $height
-     * @param bool $crop
+     * @param int    $width
+     * @param int    $height
+     * @param bool   $crop
      *
      * @return bool
      */
@@ -56,11 +56,11 @@ class image
         //No need to resize/crop
         if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) return true;
         //Process image
-        $type = substr($img_info['mime'], 6);
+        $type       = substr($img_info['mime'], 6);
         $img_create = 'imagecreatefrom' . $type;
         $img_output = 'image' . $type;
         $img_source = $img_create($file);
-        $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
+        $img_thumb  = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
         //Transparent for GIF/PNG
         switch ($img_info[2]) {
             case 1://Deal with the transparent color in a GIF
@@ -95,7 +95,7 @@ class image
         //Return when EXIF data is empty, or, Mime-type not support
         if (false === $img_exif || !isset($img_exif['Orientation']) || !in_array($img_exif['MimeType'], self::mime, true)) return;
         //Process image
-        $type = substr($img_exif['MimeType'], 6);
+        $type       = substr($img_exif['MimeType'], 6);
         $img_create = 'imagecreatefrom' . $type;
         $img_output = 'image' . $type;
         $img_source = $img_create($file);
@@ -123,10 +123,10 @@ class image
      * Get image coordinates
      *
      * @param array $size
-     * @param int $img_w
-     * @param int $img_h
-     * @param int $to_w
-     * @param int $to_h
+     * @param int   $img_w
+     * @param int   $img_h
+     * @param int   $to_w
+     * @param int   $to_h
      */
     private static function img_crop(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void
     {
@@ -138,16 +138,16 @@ class image
         //Incorrect width/height
         if (0 >= $img_w || 0 >= $img_h) return;
         //Calculate new width and height
-        $ratio_img = $img_w / $img_h;
+        $ratio_img  = $img_w / $img_h;
         $ratio_need = $to_w / $to_h;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
         if (0 < $ratio_diff && $img_h > $to_h) {
-            $crop_w = (int)($img_w - $img_h * $ratio_need);
+            $crop_w        = (int)($img_w - $img_h * $ratio_need);
             $size['img_x'] = (int)($crop_w / 2);
             $size['src_w'] = $img_w - $crop_w;
             unset($crop_w);
         } elseif (0 > $ratio_diff && $img_w > $to_w) {
-            $crop_h = (int)($img_h - $img_w / $ratio_need);
+            $crop_h        = (int)($img_h - $img_w / $ratio_need);
             $size['img_y'] = (int)($crop_h / 2);
             $size['src_h'] = $img_h - $size['img_y'] * 2;
             unset($crop_h);
@@ -159,10 +159,10 @@ class image
      * Get new image size
      *
      * @param array $size
-     * @param int $img_w
-     * @param int $img_h
-     * @param int $to_w
-     * @param int $to_h
+     * @param int   $img_w
+     * @param int   $img_h
+     * @param int   $to_w
+     * @param int   $to_h
      */
     private static function img_size(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void
     {
@@ -172,7 +172,7 @@ class image
         //Incorrect width/height
         if (0 >= $img_w || 0 >= $img_h) return;
         //Calculate new width and height
-        $ratio_img = $img_w / $img_h;
+        $ratio_img  = $img_w / $img_h;
         $ratio_need = $to_w / $to_h;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
         if (0 < $ratio_diff && $img_w > $to_w) {

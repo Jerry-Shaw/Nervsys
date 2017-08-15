@@ -185,7 +185,7 @@ class pool
      * Get module name
      *
      * @param string $module
-     * @param int $offset
+     * @param int    $offset
      *
      * @return string
      */

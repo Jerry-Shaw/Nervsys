@@ -31,7 +31,7 @@ require __DIR__ . '/../_inc/cfg.php';
 
 $operator = ['+', '*'];
 
-$codes = [];
+$codes   = [];
 $codes[] = (string)mt_rand(0, 9);
 $codes[] = $operator[mt_rand(0, 1)];
 $codes[] = (string)mt_rand(0, 9);
@@ -43,10 +43,10 @@ $auth_code = (string)eval('return ' . implode($codes) . ';');
 $codes[] = '=';
 $codes[] = '?';
 
-$width = 240;
-$height = 66;
-$font = 'georgiab.ttf';
-$font_size = 36;
+$width        = 240;
+$height       = 66;
+$font         = 'georgiab.ttf';
+$font_size    = 36;
 $left_padding = 16;
 
 $image = imagecreate($width, $height);
@@ -84,7 +84,7 @@ $uuid = get_uuid(get_client_info()['ip']);
 if (Redis_SESSION) {
     //Use Redis
     \core\db\redis::$redis_db = 0;
-    $db_redis = \core\db\redis::connect();
+    $db_redis                 = \core\db\redis::connect();
     $db_redis->set($uuid, $auth_code, 180);
 } else {
     //Use Session

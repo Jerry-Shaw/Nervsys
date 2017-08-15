@@ -74,7 +74,7 @@ class error
      */
     public static function get_all(): array
     {
-        $errors = [];
+        $errors      = [];
         $error_files = file::get_list(ROOT, '/_err/*.json', true);//Get all the json formatted error files from all modules
         foreach ($error_files as $error_file) {
             $json = (string)file_get_contents($error_file);
@@ -104,9 +104,9 @@ class error
      */
     private static function error_info(array &$errors, array $error): void
     {
-        $errors[$error['CodeRange']] = [];
-        $errors[$error['CodeRange']]['Name'] = $error['Name'];
-        $errors[$error['CodeRange']]['Module'] = '' !== $error['Module'] ? $error['Module'] : 'core';
+        $errors[$error['CodeRange']]              = [];
+        $errors[$error['CodeRange']]['Name']      = $error['Name'];
+        $errors[$error['CodeRange']]['Module']    = '' !== $error['Module'] ? $error['Module'] : 'core';
         $errors[$error['CodeRange']]['CodeRange'] = $error['CodeRange'];
         unset($error);
     }
@@ -126,8 +126,8 @@ class error
             self::error_info($errors, $error);
             foreach ($error as $code => $msg) {
                 if (!is_int($code)) continue;
-                $error_text = gettext($msg);
-                $error[$code] = $error_text;
+                $error_text                                   = gettext($msg);
+                $error[$code]                                 = $error_text;
                 $errors[$error['CodeRange']]['Errors'][$code] = $error_text;
             }
         }

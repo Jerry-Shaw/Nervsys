@@ -54,51 +54,52 @@ class upload
     public static $path_mode = 0764;
 
     //Allowed Extension/Mime-Type
-    const mime = [
-        //docs
-        '.xml'  => 'text/xml',
-        '.txt'  => 'text/plain',
-        '.rtf'  => 'application/rtf',
-        '.pdf'  => 'application/pdf',
-        '.doc'  => 'application/msword',
-        '.xls'  => 'application/vnd.ms-excel',
-        '.ppt'  => 'application/vnd.ms-powerpoint',
-        '.docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        '.pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    const mime
+        = [
+            //docs
+            '.xml'  => 'text/xml',
+            '.txt'  => 'text/plain',
+            '.rtf'  => 'application/rtf',
+            '.pdf'  => 'application/pdf',
+            '.doc'  => 'application/msword',
+            '.xls'  => 'application/vnd.ms-excel',
+            '.ppt'  => 'application/vnd.ms-powerpoint',
+            '.docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 
-        //image
-        '.gif'  => 'image/gif',
-        '.jpg'  => 'image/jpeg',
-        '.png'  => 'image/png',
-        '.bmp'  => 'image/bmp',
+            //image
+            '.gif'  => 'image/gif',
+            '.jpg'  => 'image/jpeg',
+            '.png'  => 'image/png',
+            '.bmp'  => 'image/bmp',
 
-        //video
-        '.avi'  => 'video/msvideo',
-        '.flv'  => 'video/x-flv',
-        '.mov'  => 'video/quicktime',
-        '.mp4'  => 'video/mp4',
-        '.mpeg' => 'video/mpeg',
-        '.wmv'  => 'video/x-ms-wmv',
+            //video
+            '.avi'  => 'video/msvideo',
+            '.flv'  => 'video/x-flv',
+            '.mov'  => 'video/quicktime',
+            '.mp4'  => 'video/mp4',
+            '.mpeg' => 'video/mpeg',
+            '.wmv'  => 'video/x-ms-wmv',
 
-        //audio
-        '.aac'  => 'audio/aac',
-        '.m4a'  => 'audio/mp4',
-        '.mid'  => 'audio/mid',
-        '.mp3'  => 'audio/mpeg',
-        '.ogg'  => 'audio/ogg',
-        '.wav'  => 'audio/wav',
+            //audio
+            '.aac'  => 'audio/aac',
+            '.m4a'  => 'audio/mp4',
+            '.mid'  => 'audio/mid',
+            '.mp3'  => 'audio/mpeg',
+            '.ogg'  => 'audio/ogg',
+            '.wav'  => 'audio/wav',
 
-        //package
-        '.7z'   => 'application/x-7z-compressed',
-        '.gz'   => 'application/x-gzip',
-        '.zip'  => 'application/x-zip-compressed',
-        '.rar'  => 'application/octet-stream',
-        '.tar'  => 'application/x-tar',
+            //package
+            '.7z'   => 'application/x-7z-compressed',
+            '.gz'   => 'application/x-gzip',
+            '.zip'  => 'application/x-zip-compressed',
+            '.rar'  => 'application/octet-stream',
+            '.tar'  => 'application/x-tar',
 
-        //misc
-        '.apk'  => 'application/vnd.android.package-archive'
-    ];
+            //misc
+            '.apk'  => 'application/vnd.android.package-archive'
+        ];
 
     /**
      * Upload file
@@ -132,8 +133,8 @@ class upload
         //Failed to move/copy from tmp file
         if ('' === $url) return error::get(10001);
         //Upload done
-        $result = error::get(10000);
-        $result['file_url'] = &$url;
+        $result              = error::get(10000);
+        $result['file_url']  = &$url;
         $result['file_size'] = &$file_size;
         unset($file_size, $file_ext, $save_path, $file_name, $url);
         return $result;
@@ -187,8 +188,8 @@ class upload
         //Set file permissions
         chmod($file_path, self::$file_mode);
         //Upload done
-        $result = error::get(10000);
-        $result['file_url'] = &$url_path;
+        $result              = error::get(10000);
+        $result['file_url']  = &$url_path;
         $result['file_size'] = &$file_size;
         unset($base64_pos, $mime_type, $file_ext, $binary_data, $file_size, $save_path, $file_name, $url_path, $file_path, $save_file);
         return $result;

@@ -105,7 +105,7 @@ class http
      * Prepare header for URL
      *
      * @param string $url
-     * @param array $unit
+     * @param array  $unit
      *
      * @return array
      */
@@ -134,8 +134,8 @@ class http
      * CURL ready
      *
      * @param string $url
-     * @param int $port
-     * @param array $header
+     * @param int    $port
+     * @param array  $header
      */
     private static function curl_ready(string $url, int $port, array $header): void
     {
@@ -183,7 +183,7 @@ class http
         //Run CURL
         if (1 === count(self::$curl)) {
             //Single CURL
-            $curl = current(self::$curl);
+            $curl     = current(self::$curl);
             $response = [key(self::$curl) => (string)curl_exec($curl)];
             curl_close($curl);
         } else {

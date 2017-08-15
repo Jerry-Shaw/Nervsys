@@ -48,16 +48,16 @@ class mysql
     public static function connect(): \PDO
     {
         //Parameters for PDO instance
-        $mysql_host = self::$mysql_host ?? MySQL_HOST;
-        $mysql_port = self::$mysql_port ?? MySQL_PORT;
-        $mysql_db = self::$mysql_db ?? MySQL_DB;
-        $mysql_user = self::$mysql_user ?? MySQL_USER;
-        $mysql_pwd = self::$mysql_pwd ?? MySQL_PWD;
+        $mysql_host    = self::$mysql_host ?? MySQL_HOST;
+        $mysql_port    = self::$mysql_port ?? MySQL_PORT;
+        $mysql_db      = self::$mysql_db ?? MySQL_DB;
+        $mysql_user    = self::$mysql_user ?? MySQL_USER;
+        $mysql_pwd     = self::$mysql_pwd ?? MySQL_PWD;
         $mysql_charset = self::$mysql_charset ?? MySQL_CHARSET;
         //Try to connect MySQL Server
         try {
-            $dsn = 'mysql:host=' . $mysql_host . ';port=' . $mysql_port . ';dbname=' . $mysql_db . ';charset=' . $mysql_charset;
-            $options = [
+            $dsn      = 'mysql:host=' . $mysql_host . ';port=' . $mysql_port . ';dbname=' . $mysql_db . ';charset=' . $mysql_charset;
+            $options  = [
                 \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . $mysql_charset,
                 \PDO::ATTR_PERSISTENT         => self::$mysql_persistent ?? MySQL_PERSISTENT
             ];

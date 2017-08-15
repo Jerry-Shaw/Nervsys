@@ -52,11 +52,11 @@ class generator
         switch ($keys['alg']) {
             case 0:
                 $keys['key'] = substr($key, 0, 32);
-                $keys['iv'] = substr($key, -16, 16);
+                $keys['iv']  = substr($key, -16, 16);
                 break;
             case 1:
                 $keys['key'] = substr($key, -32, 32);
-                $keys['iv'] = substr($key, 0, 16);
+                $keys['iv']  = substr($key, 0, 16);
                 break;
         }
         unset($key);
@@ -94,9 +94,9 @@ class generator
     {
         $unit = str_split($key, 5);
         foreach ($unit as $k => $v) {
-            $unit_key = substr($v, -1, 1);
+            $unit_key  = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
-            $unit[$k] = ($k & 1 !== ord($unit_key) & 1) ? strrev($unit_item) : $unit_item;
+            $unit[$k]  = ($k & 1 !== ord($unit_key) & 1) ? strrev($unit_item) : $unit_item;
         }
         $key = implode($unit);
         unset($unit, $k, $v, $unit_key, $unit_item);
