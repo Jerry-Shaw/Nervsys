@@ -29,20 +29,15 @@
  * Load simple class script
  *
  * @param string $library
- *
- * @return bool
  */
-function load_lib(string $library): bool
+function load_lib(string $library): void
 {
     $class_pos = strrpos($library, '/');
-    if (false === $class_pos) return false;
-    if (class_exists('\\' . $library) || class_exists('\\' . substr($library, $class_pos + 1))) return true;
+    if (false === $class_pos || class_exists('\\' . $library) || class_exists('\\' . substr($library, $class_pos + 1))) return;
     $path = explode('/', $library, 2);
     $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . $path[1] . '.php');
-    if (false === $file) return false;
-    require $file;
+    if (false !== $file) require $file;
     unset($library, $class_pos, $path, $file);
-    return true;
 }
 
 /**
