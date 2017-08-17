@@ -26,34 +26,23 @@
  */
 
 /**
- * Cross module api loader
+ * Load simple class script
  *
  * @param string $library
- * @param string $method
  *
- * @return array
+ * @return bool
  */
-function load_api(string $library, string $method): array
+function load_lib(string $library): bool
 {
-    $class = '\\' !== substr($library, 0, 1) ? '\\' . $library : $library;
-    //Check class existence
-    if (!class_exists($class)) return ['data' => 'Class "' . $library . '" NOT exist!'];
-    //Check method existence
-    if (!method_exists($class, $method)) return ['data' => 'Method "' . $method . '" in "' . $library . '" NOT exist!'];
-    //Check method permission
-    $api_list = SECURE_API && isset($class::$api) && is_array($class::$api) ? array_keys($class::$api) : [];
-    if (SECURE_API && 'init' !== $method && !in_array($method, $api_list, true)) return ['data' => 'Method "' . $method . '" in "' . $library . '" NOT permitted!'];
-    //Check method property
-    $reflect = new \ReflectionMethod($class, $method);
-    if (!$reflect->isPublic() || !$reflect->isStatic()) return ['data' => 'Method "' . $method . '" in "' . $library . '" NOT ready!'];
-    //Calling method
-    try {
-        $result['data'] = $class::$method();
-    } catch (\Throwable $exception) {
-        $result['data'] = $exception->getMessage();
-    }
-    unset($library, $method, $class, $api_list, $reflect);
-    return $result;
+    $class_pos = strrpos($library, '/');
+    if (false === $class_pos) return false;
+    if (class_exists('\\' . $library) || class_exists('\\' . substr($library, $class_pos + 1))) return true;
+    $path = explode('/', $library, 2);
+    $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . $path[1] . '.php');
+    if (false === $file) return false;
+    require $file;
+    unset($library, $class_pos, $path, $file);
+    return true;
 }
 
 /**
