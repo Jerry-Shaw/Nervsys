@@ -99,12 +99,11 @@ define('SSL_CFG', [
 
 //Autoload function
 spl_autoload_register(function ($library): void {
-    $class_pos = strrpos($library, '\\');
-    if (false === $class_pos || class_exists('\\' . $library) || class_exists('\\' . substr($library, $class_pos + 1))) return;
+    if (false === strrpos($library, '\\')) return;
     $path = explode('\\', $library, 2);
     $file = realpath(ROOT . '/' . $path[0] . '/_inc/' . strtr($path[1], '\\', '/') . '.php');
     if (false !== $file) require $file;
-    unset($library, $class_pos, $path, $file);
+    unset($library, $path, $file);
 });
 
 //Load basic function script
