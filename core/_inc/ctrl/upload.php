@@ -27,7 +27,8 @@
 
 namespace core\ctrl;
 
-class upload {
+class upload
+{
     //$_FILES['file']
     public static $file = [];
 
@@ -104,7 +105,8 @@ class upload {
      *
      * @return array
      */
-    public static function file(): array {
+    public static function file(): array
+    {
         lang::load('core', 'upload');
         errno::load('core', 'upload');
         //Empty $_FILES['file']
@@ -142,7 +144,8 @@ class upload {
      *
      * @return array
      */
-    public static function base64(): array {
+    public static function base64(): array
+    {
         lang::load('core', 'upload');
         errno::load('core', 'upload');
         //Get base64 position
@@ -159,7 +162,7 @@ class upload {
         if ('' === $file_ext) return errno::get(10003);
         //Get binary data
         $binary_data = base64_decode(substr(self::$base64, $base64_pos + 8));
-        //Image data errno
+        //Image data error
         if (false === $binary_data) return errno::get(10006);
         //Get file size
         $file_size = self::chk_size(strlen($binary_data));
@@ -198,7 +201,8 @@ class upload {
      *
      * @return int
      */
-    private static function chk_size(int $file_size): int {
+    private static function chk_size(int $file_size): int
+    {
         //Return 0 when file size is over limit
         return $file_size <= self::$file_size ? $file_size : 0;
     }
@@ -210,7 +214,8 @@ class upload {
      *
      * @return string
      */
-    private static function chk_ext(string $file_name): string {
+    private static function chk_ext(string $file_name): string
+    {
         $ext = file::get_ext($file_name);
         //Return empty when extension is empty
         if ('' === $ext) return '';
@@ -230,7 +235,8 @@ class upload {
      *
      * @return string
      */
-    private static function save_file(string $save_path, string $file_name): string {
+    private static function save_file(string $save_path, string $file_name): string
+    {
         //Get URL path
         $url_path = $save_path . $file_name;
         //Get real upload path
@@ -255,13 +261,14 @@ class upload {
     }
 
     /**
-     * Get the errno code from the Server
+     * Get the error code from the Server
      *
      * @param int $error_code
      *
      * @return array
      */
-    private static function get_error(int $error_code): array {
+    private static function get_error(int $error_code): array
+    {
         switch ($error_code) {
             case 1:
             case 2:

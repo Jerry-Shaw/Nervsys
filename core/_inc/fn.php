@@ -30,7 +30,8 @@
  *
  * @param string $library
  */
-function load_lib(string $library): void {
+function load_lib(string $library): void
+{
     $class_pos = strrpos($library, '/');
     if (false === $class_pos || class_exists('\\' . $library) || class_exists('\\' . substr($library, $class_pos + 1))) return;
     $path = explode('/', $library, 2);
@@ -42,7 +43,8 @@ function load_lib(string $library): void {
 /**
  * Escape all the passing variables and parameters
  */
-function escape_request(): void {
+function escape_request(): void
+{
     if (isset($_GET) && !empty($_GET)) $_GET = escape_requests($_GET);
     if (isset($_POST) && !empty($_POST)) $_POST = escape_requests($_POST);
     if (isset($_REQUEST) && !empty($_REQUEST)) $_REQUEST = escape_requests($_REQUEST);
@@ -55,7 +57,8 @@ function escape_request(): void {
  *
  * @return array
  */
-function escape_requests(array $requests): array {
+function escape_requests(array $requests): array
+{
     foreach ($requests as $key => $value) $requests[$key] = !is_array($value) ? urlencode($value) : escape_requests($value);
     unset($key, $value);
     return $requests;
@@ -69,7 +72,8 @@ function escape_requests(array $requests): array {
  *
  * @return string
  */
-function get_uuid(string $string = ''): string {
+function get_uuid(string $string = ''): string
+{
     $string = '' === $string ? uniqid(mt_rand(), true) : (0 === (int)preg_match('/[A-Z]/', $string) ? $string : mb_strtolower($string, 'UTF-8'));
     $code = hash('sha1', $string . ':UUID');
     $uuid = substr($code, 0, 8) . '-';
@@ -90,7 +94,8 @@ function get_uuid(string $string = ''): string {
  *
  * @return string
  */
-function get_char(string $uuid, int $len = 1): string {
+function get_char(string $uuid, int $len = 1): string
+{
     $uuid = substr($uuid, 0, $len);
     $char = strtr($uuid, ['A' => '0', 'B' => '1', 'C' => '2', 'D' => '3', 'E' => '4', 'F' => '5', '-' => '6']);
     unset($uuid, $len);
@@ -105,7 +110,8 @@ function get_char(string $uuid, int $len = 1): string {
  *
  * @return array
  */
-function sort_list(array $data, array $list): array {
+function sort_list(array $data, array $list): array
+{
     $result = [];
     if (empty($data) || empty($list)) return $result;
     foreach ($list as $item) if (isset($data[$item])) $result[$item] = $data[$item];
@@ -118,7 +124,8 @@ function sort_list(array $data, array $list): array {
  *
  * @return array
  */
-function get_client_info(): array {
+function get_client_info(): array
+{
     if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $XFF = $_SERVER['HTTP_X_FORWARDED_FOR'];
         $client_pos = strpos($XFF, ', ');
@@ -137,6 +144,7 @@ function get_client_info(): array {
  *
  * @return bool
  */
-function remove_empty(string $var): bool {
+function remove_empty(string $var): bool
+{
     return '' !== $var;
 }

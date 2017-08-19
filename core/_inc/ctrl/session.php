@@ -29,7 +29,8 @@ namespace core\ctrl;
 
 use \core\db\redis;
 
-class session {
+class session
+{
     //Redis connection instance
     private static $db_redis;
 
@@ -42,7 +43,8 @@ class session {
     /**
      * Initialize SESSION
      */
-    public static function start(): void {
+    public static function start(): void
+    {
         if (PHP_SESSION_ACTIVE !== session_status()) {
             redis::$redis_db = 0;
             self::$db_redis = redis::connect();
@@ -66,14 +68,16 @@ class session {
      *
      * @return bool
      */
-    public static function session_open(string $session_path, string $session_name): bool {
+    public static function session_open(string $session_path, string $session_name): bool
+    {
         return true;
     }
 
     /**
      * @return bool
      */
-    public static function session_close(): bool {
+    public static function session_close(): bool
+    {
         return true;
     }
 
@@ -82,7 +86,8 @@ class session {
      *
      * @return string
      */
-    public static function session_read(string $session_id): string {
+    public static function session_read(string $session_id): string
+    {
         return (string)self::$db_redis->get(self::prefix . $session_id);
     }
 
@@ -92,7 +97,8 @@ class session {
      *
      * @return bool
      */
-    public static function session_write(string $session_id, string $session_data): bool {
+    public static function session_write(string $session_id, string $session_data): bool
+    {
         return self::$db_redis->set(self::prefix . $session_id, $session_data, self::lifetime);
     }
 
@@ -101,7 +107,8 @@ class session {
      *
      * @return bool
      */
-    public static function session_destroy(string $session_id): bool {
+    public static function session_destroy(string $session_id): bool
+    {
         self::$db_redis->del(self::prefix . $session_id);
         return true;
     }
@@ -111,7 +118,8 @@ class session {
      *
      * @return bool
      */
-    public static function session_gc(int $gc_lifetime): bool {
+    public static function session_gc(int $gc_lifetime): bool
+    {
         return true;
     }
 }

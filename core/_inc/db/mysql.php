@@ -27,7 +27,8 @@
 
 namespace core\db;
 
-class mysql {
+class mysql
+{
     /**
      * Declare all the parameters for PDO instance on MySQl Database
      * All default to NULL, but can be changed by passing variables
@@ -44,7 +45,8 @@ class mysql {
     /**
      * @return \PDO
      */
-    public static function connect(): \PDO {
+    public static function connect(): \PDO
+    {
         //Parameters for PDO instance
         $mysql_host = self::$mysql_host ?? MySQL_HOST;
         $mysql_port = self::$mysql_port ?? MySQL_PORT;

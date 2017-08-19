@@ -27,7 +27,8 @@
 
 namespace core\ctrl;
 
-class lang {
+class lang
+{
     //Language
     public static $lang = 'en-US';
 
@@ -37,7 +38,8 @@ class lang {
      * @param string $module
      * @param string $file
      */
-    public static function load(string $module = '', string $file): void {
+    public static function load(string $module = '', string $file): void
+    {
         //Language detection
         if (isset($_REQUEST['lang'])) $lang = &$_REQUEST['lang'];
         elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
@@ -65,7 +67,8 @@ class lang {
      *
      * @return array
      */
-    public static function get_text(array $keys): array {
+    public static function get_text(array $keys): array
+    {
         $data = [];
         //Go over every language key to get the text
         foreach ($keys as $key) $data[$key] = gettext($key);

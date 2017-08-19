@@ -27,13 +27,15 @@
 
 namespace core\key;
 
-class generator {
+class generator
+{
     /**
      * Generate Crypt Key
      *
      * @return string (64 bits)
      */
-    public static function get_key(): string {
+    public static function get_key(): string
+    {
         return hash('sha256', get_uuid());
     }
 
@@ -44,7 +46,8 @@ class generator {
      *
      * @return array
      */
-    public static function get_keys(string $key): array {
+    public static function get_keys(string $key): array
+    {
         $keys = ['alg' => ord(substr($key, 0, 1)) & 1];
         switch ($keys['alg']) {
             case 0:
@@ -67,7 +70,8 @@ class generator {
      *
      * @return string (80 bits)
      */
-    public static function get_mixed(string $key): string {
+    public static function get_mixed(string $key): string
+    {
         $unit = str_split($key, 4);
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, 0, 1);
@@ -86,7 +90,8 @@ class generator {
      *
      * @return string (64 bits)
      */
-    public static function get_rebuilt(string $key): string {
+    public static function get_rebuilt(string $key): string
+    {
         $unit = str_split($key, 5);
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, -1, 1);

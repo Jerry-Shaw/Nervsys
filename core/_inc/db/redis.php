@@ -27,7 +27,8 @@
 
 namespace core\db;
 
-class redis {
+class redis
+{
     /**
      * Declare all the parameters for Redis instance
      * All default to NULL, but can be changed by passing variables
@@ -42,7 +43,8 @@ class redis {
     /**
      * @return \Redis
      */
-    public static function connect(): \Redis {
+    public static function connect(): \Redis
+    {
         //Parameters for Redis instance
         $redis_host = self::$redis_host ?? Redis_HOST;
         $redis_port = self::$redis_port ?? Redis_PORT;

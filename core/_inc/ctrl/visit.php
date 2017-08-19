@@ -27,7 +27,8 @@
 
 namespace core\ctrl;
 
-class visit {
+class visit
+{
     //Data pool
     public static $key = [];
 
@@ -45,7 +46,8 @@ class visit {
      * Get the online status by checking the online tags
      * Grant permission for Cross-Domain request
      */
-    public static function start(): void {
+    public static function start(): void
+    {
         //Get HTTP HOST and HTTP ORIGIN ready for Cross-Domain request detection
         $Server_HOST = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'] ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
         $Origin_HOST = $_SERVER['HTTP_ORIGIN'] ?? $Server_HOST;
@@ -98,7 +100,8 @@ class visit {
      *
      * @return string
      */
-    public static function renew(int $ExpireAt): string {
+    public static function renew(int $ExpireAt): string
+    {
         //Return encrypted key directly
         if (empty(self::$key)) return self::get_key();
         //Run expire time checking
@@ -122,7 +125,8 @@ class visit {
      *
      * @return string
      */
-    public static function add(array $data): string {
+    public static function add(array $data): string
+    {
         //Return encrypted key directly
         if (empty($data)) return self::get_key();
         //Add data
@@ -141,7 +145,8 @@ class visit {
      *
      * @return string
      */
-    public static function remove(array $keys = []): string {
+    public static function remove(array $keys = []): string
+    {
         if (!empty($keys)) {
             foreach ($keys as $key) unset(self::$key[$key]);
             self::ctrl_session('remove', $keys);
@@ -161,7 +166,8 @@ class visit {
      * @param $Server_HOST
      * @param $Origin_HOST
      */
-    private static function ctrl_CDS($Server_HOST, $Origin_HOST): void {
+    private static function ctrl_CDS($Server_HOST, $Origin_HOST): void
+    {
         if (isset(self::$key['CDS']) && 'on' === self::$key['CDS']) {
             //Provide Cross-Domain support for correct KEY request
             header('Access-Control-Allow-Origin: ' . $Origin_HOST);
@@ -182,7 +188,8 @@ class visit {
      * @param string $act
      * @param array  $data
      */
-    private function ctrl_session(string $act, array $data = []): void {
+    private function ctrl_session(string $act, array $data = []): void
+    {
         //Detect client type
         if ('LOCAL' !== self::$client) return;
         //Operation
@@ -205,14 +212,16 @@ class visit {
      *
      * @return string
      */
-    private static function get_key(): string {
+    private static function get_key(): string
+    {
         return !empty(self::$key) ? crypt::create_key(json_encode(self::$key)) : '';
     }
 
     /**
      * Map KEY content to key
      */
-    private static function map_key(): void {
+    private static function map_key(): void
+    {
         self::$client = 'REMOTE';
         $data = crypt::validate_key($_SERVER['HTTP_KEY']);
         if ('' !== $data) {
@@ -226,7 +235,8 @@ class visit {
     /**
      * Map SESSION content to key
      */
-    private static function map_session(): void {
+    private static function map_session(): void
+    {
         self::$client = 'LOCAL';
         if (!empty($_SESSION)) self::$key = &$_SESSION;
     }
@@ -238,7 +248,8 @@ class visit {
      *
      * @return string
      */
-    private static function chk_client(string $Server_HOST): string {
+    private static function chk_client(string $Server_HOST): string
+    {
         //Check "HTTP_ORIGIN"
         if (isset($_SERVER['HTTP_ORIGIN']) && $Server_HOST !== $_SERVER['HTTP_ORIGIN']) return 'REMOTE';
         //Check "HTTP_REFERER"
@@ -262,7 +273,8 @@ class visit {
      *
      * @return string
      */
-    private static function chk_session(): string {
+    private static function chk_session(): string
+    {
         $session_name = session_name();
         return isset($_COOKIE[$session_name]) && $_COOKIE[$session_name] === session_id() ? 'LOCAL' : 'REMOTE';
     }
@@ -270,7 +282,8 @@ class visit {
     /**
      * Get the online status by checking the online tags in KEY
      */
-    private static function chk_online(): void {
+    private static function chk_online(): void
+    {
         $tags = !empty(self::$online_tags) ? self::$online_tags : ONLINE_TAGS;
         foreach ($tags as $tag) {
             if (!isset(self::$key[$tag])) {
