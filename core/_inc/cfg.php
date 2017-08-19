@@ -98,7 +98,7 @@ define('SSL_CFG', [
 ]);
 
 //Autoload function
-spl_autoload_register(function ($library): void {
+spl_autoload_register(static function (string $library): void {
     $class_pos = strrpos($library, '\\');
     if (false === $class_pos || class_exists('\\' . $library) || class_exists('\\' . substr($library, $class_pos + 1))) return;
     $path = explode('\\', $library, 2);
