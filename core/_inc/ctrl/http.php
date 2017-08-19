@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class http
-{
+class http {
     //Request URL
     public static $url;
 
@@ -87,8 +86,7 @@ class http
      *
      * @return array
      */
-    private static function url_unit(string $url): array
-    {
+    private static function url_unit(string $url): array {
         //Parse URL
         $unit = parse_url($url);
         //Check main components
@@ -109,8 +107,7 @@ class http
      *
      * @return array
      */
-    private static function url_header(string $url, array $unit): array
-    {
+    private static function url_header(string $url, array $unit): array {
         //Prepare HTTP Header
         $header = [
             self::$method . ' ' . $unit['path'] . $unit['query'] . ' HTTP/' . self::$ver,
@@ -137,8 +134,7 @@ class http
      * @param int    $port
      * @param array  $header
      */
-    private static function curl_ready(string $url, int $port, array $header): void
-    {
+    private static function curl_ready(string $url, int $port, array $header): void {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_PORT, $port);
@@ -176,8 +172,7 @@ class http
      *
      * @return array
      */
-    private static function curl_run(): array
-    {
+    private static function curl_run(): array {
         //No CURL resource
         if (empty(self::$curl)) return [];
         //Run CURL
@@ -215,8 +210,7 @@ class http
      *
      * @return array
      */
-    public static function request(): array
-    {
+    public static function request(): array {
         //Check URL
         if (empty(self::$url)) return [];
         //Detect method
@@ -243,8 +237,7 @@ class http
      *
      * @return array
      */
-    public static function upload(): array
-    {
+    public static function upload(): array {
         //Check URL
         if (empty(self::$url)) return [];
         //Set method to POST

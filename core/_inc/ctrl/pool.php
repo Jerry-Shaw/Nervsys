@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class pool
-{
+class pool {
     //Data package
     public static $data = [];
 
@@ -54,8 +53,7 @@ class pool
      * Start Data Pool Module
      * Only static methods are supported
      */
-    public static function start(): void
-    {
+    public static function start(): void {
         //Get date from HTTP Request in CGI Mode
         if ('cli' !== PHP_SAPI) self::$data = ENABLE_GET ? $_REQUEST : $_POST;
         //Parse "cmd" data
@@ -86,16 +84,14 @@ class pool
     /**
      * Build data structure
      */
-    public static function build_struct(): void
-    {
+    public static function build_struct(): void {
         self::$struct = array_keys(self::$data);
     }
 
     /**
      * "cmd" value parser
      */
-    private static function parse_cmd(): void
-    {
+    private static function parse_cmd(): void {
         //Data incorrect
         if (!isset(self::$data['cmd']) || !is_string(self::$data['cmd']) || false === strpos(self::$data['cmd'], '/')) return;
         //Extract "cmd" values
@@ -122,8 +118,7 @@ class pool
     /**
      * "map" value parser
      */
-    private static function parse_map(): void
-    {
+    private static function parse_map(): void {
         //Data incorrect
         if (!isset(self::$data['map']) || !is_string(self::$data['map']) || false === strpos(self::$data['map'], '/') || false === strpos(self::$data['map'], ':')) return;
         //Extract "map" values
@@ -163,8 +158,7 @@ class pool
      *
      * @return array
      */
-    private static function get_list(string $library): array
-    {
+    private static function get_list(string $library): array {
         if (false === strpos($library, '-')) return [$library];
         //Spilt data when multiple modules/methods exist with "-"
         $result = explode('-', $library);
@@ -181,8 +175,7 @@ class pool
      *
      * @return string
      */
-    private static function get_module(string $library): string
-    {
+    private static function get_module(string $library): string {
         //Trim "\" and "/"
         $library = trim($library, '\\/');
         //Detect module position
@@ -200,8 +193,7 @@ class pool
      *
      * @param $library
      */
-    private static function call_api(array $library): void
-    {
+    private static function call_api(array $library): void {
         foreach ($library as $class) {
             //Check root class with namespace
             $space = '\\' . str_replace('/', '\\', $class);
@@ -225,8 +217,7 @@ class pool
      * @param $class
      * @param $methods
      */
-    private static function secure_call(string $space, string $class, array $methods): void
-    {
+    private static function secure_call(string $space, string $class, array $methods): void {
         //Get API Safe Zone list
         $api_list = isset($space::$api) && is_array($space::$api) ? array_keys($space::$api) : [];
         //Get request api methods, or, all methods in API Safe Zone
@@ -261,8 +252,7 @@ class pool
      * @param $class
      * @param $methods
      */
-    private static function insecure_call(string $space, string $class, array $methods): void
-    {
+    private static function insecure_call(string $space, string $class, array $methods): void {
         //Request api methods is needed in insecure mode
         if (empty(self::$method)) return;
         //Get request api methods
@@ -290,8 +280,7 @@ class pool
      * @param string $class
      * @param string $method
      */
-    private static function call_method(string $space, string $class, string $method): void
-    {
+    private static function call_method(string $space, string $class, string $method): void {
         //Get item key
         $item = $class . '/' . $method;
         //Get a reflection object for the class method
@@ -328,8 +317,7 @@ class pool
      * @param $keymap
      * @param $data
      */
-    private static function seek_data(array $keymap, array &$data): void
-    {
+    private static function seek_data(array $keymap, array &$data): void {
         //Loop keymap data
         foreach ($keymap as $key) {
             if (!isset($data[$key])) {

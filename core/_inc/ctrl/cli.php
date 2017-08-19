@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class cli
-{
+class cli {
     //Options
     public static $opt = [];
 
@@ -38,8 +37,8 @@ class cli
     //Option Details
     private static $opt_cmd  = '';//Option for Internal Mode
     private static $opt_map  = '';//Option for Internal Mode
-    private static $opt_get  = '';//Result (Valid values: "cmd", "data", "error", "result" or "cmd", "map", "data", "result"; empty: no returns)
-    private static $opt_log  = false;//Log setting, set to true to log all ("time", "cmd", "data", "error", "result" or "time", "cmd", "map", "data", "result")
+    private static $opt_get  = '';//Result (Valid values: "cmd", "data", "errno", "result" or "cmd", "map", "data", "result"; empty: no returns)
+    private static $opt_log  = false;//Log setting, set to true to log all ("time", "cmd", "data", "errno", "result" or "time", "cmd", "map", "data", "result")
     private static $opt_try  = 200;//Default try times for stream checking
     private static $opt_wait = 1;//Default time wait for stream checking (in microseconds)
     private static $opt_data = '';//Request data, will try to read STDIN when empty
@@ -52,8 +51,7 @@ class cli
     /**
      * Load options
      */
-    private static function load_opt(): void
-    {
+    private static function load_opt(): void {
         //Return when option is empty
         if (empty(self::$opt)) return;
         //Get "log" option
@@ -86,8 +84,7 @@ class cli
      *
      * @return string
      */
-    private static function get_opt(array $keys): string
-    {
+    private static function get_opt(array $keys): string {
         //Check every key in options
         foreach ($keys as $key) if (isset(self::$opt[$key]) && false !== self::$opt[$key] && '' !== self::$opt[$key]) return self::$opt[$key];
         //Return empty if not found
@@ -97,8 +94,7 @@ class cli
     /**
      * Load configurations
      */
-    private static function load_cfg(): void
-    {
+    private static function load_cfg(): void {
         //Check CFG file
         if ('' === self::$opt_path) return;
         //Get CFG file content
@@ -113,8 +109,7 @@ class cli
     /**
      * Build var for Internal Mode
      */
-    private static function build_var(): void
-    {
+    private static function build_var(): void {
         //Regroup request data
         self::$var = ['cmd' => self::$opt_cmd];
         //Merge "map" data when exists
@@ -131,8 +126,7 @@ class cli
     /**
      * Build CMD for External Mode
      */
-    private static function build_cmd(): void
-    {
+    private static function build_cmd(): void {
         //Check variables
         if (empty(self::$var)) return;
         //Check specific language in configurations
@@ -149,8 +143,7 @@ class cli
     /**
      * Add quotes to escape spaces in path
      */
-    private static function quote_cmd(): void
-    {
+    private static function quote_cmd(): void {
         //Return when no space in path
         if (false === strpos(self::$cli_cfg[self::$var[0]], ' ')) return;
         //Return when already quoted
@@ -164,8 +157,7 @@ class cli
      *
      * @param array $data
      */
-    private static function save_log(array $data): void
-    {
+    private static function save_log(array $data): void {
         $time = time();
         $logs = array_merge(['time' => date('Y-m-d H:i:s', $time)], $data);
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
@@ -180,8 +172,7 @@ class cli
      *
      * @return string
      */
-    private static function get_stream(array $stream): string
-    {
+    private static function get_stream(array $stream): string {
         $try = 0;
         $result = '';
         //Get the resource
@@ -210,8 +201,7 @@ class cli
      *
      * @return array
      */
-    private static function call_api(): array
-    {
+    private static function call_api(): array {
         $result = [];
         //Pass data to Data Pool Module
         pool::$data = self::$var;
@@ -241,9 +231,8 @@ class cli
      *
      * @return array
      */
-    private static function run_exec(): array
-    {
-        //Command error
+    private static function run_exec(): array {
+        //Command errno
         if ('' === self::$cli_cmd) return ['error' => 'Command ERROR!'];
         //Create process
         $process = proc_open(self::$cli_cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, CLI_WORK_PATH);
@@ -281,8 +270,7 @@ class cli
      *
      * @return array
      */
-    public static function start(): array
-    {
+    public static function start(): array {
         //Parse options
         self::load_opt();
         //Detect CLI Mode

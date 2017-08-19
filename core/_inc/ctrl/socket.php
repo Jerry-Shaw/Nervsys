@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class socket
-{
+class socket {
     //Port Settings
     public static $tcp_port = 62000;
     public static $udp_port = 64000;
@@ -45,8 +44,7 @@ class socket
     /**
      * TCP Server
      */
-    public static function server_tcp(): void
-    {
+    public static function server_tcp(): void {
         //Create TCP Socket
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if (
@@ -119,8 +117,7 @@ class socket
     /**
      * UDP Server
      */
-    public static function server_udp(): void
-    {
+    public static function server_udp(): void {
         //Create UDP Socket
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (
@@ -188,8 +185,7 @@ class socket
      * @param int    $type
      * @param string $mark
      */
-    public static function sender_tcp(string $data, string $host, int $port, int $type, string $mark = ''): void
-    {
+    public static function sender_tcp(string $data, string $host, int $port, int $type, string $mark = ''): void {
         if ('' === $mark || '' === $data || '' === $host || 0 >= $port) return;
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if (false === $socket || !socket_set_option($socket, SOL_SOCKET, $type, 1) || !socket_connect($socket, $host, $port)) return;
@@ -216,8 +212,7 @@ class socket
      * @param int    $type
      * @param string $mark
      */
-    public static function sender_udp(string $data, string $host, int $port, int $type, string $mark = ''): void
-    {
+    public static function sender_udp(string $data, string $host, int $port, int $type, string $mark = ''): void {
         if ('' === $data || '' === $host || 0 >= $port) return;
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         if (false === $socket) return;
@@ -236,8 +231,7 @@ class socket
     /**
      * Broadcast
      */
-    public static function broadcast(): void
-    {
+    public static function broadcast(): void {
         self::identify();
         while (true) {
             self::sender_udp('broadcast:' . self::$identity, '255.255.255.255', self::$udp_port, SO_BROADCAST, '');
@@ -248,8 +242,7 @@ class socket
     /**
      * Get local identity
      */
-    private static function identify(): void
-    {
+    private static function identify(): void {
         $identity = self::get_identity(self::id, 'mrk');
         if ('' === $identity) {
             $identity = get_uuid();
@@ -266,8 +259,7 @@ class socket
      * @param string $mark
      * @param string $file
      */
-    private static function act_broadcast(string $host, string $mark, string $file): void
-    {
+    private static function act_broadcast(string $host, string $mark, string $file): void {
         $mrk = $file . '.mrk';
         if (false !== realpath($mrk)) return;
         $pkey = crypt::get_pkey();
@@ -288,8 +280,7 @@ class socket
      * @param string $uuid
      * @param string $pkey
      */
-    private static function act_receive(string $host, string $mark, string $file, string $uuid, string $pkey): void
-    {
+    private static function act_receive(string $host, string $mark, string $file, string $uuid, string $pkey): void {
         //Check identity
         if (self::$identity !== $uuid) {
             self::sender_udp('remove:' . $uuid, $host, self::$udp_port, SO_REUSEADDR, '');
@@ -320,8 +311,7 @@ class socket
      *
      * @return array
      */
-    private static function parse_data(string $content): array
-    {
+    private static function parse_data(string $content): array {
         $data = explode(':', $content, 2);
         $pub_key = self::get_identity($data[0], 'pub');
         if ('' === $pub_key) return [];
@@ -341,8 +331,7 @@ class socket
      *
      * @return string
      */
-    private static function get_identity(string $mark, string $ext): string
-    {
+    private static function get_identity(string $mark, string $ext): string {
         $file = realpath(CLI_CAS_PATH . $mark . '.' . $ext);
         $identity = false !== $file ? (string)file_get_contents($file) : '';
         unset($mark, $ext, $file);
@@ -356,8 +345,7 @@ class socket
      *
      * @return string
      */
-    private static function run_cmd(array $data): string
-    {
+    private static function run_cmd(array $data): string {
         $data['cmd'] = trim($data['cmd']);
         if ('' === $data['cmd']) return '';
         if (false !== strpos($data['cmd'], '\\') && false === strpos($data['cmd'], ' ')) {

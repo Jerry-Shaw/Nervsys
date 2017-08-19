@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class file
-{
+class file {
     /**
      * Get the extension of a file
      *
@@ -36,8 +35,7 @@ class file
      *
      * @return string
      */
-    public static function get_ext(string $path): string
-    {
+    public static function get_ext(string $path): string {
         $ext = pathinfo($path, PATHINFO_EXTENSION);
         if ('' !== $ext && 1 === preg_match('/[A-Z]/', $ext)) $ext = strtolower($ext);
         unset($path);
@@ -53,8 +51,7 @@ class file
      *
      * @return string
      */
-    public static function get_path(string $path, int $mode = 0764): string
-    {
+    public static function get_path(string $path, int $mode = 0764): string {
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) $path = str_replace('..', '', $path);
         //Format path with '/'
@@ -89,8 +86,7 @@ class file
      *
      * @return array
      */
-    public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array
-    {
+    public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array {
         //Check path
         $path = realpath($path);
         if (false === $path) return [];

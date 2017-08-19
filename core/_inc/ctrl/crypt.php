@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class crypt
-{
+class crypt {
     //Crypt methods
     const method = ['AES-256-CTR', 'CAMELLIA-256-CFB'];
 
@@ -37,8 +36,7 @@ class crypt
      *
      * @return array
      */
-    public static function get_pkey(): array
-    {
+    public static function get_pkey(): array {
         $keys = ['public' => '', 'private' => ''];
         $openssl = openssl_pkey_new(SSL_CFG);
         //Return directly when create private key failed
@@ -59,8 +57,7 @@ class crypt
      *
      * @return string
      */
-    public static function encode(string $string, array $keys): string
-    {
+    public static function encode(string $string, array $keys): string {
         return (string)openssl_encrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
     }
 
@@ -72,8 +69,7 @@ class crypt
      *
      * @return string
      */
-    public static function decode(string $string, array $keys): string
-    {
+    public static function decode(string $string, array $keys): string {
         return (string)openssl_decrypt($string, self::method[$keys['alg']], $keys['key'], 0, $keys['iv']);
     }
 
@@ -84,8 +80,7 @@ class crypt
      *
      * @return string
      */
-    private static function get_type(string $key): string
-    {
+    private static function get_type(string $key): string {
         $start = strlen('-----BEGIN ');
         $end = strpos($key, ' KEY-----', $start);
         $type = false !== $end ? strtolower(substr($key, $start, $end)) : '';
@@ -101,8 +96,7 @@ class crypt
      *
      * @return string
      */
-    public static function encrypt(string $string, string $key): string
-    {
+    public static function encrypt(string $string, string $key): string {
         $type = '' !== $key ? self::get_type($key) : '';
         //Key incorrect, return empty directly
         if ('' === $type || !in_array($type, ['public', 'private'], true)) return '';
@@ -121,8 +115,7 @@ class crypt
      *
      * @return string
      */
-    public static function decrypt(string $string, string $key): string
-    {
+    public static function decrypt(string $string, string $key): string {
         $type = '' !== $key ? self::get_type($key) : '';
         //Key incorrect, return empty directly
         if ('' === $type || !in_array($type, ['public', 'private'], true)) return '';
@@ -141,8 +134,7 @@ class crypt
      *
      * @return string
      */
-    public static function hash_pwd(string $string, string $codes): string
-    {
+    public static function hash_pwd(string $string, string $codes): string {
         $noises = str_split($codes, 16);
         $string = 0 === ord(substr($codes, 0, 1)) & 1 ? $noises[0] . ':' . $string . ':' . $noises[2] : $noises[1] . ':' . $string . ':' . $noises[3];
         $string = substr(hash('sha1', $string), 4, 32);
@@ -159,8 +151,7 @@ class crypt
      *
      * @return bool
      */
-    public static function check_pwd(string $input, string $codes, string $hash): bool
-    {
+    public static function check_pwd(string $input, string $codes, string $hash): bool {
         return self::hash_pwd($input, $codes) === $hash;
     }
 
@@ -172,8 +163,7 @@ class crypt
      *
      * @return string
      */
-    public static function create_key(string $string, string $rsa_key = ''): string
-    {
+    public static function create_key(string $string, string $rsa_key = ''): string {
         //Return empty when string is empty
         if ('' === $string) return '';
         //Encode data
@@ -196,8 +186,7 @@ class crypt
      *
      * @return string
      */
-    public static function validate_key(string $signature, string $rsa_key = ''): string
-    {
+    public static function validate_key(string $signature, string $rsa_key = ''): string {
         //Return empty when signature is incorrect
         if (empty($signature) || false === strpos($signature, '-')) return '';
         //Decode signature

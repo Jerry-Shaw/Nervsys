@@ -27,8 +27,7 @@
 
 namespace core\ctrl;
 
-class image
-{
+class image {
     //Support Mime-Type
     const mime = ['image/gif', 'image/jpeg', 'image/png', 'image/bmp'];
 
@@ -42,8 +41,7 @@ class image
      *
      * @return bool
      */
-    public static function resize(string $file, int $width, int $height, bool $crop = false): bool
-    {
+    public static function resize(string $file, int $width, int $height, bool $crop = false): bool {
         //Rotate image
         self::rotate($file);
         //Get image data
@@ -88,8 +86,7 @@ class image
      *
      * @param string $file
      */
-    private static function rotate(string $file): void
-    {
+    private static function rotate(string $file): void {
         //Get EXIF data
         $img_exif = exif_read_data($file);
         //Return when EXIF data is empty, or, Mime-type not support
@@ -128,8 +125,7 @@ class image
      * @param int   $to_w
      * @param int   $to_h
      */
-    private static function img_crop(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void
-    {
+    private static function img_crop(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void {
         $size['img_w'] = &$to_w;
         $size['img_h'] = &$to_h;
         $size['src_w'] = $img_w;
@@ -164,8 +160,7 @@ class image
      * @param int   $to_w
      * @param int   $to_h
      */
-    private static function img_size(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void
-    {
+    private static function img_size(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void {
         $size['img_x'] = $size['img_y'] = 0;
         $size['img_w'] = $size['src_w'] = $img_w;
         $size['img_h'] = $size['src_h'] = $img_h;
