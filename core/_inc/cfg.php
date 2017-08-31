@@ -36,7 +36,7 @@ header('Content-Type:text/html; charset=utf-8');
 define('ROOT', realpath(substr(__DIR__, 0, -10)));
 
 //Define Key Generator module property
-define('GENERATOR', '\\core\\key\\generator');
+define('KeyGen', '\\core\\key\\keygen');
 
 //Enable/Disable HTTP GET Method
 define('ENABLE_GET', true);

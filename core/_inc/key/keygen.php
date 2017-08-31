@@ -27,7 +27,7 @@
 
 namespace core\key;
 
-class generator
+class keygen
 {
     /**
      * Generate Crypt Key
