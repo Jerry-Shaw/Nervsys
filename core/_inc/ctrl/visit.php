@@ -188,7 +188,7 @@ class visit
      * @param string $act
      * @param array  $data
      */
-    private function ctrl_session(string $act, array $data = []): void
+    private static function ctrl_session(string $act, array $data = []): void
     {
         //Detect client type
         if ('LOCAL' !== self::$client) return;
