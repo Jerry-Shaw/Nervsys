@@ -203,14 +203,11 @@ class pool
     private static function call_api(array $library): void
     {
         foreach ($library as $class) {
-            //Check root class with namespace
+            //Check root class
             $space = '\\' . str_replace('/', '\\', $class);
-            if (!class_exists($space)) {
-                //Check root class without namespace
-                $space = '\\' . substr($class, strrpos($class, '/') + 1);
-                if (!class_exists($space)) continue;
-            }
-            //Get method list from the space
+            //Skip when class not exist
+            if (!class_exists($space)) continue;
+            //Get method list from class
             $methods = get_class_methods($space);
             //Call methods
             SECURE_API ? self::secure_call($space, $class, $methods) : self::insecure_call($space, $class, $methods);

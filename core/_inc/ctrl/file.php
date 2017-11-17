@@ -60,7 +60,7 @@ class file
         //Format path with '/'
         if (false !== strpos($path, '\\')) $path = str_replace('\\', '/', $path);
         //Trim "/"
-        $path = time($path, '/');
+        $path = trim($path, '/');
         //Return "/" when path is empty
         if ('' === $path) return is_readable(FILE_PATH) ? '/' : '';
         //Add "/" to the beginning

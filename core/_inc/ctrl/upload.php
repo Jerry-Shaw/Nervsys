@@ -56,48 +56,48 @@ class upload
     //Allowed Extension/Mime-Type
     const mime = [
         //docs
-        '.xml'  => 'text/xml',
-        '.txt'  => 'text/plain',
-        '.rtf'  => 'application/rtf',
-        '.pdf'  => 'application/pdf',
-        '.doc'  => 'application/msword',
-        '.xls'  => 'application/vnd.ms-excel',
-        '.ppt'  => 'application/vnd.ms-powerpoint',
-        '.docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        '.pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'xml'  => 'text/xml',
+        'txt'  => 'text/plain',
+        'rtf'  => 'application/rtf',
+        'pdf'  => 'application/pdf',
+        'doc'  => 'application/msword',
+        'xls'  => 'application/vnd.ms-excel',
+        'ppt'  => 'application/vnd.ms-powerpoint',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 
         //image
-        '.gif'  => 'image/gif',
-        '.jpg'  => 'image/jpeg',
-        '.png'  => 'image/png',
-        '.bmp'  => 'image/bmp',
+        'gif'  => 'image/gif',
+        'jpg'  => 'image/jpeg',
+        'png'  => 'image/png',
+        'bmp'  => 'image/bmp',
 
         //video
-        '.avi'  => 'video/msvideo',
-        '.flv'  => 'video/x-flv',
-        '.mov'  => 'video/quicktime',
-        '.mp4'  => 'video/mp4',
-        '.mpeg' => 'video/mpeg',
-        '.wmv'  => 'video/x-ms-wmv',
+        'avi'  => 'video/msvideo',
+        'flv'  => 'video/x-flv',
+        'mov'  => 'video/quicktime',
+        'mp4'  => 'video/mp4',
+        'mpeg' => 'video/mpeg',
+        'wmv'  => 'video/x-ms-wmv',
 
         //audio
-        '.aac'  => 'audio/aac',
-        '.m4a'  => 'audio/mp4',
-        '.mid'  => 'audio/mid',
-        '.mp3'  => 'audio/mpeg',
-        '.ogg'  => 'audio/ogg',
-        '.wav'  => 'audio/wav',
+        'aac'  => 'audio/aac',
+        'm4a'  => 'audio/mp4',
+        'mid'  => 'audio/mid',
+        'mp3'  => 'audio/mpeg',
+        'ogg'  => 'audio/ogg',
+        'wav'  => 'audio/wav',
 
         //package
-        '.7z'   => 'application/x-7z-compressed',
-        '.gz'   => 'application/x-gzip',
-        '.zip'  => 'application/x-zip-compressed',
-        '.rar'  => 'application/octet-stream',
-        '.tar'  => 'application/x-tar',
+        '7z'   => 'application/x-7z-compressed',
+        'gz'   => 'application/x-gzip',
+        'zip'  => 'application/x-zip-compressed',
+        'rar'  => 'application/octet-stream',
+        'tar'  => 'application/x-tar',
 
         //misc
-        '.apk'  => 'application/vnd.android.package-archive'
+        'apk'  => 'application/vnd.android.package-archive'
     ];
 
     /**
