@@ -25,11 +25,11 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace core\ctr\platform;
+namespace core\ctr\os;
 
-use \core\lib\platform as platform;
+use \core\lib\os as os;
 
-class winnt implements platform
+class winnt implements os
 {
     /**
      * Get Machine hash code

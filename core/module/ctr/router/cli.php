@@ -229,7 +229,7 @@ class cli extends router
      */
     private static function auto_config(): void
     {
-        $platform = '\\core\\ctr\\platform\\' . strtolower(PHP_OS);
+        $platform = '\\core\\ctr\\os\\' . strtolower(PHP_OS);
         $exec_info = $platform::exec_info();
         if (0 === $exec_info['pid']) return;
         self::$config['PHP_CMD'] = $exec_info['cmd'];

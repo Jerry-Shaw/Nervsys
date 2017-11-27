@@ -1,7 +1,7 @@
 <?php
 
 /**
- * linux Platform Module
+ * Operating System Interface
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -25,29 +25,21 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace core\ctr\platform;
+namespace core\lib;
 
-use \core\lib\platform as platform;
-
-class linux implements platform
+interface os
 {
     /**
      * Get Machine hash code
      *
      * @return string
      */
-    public static function get_hash(): string
-    {
-
-    }
+    public static function get_hash(): string;
 
     /**
      * Get PHP executable info
      *
      * @return array
      */
-    public static function exec_info(): array
-    {
-
-    }
+    public static function exec_info(): array;
 }
