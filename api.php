@@ -31,7 +31,7 @@ declare(strict_types = 1);
 if (version_compare(PHP_VERSION, '7.1.0', '<')) exit('NervSys needs PHP 7.1.0 or higher!');
 
 //Load config file
-require __DIR__ . '/core/config.php';
+require __DIR__ . '/core/cfg.php';
 
 //Run & Output
 \core\ctr\router::start();

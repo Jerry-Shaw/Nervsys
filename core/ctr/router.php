@@ -40,12 +40,6 @@ class router
     //Result data
     public static $result = [];
 
-    //Module list
-    protected static $module = [];
-
-    //Method list
-    protected static $method = [];
-
     //Data Structure
     protected static $struct = [];
 

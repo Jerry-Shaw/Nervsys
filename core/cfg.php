@@ -49,9 +49,8 @@ spl_autoload_register(
     static function (string $lib): void
     {
         if (false === strpos($lib, '\\')) return;
-        $path = explode('\\', $lib, 2);
-        $file = realpath(ROOT . '/' . $path[0] . '/module/' . strtr($path[1], '\\', '/') . '.php');
+        $file = realpath(ROOT . '/' . strtr($lib, '\\', '/') . '.php');
         if (false !== $file) require $file;
-        unset($lib, $path, $file);
+        unset($lib, $file);
     }
 );

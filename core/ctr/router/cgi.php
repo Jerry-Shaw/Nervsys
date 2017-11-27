@@ -31,6 +31,12 @@ use \core\ctr\router as router;
 
 class cgi extends router
 {
+    //Module list
+    private static $module = [];
+
+    //Method list
+    private static $method = [];
+
     /**
      * Run CGI Router
      */
@@ -110,14 +116,14 @@ class cgi extends router
             $module = self::get_module($item);
             if ('' !== $module) {
                 //Module goes here
-                //Add module to "parent::$module" if not added
-                if (!isset(parent::$module[$module])) parent::$module[$module] = [];
-                //Add method to "parent::$module" if not added
-                if (!in_array($item, parent::$module[$module], true)) parent::$module[$module][] = $item;
+                //Add module to "self::$module" if not added
+                if (!isset(self::$module[$module])) self::$module[$module] = [];
+                //Add method to "self::$module" if not added
+                if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;
             } else {
                 //Method goes here
-                //Add to "parent::$method" if not added
-                if (!in_array($item, parent::$method, true)) parent::$method[] = $item;
+                //Add to "self::$method" if not added
+                if (!in_array($item, self::$method, true)) self::$method[] = $item;
             }
         }
         unset($list, $item, $module);
@@ -130,17 +136,17 @@ class cgi extends router
     {
         //Check main data
         if (
-            empty(parent::$module) ||
-            (empty(parent::$method) && empty(parent::$data))
+            empty(self::$module) ||
+            (empty(self::$method) && empty(parent::$data))
         ) {
             if (DEBUG) parent::$result['ERROR'] = 'Missing Data or CMD ERROR!';
             return;
         }
 
         //Execute queue list
-        foreach (parent::$module as $module => $method) {
+        foreach (self::$module as $module => $method) {
             //Load Module config file
-            $file = realpath(ROOT . '/' . $module . '/config.php');
+            $file = realpath(ROOT . '/' . $module . '/cfg.php');
             if (false !== $file) require $file;
             //Call API
             self::call_api($method);
@@ -222,7 +228,7 @@ class cgi extends router
         $method_list = get_class_methods($space);
 
         //Get requested api methods
-        $key_methods = !empty(parent::$method) ? array_intersect(parent::$method, $key_list, $method_list) : array_intersect($key_list, $method_list);
+        $key_methods = !empty(self::$method) ? array_intersect(self::$method, $key_list, $method_list) : array_intersect($key_list, $method_list);
 
         //Calling "init" without permission
         if (in_array('init', $method_list, true) && !in_array('init', $key_methods, true)) self::call_method($class, $space, 'init');

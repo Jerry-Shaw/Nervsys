@@ -40,14 +40,17 @@ class cli extends router
     //CMD data value
     private static $cmd_data = [];
 
+    //Pipe read timeout
+    private static $timeout = 5000;
+
     //CLI config settings
     private static $config = [];
 
     //CLI config file
-    const config = ROOT . '/core/config.ini';
+    const config = ROOT . '/core/cfg.ini';
 
     //work path
-    const work_path = ROOT . '/core/cache/cli/';
+    const work_path = ROOT . '/core/cli/';
 
     /**
      * Run CLI Router
@@ -74,7 +77,7 @@ class cli extends router
          * d/data: CGI data content
          * p/pipe: CLI pipe content
          * r/return: return type (result (default) / error / data / cmd, multiple options)
-         * t/timeout: timeout for return (in microseconds, default value is 100ms when r/return is set)
+         * t/timeout: timeout for return (in microseconds, default value is 5000ms when r/return is set)
          * l/log: log option
          */
         $command = false;
@@ -94,6 +97,10 @@ class cli extends router
             $data_get = self::get_opt($opt, ['p', 'pipe']);
             if ($data_get['get'] && '' !== $data_get['data']) self::$cli_data = &$data_get['data'];
 
+            //Process pipe read timeout
+            $data_get = self::get_opt($opt, ['t', 'timeout']);
+            if ($data_get['get'] && is_numeric($data_get['data'])) self::$timeout = (int)$data_get['data'];
+
             //Merge options to parent
             if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
             if (self::get_cmd()) $command = true;
@@ -107,7 +114,7 @@ class cli extends router
         //No command, point to first argument
         if (!$command) parent::$data['cmd'] = array_shift($argv_data);
 
-        //Merge data to parent
+        //Merge data to self::$cmd_data
         if (!empty($argv_data)) self::$cmd_data = &$argv_data;
 
         //Build data structure
@@ -193,8 +200,26 @@ class cli extends router
      */
     private static function execute_cmd(): void
     {
-        if (self::$cgi_mode) cgi::run();
-        else {
+        if (self::$cgi_mode) {
+            try {
+                cgi::run();
+                $error = '';
+            } catch (\Throwable $exception) {
+                $error = $exception->getMessage();
+            }
+
+            //Save logs
+            if (self::get_opt(parent::$data, ['l', 'log'])['get']) {
+                $logs = [];
+                $logs['cmd'] = parent::$cmd;
+                $logs['data'] = json_encode(parent::$data);
+                $logs['error'] = &$error;
+                $logs['result'] = json_encode(parent::$result);
+                self::save_log($logs);
+                unset($logs);
+            }
+            unset($error);
+        } else {
             //Load config file
             self::load_config();
             self::auto_config();
@@ -232,8 +257,8 @@ class cli extends router
         $platform = '\\core\\ctr\\os\\' . strtolower(PHP_OS);
         $exec_info = $platform::exec_info();
         if (0 === $exec_info['pid']) return;
-        self::$config['PHP_CMD'] = $exec_info['cmd'];
-        self::$config['PHP_EXEC'] = $exec_info['path'];
+        self::$config['PHP_CMD'] = &$exec_info['cmd'];
+        self::$config['PHP_EXEC'] = self::quote_command($exec_info['path']);
         unset($platform, $exec_info);
     }
 
@@ -248,7 +273,7 @@ class cli extends router
             if (isset(self::$config[parent::$cmd]) && is_string(self::$config[parent::$cmd])) return self::$config[parent::$cmd];
             else {
                 if (DEBUG) {
-                    fwrite(STDOUT, 'CMD config ERROR! Please check config.ini!' . PHP_EOL);
+                    fwrite(STDOUT, 'CMD config ERROR! Please check cfg.ini!' . PHP_EOL);
                     fclose(STDOUT);
                 }
                 return '';
@@ -261,7 +286,7 @@ class cli extends router
                 else {
                     unset($cmd, $keys, $key);
                     if (DEBUG) {
-                        fwrite(STDOUT, 'CMD not found! Please add to config.ini!' . PHP_EOL);
+                        fwrite(STDOUT, 'CMD not found! Please add to cfg.ini!' . PHP_EOL);
                         fclose(STDOUT);
                     }
                     return '';
@@ -271,7 +296,7 @@ class cli extends router
             else {
                 unset($cmd, $keys, $key);
                 if (DEBUG) {
-                    fwrite(STDOUT, 'CMD config ERROR! Please check config.ini!' . PHP_EOL);
+                    fwrite(STDOUT, 'CMD config ERROR! Please check cfg.ini!' . PHP_EOL);
                     fclose(STDOUT);
                 }
                 return '';
@@ -314,7 +339,7 @@ class cli extends router
 
         //Save logs
         if (self::get_opt(parent::$data, ['l', 'log'])['get']) {
-            $logs['cmd'] = $command;
+            $logs['cmd'] = &$command;
             $logs['data'] = self::$cli_data;
             $logs['error'] = self::get_stream([$pipes[2]]);
             $logs['result'] = self::get_stream([$pipes[1]]);
@@ -324,7 +349,7 @@ class cli extends router
         //Build results
         $result_get = self::get_opt(parent::$data, ['r', 'return']);
         if ($result_get['get']) {
-            if (false !== strpos($result_get['data'], 'cmd')) $result['cmd'] = $command;
+            if (false !== strpos($result_get['data'], 'cmd')) $result['cmd'] = &$command;
             if (false !== strpos($result_get['data'], 'data')) $result['data'] = self::$cli_data;
             if (false !== strpos($result_get['data'], 'error')) $result['error'] = $logs['error'] ?? self::get_stream([$pipes[2]]);
             if (false !== strpos($result_get['data'], 'result')) $result['result'] = $logs['result'] ?? self::get_stream([$pipes[1]]);
@@ -336,7 +361,7 @@ class cli extends router
         //Close Process
         proc_close($process);
 
-        unset($command, $process, $pipes, $logs, $pipe);
+        unset($command, $process, $pipes, $logs, $result_get, $pipe);
         return $result;
     }
 
@@ -349,12 +374,6 @@ class cli extends router
      */
     private static function get_stream(array $stream): string
     {
-        //Set timeout
-        if (isset(parent::$data['timeout'])) {
-            parent::$data['timeout'] = (int)parent::$data['timeout'];
-            if (0 < parent::$data['timeout']) $timeout = parent::$data['timeout'];
-        } else $timeout = 100;
-
         $time = 0;
         $result = '';
 
@@ -362,7 +381,7 @@ class cli extends router
         $resource = current($stream);
 
         //Keep checking the stat of stream
-        while ($time <= $timeout) {
+        while ($time <= self::$timeout) {
             //Get the stat of stream
             $stat = fstat($resource);
 
@@ -377,8 +396,9 @@ class cli extends router
             usleep(10);
             $time += 10;
         }
+
         //Return false once the elapsed time reaches the limit
-        unset($stream, $timeout, $time, $resource, $stat);
+        unset($stream, $time, $resource, $stat);
         return $result;
     }
 

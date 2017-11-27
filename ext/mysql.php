@@ -1,7 +1,7 @@
 <?php
 
 /**
- * MySQL Module
+ * MySQL Extension
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -25,7 +25,7 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace core\db;
+namespace ext;
 
 class mysql
 {
