@@ -38,7 +38,19 @@ class winnt implements platform
      */
     public static function get_hash(): string
     {
+        $queries = [
+            'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
+            'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
+            'wmic bios get Manufacturer, Name, SerialNumber, Version /format:value',
+            'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
+            'wmic diskdrive get Model, Size /format:value',
+            'wmic memorychip get BankLabel, Capacity /format:value'
+        ];
 
+        foreach ($queries as $query) exec($query, $output);
+
+        unset($queries, $query);
+        return implode('|', array_filter($output));
     }
 
     /**
