@@ -8,6 +8,6 @@ Functional extensions (class) are considered to moved out to the third part to m
  
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
 
-Demo module is out and opened here https://github.com/Jerry-Shaw/fruit. You can try it with NervSys with detailed comments in the picker.php
+Demo module is out and opened here https://github.com/Jerry-Shaw/fruit. You can try it with NervSys with detailed comments in the "fruit.php"
 
 Sensor Module is opened for communication, https://github.com/Jerry-Shaw/sensor. Always needs developers.
