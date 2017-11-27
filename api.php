@@ -27,39 +27,12 @@
 
 declare(strict_types = 1);
 
-//Load CFG file (basic function script is loaded in the cfg file as also).
-require __DIR__ . '/core/_inc/cfg.php';
+//Check Version
+if (version_compare(PHP_VERSION, '7.1.0', '<')) exit('NervSys needs PHP 7.1.0 or higher!');
 
-//Detect PHP SAPI
-if ('cli' !== PHP_SAPI) {
-    //Code Block for CGI Mode
-    //Start \core\key\visit
-    \core\ctrl\visit::start();
-    //Start \core\ctrl\pool
-    \core\ctrl\pool::start();
-    //Valid values for "\core\ctrl\pool::$format" are "json" and "data", which should be changed via GET or POST
-    //All returned data will be output in JSON by default, or, kept in "\core\ctrl\pool::$pool" for further use by setting to "data"
-    if ('json' === \core\ctrl\pool::$format) {
-        //Force output content to UTF-8 formatted plain text
-        header('Content-Type: text/plain; charset=UTF-8');
-        //Output JSON formatted result
-        echo json_encode(\core\ctrl\pool::$pool);
-    }
-} else {
-    //Code Block for CLI Mode
-    //Force output content to UTF-8 formatted plain text
-    header('Content-Type: text/plain; charset=UTF-8');
-    //Pass CLI options
-    \core\ctrl\cli::$opt = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
-    //Pass CLI variables
-    \core\ctrl\cli::$var = array_slice($argv, $optind);
-    //Start CLI
-    $result = \core\ctrl\cli::start();
-    //Output Result
-    if (!empty($result)) {
-        //Output JSON formatted result via STDOUT
-        fwrite(STDOUT, json_encode($result) . PHP_EOL);
-        //Close STDOUT stream
-        fclose(STDOUT);
-    }
-}
+//Load config file
+require __DIR__ . '/core/config.php';
+
+//Run & Output
+\core\ctr\router::start();
+\core\ctr\router::output();
