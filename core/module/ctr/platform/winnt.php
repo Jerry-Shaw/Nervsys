@@ -50,7 +50,7 @@ class winnt implements platform
         foreach ($queries as $query) exec($query, $output);
 
         unset($queries, $query);
-        return implode('|', array_filter($output));
+        return hash('sha256', implode('|', array_filter($output)));
     }
 
     /**
