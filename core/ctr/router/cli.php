@@ -263,7 +263,7 @@ class cli extends router
             $exec_info = $platform::exec_info();
             if (0 === $exec_info['pid']) return;
             self::$config['PHP_CMD'] = &$exec_info['cmd'];
-            self::$config['PHP_EXEC'] = self::quote_command($exec_info['path']);
+            self::$config['PHP_EXEC'] = &$exec_info['path'];
             unset($platform, $exec_info);
         } catch (\Throwable $exception) {
             if (DEBUG) {

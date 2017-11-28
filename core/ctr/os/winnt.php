@@ -96,7 +96,7 @@ class winnt implements os
             if (!empty($process)) {
                 foreach ($process as $info) {
                     if (false !== strpos($info['CommandLine'], 'api.php')) {
-                        $result = ['pid' => &$info['ProcessId'], 'cmd' => &$info['CommandLine'], 'path' => &$info['ExecutablePath']];
+                        $result = ['pid' => &$info['ProcessId'], 'cmd' => &$info['CommandLine'], 'path' => '"' . $info['ExecutablePath'] . '"'];
                         unset($process, $info);
                         return $result;
                     }
