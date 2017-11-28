@@ -210,13 +210,14 @@ class cli extends router
 
             //Save logs
             if (self::get_opt(parent::$data, ['l', 'log'])['get']) {
-                $logs = [];
-                $logs['cmd'] = parent::$cmd;
-                $logs['data'] = json_encode(parent::$data);
-                $logs['error'] = &$error;
-                $logs['result'] = json_encode(parent::$result);
-                self::save_log($logs);
-                unset($logs);
+                self::save_log(
+                    [
+                        'cmd'    => parent::$cmd,
+                        'data'   => json_encode(parent::$data),
+                        'error'  => &$error,
+                        'result' => json_encode(parent::$result)
+                    ]
+                );
             }
             unset($error);
         } else {
@@ -228,10 +229,12 @@ class cli extends router
             $command = self::command();
             if ('' === $command) return;
             $command = self::quote_command($command);
+
             if (!empty(parent::$data)) $command .= ' ' . implode(' ', self::$cmd_data);
 
             //Run command
             parent::$result = self::run_exec($command);
+            unset($command);
         }
     }
 
@@ -254,12 +257,21 @@ class cli extends router
      */
     private static function auto_config(): void
     {
-        $platform = '\\core\\ctr\\os\\' . strtolower(PHP_OS);
-        $exec_info = $platform::exec_info();
-        if (0 === $exec_info['pid']) return;
-        self::$config['PHP_CMD'] = &$exec_info['cmd'];
-        self::$config['PHP_EXEC'] = self::quote_command($exec_info['path']);
-        unset($platform, $exec_info);
+        $os = PHP_OS;
+        try {
+            $platform = '\\core\\ctr\\os\\' . strtolower($os);
+            $exec_info = $platform::exec_info();
+            if (0 === $exec_info['pid']) return;
+            self::$config['PHP_CMD'] = &$exec_info['cmd'];
+            self::$config['PHP_EXEC'] = self::quote_command($exec_info['path']);
+            unset($platform, $exec_info);
+        } catch (\Throwable $exception) {
+            if (DEBUG) {
+                fwrite(STDOUT, $os . ' NOT fully supported yet! ' . $exception->getMessage() . PHP_EOL);
+                fclose(STDOUT);
+            }
+        }
+        unset($os);
     }
 
     /**
