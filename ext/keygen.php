@@ -27,9 +27,9 @@
 
 namespace ext;
 
-use \ext\lib\crypt_key as crypt_key;
+use \ext\lib\keys as keys;
 
-class keygen implements crypt_key
+class keygen implements keys
 {
     /**
      * Create Crypt Key

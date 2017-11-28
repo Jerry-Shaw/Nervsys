@@ -27,7 +27,7 @@
 
 namespace ext\lib;
 
-interface crypt_key
+interface keys
 {
     /**
      * Create Crypt Key
