@@ -285,7 +285,7 @@ class cli extends router
             if (isset(self::$config[parent::$cmd]) && is_string(self::$config[parent::$cmd])) return self::$config[parent::$cmd];
             else {
                 if (DEBUG) {
-                    fwrite(STDOUT, 'CMD config ERROR! Please check cfg.ini!' . PHP_EOL);
+                    fwrite(STDOUT, 'CMD config ERROR! Please check "cfg.ini"!' . PHP_EOL);
                     fclose(STDOUT);
                 }
                 return '';
@@ -298,7 +298,7 @@ class cli extends router
                 else {
                     unset($cmd, $keys, $key);
                     if (DEBUG) {
-                        fwrite(STDOUT, 'CMD not found! Please add to cfg.ini!' . PHP_EOL);
+                        fwrite(STDOUT, 'CMD not found! Please add to "cfg.ini"!' . PHP_EOL);
                         fclose(STDOUT);
                     }
                     return '';
@@ -308,7 +308,7 @@ class cli extends router
             else {
                 unset($cmd, $keys, $key);
                 if (DEBUG) {
-                    fwrite(STDOUT, 'CMD config ERROR! Please check cfg.ini!' . PHP_EOL);
+                    fwrite(STDOUT, 'CMD config ERROR! Please check "cfg.ini"!' . PHP_EOL);
                     fclose(STDOUT);
                 }
                 return '';
@@ -341,7 +341,7 @@ class cli extends router
         $process = proc_open($command, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
 
         //Process create failed
-        if (!is_resource($process)) return ['error' => 'Access denied! Please check your authority!'];
+        if (!is_resource($process)) return ['error' => 'Access denied! Check your "cfg.ini" and authority!'];
 
         //Write input data
         if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
