@@ -88,7 +88,7 @@ class crypt
     {
         $start = strlen('-----BEGIN ');
         $end = strpos($key, ' KEY-----', $start);
-        $type = false !== $end ? strtolower(substr($key, $start, $end)) : '';
+        $type = false !== $end ? strtolower(substr($key, $start, $end - $start)) : '';
         unset($key, $start, $end);
         return $type;
     }
