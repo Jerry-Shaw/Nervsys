@@ -41,9 +41,6 @@ define('NS_VER', '5.0.0 Beta');
 //Document Root Definition
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
 
-//OpenSSL config file location
-define('SSL_CNF', 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf');
-
 //Autoload function
 spl_autoload_register(
     static function (string $lib): void
