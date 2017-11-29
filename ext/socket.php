@@ -184,13 +184,8 @@ class socket
 
                 //Run command & Send result
                 exec(self::$system_info['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
-                unset($msg);
-
-                if (0 === $status && !empty($output)) {
-                    if (!is_string($output)) $output = json_encode($output);
-                    socket_write($client, $output . PHP_EOL);
-                }
-                unset($output, $status);
+                if (0 === $status && !empty($output)) socket_write($client, $output . PHP_EOL);
+                unset($msg, $output, $status);
             }
             unset($read, $write, $except, $client);
         }
