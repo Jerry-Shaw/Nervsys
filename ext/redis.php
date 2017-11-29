@@ -32,14 +32,14 @@ class redis
     /**
      * Default settings for Redis
      */
-    public static $host       = '127.0.0.1';
-    public static $port       = 6379;
-    public static $auth       = '';
-    public static $db         = 0;
-    public static $prefix     = '';
-    public static $timeout    = 10;
-    public static $persistent = true;
-    public static $session    = true;
+    public static $host    = '127.0.0.1';
+    public static $port    = 6379;
+    public static $auth    = '';
+    public static $db      = 0;
+    public static $prefix  = '';
+    public static $timeout = 10;
+    public static $persist = true;
+    public static $session = true;
 
     /**
      * @return \Redis
@@ -48,7 +48,7 @@ class redis
     {
         try {
             $redis = new \Redis();
-            $type = self::$persistent ? 'pconnect' : 'connect';
+            $type = self::$persist ? 'pconnect' : 'connect';
             if (!$redis->$type(self::$host, self::$port)) throw new \Exception('Redis: Host or Port ERROR!');
             if ('' !== self::$auth) $redis->auth((string)self::$auth);
             if ('' !== self::$prefix) $redis->setOption($redis::OPT_PREFIX, (string)self::$prefix . ':');

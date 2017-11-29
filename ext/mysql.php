@@ -32,13 +32,13 @@ class mysql
     /**
      * Default settings for MySQL
      */
-    public static $host       = '127.0.0.1';
-    public static $port       = 3306;
-    public static $user       = 'root';
-    public static $pwd        = '';
-    public static $db         = '';
-    public static $charset    = 'utf8mb4';
-    public static $persistent = true;
+    public static $host    = '127.0.0.1';
+    public static $port    = 3306;
+    public static $user    = 'root';
+    public static $pwd     = '';
+    public static $db      = '';
+    public static $charset = 'utf8mb4';
+    public static $persist = true;
 
     /**
      * @return \PDO
@@ -50,7 +50,7 @@ class mysql
             $dsn = 'mysql:host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db . ';charset=' . self::$charset;
             $options = [
                 \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . self::$charset,
-                \PDO::ATTR_PERSISTENT         => (bool)self::$persistent
+                \PDO::ATTR_PERSISTENT         => (bool)self::$persist
             ];
             $mysql = new \PDO($dsn, (string)self::$user, (string)self::$pwd, $options);
             $mysql->exec('SET NAMES ' . self::$charset);
