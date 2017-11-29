@@ -171,21 +171,23 @@ class socket
             //Process client message
             foreach ($read as $client) {
                 //Read message and remove disconnected clients
-                if (0 === (int)socket_recvfrom($client, $msg, self::buffer, 0, $ip, $port)) {
+                if (0 === (int)socket_recvfrom($client, $msg, self::buffer, 0, $from, $port)) {
                     $key = array_search($client, self::$client[$hash]);
                     if (false !== $key) unset(self::$client[$hash][$key], $key);
                     continue;
                 }
-                unset($ip, $port);
 
                 //Trim message
                 $msg = trim($msg);
                 if ('' === $msg) continue;
 
-                //Run command & Send result
+                //Run command
                 exec(self::$system_info['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
-                if (0 === $status && !empty($output)) socket_write($client, $output . PHP_EOL);
-                unset($msg, $output, $status);
+                if (0 !== $status || empty($output)) continue;
+
+                //Send result
+                socket_write($client, implode(PHP_EOL, $output) . PHP_EOL);
+                unset($msg, $from, $port, $output, $status);
             }
             unset($read, $write, $except, $client);
         }
@@ -193,7 +195,7 @@ class socket
     }
 
     /**
-     * Send group of message
+     * Send group of message via TCP
      *
      * @param array $data
      *
@@ -231,6 +233,108 @@ class socket
 
             $result[] = trim($return);
             unset($return);
+        }
+        socket_shutdown($socket);
+        socket_close($socket);
+
+        unset($data, $socket, $msg);
+        return $result;
+    }
+
+    /**
+     * Create UDP Server
+     *
+     * @return string
+     */
+    public static function udp_create(): string
+    {
+        //Create UDP Socket
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if (
+            false === $socket ||
+            !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+            !socket_bind($socket, self::$host, self::$port)
+        ) return '';
+
+        //Add to Server
+        $hash = hash('md5', uniqid(mt_rand(), true));
+        self::$server[$hash] = $socket;
+        unset($socket);
+        return $hash;
+    }
+
+    /**
+     * Start UDP Server
+     *
+     * @param string $hash
+     */
+    public static function udp_start(string $hash): void
+    {
+        if (!isset(self::$server[$hash])) return;
+
+        //Run TCP Server
+        $socket = self::$server[$hash];
+        while (true) {
+            if (!socket_set_block($socket)) return;
+
+            //Read message
+            if (0 === (int)socket_recvfrom($socket, $msg, self::buffer, 0, $from, $port)) continue;
+
+            //Trim message
+            $msg = trim($msg);
+            if ('' === $msg) continue;
+
+            //Run command
+            exec(self::$system_info['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
+            if (0 !== $status || empty($output)) continue;
+
+            $result = implode(PHP_EOL, $output) . PHP_EOL;
+            $length = strlen($result);
+
+            //Send result
+            if (!socket_set_nonblock($socket) || $length !== (int)socket_sendto($socket, $result, $length, 0, $from, self::$port)) return;
+            unset($msg, $from, $port, $output, $status, $result, $length);
+        }
+        socket_close($socket);
+    }
+
+    /**
+     * Send group of message via UDP
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public static function udp_sender(array $data): array
+    {
+        if (empty($data)) return [];
+
+        //Start TCP connection
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if (false === $socket || !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1)) return [];
+
+        //Send data
+        $result = [];
+        foreach ($data as $msg) {
+            if (!socket_set_nonblock($socket)) {
+                $result[] = false;
+                continue;
+            }
+
+            $msg = trim($msg);
+            if ('' === $msg) {
+                $result[] = false;
+                continue;
+            }
+
+            $length = strlen($msg);
+            if ($length !== (int)socket_sendto($socket, $msg, $length, 0, self::$host, self::$port)) {
+                $result[] = false;
+                continue;
+            }
+
+            unset($length);
+            $result[] = true;
         }
         socket_shutdown($socket);
         socket_close($socket);
