@@ -27,7 +27,7 @@
 
 namespace core\ctr\router;
 
-use \core\ctr\router as router, \core\ctr\router\cgi as cgi;
+use \core\ctr\router as router, \core\ctr\router\cgi as cgi, \core\ctr\os as os;
 
 class cli extends router
 {
@@ -257,21 +257,10 @@ class cli extends router
      */
     private static function auto_config(): void
     {
-        $os = PHP_OS;
-        try {
-            $platform = '\\core\\ctr\\os\\' . strtolower($os);
-            $exec_info = $platform::exec_info();
-            if (0 === $exec_info['pid']) return;
-            self::$config['PHP_CMD'] = &$exec_info['cmd'];
-            self::$config['PHP_EXEC'] = &$exec_info['path'];
-            unset($platform, $exec_info);
-        } catch (\Throwable $exception) {
-            if (DEBUG) {
-                fwrite(STDOUT, $os . ' NOT fully supported yet! ' . $exception->getMessage() . PHP_EOL);
-                fclose(STDOUT);
-            }
-        }
-        unset($os);
+        $env_info = os::get_env();
+        if (empty($env_info)) return;
+        self::$config = &$env_info;
+        unset($env_info);
     }
 
     /**

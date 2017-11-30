@@ -41,7 +41,7 @@ class router
     public static $result = [];
 
     //Data Structure
-    protected static $struct = [];
+    public static $struct = [];
 
     //Argument hash
     private static $argv_hash = '';

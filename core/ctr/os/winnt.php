@@ -27,38 +27,42 @@
 
 namespace core\ctr\os;
 
-use \core\lib\os as os;
+use \core\ctr\os as os;
 
-class winnt implements os
+class winnt extends os
 {
     /**
-     * Get Machine hash code
+     * Format system output data
      *
-     * @return string
+     * @param array $data
      */
-    public static function get_hash(): string
+    private static function format(array &$data): void
     {
-        $queries = [
-            'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
-            'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
-            'wmic bios get Manufacturer, Name, SerialNumber, Version /format:value',
-            'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
-            'wmic diskdrive get Model, Size /format:value',
-            'wmic memorychip get BankLabel, Capacity /format:value'
-        ];
+        if (empty($data)) return;
 
-        foreach ($queries as $query) exec($query, $output);
+        $key = 0;
+        $list = [];
 
-        unset($queries, $query);
-        return hash('sha256', implode('|', array_filter($output)));
+        foreach ($data as $line) {
+            $line = trim($line);
+            if ('' === $line) {
+                ++$key;
+                continue;
+            }
+
+            if (false === strpos($line, '=')) continue;
+            list($name, $value) = explode('=', $line, 2);
+            if (!isset($list[$key][$name]) && '' !== $value) $list[$key][$name] = $value;
+        }
+
+        $data = array_values($list);
+        unset($key, $list, $line, $name, $value);
     }
 
     /**
-     * Get PHP executable info
-     *
-     * @return array
+     * Get PHP environment information
      */
-    public static function exec_info(): array
+    public static function env_info(): void
     {
         exec('wmic process where ProcessId="' . getmypid() . '" get ProcessId, CommandLine, ExecutablePath /format:value', $output, $status);
 
@@ -72,37 +76,51 @@ class winnt implements os
         }
 
         unset($status);
+        self::format($output);
+        if (empty($output)) return;
 
         //Process output data
-        if (!empty($output)) {
-
-            $key = 0;
-            $process = [];
-
-            foreach ($output as $line) {
-                if ('' === $line) {
-                    ++$key;
-                    continue;
-                }
-
-                if (false === strpos($line, '=')) continue;
-
-                list($name, $value) = explode('=', $line);
-                $process[$key][$name] = $value;
-            }
-
-            unset($output, $key, $line, $name, $value);
-
-            if (!empty($process)) {
-                foreach ($process as $info) {
-                    if (false !== strpos($info['CommandLine'], 'api.php')) {
-                        $result = ['pid' => &$info['ProcessId'], 'cmd' => &$info['CommandLine'], 'path' => '"' . $info['ExecutablePath'] . '"'];
-                        unset($process, $info);
-                        return $result;
-                    }
-                }
+        foreach ($output as $info) {
+            if (false !== strpos($info['CommandLine'], 'api.php')) {
+                parent::$env['PHP_PID'] = &$info['ProcessId'];
+                parent::$env['PHP_CMD'] = &$info['CommandLine'];
+                parent::$env['PHP_EXE'] = '"' . $info['ExecutablePath'] . '"';
             }
         }
-        return ['pid' => 0, 'cmd' => '', 'path' => ''];
+
+        unset($output, $info);
+    }
+
+    /**
+     * Get System information
+     */
+    public static function sys_info(): void
+    {
+        $queries = [
+            'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
+            'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
+            'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
+            'wmic diskdrive get Model, Size /format:value',
+            'wmic memorychip get BankLabel, Capacity /format:value'
+        ];
+
+        //Run command
+        foreach ($queries as $query) {
+            exec($query, $output, $status);
+
+            //No authority
+            if (0 !== $status) {
+                if (DEBUG) {
+                    fwrite(STDOUT, 'Access denied! Please check your authority!' . PHP_EOL);
+                    fclose(STDOUT);
+                }
+                continue;
+            }
+        }
+
+        self::format($output);
+        parent::$sys = &$output;
+
+        unset($queries, $query, $output, $status);
     }
 }

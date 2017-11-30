@@ -27,26 +27,22 @@
 
 namespace core\ctr\os;
 
-use \core\lib\os as os;
+use \core\ctr\os as os;
 
-class linux implements os
+class linux extends os
 {
     /**
-     * Get Machine hash code
-     *
-     * @return string
+     * Get PHP environment information
      */
-    public static function get_hash(): string
+    public static function env_info(): void
     {
 
     }
 
     /**
-     * Get PHP executable info
-     *
-     * @return array
+     * Get System information
      */
-    public static function exec_info(): array
+    public static function sys_info(): void
     {
 
     }

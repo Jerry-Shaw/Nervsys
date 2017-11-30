@@ -27,13 +27,18 @@
 
 namespace ext;
 
+use core\ctr\os;
+
 class socket
 {
     //Property (server / sender)
     public static $type = 'server';
 
-    //Protocol (web / tcp / udp / bcst)
+    //Protocol (web / tcp / udp / http)
     public static $socket = 'tcp';
+
+    //Option name
+    public static $option = SO_REUSEADDR;
 
     //Host
     public static $host = '0.0.0.0';
@@ -51,7 +56,7 @@ class socket
     public static $client = [];
 
     //System information
-    public static $system_info = [];
+    public static $system = [];
 
     /**
      * Validate Socket arguments
@@ -77,7 +82,7 @@ class socket
         }
 
         //Socket Protocol
-        if (!in_array(self::$socket, ['web', 'tcp', 'udp', 'bcst'], true)) {
+        if (!in_array(self::$socket, ['web', 'tcp', 'udp', 'http'], true)) {
             if (DEBUG) {
                 fwrite(STDOUT, 'Socket Protocol ERROR!' . PHP_EOL);
                 fclose(STDOUT);
@@ -91,23 +96,11 @@ class socket
      */
     public static function sys_info(): void
     {
-        $os = PHP_OS;
-        try {
-            $platform = '\\core\\ctr\\os\\' . strtolower($os);
-            $exec_info = $platform::exec_info();
-            if (0 === $exec_info['pid']) return;
-            self::$system_info['PHP_PID'] = &$exec_info['pid'];
-            self::$system_info['PHP_CMD'] = &$exec_info['cmd'];
-            self::$system_info['PHP_EXEC'] = &$exec_info['path'];
-            self::$system_info['SYS_HASH'] = $platform::get_hash();
-            unset($platform, $exec_info);
-        } catch (\Throwable $exception) {
-            if (DEBUG) {
-                fwrite(STDOUT, $os . ' NOT fully supported yet! ' . $exception->getMessage() . PHP_EOL);
-                fclose(STDOUT);
-            }
-        }
-        unset($os);
+        $env_info = os::get_env();
+        if (empty($env_info)) return;
+        self::$system = &$env_info;
+        self::$system['SYS_HASH'] = os::get_hash();
+        unset($env_info);
     }
 
     /**
@@ -125,6 +118,28 @@ class socket
             !socket_bind($socket, self::$host, self::$port) ||
             !socket_set_nonblock($socket) ||
             !socket_listen($socket)
+        ) return '';
+
+        //Add to Server
+        $hash = hash('md5', uniqid(mt_rand(), true));
+        self::$server[$hash] = $socket;
+        unset($socket);
+        return $hash;
+    }
+
+    /**
+     * Create UDP Server
+     *
+     * @return string
+     */
+    public static function udp_create(): string
+    {
+        //Create UDP Socket
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if (
+            false === $socket ||
+            !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+            !socket_bind($socket, self::$host, self::$port)
         ) return '';
 
         //Add to Server
@@ -182,7 +197,7 @@ class socket
                 if ('' === $msg) continue;
 
                 //Run command
-                exec(self::$system_info['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
+                exec(self::$system['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
                 if (0 !== $status || empty($output)) continue;
 
                 //Send result
@@ -242,28 +257,6 @@ class socket
     }
 
     /**
-     * Create UDP Server
-     *
-     * @return string
-     */
-    public static function udp_create(): string
-    {
-        //Create UDP Socket
-        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if (
-            false === $socket ||
-            !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
-            !socket_bind($socket, self::$host, self::$port)
-        ) return '';
-
-        //Add to Server
-        $hash = hash('md5', uniqid(mt_rand(), true));
-        self::$server[$hash] = $socket;
-        unset($socket);
-        return $hash;
-    }
-
-    /**
      * Start UDP Server
      *
      * @param string $hash
@@ -285,7 +278,7 @@ class socket
             if ('' === $msg) continue;
 
             //Run command
-            exec(self::$system_info['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
+            exec(self::$system['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
             if (0 !== $status || empty($output)) continue;
 
             $result = implode(PHP_EOL, $output) . PHP_EOL;
@@ -302,16 +295,17 @@ class socket
      * Send group of message via UDP
      *
      * @param array $data
+     * @param int   $type (SO_REUSEADDR / SO_BROADCAST)
      *
      * @return array
      */
-    public static function udp_sender(array $data): array
+    public static function udp_sender(array $data, int $type): array
     {
         if (empty($data)) return [];
 
         //Start TCP connection
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if (false === $socket || !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1)) return [];
+        if (false === $socket || !socket_set_option($socket, SOL_SOCKET, $type, 1)) return [];
 
         //Send data
         $result = [];
@@ -339,7 +333,39 @@ class socket
         socket_shutdown($socket);
         socket_close($socket);
 
-        unset($data, $socket, $msg);
+        unset($data, $type, $socket, $msg);
         return $result;
     }
+
+
+    //======================================
+
+
+    public function genKey()
+    {
+        // 参考 RFC 文档（Internet 标准 WebSocket 协议部分）
+        $guid = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+        $client_key = $this->header['sec_websocket_key'];
+        $client_key = trim($client_key);
+        $client_key .= $guid;
+        $client_key = sha1($client_key, true);
+        $client_key = base64_encode($client_key);
+
+        return $client_key;
+    }
+
+    //Port Settings
+    public static $tcp_port = 62000;
+    public static $udp_port = 64000;
+
+    //Local identity
+    private static $identity = '';
+
+    //Socket buffer
+    const buffer = 65535;
+
+    //Identity name
+    const id = 'id';
+
+
 }
