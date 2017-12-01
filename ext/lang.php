@@ -32,7 +32,7 @@ class lang
     //Language
     public static $lang = 'en-US';
 
-    //Language file path
+    //Language file path (inside path should be "$lang/LC_MESSAGES/lang_file.mo")
     public static $path = '/language/';
 
     /**
