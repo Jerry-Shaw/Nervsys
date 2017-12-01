@@ -83,6 +83,6 @@ class os
     public static function get_hash(): string
     {
         self::run();
-        return hash('sha256', implode('|', json_encode(self::$sys)));
+        return hash('sha256', json_encode(self::$sys));
     }
 }
