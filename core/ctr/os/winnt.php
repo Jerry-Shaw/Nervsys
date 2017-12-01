@@ -72,7 +72,6 @@ class winnt extends os
                 fwrite(STDOUT, 'Access denied! Please check your authority!' . PHP_EOL);
                 fclose(STDOUT);
             }
-            exit;
         }
 
         unset($status);
@@ -119,8 +118,7 @@ class winnt extends os
         }
 
         self::format($output);
-        parent::$sys = &$output;
-
-        unset($queries, $query, $output, $status);
+        foreach ($output as $key => $value) if (1 < count($value)) parent::$sys[] = $value;
+        unset($queries, $query, $output, $status, $key, $value);
     }
 }

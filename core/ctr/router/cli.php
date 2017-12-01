@@ -248,7 +248,7 @@ class cli extends router
         if (false === $path) return;
         $config = parse_ini_file($path, true);
         if (!is_array($config) || empty($config)) return;
-        self::$config = &$config;
+        self::$config = array_merge(self::$config, $config);
         unset($path, $config);
     }
 
@@ -259,7 +259,7 @@ class cli extends router
     {
         $env_info = os::get_env();
         if (empty($env_info)) return;
-        self::$config = &$env_info;
+        self::$config = array_merge(self::$config, $env_info);
         unset($env_info);
     }
 

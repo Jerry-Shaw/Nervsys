@@ -59,8 +59,8 @@ class os
             if (DEBUG) {
                 fwrite(STDOUT, self::$os . ' NOT fully supported yet! ' . $exception->getMessage() . PHP_EOL);
                 fclose(STDOUT);
-                exit;
             }
+            exit;
         }
     }
 

@@ -98,7 +98,7 @@ class socket
     {
         $env_info = os::get_env();
         if (empty($env_info)) return;
-        self::$system = &$env_info;
+        self::$system = array_merge(self::$system, $env_info);
         self::$system['SYS_HASH'] = os::get_hash();
         unset($env_info);
     }
