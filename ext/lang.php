@@ -32,7 +32,7 @@ class lang
     //Language
     public static $lang = 'en-US';
 
-    //Language file path (inside path should be "$lang/LC_MESSAGES/lang_file.mo")
+    //Language directory (language file should be located in "/$lang/LC_MESSAGES/lang_file.mo")
     public static $path = '/language/';
 
     /**
@@ -42,26 +42,15 @@ class lang
      */
     public static function load(string $file): void
     {
-        //Language detection
-        if (isset($_REQUEST['lang'])) $lang = &$_REQUEST['lang'];
-        elseif (isset($_COOKIE['lang'])) $lang = &$_COOKIE['lang'];
-        elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
-            setcookie('lang', $lang, $_SERVER['REQUEST_TIME'] + 2592000, '/');
-        } else $lang = 'en-US';
-        if (!in_array($lang, LANGUAGE_LIST, true)) $lang = 'en-US';
-        //Change default language
-        if ('en-US' !== $lang) self::$lang = &$lang;
-        //Load language file
-        putenv('LANG=' . $lang);
-        setlocale(LC_ALL, $lang);
+        putenv('LANG=' . self::$lang);
+        setlocale(LC_ALL, self::$lang);
         bindtextdomain($file, ROOT . self::$path);
         textdomain($file);
-        unset($file, $lang);
+        unset($file);
     }
 
     /**
-     * Get text by language from an array
+     * Get text from an array
      *
      * @param array $keys
      *
@@ -70,7 +59,6 @@ class lang
     public static function get_text(array $keys): array
     {
         $data = [];
-        //Go over every language key to get the text
         foreach ($keys as $key) $data[$key] = gettext($key);
         unset($keys, $key);
         return $data;

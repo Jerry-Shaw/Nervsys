@@ -69,8 +69,8 @@ class winnt extends os
         //No authority
         if (0 !== $status) {
             if (DEBUG) {
-                fwrite(STDOUT, 'Access denied! Please check your authority!' . PHP_EOL);
-                fclose(STDOUT);
+                fwrite(STDERR, 'Access denied! Please check your authority!' . PHP_EOL);
+                fclose(STDERR);
             }
         }
 
@@ -110,8 +110,8 @@ class winnt extends os
             //No authority
             if (0 !== $status) {
                 if (DEBUG) {
-                    fwrite(STDOUT, 'Access denied! Please check your authority!' . PHP_EOL);
-                    fclose(STDOUT);
+                    fwrite(STDERR, 'Access denied! Please check your authority!' . PHP_EOL);
+                    fclose(STDERR);
                 }
                 continue;
             }

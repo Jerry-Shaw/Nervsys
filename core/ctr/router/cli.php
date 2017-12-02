@@ -274,8 +274,8 @@ class cli extends router
             if (isset(self::$config[parent::$cmd]) && is_string(self::$config[parent::$cmd])) return self::$config[parent::$cmd];
             else {
                 if (DEBUG) {
-                    fwrite(STDOUT, 'CMD config ERROR! Please check "cfg.ini"!' . PHP_EOL);
-                    fclose(STDOUT);
+                    fwrite(STDERR, 'CMD config ERROR! Please check "cfg.ini"!' . PHP_EOL);
+                    fclose(STDERR);
                 }
                 return '';
             }
@@ -287,8 +287,8 @@ class cli extends router
                 else {
                     unset($cmd, $keys, $key);
                     if (DEBUG) {
-                        fwrite(STDOUT, 'CMD not found! Please add to "cfg.ini"!' . PHP_EOL);
-                        fclose(STDOUT);
+                        fwrite(STDERR, 'CMD not found! Please add to "cfg.ini"!' . PHP_EOL);
+                        fclose(STDERR);
                     }
                     return '';
                 }
@@ -297,8 +297,8 @@ class cli extends router
             else {
                 unset($cmd, $keys, $key);
                 if (DEBUG) {
-                    fwrite(STDOUT, 'CMD config ERROR! Please check "cfg.ini"!' . PHP_EOL);
-                    fclose(STDOUT);
+                    fwrite(STDERR, 'CMD config ERROR! Please check "cfg.ini"!' . PHP_EOL);
+                    fclose(STDERR);
                 }
                 return '';
             }

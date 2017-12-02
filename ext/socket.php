@@ -66,8 +66,8 @@ class socket
         //Socket Type
         if (!in_array(self::$type, ['server', 'sender'], true)) {
             if (DEBUG) {
-                fwrite(STDOUT, 'Socket Type ERROR!' . PHP_EOL);
-                fclose(STDOUT);
+                fwrite(STDERR, 'Socket Type ERROR!' . PHP_EOL);
+                fclose(STDERR);
             }
             exit;
         }
@@ -75,8 +75,8 @@ class socket
         //Socket Port
         if (1 > self::$port || 65535 < self::$port) {
             if (DEBUG) {
-                fwrite(STDOUT, 'Socket Port ERROR!' . PHP_EOL);
-                fclose(STDOUT);
+                fwrite(STDERR, 'Socket Port ERROR!' . PHP_EOL);
+                fclose(STDERR);
             }
             exit;
         }
@@ -84,8 +84,8 @@ class socket
         //Socket Protocol
         if (!in_array(self::$socket, ['web', 'tcp', 'udp', 'http'], true)) {
             if (DEBUG) {
-                fwrite(STDOUT, 'Socket Protocol ERROR!' . PHP_EOL);
-                fclose(STDOUT);
+                fwrite(STDERR, 'Socket Protocol ERROR!' . PHP_EOL);
+                fclose(STDERR);
             }
             exit;
         }

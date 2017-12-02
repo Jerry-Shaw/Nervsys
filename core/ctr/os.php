@@ -57,8 +57,8 @@ class os
             if (empty(self::$sys)) call_user_func(self::$platform . '::sys_info');
         } catch (\Throwable $exception) {
             if (DEBUG) {
-                fwrite(STDOUT, self::$os . ' NOT fully supported yet! ' . $exception->getMessage() . PHP_EOL);
-                fclose(STDOUT);
+                fwrite(STDERR, self::$os . ' NOT fully supported yet! ' . $exception->getMessage() . PHP_EOL);
+                fclose(STDERR);
             }
             exit;
         }
