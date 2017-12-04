@@ -29,16 +29,16 @@ namespace ext;
 
 use core\ctr\os;
 
-class socket
+class sock
 {
     //Property (server / sender)
     public static $type = 'server';
 
     //Protocol (web / tcp / udp / http)
-    public static $socket = 'tcp';
+    public static $sock = 'tcp';
 
     //Option name
-    public static $option = SO_REUSEADDR;
+    public static $opt = SO_REUSEADDR;
 
     //Host
     public static $host = '0.0.0.0';
@@ -59,39 +59,6 @@ class socket
     public static $system = [];
 
     /**
-     * Validate Socket arguments
-     */
-    public static function validate(): void
-    {
-        //Socket Type
-        if (!in_array(self::$type, ['server', 'sender'], true)) {
-            if (DEBUG) {
-                fwrite(STDERR, 'Socket Type ERROR!' . PHP_EOL);
-                fclose(STDERR);
-            }
-            exit;
-        }
-
-        //Socket Port
-        if (1 > self::$port || 65535 < self::$port) {
-            if (DEBUG) {
-                fwrite(STDERR, 'Socket Port ERROR!' . PHP_EOL);
-                fclose(STDERR);
-            }
-            exit;
-        }
-
-        //Socket Protocol
-        if (!in_array(self::$socket, ['web', 'tcp', 'udp', 'http'], true)) {
-            if (DEBUG) {
-                fwrite(STDERR, 'Socket Protocol ERROR!' . PHP_EOL);
-                fclose(STDERR);
-            }
-            exit;
-        }
-    }
-
-    /**
      * Get system information
      */
     public static function sys_info(): void
@@ -104,50 +71,57 @@ class socket
     }
 
     /**
-     * Create TCP Server
+     * Create Server
      *
      * @return string
      */
-    public static function tcp_create(): string
+    public static function create(): string
     {
-        //Create TCP Socket
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (
-            false === $socket ||
-            !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
-            !socket_bind($socket, self::$host, self::$port) ||
-            !socket_set_nonblock($socket) ||
-            !socket_listen($socket)
-        ) return '';
+        if ('server' !== self::$type) return '';
+        if (1 > self::$port || 65535 < self::$port) return '';
 
-        //Add to Server
+        switch (self::$sock) {
+            case 'tcp':
+            case 'web':
+            case 'http':
+                $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+                if (false === $socket || !socket_set_nonblock($socket) || !socket_listen($socket)) return '';
+                break;
+            case 'udp':
+                $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+                if (false === $socket || !socket_set_block($socket)) return '';
+                break;
+            default:
+                debug('Socket Protocol ERROR');
+                return '';
+                break;
+        }
+
+        if (!socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) || !socket_bind($socket, self::$host, self::$port)) return '';
+
         $hash = hash('md5', uniqid(mt_rand(), true));
-        self::$server[$hash] = $socket;
+        self::$server[$hash] = &$socket;
         unset($socket);
         return $hash;
     }
 
-    /**
-     * Create UDP Server
-     *
-     * @return string
-     */
-    public static function udp_create(): string
-    {
-        //Create UDP Socket
-        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if (
-            false === $socket ||
-            !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
-            !socket_bind($socket, self::$host, self::$port)
-        ) return '';
 
-        //Add to Server
-        $hash = hash('md5', uniqid(mt_rand(), true));
-        self::$server[$hash] = $socket;
-        unset($socket);
-        return $hash;
+    public static function listen()
+    {
+
     }
+
+
+    public static function read()
+    {
+
+    }
+
+    public static function send()
+    {
+
+    }
+
 
     /**
      * Start TCP Server

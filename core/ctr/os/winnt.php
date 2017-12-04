@@ -68,10 +68,8 @@ class winnt extends os
 
         //No authority
         if (0 !== $status) {
-            if (DEBUG) {
-                fwrite(STDERR, 'Access denied! Please check your authority!' . PHP_EOL);
-                fclose(STDERR);
-            }
+            debug('Access denied! Please check your authority!');
+            exit;
         }
 
         unset($status);
@@ -109,15 +107,13 @@ class winnt extends os
 
             //No authority
             if (0 !== $status) {
-                if (DEBUG) {
-                    fwrite(STDERR, 'Access denied! Please check your authority!' . PHP_EOL);
-                    fclose(STDERR);
-                }
-                continue;
+                debug('Access denied! Please check your authority!');
+                exit;
             }
         }
 
         self::format($output);
+        if (empty($output)) return;
         foreach ($output as $key => $value) if (1 < count($value)) parent::$sys[] = $value;
         unset($queries, $query, $output, $status, $key, $value);
     }

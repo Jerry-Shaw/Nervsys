@@ -51,3 +51,12 @@ spl_autoload_register(
         unset($lib, $file);
     }
 );
+
+function debug($msg): void
+{
+    if (DEBUG) {
+        fwrite(STDERR, $msg . PHP_EOL);
+        fclose(STDERR);
+    }
+    unset($msg);
+}
