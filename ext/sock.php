@@ -204,8 +204,9 @@ class sock
 
         foreach ($clients as $key => $client) {
             //Read message and remove disconnected clients
-            if (0 === (int)socket_recvfrom($client, $msg, self::buffer, 0, $from, $port)) {
+            if (0 === (int)@socket_recvfrom($client, $msg, self::buffer, 0, $from, $port)) {
                 if (isset(self::$client[$hash][$key])) unset(self::$client[$hash][$key], $clients[$key]);
+                socket_close($client);
                 continue;
             }
 
