@@ -28,17 +28,27 @@
 namespace ext;
 
 use core\ctr\os;
+use core\ctr\router\cli;
 
 class sock
 {
-    //Property (server / sender)
-    public static $type = 'server';
-
-    //Protocol (web / tcp / udp / http)
-    public static $sock = 'tcp';
-
-    //Option name
-    public static $opt = SO_REUSEADDR;
+    /**
+     * Protocol and type
+     * Available as follows:
+     *
+     * tcp:server
+     * tcp:sender
+     *
+     * udp:server
+     * udp:sender
+     * udp:broadcast
+     *
+     * web:server
+     * http:server
+     *
+     * @var string
+     */
+    public static $sock = 'tcp:server';
 
     //Host
     public static $host = '0.0.0.0';
@@ -71,51 +81,142 @@ class sock
     }
 
     /**
-     * Create Server
+     * Create Socket
      *
      * @return string
      */
     public static function create(): string
     {
-        if ('server' !== self::$type) return '';
         if (1 > self::$port || 65535 < self::$port) return '';
 
+        //Create socket resource
         switch (self::$sock) {
-            case 'tcp':
-            case 'web':
-            case 'http':
+            case 'tcp:server':
+            case 'web:server':
+            case 'http:server':
                 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-                if (false === $socket || !socket_set_nonblock($socket) || !socket_listen($socket)) return '';
+                if (
+                    false === $socket ||
+                    !socket_bind($socket, self::$host, self::$port) ||
+                    !socket_listen($socket) ||
+                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+                    !socket_set_nonblock($socket)
+                ) return '';
                 break;
-            case 'udp':
+            case 'tcp:sender':
+                $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+                if (
+                    false === $socket ||
+                    !socket_connect($socket, self::$host, self::$port) ||
+                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1)
+                ) return '';
+                break;
+            case 'udp:server':
                 $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-                if (false === $socket || !socket_set_block($socket)) return '';
+                if (
+                    false === $socket ||
+                    !socket_bind($socket, self::$host, self::$port) ||
+                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+                    !socket_set_block($socket)
+                ) return '';
+                break;
+            case 'udp:sender':
+                $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+                if (
+                    false === $socket ||
+                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+                    !socket_set_nonblock($socket)
+                ) return '';
+                break;
+            case 'udp:broadcast':
+                $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+                if (
+                    false === $socket ||
+                    !socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) ||
+                    !socket_set_nonblock($socket)
+                ) return '';
                 break;
             default:
-                debug('Socket Protocol ERROR');
+                stderr('Socket Protocol ERROR!');
                 return '';
                 break;
         }
 
-        if (!socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) || !socket_bind($socket, self::$host, self::$port)) return '';
-
+        //Generator unique hash for socket resource
         $hash = hash('md5', uniqid(mt_rand(), true));
         self::$server[$hash] = &$socket;
         unset($socket);
         return $hash;
     }
 
-
-    public static function listen()
+    /**
+     * Listen to clients
+     *
+     * @param string $hash
+     *
+     * @return array
+     */
+    public static function listen(string $hash): array
     {
+        //Only for 'tcp:server' & 'web:server'
+        if (!in_array(self::$sock, ['tcp:server', 'web:server'], true)) return [];
 
+        //Copy socket server
+        $socket = self::$server[$hash];
+
+        //Copy client list
+        $read = isset(self::$client[$hash]) && is_array(self::$client[$hash]) ? self::$client[$hash] : [];
+        $read[hash('md5', uniqid(mt_rand(), true))] = $socket;
+        $write = $except = [];
+
+        //Select connections
+        $select = socket_select($read, $write, $except, 0);
+        if (false === $select || 0 === $select) return [];
+        unset($select);
+
+        //New client
+        if (in_array($socket, $read, true)) {
+            //Accept client
+            $accept = socket_accept($socket);
+            if (false !== $accept) self::$client[$hash][hash('md5', uniqid(mt_rand(), true))] = $accept;
+            unset($accept);
+
+            //Remove from read list
+            $key = array_search($socket, $read);
+            if (false !== $key) unset($read[$key], $key);
+        }
+
+        unset($hash, $socket, $write, $except);
+        return $read;
     }
 
-
-    public static function read()
+    /**
+     * Read message
+     *
+     * @param string $hash
+     * @param array  $clients
+     *
+     * @return array
+     */
+    public static function read(string $hash, array $clients): array
     {
+        $message = [];
 
+        foreach ($clients as $key => $client) {
+            //Read message and remove disconnected clients
+            if (0 === (int)socket_recvfrom($client, $msg, self::buffer, 0, $from, $port)) {
+                if (isset(self::$client[$hash][$key])) unset(self::$client[$hash][$key], $clients[$key]);
+                continue;
+            }
+
+            //Gather message
+            $message[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
+        }
+
+        unset($hash, $clients, $key, $client, $msg, $from, $port);
+        return $message;
     }
+
 
     public static function send()
     {

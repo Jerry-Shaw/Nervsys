@@ -42,17 +42,17 @@ define('NS_VER', '5.0.0 Beta');
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
 
 //Autoload function
-spl_autoload_register(
-    static function (string $lib): void
-    {
-        if (false === strpos($lib, '\\')) return;
-        $file = realpath(ROOT . '/' . strtr($lib, '\\', '/') . '.php');
-        if (false !== $file) require $file;
-        unset($lib, $file);
-    }
-);
+spl_autoload_register('load');
 
-function debug($msg): void
+function load(string $lib): void
+{
+    if (false === strpos($lib, '\\')) return;
+    $file = realpath(ROOT . '/' . strtr($lib, '\\', '/') . '.php');
+    if (false !== $file) require $file;
+    unset($lib, $file);
+}
+
+function stderr(string $msg): void
 {
     if (DEBUG) {
         fwrite(STDERR, $msg . PHP_EOL);
