@@ -68,6 +68,9 @@ class sock
     //System information
     public static $system = [];
 
+    //Socket hash
+    private static $hash = '';
+
     /**
      * Get system information
      */
@@ -83,12 +86,12 @@ class sock
     /**
      * Create Socket
      *
-     * @return string
+     * @return bool
      */
-    public static function create(): string
+    public static function create(): bool
     {
         //Check Port
-        if (1 > self::$port || 65535 < self::$port) return '';
+        if (1 > self::$port || 65535 < self::$port) return false;
 
         //Create socket resource
         switch (self::$sock) {
@@ -139,24 +142,23 @@ class sock
                 break;
             default:
                 stderr('Socket Protocol ERROR!');
-                return '';
+                return false;
                 break;
         }
 
         //Generator unique hash for socket resource
-        $hash = hash('md5', uniqid(mt_rand(), true));
-        self::$server[$hash] = &$socket;
+        self::$hash = hash('md5', uniqid(mt_rand(), true));
+        self::$server[self::$hash] = &$socket;
         unset($socket);
-        return $hash;
+        return true;
     }
 
     /**
      * Listen to connection
      *
-     * @param string $hash
-     * @param array  $read
+     * @param array $read
      */
-    public static function listen(string $hash, array &$read): void
+    public static function listen(array &$read): void
     {
         //Only for server
         if (!in_array(self::$sock, ['tcp:server', 'udp:server', 'web:server', 'http:server'], true)) {
@@ -165,30 +167,29 @@ class sock
         }
 
         $write = $except = [];
-        $read[$hash] = self::$server[$hash];
+        $read[self::$hash] = self::$server[self::$hash];
 
         //Watch clients
         socket_select($read, $write, $except, null);
-        unset($hash, $write, $except);
+        unset($write, $except);
     }
 
     /**
      * Accept new client (for tcp / web)
      *
-     * @param string $hash
-     * @param array  $read
-     * @param array  $clients
+     * @param array $read
+     * @param array $clients
      */
-    public static function accept(string $hash, array &$read, array &$clients): void
+    public static function accept(array &$read, array &$clients): void
     {
-        if (!isset($read[$hash])) return;
+        if (!isset($read[self::$hash])) return;
 
-        $accept = socket_accept($read[$hash]);
+        $accept = socket_accept($read[self::$hash]);
         if (false === $accept) return;
-        unset($read[$hash]);
+        unset($read[self::$hash]);
 
         $clients[hash('md5', uniqid(mt_rand(), true))] = &$accept;
-        unset($hash, $accept);
+        unset($accept);
     }
 
     /**
