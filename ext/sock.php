@@ -87,6 +87,7 @@ class sock
      */
     public static function create(): string
     {
+        //Check Port
         if (1 > self::$port || 65535 < self::$port) return '';
 
         //Create socket resource
@@ -150,71 +151,72 @@ class sock
     }
 
     /**
-     * Listen to clients
+     * Listen to connection
      *
      * @param string $hash
-     *
-     * @return array
+     * @param array  $read
      */
-    public static function listen(string $hash): array
+    public static function listen(string $hash, array &$read): void
     {
-        //Only for 'tcp:server' & 'web:server'
-        if (!in_array(self::$sock, ['tcp:server', 'web:server'], true)) return [];
-
-        //Copy socket server
-        $socket = self::$server[$hash];
-
-        //Copy client list
-        $read = isset(self::$client[$hash]) && is_array(self::$client[$hash]) ? self::$client[$hash] : [];
-        $read[hash('md5', uniqid(mt_rand(), true))] = $socket;
-        $write = $except = [];
-
-        //Select connections
-        $select = socket_select($read, $write, $except, 0);
-        if (false === $select || 0 === $select) return [];
-        unset($select);
-
-        //New client
-        if (in_array($socket, $read, true)) {
-            //Accept client
-            $accept = socket_accept($socket);
-            if (false !== $accept) self::$client[$hash][hash('md5', uniqid(mt_rand(), true))] = $accept;
-            unset($accept);
-
-            //Remove from read list
-            $key = array_search($socket, $read);
-            if (false !== $key) unset($read[$key], $key);
+        //Only for server
+        if (!in_array(self::$sock, ['tcp:server', 'udp:server', 'web:server', 'http:server'], true)) {
+            stderr('Socket Protocol ERROR!');
+            return;
         }
 
-        unset($hash, $socket, $write, $except);
-        return $read;
+        $write = $except = [];
+        $read[$hash] = self::$server[$hash];
+
+        //Watch clients
+        socket_select($read, $write, $except, null);
+        unset($hash, $write, $except);
     }
 
     /**
-     * Read message
+     * Accept new client (for tcp / web)
      *
      * @param string $hash
+     * @param array  $read
      * @param array  $clients
+     */
+    public static function accept(string $hash, array &$read, array &$clients): void
+    {
+        if (!isset($read[$hash])) return;
+
+        $accept = socket_accept($read[$hash]);
+        if (false === $accept) return;
+        unset($read[$hash]);
+
+        $clients[hash('md5', uniqid(mt_rand(), true))] = &$accept;
+        unset($hash, $accept);
+    }
+
+    /**
+     * Read message & maintain clients
+     *
+     * @param array $read
+     * @param array $clients
      *
      * @return array
      */
-    public static function read(string $hash, array $clients): array
+    public static function read(array &$read, array &$clients): array
     {
         $message = [];
 
-        foreach ($clients as $key => $client) {
-            //Read message and remove disconnected clients
-            if (0 === (int)@socket_recvfrom($client, $msg, self::buffer, 0, $from, $port)) {
-                if (isset(self::$client[$hash][$key])) unset(self::$client[$hash][$key], $clients[$key]);
-                socket_close($client);
+        foreach ($read as $key => $sock) {
+            //Read and remove disconnected clients
+            if (0 === (int)@socket_recvfrom($sock, $msg, self::$buffer, 0, $from, $port)) {
+                unset($read[$key], $clients[$key]);
+                socket_close($sock);
                 continue;
             }
 
+            unset($read[$key]);
             //Gather message
             $message[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
         }
 
-        unset($hash, $clients, $key, $client, $msg, $from, $port);
+        unset($key, $sock, $msg, $from, $port);
         return $message;
     }
 
