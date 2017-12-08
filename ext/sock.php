@@ -27,15 +27,13 @@
 
 namespace ext;
 
-use core\ctr\os;
-use core\ctr\router\cli;
-
 class sock
 {
     /**
      * Protocol and type
      * Available as follows:
      *
+     * web:server
      * tcp:server
      * tcp:sender
      *
@@ -43,15 +41,12 @@ class sock
      * udp:sender
      * udp:broadcast
      *
-     * web:server
-     * http:server
-     *
      * @var string
      */
-    public static $sock = 'tcp:server';
+    public static $type = 'tcp:server';
 
     //Host
-    public static $host = '0.0.0.0';
+    public static $host = '255.255.255.255';
 
     //Port
     public static $port = 65535;
@@ -59,29 +54,14 @@ class sock
     //Buffer
     public static $buffer = 65535;
 
-    //Server group
-    public static $server = [];
+    //Domain
+    public static $domain = AF_INET;
 
-    //Client group
-    public static $client = [];
+    //Socket id
+    private static $socket = '';
 
-    //System information
-    public static $system = [];
-
-    //Socket hash
-    private static $hash = '';
-
-    /**
-     * Get system information
-     */
-    public static function sys_info(): void
-    {
-        $env_info = os::get_env();
-        if (empty($env_info)) return;
-        self::$system = array_merge(self::$system, $env_info);
-        self::$system['SYS_HASH'] = os::get_hash();
-        unset($env_info);
-    }
+    //Server pool
+    private static $server = [];
 
     /**
      * Create Socket
@@ -91,64 +71,66 @@ class sock
     public static function create(): bool
     {
         //Check Port
-        if (1 > self::$port || 65535 < self::$port) return false;
+        if (1 > self::$port || 65535 < self::$port) {
+            stderr('Socket Port ERROR!');
+            return false;
+        }
 
         //Create socket resource
-        switch (self::$sock) {
-            case 'tcp:server':
+        $socket = false === strpos(self::$type, 'udp:')
+            ? socket_create(self::$domain, SOCK_STREAM, SOL_TCP)
+            : socket_create(self::$domain, SOCK_DGRAM, SOL_UDP);
+
+        if (false === $socket) {
+            stderr('Socket Creation Failed!');
+            return false;
+        }
+
+        //Set socket options
+        switch (self::$type) {
             case 'web:server':
-            case 'http:server':
-                $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            case 'tcp:server':
                 if (
-                    false === $socket ||
                     !socket_bind($socket, self::$host, self::$port) ||
                     !socket_listen($socket) ||
                     !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
                     !socket_set_nonblock($socket)
-                ) return '';
+                ) return false;
                 break;
             case 'tcp:sender':
-                $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
                 if (
-                    false === $socket ||
                     !socket_connect($socket, self::$host, self::$port) ||
                     !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1)
-                ) return '';
+                ) return false;
                 break;
             case 'udp:server':
-                $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
                 if (
-                    false === $socket ||
                     !socket_bind($socket, self::$host, self::$port) ||
                     !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
                     !socket_set_block($socket)
-                ) return '';
+                ) return false;
                 break;
             case 'udp:sender':
-                $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
                 if (
-                    false === $socket ||
                     !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
                     !socket_set_nonblock($socket)
-                ) return '';
+                ) return false;
                 break;
             case 'udp:broadcast':
-                $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
                 if (
-                    false === $socket ||
                     !socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1) ||
                     !socket_set_nonblock($socket)
-                ) return '';
+                ) return false;
                 break;
             default:
-                stderr('Socket Protocol ERROR!');
+                stderr('Socket Type ERROR!');
                 return false;
                 break;
         }
 
         //Generator unique hash for socket resource
-        self::$hash = hash('md5', uniqid(mt_rand(), true));
-        self::$server[self::$hash] = &$socket;
+        self::$socket = hash('md5', uniqid(mt_rand(), true));
+        self::$server[self::$socket] = &$socket;
         unset($socket);
         return true;
     }
@@ -161,13 +143,13 @@ class sock
     public static function listen(array &$read): void
     {
         //Only for server
-        if (!in_array(self::$sock, ['tcp:server', 'udp:server', 'web:server', 'http:server'], true)) {
-            stderr('Socket Protocol ERROR!');
+        if (false === strpos(self::$type, ':server')) {
+            stderr('Socket Type NOT Support!');
             return;
         }
 
         $write = $except = [];
-        $read[self::$hash] = self::$server[self::$hash];
+        $read[self::$socket] = self::$server[self::$socket];
 
         //Watch clients
         socket_select($read, $write, $except, null);
@@ -175,20 +157,32 @@ class sock
     }
 
     /**
-     * Accept new client (for tcp / web)
+     * Accept new client
      *
      * @param array $read
-     * @param array $clients
+     * @param array $client
      */
-    public static function accept(array &$read, array &$clients): void
+    public static function accept(array &$read, array &$client): void
     {
-        if (!isset($read[self::$hash])) return;
+        //Only for web / tcp server
+        if (!in_array(self::$type, ['web:server', 'tcp:server'], true)) {
+            stderr('Socket Type NOT Support!');
+            return;
+        }
 
-        $accept = socket_accept($read[self::$hash]);
+        //Set Socket for web:server
+        if ('web:server' === self::$type) {
+            socket_set_block(self::$server[self::$socket]);
+            $read[self::$socket] = self::$server[self::$socket];
+        }
+
+        if (!isset($read[self::$socket])) return;
+
+        $accept = socket_accept($read[self::$socket]);
         if (false === $accept) return;
-        unset($read[self::$hash]);
+        unset($read[self::$socket]);
 
-        $clients[hash('md5', uniqid(mt_rand(), true))] = &$accept;
+        $client[hash('md5', uniqid(mt_rand(), true))] = &$accept;
         unset($accept);
     }
 
@@ -196,255 +190,75 @@ class sock
      * Read message & maintain clients
      *
      * @param array $read
-     * @param array $clients
+     * @param array $client
      *
      * @return array
      */
-    public static function read(array &$read, array &$clients): array
+    public static function read(array $read = [], array &$client = []): array
     {
-        $message = [];
+        $receive = [];
+
+        //Rewrite read list for sender
+        if (false !== strpos(self::$type, ':sender')) $read = [self::$socket => self::$server[self::$socket]];
 
         foreach ($read as $key => $sock) {
             //Read and remove disconnected clients
             if (0 === (int)@socket_recvfrom($sock, $msg, self::$buffer, 0, $from, $port)) {
-                unset($read[$key], $clients[$key]);
+                unset($client[$key]);
                 socket_close($sock);
                 continue;
             }
 
-            unset($read[$key]);
             //Gather message
-            $message[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
+            $receive[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
         }
 
-        unset($key, $sock, $msg, $from, $port);
-        return $message;
-    }
-
-
-    public static function send()
-    {
-
-    }
-
-
-    /**
-     * Start TCP Server
-     *
-     * @param string $hash
-     */
-    public static function tcp_start(string $hash): void
-    {
-        if (!isset(self::$server[$hash])) return;
-
-        //Run TCP Server
-        $socket = self::$server[$hash];
-        while (true) {
-            //Copy client list
-            $read = isset(self::$client[$hash]) && is_array(self::$client[$hash]) ? self::$client[$hash] : [];
-            $read[] = $socket;
-            $write = $except = [];
-
-            //Select connections
-            $select = socket_select($read, $write, $except, 0);
-            if (false === $select || 0 === $select) continue;
-            unset($select);
-
-            //New client
-            if (in_array($socket, $read, true)) {
-                //Accept client
-                $accept = socket_accept($socket);
-                if (false !== $accept) self::$client[$hash][] = $accept;
-                unset($accept);
-
-                //Remove from read list
-                $key = array_search($socket, $read);
-                if (false !== $key) unset($read[$key], $key);
-            }
-
-            //Process client message
-            foreach ($read as $client) {
-                //Read message and remove disconnected clients
-                if (0 === (int)socket_recvfrom($client, $msg, self::buffer, 0, $from, $port)) {
-                    $key = array_search($client, self::$client[$hash]);
-                    if (false !== $key) unset(self::$client[$hash][$key], $key);
-                    continue;
-                }
-
-                //Trim message
-                $msg = trim($msg);
-                if ('' === $msg) continue;
-
-                //Run command
-                exec(self::$system['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
-                if (0 !== $status || empty($output)) continue;
-
-                //Send result
-                socket_write($client, implode(PHP_EOL, $output) . PHP_EOL);
-                unset($msg, $from, $port, $output, $status);
-            }
-            unset($read, $write, $except, $client);
-        }
-        socket_close($socket);
+        unset($read, $key, $sock, $msg, $from, $port);
+        return $receive;
     }
 
     /**
-     * Send group of message via TCP
+     * Send message & maintain clients
      *
-     * @param array $data
+     * @param array $write
+     * @param array $client
      *
      * @return array
      */
-    public static function tcp_sender(array $data): array
+    public static function send(array $write, array &$client = []): array
     {
-        if (empty($data)) return [];
+        $send = [];
 
-        //Start TCP connection
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if (false === $socket || !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) || !socket_connect($socket, self::$host, self::$port)) return [];
-
-        //Send data
-        $result = [];
-        foreach ($data as $msg) {
-            $msg = trim($msg);
-            if ('' === $msg) {
-                $result[] = '';
+        foreach ($write as $key => $data) {
+            //Check message
+            if (!isset($data['msg'])) {
+                $send[$key] = 'Failed! No message to send!';
                 continue;
             }
 
-            $write = socket_write($socket, $msg . PHP_EOL);
-            if (false === $write || 0 === $write) {
-                $result[] = '';
+            //Fix socket for sender
+            if (false !== strpos(self::$type, ':sender')) $data['sock'] = self::$server[self::$socket];
+
+            //Fix host
+            if (!isset($data['host'])) $data['host'] = self::$host;
+
+            //Prepare message
+            $data['msg'] .= PHP_EOL;
+            $length = strlen($data['msg']);
+
+            //Send and remove disconnected clients
+            if (0 === (int)@socket_sendto($data['sock'], $data['msg'], $length, 0, $data['host'], self::$port)) {
+                unset($client[$key]);
+                socket_close($data['sock']);
+                $send[$key] = 'Failed! Client disconnected!';
                 continue;
             }
-            unset($write);
 
-            $return = socket_read($socket, self::buffer, PHP_BINARY_READ);
-            if (false === $return) {
-                $result[] = '';
-                continue;
-            }
-
-            $result[] = trim($return);
-            unset($return);
+            //Message sent succeeded
+            $send[$key] = 'Succeeded!';
         }
-        socket_shutdown($socket);
-        socket_close($socket);
 
-        unset($data, $socket, $msg);
-        return $result;
+        unset($write, $key, $data, $length);
+        return $send;
     }
-
-    /**
-     * Start UDP Server
-     *
-     * @param string $hash
-     */
-    public static function udp_start(string $hash): void
-    {
-        if (!isset(self::$server[$hash])) return;
-
-        //Run TCP Server
-        $socket = self::$server[$hash];
-        while (true) {
-            if (!socket_set_block($socket)) return;
-
-            //Read message
-            if (0 === (int)socket_recvfrom($socket, $msg, self::buffer, 0, $from, $port)) continue;
-
-            //Trim message
-            $msg = trim($msg);
-            if ('' === $msg) continue;
-
-            //Run command
-            exec(self::$system['PHP_EXEC'] . ' ' . ROOT . '/api.php ' . $msg, $output, $status);
-            if (0 !== $status || empty($output)) continue;
-
-            $result = implode(PHP_EOL, $output) . PHP_EOL;
-            $length = strlen($result);
-
-            //Send result
-            if (!socket_set_nonblock($socket) || $length !== (int)socket_sendto($socket, $result, $length, 0, $from, self::$port)) return;
-            unset($msg, $from, $port, $output, $status, $result, $length);
-        }
-        socket_close($socket);
-    }
-
-    /**
-     * Send group of message via UDP
-     *
-     * @param array $data
-     * @param int   $type (SO_REUSEADDR / SO_BROADCAST)
-     *
-     * @return array
-     */
-    public static function udp_sender(array $data, int $type): array
-    {
-        if (empty($data)) return [];
-
-        //Start TCP connection
-        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        if (false === $socket || !socket_set_option($socket, SOL_SOCKET, $type, 1)) return [];
-
-        //Send data
-        $result = [];
-        foreach ($data as $msg) {
-            if (!socket_set_nonblock($socket)) {
-                $result[] = false;
-                continue;
-            }
-
-            $msg = trim($msg);
-            if ('' === $msg) {
-                $result[] = false;
-                continue;
-            }
-
-            $length = strlen($msg);
-            if ($length !== (int)socket_sendto($socket, $msg, $length, 0, self::$host, self::$port)) {
-                $result[] = false;
-                continue;
-            }
-
-            unset($length);
-            $result[] = true;
-        }
-        socket_shutdown($socket);
-        socket_close($socket);
-
-        unset($data, $type, $socket, $msg);
-        return $result;
-    }
-
-
-    //======================================
-
-
-    public function genKey()
-    {
-        // 参考 RFC 文档（Internet 标准 WebSocket 协议部分）
-        $guid = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-        $client_key = $this->header['sec_websocket_key'];
-        $client_key = trim($client_key);
-        $client_key .= $guid;
-        $client_key = sha1($client_key, true);
-        $client_key = base64_encode($client_key);
-
-        return $client_key;
-    }
-
-    //Port Settings
-    public static $tcp_port = 62000;
-    public static $udp_port = 64000;
-
-    //Local identity
-    private static $identity = '';
-
-    //Socket buffer
-    const buffer = 65535;
-
-    //Identity name
-    const id = 'id';
-
-
 }
