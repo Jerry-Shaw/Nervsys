@@ -74,7 +74,7 @@ class sock
     {
         //Check Port
         if (1 > self::$port || 65535 < self::$port) {
-            stderr('Socket Port ERROR!');
+            debug('Socket Port ERROR!');
             return false;
         }
 
@@ -84,7 +84,7 @@ class sock
             : socket_create(self::$domain, SOCK_DGRAM, SOL_UDP);
 
         if (false === $socket) {
-            stderr('Socket Creation Failed!');
+            debug('Socket Creation Failed!');
             return false;
         }
 
@@ -133,7 +133,7 @@ class sock
                 ) return false;
                 break;
             default:
-                stderr('Socket Type ERROR!');
+                debug('Socket Type ERROR!');
                 return false;
                 break;
         }
@@ -154,7 +154,7 @@ class sock
     {
         //Only for tcp:server / udp:server
         if (!in_array(self::$type, ['tcp:server', 'udp:server'], true)) {
-            stderr('Socket Type NOT Support!');
+            debug('Socket Type NOT Support!');
             return;
         }
 
@@ -176,7 +176,7 @@ class sock
     {
         //Only for tcp:server / http:server
         if (!in_array(self::$type, ['tcp:server', 'http:server'], true)) {
-            stderr('Socket Type NOT Support!');
+            debug('Socket Type NOT Support!');
             return;
         }
 

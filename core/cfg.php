@@ -52,7 +52,7 @@ function load(string $lib): void
     unset($lib, $file);
 }
 
-function stderr(string $msg): void
+function debug(string $msg): void
 {
     if (DEBUG) {
         fwrite(STDOUT, $msg . PHP_EOL);

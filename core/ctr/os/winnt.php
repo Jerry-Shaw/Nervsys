@@ -68,7 +68,7 @@ class winnt extends os
 
         //No authority
         if (0 !== $status) {
-            stderr('Access denied! Please check your authority!');
+            debug('Access denied! Please check your authority!');
             exit;
         }
 
@@ -107,7 +107,7 @@ class winnt extends os
 
             //No authority
             if (0 !== $status) {
-                stderr('Access denied! Please check your authority!');
+                debug('Access denied! Please check your authority!');
                 exit;
             }
         }
