@@ -33,12 +33,14 @@ class sock
      * Protocol and type
      * Available as follows:
      *
-     * web:server
      * tcp:server
      * tcp:sender
      *
      * udp:server
      * udp:sender
+     *
+     * http:server
+     *
      * udp:broadcast
      *
      * @var string
@@ -46,7 +48,7 @@ class sock
     public static $type = 'tcp:server';
 
     //Host
-    public static $host = '255.255.255.255';
+    public static $host = '0.0.0.0';
 
     //Port
     public static $port = 65535;
@@ -88,7 +90,6 @@ class sock
 
         //Set socket options
         switch (self::$type) {
-            case 'web:server':
             case 'tcp:server':
                 if (
                     !socket_bind($socket, self::$host, self::$port) ||
@@ -100,20 +101,29 @@ class sock
             case 'tcp:sender':
                 if (
                     !socket_connect($socket, self::$host, self::$port) ||
-                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1)
+                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+                    !socket_set_nonblock($socket)
                 ) return false;
                 break;
             case 'udp:server':
                 if (
                     !socket_bind($socket, self::$host, self::$port) ||
                     !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
-                    !socket_set_block($socket)
+                    !socket_set_nonblock($socket)
                 ) return false;
                 break;
             case 'udp:sender':
                 if (
                     !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
                     !socket_set_nonblock($socket)
+                ) return false;
+                break;
+            case 'http:server':
+                if (
+                    !socket_bind($socket, self::$host, self::$port) ||
+                    !socket_listen($socket) ||
+                    !socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) ||
+                    !socket_set_block($socket)
                 ) return false;
                 break;
             case 'udp:broadcast':
@@ -142,8 +152,8 @@ class sock
      */
     public static function listen(array &$read): void
     {
-        //Only for server
-        if (false === strpos(self::$type, ':server')) {
+        //Only for tcp:server / udp:server
+        if (!in_array(self::$type, ['tcp:server', 'udp:server'], true)) {
             stderr('Socket Type NOT Support!');
             return;
         }
@@ -164,20 +174,19 @@ class sock
      */
     public static function accept(array &$read, array &$client): void
     {
-        //Only for web / tcp server
-        if (!in_array(self::$type, ['web:server', 'tcp:server'], true)) {
+        //Only for tcp:server / http:server
+        if (!in_array(self::$type, ['tcp:server', 'http:server'], true)) {
             stderr('Socket Type NOT Support!');
             return;
         }
 
-        //Set Socket for web:server
-        if ('web:server' === self::$type) {
-            socket_set_block(self::$server[self::$socket]);
-            $read[self::$socket] = self::$server[self::$socket];
-        }
+        //Set Socket for http:server
+        if ('http:server' === self::$type) $read[self::$socket] = self::$server[self::$socket];
 
+        //Check Socket resource
         if (!isset($read[self::$socket])) return;
 
+        //Accept new client
         $accept = socket_accept($read[self::$socket]);
         if (false === $accept) return;
         unset($read[self::$socket]);
@@ -198,17 +207,16 @@ class sock
     {
         $receive = [];
 
-        //Rewrite read list for sender
+        //Reset read list for tcp:sender / udp:sender
         if (false !== strpos(self::$type, ':sender')) $read = [self::$socket => self::$server[self::$socket]];
 
+        //Read and remove disconnected clients
         foreach ($read as $key => $sock) {
-            //Read and remove disconnected clients
             if (0 === (int)@socket_recvfrom($sock, $msg, self::$buffer, 0, $from, $port)) {
                 unset($client[$key]);
                 socket_close($sock);
                 continue;
             }
-
             //Gather message
             $receive[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
         }
@@ -232,12 +240,12 @@ class sock
         foreach ($write as $key => $data) {
             //Check message
             if (!isset($data['msg'])) {
-                $send[$key] = 'Failed! No message to send!';
+                $send[$key] = false;
                 continue;
             }
 
-            //Fix socket for sender
-            if (false !== strpos(self::$type, ':sender')) $data['sock'] = self::$server[self::$socket];
+            //Fix socket for tcp:sender / udp:sender / udp:broadcast
+            if (in_array(self::$type, ['tcp:sender', 'udp:sender', 'udp:broadcast'], true)) $data['sock'] = self::$server[self::$socket];
 
             //Fix host
             if (!isset($data['host'])) $data['host'] = self::$host;
@@ -246,16 +254,16 @@ class sock
             $data['msg'] .= PHP_EOL;
             $length = strlen($data['msg']);
 
-            //Send and remove disconnected clients
-            if (0 === (int)@socket_sendto($data['sock'], $data['msg'], $length, 0, $data['host'], self::$port)) {
-                unset($client[$key]);
+            if ($length === (int)@socket_sendto($data['sock'], $data['msg'], $length, 0, $data['host'], self::$port)) {
+                //Close connection for http:server
+                if ('http:server' === self::$type) socket_close($data['sock']);
+                //Message sent succeeded
+                $send[$key] = true;
+            } else {
                 socket_close($data['sock']);
-                $send[$key] = 'Failed! Client disconnected!';
-                continue;
+                unset($client[$key]);
+                $send[$key] = false;
             }
-
-            //Message sent succeeded
-            $send[$key] = 'Succeeded!';
         }
 
         unset($write, $key, $data, $length);
