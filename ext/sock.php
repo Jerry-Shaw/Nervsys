@@ -212,13 +212,24 @@ class sock
 
         //Read and remove disconnected clients
         foreach ($read as $key => $sock) {
-            if (0 === (int)@socket_recvfrom($sock, $msg, self::$buffer, 0, $from, $port)) {
-                unset($client[$key]);
-                socket_close($sock);
-                continue;
+
+            if (false === strpos(self::$type, 'udp:')) {
+                if (0 === (int)@socket_recv($sock, $msg, self::$buffer, 0)) {
+                    unset($client[$key]);
+                    socket_close($sock);
+                    continue;
+                }
+                //Gather message
+                $receive[$key] = ['msg' => trim($msg)];
+            } else {
+                if (0 === (int)@socket_recvfrom($sock, $msg, self::$buffer, 0, $from, $port)) {
+                    unset($client[$key]);
+                    socket_close($sock);
+                    continue;
+                }
+                //Gather message
+                $receive[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
             }
-            //Gather message
-            $receive[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
         }
 
         unset($read, $key, $sock, $msg, $from, $port);
@@ -226,14 +237,14 @@ class sock
     }
 
     /**
-     * Send message & maintain clients
+     * Write message & maintain clients
      *
      * @param array $write
      * @param array $client
      *
      * @return array
      */
-    public static function send(array $write, array &$client = []): array
+    public static function write(array $write, array &$client = []): array
     {
         $send = [];
 
@@ -254,15 +265,26 @@ class sock
             $data['msg'] .= PHP_EOL;
             $length = strlen($data['msg']);
 
-            if ($length === (int)@socket_sendto($data['sock'], $data['msg'], $length, 0, $data['host'], self::$port)) {
-                //Close connection for http:server
-                if ('http:server' === self::$type) socket_close($data['sock']);
-                //Message sent succeeded
-                $send[$key] = true;
+            if (false === strpos(self::$type, 'udp:')) {
+                if ($length === (int)@socket_send($data['sock'], $data['msg'], $length, 0)) {
+                    //Close connection for http:server
+                    if ('http:server' === self::$type) socket_close($data['sock']);
+                    //Message sent succeeded
+                    $send[$key] = true;
+                } else {
+                    socket_close($data['sock']);
+                    unset($client[$key]);
+                    $send[$key] = false;
+                }
             } else {
-                socket_close($data['sock']);
-                unset($client[$key]);
-                $send[$key] = false;
+                if ($length === (int)@socket_sendto($data['sock'], $data['msg'], $length, 0, $data['host'], self::$port)) {
+                    //Message sent succeeded
+                    $send[$key] = true;
+                } else {
+                    socket_close($data['sock']);
+                    unset($client[$key]);
+                    $send[$key] = false;
+                }
             }
         }
 
