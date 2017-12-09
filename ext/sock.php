@@ -150,18 +150,10 @@ class sock
      *
      * @param array $read
      */
-    public static function listen(array &$read): void
+    public static function listen(array &$read = []): void
     {
-        //Only for tcp:server / udp:server
-        if (!in_array(self::$type, ['tcp:server', 'udp:server'], true)) {
-            debug('Socket Type NOT Support!');
-            return;
-        }
-
         $write = $except = [];
         $read[self::$socket] = self::$server[self::$socket];
-
-        //Watch clients
         socket_select($read, $write, $except, null);
         unset($write, $except);
     }
@@ -174,12 +166,6 @@ class sock
      */
     public static function accept(array &$read, array &$client): void
     {
-        //Only for tcp:server / http:server
-        if (!in_array(self::$type, ['tcp:server', 'http:server'], true)) {
-            debug('Socket Type NOT Support!');
-            return;
-        }
-
         //Set Socket for http:server
         if ('http:server' === self::$type) $read[self::$socket] = self::$server[self::$socket];
 
@@ -210,10 +196,9 @@ class sock
         //Reset read list for tcp:sender / udp:sender
         if (false !== strpos(self::$type, ':sender')) $read = [self::$socket => self::$server[self::$socket]];
 
-        //Read and remove disconnected clients
-        foreach ($read as $key => $sock) {
-
-            if (false === strpos(self::$type, 'udp:')) {
+        //Read message and maintain clients
+        if (false === strpos(self::$type, 'udp:')) {
+            foreach ($read as $key => $sock) {
                 if (0 === (int)@socket_recv($sock, $msg, self::$buffer, 0)) {
                     unset($client[$key]);
                     socket_close($sock);
@@ -221,7 +206,9 @@ class sock
                 }
                 //Gather message
                 $receive[$key] = ['msg' => trim($msg)];
-            } else {
+            }
+        } else {
+            foreach ($read as $key => $sock) {
                 if (0 === (int)@socket_recvfrom($sock, $msg, self::$buffer, 0, $from, $port)) {
                     unset($client[$key]);
                     socket_close($sock);
@@ -230,9 +217,10 @@ class sock
                 //Gather message
                 $receive[$key] = ['msg' => trim($msg), 'from' => $from, 'port' => $port];
             }
+            unset($from, $port);
         }
 
-        unset($read, $key, $sock, $msg, $from, $port);
+        unset($read, $key, $sock, $msg);
         return $receive;
     }
 
@@ -246,49 +234,51 @@ class sock
      */
     public static function write(array $write, array &$client = []): array
     {
-        $send = [];
+        $send = $close = [];
 
-        foreach ($write as $key => $data) {
+        //Prepare data
+        foreach ($write as $key => $item) {
             //Check message
-            if (!isset($data['msg'])) {
+            if (!isset($item['msg'])) {
                 $send[$key] = false;
+                unset($write[$key]);
                 continue;
             }
 
-            //Fix socket for tcp:sender / udp:sender / udp:broadcast
-            if (in_array(self::$type, ['tcp:sender', 'udp:sender', 'udp:broadcast'], true)) $data['sock'] = self::$server[self::$socket];
+            //Prepare data
+            $write[$key]['msg'] .= PHP_EOL;
+            $write[$key]['len'] = strlen($write[$key]['msg']);
 
-            //Fix host
-            if (!isset($data['host'])) $data['host'] = self::$host;
+            //Fix host & socket
+            if (!isset($item['host'])) $write[$key]['host'] = self::$host;
+            if (!isset($item['sock'])) $write[$key]['sock'] = empty($client) || !isset($client[$key]) ? self::$server[self::$socket] : $client[$key];
+        }
 
-            //Prepare message
-            $data['msg'] .= PHP_EOL;
-            $length = strlen($data['msg']);
-
-            if (false === strpos(self::$type, 'udp:')) {
-                if ($length === (int)@socket_send($data['sock'], $data['msg'], $length, 0)) {
+        //Send message and maintain clients
+        if (false === strpos(self::$type, 'udp:')) {
+            foreach ($write as $key => $item) {
+                if ($item['len'] === (int)@socket_send($item['sock'], $item['msg'], $item['len'], 0)) {
                     //Close connection for http:server
-                    if ('http:server' === self::$type) socket_close($data['sock']);
-                    //Message sent succeeded
+                    if ('http:server' === self::$type) socket_close($item['sock']);
+                    //Message send succeeded
                     $send[$key] = true;
-                } else {
-                    socket_close($data['sock']);
-                    unset($client[$key]);
-                    $send[$key] = false;
-                }
-            } else {
-                if ($length === (int)@socket_sendto($data['sock'], $data['msg'], $length, 0, $data['host'], self::$port)) {
-                    //Message sent succeeded
-                    $send[$key] = true;
-                } else {
-                    socket_close($data['sock']);
-                    unset($client[$key]);
-                    $send[$key] = false;
-                }
+                } else $close[$key] = $item['sock'];
+            }
+        } else {
+            foreach ($write as $key => $item) {
+                if ($item['len'] === (int)@socket_sendto($item['sock'], $item['msg'], $item['len'], 0, $item['host'], self::$port)) $send[$key] = true;
+                else $close[$key] = $item['sock'];
             }
         }
 
-        unset($write, $key, $data, $length);
+        //Close disconnected clients
+        foreach ($close as $key => $item) {
+            unset($client[$key]);
+            socket_close($item);
+            $send[$key] = false;
+        }
+
+        unset($write, $close, $key, $item);
         return $send;
     }
 }
