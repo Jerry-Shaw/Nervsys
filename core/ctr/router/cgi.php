@@ -60,6 +60,7 @@ class cgi extends router
         if (!empty($data)) {
             parent::$data = &$data;
             unset($data);
+            //Try to get CMD & build structure
             if (self::get_cmd()) {
                 if (!empty($_FILES)) parent::$data = array_merge(parent::$data, $_FILES);
                 parent::build_struct();
@@ -134,12 +135,9 @@ class cgi extends router
      */
     private static function execute_cmd(): void
     {
-        //Check main data
-        if (
-            empty(self::$module) ||
-            (empty(self::$method) && empty(parent::$data))
-        ) {
-            if (DEBUG) parent::$result['ERROR'] = 'Missing Data or CMD ERROR!';
+        //Check module data
+        if (empty(self::$module)) {
+            if (DEBUG) parent::$result['ERROR'] = 'Module Data ERROR!';
             return;
         }
 
@@ -221,10 +219,8 @@ class cgi extends router
             return;
         }
 
-        //Get API Safe Key list
+        //Get API Safe Key list & method list
         $key_list = array_keys($space::$key);
-
-        //Get all methods in class
         $method_list = get_class_methods($space);
 
         //Get requested api methods
