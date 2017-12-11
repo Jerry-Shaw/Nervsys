@@ -30,7 +30,16 @@ namespace ext;
 class redis_session extends redis
 {
     /**
-     * Default settings for Redis Session
+     * Use self config to connect Redis
+     * Set "true" to use Redis Session settings
+     * Set "false" to use default Redis connection instead
+     *
+     * @var bool
+     */
+    public static $self_cfg = true;
+
+    /**
+     * Redis Session settings
      */
     public static $sess_host    = '127.0.0.1';
     public static $sess_port    = 6379;
@@ -50,23 +59,20 @@ class redis_session extends redis
     const cfg = ['host', 'port', 'auth', 'db', 'prefix', 'timeout', 'persist'];
 
     /**
-     * Backup Redis default config
+     * Setup & Backup Redis settings
      *
      * @param array $cfg
      */
-    private static function backup_cfg(array &$cfg): void
+    private static function setup_cfg(array &$cfg): void
     {
-        foreach (self::cfg as $key) $cfg[$key] = parent::$$key;
-        unset($key);
-    }
+        $config = self::$self_cfg ? self::cfg : ['prefix'];
 
-    /**
-     * Setup Redis Session config
-     */
-    private static function setup_cfg(): void
-    {
-        foreach (self::cfg as $key) parent::$$key = self::${'sess_' . $key};
-        unset($key);
+        foreach ($config as $key) {
+            $cfg[$key] = parent::$$key;
+            parent::$$key = self::${'sess_' . $key};
+        }
+
+        unset($config, $key);
     }
 
     /**
@@ -86,12 +92,10 @@ class redis_session extends redis
     public static function start(): void
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
+            //Setup & Backup Redis settings
             $cfg = [];
-            //Backup Redis settings
-            self::backup_cfg($cfg);
+            self::setup_cfg($cfg);
 
-            //Setup Redis Session settings
-            self::setup_cfg();
             //Connect Redis
             self::$db_redis = parent::connect();
 
