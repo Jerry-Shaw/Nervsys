@@ -104,11 +104,12 @@ class cli extends router
             //Merge options to parent
             if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
 
-            //Build data structure
+            //Get CMD & build data structure
             if (self::get_cmd()) {
                 $command = true;
                 parent::build_struct();
             }
+
             unset($data_get);
         }
 
@@ -122,9 +123,10 @@ class cli extends router
         //Merge data to self::$cmd_data
         if (!empty($argv_data)) self::$cmd_data = &$argv_data;
 
-        //Build data structure
-        if ($command || self::get_cmd()) parent::build_struct();
-        unset($command, $opt, $argv_data);
+        //Get CMD for CLI
+        self::get_cmd();
+
+        unset($command, $opt, $optind, $argv_data);
     }
 
     /**
@@ -225,7 +227,19 @@ class cli extends router
                 );
             }
 
-            unset($error);
+            //Build results
+            $result = [];
+            $result_get = self::get_opt(parent::$data, ['r', 'return']);
+            if ($result_get['get']) {
+                if (false !== strpos($result_get['data'], 'cmd')) $result['cmd'] = parent::$cmd;
+                if (false !== strpos($result_get['data'], 'data')) $result['data'] = parent::$data;
+                if (false !== strpos($result_get['data'], 'error')) $result['error'] = &$error;
+                if (false !== strpos($result_get['data'], 'result')) $result['result'] = parent::$result;
+            }
+
+            parent::$result = &$result;
+
+            unset($error, $result, $result_get);
         } else {
             //Load config file
             self::load_config();
