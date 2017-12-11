@@ -54,9 +54,6 @@ function load(string $lib): void
 
 function debug(string $msg): void
 {
-    if (DEBUG) {
-        fwrite(STDOUT, $msg . PHP_EOL);
-        exit;
-    }
+    if (DEBUG) fwrite(STDOUT, $msg . PHP_EOL);
     unset($msg);
 }

@@ -43,6 +43,12 @@ class cli extends router
     //Pipe read timeout
     private static $timeout = 5000;
 
+    //Return option
+    private static $return = '';
+
+    //Log option
+    private static $log = false;
+
     //CLI config settings
     private static $config = [];
 
@@ -97,9 +103,17 @@ class cli extends router
             $data_get = self::get_opt($opt, ['p', 'pipe']);
             if ($data_get['get'] && '' !== $data_get['data']) self::$cli_data = &$data_get['data'];
 
+            //Process return option
+            $data_get = self::get_opt($opt, ['r', 'return']);
+            if ($data_get['get'] && '' !== $data_get['data']) self::$return = &$data_get['data'];
+
             //Process pipe read timeout
             $data_get = self::get_opt($opt, ['t', 'timeout']);
             if ($data_get['get'] && is_numeric($data_get['data'])) self::$timeout = (int)$data_get['data'];
+
+            //Process log option
+            $data_get = self::get_opt($opt, ['l', 'log']);
+            if ($data_get['get']) self::$log = true;
 
             //Merge options to parent
             if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
@@ -163,14 +177,17 @@ class cli extends router
      */
     private static function get_opt(array &$opt, array $keys): array
     {
+        $result = ['get' => false, 'data' => ''];
+
         foreach ($keys as $key) {
             if (isset($opt[$key])) {
-                $result = ['get' => true, 'data' => &$opt[$key]];
+                $result = ['get' => true, 'data' => $opt[$key]];
                 unset($opt[$key]);
-                return $result;
             }
         }
-        return ['get' => false, 'data' => ''];
+
+        unset($keys, $key);
+        return $result;
     }
 
     /**
@@ -180,18 +197,16 @@ class cli extends router
      */
     private static function get_cmd(): bool
     {
-        foreach (['c', 'cmd'] as $key) {
-            if (
-                isset(parent::$data[$key]) &&
-                is_string(parent::$data[$key]) &&
-                '' !== parent::$data[$key]
-            ) {
-                parent::$cmd = parent::$data[$key];
-                unset(parent::$data[$key]);
-                return true;
-            }
+        $get = false;
+        $data_get = self::get_opt(parent::$data, ['c', 'cmd']);
+
+        if ($data_get['get'] && is_string($data_get['data']) && '' !== $data_get['data']) {
+            parent::$cmd = &$data_get['data'];
+            $get = true;
         }
-        return false;
+
+        unset($data_get);
+        return $get;
     }
 
     /**
@@ -215,31 +230,28 @@ class cli extends router
                 $error = $exception->getMessage();
             }
 
-            //Save logs
-            if (self::get_opt(parent::$data, ['l', 'log'])['get']) {
-                self::save_log(
-                    [
-                        'cmd'    => parent::$cmd,
-                        'data'   => json_encode(parent::$data),
-                        'error'  => &$error,
-                        'result' => json_encode(parent::$result)
-                    ]
-                );
+            //Save log
+            if (self::$log) {
+                self::save_log([
+                    'cmd'    => parent::$cmd,
+                    'data'   => json_encode(parent::$data),
+                    'error'  => &$error,
+                    'result' => json_encode(parent::$result)
+                ]);
             }
 
-            //Build results
+            //Build result
             $result = [];
-            $result_get = self::get_opt(parent::$data, ['r', 'return']);
-            if ($result_get['get']) {
-                if (false !== strpos($result_get['data'], 'cmd')) $result['cmd'] = parent::$cmd;
-                if (false !== strpos($result_get['data'], 'data')) $result['data'] = parent::$data;
-                if (false !== strpos($result_get['data'], 'error')) $result['error'] = &$error;
-                if (false !== strpos($result_get['data'], 'result')) $result['result'] = parent::$result;
+            if ('' !== self::$return) {
+                if (false !== strpos(self::$return, 'cmd')) $result['cmd'] = parent::$cmd;
+                if (false !== strpos(self::$return, 'data')) $result['data'] = parent::$data;
+                if (false !== strpos(self::$return, 'error')) $result['error'] = &$error;
+                if (false !== strpos(self::$return, 'result')) $result['result'] = parent::$result;
             }
 
+            //Write result
             parent::$result = &$result;
-
-            unset($error, $result, $result_get);
+            unset($error, $result);
         } else {
             //Load config file
             self::load_config();
@@ -341,30 +353,32 @@ class cli extends router
         $process = proc_open($command, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
 
         //Process create failed
-        if (!is_resource($process)) return ['error' => 'Access denied! Check your "cfg.ini" and authority!'];
+        if (!is_resource($process)) {
+            debug('Access denied! Check your "cfg.ini" and authority!');
+            exit;
+        }
 
         //Write input data
         if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
 
-        //Build detailed results/logs
-        $result = $logs = [];
+        //Build detailed result/log
+        $result = $log = [];
 
-        //Save logs
-        if (self::get_opt(parent::$data, ['l', 'log'])['get']) {
-            $logs['cmd'] = &$command;
-            $logs['data'] = self::$cli_data;
-            $logs['error'] = self::get_stream([$pipes[2]]);
-            $logs['result'] = self::get_stream([$pipes[1]]);
-            self::save_log($logs);
+        //Save log
+        if (self::$log) {
+            $log['cmd'] = &$command;
+            $log['data'] = self::$cli_data;
+            $log['error'] = self::get_stream([$pipes[2]]);
+            $log['result'] = self::get_stream([$pipes[1]]);
+            self::save_log($log);
         }
 
-        //Build results
-        $result_get = self::get_opt(parent::$data, ['r', 'return']);
-        if ($result_get['get']) {
-            if (false !== strpos($result_get['data'], 'cmd')) $result['cmd'] = &$command;
-            if (false !== strpos($result_get['data'], 'data')) $result['data'] = self::$cli_data;
-            if (false !== strpos($result_get['data'], 'error')) $result['error'] = $logs['error'] ?? self::get_stream([$pipes[2]]);
-            if (false !== strpos($result_get['data'], 'result')) $result['result'] = $logs['result'] ?? self::get_stream([$pipes[1]]);
+        //Build result
+        if ('' !== self::$return) {
+            if (false !== strpos(self::$return, 'cmd')) $result['cmd'] = &$command;
+            if (false !== strpos(self::$return, 'data')) $result['data'] = self::$cli_data;
+            if (false !== strpos(self::$return, 'error')) $result['error'] = $log['error'] ?? self::get_stream([$pipes[2]]);
+            if (false !== strpos(self::$return, 'result')) $result['result'] = $log['result'] ?? self::get_stream([$pipes[1]]);
         }
 
         //Close all pipes
@@ -373,7 +387,7 @@ class cli extends router
         //Close Process
         proc_close($process);
 
-        unset($command, $process, $pipes, $logs, $result_get, $pipe);
+        unset($command, $process, $pipes, $log, $pipe);
         return $result;
     }
 
