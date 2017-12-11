@@ -27,18 +27,58 @@
 
 namespace ext;
 
-use \ext\redis as redis;
-
 class redis_session extends redis
 {
-    //SESSION prefix in Redis
-    public static $prefix = 'sess:';
+    /**
+     * Default settings for Redis Session
+     */
+    public static $sess_host    = '127.0.0.1';
+    public static $sess_port    = 6379;
+    public static $sess_auth    = '';
+    public static $sess_db      = 0;
+    public static $sess_prefix  = 'sess';
+    public static $sess_timeout = 10;
+    public static $sess_persist = true;
 
     //SESSION Lifetime (in seconds)
-    public static $lifetime = 600;
+    public static $sess_life = 600;
 
-    //Redis connection instance
+    //Redis connection
     private static $db_redis;
+
+    //Redis config keys
+    const cfg = ['host', 'port', 'auth', 'db', 'prefix', 'timeout', 'persist'];
+
+    /**
+     * Backup Redis default config
+     *
+     * @param array $cfg
+     */
+    private static function backup_cfg(array &$cfg): void
+    {
+        foreach (self::cfg as $key) $cfg[$key] = parent::$$key;
+        unset($key);
+    }
+
+    /**
+     * Setup Redis Session config
+     */
+    private static function setup_cfg(): void
+    {
+        foreach (self::cfg as $key) parent::$$key = self::${'sess_' . $key};
+        unset($key);
+    }
+
+    /**
+     * Restore Redis default config
+     *
+     * @param array $cfg
+     */
+    private static function restore_cfg(array $cfg): void
+    {
+        foreach ($cfg as $key => $value) parent::$$key = $value;
+        unset($cfg, $key, $value);
+    }
 
     /**
      * Initialize SESSION
@@ -46,40 +86,54 @@ class redis_session extends redis
     public static function start(): void
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
+            $cfg = [];
+            //Backup Redis settings
+            self::backup_cfg($cfg);
+
+            //Setup Redis Session settings
+            self::setup_cfg();
             //Connect Redis
             self::$db_redis = parent::connect();
 
+            //Restore Redis settings
+            self::restore_cfg($cfg);
+            unset($cfg);
+
+            //Setup Session GC config
             ini_set('session.gc_divisor', 100);
             ini_set('session.gc_probability', 100);
 
+            //Set Session handler & start Session
+            $handler = __CLASS__;
             session_set_save_handler(
-                [__CLASS__, 'session_open'],
-                [__CLASS__, 'session_close'],
-                [__CLASS__, 'session_read'],
-                [__CLASS__, 'session_write'],
-                [__CLASS__, 'session_destroy'],
-                [__CLASS__, 'session_gc']
+                [$handler, 'open'],
+                [$handler, 'close'],
+                [$handler, 'read'],
+                [$handler, 'write'],
+                [$handler, 'destroy'],
+                [$handler, 'gc']
             );
-
             session_start();
+            unset($handler);
         }
     }
 
     /**
-     * @param string $session_path
+     * @param string $save_path
      * @param string $session_name
      *
      * @return bool
      */
-    public static function session_open(string $session_path, string $session_name): bool
+    public static function open(string $save_path, string $session_name): bool
     {
+        unset($save_path, $session_name);
         return true;
     }
 
     /**
      * @return bool
      */
-    public static function session_close(): bool
+    public static function close(): bool
     {
         return true;
     }
@@ -89,7 +143,7 @@ class redis_session extends redis
      *
      * @return string
      */
-    public static function session_read(string $session_id): string
+    public static function read(string $session_id): string
     {
         return (string)self::$db_redis->get(self::$prefix . $session_id);
     }
@@ -100,9 +154,11 @@ class redis_session extends redis
      *
      * @return bool
      */
-    public static function session_write(string $session_id, string $session_data): bool
+    public static function write(string $session_id, string $session_data): bool
     {
-        return self::$db_redis->set(self::$prefix . $session_id, $session_data, self::$lifetime);
+        $write = (bool)self::$db_redis->set(self::$prefix . $session_id, $session_data, self::$sess_life);
+        unset($session_id, $session_data);
+        return $write;
     }
 
     /**
@@ -110,19 +166,21 @@ class redis_session extends redis
      *
      * @return bool
      */
-    public static function session_destroy(string $session_id): bool
+    public static function destroy(string $session_id): bool
     {
         self::$db_redis->del(self::$prefix . $session_id);
+        unset($session_id);
         return true;
     }
 
     /**
-     * @param int $gc_lifetime
+     * @param int $lifetime
      *
      * @return bool
      */
-    public static function session_gc(int $gc_lifetime): bool
+    public static function gc(int $lifetime): bool
     {
+        unset($lifetime);
         return true;
     }
 }

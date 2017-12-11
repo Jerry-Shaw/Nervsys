@@ -39,7 +39,6 @@ class redis
     public static $prefix  = '';
     public static $timeout = 10;
     public static $persist = true;
-    public static $session = true;
 
     /**
      * @return \Redis
