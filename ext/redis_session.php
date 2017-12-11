@@ -113,6 +113,8 @@ class redis_session extends redis
                 [$handler, 'destroy'],
                 [$handler, 'gc']
             );
+
+            register_shutdown_function('session_write_close');
             session_start();
             unset($handler);
         }
