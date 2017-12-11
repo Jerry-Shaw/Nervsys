@@ -103,7 +103,12 @@ class cli extends router
 
             //Merge options to parent
             if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
-            if (self::get_cmd()) $command = true;
+
+            //Build data structure
+            if (self::get_cmd()) {
+                $command = true;
+                parent::build_struct();
+            }
             unset($data_get);
         }
 
