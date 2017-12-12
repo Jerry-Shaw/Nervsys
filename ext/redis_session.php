@@ -30,13 +30,19 @@ namespace ext;
 class redis_session extends redis
 {
     /**
-     * Use self config to connect Redis
-     * Set "true" to use Redis Session settings
-     * Set "false" to use default Redis connection instead
+     * Global Session settings
+     *
+     * Set "true" to use independent Redis config
+     * New connection on different host, port, auth, and db, or more should be provided.
+     * DB select could be wrong when using persistent connection on the same host, port, auth but in another DB.
+     *
+     * Set "false" to use default Redis config
+     * Settings on host, port, auth will be ignored but using the same one in Redis extension instead.
+     * Connection will be non-persistent in default to avoid wrong DB select. Persistent is suggested when using the same DB.
      *
      * @var bool
      */
-    public static $self_cfg = true;
+    public static $global = true;
 
     /**
      * Redis Session settings
@@ -47,7 +53,7 @@ class redis_session extends redis
     public static $sess_db      = 0;
     public static $sess_prefix  = 'sess';
     public static $sess_timeout = 10;
-    public static $sess_persist = true;
+    public static $sess_persist;
 
     //SESSION Lifetime (in seconds)
     public static $sess_life = 600;
@@ -65,7 +71,8 @@ class redis_session extends redis
      */
     private static function setup_cfg(array &$cfg): void
     {
-        $config = self::$self_cfg ? self::cfg : ['prefix'];
+        if (!is_bool(self::$sess_persist)) self::$sess_persist = self::$global;
+        $config = self::$global ? self::cfg : ['db', 'prefix', 'timeout', 'persist'];
 
         foreach ($config as $key) {
             $cfg[$key] = parent::$$key;
@@ -141,6 +148,7 @@ class redis_session extends redis
      */
     public static function close(): bool
     {
+        if (!self::$sess_persist) self::$db_redis->close();
         return true;
     }
 
