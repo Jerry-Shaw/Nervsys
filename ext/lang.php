@@ -29,11 +29,11 @@ namespace ext;
 
 class lang
 {
+    //Language file directory (Related to ROOT/module/, language file should be located in "ROOT/module/$dir/$lang/LC_MESSAGES/lang_file.mo")
+    public static $dir = 'language';
+
     //Language
     public static $lang = 'en-US';
-
-    //Language directory (language file should be located in "/$lang/LC_MESSAGES/lang_file.mo")
-    public static $path = '/language/';
 
     /**
      * Load language pack from module
@@ -44,7 +44,7 @@ class lang
     {
         putenv('LANG=' . self::$lang);
         setlocale(LC_ALL, self::$lang);
-        bindtextdomain($file, ROOT . self::$path);
+        bindtextdomain($file, ROOT . '/' . self::$dir . '/');
         textdomain($file);
         unset($file);
     }
