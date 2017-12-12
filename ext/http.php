@@ -72,7 +72,7 @@ class http
     public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
 
     //User-Agent
-    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API 5.0; Granted by NervSys)';
+    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API ' . NS_VER . '; Powered by NervSys!)';
 
     //Request Method
     private static $method = 'GET';
