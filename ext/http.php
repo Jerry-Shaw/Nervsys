@@ -91,12 +91,15 @@ class http
     {
         //Parse URL
         $unit = parse_url($url);
+
         //Check main components
         if (false === $unit || !isset($unit['scheme']) || !isset($unit['host'])) return [];
+
         //Prepare URL unit
         if (!isset($unit['path'])) $unit['path'] = '/';
         $unit['query'] = !isset($unit['query']) ? '' : '?' . $unit['query'];
         if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+
         unset($url);
         return $unit;
     }
@@ -104,12 +107,11 @@ class http
     /**
      * Prepare header for URL
      *
-     * @param string $url
-     * @param array  $unit
+     * @param array $unit
      *
      * @return array
      */
-    private static function get_header(string $url, array $unit): array
+    private static function get_header(array $unit): array
     {
         //Prepare HTTP Header
         $header = [
@@ -123,12 +125,18 @@ class http
             'User-Agent: ' . self::$user_agent
         ];
 
-        //Prepare other Header content
-        if (!empty(self::$Header)) foreach (self::$Header as $key => $value) $header[] = $key . ': ' . $value;
+        unset($unit);
+
         if ('' !== self::$ETag) $header[] = 'If-None-Match: ' . self::$ETag;
         if ('' !== self::$Cookie) $header[] = 'Cookie: ' . self::$Cookie;
         if ('' !== self::$Modified) $header[] = 'If-Modified-Since: ' . self::$Modified;
-        unset($url, $unit);
+
+        if (empty(self::$Header)) return $header;
+
+        //Prepare other Header content
+        foreach (self::$Header as $key => $value) $header[] = $key . ': ' . $value;
+
+        unset($key, $value);
         return $header;
     }
 
@@ -142,6 +150,7 @@ class http
     private static function curl_ready(string $url, int $port, array $header): void
     {
         $curl = curl_init();
+
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_PORT, $port);
         curl_setopt($curl, CURLOPT_TIMEOUT, 60);
@@ -153,21 +162,25 @@ class http
         curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
         curl_setopt($curl, CURLOPT_USERAGENT, self::$user_agent);
         curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
+
         if (!self::$with_body) curl_setopt($curl, CURLOPT_NOBODY, true);
         if (self::$with_header) curl_setopt($curl, CURLOPT_HEADER, true);
         if ('' !== self::$Cookie) curl_setopt($curl, CURLOPT_COOKIE, self::$Cookie);
         if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
         if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT, self::$ssl_cert);
+
         //Follow settings
         if (0 < self::$max_follow) {
             curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($curl, CURLOPT_MAXREDIRS, self::$max_follow);
         }
+
         //POST settings
         if ('POST' === self::$method) {
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_POSTFIELDS, empty(self::$file) ? http_build_query(self::$data) : self::$data);
         }
+
         //Merge CURL
         self::$curl[$url] = &$curl;
         unset($url, $port, $header, $curl);
@@ -182,6 +195,7 @@ class http
     {
         //No CURL resource
         if (empty(self::$curl)) return [];
+
         //Run CURL
         if (1 === count(self::$curl)) {
             //Single CURL
@@ -191,10 +205,13 @@ class http
         } else {
             //Multi CURL
             $curl = curl_multi_init();
+
             //Add handles
             foreach (self::$curl as $url => $res) curl_multi_add_handle($curl, $res);
+
             //execute handles
             while (CURLM_OK === curl_multi_exec($curl, $running) && 0 < $running) ;
+
             //Merge response
             $response = [];
             foreach (self::$curl as $url => $res) {
@@ -202,13 +219,17 @@ class http
                 //Remove handles
                 curl_multi_remove_handle($curl, $res);
             }
+
             //close handle
             curl_multi_close($curl);
             unset($url, $res);
         }
+
         unset($curl);
+
         //Free CURL list
         self::$curl = [];
+
         return $response;
     }
 
@@ -221,10 +242,13 @@ class http
     {
         //Check URL
         if (empty(self::$url)) return [];
+
         //Detect method
         if (!empty(self::$data)) self::$method = 'POST';
+
         //Merge URL
         $list = is_string(self::$url) ? [self::$url] : self::$url;
+
         //Prepare CURL
         foreach ($list as $url) {
             //No URL
@@ -233,8 +257,9 @@ class http
             $unit = self::get_unit($url);
             if (empty($unit)) continue;
             //Get CURL ready
-            self::curl_ready($url, $unit['port'], self::get_header($url, $unit));
+            self::curl_ready($url, $unit['port'], self::get_header($unit));
         }
+
         //Execute CURL
         unset($list, $url, $unit);
         return self::curl_run();
@@ -249,18 +274,24 @@ class http
     {
         //Check URL
         if (empty(self::$url)) return [];
+
         //Set method to POST
         self::$method = 'POST';
+
         //Validate files
         $files = [];
         foreach (self::$file as $key => $item) if (is_file($item)) $files[$key] = new \CURLFile($item);
+
         //Check files
         if (empty($files)) return [];
+
         //Attach files
         self::$data = array_merge(self::$data, $files);
         unset($files, $key, $item);
+
         //Merge URL
         $list = is_string(self::$url) ? [self::$url] : self::$url;
+
         //Prepare CURL
         foreach ($list as $url) {
             //No URL
@@ -269,12 +300,13 @@ class http
             $unit = self::get_unit($url);
             if (empty($unit)) continue;
             //Get URL header
-            $header = self::get_header($url, $unit);
+            $header = self::get_header($unit);
             //Add "Content-Type"
             $header[] = 'Content-Type: multipart/form-data';
             //Get CURL ready
             self::curl_ready($url, $unit['port'], $header);
         }
+
         //Execute CURL
         unset($list, $url, $unit, $header);
         return self::curl_run();
