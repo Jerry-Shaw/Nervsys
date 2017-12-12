@@ -32,9 +32,6 @@ class http
     //Request URL
     public static $url;
 
-    //Access Key
-    public static $key = '';
-
     //Protocol Version
     public static $ver = '2.0';
 
@@ -49,6 +46,9 @@ class http
 
     //Cookie
     public static $Cookie = '';
+
+    //Header value
+    public static $Header = [];
 
     //Last-Modified
     public static $Modified = '';
@@ -72,7 +72,7 @@ class http
     public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
 
     //User-Agent
-    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API 3.0; Granted by NervSys)';
+    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API 5.0; Granted by NervSys)';
 
     //Request Method
     private static $method = 'GET';
@@ -87,7 +87,7 @@ class http
      *
      * @return array
      */
-    private static function url_unit(string $url): array
+    private static function get_unit(string $url): array
     {
         //Parse URL
         $unit = parse_url($url);
@@ -109,7 +109,7 @@ class http
      *
      * @return array
      */
-    private static function url_header(string $url, array $unit): array
+    private static function get_header(string $url, array $unit): array
     {
         //Prepare HTTP Header
         $header = [
@@ -122,7 +122,9 @@ class http
             'Connection: keep-alive',
             'User-Agent: ' . self::$user_agent
         ];
-        if ('' !== self::$key) $header[] = 'KEY: ' . self::$key;
+
+        //Prepare other Header content
+        if (!empty(self::$Header)) foreach (self::$Header as $key => $value) $header[] = $key . ': ' . $value;
         if ('' !== self::$ETag) $header[] = 'If-None-Match: ' . self::$ETag;
         if ('' !== self::$Cookie) $header[] = 'Cookie: ' . self::$Cookie;
         if ('' !== self::$Modified) $header[] = 'If-Modified-Since: ' . self::$Modified;
@@ -228,10 +230,10 @@ class http
             //No URL
             if ('' === $url) continue;
             //Get URL unit
-            $unit = self::url_unit($url);
+            $unit = self::get_unit($url);
             if (empty($unit)) continue;
             //Get CURL ready
-            self::curl_ready($url, $unit['port'], self::url_header($url, $unit));
+            self::curl_ready($url, $unit['port'], self::get_header($url, $unit));
         }
         //Execute CURL
         unset($list, $url, $unit);
@@ -264,10 +266,10 @@ class http
             //No URL
             if ('' === $url) continue;
             //Get URL unit
-            $unit = self::url_unit($url);
+            $unit = self::get_unit($url);
             if (empty($unit)) continue;
             //Get URL header
-            $header = self::url_header($url, $unit);
+            $header = self::get_header($url, $unit);
             //Add "Content-Type"
             $header[] = 'Content-Type: multipart/form-data';
             //Get CURL ready
