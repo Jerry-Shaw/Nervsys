@@ -98,37 +98,37 @@ class redis_session extends redis
      */
     public static function start(): void
     {
-        if (PHP_SESSION_ACTIVE !== session_status()) {
-            //Setup & Backup Redis settings
-            $cfg = [];
-            self::setup_cfg($cfg);
+        if (PHP_SESSION_ACTIVE === session_status()) return;
 
-            //Connect Redis
-            self::$db_redis = parent::connect();
+        //Setup & Backup Redis settings
+        $cfg = [];
+        self::setup_cfg($cfg);
 
-            //Restore Redis settings
-            self::restore_cfg($cfg);
-            unset($cfg);
+        //Connect Redis
+        self::$db_redis = parent::connect();
 
-            //Setup Session GC config
-            ini_set('session.gc_divisor', 100);
-            ini_set('session.gc_probability', 100);
+        //Restore Redis settings
+        self::restore_cfg($cfg);
+        unset($cfg);
 
-            //Set Session handler & start Session
-            $handler = __CLASS__;
-            session_set_save_handler(
-                [$handler, 'open'],
-                [$handler, 'close'],
-                [$handler, 'read'],
-                [$handler, 'write'],
-                [$handler, 'destroy'],
-                [$handler, 'gc']
-            );
+        //Setup Session GC config
+        ini_set('session.gc_divisor', 100);
+        ini_set('session.gc_probability', 100);
 
-            register_shutdown_function('session_write_close');
-            session_start();
-            unset($handler);
-        }
+        //Set Session handler & start Session
+        $handler = __CLASS__;
+        session_set_save_handler(
+            [$handler, 'open'],
+            [$handler, 'close'],
+            [$handler, 'read'],
+            [$handler, 'write'],
+            [$handler, 'destroy'],
+            [$handler, 'gc']
+        );
+
+        register_shutdown_function('session_write_close');
+        session_start();
+        unset($handler);
     }
 
     /**
