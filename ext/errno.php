@@ -29,7 +29,13 @@ namespace ext;
 
 class errno
 {
-    //Error file directory (Related to ROOT/module/)
+    /**
+     * Error file directory
+     * Related to "ROOT/module/"
+     * Error file should be located in "ROOT/module/$dir/filename.ini"
+     *
+     * @var string
+     */
     public static $dir = 'error';
 
     //Multi-language support
@@ -60,7 +66,7 @@ class errno
             return;
         }
 
-        self::$pool = array_merge(self::$pool, $error);
+        self::$pool += $error;
 
         unset($module, $file, $path, $error);
     }

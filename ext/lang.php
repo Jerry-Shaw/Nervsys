@@ -29,7 +29,13 @@ namespace ext;
 
 class lang
 {
-    //Language file directory (Related to ROOT/module/, language file should be located in "ROOT/module/$dir/$lang/LC_MESSAGES/lang_file.mo")
+    /**
+     * Language file directory
+     * Related to "ROOT/module/"
+     * Language file should be located in "ROOT/module/$dir/$lang/LC_MESSAGES/filename.mo"
+     *
+     * @var string
+     */
     public static $dir = 'language';
 
     //Language
@@ -38,29 +44,31 @@ class lang
     /**
      * Load language pack from module
      *
+     * @param string $module
      * @param string $file
      */
-    public static function load(string $file): void
+    public static function load(string $module, string $file): void
     {
         putenv('LANG=' . self::$lang);
         setlocale(LC_ALL, self::$lang);
-        bindtextdomain($file, ROOT . '/' . self::$dir . '/');
+        bindtextdomain($file, ROOT . '/' . $module . '/' . self::$dir . '/');
         textdomain($file);
-        unset($file);
+
+        unset($module, $file);
     }
 
     /**
-     * Get text from an array
+     * Translate list in language
      *
-     * @param array $keys
-     *
-     * @return array
+     * @param array $list
      */
-    public static function get_text(array $keys): array
+    public static function trans(array &$list): void
     {
-        $data = [];
-        foreach ($keys as $key) $data[$key] = gettext($key);
-        unset($keys, $key);
-        return $data;
+        foreach ($list as $key => $item) {
+            unset($list[$key]);
+            $list[$item] = gettext($item);
+        }
+
+        unset($key, $item);
     }
 }

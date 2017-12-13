@@ -45,14 +45,15 @@ class file
     }
 
     /**
-     * Check & create directory (Related to ROOT)
+     * Check & create directory (Related to "$root")
      *
      * @param string $path
+     * @param string $root
      * @param int    $mode
      *
      * @return string
      */
-    public static function get_path(string $path, int $mode = 0776): string
+    public static function get_path(string $path, string $root = ROOT, int $mode = 0776): string
     {
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) $path = str_replace('..', '', $path);
@@ -63,13 +64,13 @@ class file
         $path = trim($path, '/');
 
         //Return "/" when path is empty
-        if ('' === $path) return is_readable(ROOT) ? '/' : '';
+        if ('' === $path) return is_readable($root) ? '/' : '';
 
         //Add "/"
         $path = '/' . $path;
 
         //Create directories
-        $dir = ROOT . $path;
+        $dir = $root . $path;
         if (!is_dir($dir)) {
             //Create directory recursively
             mkdir($dir, $mode, true);
@@ -80,7 +81,7 @@ class file
         //Check path property
         $path = is_readable($dir) ? $path . '/' : '';
 
-        unset($mode, $dir);
+        unset($root, $mode, $dir);
         return $path;
     }
 
