@@ -54,6 +54,10 @@ function load(string $lib): void
 
 function debug(string $msg): void
 {
-    if (DEBUG) fwrite(STDOUT, $msg . PHP_EOL);
+    if (!DEBUG) return;
+
+    if ('cli' !== PHP_SAPI) echo $msg;
+    else fwrite(STDOUT, $msg . PHP_EOL);
+
     unset($msg);
 }
