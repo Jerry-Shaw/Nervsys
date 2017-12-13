@@ -36,7 +36,7 @@ header('Content-Type: text/plain; charset=UTF-8');
 define('DEBUG', true);
 
 //NervSys Version
-define('NS_VER', '5.0.0 Beta');
+define('NS_VER', '5.0.0 RC');
 
 //Document Root Definition
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
@@ -44,14 +44,26 @@ define('ROOT', realpath(substr(__DIR__, 0, -4)));
 //Autoload function
 spl_autoload_register('load');
 
+/**
+ * Load function
+ *
+ * @param string $lib
+ */
 function load(string $lib): void
 {
     if (false === strpos($lib, '\\')) return;
+
     $file = realpath(ROOT . '/' . strtr($lib, '\\', '/') . '.php');
     if (false !== $file) require $file;
+
     unset($lib, $file);
 }
 
+/**
+ * Debug function
+ *
+ * @param string $msg
+ */
 function debug(string $msg): void
 {
     if (!DEBUG) return;
