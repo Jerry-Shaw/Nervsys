@@ -50,9 +50,7 @@ class mysql_sql extends \ext\mysql
         empty($conf['pwd'])   or self::$pwd   = $conf['pwd'];
         empty($conf['db'])    or self::$db    = $conf['db'];
         empty($conf['table']) or self::$table = $conf['table'];
-        if (is_null(self::$conn) || $reconnect) {
-            self::$conn = self::connect();
-        }
+        if (is_null(self::$conn) || $reconnect) self::$conn = self::connect();
     }
 
     // Query or Exec
@@ -270,7 +268,8 @@ class mysql_sql extends \ext\mysql
     // Exec SQL common function
     protected static function _start(string $sql = '')
     {
-        !empty($sql) && self::$sql = $sql;
+        empty($sql) or self::$sql = $sql;
+        !empty(self::$conn) or self::$conn = self::connect();
         $statm = self::$conn->prepare(self::$sql);
         $statm->execute(self::$bind);
         self::clear();
