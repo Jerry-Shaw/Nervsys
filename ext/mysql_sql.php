@@ -75,7 +75,7 @@ class mysql_sql extends \ext\mysql
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
         return $flag ? $result[0] : $result;
     }
-    
+
     // Exec
     public static function exec(string $sql = '', bool $flag = false):int
     {
@@ -322,10 +322,12 @@ class mysql_sql extends \ext\mysql
 
 		foreach ($fieldArr as $v) {
 			$val = self::_avoidKey($v);
-			$strField = str_replace('_'.$v.'_', $func . '(' . $val . ') AS '.str_replace('.', '_', $val), $strField);
+            $alias = str_replace('.', '_', $val);
+            $alias = ' AS '.(false === strpos($val, '*') ? $alias : '`'. $alias .'`');
+			$strField = str_replace('_'.$v.'_', $func . '(' . $val . ') '.$alias, $strField);
 		}
 		self::$sql = 'SELECT '.$strField.' FROM `'.$opt['table'].'` '.$opt['join'].$opt['where'].$opt['group'].$opt['order'].$opt['limit'];
-		unset($opt, $func, $fieldArr, $strField);
+		unset($opt, $func, $fieldArr, $strField, $alias);
         $result = self::query();
 		return count($result) == 1 && !empty($result[0]) ? $result[0] : $result;
 	}
