@@ -40,11 +40,7 @@ class mysql_sql extends \ext\mysql
     public static $bind     = [];
     public static $sql      = '';
 
-    /**
-     * Initialization
-     * @param  array        $conf      
-     * @param  bool|boolean $reconnect
-     */
+    // Initialization
     public static function init(array $conf = array(), bool $reconnect = false):void
     {
         class_exists('PDO') or exit("PDO: class not exists.");
@@ -84,13 +80,7 @@ class mysql_sql extends \ext\mysql
         return $flag ? self::$conn->lastInsertId() : $row;
     }
 
-    /**
-     * Insert 
-     * @param  string       $table
-     * @param  array        $data  
-     * @param  bool|boolean $flag  
-     * @return int              
-     */
+    // Insert 
     public static function insert(string $table = '', array $data = [], bool $flag = false):int
     {
     	$table = !empty($data) ? $table : self::$table;
@@ -117,12 +107,7 @@ class mysql_sql extends \ext\mysql
         return $flag ? $row : $lastId;
     }
 
-    /**
-     * Delete
-     * @param  string $table 
-     * @param  array  $where 
-     * @return int        
-     */
+    // Delete
     public static function del(string $table = '', array $where = []):int
     {
     	$table = !empty($data) ? $table : self::$table;
@@ -133,13 +118,7 @@ class mysql_sql extends \ext\mysql
         return self::exec();
     }
 
-    /**
-     * Update
-     * @param  string $table 
-     * @param  array  $data  
-     * @param  array  $where 
-     * @return int        
-     */
+    // Update
     public static function save(string $table = '', array $data = [], $where = []):int
     {
     	$table = !empty($table) ? $table : self::$table;
@@ -167,12 +146,7 @@ class mysql_sql extends \ext\mysql
         return self::exec();
     }
 
-    /**
-     * Select
-     * @param  string $table
-     * @param  array  $opt   
-     * @return array        
-     */
+    // Select
     public static function select(string $table = '', array $opt = []):array
     {
     	$opt = self::_condition($table, $opt);
@@ -188,12 +162,7 @@ class mysql_sql extends \ext\mysql
     	return self::query();
     }
 
-    /**
-     * Get a line
-     * @param  string $table 
-     * @param  array  $opt   
-     * @return array        
-     */
+    // Get a line
     public static function first(string $table = '', array $opt = []):array
     {
         self::$limit = '1';
