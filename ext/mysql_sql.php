@@ -231,24 +231,28 @@ class mysql_sql extends \ext\mysql
     // SetAttribute
     public static function setAttr($key, $val):bool
     {
+        !empty(self::$conn) or self::$conn = self::connect();
         return self::$conn->setAttribute($key, $val);
     }
 
     // BeginTransaction
     public static function begin():bool
     {
+        !empty(self::$conn) or self::$conn = self::connect();
         return self::$conn->beginTransaction();
     }
 
     // Commit
     public static function commit():bool
     {
+        !empty(self::$conn) or self::$conn = self::connect();
         return self::$conn->commit();
     }
 
     // RollBack
     public static function rollBack():bool
     {
+        !empty(self::$conn) or self::$conn = self::connect();
         return self::$conn->rollBack();
     }
 
