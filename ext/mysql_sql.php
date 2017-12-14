@@ -7,7 +7,7 @@
  *
  * Copyright 2017 空城
  *
- *self::$le is part of NervSys.
+ * This file is part of NervSys.
  *
  * NervSys is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,28 +25,11 @@
 
 namespace ext;
 
-class mysql_sql
+class mysql_sql extends \ext\mysql
 {
-    // Host address
-    public static $host     = '127.0.0.1';
-    // Host port
-    public static $port     = 3306;
-    // Username
-    public static $user     = 'root';
-    // Password
-    public static $pwd      = '';
-    // Database
-    public static $db       = '';
-    // Character set
-    public static $charset  = 'utf8mb4';
-    // Persistent connection
-    public static $pconnect = true;
-    // Connection object
-    public static $conn     = null;
-    // Table name
-    public static $table    = '';
-
     // Core container
+    public static $conn     = null;
+    public static $table    = '';
     public static $data     = '';
     public static $field    = '*';
     public static $where    = '';
@@ -58,9 +41,10 @@ class mysql_sql
     public static $sql      = '';
 
     /**
-    * Initialization
-    * @param array $conf
-    */
+     * Initialization
+     * @param  array        $conf      
+     * @param  bool|boolean $reconnect
+     */
     public static function init(array $conf = array(), bool $reconnect = false):void
     {
         class_exists('PDO') or exit("PDO: class not exists.");
@@ -71,22 +55,33 @@ class mysql_sql
         empty($conf['db'])    or self::$db    = $conf['db'];
         empty($conf['table']) or self::$table = $conf['table'];
         if (is_null(self::$conn) || $reconnect) {
-            self::_connect();
+            self::$conn = self::connect();
         }
     }
 
-    /**
-     * Exec SQL
-     * @param  string       $sql  
-     * @param  bool|boolean $flag 
-     * @return array|int             
-     */
-    public static  function do(string $sql, bool $flag = false)
+    // Query or Exec
+    public static  function do(string $sql = '', bool $flag = false)
     {
-        self::$sql = $sql;
+        self::$sql = !empty($sql) ? $sql : self::$sql;
         $preg = 'INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|LOAD DATA|SELECT .* INTO|COPY|ALTER|GRANT|REVOKE|LOCK|UNLOCK'; 
-        if (preg_match('/^\s*"?(' . $preg . ')\s+/i', $sql)) return self::exec($flag);
-        else return self::query($flag);
+        if (preg_match('/^\s*"?(' . $preg . ')\s+/i', $sql)) return self::exec('', $flag);
+        else return self::query('', $flag);
+    }
+
+    // Query
+    public static function query(string $sql = '', bool $flag = false):array
+    {
+        $statm = self::_start($sql);
+        $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
+        return $flag ? $result[0] : $result;
+    }
+    
+    // Exec
+    public static function exec(string $sql = '', bool $flag = false):int
+    {
+        $statm = self::_start($sql);
+        $row = $statm->rowCount();
+        return $flag ? self::$conn->lastInsertId() : $row;
     }
 
     /**
@@ -114,7 +109,7 @@ class mysql_sql
             $keys = array_keys($data);
             
             self::$sql = 'INSERT INTO `' . trim($table) . '` (' . implode(',', $keys) . ') VALUES(' . implode(',', $vals) . ')';
-            self::exec(false) && $flag && $row += 1;
+            self::exec() && $flag && $row += 1;
         }
 
         $lastId = self::$conn->lastInsertId();
@@ -135,7 +130,7 @@ class mysql_sql
         if ('' === $where) return 0;
         self::$sql = 'DELETE FROM `'.trim($table).'` '.$where;
         unset($table, $where);
-        return self::exec(false);
+        return self::exec();
     }
 
     /**
@@ -169,7 +164,7 @@ class mysql_sql
         self::$sql = 'UPDATE `'.trim($table).'` SET '.trim($kv_str).' '.trim($where);
         unset($kv_str, $data, $kv, $table);
         if ('' === $where) return 0;
-        return self::exec(false);
+        return self::exec();
     }
 
     /**
@@ -190,7 +185,7 @@ class mysql_sql
     	else $field = '*';
     	self::$sql = 'SELECT '.$field.' FROM `'.$opt['table'].'` '.$opt['join'].$opt['where'].$opt['group'].$opt['order'].$opt['limit'];
     	unset($opt);
-    	return self::query(false);
+    	return self::query();
     }
 
     /**
@@ -289,46 +284,6 @@ class mysql_sql
         return self::$conn->rollBack();
     }
 
-    // Connect
-    protected static function _connect():void
-    {
-        $dsn = 'mysql:host='.self::$host.';port='.self::$port.';dbname='.self::$db;
-        $options = [
-                \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . self::$charset,
-                \PDO::ATTR_PERSISTENT         => (bool)self::$pconnect
-            ];
-        try { 
-            $dbh = new \PDO($dsn, self::$user, self::$pwd, $options);
-            $dbh->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-            $dbh->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-            $dbh->exec('SET NAMES ' . self::$charset);
-        } catch (PDOException $e) { 
-            exit('Connection failed: ' . $e->getMessage());
-        }
-        self::$conn = $dbh;
-        unset($dsn, $dbh, $options);
-    }
-
-    // Exec
-    protected static function exec(bool $flag)
-    {
-        $statm = self::$conn->prepare(self::$sql);
-        $statm->execute(self::$bind);
-        self::clear();
-        $row = $statm->rowCount();
-        return $flag ? self::$conn->lastInsertId() : $row;
-    }
-
-    // Query
-    protected static function query(bool $flag)
-    {
-        $statm = self::$conn->prepare(self::$sql);
-        $statm->execute(self::$bind);
-        self::clear();
-        $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
-        return $flag ? $result[0] : $result;
-    }
-
     // Mosaic SQL
     protected static function _condition(string $table, array $opt):array
     {
@@ -342,6 +297,16 @@ class mysql_sql
     	$option['limit'] = !empty($opt['limit']) ? self::_limit($opt['limit']) : self::_limit(self::$limit);
     	return $option;
 	}
+
+    // Exec SQL common function
+    protected static function _start(string $sql = '')
+    {
+        !empty($sql) && self::$sql = $sql;
+        $statm = self::$conn->prepare(self::$sql);
+        $statm->execute(self::$bind);
+        self::clear();
+        return $statm;
+    }
 
     // Common
     protected static function _common(array $opt, string $func):array
@@ -360,8 +325,9 @@ class mysql_sql
 			$strField = str_replace('_'.$v.'_', $func . '(' . $val . ') AS '.str_replace('.', '_', $val), $strField);
 		}
 		self::$sql = 'SELECT '.$strField.' FROM `'.$opt['table'].'` '.$opt['join'].$opt['where'].$opt['group'].$opt['order'].$opt['limit'];
-		unset($opt, $func);
-		return self::query(false);
+		unset($opt, $func, $fieldArr, $strField);
+        $result = self::query();
+		return count($result) == 1 && !empty($result[0]) ? $result[0] : $result;
 	}
 
     // Set field
@@ -386,7 +352,7 @@ class mysql_sql
         self::$sql = 'UPDATE `'.trim($table).'` SET '.trim($kv_str).' '.trim($where);
         unset($data);
         if ('' === $where) return 0;
-        return self::exec(false);
+        return self::exec();
     }
 
     // Preprocessing
