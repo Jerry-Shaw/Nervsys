@@ -50,9 +50,7 @@ class mysql_sql extends \ext\mysql
         empty($conf['pwd'])   or self::$pwd   = $conf['pwd'];
         empty($conf['db'])    or self::$db    = $conf['db'];
         empty($conf['table']) or self::$table = $conf['table'];
-        if (is_null(self::$conn) || $reconnect) {
-            self::$conn = self::connect();
-        }
+        if (is_null(self::$conn) || $reconnect) self::$conn = self::connect();
     }
 
     // Query or Exec
@@ -83,6 +81,7 @@ class mysql_sql extends \ext\mysql
     // Insert 
     public static function insert(string $table = '', array $data = [], bool $flag = false):int
     {
+
     	$table = !empty($data) ? $table : self::$table;
     	$data = !empty($data) ? $data : self::$data;
         $insertData = [];
@@ -101,7 +100,7 @@ class mysql_sql extends \ext\mysql
             self::$sql = 'INSERT INTO `' . trim($table) . '` (' . implode(',', $keys) . ') VALUES(' . implode(',', $vals) . ')';
             self::exec() && $flag && $row += 1;
         }
-
+        
         $lastId = self::$conn->lastInsertId();
         unset($insertData,$data);
         return $flag ? $row : $lastId;
@@ -270,7 +269,8 @@ class mysql_sql extends \ext\mysql
     // Exec SQL common function
     protected static function _start(string $sql = '')
     {
-        !empty($sql) && self::$sql = $sql;
+        empty($sql) or self::$sql = $sql;
+        !empty(self::$conn) or self::$conn = self::connect();
         $statm = self::$conn->prepare(self::$sql);
         $statm->execute(self::$bind);
         self::clear();
@@ -344,7 +344,7 @@ class mysql_sql extends \ext\mysql
 	}
 
     // Join
-	protected static function _join(array $opt):string
+	protected static function _join($opt):string
     {
 		$join = '';
         if (is_string($opt) && '' !== trim($opt)) return $opt;
@@ -464,8 +464,7 @@ class mysql_sql extends \ext\mysql
     {
     	$table = !empty($table) ? $table : self::$table;
         $sql = 'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME="'.$table.'" AND TABLE_SCHEMA="'.self::$db.'"';
-        $statm = self::$conn->prepare($sql);
-        $statm->execute();
+        $statm = self::_start($sql);
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
         $res = [];
         foreach ($result as $key=>$value) {
@@ -479,8 +478,7 @@ class mysql_sql extends \ext\mysql
     protected static function _tbKey(string $table):array
     {
         $sql = 'SELECT k.column_name FROM information_schema.table_constraints t JOIN information_schema.key_column_usage k USING (constraint_name,table_schema,table_name) WHERE t.constraint_type="PRIMARY KEY" AND t.table_schema="'.self::$db.'" AND t.table_name="'.$table.'"';
-        $statm = self::$conn->prepare($sql);
-        $statm->execute();
+        $statm = self::_start($sql);
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
         $res = [];
         foreach ($result as $key=>$value) {
