@@ -53,7 +53,7 @@ class redis_session extends redis
     public static $sess_db      = 0;
     public static $sess_prefix  = 'sess';
     public static $sess_timeout = 10;
-    public static $sess_persist;
+    public static $sess_persist = null;
 
     //SESSION Lifetime (in seconds)
     public static $sess_life = 600;
