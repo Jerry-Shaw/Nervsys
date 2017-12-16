@@ -471,8 +471,6 @@ class mysql_sql extends mysql
         $statm = self::$conn->prepare($sql);
         $statm->execute();
 
-//         $statm = self::_start($sql);
-
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
 
         $res = [];
@@ -491,8 +489,6 @@ class mysql_sql extends mysql
         !empty(self::$conn) or self::$conn = self::connect();
         $statm = self::$conn->prepare($sql);
         $statm->execute();
-
-//         $statm = self::_start($sql);
 
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
         $res = [];
