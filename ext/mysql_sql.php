@@ -470,6 +470,9 @@ class mysql_sql extends mysql
         !empty(self::$conn) or self::$conn = self::connect();
         $statm = self::$conn->prepare($sql);
         $statm->execute();
+
+//         $statm = self::_start($sql);
+
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
 
         $res = [];
@@ -484,9 +487,13 @@ class mysql_sql extends mysql
     protected static function _tbKey(string $table): array
     {
         $sql = 'SELECT k.column_name FROM information_schema.table_constraints t JOIN information_schema.key_column_usage k USING (constraint_name,table_schema,table_name) WHERE t.constraint_type="PRIMARY KEY" AND t.table_schema="' . self::$db . '" AND t.table_name="' . $table . '"';
+
         !empty(self::$conn) or self::$conn = self::connect();
         $statm = self::$conn->prepare($sql);
         $statm->execute();
+
+//         $statm = self::_start($sql);
+
         $result = $statm->fetchAll(\PDO::FETCH_ASSOC);
         $res = [];
         foreach ($result as $key => $value) {
