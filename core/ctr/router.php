@@ -52,6 +52,12 @@ class router
     public static function start(): void
     {
         'cli' !== PHP_SAPI ? cgi::run() : cli::run();
+
+        //Debug values
+        if (DEBUG) {
+            self::$result['duration'] = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
+            self::$result['memory'] = round(memory_get_peak_usage(true) / 1024 / 1024, 2) . 'MB';
+        }
     }
 
     /**

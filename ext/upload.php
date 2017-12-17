@@ -100,11 +100,11 @@ class upload
     /**
      * Upload file
      *
-     * @param array $file
+     * @param string $name
      *
      * @return array
      */
-    public static function file(array $file): array
+    public static function file(string $name): array
     {
         //Load language pack
         lang::$dir = 'upload';
@@ -114,8 +114,11 @@ class upload
         errno::$dir = 'upload';
         errno::load('ext', 'upload');
 
-        //Empty $_FILES['file']
-        if (empty($file)) return errno::get(1007);
+        //File not exist
+        if (!isset($_FILES[$name]) || empty($_FILES[$name])) return errno::get(1007);
+
+        //Copy file
+        $file = &$_FILES[$name];
 
         //Upload failed when uploading, returned from server
         if (0 !== $file['error']) return self::get_error($file['error']);
@@ -152,7 +155,7 @@ class upload
         $result['file_url'] = &$url;
         $result['file_size'] = &$file_size;
 
-        unset($file, $file_size, $file_ext, $save_path, $save_name, $url);
+        unset($name, $file, $file_size, $file_ext, $save_path, $save_name, $url);
         return $result;
     }
 
