@@ -27,7 +27,7 @@
 
 namespace core\ctr;
 
-use \core\ctr\router\cgi as cgi, \core\ctr\router\cli as cli;
+use core\ctr\router\cgi, core\ctr\router\cli;
 
 class router
 {

@@ -27,7 +27,7 @@
 
 namespace ext;
 
-use \ext\lib\keys as keys;
+use ext\lib\keys;
 
 class keygen implements keys
 {

@@ -27,7 +27,7 @@
 
 namespace core\ctr\os;
 
-use \core\ctr\os as os;
+use core\ctr\os;
 
 class winnt extends os
 {
