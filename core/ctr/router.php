@@ -55,8 +55,9 @@ class router
 
         //Debug values
         if (DEBUG) {
-            self::$result['duration'] = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
-            self::$result['memory'] = round(memory_get_peak_usage(true) / 1024 / 1024, 2) . 'MB';
+            self::$result['duration'] = round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 'ms';
+            self::$result['memory'] = round(memory_get_usage(true) / 1048576, 4) . 'MB';
+            self::$result['peak'] = round(memory_get_peak_usage(true) / 1048576, 4) . 'MB';
         }
     }
 
