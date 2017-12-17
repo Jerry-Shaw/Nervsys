@@ -29,69 +29,14 @@ namespace ext;
 
 class redis_session extends redis
 {
-    /**
-     * Global Session settings
-     *
-     * Set "true" to use independent Redis config
-     * New connection on different host, port, auth, and db, or more should be provided.
-     * DB select could be wrong when using persistent connection on the same host, port, auth but in another DB.
-     *
-     * Set "false" to use default Redis config
-     * Settings on host, port, auth will be ignored but using the same one in Redis extension instead.
-     * Connection will be non-persistent in default to avoid wrong DB select. Persistent is suggested when using the same DB.
-     *
-     * @var bool
-     */
-    public static $global = true;
-
-    /**
-     * Redis Session settings
-     */
-    public static $sess_host    = '127.0.0.1';
-    public static $sess_port    = 6379;
-    public static $sess_auth    = '';
-    public static $sess_db      = 0;
-    public static $sess_prefix  = 'sess';
-    public static $sess_timeout = 10;
-    public static $sess_persist = null;
+    //SESSION Prefix (Extends from "parent::$prefix")
+    public static $sess_prefix = 'sess:';
 
     //SESSION Lifetime (in seconds)
     public static $sess_life = 600;
 
     //Redis connection
-    private static $db_redis;
-
-    //Redis config keys
-    const cfg = ['host', 'port', 'auth', 'db', 'prefix', 'timeout', 'persist'];
-
-    /**
-     * Setup & Backup Redis settings
-     *
-     * @param array $cfg
-     */
-    private static function setup_cfg(array &$cfg): void
-    {
-        if (!is_bool(self::$sess_persist)) self::$sess_persist = self::$global;
-        $config = self::$global ? self::cfg : ['db', 'prefix', 'timeout', 'persist'];
-
-        foreach ($config as $key) {
-            $cfg[$key] = parent::$$key;
-            parent::$$key = self::${'sess_' . $key};
-        }
-
-        unset($config, $key);
-    }
-
-    /**
-     * Restore Redis default config
-     *
-     * @param array $cfg
-     */
-    private static function restore_cfg(array $cfg): void
-    {
-        foreach ($cfg as $key => $value) parent::$$key = $value;
-        unset($cfg, $key, $value);
-    }
+    private static $db_redis = null;
 
     /**
      * Initialize SESSION
@@ -99,17 +44,8 @@ class redis_session extends redis
     public static function start(): void
     {
         if (PHP_SESSION_ACTIVE === session_status()) return;
-
-        //Setup & Backup Redis settings
-        $cfg = [];
-        self::setup_cfg($cfg);
-
         //Connect Redis
-        self::$db_redis = parent::connect();
-
-        //Restore Redis settings
-        self::restore_cfg($cfg);
-        unset($cfg);
+        if (is_null(self::$db_redis)) self::$db_redis = self::connect();
 
         //Setup Session GC config
         ini_set('session.gc_divisor', 100);
@@ -148,7 +84,6 @@ class redis_session extends redis
      */
     public static function close(): bool
     {
-        if (!self::$sess_persist) self::$db_redis->close();
         return true;
     }
 
@@ -159,7 +94,7 @@ class redis_session extends redis
      */
     public static function read(string $session_id): string
     {
-        return (string)self::$db_redis->get(self::$prefix . $session_id);
+        return (string)self::$db_redis->get(self::$sess_prefix . $session_id);
     }
 
     /**
@@ -170,9 +105,9 @@ class redis_session extends redis
      */
     public static function write(string $session_id, string $session_data): bool
     {
-        $write = (bool)self::$db_redis->set(self::$prefix . $session_id, $session_data, self::$sess_life);
+        $write = self::$db_redis->set(self::$sess_prefix . $session_id, $session_data, self::$sess_life);
         unset($session_id, $session_data);
-        return $write;
+        return (bool)$write;
     }
 
     /**
@@ -182,7 +117,7 @@ class redis_session extends redis
      */
     public static function destroy(string $session_id): bool
     {
-        self::$db_redis->del(self::$prefix . $session_id);
+        self::$db_redis->del(self::$sess_prefix . $session_id);
         unset($session_id);
         return true;
     }
