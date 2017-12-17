@@ -29,7 +29,7 @@ namespace ext;
 
 class redis_session extends redis
 {
-    //SESSION Prefix (Extends from "parent::$prefix")
+    //SESSION Prefix (After "parent::$prefix")
     public static $sess_prefix = 'sess:';
 
     //SESSION Lifetime (in seconds)
