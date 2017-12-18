@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Redis Extension
+ * Redis Connector Extension
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -47,17 +47,19 @@ class redis
     {
         try {
             $redis = new \Redis();
-            $type = self::$persist ? 'pconnect' : 'connect';
-            if (!$redis->$type(self::$host, self::$port)) throw new \Exception('Redis: Host or Port ERROR!');
-            if ('' !== self::$auth) $redis->auth((string)self::$auth);
+
+            if (self::$persist ? !$redis->pconnect(self::$host, self::$port) : !$redis->connect(self::$host, self::$port)) throw new \RedisException('Redis: Host or Port ERROR!');
+            if ('' !== self::$auth && !$redis->auth((string)self::$auth)) throw new \RedisException('Redis: Authentication Failed!');
+
             if ('' !== self::$prefix) $redis->setOption($redis::OPT_PREFIX, (string)self::$prefix . ':');
             if (0 < self::$timeout) $redis->setOption($redis::OPT_READ_TIMEOUT, (int)self::$timeout);
             $redis->setOption($redis::OPT_SERIALIZER, $redis::SERIALIZER_NONE);
+
             $redis->select((int)self::$db);
-            unset($type);
-        } catch (\Exception $error) {
+
+            return $redis;
+        } catch (\RedisException $error) {
             exit('Redis: Failed to connect! ' . $error->getMessage());
         }
-        return $redis;
     }
 }

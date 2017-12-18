@@ -1,7 +1,7 @@
 <?php
 
 /**
- * PDO Extension
+ * PDO Connector Extension
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
@@ -26,8 +26,6 @@
  */
 
 namespace ext;
-
-use function Couchbase\defaultDecoder;
 
 class pdo
 {
@@ -77,9 +75,9 @@ class pdo
                 $dsn .= 'dbname=//' . self::$host . ':' . self::$port . '/' . self::$db_name . ';charset=' . self::$charset;
                 break;
             default:
-                //Database type NOT support
                 exit('Database type NOT support!');
         }
+
         return $dsn;
     }
 
@@ -89,10 +87,10 @@ class pdo
     public static function connect(): \PDO
     {
         try {
-            if ('' === (string)self::$db_name) throw new \Exception('MySQL: Database Name ERROR!');
+            if ('' === (string)self::$db_name) throw new \PDOException('PDO: Database Name ERROR!');
             return new \PDO(self::build(), (string)self::$user, (string)self::$pwd, self::$option);
-        } catch (\Exception $error) {
-            exit('MySQL: Failed to connect! ' . $error->getMessage());
+        } catch (\PDOException $error) {
+            exit('PDO: Failed to connect! ' . $error->getMessage());
         }
     }
 }
