@@ -265,7 +265,7 @@ class upload
     {
         $ext = file::get_ext($file_name);
         //Extension not allowed
-        if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext)) || (empty(self::$file_ext) && !isset(self::mime[$ext]))) $ext = '';
+        if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) || (empty(self::$file_ext) && !isset(self::mime[$ext]))) $ext = '';
         unset($file_name);
         return $ext;
     }
