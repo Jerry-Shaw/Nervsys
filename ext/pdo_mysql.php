@@ -168,6 +168,42 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Delete data
+     *
+     * @param string $table
+     * @param array  $where
+     *
+     * @return bool
+     */
+    public static function delete(string $table, array $where): bool
+    {
+        //Delete not allowed
+        if (empty($where)) {
+            debug('Delete is not allowed!');
+            return false;
+        }
+
+        //Get columns of the table
+        $column = self::column($table);
+
+        //Build "column" & "where"
+        if (!self::build_where($column, $where)) {
+            debug('Where clause NOT match!');
+            return false;
+        }
+
+        //Prepare & execute SQL
+        self::init();
+
+        $sql = 'DELETE ' . self::escape($table) . ' WHERE ' . implode(' ', $column);
+        $stmt = self::$db_mysql->prepare($sql);
+        $result = $stmt->execute($where);
+
+        unset($table, $where, $column, $sql, $stmt);
+        return $result;
+    }
+
+    /**
      * Get columns from a table
      *
      * @param string $table
