@@ -344,41 +344,35 @@ class pdo_mysql extends pdo
         if (isset($opt['join'])) {
             if (is_array($opt['join'])) {
 
+                $join_data = [];
 
-                $column = [];
-                foreach ($opt['field'] as $item) $column[] = self::escape($item);
-                $data['field'] = implode(', ', $column);
-                unset($column);
+                foreach ($opt['join'] as $table => $option) {
+                    $option[3] = !isset($option[3]) ? 'INNER' : strtoupper($option[3]);
+                    $mode = in_array($option[3], ['INNER', 'LEFT', 'RIGHT'], true) ? $option[3] : 'INNER';
 
+                    if (2 === count($option)) {
+                        $column_A = $option[0];
+                        $column_B = $option[1];
+                        $operator = '=';
+                    } else {
+                        $column_A = $option[0];
+                        $column_B = $option[2];
+                        $operator = $option[1];
+                    }
 
+                    $join_data[] = $mode . ' JOIN ' . self::escape($table) . ' ON ' . $column_A . ' ' . $operator . ' ' . $column_B;
+                }
+
+                if (!empty($join_data)) $data['join'] = implode(' ', $join_data);
             } else $data['join'] = &$opt['join'];
         }
 
 
-        $join = '';
-        if (is_string($opt) && '' !== trim($opt)) return $opt;
-        elseif (is_array($opt)) {
-            foreach ($opt as $key => $value) {
-                $mode = 'INNER';
-                if (is_array($value)) {
-                    if (!empty($value[2]) && 0 === strcasecmp($value[2], 'LEFT')) $mode = 'LEFT';
-                    elseif (!empty($value[2]) && 0 === strcasecmp($value[2], 'RIGHT')) $mode = 'RIGHT';
-                    $relative = !empty($value[3]) ? $value[3] : '=';
-                    $condition = ' ' . $mode . ' JOIN ' . $key . ' ON ' . self::escape($value[0]) . $relative . self::escape($value[1]) . ' ';
-                } else {
-                    $condition = ' ' . $mode . ' JOIN ' . $key . ' ON ' . $value . ' ';
-                }
-                $join .= $condition;
-            }
-        }
-        unset($opt);
-        return $join;
 
+        
 
         $option = [];
         $option['table'] = !empty($table) ? $table : self::$table;
-        $option['field'] = !empty($opt['field']) ? $opt['field'] : self::$field;
-        $option['join'] = !empty($opt['join']) ? self::_join($opt['join']) : self::_join(self::$join);
         $option['where'] = !empty($opt['where']) ? self::_where($opt['where']) : self::_where(self::$where);
         $option['order'] = !empty($opt['order']) ? self::_order($opt['order']) : self::_order(self::$order);
         $option['group'] = !empty($opt['group']) ? self::_group($opt['group']) : self::_group(self::$group);
