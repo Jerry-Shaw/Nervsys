@@ -187,9 +187,7 @@ class pdo_mysql extends pdo
         self::init();
 
         //Prepare & execute
-        $sql = 'SELECT ' . $field . ' FROM ' . self::escape($table);
-
-        foreach ($opt as $item) $sql .= $item;
+        $sql = 'SELECT ' . $field . ' FROM ' . self::escape($table) . ' ' . implode(' ', $opt);
 
         $stmt = self::$db_mysql->prepare($sql);
         !empty($data) ? $stmt->execute($data) : $stmt->execute();
