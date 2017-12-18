@@ -49,6 +49,7 @@ class pdo_mysql extends pdo
      * @var array
      */
     public static $config = [
+        'init'    => false,
         'type'    => 'mysql',
         'host'    => '127.0.0.1',
         'port'    => 3306,
