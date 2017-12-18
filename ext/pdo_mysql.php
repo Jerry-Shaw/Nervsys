@@ -37,17 +37,27 @@ class pdo_mysql extends pdo
      * 'type'    => 'mysql'     //string: PDO DSN prefix (database type)
      * 'host'    => '127.0.0.1' //string: Database host address
      * 'port'    => 3306        //int: Database host port
-     * 'user'    => 'root'      //string: Database user name
+     * 'user'    => 'root'      //string: Database username
      * 'pwd'     => ''          //string: Database password
      * 'db_name' => ''          //string: Database name
      * 'charset' => 'utf8mb4'   //string: Database charset
      * 'persist' => true        //string: Persistent connection option
      *
-     * Leave empty to use default config in PDO extension
+     * Config will be removed once used
+     * Do add 'init' => true to re-connect
      *
      * @var array
      */
-    public static $config = [];
+    public static $config = [
+        'type'    => 'mysql',
+        'host'    => '127.0.0.1',
+        'port'    => 3306,
+        'user'    => 'root',
+        'pwd'     => '',
+        'db_name' => '',
+        'charset' => 'utf8mb4',
+        'persist' => true
+    ];
 
     //MySQL instance resource
     private static $db_mysql = null;
@@ -94,19 +104,14 @@ class pdo_mysql extends pdo
             return false;
         }
 
-        //Get columns of the table
-        $column = self::column($table);
+        //Build "data"
+        $column = self::build_data($data);
 
-        //Build "column" & "data"
-        if (!self::build_data($column, $data)) {
-            debug('Data structure NOT match!');
-            return false;
-        }
-
-        //Prepare & execute SQL
+        //Initialize
         self::init();
 
-        $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
+        //Prepare & execute
+        $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', $column) . ') VALUES(' . implode(', ', array_keys($column)) . ')';
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($data);
 
@@ -127,43 +132,36 @@ class pdo_mysql extends pdo
      */
     public static function update(string $table, array $data, array $where): bool
     {
-        //No data to insert
+        //No data to update
         if (empty($data)) {
             debug('No data to update!');
             return false;
         }
 
-        //Get columns of the table
-        $column = self::column($table);
+        //Build "data"
+        $data_column = self::build_data($data);
 
-        //Build "column" & "data"
-        $data_col = $column;
-        if (!self::build_data($data_col, $data)) {
-            debug('Data structure NOT match!');
-            return false;
-        }
+        //Get "SET"
+        $set_opt = [];
+        foreach ($data_column as $key => $item) $set_opt[] = $item . ' = ' . $key;
+        unset($data_column, $key, $item);
 
-        $set = [];
-        foreach ($data_col as $key => $item) $set[] = $key . ' = ' . $item;
-
-        //Build "column" & "where"
-        $where_col = $column;
-        if (!self::build_where($where_col, $where)) {
-            debug('Where clause NOT match!');
-            return false;
-        }
+        //Build "where"
+        $where_opt = self::build_where($where);
 
         //Merge data
         $data = array_merge($data, $where);
+        unset($where);
 
-        //Prepare & execute SQL
+        //Initialize
         self::init();
 
-        $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set) . ' WHERE ' . implode(' ', $where_col);
+        //Prepare & execute
+        $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . implode(' ', $where_opt);
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($data);
 
-        unset($table, $data, $where, $column, $data_col, $set, $key, $item, $where_col, $sql, $stmt);
+        unset($table, $data, $set_opt, $where_opt, $sql, $stmt);
         return $result;
     }
 
@@ -183,131 +181,90 @@ class pdo_mysql extends pdo
             return false;
         }
 
-        //Get columns of the table
-        $column = self::column($table);
-
-        //Build "column" & "where"
-        if (!self::build_where($column, $where)) {
-            debug('Where clause NOT match!');
-            return false;
-        }
+        //Build "where"
+        $where_opt = self::build_where($where);
 
         //Prepare & execute SQL
         self::init();
 
-        $sql = 'DELETE ' . self::escape($table) . ' WHERE ' . implode(' ', $column);
+        $sql = 'DELETE ' . self::escape($table) . implode(' ', $where_opt);
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($where);
 
-        unset($table, $where, $column, $sql, $stmt);
+        unset($table, $where, $where_opt, $sql, $stmt);
         return $result;
     }
 
     /**
-     * Get columns from a table
+     * Build "data"
      *
-     * @param string $table
+     * @param array $data
      *
      * @return array
      */
-    private static function column(string $table): array
+    private static function build_data(array &$data): array
     {
-        $sql = 'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = :table AND TABLE_SCHEMA = :db';
-        $stmt = self::$db_mysql->prepare($sql);
+        //Columns
+        $column = [];
 
-        $stmt->bindValue(':table', $table, \PDO::PARAM_STR);
-        $stmt->bindValue(':db', self::$db_name, \PDO::PARAM_STR);
-        $stmt->execute();
+        //Process data
+        foreach ($data as $key => $value) {
+            //Generate bind value
+            $bind = ':d_' . $key;
 
-        $column = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            //Add to columns
+            $column[$bind] = self::escape($key);
 
-        unset($table, $sql, $stmt);
-        return !empty($column) ? array_flip($column) : [];
-    }
-
-    /**
-     * Build "column" & "data"
-     *
-     * @param array $column
-     * @param array $data
-     *
-     * @return bool
-     */
-    private static function build_data(array &$column, array &$data): bool
-    {
-        $list = $pack = [];
-        //Compare & format data
-        if (count($column) !== count($data)) {
-            //Check "data" columns
-            $keys = array_keys($data);
-            $diff = array_diff($keys, $column);
-
-            //Remove column not exist
-            if (!empty($diff)) foreach ($diff as $key) unset($keys[array_search($key, $keys)]);
-
-            foreach ($keys as $key => $value) {
-                $bind = ':d_' . $value;
-                $pack[$bind] = $data[$value];
-                $list[self::escape($value)] = $bind;
-            }
-            unset($keys, $diff);
-        } else {
-            $data = array_values($data);
-            foreach ($data as $key => $value) {
-                $bind = ':d_' . $column[$key];
-                $pack[$bind] = $value;
-                $list[self::escape($value)] = $bind;
-            }
+            //Renew data
+            unset($data[$key]);
+            $data[$bind] = $value;
         }
 
-        $column = &$list;
-        $data = &$pack;
+        unset($key, $value, $bind);
 
-        unset($list, $pack, $key, $value, $bind);
-        return !empty($column) && !empty($data) ? true : false;
+        return $column;
     }
 
     /**
-     * Build "column" & "where"
+     * Build "where"
      *
-     * @param array $column
      * @param array $where
      *
-     * @return bool
+     * @return array
      */
-    private static function build_where(array &$column, array &$where): bool
+    private static function build_where(array &$where): array
     {
-        $list = $pack = [];
-        foreach ($where as $item) {
-            //Ignore column not exist
-            if (empty($item) || !in_array($item[0], $column, true)) continue;
+        //Options
+        $option = ['WHERE'];
 
-            //Process
+        foreach ($where as $key => $item) {
+            unset($where[$key]);
+
+            //Add operator
+            if (2 === count($item)) {
+                $item[2] = $item[1];
+                $item[1] = '=';
+            }
+
+            //Generate bind value
             $bind = ':w_' . $item[0] . '_' . mt_rand();
 
+            //Add to "where"
+            $where[$bind] = $item[2];
+
+            //Process data
             if (isset($item[3])) {
                 $item[3] = strtoupper($item[3]);
-                if (in_array($item[3], ['AND', 'OR', 'NOT'], true)) $list[] = $item[3];
+                if (in_array($item[3], ['AND', 'OR', 'NOT'], true)) $option[] = $item[3];
             }
 
-            $list[] = self::escape($item[0]);
-
-            if (2 === count($item)) {
-                $list[] = '=';
-                $pack[$bind] = $item[1];
-            } else {
-                $list[] = $item[1];
-                $pack[$bind] = $item[2];
-            }
-
-            $list[] = $bind;
+            $option[] = self::escape($item[0]);
+            $option[] = $item[1];
+            $option[] = $bind;
         }
 
-        $column = &$list;
-        $where = &$pack;
-
-        unset($list, $pack, $item, $bind);
-        return !empty($column) && !empty($where) ? true : false;
+        unset($key, $item, $bind);
+        return $option;
     }
 
     /**
@@ -319,12 +276,58 @@ class pdo_mysql extends pdo
      */
     private static function escape(string $value): string
     {
-        return '`' . trim($value, " `\t\n\r\0\x0B") . '`';
+        return false !== strpos($value, '.') ? '`' . trim($value, " `\t\n\r\0\x0B") . '`' : trim($value);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     //==============================
 
+    /**
+     * Get columns from a table
+     *
+     * @param string $table
+     *
+     * @return array
+     */
+    private static function column(string $table): array
+    {
+        if (isset(self::$table_column[$table])) return self::$table_column[$table];
+
+        $sql = 'SELECT COLUMN_NAME, EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = :db_name AND TABLE_NAME = :table';
+
+        $stmt = self::$db_mysql->prepare($sql);
+
+        $stmt->bindValue(':db_name', self::$db_name, \PDO::PARAM_STR);
+        $stmt->bindValue(':table', $table, \PDO::PARAM_STR);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            self::$table_column[$table]['column'][] = $row['COLUMN_NAME'];
+            if ('AUTO_INCREMENT' === $row['EXTRA']) self::$table_column[$table]['increment'] = $row['COLUMN_NAME'];
+        }
+
+        unset($sql, $stmt, $row);
+
+        return self::$table_column[$table];
+    }
 
     private static function build_opt(array $opt = []): array
     {
@@ -367,12 +370,19 @@ class pdo_mysql extends pdo
             } else $data['join'] = &$opt['join'];
         }
 
+        //Process "where"
 
 
-        
+        //Get columns of the table
+        $column = self::column($table);
 
-        $option = [];
-        $option['table'] = !empty($table) ? $table : self::$table;
+        //Build "column" & "where"
+        if (!self::build_where($column, $where)) {
+            debug('Where clause NOT match!');
+            return false;
+        }
+
+
         $option['where'] = !empty($opt['where']) ? self::_where($opt['where']) : self::_where(self::$where);
         $option['order'] = !empty($opt['order']) ? self::_order($opt['order']) : self::_order(self::$order);
         $option['group'] = !empty($opt['group']) ? self::_group($opt['group']) : self::_group(self::$group);
