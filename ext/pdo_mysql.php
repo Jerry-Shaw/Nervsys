@@ -157,7 +157,7 @@ class pdo_mysql extends pdo
         self::init();
 
         //Prepare & execute
-        $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . implode(' ', $where_opt);
+        $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($data);
 
@@ -187,7 +187,7 @@ class pdo_mysql extends pdo
         //Prepare & execute SQL
         self::init();
 
-        $sql = 'DELETE ' . self::escape($table) . implode(' ', $where_opt);
+        $sql = 'DELETE ' . self::escape($table) . ' ' . implode(' ', $where_opt);
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($where);
 
@@ -280,68 +280,22 @@ class pdo_mysql extends pdo
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     //==============================
 
-    /**
-     * Get columns from a table
-     *
-     * @param string $table
-     *
-     * @return array
-     */
-    private static function column(string $table): array
-    {
-        if (isset(self::$table_column[$table])) return self::$table_column[$table];
-
-        $sql = 'SELECT COLUMN_NAME, EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = :db_name AND TABLE_NAME = :table';
-
-        $stmt = self::$db_mysql->prepare($sql);
-
-        $stmt->bindValue(':db_name', self::$db_name, \PDO::PARAM_STR);
-        $stmt->bindValue(':table', $table, \PDO::PARAM_STR);
-        $stmt->execute();
-
-        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-            self::$table_column[$table]['column'][] = $row['COLUMN_NAME'];
-            if ('AUTO_INCREMENT' === $row['EXTRA']) self::$table_column[$table]['increment'] = $row['COLUMN_NAME'];
-        }
-
-        unset($sql, $stmt, $row);
-
-        return self::$table_column[$table];
-    }
 
     private static function build_opt(array $opt = []): array
     {
-        $data = [];
+        $option = [];
 
         //Process "field"
         if (isset($opt['field'])) {
             if (is_array($opt['field'])) {
                 $column = [];
                 foreach ($opt['field'] as $item) $column[] = self::escape($item);
-                $data['field'] = implode(', ', $column);
+                $option['field'] = implode(', ', $column);
                 unset($column);
-            } else $data['field'] = &$opt['field'];
-        } else $data['field'] = '*';
+            } else $option['field'] = &$opt['field'];
+        } else $option['field'] = '*';
 
         //Process "join"
         if (isset($opt['join'])) {
@@ -366,20 +320,15 @@ class pdo_mysql extends pdo
                     $join_data[] = $mode . ' JOIN ' . self::escape($table) . ' ON ' . $column_A . ' ' . $operator . ' ' . $column_B;
                 }
 
-                if (!empty($join_data)) $data['join'] = implode(' ', $join_data);
-            } else $data['join'] = &$opt['join'];
+                if (!empty($join_data)) $option['join'] = implode(' ', $join_data);
+            } else $option['join'] = &$opt['join'];
         }
 
         //Process "where"
+        if (isset($opt['where'])) {
+            $where_opt = self::build_where($opt['where']);
 
 
-        //Get columns of the table
-        $column = self::column($table);
-
-        //Build "column" & "where"
-        if (!self::build_where($column, $where)) {
-            debug('Where clause NOT match!');
-            return false;
         }
 
 
@@ -413,6 +362,35 @@ class pdo_mysql extends pdo
 
 
     //============================
+
+    /**
+     * Get columns from a table
+     *
+     * @param string $table
+     *
+     * @return array
+     */
+    private static function column(string $table): array
+    {
+        if (isset(self::$table_column[$table])) return self::$table_column[$table];
+
+        $sql = 'SELECT COLUMN_NAME, EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = :db_name AND TABLE_NAME = :table';
+
+        $stmt = self::$db_mysql->prepare($sql);
+
+        $stmt->bindValue(':db_name', self::$db_name, \PDO::PARAM_STR);
+        $stmt->bindValue(':table', $table, \PDO::PARAM_STR);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            self::$table_column[$table]['column'][] = $row['COLUMN_NAME'];
+            if ('AUTO_INCREMENT' === $row['EXTRA']) self::$table_column[$table]['increment'] = $row['COLUMN_NAME'];
+        }
+
+        unset($sql, $stmt, $row);
+
+        return self::$table_column[$table];
+    }
 
     // Format data
     protected static function format(string $table, array $data): array
