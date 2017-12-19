@@ -220,7 +220,7 @@ class pdo_mysql extends pdo
         //Prepare & execute SQL
         self::init();
 
-        $sql = 'DELETE ' . self::escape($table) . ' ' . implode(' ', $where_opt);
+        $sql = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($where);
 
