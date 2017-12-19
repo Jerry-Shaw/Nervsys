@@ -99,7 +99,7 @@ class pdo_mysql extends pdo
      *
      * @return bool
      */
-    public static function insert(string $table, array $data, string &$last = 'id'): bool
+    public static function insert(string $table, array $data, string &$last = ''): bool
     {
         //No data to insert
         if (empty($data)) {
