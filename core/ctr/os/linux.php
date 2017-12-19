@@ -32,11 +32,73 @@ use core\ctr\os;
 class linux extends os
 {
     /**
+     * Format system output data
+     *
+     * @param array $data
+     */
+    private static function format(array &$data): void
+    {
+        if (empty($data)) return;
+
+        $key = 0;
+        $list = [];
+
+        foreach ($data as $line) {
+            $line = trim($line);
+            if ('' === $line) {
+                ++$key;
+                continue;
+            }
+
+            if (false === strpos($line, ':')) continue;
+            list($name, $value) = explode(':', $line, 2);
+
+            $name = trim($name);
+            $value = trim($value);
+
+            if (!isset($list[$key][$name]) && '' !== $value) $list[$key][$name] = $value;
+        }
+
+        $data = array_values($list);
+        unset($key, $list, $line, $name, $value);
+    }
+
+    /**
      * Get PHP environment information
      */
     public static function env_info(): void
     {
+        //Get pid
+        parent::$env['PHP_PID'] = getmypid();
 
+        //Execute system command
+        exec('cat /proc/' . parent::$env['PHP_PID'] . '/cmdline | strings -1', $output, $status);
+
+        //No authority
+        if (0 !== $status) {
+            debug('Access denied! Please check your authority!');
+            exit;
+        }
+
+        //Get CMD
+        parent::$env['PHP_CMD'] = implode(' ', $output);
+
+        //Empty output
+        $output = [];
+
+        //Execute system command
+        exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
+
+        //No authority
+        if (0 !== $status) {
+            debug('Access denied! Please check your authority!');
+            exit;
+        }
+
+        //Get executable path
+        parent::$env['PHP_EXE'] = '"' . current($output) . '"';
+
+        unset($output, $status);
     }
 
     /**
@@ -44,6 +106,49 @@ class linux extends os
      */
     public static function sys_info(): void
     {
+        $queries = [
+            'lspci | grep -i "eth"',
+            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
+            'cat /proc/cpuinfo | grep -E "processor|vendor|family|model|microcode|MHz|cache|physical|address"',
+            'dmidecode -t memory'
+        ];
 
+        //Run command
+        $output = [];
+        foreach ($queries as $query) {
+            exec($query, $output, $status);
+
+            //No authority
+            if (0 !== $status) {
+                debug('Access denied! Please check your authority!');
+                exit;
+            }
+        }
+
+        self::format($output);
+
+        $queries = [
+            'mac'  => 'ip link show | grep link/ether',
+            'pci'  => 'lspci',
+            'disk' => 'lsblk'
+        ];
+
+        //Run command
+        foreach ($queries as $key => $query) {
+            $value = [];
+            exec($query, $value, $status);
+
+            //No authority
+            if (0 !== $status) {
+                debug('Access denied! Please check your authority!');
+                exit;
+            }
+
+            $output[$key] = 1 < count($value) ? $value : trim(current($value));
+        }
+
+        if (empty($output)) return;
+        parent::$sys = &$output;
+        unset($queries, $output, $query, $status, $key, $value);
     }
 }

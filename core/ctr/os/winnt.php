@@ -102,6 +102,7 @@ class winnt extends os
         ];
 
         //Run command
+        $output = [];
         foreach ($queries as $query) {
             exec($query, $output, $status);
 
@@ -113,8 +114,9 @@ class winnt extends os
         }
 
         self::format($output);
+
         if (empty($output)) return;
         foreach ($output as $key => $value) if (1 < count($value)) parent::$sys[] = $value;
-        unset($queries, $query, $output, $status, $key, $value);
+        unset($queries, $output, $query, $status, $key, $value);
     }
 }
