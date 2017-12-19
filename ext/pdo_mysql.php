@@ -190,7 +190,7 @@ class pdo_mysql extends pdo
         $sql = 'SELECT ' . $field . ' FROM ' . self::escape($table) . ' ' . implode(' ', $opt);
 
         $stmt = self::$db_mysql->prepare($sql);
-        !empty($data) ? $stmt->execute($data) : $stmt->execute();
+        $stmt->execute($data);
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
@@ -225,6 +225,47 @@ class pdo_mysql extends pdo
         $result = $stmt->execute($where);
 
         unset($table, $where, $where_opt, $sql, $stmt);
+        return $result;
+    }
+
+    /**
+     * Query SQL & fetch data
+     *
+     * @param string $sql
+     * @param array  $data
+     * @param bool   $column
+     *
+     * @return array
+     */
+    public static function query(string $sql, array $data = [], bool $column = false): array
+    {
+        self::init();
+
+        $stmt = self::$db_mysql->prepare($sql);
+        $stmt->execute($data);
+
+        $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
+
+        unset($sql, $data, $column, $stmt);
+        return $result;
+    }
+
+    /**
+     * Execute SQL & fetch result
+     *
+     * @param string $sql
+     * @param array  $data
+     *
+     * @return bool
+     */
+    public static function exec(string $sql, array $data = []): bool
+    {
+        self::init();
+
+        $stmt = self::$db_mysql->prepare($sql);
+        $result = $stmt->execute($data);
+
+        unset($sql, $data, $stmt);
         return $result;
     }
 
