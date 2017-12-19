@@ -91,6 +91,8 @@ class pdo_mysql extends pdo
     /**
      * Insert data
      *
+     * Usage: insert('myTable', ['col_a' => 'A', 'col_b' => 'B, ...], 'myID')
+     *
      * @param string $table
      * @param array  $data
      * @param string $last
@@ -124,6 +126,8 @@ class pdo_mysql extends pdo
 
     /**
      * Update data
+     *
+     * Usage: update('myTable', ['col_a' => 'A', 'col_b' => 'B, ...], [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...])
      *
      * @param string $table
      * @param array  $data
@@ -169,6 +173,18 @@ class pdo_mysql extends pdo
     /**
      * Select data
      *
+     * Usage: select(
+     * 'myTable',
+     * [
+     * 'field' => ['a', 'b', ...], / a,b,c / *
+     * 'join' => ['TableB' => ['myTable.a', '=', 'TableB.b'],...], / INNER JOIN TableB
+     * 'where' => [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...], / a = 'a' AND b = 'b'
+     * 'order' => [['a', 'DESC'],...], / a DESC
+     * 'group' => ['a', 'b',...], / ['a'] / a
+     * 'limit' => [1, 20] / 1 / 1, 20
+     * ],
+     * false)
+     *
      * @param string $table
      * @param array  $option
      * @param bool   $column
@@ -196,6 +212,8 @@ class pdo_mysql extends pdo
 
     /**
      * Delete data
+     *
+     * Usage: delete('myTable', [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...])
      *
      * @param string $table
      * @param array  $where
