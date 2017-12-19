@@ -262,7 +262,7 @@ class cli extends router
             if ('' === $command) return;
             $command = self::quote_command($command);
 
-            if (!empty(parent::$data)) $command .= ' ' . implode(' ', self::$cmd_data);
+            if (!empty(self::$cmd_data)) $command .= ' ' . implode(' ', self::$cmd_data);
 
             //Run command
             parent::$result = self::run_exec($command);
