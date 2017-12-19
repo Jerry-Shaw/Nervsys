@@ -97,7 +97,7 @@ class pdo_mysql extends pdo
      *
      * @return bool
      */
-    public static function insert(string $table, array $data = [], string &$last = 'id'): bool
+    public static function insert(string $table, array $data, string &$last = 'id'): bool
     {
         //No data to insert
         if (empty($data)) {
@@ -287,12 +287,6 @@ class pdo_mysql extends pdo
                 } elseif (0 < $key) $item[3] = 'AND';
             }
 
-            //Generate bind value
-            $bind = ':w_' . $item[0] . '_' . mt_rand();
-
-            //Add to "where"
-            $where[$bind] = $item[2];
-
             //Process data
             if (isset($item[3])) {
                 $item[3] = strtoupper($item[3]);
@@ -300,8 +294,43 @@ class pdo_mysql extends pdo
             }
 
             $option[] = self::escape($item[0]);
-            $option[] = $item[1];
-            $option[] = $bind;
+
+            //Bind data
+            if (false === stripos($item[1], 'IN')) {
+                $option[] = $item[1];
+                //Generate bind value
+                $bind = ':w_' . $item[0] . '_' . mt_rand();
+                //Add to option
+                $option[] = $bind;
+                //Add to "where"
+                $where[$bind] = $item[2];
+            } else {
+                $option[] = strtoupper($item[1]);
+                $option[] = '(';
+
+                if (is_array($item[2])) {
+                    $opt = [];
+                    foreach ($item[2] as $name => $value) {
+                        //Generate bind value
+                        $bind = ':w_' . $item[0] . '_' . $name . '_' . mt_rand();
+                        //Add to option
+                        $opt[] = $bind;
+                        //Add to "where"
+                        $where[$bind] = $value;
+                    }
+                    $option[] = implode(', ', $opt);
+                    unset($opt, $name, $value);
+                } else {
+                    //Generate bind value
+                    $bind = ':w_' . $item[0] . '_' . mt_rand();
+                    //Add to option
+                    $option[] = $bind;
+                    //Add to "where"
+                    $where[$bind] = $item[2];
+                }
+
+                $option[] = ')';
+            }
         }
 
         unset($key, $item, $count, $bind);
@@ -315,7 +344,7 @@ class pdo_mysql extends pdo
      *
      * @return array
      */
-    private static function build_opt(array $opt = []): array
+    private static function build_opt(array $opt): array
     {
         $option = [];
         $option['data'] = [];
