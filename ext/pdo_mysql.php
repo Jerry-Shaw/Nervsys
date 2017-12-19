@@ -564,7 +564,6 @@ class pdo_mysql extends pdo
         if (!isset($opt['limit'])) return [];
         $opt_data = $opt['limit'];
         unset($opt['limit']);
-
         $data = [];
 
         if (is_array($opt_data) && !empty($opt_data)) {
@@ -593,6 +592,19 @@ class pdo_mysql extends pdo
      */
     private static function escape(string $value): string
     {
-        return false !== strpos($value, '.') ? '`' . trim($value, " `\t\n\r\0\x0B") . '`' : trim($value);
+        $pass = true;
+        $char = ['.', '(', ')', ' '];
+
+        foreach ($char as $key) {
+            if (false !== strpos($value, $key)) {
+                $pass = false;
+                break;
+            }
+        }
+
+        $value = $pass ? '`' . trim($value, " `\t\n\r\0\x0B") . '`' : trim($value);
+
+        unset($pass, $char, $key);
+        return $value;
     }
 }
