@@ -368,8 +368,8 @@ class cli extends router
         if (self::$log) {
             $log['cmd'] = &$command;
             $log['data'] = self::$cli_data;
-            $log['error'] = self::get_stream([$pipes[2]]);
-            $log['result'] = self::get_stream([$pipes[1]]);
+            $log['error'] = self::get_stream([$process, $pipes[2]]);
+            $log['result'] = self::get_stream([$process, $pipes[1]]);
             self::save_log($log);
         }
 
@@ -377,8 +377,8 @@ class cli extends router
         if ('' !== self::$return) {
             if (false !== strpos(self::$return, 'cmd')) $result['cmd'] = &$command;
             if (false !== strpos(self::$return, 'data')) $result['data'] = self::$cli_data;
-            if (false !== strpos(self::$return, 'error')) $result['error'] = $log['error'] ?? self::get_stream([$pipes[2]]);
-            if (false !== strpos(self::$return, 'result')) $result['result'] = $log['result'] ?? self::get_stream([$pipes[1]]);
+            if (false !== strpos(self::$return, 'error')) $result['error'] = $log['error'] ?? self::get_stream([$process, $pipes[2]]);
+            if (false !== strpos(self::$return, 'result')) $result['result'] = $log['result'] ?? self::get_stream([$process, $pipes[1]]);
         }
 
         //Close all pipes
@@ -403,18 +403,14 @@ class cli extends router
         $time = 0;
         $result = '';
 
-        //Get the resource
-        $resource = current($stream);
-
-        //Keep checking the stat of stream
+        //Keep checking process
         while ($time <= self::$timeout) {
-            //Get the stat of stream
-            $stat = fstat($resource);
+            //Get status of process
+            $status = proc_get_status($stream[0]);
 
-            //Check the stat of stream
-            if (false !== $stat && 0 < $stat['size']) {
-                //Get trimmed stream content
-                $result = trim(stream_get_contents($resource));
+            //Get stream content when process terminated
+            if (false === $status['running']) {
+                $result = trim(stream_get_contents($stream[1]));
                 break;
             }
 
@@ -424,7 +420,7 @@ class cli extends router
         }
 
         //Return false once the elapsed time reaches the limit
-        unset($stream, $time, $resource, $stat);
+        unset($stream, $time, $status);
         return $result;
     }
 
