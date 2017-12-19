@@ -177,20 +177,16 @@ class pdo_mysql extends pdo
      */
     public static function select(string $table, array $option = [], bool $column = false): array
     {
-        //Build options
-        $opt = self::build_opt($option);
-        $data = &$opt['data'];
-        $field = &$opt['field'];
-        unset($opt['data'], $opt['field']);
+        //Build options & get data bind
+        $data = self::build_opt($option);
 
         //Initialize
         self::init();
 
         //Prepare & execute
-        $sql = 'SELECT ' . $field . ' FROM ' . self::escape($table) . ' ' . implode(' ', $opt);
-
+        $sql = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
         $stmt = self::$db_mysql->prepare($sql);
-        $stmt->execute($data);
+        $stmt->execute($data['bind']);
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
@@ -312,7 +308,6 @@ class pdo_mysql extends pdo
 
         foreach ($where as $key => $item) {
             unset($where[$key]);
-
             $count = count($item);
 
             //Add missing elements
@@ -380,102 +375,195 @@ class pdo_mysql extends pdo
 
     /**
      * Build options
+     * Do NOT mess function orders
      *
      * @param array $opt
      *
      * @return array
      */
-    private static function build_opt(array $opt): array
+    private static function build_opt(array &$opt): array
     {
-        $option = [];
-        $option['data'] = [];
+        $data = [];
+        $data['bind'] = [];
 
         //Process "field"
-        if (isset($opt['field'])) {
-            if (is_array($opt['field']) && !empty($opt['field'])) {
-                $column = [];
-                foreach ($opt['field'] as $value) $column[] = self::escape($value);
-                if (!empty($column)) $option['field'] = implode(', ', $column);
-                unset($column, $value);
-            } elseif (is_string($opt['field']) && '' !== $opt['field']) $option['field'] = &$opt['field'];
-        } else $option['field'] = '*';
-
+        $data['field'] = self::opt_field($opt);
         //Process "join"
-        if (isset($opt['join'])) {
-            if (is_array($opt['join']) && !empty($opt['join'])) {
-                $join_data = [];
-
-                foreach ($opt['join'] as $table => $value) {
-                    $value[3] = !isset($value[3]) ? 'INNER' : strtoupper($value[3]);
-                    if (!in_array($value[3], ['INNER', 'LEFT', 'RIGHT'], true)) $value[3] = 'INNER';
-
-                    if (2 === count($value)) {
-                        $value[2] = $value[1];
-                        $value[1] = '=';
-                    }
-
-                    $join_data[] = $value[3] . ' JOIN ' . self::escape($table) . ' ON ' . $value[0] . ' ' . $value[1] . ' ' . $value[2];
-                }
-
-                if (!empty($join_data)) $option['join'] = implode(' ', $join_data);
-                unset($join_data, $table, $value);
-            } elseif (is_string($opt['join']) && '' !== $opt['join']) $option['join'] = false !== stripos($opt['join'], 'JOIN') ? $opt['join'] : 'INNER JOIN ' . $opt['join'];
-        }
-
+        self::opt_join($opt);
         //Process "where"
-        if (isset($opt['where'])) {
-            if (is_array($opt['where']) && !empty($opt['where'])) {
-                $option['where'] = implode(' ', self::build_where($opt['where']));
-                $option['data'] = array_merge($option['data'], $opt['where']);
-            } elseif (is_string($opt['where']) && '' !== $opt['where']) $option['where'] = 'WHERE ' . $opt['where'];
-        }
-
+        $data['bind'] = self::opt_where($opt);
         //Process "order"
-        if (isset($opt['order'])) {
-            if (is_array($opt['order']) && !empty($opt['order'])) {
-                $column = [];
-
-                foreach ($opt['order'] as $key => $value) {
-                    $value = strtoupper($value);
-                    if (!in_array($value, ['DESC', 'ASC'], true)) $value = 'DESC';
-
-                    $column[] = self::escape($key) . ' ' . $value;
-                }
-
-                if (!empty($column)) $option['order'] = 'ORDER BY ' . implode(', ', $column);
-                unset($column, $key, $value);
-            } elseif (is_string($opt['order']) && '' !== $opt['order']) $option['order'] = 'ORDER BY ' . $opt['order'];
-        }
-
+        self::opt_order($opt);
         //Process "group"
-        if (isset($opt['group'])) {
-            if (is_array($opt['group']) && !empty($opt['group'])) {
-                $column = [];
-                foreach ($opt['group'] as $key) $column[] = self::escape($key);
-
-                if (!empty($column)) $option['group'] = 'GROUP BY ' . implode(', ', $column);
-                unset($column, $key);
-            } elseif (is_string($opt['group']) && '' !== $opt['group']) $option['group'] = 'GROUP BY ' . $opt['group'];
-        }
-
+        self::opt_group($opt);
         //Process "limit"
-        if (isset($opt['limit'])) {
-            if (is_array($opt['limit']) && !empty($opt['limit'])) {
-                if (1 === count($opt['limit'])) {
-                    $opt['limit'][1] = $opt['limit'][0];
-                    $opt['limit'][0] = 0;
+        $data['bind'] += self::opt_limit($opt);
+
+        return $data;
+    }
+
+    /**
+     * Get opt "field"
+     *
+     * @param array $opt
+     *
+     * @return string
+     */
+    private static function opt_field(array &$opt): string
+    {
+        //Default field value
+        $field = '*';
+
+        if (!isset($opt['field'])) return $field;
+        $opt_data = $opt['field'];
+        unset($opt['field']);
+
+        if (is_array($opt_data) && !empty($opt_data)) {
+            $column = [];
+            foreach ($opt_data as $value) $column[] = self::escape($value);
+            if (!empty($column)) $field = implode(', ', $column);
+            unset($column, $value);
+        } elseif (is_string($opt_data) && '' !== $opt_data) $field = &$opt_data;
+
+        unset($opt_data);
+        return $field;
+    }
+
+    /**
+     * Get opt "join"
+     *
+     * @param array $opt
+     */
+    private static function opt_join(array &$opt): void
+    {
+        if (!isset($opt['join'])) return;
+        $opt_data = $opt['join'];
+        unset($opt['join']);
+
+        if (is_array($opt_data) && !empty($opt_data)) {
+            $join = [];
+            foreach ($opt_data as $table => $value) {
+                $value[3] = !isset($value[3]) ? 'INNER' : strtoupper($value[3]);
+                if (!in_array($value[3], ['INNER', 'LEFT', 'RIGHT'], true)) $value[3] = 'INNER';
+                if (2 === count($value)) {
+                    $value[2] = $value[1];
+                    $value[1] = '=';
                 }
 
-                $option['limit'] = 'LIMIT :l_start, :l_offset';
-                $option['data'] = array_merge($option['data'], [':l_start' => (int)$opt['limit'][0], ':l_offset' => (int)$opt['limit'][1]]);
-            } elseif (is_numeric($opt['limit'])) {
-                $option['limit'] = 'LIMIT :l_start, :l_offset';
-                $option['data'] = array_merge($option['data'], [':l_start' => 0, ':l_offset' => (int)$opt['limit']]);
-            } elseif (is_string($opt['limit']) && '' !== $opt['limit']) $option['limit'] = 'LIMIT ' . $opt['limit'];
+                $join[] = $value[3] . ' JOIN ' . self::escape($table) . ' ON ' . $value[0] . ' ' . $value[1] . ' ' . $value[2];
+            }
+
+            if (!empty($join)) $opt['join'] = implode(' ', $join);
+
+            unset($join, $table, $value);
+        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['join'] = false !== stripos($opt_data, 'JOIN') ? $opt_data : 'INNER JOIN ' . $opt_data;
+
+        unset($opt_data);
+    }
+
+    /**
+     * Get opt "where"
+     *
+     * @param array $opt
+     *
+     * @return array
+     */
+    private static function opt_where(array &$opt): array
+    {
+        if (!isset($opt['where'])) return [];
+        $opt_data = $opt['where'];
+        unset($opt['where']);
+
+        if (is_array($opt_data) && !empty($opt_data)) $opt['where'] = implode(' ', self::build_where($opt_data));
+        elseif (is_string($opt_data) && '' !== $opt_data) {
+            $opt['where'] = 'WHERE ' . $opt_data;
+            $opt_data = [];
         }
 
-        unset($opt);
-        return $option;
+        return $opt_data;
+    }
+
+    /**
+     * Get opt "order"
+     *
+     * @param array $opt
+     */
+    private static function opt_order(array &$opt): void
+    {
+        if (!isset($opt['order'])) return;
+        $opt_data = $opt['order'];
+        unset($opt['order']);
+
+        if (is_array($opt_data) && !empty($opt_data)) {
+            $column = [];
+
+            foreach ($opt_data as $key => $value) {
+                $value = strtoupper($value);
+                if (!in_array($value, ['DESC', 'ASC'], true)) $value = 'DESC';
+
+                $column[] = self::escape($key) . ' ' . $value;
+            }
+
+            if (!empty($column)) $opt['order'] = 'ORDER BY ' . implode(', ', $column);
+            unset($column, $key, $value);
+        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['order'] = 'ORDER BY ' . $opt_data;
+
+        unset($opt_data);
+    }
+
+    /**
+     * Get opt "group"
+     *
+     * @param array $opt
+     */
+    private static function opt_group(array &$opt): void
+    {
+        if (!isset($opt['group'])) return;
+        $opt_data = $opt['group'];
+        unset($opt['group']);
+
+        if (is_array($opt_data) && !empty($opt_data)) {
+            $column = [];
+
+            foreach ($opt_data as $key) $column[] = self::escape($key);
+            if (!empty($column)) $opt['group'] = 'GROUP BY ' . implode(', ', $column);
+
+            unset($column, $key);
+        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['group'] = 'GROUP BY ' . $opt_data;
+
+        unset($opt_data);
+    }
+
+    /**
+     * Get opt "limit"
+     *
+     * @param array $opt
+     *
+     * @return array
+     */
+    private static function opt_limit(array &$opt): array
+    {
+        if (!isset($opt['limit'])) return [];
+        $opt_data = $opt['limit'];
+        unset($opt['limit']);
+
+        $data = [];
+
+        if (is_array($opt_data) && !empty($opt_data)) {
+            if (1 === count($opt_data)) {
+                $opt_data[1] = $opt_data[0];
+                $opt_data[0] = 0;
+            }
+
+            $opt['limit'] = 'LIMIT :l_start, :l_offset';
+            $data = [':l_start' => (int)$opt_data[0], ':l_offset' => (int)$opt_data[1]];
+        } elseif (is_numeric($opt_data)) {
+            $opt['limit'] = 'LIMIT :l_start, :l_offset';
+            $data = [':l_start' => 0, ':l_offset' => (int)$opt_data];
+        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['limit'] = 'LIMIT ' . $opt_data;
+
+        unset($opt_data);
+        return $data;
     }
 
     /**
