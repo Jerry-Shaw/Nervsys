@@ -272,10 +272,19 @@ class pdo_mysql extends pdo
         foreach ($where as $key => $item) {
             unset($where[$key]);
 
-            //Add operator
-            if (2 === count($item)) {
+            $count = count($item);
+
+            //Add missing elements
+            if (2 === $count) {
                 $item[2] = $item[1];
                 $item[1] = '=';
+                if (0 < $key) $item[3] = 'AND';
+            } elseif (3 === $count) {
+                if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN'], true)) {
+                    $item[3] = $item[2];
+                    $item[2] = $item[1];
+                    $item[1] = '=';
+                } elseif (0 < $key) $item[3] = 'AND';
             }
 
             //Generate bind value
@@ -287,7 +296,7 @@ class pdo_mysql extends pdo
             //Process data
             if (isset($item[3])) {
                 $item[3] = strtoupper($item[3]);
-                if (in_array($item[3], ['AND', 'OR', 'NOT'], true)) $option[] = $item[3];
+                $option[] = in_array($item[3], ['AND', 'OR', 'NOT'], true) ? $item[3] : 'AND';
             }
 
             $option[] = self::escape($item[0]);
@@ -295,7 +304,7 @@ class pdo_mysql extends pdo
             $option[] = $bind;
         }
 
-        unset($key, $item, $bind);
+        unset($key, $item, $count, $bind);
         return $option;
     }
 

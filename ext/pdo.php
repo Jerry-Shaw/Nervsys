@@ -58,12 +58,16 @@ class pdo
         $dsn = self::$type . ':';
 
         //Build option
+        self::$option[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;
         self::$option[\PDO::ATTR_PERSISTENT] = (bool)self::$persist;
+        self::$option[\PDO::ATTR_ORACLE_NULLS] = \PDO::NULL_TO_STRING;
+        self::$option[\PDO::ATTR_EMULATE_PREPARES] = false;
 
         switch (self::$type) {
             case 'mysql':
                 $dsn .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
                 self::$option[\PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . self::$charset;
+                self::$option[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
                 break;
             case 'mssql':
                 $dsn .= 'host=' . self::$host . ',' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
