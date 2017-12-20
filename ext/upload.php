@@ -115,7 +115,7 @@ class upload
         errno::load('ext', 'upload');
 
         //File not exist
-        if (!isset($_FILES[$name]) || empty($_FILES[$name])) return errno::get(1007);
+        if (!isset($_FILES[$name]) || empty($_FILES[$name])) return errno::get(1007, 1);
 
         //Copy file
         $file = &$_FILES[$name];
@@ -127,19 +127,19 @@ class upload
         $file_size = self::chk_size($file['size']);
 
         //File too large
-        if (0 === $file_size) return errno::get(1004);
+        if (0 === $file_size) return errno::get(1004, 1);
 
         //Check file extension
         $file_ext = self::chk_ext($file['name']);
 
         //Extension not allowed
-        if ('' === $file_ext) return errno::get(1003);
+        if ('' === $file_ext) return errno::get(1003, 1);
 
         //Get upload path
         $save_path = file::get_path(self::$path_save, self::$path_root, self::$path_mode);
 
         //Upload path Error
-        if ('' === $save_path) return errno::get(1002);
+        if ('' === $save_path) return errno::get(1002, 1);
 
         //Get file name
         $save_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
@@ -148,10 +148,10 @@ class upload
         $url = self::save_file($file['tmp_name'], $save_path, $save_name . '.' . $file_ext);
 
         //Failed to move/copy from tmp file
-        if ('' === $url) return errno::get(1001);
+        if ('' === $url) return errno::get(1001, 1);
 
         //Upload done
-        $result = errno::get(1000);
+        $result = errno::get(1000, 0);
         $result['file_url'] = &$url;
         $result['file_size'] = &$file_size;
 
@@ -180,7 +180,7 @@ class upload
         $data_pos = strpos($base64, ';base64,');
 
         //Mime-type not allowed
-        if (false === $data_pos || 0 !== strpos($base64, 'data:')) return errno::get(1003);
+        if (false === $data_pos || 0 !== strpos($base64, 'data:')) return errno::get(1003, 1);
 
         //Get Mime-type
         $mime_type = (string)substr($base64, 5, $data_pos - 5);
@@ -192,25 +192,25 @@ class upload
         $file_ext = self::chk_ext($file_ext);
 
         //Extension not allowed
-        if ('' === $file_ext) return errno::get(1003);
+        if ('' === $file_ext) return errno::get(1003, 1);
 
         //Get binary data
         $binary_data = base64_decode(substr($base64, $data_pos + 8));
 
         //Image data error
-        if (false === $binary_data) return errno::get(1006);
+        if (false === $binary_data) return errno::get(1006, 1);
 
         //Get file size
         $file_size = self::chk_size(strlen($binary_data));
 
         //File too large
-        if (0 === $file_size) return errno::get(1004);
+        if (0 === $file_size) return errno::get(1004, 1);
 
         //Get upload path
         $save_path = file::get_path(self::$path_save, self::$path_root, self::$path_mode);
 
         //Upload path Error
-        if ('' === $save_path) return errno::get(1002);
+        if ('' === $save_path) return errno::get(1002, 1);
 
         //Get file name
         $save_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
@@ -227,13 +227,13 @@ class upload
         $save_file = (int)file_put_contents($file_path, $binary_data);
 
         //File write failed
-        if (0 === $save_file) return errno::get(1001);
+        if (0 === $save_file) return errno::get(1001, 1);
 
         //Set file permissions
         chmod($file_path, self::$file_mode);
 
         //Upload done
-        $result = errno::get(1000);
+        $result = errno::get(1000, 0);
         $result['file_url'] = &$url_path;
         $result['file_size'] = &$file_size;
 
@@ -322,17 +322,17 @@ class upload
         switch ($errno) {
             case 1:
             case 2:
-                return errno::get(1004);
+                return errno::get(1004, 1);
             case 3:
-                return errno::get(1006);
+                return errno::get(1006, 1);
             case 4:
-                return errno::get(1007);
+                return errno::get(1007, 1);
             case 6:
-                return errno::get(1005);
+                return errno::get(1005, 1);
             case 7:
-                return errno::get(1008);
+                return errno::get(1008, 1);
             default:
-                return errno::get(1001);
+                return errno::get(1001, 1);
         }
     }
 }
