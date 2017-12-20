@@ -96,7 +96,7 @@ class linux extends os
         }
 
         //Get executable path
-        parent::$env['PHP_EXE'] = '"' . current($output) . '"';
+        parent::$env['PHP_EXE'] = '"' . $output[0] . '"';
 
         unset($output, $status);
     }
@@ -144,7 +144,7 @@ class linux extends os
                 exit;
             }
 
-            $output[$key] = 1 < count($value) ? $value : trim(current($value));
+            $output[$key] = 1 < count($value) ? $value : trim($value[0]);
         }
 
         if (empty($output)) return;
