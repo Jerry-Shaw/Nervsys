@@ -76,13 +76,14 @@ class errno
      * Language pack needs to be loaded before getting an error message on multi-language support system
      *
      * @param int $code
+     * @param int $errno
      *
      * @return array
      */
-    public static function get(int $code): array
+    public static function get(int $code, int $errno = 0): array
     {
         return isset(self::$pool[$code])
-            ? ['code' => $code, 'msg' => self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code]]
-            : ['code' => $code, 'msg' => 'Error message NOT found!'];
+            ? ['err' => &$errno, 'code' => &$code, 'msg' => self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code]]
+            : ['err' => &$errno, 'code' => &$code, 'msg' => 'Error message NOT found!'];
     }
 }
