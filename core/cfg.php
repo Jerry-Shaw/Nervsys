@@ -36,7 +36,7 @@ header('Content-Type: text/plain; charset=UTF-8');
 define('DEBUG', true);
 
 //NervSys Version
-define('NS_VER', '5.0.0 RC');
+define('NS_VER', '5.0.0');
 
 //Document Root Definition
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
