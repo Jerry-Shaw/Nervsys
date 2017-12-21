@@ -200,7 +200,7 @@ class cgi extends router
             //Get root class
             $space = '\\' . str_replace('/', '\\', $class);
             //Call methods
-            class_exists($space) ? self::call_class($class, $space) : debug($class, 'Module: [' . $space . '] NOT exist!');
+            class_exists($space) ? self::call_class($class, $space) : debug($class, 'Module [' . $space . '] NOT exist!');
         }
         unset($lib, $class, $space);
     }
