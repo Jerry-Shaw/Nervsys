@@ -201,6 +201,8 @@ class cgi extends router
             $space = '\\' . str_replace('/', '\\', $class);
             //Call methods
             if (class_exists($space)) self::call_class($class, $space);
+            //Debugging
+            elseif (DEBUG) parent::$result[$class] = 'Module: [' . $space . '] NOT exist!';
         }
         unset($lib, $class, $space);
     }
@@ -237,7 +239,7 @@ class cgi extends router
 
             //Skip running method when data structure not match
             if (!empty($diff)) {
-                if (DEBUG) parent::$result[$class . '/' . $method] = 'Data Structure ERROR: [' . (implode(', ', $diff)) . '] were missing';
+                if (DEBUG) parent::$result[$class . '/' . $method] = 'Data Structure ERROR: [' . (implode(', ', $diff)) . '] were missing!';
                 continue;
             }
 
