@@ -68,7 +68,7 @@ class winnt extends os
 
         //No authority
         if (0 !== $status) {
-            debug('Access denied! Please check your authority!');
+            debug('WinNT Controller', 'Access denied! Please check your authority!');
             exit;
         }
 
@@ -108,7 +108,7 @@ class winnt extends os
 
             //No authority
             if (0 !== $status) {
-                debug('Access denied! Please check your authority!');
+                debug('WinNT Controller', 'Access denied! Please check your authority!');
                 exit;
             }
         }

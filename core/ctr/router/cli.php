@@ -305,7 +305,7 @@ class cli extends router
         if (false === strpos(parent::$cmd, ':')) {
             if (isset(self::$config[parent::$cmd]) && is_string(self::$config[parent::$cmd])) return self::$config[parent::$cmd];
             else {
-                debug('CMD config ERROR! Please check "cfg.ini"!');
+                debug('CLI Config', 'CMD config ERROR! Please check "cfg.ini"!');
                 return '';
             }
         } else {
@@ -314,14 +314,14 @@ class cli extends router
             foreach ($keys as $key) {
                 if (isset($cmd[$key])) $cmd = $cmd[$key];
                 else {
-                    debug('CMD not found! Please add to "cfg.ini"!');
+                    debug('CLI Config', 'CMD not found! Please add to "cfg.ini"!');
                     unset($cmd, $keys, $key);
                     return '';
                 }
             }
             if (is_string($cmd)) return $cmd;
             else {
-                debug('CMD config ERROR! Please check "cfg.ini"!');
+                debug('CLI Config', 'CMD config ERROR! Please check "cfg.ini"!');
                 unset($cmd, $keys, $key);
                 return '';
             }
@@ -354,7 +354,7 @@ class cli extends router
 
         //Process create failed
         if (!is_resource($process)) {
-            debug('Access denied! Check your "cfg.ini" and authority!');
+            debug('Execute Permission', 'Access denied! Check your "cfg.ini" and authority!');
             exit;
         }
 

@@ -53,12 +53,12 @@ class router
     {
         'cli' !== PHP_SAPI ? cgi::run() : cli::run();
 
-        //Debug values
-        if (DEBUG) {
-            self::$result['duration'] = round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 'ms';
-            self::$result['memory'] = round(memory_get_usage(true) / 1048576, 4) . 'MB';
-            self::$result['peak'] = round(memory_get_peak_usage(true) / 1048576, 4) . 'MB';
-        }
+        if (!DEBUG) return;
+
+        //Debug runtime values
+        debug('duration', round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 'ms');
+        debug('memory', round(memory_get_usage(true) / 1048576, 4) . 'MB');
+        debug('peak', round(memory_get_peak_usage(true) / 1048576, 4) . 'MB');
     }
 
     /**
@@ -82,8 +82,7 @@ class router
         if (empty(self::$result)) exit;
 
         $result = 1 === count(self::$result) ? json_encode(current(self::$result)) : json_encode(self::$result);
-        if ('cli' !== PHP_SAPI) echo $result;
-        else fwrite(STDOUT, $result . PHP_EOL);
+        'cli' !== PHP_SAPI ? print $result : fwrite(STDOUT, $result . PHP_EOL);
 
         unset($result);
         exit;

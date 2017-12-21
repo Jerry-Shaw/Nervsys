@@ -103,7 +103,7 @@ class pdo_mysql extends pdo
     {
         //No data to insert
         if (empty($data)) {
-            debug('No data to insert!');
+            debug(__CLASS__, 'No data to insert!');
             return false;
         }
 
@@ -139,7 +139,7 @@ class pdo_mysql extends pdo
     {
         //No data to update
         if (empty($data)) {
-            debug('No data to update!');
+            debug(__CLASS__, 'No data to update!');
             return false;
         }
 
@@ -224,7 +224,7 @@ class pdo_mysql extends pdo
     {
         //Delete not allowed
         if (empty($where)) {
-            debug('Delete is not allowed!');
+            debug(__CLASS__, 'Delete is not allowed!');
             return false;
         }
 

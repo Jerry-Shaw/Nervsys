@@ -76,7 +76,7 @@ class linux extends os
 
         //No authority
         if (0 !== $status) {
-            debug('Access denied! Please check your authority!');
+            debug('Linux Controller', 'Access denied! Please check your authority!');
             exit;
         }
 
@@ -91,7 +91,7 @@ class linux extends os
 
         //No authority
         if (0 !== $status) {
-            debug('Access denied! Please check your authority!');
+            debug('Linux Controller', 'Access denied! Please check your authority!');
             exit;
         }
 
@@ -120,7 +120,7 @@ class linux extends os
 
             //No authority
             if (0 !== $status) {
-                debug('Access denied! Please check your authority!');
+                debug('Linux Controller', 'Access denied! Please check your authority!');
                 exit;
             }
         }
@@ -140,7 +140,7 @@ class linux extends os
 
             //No authority
             if (0 !== $status) {
-                debug('Access denied! Please check your authority!');
+                debug('Linux Controller', 'Access denied! Please check your authority!');
                 exit;
             }
 

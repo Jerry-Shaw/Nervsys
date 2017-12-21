@@ -137,7 +137,7 @@ class cgi extends router
     {
         //Check module data
         if (empty(self::$module)) {
-            if (DEBUG) parent::$result['ERROR'] = 'Module Data ERROR!';
+            debug('CGI ERROR', 'Module Data ERROR!');
             return;
         }
 
@@ -200,9 +200,7 @@ class cgi extends router
             //Get root class
             $space = '\\' . str_replace('/', '\\', $class);
             //Call methods
-            if (class_exists($space)) self::call_class($class, $space);
-            //Debugging
-            elseif (DEBUG) parent::$result[$class] = 'Module: [' . $space . '] NOT exist!';
+            class_exists($space) ? self::call_class($class, $space) : debug($class, 'Module: [' . $space . '] NOT exist!');
         }
         unset($lib, $class, $space);
     }
@@ -217,7 +215,7 @@ class cgi extends router
     {
         //Check API Safe Key
         if (!isset($space::$key) || !is_array($space::$key)) {
-            if (DEBUG) parent::$result[$class] = 'Safe Key ERROR!';
+            debug($class, 'Safe Key NOT exist!');
             return;
         }
 
@@ -239,7 +237,7 @@ class cgi extends router
 
             //Skip running method when data structure not match
             if (!empty($diff)) {
-                if (DEBUG) parent::$result[$class . '/' . $method] = 'Data Structure ERROR: [' . (implode(', ', $diff)) . '] were missing!';
+                debug($class . '/' . $method, 'Data Structure ERROR: [' . (implode(', ', $diff)) . '] were missing!');
                 continue;
             }
 
@@ -247,7 +245,7 @@ class cgi extends router
             try {
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
-                if (DEBUG) parent::$result[$class . '/' . $method] = 'Method Calling Failed: ' . $exception->getMessage();
+                debug($class . '/' . $method, 'Method Calling Failed: ' . $exception->getMessage());
                 unset($exception);
             }
         }

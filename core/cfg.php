@@ -25,15 +25,15 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//Basic Settings
-set_time_limit(0);
-error_reporting(E_ALL);
-ignore_user_abort(true);
-date_default_timezone_set('PRC');
-header('Content-Type: text/plain; charset=UTF-8');
-
 //Debug mode
 define('DEBUG', true);
+
+//Basic Settings
+set_time_limit(0);
+ignore_user_abort(true);
+error_reporting(DEBUG ? E_ALL : 0);
+date_default_timezone_set('PRC');
+header('Content-Type: text/plain; charset=UTF-8');
 
 //NervSys Version
 define('NS_VER', '5.0.0');
@@ -62,14 +62,11 @@ function load(string $lib): void
 /**
  * Debug function
  *
- * @param string $msg
+ * @param string $module
+ * @param string $message
  */
-function debug(string $msg): void
+function debug(string $module, string $message): void
 {
-    if (!DEBUG) return;
-
-    if ('cli' !== PHP_SAPI) echo $msg;
-    else fwrite(STDOUT, $msg . PHP_EOL);
-
-    unset($msg);
+    if (DEBUG) 'cli' !== PHP_SAPI ? \core\ctr\router::$result[$module] = &$message : fwrite(STDOUT, $module . ': ' . $message . PHP_EOL);
+    unset($module, $message);
 }

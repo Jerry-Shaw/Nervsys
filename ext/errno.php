@@ -55,14 +55,14 @@ class errno
         $path = realpath(ROOT . '/' . $module . '/' . self::$dir . '/' . $file . '.ini');
 
         if (false === $path) {
-            debug('"' . $file . '.ini" NOT exist in "' . $module . '"!');
+            debug(__CLASS__, '"' . $file . '.ini" NOT exist in "' . $module . '"!');
             return;
         }
 
         $error = parse_ini_file($path, false);
 
         if (!is_array($error) || empty($error)) {
-            debug('"' . $file . '.ini" in "' . $module . '" is incorrect or empty!');
+            debug(__CLASS__, '"' . $file . '.ini" in "' . $module . '" is incorrect or empty!');
             return;
         }
 
