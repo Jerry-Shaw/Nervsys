@@ -99,7 +99,7 @@ All script should under the right namespace for better calling by NervSys API.
         * Important!!!
         * 
         * This is the Safe Key area for NervSys API.
-        * The keys should be the function names which you want them to be visited by NervSys API,
+        * The keys should be the function names which you want them to be visited by API,
         * while the values should be the data MUST be send into the function.
         * Don't write optional data in Safe Key values, 
         * or, the request will be ignored if the optional data is not passed.
@@ -112,17 +112,22 @@ All script should under the right namespace for better calling by NervSys API.
         
         public static function test_a()
         {
-            //this function must need variables [a, b, c]
-            //You can fetch the data from router::$data, like router::$data['a'], router::$data['b'], ...
+            /**
+            * This function must need variables [a, b, c]
+            * You can fetch the data from router::$data['a'], router::$data['b'], ...
+            * The returned value will be captured by router
+            * stored in router::$result['namespace/class_name/function_name']
+            */
             ... (your code)
-            //The returned value will be captured by router stored in router::$result['namespace/class_name/function_name']
             return something;
         }
         
         public static function test_b()
         {
-            //this function must need variables [b, c], variable [d] can be optional
-            //Just use router::$data['d'] if exists as it is optional
+            /**
+            * This function must need variables [b, c], variable [d] is optional
+            * Just use router::$data['d'] if exists as it is optional
+            */
             ... (your code)
             return something;
         }
@@ -178,14 +183,16 @@ Remember one param named "c" or "cmd", the two are equal.
     1. http://yourhost/api.php&c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     2. http://yourhost/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     
-    Above are the strict mode with detailed function name, only "test_a" will be called.
+    Above are the strict mode with detailed function name, 
+    only "test_a" will be called.
         
     Let's see more:
         
     1. http://yourhost/api.php&c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
     2. http://yourhost/api.php&cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
         
-    We called "test_b" in "pr_1\ctr\test_2" with params "b" and "c", "a" is obviously usless and ignore.
+    We called "test_b" in "pr_1\ctr\test_2" with params "b" and "c", 
+    "a" is obviously usless and ignore.
         
     And there goes some interesting things, what if we do as follows?
         
@@ -194,7 +201,8 @@ Remember one param named "c" or "cmd", the two are equal.
     
     ...
         
-    Right, both "test_a" and "test_b" in "pr_1\ctr\test_1" will be called sharing the same data of "b" and "c", "test_a" used one more "a".
+    Right, both "test_a" and "test_b" in "pr_1\ctr\test_1" will be called 
+    sharing the same data of "b" and "c", "test_a" used one more "a".
         
     You now can get some compound results with difference keys.
         
@@ -205,9 +213,23 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Will it stucked?
         
-    This is called loose mode. If we do this, all functions listed in Safe Key will be checked with the input data structure and will be called if the structure matched or contained. So, it'll be very useful to calculate in multiple algorithms with one same data pack. And more things here, you can always refresh the data structure adding new data from results in you own function codes, and let others be called in midway.
+    This is called loose mode. 
+    If we do this, all functions listed in Safe Key 
+    will be checked with the input data structure, 
+    and will be called if the structure matched or contained. 
         
-    This is more powerful than strict mode, but may bring some harm if don't pay attantion on it, espcially on data written. Functions will be called out of your prediction.
+    Call order is the Safe Key list order.
+        
+    So, it'll be very useful to calculate in multiple algorithms 
+    with one same data pack. 
+        
+    And more things here, we can always refresh the data structure 
+    adding new data from results in you own function codes, 
+    and let others be called in midway.
+        
+    This is more powerful than strict mode, 
+    but may bring some harm if don't pay attantion on it, 
+    espcially on data written. Functions will be called out of your prediction.
 
 ============================================================================================================
 
