@@ -82,9 +82,7 @@ All script should under the right namespace for better calling by NervSys API.
               │    └─test_1.php   test 1 script
               └─test_2.php        test 2 script
 
-============================================================================================================
-
-    **Format for test_1.php:
+****Format for test_1.php:**
         
     //The right namespace follows the path structure
     namespace pr_1\ctr;
@@ -133,10 +131,8 @@ All script should under the right namespace for better calling by NervSys API.
         }
     }
 
-============================================================================================================
+****Format for test_2.php:**
 
-    **Format for test_2.php:
-        
     //The right namespace follows the path structure
     namespace pr_1;
         
@@ -166,7 +162,6 @@ All script should under the right namespace for better calling by NervSys API.
         }
     }
 
-============================================================================================================
 
 As said, it is an universal API controller. So, we can easily use it as follows as usual.
 
@@ -231,7 +226,6 @@ Remember one param named "c" or "cmd", the two are equal.
     but may bring some harm if don't pay attantion on it, 
     espcially on data written. Functions will be called out of your prediction.
 
-============================================================================================================
 
 Notice: once if there is only one element in router's result, it will ouput the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If you set "DEBUG" to true and run it under cgi, the results should be complex because 3 more elements for debugging will be added to results as well. Always remember to close "DEBUG" option when all are under production environment, or, the result structure will confuse you with 3 more inside.
 
