@@ -1,5 +1,7 @@
 **Nervsys** is a very slight framework based on PHP7.1+ for universal API controlling. 
 
+Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode.
+
 It can be used as:
 
     1. Normal develop framework for Web
@@ -14,7 +16,13 @@ Don't expect too much, it is just a newborn framework though~
 
 Extensions in "/ext/" makes it greater than we can image. 
 
-We need you. Ideas, actions, participation, and supports.
+Version 5.0.0 is on going, and not compatible with versions before.
+
+Demos for Ver 5.0.0 is here: https://github.com/Jerry-Shaw/demo. 
+
+Just can try it in NervSys with detailed comments in the scripts.
+
+Functional extensions (class) are considered to moved out to the third part to maintain. Not only extensions, but sub-projects based on NervSys are expected. Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... And many thanks!
 
 
 **Structure Introduce:**
@@ -60,7 +68,9 @@ We need you. Ideas, actions, participation, and supports.
            └─upload.php                 Upload extension
 
 
-Files of a project should be better containing just in one folder right under the ROOT folder. Files inside project can be placed as what developers like. Some example structures as follows:
+Files of a project should be better containing just in one folder right under the ROOT folder. 
+Files inside a project can be placed as will.
+Some example structures are as follows:
 
 
     root/                       **Root directory
@@ -302,13 +312,5 @@ Remember one param named "c" or "cmd", the two are equal.
     
 
 Notice: once if there is only one element in router's result, it will ouput the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If "DEBUG" option is set to true and run it under cgi, the results should be complex because 3 more elements for debugging will be added to results as well. Always remember to close "DEBUG" option when all are under production environment, or, the result structure will confuse us with 3 more values inside.
-
-Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode.
-
-Version 5.0.0 is on going, and not compatible with versions before.
-
-Demos for Ver 5.0.0 is here: https://github.com/Jerry-Shaw/demo. Just can try it in NervSys with detailed comments in the scripts.
-
-Functional extensions (class) are considered to moved out to the third part to maintain. Not only extensions, but sub-projects based on NervSys are expected. Everyone can join the project. Ideas, codes, suggests, supports, etc... And many thanks!
 
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
