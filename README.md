@@ -66,9 +66,15 @@ Files of a project should be better containing just in one folder right under th
     root/                       **Root directory
         ├─PR_1/                 **Project 1
         │     ├─ctr/            **Controller folder
+        │     │    ├─a.php         a script
+        │     │    └─b.php         b script
         │     ├─lib/            **library folder
+        │     │    ├─a.php         a script
+        │     │    └─b.php         b script
         │     ├─exe/            **executable program folder 
+        │     │    └─c.php         c script
         │     └─.../            **Other folders containing functional scripts
+        │          └─....php         Model ... script
         └─PR_2/                 **Project 2
               ├─model_a.php     Model a script
               ├─model_b.php     Model b script
