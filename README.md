@@ -292,7 +292,7 @@ Remember one param named "c" or "cmd", the two are equal.
     Output data will be also captured as in CGI mode and outputs via STDOUT.
         
     Don't forget to use "-r result" or "--return result" to capture output result.
-    If the time is too short to run extenal programs, use "-t ms" or "-timeout ms"
+    If the time is too short to run extenal programs, use "-t ms" or "--timeout ms"
     
 
 Notice: once if there is only one element in router's result, it will ouput the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If "DEBUG" option is set to true and run it under cgi, the results should be complex because 3 more elements for debugging will be added to results as well. Always remember to close "DEBUG" option when all are under production environment, or, the result structure will confuse us with 3 more values inside.
