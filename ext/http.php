@@ -68,11 +68,17 @@ class http
     //Return with header
     public static $with_header = false;
 
+    //Send via "Request Payload"
+    public static $send_payload = false;
+
     //HTTP Accept
     public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
 
     //User-Agent
     public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API ' . NS_VER . '; Powered by NervSys!)';
+
+    //Content-Type
+    private static $content_type = 'application/json';
 
     //Request Method
     private static $method = 'GET';
@@ -121,8 +127,9 @@ class http
             'Accept-Charset: UTF-8,*;q=0',
             'Accept-Encoding: identity,*;q=0',
             'Accept-Language: en-US,en,zh-CN,zh,*;q=0',
-            'Connection: keep-alive',
-            'User-Agent: ' . self::$user_agent
+            'Content-Type: ' . self::$content_type,
+            'User-Agent: ' . self::$user_agent,
+            'Connection: keep-alive'
         ];
 
         unset($unit);
@@ -178,7 +185,12 @@ class http
         //POST settings
         if ('POST' === self::$method) {
             curl_setopt($curl, CURLOPT_POST, true);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, empty(self::$file) ? http_build_query(self::$data) : self::$data);
+
+            //Content-Type for "Form Data" or "Request Payload"
+            $data = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data);
+
+            curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+            unset($data);
         }
 
         //Merge CURL
@@ -249,6 +261,9 @@ class http
         //Merge URL
         $list = is_string(self::$url) ? [self::$url] : self::$url;
 
+        //Choose Content-Type
+        if (!self::$send_payload) self::$content_type = 'application/x-www-form-urlencoded';
+
         //Prepare CURL
         foreach ($list as $url) {
             //No URL
@@ -292,6 +307,9 @@ class http
         //Merge URL
         $list = is_string(self::$url) ? [self::$url] : self::$url;
 
+        //Choose Content-Type
+        if (!self::$send_payload) self::$content_type = 'multipart/form-data';
+
         //Prepare CURL
         foreach ($list as $url) {
             //No URL
@@ -299,16 +317,12 @@ class http
             //Get URL unit
             $unit = self::get_unit($url);
             if (empty($unit)) continue;
-            //Get URL header
-            $header = self::get_header($unit);
-            //Add "Content-Type"
-            $header[] = 'Content-Type: multipart/form-data';
             //Get CURL ready
-            self::curl_ready($url, $unit['port'], $header);
+            self::curl_ready($url, $unit['port'], self::get_header($unit));
         }
 
         //Execute CURL
-        unset($list, $url, $unit, $header);
+        unset($list, $url, $unit);
         return self::curl_run();
     }
 }
