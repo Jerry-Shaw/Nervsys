@@ -206,7 +206,7 @@ Remember one param named "c" or "cmd", the two are equal.
     1. http://yourhost/api.php&c=pr_1\ctr\test_1&a=a&b=b&c=c
     2. http://yourhost/api.php&cmd=pr_1\ctr\test_1&a=a&b=b&c=c
         
-    Will it stucked?
+    Could it be an error calling?
         
     This is called loose mode. 
     If we do this, all functions listed in Safe Key 
