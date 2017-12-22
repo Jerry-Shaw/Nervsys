@@ -33,7 +33,7 @@ set_time_limit(0);
 ignore_user_abort(true);
 error_reporting(DEBUG ? E_ALL : 0);
 date_default_timezone_set('PRC');
-header('Content-Type: text/plain; charset=UTF-8');
+header('Content-Type: application/json; charset=utf-8');
 
 //NervSys Version
 define('NS_VER', '5.0.0');

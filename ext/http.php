@@ -78,7 +78,7 @@ class http
     public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API ' . NS_VER . '; Powered by NervSys!)';
 
     //Content-Type
-    private static $content_type = 'application/json';
+    private static $content_type = 'application/json; charset=utf-8';
 
     //Request Method
     private static $method = 'GET';
