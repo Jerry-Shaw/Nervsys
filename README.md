@@ -66,7 +66,8 @@ Functional extensions (class) are considered to moved out to the third part to m
            ├─redis.php                    Redis connector extension
            ├─redis_session.php            Session extension for Redis
            ├─sock.php                     Socket extension
-           └─upload.php                   Upload extension
+           ├─upload.php                   Upload extension
+           └─...                          There will be more useful extensions soon in the near future
 
 
 Files of a project should be better containing just in one folder right under the ROOT folder. 
@@ -218,8 +219,7 @@ Remember one param named "c" or "cmd", the two are equal.
     2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     3. ...
         
-    Above are the strict mode with detailed function name, 
-    only "test_a" will be called.
+    Above are the strict mode with detailed function name, only "test_a" is called.
         
     Let's see more:
         
