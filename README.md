@@ -2,6 +2,7 @@
 
 Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode.
 
+
 It can be used as:
 
     1. Normal develop framework for Web
@@ -28,44 +29,44 @@ Functional extensions (class) are considered to moved out to the third part to m
 **Structure Introduce:**
         
       /                                 **Root directory
-      ├─api.php                         Main entry
-      ├─README.md                       Readme
-      ├─LICENSE                         Lincese
+      ├─api.php                           Main entry
+      ├─README.md                         Readme
+      ├─LICENSE                           Lincese
       ├─core/                           **Core directory
       │     ├─cli/                      **CLI working directory
       │     │    └─logs/                **CLI logging directory
       │     ├─ctr/                      **Controller directory
       │     │    ├─os/                  **OS controller directory
-      │     │    │   ├─linux.php        Linux Controller
-      │     │    │   ├─winnt.php        WinNT Controller
-      │     │    │   └─(need more...)   Need more controllers
+      │     │    │   ├─linux.php          Linux Controller
+      │     │    │   ├─winnt.php          WinNT Controller
+      │     │    │   └─(need more...)     Need more controllers
       │     │    ├─router/              **Router directory
-      │     │    │       ├─cgi.php      CGI execution script
-      │     │    │       └─cli.php      CLI execution script
-      │     │    ├─os.php               Main OS controller
-      │     │    └─router.php           Main Router controller
-      │     ├─cfg.ini                   Config file for CLI executable command
-      │     └─cfg.php                   Config file for core system
+      │     │    │       ├─cgi.php        CGI execution script
+      │     │    │       └─cli.php        CLI execution script
+      │     │    ├─os.php                 Main OS controller
+      │     │    └─router.php             Main Router controller
+      │     ├─cfg.ini                     Config file for CLI executable command
+      │     └─cfg.php                     Config file for core system
       └─ext/                            **extension directory
            ├─lib/                       **extension interface directory
-           │    └─keys.php              Cryption Key generator interface
+           │    └─keys.php                Cryption Key generator interface
            ├─upload/                    **Upload extension relaterd directory
            │       ├─en-US/             **Upload language folder (en-US)
            │       ├─zh-CN/             **Upload language folder (zh-CN)
-           │       └─upload.ini         Upload error code file
-           ├─crypt.php                  Encrypt/decrypt extension
-           ├─errno.php                  Error code extension
-           ├─file.php                   Filesystem related IO extension
-           ├─http.php                   HTTP request extension
-           ├─image.php                  Image processing extension
-           ├─keygen.php                 Cryption Key generator extension
-           ├─lang.php                   Language extension
-           ├─pdo.php                    PDO connector extension
-           ├─pdo_mysql.php              MySQL extension for PDO
-           ├─redis.php                  Redis connector extension
-           ├─redis_session.php          Session extension for Redis
-           ├─sock.php                   Socket extension
-           └─upload.php                 Upload extension
+           │       └─upload.ini           Upload error code file
+           ├─crypt.php                    Encrypt/decrypt extension
+           ├─errno.php                    Error code extension
+           ├─file.php                     Filesystem related IO extension
+           ├─http.php                     HTTP request extension
+           ├─image.php                    Image processing extension
+           ├─keygen.php                   Cryption Key generator extension
+           ├─lang.php                     Language extension
+           ├─pdo.php                      PDO connector extension
+           ├─pdo_mysql.php                MySQL extension for PDO
+           ├─redis.php                    Redis connector extension
+           ├─redis_session.php            Session extension for Redis
+           ├─sock.php                     Socket extension
+           └─upload.php                   Upload extension
 
 
 Files of a project should be better containing just in one folder right under the ROOT folder. 
@@ -74,22 +75,25 @@ Some example structures are as follows:
 
 
     root/                       **Root directory
-        ├─PR_1/                 **Project 1
+        ├─PR_1/                 **Project 1 folder
         │     ├─ctr/            **Controller folder
-        │     │    ├─a.php         a script
-        │     │    └─b.php         b script
+        │     │    ├─a.php        a script
+        │     │    └─b.php        b script
         │     ├─lib/            **library folder
-        │     │    ├─a.php         a script
-        │     │    └─b.php         b script
+        │     │    ├─a.php        a script
+        │     │    └─b.php        b script
         │     ├─exe/            **executable program folder 
-        │     │    └─c.php         c script
-        │     └─.../            **Other folders containing functional scripts
-        │          └─....php         Model ... script
-        └─PR_2/                 **Project 2
-              ├─model_a.php     Model a script
-              ├─model_b.php     Model b script
-              ├─model_c.php     Model c script
-              └─....php         Model ... script
+        │     │    ├─c.php        c script
+        │     │    └─xxx          xxx executable program
+        │     ├─.../            **Other folders containing functional scripts
+        │     │    └─....php      Model ... script
+        │     └─cfg.php           Config file for Project 1
+        └─PR_2/                 **Project 2 folder
+              ├─model_a.php       Model a script
+              ├─model_b.php       Model b script
+              ├─model_c.php       Model c script
+              ├─....php           Model ... script
+              └─cfg.php           Config file for Project 2
     
     
 All script should under the right namespace for better calling by NervSys API.
@@ -98,10 +102,14 @@ All script should under the right namespace for better calling by NervSys API.
 **Example:**
 
     root/                       **Root directory
-        └─pr_1/                 **Project 1
+        └─pr_1/                 **Project 1 folder
               ├─ctr/            **Controller folder
               │    └─test_1.php   test 1 script
-              └─test_2.php        test 2 script
+              ├─xxx/            **Controller folder
+              │    └─xxx.php      test 1 script
+              ├─test_2.php        test 2 script
+              └─cfg.php           Config file for Project 1
+
 
 ****Format for test_1.php:**
         
@@ -152,6 +160,7 @@ All script should under the right namespace for better calling by NervSys API.
         }
     }
 
+
 ****Format for test_2.php:**
 
     //The right namespace follows the path structure
@@ -191,7 +200,7 @@ It receives normal GET/POST data, and stream data in JSON format.
 Remember one param named "c" or "cmd", the two are equal.
 
 
-**Example using GET:**
+**Examples (using GET):**
 
     Usage:
         
@@ -249,6 +258,18 @@ Remember one param named "c" or "cmd", the two are equal.
     This is more powerful than strict mode, 
     but may bring some harm if don't pay attantion on it, 
     espcially on data written. Functions will be called out of prediction.
+        
+    Once when we call as follows:
+            
+    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_a&a=a&b=b
+    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c
+    3. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
+        
+    This won't happen because the input data structure dismatched.
+    API just chooses to ignore the request to "test_a" function,
+    and gives us a notice "[what] is missing" when "DEBUG" is set.
+    
     
 **CLI Command usage:**
     
@@ -309,8 +330,29 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Don't forget to use "-r result" or "--return result" to capture output result.
     If the time is too short to run extenal programs, use "-t ms" or "--timeout ms"
+        
+    In CLI mode, we have 3 globle variables named "PHP_PID", "PHP_CMD" and "PHP_EXE".
+        
+    "PHP_PID" is the Process ID that the current PHP runs with.
+    "PHP_CMD" is the Process Comand that the current script started with.
+    "PHP_EXE" is php executable path, which we can execute another PHP process.
+        
+    All the globle variables can be fetched in "os::$env".
     
+    
+**About "cfg.php" in Project root directory**
 
-Notice: once if there is only one element in router's result, it will ouput the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If "DEBUG" option is set to true and run it under cgi, the results should be complex because 3 more elements for debugging will be added to results as well. Always remember to close "DEBUG" option when all are under production environment, or, the result structure will confuse us with 3 more values inside.
+Each project could have a "cfg.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions. So that, the scripts in this project will run under these settings.
+
+For example, we can set project 1 to connect database A, but using database B in project 2; We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc...
+
+But, always remember, don't set the same definitions in different "cfg.php", it will conflict, because all the "cfg.php" existed will be required in order right before the script inside runs.
+
+If you are used to set all variables inside scripts, that is OK, just leave the "cfg.php" file away.
+
+If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before.
+
+
+**Notice**: once if there is only one element in router's result, it will ouput the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If "DEBUG" option is set to true and run it under cgi, the results should be complex because 3 more elements for debugging will be added to results as well. Always remember to close "DEBUG" option when all are under production environment, or, the result structure will confuse us with 3 more values inside.
 
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
