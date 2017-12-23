@@ -174,7 +174,8 @@ All script should under the right namespace for better calling by NervSys API.
     {
         public static $key = [
             test_a = [a, b, c],
-            test_b = [b, c]
+            test_b = [b, c],
+            test_c = []
         ];
         
         public static function test_a()
@@ -187,6 +188,13 @@ All script should under the right namespace for better calling by NervSys API.
         public static function test_b()
         {
             //Fetch variables
+            ... (Some code)
+            return something;
+        }
+        
+        public static function test_c()
+        {
+            //Fetch optional variables
             ... (Some code)
             return something;
         }
@@ -209,7 +217,7 @@ Remember one param named "c" or "cmd", the two are equal.
     1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     3. ...
-    
+        
     Above are the strict mode with detailed function name, 
     only "test_a" will be called.
         
@@ -231,7 +239,12 @@ Remember one param named "c" or "cmd", the two are equal.
     Right, both "test_a" and "test_b" in "pr_1\ctr\test_1" will be called 
     sharing the same data of "b" and "c", "test_a" used one more "a".
         
-    We now can get some compound results with difference keys.
+    This time, we do it as:
+        
+    http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
+        
+    Yep. "test_c" will run right after, as it needs no required variables.
+    We now can get some compound results with differences in keys.
         
     And what if we do as follows?
         
@@ -244,7 +257,8 @@ Remember one param named "c" or "cmd", the two are equal.
     This is called loose mode. 
     If we do this, all functions listed in Safe Key 
     will be checked with the input data structure, 
-    and will be called if the structure matched or contained. 
+    and will be called if the structure matched or contained.
+    "test_c" will always run right after, since it needs no required variables.
         
     Call order is the Safe Key list order.
         
@@ -269,6 +283,26 @@ Remember one param named "c" or "cmd", the two are equal.
     This won't happen because the input data structure dismatched.
     API just chooses to ignore the request to "test_a" function,
     and gives us a notice "[what] is missing" when "DEBUG" is set.
+        
+    And what's more:
+        
+    loose style:
+    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+        
+    All functions that match the input data strucuture in both "pr_1\ctr\test_1" and "pr_1\test_2"
+    will run. With this, we can call multiple functions in multiple modules right in one request.
+    These functions share the same source data, and do thire own work.
+        
+    strict style:
+    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
+        
+    Functions placed in the URL (in "c"/"cmd" value, seperated by "-", order ignored, same in "POST") 
+    and match the input data strucuture at the same time in both "pr_1\ctr\test_1" and "pr_1\test_2"
+    will run. With this, we can call EXACT multiple functions in EXACT multiple modules in one request.
+    These modules share the same function names when exist. 
+    All functions share the same source data and run with the input order.
     
     
 **CLI Command usage:**
