@@ -380,9 +380,9 @@ Each project could have a "cfg.php" as the only config file for the whole projec
 
 For example, we can set project 1 to connect database A, but using database B in project 2; We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc...
 
-But, always remember, don't set the same definitions in different "cfg.php", it will conflict, because all the "cfg.php" existed will be required in order right before the script inside runs.
+But, always remember, don't set the same definitions in different "cfg.php"s. It will conflict. All "cfg.php"s existed in the root directory of projects will be required in order right before inside script runs.
 
-If you are used to set all variables inside scripts, that is OK, just leave the "cfg.php" file away.
+If you are used to set all variables inside other scripts. That is OK, just leave the "cfg.php" file away.
 
 If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before.
 
