@@ -298,7 +298,7 @@ class pdo_mysql extends pdo
         //Process data
         foreach ($data as $key => $value) {
             //Generate bind value
-            $bind = ':d_' . $key;
+            $bind = ':d_' . strtr($key, '.', '_');
 
             //Add to columns
             $column[$bind] = self::escape($key);
@@ -353,7 +353,7 @@ class pdo_mysql extends pdo
             if (false === stripos($item[1], 'IN')) {
                 $option[] = $item[1];
                 //Generate bind value
-                $bind = ':w_' . $item[0] . '_' . mt_rand();
+                $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
                 //Add to option
                 $option[] = $bind;
                 //Add to "where"
@@ -366,7 +366,7 @@ class pdo_mysql extends pdo
                     $opt = [];
                     foreach ($item[2] as $name => $value) {
                         //Generate bind value
-                        $bind = ':w_' . $item[0] . '_' . $name . '_' . mt_rand();
+                        $bind = ':w_' . strtr($item[0], '.', '_') . '_' . $name . '_' . mt_rand();
                         //Add to option
                         $opt[] = $bind;
                         //Add to "where"
@@ -376,7 +376,7 @@ class pdo_mysql extends pdo
                     unset($opt, $name, $value);
                 } else {
                     //Generate bind value
-                    $bind = ':w_' . $item[0] . '_' . mt_rand();
+                    $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
                     //Add to option
                     $option[] = $bind;
                     //Add to "where"
@@ -460,20 +460,28 @@ class pdo_mysql extends pdo
 
         if (is_array($opt_data) && !empty($opt_data)) {
             $join = [];
-            foreach ($opt_data as $table => $value) {
-                $value[3] = !isset($value[3]) ? 'INNER' : strtoupper($value[3]);
-                if (!in_array($value[3], ['INNER', 'LEFT', 'RIGHT'], true)) $value[3] = 'INNER';
-                if (2 === count($value)) {
-                    $value[2] = $value[1];
-                    $value[1] = '=';
+            foreach ($opt_data as $table => $item) {
+                $count = count($item);
+                //Add missing elements
+                if (2 === $count) {
+                    $item[2] = $item[1];
+                    $item[3] = 'INNER';
+                    $item[1] = '=';
+                } elseif (3 === $count) {
+                    if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN'], true)) {
+                        $item[3] = $item[2];
+                        $item[2] = $item[1];
+                        $item[1] = '=';
+                    } else $item[3] = 'INNER';
                 }
 
-                $join[] = $value[3] . ' JOIN ' . self::escape($table) . ' ON ' . $value[0] . ' ' . $value[1] . ' ' . $value[2];
+                if (!in_array($item[3], ['INNER', 'LEFT', 'RIGHT'], true)) $item[3] = 'INNER';
+                $join[] = $item[3] . ' JOIN ' . self::escape($table) . ' ON ' . $item[0] . ' ' . $item[1] . ' ' . $item[2];
             }
 
             if (!empty($join)) $opt['join'] = implode(' ', $join);
 
-            unset($join, $table, $value);
+            unset($join, $table, $item, $count);
         } elseif (is_string($opt_data) && '' !== $opt_data) $opt['join'] = false !== stripos($opt_data, 'JOIN') ? $opt_data : 'INNER JOIN ' . $opt_data;
 
         unset($opt_data);
