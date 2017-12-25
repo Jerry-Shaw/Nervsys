@@ -25,13 +25,18 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//Debug mode
-define('DEBUG', true);
+/**
+ * Debug mode
+ * 0: for production environment (Disable ERROR Reporting)
+ * 1: for development environment (Display all ERROR, WARNING, NOTICE)
+ * 2: for optimization development (Display all ERROR, WARNING, NOTICE and Runtime Values)
+ */
+define('DEBUG', 2);
 
 //Basic Settings
 set_time_limit(0);
 ignore_user_abort(true);
-error_reporting(DEBUG ? E_ALL : 0);
+error_reporting(0 === DEBUG ? 0 : E_ALL);
 date_default_timezone_set('PRC');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -55,7 +60,6 @@ function load(string $lib): void
 
     $file = realpath(ROOT . '/' . strtr($lib, '\\', '/') . '.php');
     if (false !== $file) require $file;
-
     unset($lib, $file);
 }
 
@@ -67,6 +71,6 @@ function load(string $lib): void
  */
 function debug(string $module, string $message): void
 {
-    if (DEBUG) 'cli' !== PHP_SAPI ? \core\ctr\router::$result[$module] = &$message : fwrite(STDOUT, $module . ': ' . $message . PHP_EOL);
+    if (0 !== DEBUG) 'cli' !== PHP_SAPI ? \core\ctr\router::$result[$module] = &$message : fwrite(STDOUT, $module . ': ' . $message . PHP_EOL);
     unset($module, $message);
 }

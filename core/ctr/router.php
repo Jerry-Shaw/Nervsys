@@ -53,9 +53,9 @@ class router
     {
         'cli' !== PHP_SAPI ? cgi::run() : cli::run();
 
-        if (!DEBUG) return;
+        if (2 > DEBUG) return;
 
-        //Debug runtime values
+        //Debug with Runtime Values
         debug('duration', round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 'ms');
         debug('memory', round(memory_get_usage(true) / 1048576, 4) . 'MB');
         debug('peak', round(memory_get_peak_usage(true) / 1048576, 4) . 'MB');
