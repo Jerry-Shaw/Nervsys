@@ -54,8 +54,8 @@ class os
 
         try {
             if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT exist!');
-            if (empty(self::$env)) call_user_func(self::$platform . '::env_info');
-            if (empty(self::$sys)) call_user_func(self::$platform . '::sys_info');
+            if (empty(self::$env)) forward_static_call(self::$platform . '::env_info');
+            if (empty(self::$sys)) forward_static_call(self::$platform . '::sys_info');
         } catch (\Throwable $exception) {
             debug('OS Controller', self::$os . ' NOT fully supported yet! ' . $exception->getMessage());
             exit;
