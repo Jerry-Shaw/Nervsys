@@ -59,6 +59,9 @@ class http
     //SSL CERT
     public static $ssl_cert = '';
 
+    //Authority
+    public static $user_pwd = '';
+
     //Max follow level
     public static $max_follow = 0;
 
@@ -156,46 +159,49 @@ class http
      */
     private static function curl_ready(string $url, int $port, array $header): void
     {
+        //Initialize
+        $opt = [];
         $curl = curl_init();
 
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_PORT, $port);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 60);
-        curl_setopt($curl, CURLOPT_AUTOREFERER, true);
-        curl_setopt($curl, CURLOPT_COOKIESESSION, true);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($curl, CURLOPT_USERAGENT, self::$user_agent);
-        curl_setopt($curl, CURLOPT_ENCODING, 'identity,*;q=0');
+        //Build options
+        $opt[CURLOPT_URL] = $url;
+        $opt[CURLOPT_PORT] = $port;
+        $opt[CURLOPT_TIMEOUT] = 60;
+        $opt[CURLOPT_AUTOREFERER] = true;
+        $opt[CURLOPT_COOKIESESSION] = true;
+        $opt[CURLOPT_RETURNTRANSFER] = true;
+        $opt[CURLOPT_SSL_VERIFYHOST] = 2;
+        $opt[CURLOPT_SSL_VERIFYPEER] = false;
+        $opt[CURLOPT_HTTPHEADER] = $header;
+        $opt[CURLOPT_USERAGENT] = self::$user_agent;
+        $opt[CURLOPT_ENCODING] = 'identity,*;q=0';
 
-        if (!self::$with_body) curl_setopt($curl, CURLOPT_NOBODY, true);
-        if (self::$with_header) curl_setopt($curl, CURLOPT_HEADER, true);
-        if ('' !== self::$Cookie) curl_setopt($curl, CURLOPT_COOKIE, self::$Cookie);
-        if ('' !== self::$ssl_key) curl_setopt($curl, CURLOPT_SSLKEY, self::$ssl_key);
-        if ('' !== self::$ssl_cert) curl_setopt($curl, CURLOPT_SSLCERT, self::$ssl_cert);
+        if (!self::$with_body) $opt[CURLOPT_NOBODY] = true;
+        if (self::$with_header) $opt[CURLOPT_HEADER] = true;
+        if ('' !== self::$Cookie) $opt[CURLOPT_COOKIE] = self::$Cookie;
+        if ('' !== self::$ssl_key) $opt[CURLOPT_SSLKEY] = self::$ssl_key;
+        if ('' !== self::$ssl_cert) $opt[CURLOPT_SSLCERT] = self::$ssl_cert;
+        if ('' !== self::$user_pwd) $opt[CURLOPT_USERPWD] = self::$user_pwd;
 
         //Follow settings
         if (0 < self::$max_follow) {
-            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($curl, CURLOPT_MAXREDIRS, self::$max_follow);
+            $opt[CURLOPT_FOLLOWLOCATION] = true;
+            $opt[CURLOPT_MAXREDIRS] = self::$max_follow;
         }
 
         //POST settings
         if ('POST' === self::$method) {
-            curl_setopt($curl, CURLOPT_POST, true);
-
+            $opt[CURLOPT_POST] = true;
             //Content-Type for "Form Data" or "Request Payload"
-            $data = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data);
-
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-            unset($data);
+            $opt[CURLOPT_POSTFIELDS] = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data);
         }
+
+        //Set CURL options
+        curl_setopt_array($curl, $opt);
 
         //Merge CURL
         self::$curl[$url] = &$curl;
-        unset($url, $port, $header, $curl);
+        unset($url, $port, $header, $opt, $curl);
     }
 
     /**
