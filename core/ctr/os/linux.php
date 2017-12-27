@@ -107,7 +107,6 @@ class linux extends os
     public static function sys_info(): void
     {
         $queries = [
-            'lspci | grep -i "eth"',
             'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
             'cat /proc/cpuinfo | grep -E "processor|vendor|family|model|microcode|MHz|cache|physical|address"',
             'dmidecode -t memory'
@@ -129,7 +128,6 @@ class linux extends os
 
         $queries = [
             'mac'  => 'ip link show | grep link/ether',
-            'pci'  => 'lspci',
             'disk' => 'lsblk'
         ];
 
