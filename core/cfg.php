@@ -43,9 +43,6 @@ header('Content-Type: application/json; charset=utf-8');
 //NervSys Version
 define('NS_VER', '5.0.0');
 
-//Document Root Definition
-define('ROOT', realpath(substr(__DIR__, 0, -4)));
-
 //JSON Encode Options
 define(
     'JSON_OPT',
@@ -58,6 +55,9 @@ define(
     JSON_PARTIAL_OUTPUT_ON_ERROR |
     JSON_UNESCAPED_LINE_TERMINATORS
 );
+
+//Document Root Definition
+define('ROOT', realpath(substr(__DIR__, 0, -4)));
 
 //Autoload function
 spl_autoload_register('load');
