@@ -46,6 +46,19 @@ define('NS_VER', '5.0.0');
 //Document Root Definition
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
 
+//JSON Encode Options
+define(
+    'JSON_OPT',
+    JSON_PRETTY_PRINT |
+    JSON_NUMERIC_CHECK |
+    JSON_BIGINT_AS_STRING |
+    JSON_UNESCAPED_SLASHES |
+    JSON_UNESCAPED_UNICODE |
+    JSON_PRESERVE_ZERO_FRACTION |
+    JSON_PARTIAL_OUTPUT_ON_ERROR |
+    JSON_UNESCAPED_LINE_TERMINATORS
+);
+
 //Autoload function
 spl_autoload_register('load');
 
@@ -60,6 +73,7 @@ function load(string $lib): void
 
     $file = realpath(ROOT . '/' . strtr($lib, '\\', '/') . '.php');
     if (false !== $file) require $file;
+
     unset($lib, $file);
 }
 
