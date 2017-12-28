@@ -243,7 +243,26 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Query SQL & fetch data
+     * Execute SQL with data
+     *
+     * @param string $sql
+     * @param array  $data
+     *
+     * @return bool
+     */
+    public static function execute(string $sql, array $data = []): bool
+    {
+        self::init();
+
+        $stmt = self::$db_mysql->prepare($sql);
+        $result = $stmt->execute($data);
+
+        unset($sql, $data, $stmt);
+        return $result;
+    }
+
+    /**
+     * Query SQL & fetch rows
      *
      * @param string $sql
      * @param array  $data
@@ -265,22 +284,46 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Execute SQL & fetch result
+     * Exec SQL & count affected rows
      *
      * @param string $sql
-     * @param array  $data
+     *
+     * @return int
+     */
+    public static function exec(string $sql): int
+    {
+        self::init();
+        return (int)self::$db_mysql->exec($sql);
+    }
+
+    /**
+     * Begin transaction
      *
      * @return bool
      */
-    public static function exec(string $sql, array $data = []): bool
+    public static function begin(): bool
     {
-        self::init();
+        return self::$db_mysql->beginTransaction();
+    }
 
-        $stmt = self::$db_mysql->prepare($sql);
-        $result = $stmt->execute($data);
+    /**
+     * Commit transaction
+     *
+     * @return bool
+     */
+    public static function commit(): bool
+    {
+        return self::$db_mysql->commit();
+    }
 
-        unset($sql, $data, $stmt);
-        return $result;
+    /**
+     * Rollback transaction
+     *
+     * @return bool
+     */
+    public static function rollback(): bool
+    {
+        return self::$db_mysql->rollBack();
     }
 
     /**
@@ -604,10 +647,9 @@ class pdo_mysql extends pdo
         $char = ['(', ' ', '.', ')'];
 
         foreach ($char as $key) {
-            if (false !== strpos($value, $key)) {
-                $pass = false;
-                break;
-            }
+            if (false === strpos($value, $key)) continue;
+            $pass = false;
+            break;
         }
 
         $value = $pass ? '`' . trim($value, " `\t\n\r\0\x0B") . '`' : trim($value);
