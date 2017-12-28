@@ -387,6 +387,6 @@ If you are used to set all variables inside other scripts. That is OK, just leav
 If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before.
 
 
-**Notice**: once if there is only one element in router's result, it will ouput the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If "DEBUG" option is set to true and run it under cgi, the results should be complex because 3 more elements for debugging will be added to results as well. Always remember to close "DEBUG" option when all are under production environment, or, the result structure will confuse us with 3 more values inside.
+**Notice**: once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name'). If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, and run it under cgi, the results could be complex because one or more elements for debugging will be added to results as well. Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside.
 
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
