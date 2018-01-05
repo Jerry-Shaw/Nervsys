@@ -57,7 +57,22 @@ class pool
     public static function start(): void
     {
         //Get date from HTTP Request in CGI Mode
-        if ('cli' !== PHP_SAPI) self::$data = ENABLE_GET ? $_REQUEST : $_POST;
+        if ('cli' !== PHP_SAPI) {
+            self::$data = ENABLE_GET ? $_REQUEST : $_POST;
+            //No Request data
+            if (empty(self::$data)) {
+                //Get data from raw input stream
+                $input = file_get_contents('php://input');
+                if (false !== $input) {
+                    //Decode data in JSON
+                    $json = json_decode($input, true);
+                    if (is_array($json) && !empty($json)) {
+                        self::$data = &$json;
+                        unset($input, $json);
+                    }
+                }
+            }
+        }
         //Parse "cmd" data
         self::parse_cmd();
         //Parse "map" data
