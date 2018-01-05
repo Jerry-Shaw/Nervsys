@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -31,14 +31,14 @@ use core\ctr\router, core\ctr\os;
 
 class cli extends router
 {
-    //CGI command
-    private static $cgi_mode = false;
-
     //CLI data value
-    private static $cli_data = '';
+    public static $cli_data = '';
 
     //CMD data value
-    private static $cmd_data = [];
+    public static $cmd_data = [];
+
+    //CGI command
+    private static $cgi_mode = false;
 
     //Pipe read timeout
     private static $timeout = 5000;
