@@ -67,9 +67,10 @@ class sql extends mysql
 
     public static function install(): array
     {
-        $result = [];
+        if (!is_array(self::$dir) || empty(self::$dir)) return [];
 
         //Loop dir
+        $result = [];
         foreach (self::$dir as $dir) {
             //Get absolute path
             $path = ROOT . '/' . $dir;
@@ -92,6 +93,7 @@ class sql extends mysql
                 try {
                     //Exec SQL
                     mysql::exec($sql);
+
                     //Gather result
                     $result[] = $dir . '/' . basename($file) . ' installed!';
                 } catch (\Throwable $exception) {
