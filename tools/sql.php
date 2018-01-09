@@ -1,7 +1,7 @@
 <?php
 
 /**
- * MySQL Table installer
+ * MySQL Executor
  *
  * Author 秋水之冰 <27206617@qq.com>
  *
@@ -30,19 +30,15 @@ use core\ctr\router;
 use core\ctr\router\cli;
 use ext\pdo_mysql as mysql;
 
-class sql extends mysql
+class sql
 {
-    public static $key = [
-        'install' => []
-    ];
-
     //Scan dir
     public static $dir = null;
 
     /**
      * Initialize
      */
-    public static function init(): void
+    private static function init(): void
     {
         //Check dir value
         if (is_string(self::$dir) && '' !== self::$dir) self::$dir = [self::$dir];
@@ -55,8 +51,8 @@ class sql extends mysql
         }
 
         //Get dir from Router variables
-        if (isset(router::$data['path'])) {
-            self::$dir = is_array(router::$data['path']) ? router::$data['path'] : [router::$data['path']];
+        if (isset(router::$data['dir'])) {
+            self::$dir = is_array(router::$data['dir']) ? router::$data['dir'] : [router::$data['dir']];
             return;
         }
 
@@ -64,9 +60,17 @@ class sql extends mysql
         self::$dir = ['sql'];
     }
 
-
-    public static function install(): array
+    /**
+     * Execute SQL
+     *
+     * @return array
+     */
+    public static function exec(): array
     {
+        //Initialize
+        self::init();
+
+        //Check dir value
         if (!is_array(self::$dir) || empty(self::$dir)) return [];
 
         //Loop dir
@@ -82,7 +86,7 @@ class sql extends mysql
                 continue;
             }
 
-            //Get SQL files
+            //List SQL files
             $files = file::get_list($path, '*.sql');
 
             //Loop SQL files
@@ -98,7 +102,7 @@ class sql extends mysql
                     $result[] = $dir . '/' . basename($file) . ' installed!';
                 } catch (\Throwable $exception) {
                     //Catch Exceptions
-                    $result[] = $exception->getMessage();
+                    $result[] = $dir . '/' . basename($file) . ' install failed! ' . $exception->getMessage();
                 }
             }
         }
