@@ -30,7 +30,7 @@ use core\ctr\router;
 use core\ctr\router\cli;
 use ext\pdo_mysql as mysql;
 
-class sql
+class sql extends mysql
 {
     //Scan dir
     public static $dir = null;
@@ -61,11 +61,11 @@ class sql
     }
 
     /**
-     * Execute SQL
+     * Import SQL
      *
      * @return array
      */
-    public static function exec(): array
+    public static function import(): array
     {
         //Initialize
         self::init();
@@ -96,7 +96,7 @@ class sql
 
                 try {
                     //Exec SQL
-                    mysql::exec($sql);
+                    parent::exec($sql);
 
                     //Gather result
                     $result[] = $dir . '/' . basename($file) . ' installed!';
