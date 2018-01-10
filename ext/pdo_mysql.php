@@ -436,18 +436,7 @@ class pdo_mysql extends pdo
             if ($in_value) $option[] = '(';
 
             //Process values
-            if (is_string($item[2])) {
-                if (self::use_bind($item[2])) {
-                    //Generate bind value
-                    $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
-                    //Add to option
-                    $option[] = $bind;
-                    //Add to "where"
-                    $where[$bind] = $item[2];
-                    //Free memory
-                    unset($bind);
-                } else $option[] = addslashes($item[2]);
-            } else {
+            if (is_array($item[2])) {
                 //Reset bind list
                 $list = [];
 
@@ -465,6 +454,17 @@ class pdo_mysql extends pdo
 
                 //Free memory
                 unset($list, $name, $value, $bind);
+            } else {
+                if (self::use_bind($item[2])) {
+                    //Generate bind value
+                    $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
+                    //Add to option
+                    $option[] = $bind;
+                    //Add to "where"
+                    $where[$bind] = $item[2];
+                    //Free memory
+                    unset($bind);
+                } else $option[] = addslashes($item[2]);
             }
 
             //"in_value" mode
