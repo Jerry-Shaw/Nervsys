@@ -114,7 +114,7 @@ class pdo_mysql extends pdo
         self::init();
 
         //Prepare & execute
-        $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', $column) . ') VALUES(' . implode(', ', array_keys($column)) . ')';
+        $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($data);
 
@@ -148,7 +148,7 @@ class pdo_mysql extends pdo
 
         //Get "SET"
         $set_opt = [];
-        foreach ($data_column as $key => $item) $set_opt[] = $item . ' = ' . $key;
+        foreach ($data_column as $key => $item) $set_opt[] = $key . ' = ' . $item;
         unset($data_column, $key, $item);
 
         //Build "where"
@@ -327,6 +327,18 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Value bind mode detector
+     *
+     * @param string $value
+     *
+     * @return bool
+     */
+    private static function use_bind(string $value): bool
+    {
+        return '(' !== substr($value, 0, 1) || ')' !== substr($value, -1, 1);
+    }
+
+    /**
      * Build "data"
      *
      * @param array $data
@@ -335,23 +347,28 @@ class pdo_mysql extends pdo
      */
     private static function build_data(array &$data): array
     {
-        //Columns
+        //Column
         $column = [];
 
         //Process data
         foreach ($data as $key => $value) {
-            //Generate bind value
-            $bind = ':d_' . strtr($key, '.', '_');
-
-            //Add to columns
-            $column[$bind] = self::escape($key);
-
-            //Renew data
+            //Delete structure
             unset($data[$key]);
-            $data[$bind] = $value;
+
+            //Process value
+            if (self::use_bind($value)) {
+                //Generate bind value
+                $bind = ':d_' . strtr($key, '.', '_');
+                //Add to column
+                $column[self::escape($key)] = $bind;
+                //Add to data
+                $data[$bind] = $value;
+                //Free memory
+                unset($bind);
+            } else $column[self::escape($key)] = addslashes($value);
         }
 
-        unset($key, $value, $bind);
+        unset($key, $value);
         return $column;
     }
 
@@ -368,69 +385,93 @@ class pdo_mysql extends pdo
         $option = ['WHERE'];
 
         foreach ($where as $key => $item) {
+            //Delete structure
             unset($where[$key]);
-            $count = count($item);
+
+            //Ignore incomplete items
+            if (2 > count($item)) continue;
+
+            //Set "in_value" mode
+            $in_value = false;
+
+            //Try uppercase operator
+            $operator = strtoupper($item[1]);
 
             //Add missing elements
-            if (2 === $count) {
+            if (!in_array($operator, ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN', 'NOT EXISTS', 'IS NULL', 'IS NOT NULL'], true)) {
+                if (isset($item[2])) $item[3] = $item[2];
                 $item[2] = $item[1];
                 $item[1] = '=';
-                if (0 < $key) $item[3] = 'AND';
-            } elseif (3 === $count) {
-                if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN'], true)) {
+            } elseif (in_array($operator, ['IN', 'NOT IN', 'NOT EXISTS'], true)) {
+                $item[1] = $operator;
+                $in_value = true;
+            } elseif (in_array($operator, ['IS NULL', 'IS NOT NULL'], true)) {
+                $item[1] = $operator;
+                if (isset($item[2])) {
                     $item[3] = $item[2];
-                    $item[2] = $item[1];
-                    $item[1] = '=';
-                } elseif (0 < $key) $item[3] = 'AND';
+                    unset($item[2]);
+                }
             }
 
-            //Process data
+            //Add missing logic gate
+            if (!isset($item[3]) && 0 < $key) $item[3] = 'AND';
+
+            //Add logic gate to option
             if (isset($item[3])) {
-                $item[3] = strtoupper($item[3]);
-                $option[] = in_array($item[3], ['AND', 'OR', 'NOT'], true) ? $item[3] : 'AND';
+                $gate = strtoupper($item[3]);
+                $option[] = in_array($gate, ['AND', 'OR', 'NOT'], true) ? $gate : 'AND';
+                unset($gate);
             }
 
+            //Add column name to option
             $option[] = self::escape($item[0]);
 
-            //Bind data
-            if (false === stripos($item[1], 'IN')) {
-                $option[] = $item[1];
-                //Generate bind value
-                $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
-                //Add to option
-                $option[] = $bind;
-                //Add to "where"
-                $where[$bind] = $item[2];
-            } else {
-                $option[] = strtoupper($item[1]);
-                $option[] = '(';
+            //Add operator to option
+            $option[] = $item[1];
 
-                if (is_array($item[2])) {
-                    $opt = [];
-                    foreach ($item[2] as $name => $value) {
-                        //Generate bind value
-                        $bind = ':w_' . strtr($item[0], '.', '_') . '_' . $name . '_' . mt_rand();
-                        //Add to option
-                        $opt[] = $bind;
-                        //Add to "where"
-                        $where[$bind] = $value;
-                    }
-                    $option[] = implode(', ', $opt);
-                    unset($opt, $name, $value);
-                } else {
+            //Continue when no value passed
+            if (!isset($item[2])) continue;
+
+            //"in_value" mode
+            if ($in_value) $option[] = '(';
+
+            //Process values
+            if (is_string($item[2])) {
+                if (self::use_bind($item[2])) {
                     //Generate bind value
                     $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
                     //Add to option
                     $option[] = $bind;
                     //Add to "where"
                     $where[$bind] = $item[2];
+                    //Free memory
+                    unset($bind);
+                } else $option[] = addslashes($item[2]);
+            } else {
+                //Reset bind list
+                $list = [];
+
+                foreach ($item[2] as $name => $value) {
+                    //Generate bind value
+                    $bind = ':w_' . strtr($item[0], '.', '_') . '_' . $name . '_' . mt_rand();
+                    //Add to bind list
+                    $list[] = $bind;
+                    //Add to "where"
+                    $where[$bind] = $value;
                 }
 
-                $option[] = ')';
+                //Add to option
+                $option[] = implode(', ', $list);
+
+                //Free memory
+                unset($list, $name, $value, $bind);
             }
+
+            //"in_value" mode
+            if ($in_value) $option[] = ')';
         }
 
-        unset($key, $item, $count, $bind);
+        unset($key, $item, $in_value, $operator);
         return $option;
     }
 
@@ -504,27 +545,31 @@ class pdo_mysql extends pdo
         if (is_array($opt_data) && !empty($opt_data)) {
             $join = [];
             foreach ($opt_data as $table => $item) {
-                $count = count($item);
                 //Add missing elements
-                if (2 === $count) {
-                    $item[2] = $item[1];
-                    $item[3] = 'INNER';
-                    $item[1] = '=';
-                } elseif (3 === $count) {
-                    if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN'], true)) {
-                        $item[3] = $item[2];
+                switch (count($item)) {
+                    case 2:
                         $item[2] = $item[1];
+                        $item[3] = 'INNER';
                         $item[1] = '=';
-                    } else $item[3] = 'INNER';
+                        break;
+                    case 3:
+                        if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN', 'NOT EXISTS'], true)) {
+                            $item[3] = $item[2];
+                            $item[2] = $item[1];
+                            $item[1] = '=';
+                        } else $item[3] = 'INNER';
+                        break;
                 }
 
                 if (!in_array($item[3], ['INNER', 'LEFT', 'RIGHT'], true)) $item[3] = 'INNER';
+
                 $join[] = $item[3] . ' JOIN ' . self::escape($table) . ' ON ' . $item[0] . ' ' . $item[1] . ' ' . $item[2];
             }
 
             if (!empty($join)) $opt['join'] = implode(' ', $join);
 
-            unset($join, $table, $item, $count);
+            unset($join, $table, $item);
+
         } elseif (is_string($opt_data) && '' !== $opt_data) $opt['join'] = false !== stripos($opt_data, 'JOIN') ? $opt_data : 'INNER JOIN ' . $opt_data;
 
         unset($opt_data);
