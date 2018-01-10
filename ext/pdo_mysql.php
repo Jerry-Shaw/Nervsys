@@ -689,7 +689,7 @@ class pdo_mysql extends pdo
     private static function escape(string $value): string
     {
         $pass = true;
-        $char = ['(', ' ', '.', ')'];
+        $char = ['(', ' ', '.', '*', ')'];
 
         foreach ($char as $key) {
             if (false === strpos($value, $key)) continue;
