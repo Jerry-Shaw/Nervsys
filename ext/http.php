@@ -185,7 +185,7 @@ class http
         if ('' !== self::$ssl_cert) $opt[CURLOPT_SSLCERT] = self::$ssl_cert;
         if ('' !== self::$user_pwd) $opt[CURLOPT_USERPWD] = self::$user_pwd;
         if ('POST' === self::$Method) $opt[CURLOPT_POST] = true;
-        if (!empty(self::$data)) $opt[CURLOPT_POSTFIELDS] = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data);
+        if (!empty(self::$data)) $opt[CURLOPT_POSTFIELDS] = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data, JSON_OPT);
 
         //Follow settings
         if (0 < self::$max_follow) {

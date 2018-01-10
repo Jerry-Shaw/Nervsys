@@ -234,9 +234,9 @@ class cli extends router
             if (self::$log) {
                 self::save_log([
                     'cmd'    => parent::$cmd,
-                    'data'   => json_encode(parent::$data),
+                    'data'   => json_encode(parent::$data, JSON_OPT),
                     'error'  => &$error,
-                    'result' => json_encode(parent::$result)
+                    'result' => json_encode(parent::$result, JSON_OPT)
                 ]);
             }
 
