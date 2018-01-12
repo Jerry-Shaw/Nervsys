@@ -1,0 +1,256 @@
+<?php
+
+/**
+ * Auth Code Extension
+ *
+ * Author 秋水之冰 <27206617@qq.com>
+ *
+ * Copyright 2017 秋水之冰
+ *
+ * This file is part of NervSys.
+ *
+ * NervSys is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * NervSys is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+namespace ext;
+
+class authcode extends crypt
+{
+    //Auth code type (any / num / calc / word)
+    public static $type = 'any';
+
+    //Character count (only work for "num" & "word")
+    public static $count = 6;
+
+    //Image size
+    public static $width  = 240;
+    public static $height = 60;
+
+    //Font name
+    public static $font = 'georgiab';
+
+    //Lifetime (in seconds)
+    public static $life = 60;
+
+    /**
+     * Generate any codes from num / calc / word
+     *
+     * @return array
+     */
+    private static function gen_any(): array
+    {
+        $list = ['num', 'calc', 'word'];
+        $type = $list[mt_rand(0, 2)];
+
+        unset($list);
+
+        return forward_static_call([__CLASS__, 'gen_' . $type]);
+    }
+
+    /**
+     * Generate pure number codes
+     *
+     * @return array
+     */
+    private static function gen_num(): array
+    {
+        $result = [];
+        for ($i = 0; $i < self::$count; ++$i) $result['code'][] = (string)mt_rand(0, 9);
+        $result['res'] = implode($result['code']);
+
+        unset($i);
+        return $result;
+    }
+
+    /**
+     * Generate Math calculation codes
+     *
+     * @return array
+     */
+    private static function gen_calc(): array
+    {
+        $result = [];
+
+        //Allowed calculate options
+        $option = ['+', '-', '*'];
+
+        //Generate random numbers and option indicators
+        $result['code'][] = mt_rand(0, 9);
+        $result['code'][] = mt_rand(0, 2);
+        $result['code'][] = mt_rand(0, 9);
+        $result['code'][] = mt_rand(0, 2);
+        $result['code'][] = mt_rand(0, 9);
+
+        //Calculate function
+        $calc = static function (int $num_1, int $opt, int $num_2): int
+        {
+            switch ($opt) {
+                case 2:
+                    $res = $num_1 * $num_2;
+                    break;
+                case 1:
+                    $res = $num_1 - $num_2;
+                    break;
+                default:
+                    $res = $num_1 + $num_2;
+                    break;
+            }
+            unset($num_1, $opt, $num_2);
+            return $res;
+        };
+
+        //Calculate result
+        switch ($result['code'][1] <=> $result['code'][3]) {
+            case -1:
+                $result['res'] = (string)$calc($result['code'][0], $result['code'][1], $calc($result['code'][2], $result['code'][3], $result['code'][4]));
+                break;
+            default:
+                $result['res'] = (string)$calc($calc($result['code'][0], $result['code'][1], $result['code'][2]), $result['code'][3], $result['code'][4]);
+                break;
+        }
+
+        //Change number integer to string
+        $result['code'][0] = (string)$result['code'][0];
+        $result['code'][2] = (string)$result['code'][2];
+        $result['code'][4] = (string)$result['code'][4];
+
+        //Change option indicator to option string
+        $result['code'][1] = $option[$result['code'][1]];
+        $result['code'][3] = $option[$result['code'][3]];
+
+        //Add suffix
+        $result['code'][] = '=';
+        $result['code'][] = '?';
+
+        //Free memory
+        unset($option, $calc);
+        return $result;
+    }
+
+    /**
+     * Generate English letter codes
+     *
+     * @return array
+     */
+    private static function gen_word(): array
+    {
+        $result = [];
+
+        $list = range('A', 'Z');
+        for ($i = 0; $i < self::$count; ++$i) $result['code'][] = $list[mt_rand(0, 25)];
+        $result['res'] = implode($result['code']);
+
+        unset($i);
+        return $result;
+    }
+
+    /**
+     * Get Auth Code values
+     *
+     * @return array
+     */
+    public static function get(): array
+    {
+        //Check Auth Code type
+        if (!in_array(self::$type, ['any', 'num', 'calc', 'word'], true)) self::$type = 'any';
+
+        //Generate Auth Code
+        $codes = forward_static_call([__CLASS__, 'gen_' . self::$type]);
+
+        //Encrypt result with lifetime
+        $codes['res'] = parent::sign(json_encode(['res' => $codes['res'], 'life' => time() + (0 < self::$life ? self::$life : 60)]));
+
+        //Image properties
+        $font = __DIR__ . '/font/' . self::$font . '.ttf';
+        $font_size = ceil(self::$height / 2);
+        $left_padding = ceil((self::$width - $font_size * count($codes['code'])) / 2);
+
+        //Create image
+        $image = imagecreate(self::$width, self::$height);
+
+        if (false === $image) {
+            debug(__CLASS__, 'Auth Code image creation failed!');
+            return ['err' => 1, 'msg' => 'Auth Code image creation failed!'];
+        }
+
+        //Fill image in white
+        imagefill($image, 0, 0, imagecolorallocate($image, 255, 255, 255));
+
+        $colors = [];
+
+        //Generator random colors
+        for ($i = 0; $i < 255; ++$i) {
+            $color = imagecolorallocate($image, mt_rand(0, 200), mt_rand(0, 200), mt_rand(0, 200));
+            if (false !== $color) $colors[] = $color;
+        }
+
+        $color_index = count($colors) - 1;
+
+        //Draw text
+        foreach ($codes['code'] as $text) {
+            imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, 44, $colors[mt_rand(0, $color_index)], $font, $text);
+            $left_padding += $font_size;
+        }
+
+        unset($codes['code'], $text);
+
+        //Draw arcs
+        for ($i = 0; $i < 10; ++$i) imagearc($image, mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, 360), mt_rand(0, 360), $colors[mt_rand(0, $color_index)]);
+
+        //Draw pixels
+        for ($i = 0; $i < 2000; ++$i) imagesetpixel($image, mt_rand(0, self::$width), mt_rand(0, self::$height), $colors[mt_rand(0, $color_index)]);
+
+        unset($colors, $color_index, $i);
+
+        //Start output buffer
+        ob_clean();
+        ob_start();
+
+        //Output image
+        imagegif($image);
+        imagedestroy($image);
+
+        //Capture output
+        $codes['img'] = 'data:image/gif;base64,' . base64_encode(ob_get_contents());
+
+        //Clean output buffer
+        ob_clean();
+        ob_end_clean();
+
+        unset($font, $font_size, $left_padding, $image);
+        return $codes;
+    }
+
+    /**
+     * Validate Auth Code & Input values
+     *
+     * @param string $code
+     * @param string $input
+     *
+     * @return bool
+     */
+    public static function valid(string $code, string $input): bool
+    {
+        $res = parent::verify($code);
+        if ('' === $res) return false;
+
+        $json = json_decode($res, true);
+        if (is_null($json) || !isset($json['life']) || !isset($json['res'])) return false;
+
+        $result = $json['life'] >= time() && $json['res'] === $input ? true : false;
+
+        unset($code, $input, $res, $json);
+        return $result;
+    }
+}
