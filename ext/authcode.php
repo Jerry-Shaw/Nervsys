@@ -31,11 +31,11 @@ class authcode extends crypt
     public static $type = 'any';
 
     //Character count (only work for "num" & "word")
-    public static $count = 6;
+    public static $count = 4;
 
     //Image size
-    public static $width  = 200;
-    public static $height = 60;
+    public static $width  = 120;
+    public static $height = 40;
 
     //Font name
     public static $font = 'georgiab';
@@ -131,7 +131,6 @@ class authcode extends crypt
 
         //Add suffix
         $result['char'][] = '=';
-        $result['char'][] = '?';
 
         //Free memory
         unset($option, $calc);
@@ -172,12 +171,11 @@ class authcode extends crypt
         $codes['code'] = parent::sign(json_encode(['code' => $codes['code'], 'life' => time() + (0 < self::$life ? self::$life : 60)]));
 
         //Image properties
-        $font = __DIR__ . '/font/' . self::$font . '.ttf';
+        $font_file = __DIR__ . '/font/' . self::$font . '.ttf';
 
-        $font_height = (int)(self::$height / 2);
+        $font_height = (int)(self::$height / 1.6);
         $font_width = (int)(self::$width / count($codes['char']));
         $font_size = $font_width < $font_height ? $font_width : $font_height;
-        unset($font_height, $font_width);
 
         $top_padding = (int)(self::$height - (self::$height - $font_size) / 1.8);
         $left_padding = (int)((self::$width - $font_size * count($codes['char'])) / 2);
@@ -197,7 +195,7 @@ class authcode extends crypt
 
         //Generator random colors
         for ($i = 0; $i < 255; ++$i) {
-            $color = imagecolorallocate($image, mt_rand(0, 200), mt_rand(0, 200), mt_rand(0, 200));
+            $color = imagecolorallocate($image, mt_rand(0, 180), mt_rand(0, 180), mt_rand(0, 180));
             if (false !== $color) $colors[] = $color;
         }
 
@@ -205,17 +203,17 @@ class authcode extends crypt
 
         //Draw text
         foreach ($codes['char'] as $text) {
-            imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, $top_padding, $colors[mt_rand(0, $color_index)], $font, $text);
+            imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, $top_padding, $colors[mt_rand(0, $color_index)], $font_file, $text);
             $left_padding += $font_size;
         }
 
         unset($codes['char'], $text);
 
         //Draw arcs
-        for ($i = 0; $i < 10; ++$i) imagearc($image, mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, 360), mt_rand(0, 360), $colors[mt_rand(0, $color_index)]);
+        for ($i = 0; $i < 5; ++$i) imagearc($image, mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, 360), mt_rand(0, 360), $colors[mt_rand(0, $color_index)]);
 
         //Draw pixels
-        for ($i = 0; $i < 2000; ++$i) imagesetpixel($image, mt_rand(0, self::$width), mt_rand(0, self::$height), $colors[mt_rand(0, $color_index)]);
+        for ($i = 0; $i < 500; ++$i) imagesetpixel($image, mt_rand(0, self::$width), mt_rand(0, self::$height), $colors[mt_rand(0, $color_index)]);
 
         unset($colors, $color_index, $i);
 
@@ -224,17 +222,17 @@ class authcode extends crypt
         ob_start();
 
         //Output image
-        imagegif($image);
+        imagejpeg($image, null, 25);
         imagedestroy($image);
 
         //Capture output
-        $codes['image'] = 'data:image/gif;base64,' . base64_encode(ob_get_contents());
+        $codes['image'] = 'data:image/jpeg;base64,' . base64_encode(ob_get_contents());
 
         //Clean output buffer
         ob_clean();
         ob_end_clean();
 
-        unset($font, $font_size, $top_padding, $left_padding, $image);
+        unset($font_file, $font_height, $font_width, $font_size, $top_padding, $left_padding, $image);
         return $codes;
     }
 
