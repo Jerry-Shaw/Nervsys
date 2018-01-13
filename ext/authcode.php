@@ -218,7 +218,7 @@ class authcode extends crypt
         ob_start();
 
         //Output image
-        imagejpeg($image, null, 0);
+        imagejpeg($image, null, 25);
         imagedestroy($image);
 
         //Capture output
