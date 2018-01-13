@@ -66,8 +66,8 @@ class authcode extends crypt
     private static function gen_num(): array
     {
         $result = [];
-        for ($i = 0; $i < self::$count; ++$i) $result['code'][] = (string)mt_rand(0, 9);
-        $result['res'] = implode($result['code']);
+        for ($i = 0; $i < self::$count; ++$i) $result['char'][] = (string)mt_rand(0, 9);
+        $result['code'] = implode($result['char']);
 
         unset($i);
         return $result;
@@ -86,11 +86,11 @@ class authcode extends crypt
         $option = ['+', '-', '*'];
 
         //Generate random numbers and option indicators
-        $result['code'][] = mt_rand(0, 9);
-        $result['code'][] = mt_rand(0, 2);
-        $result['code'][] = mt_rand(0, 9);
-        $result['code'][] = mt_rand(0, 2);
-        $result['code'][] = mt_rand(0, 9);
+        $result['char'][] = mt_rand(0, 9);
+        $result['char'][] = mt_rand(0, 2);
+        $result['char'][] = mt_rand(0, 9);
+        $result['char'][] = mt_rand(0, 2);
+        $result['char'][] = mt_rand(0, 9);
 
         //Calculate function
         $calc = static function (int $num_1, int $opt, int $num_2): int
@@ -111,27 +111,27 @@ class authcode extends crypt
         };
 
         //Calculate result
-        switch ($result['code'][1] <=> $result['code'][3]) {
+        switch ($result['char'][1] <=> $result['char'][3]) {
             case -1:
-                $result['res'] = (string)$calc($result['code'][0], $result['code'][1], $calc($result['code'][2], $result['code'][3], $result['code'][4]));
+                $result['code'] = (string)$calc($result['char'][0], $result['char'][1], $calc($result['char'][2], $result['char'][3], $result['char'][4]));
                 break;
             default:
-                $result['res'] = (string)$calc($calc($result['code'][0], $result['code'][1], $result['code'][2]), $result['code'][3], $result['code'][4]);
+                $result['code'] = (string)$calc($calc($result['char'][0], $result['char'][1], $result['char'][2]), $result['char'][3], $result['char'][4]);
                 break;
         }
 
         //Change number integer to string
-        $result['code'][0] = (string)$result['code'][0];
-        $result['code'][2] = (string)$result['code'][2];
-        $result['code'][4] = (string)$result['code'][4];
+        $result['char'][0] = (string)$result['char'][0];
+        $result['char'][2] = (string)$result['char'][2];
+        $result['char'][4] = (string)$result['char'][4];
 
         //Change option indicator to option string
-        $result['code'][1] = $option[$result['code'][1]];
-        $result['code'][3] = $option[$result['code'][3]];
+        $result['char'][1] = $option[$result['char'][1]];
+        $result['char'][3] = $option[$result['char'][3]];
 
         //Add suffix
-        $result['code'][] = '=';
-        $result['code'][] = '?';
+        $result['char'][] = '=';
+        $result['char'][] = '?';
 
         //Free memory
         unset($option, $calc);
@@ -148,8 +148,8 @@ class authcode extends crypt
         $result = [];
 
         $list = range('A', 'Z');
-        for ($i = 0; $i < self::$count; ++$i) $result['code'][] = $list[mt_rand(0, 25)];
-        $result['res'] = implode($result['code']);
+        for ($i = 0; $i < self::$count; ++$i) $result['char'][] = $list[mt_rand(0, 25)];
+        $result['code'] = implode($result['char']);
 
         unset($i);
         return $result;
@@ -169,12 +169,12 @@ class authcode extends crypt
         $codes = forward_static_call([__CLASS__, 'gen_' . self::$type]);
 
         //Encrypt result with lifetime
-        $codes['res'] = parent::sign(json_encode(['res' => $codes['res'], 'life' => time() + (0 < self::$life ? self::$life : 60)]));
+        $codes['code'] = parent::sign(json_encode(['code' => $codes['code'], 'life' => time() + (0 < self::$life ? self::$life : 60)]));
 
         //Image properties
         $font = __DIR__ . '/font/' . self::$font . '.ttf';
         $font_size = ceil(self::$height / 2);
-        $left_padding = ceil((self::$width - $font_size * count($codes['code'])) / 2);
+        $left_padding = ceil((self::$width - $font_size * count($codes['char'])) / 2);
 
         //Create image
         $image = imagecreate(self::$width, self::$height);
@@ -198,12 +198,12 @@ class authcode extends crypt
         $color_index = count($colors) - 1;
 
         //Draw text
-        foreach ($codes['code'] as $text) {
+        foreach ($codes['char'] as $text) {
             imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, 44, $colors[mt_rand(0, $color_index)], $font, $text);
             $left_padding += $font_size;
         }
 
-        unset($codes['code'], $text);
+        unset($codes['char'], $text);
 
         //Draw arcs
         for ($i = 0; $i < 10; ++$i) imagearc($image, mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, 360), mt_rand(0, 360), $colors[mt_rand(0, $color_index)]);
@@ -218,11 +218,11 @@ class authcode extends crypt
         ob_start();
 
         //Output image
-        imagegif($image);
+        imagejpeg($image, null, 0);
         imagedestroy($image);
 
         //Capture output
-        $codes['img'] = 'data:image/gif;base64,' . base64_encode(ob_get_contents());
+        $codes['image'] = 'data:image/jpeg;base64,' . base64_encode(ob_get_contents());
 
         //Clean output buffer
         ob_clean();
@@ -246,9 +246,9 @@ class authcode extends crypt
         if ('' === $res) return false;
 
         $json = json_decode($res, true);
-        if (is_null($json) || !isset($json['life']) || !isset($json['res'])) return false;
+        if (is_null($json) || !isset($json['life']) || !isset($json['code'])) return false;
 
-        $result = $json['life'] >= time() && $json['res'] === $input ? true : false;
+        $result = $json['life'] > time() && $json['code'] === strtoupper($input) ? true : false;
 
         unset($code, $input, $res, $json);
         return $result;
