@@ -34,7 +34,7 @@ class authcode extends crypt
     public static $count = 6;
 
     //Image size
-    public static $width  = 240;
+    public static $width  = 200;
     public static $height = 60;
 
     //Font name
@@ -173,8 +173,14 @@ class authcode extends crypt
 
         //Image properties
         $font = __DIR__ . '/font/' . self::$font . '.ttf';
-        $font_size = ceil(self::$height / 2);
-        $left_padding = ceil((self::$width - $font_size * count($codes['char'])) / 2);
+
+        $font_height = (int)(self::$height / 2);
+        $font_width = (int)(self::$width / count($codes['char']));
+        $font_size = $font_width < $font_height ? $font_width : $font_height;
+        unset($font_height, $font_width);
+
+        $top_padding = (int)(self::$height - (self::$height - $font_size) / 1.8);
+        $left_padding = (int)((self::$width - $font_size * count($codes['char'])) / 2);
 
         //Create image
         $image = imagecreate(self::$width, self::$height);
@@ -199,7 +205,7 @@ class authcode extends crypt
 
         //Draw text
         foreach ($codes['char'] as $text) {
-            imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, 44, $colors[mt_rand(0, $color_index)], $font, $text);
+            imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, $top_padding, $colors[mt_rand(0, $color_index)], $font, $text);
             $left_padding += $font_size;
         }
 
@@ -218,17 +224,17 @@ class authcode extends crypt
         ob_start();
 
         //Output image
-        imagejpeg($image, null, 25);
+        imagegif($image);
         imagedestroy($image);
 
         //Capture output
-        $codes['image'] = 'data:image/jpeg;base64,' . base64_encode(ob_get_contents());
+        $codes['image'] = 'data:image/gif;base64,' . base64_encode(ob_get_contents());
 
         //Clean output buffer
         ob_clean();
         ob_end_clean();
 
-        unset($font, $font_size, $left_padding, $image);
+        unset($font, $font_size, $top_padding, $left_padding, $image);
         return $codes;
     }
 
