@@ -42,23 +42,23 @@ class keygen implements keys
     }
 
     /**
-     * Get Keys from Crypt Key
+     * Parse Keys from Crypt Key
      *
      * @param string $key (64 bits)
      *
      * @return array
      */
-    public static function get_keys(string $key): array
+    public static function parse(string $key): array
     {
-        $keys = ['alg' => ord(substr($key, 0, 1)) & 1];
-        switch ($keys['alg']) {
+        $keys = [];
+        switch (ord(substr($key, 0, 1)) & 1) {
             case 0:
                 $keys['key'] = substr($key, 0, 32);
-                $keys['iv'] = substr($key, -32, 32);
+                $keys['iv'] = substr($key, -32, 16);
                 break;
             case 1:
                 $keys['key'] = substr($key, -32, 32);
-                $keys['iv'] = substr($key, 0, 32);
+                $keys['iv'] = substr($key, 0, 16);
                 break;
         }
         unset($key);
@@ -66,28 +66,13 @@ class keygen implements keys
     }
 
     /**
-     * Fix key length
-     *
-     * @param array $keys
-     * @param int   $iv_len
-     *
-     * @return array
-     */
-    public static function fix_keys(array $keys, int $iv_len): array
-    {
-        $keys['iv'] = 0 === $keys['alg'] ? substr($keys['iv'], 0, $iv_len) : substr($keys['iv'], -$iv_len, $iv_len);
-        unset($iv_len);
-        return $keys;
-    }
-
-    /**
-     * Build Mixed Key
+     * Mix Crypt Key
      *
      * @param string $key (64 bits)
      *
      * @return string (80 bits)
      */
-    public static function build(string $key): string
+    public static function mix(string $key): string
     {
         $unit = str_split($key, 4);
         foreach ($unit as $k => $v) {
@@ -101,13 +86,13 @@ class keygen implements keys
     }
 
     /**
-     * Rebuild Crypt Key
+     * Build Crypt Key
      *
      * @param string $key (80 bits)
      *
      * @return string (64 bits)
      */
-    public static function rebuild(string $key): string
+    public static function build(string $key): string
     {
         $unit = str_split($key, 5);
         foreach ($unit as $k => $v) {

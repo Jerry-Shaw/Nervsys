@@ -32,44 +32,34 @@ interface keys
     /**
      * Create Crypt Key
      *
-     * @return string (64 bits)
+     * @return string
      */
     public static function create(): string;
 
     /**
-     * Get Keys from Crypt Key
+     * Parse Keys from Crypt Key
      *
-     * @param string $key (64 bits)
-     *
-     * @return array
-     */
-    public static function get_keys(string $key): array;
-
-    /**
-     * Fix key length
-     *
-     * @param array $keys
-     * @param int   $iv_len
+     * @param string $key
      *
      * @return array
      */
-    public static function fix_keys(array $keys, int $iv_len): array;
+    public static function parse(string $key): array;
 
     /**
-     * Build Mixed Key
+     * Mix Crypt Key
      *
-     * @param string $key (64 bits)
+     * @param string $key
      *
-     * @return string (80 bits)
+     * @return string
+     */
+    public static function mix(string $key): string;
+
+    /**
+     * Build Crypt Key
+     *
+     * @param string $key
+     *
+     * @return string
      */
     public static function build(string $key): string;
-
-    /**
-     * Rebuild Crypt Key
-     *
-     * @param string $key (80 bits)
-     *
-     * @return string (64 bits)
-     */
-    public static function rebuild(string $key): string;
 }
