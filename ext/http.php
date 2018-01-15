@@ -30,7 +30,7 @@ namespace ext;
 class http
 {
     //Request URL
-    public static $url;
+    public static $url = null;
 
     //Protocol Version
     public static $ver = '2.0';
@@ -88,6 +88,16 @@ class http
 
     //CURL Resource
     private static $curl = [];
+
+    /**
+     * Check requested URLs
+     *
+     * @return bool
+     */
+    private static function chk_url(): bool
+    {
+        return (is_string(self::$url) || is_array(self::$url)) && !empty(self::$url) ? true : false;
+    }
 
     /**
      * Prepare unit for URL
@@ -256,8 +266,8 @@ class http
     public static function request(): array
     {
         //Check URL
-        if (empty(self::$url)) {
-            debug(__CLASS__, 'No URL entry!');
+        if (!self::chk_url()) {
+            debug(__CLASS__, 'No URL entry or URL ERROR!');
             return [];
         }
 
@@ -294,8 +304,8 @@ class http
     public static function upload(): array
     {
         //Check URL
-        if (empty(self::$url)) {
-            debug(__CLASS__, 'No URL entry!');
+        if (!self::chk_url()) {
+            debug(__CLASS__, 'No URL entry or URL ERROR!');
             return [];
         }
 
