@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -219,9 +219,9 @@ class crypt
      */
     public static function hash_pwd(string $string, string $key): string
     {
-        if (64 > strlen($key)) $key = str_pad($key, 64, $key);
+        if (48 > strlen($key)) $key = str_pad($key, 48, $key);
 
-        $noises = str_split($key, 16);
+        $noises = str_split($key, 12);
 
         $string = 0 === ord(substr($key, 0, 1)) & 1 ? $noises[0] . ':' . $string . ':' . $noises[2] : $noises[1] . ':' . $string . ':' . $noises[3];
         $string = substr(hash('sha1', $string), 4, 32);
@@ -261,7 +261,7 @@ class crypt
         $mix = forward_static_call([self::$keygen, 'mix'], $key);
 
         //Create encrypted signature
-        $mix = '' !== $rsa_key ? self::rsa_encrypt($mix, $rsa_key) : (string)base64_encode(gzdeflate($mix, 9));
+        $mix = '' === $rsa_key ? (string)base64_encode(gzdeflate($mix, 9)) : self::rsa_encrypt($mix, $rsa_key);
         $sig = '' !== $mix ? $mix . '-' . self::encrypt($string, $key) : '';
 
         unset($string, $rsa_key, $key, $mix);
@@ -282,9 +282,8 @@ class crypt
 
         //Explode signature
         list($mix, $enc) = explode('-', $string, 2);
-        $mix = '' !== $rsa_key ? self::rsa_decrypt($mix, $rsa_key) : (string)gzinflate(base64_decode($mix, true));
 
-        //Key decode failed
+        $mix = '' === $rsa_key ? (string)gzinflate(base64_decode($mix, true)) : self::rsa_decrypt($mix, $rsa_key);
         if ('' === $mix) return '';
 
         //Prepare key
