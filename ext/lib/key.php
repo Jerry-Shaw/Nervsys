@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -27,7 +27,7 @@
 
 namespace ext\lib;
 
-interface keys
+interface key
 {
     /**
      * Create Crypt Key
@@ -37,29 +37,29 @@ interface keys
     public static function create(): string;
 
     /**
-     * Parse Keys from Crypt Key
+     * Extract Keys from Crypt Key
      *
      * @param string $key
      *
      * @return array
      */
-    public static function parse(string $key): array;
+    public static function extract(string $key): array;
 
     /**
-     * Mix Crypt Key
+     * Create obscured key from Crypt Key
      *
      * @param string $key
      *
      * @return string
      */
-    public static function mix(string $key): string;
+    public static function obscure(string $key): string;
 
     /**
-     * Build Crypt Key
+     * Rebuild Crypt Key from obscured Key
      *
      * @param string $key
      *
      * @return string
      */
-    public static function build(string $key): string;
+    public static function rebuild(string $key): string;
 }

@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -27,80 +27,79 @@
 
 namespace ext;
 
-use ext\lib\keys;
+use ext\lib\key;
 
-class keygen implements keys
+class keygen implements key
 {
     /**
      * Create Crypt Key
      *
-     * @return string (64 bits)
+     * @return string (32 bits)
      */
     public static function create(): string
     {
-        return hash('sha256', uniqid(mt_rand(), true));
+        return hash('md5', uniqid(mt_rand(), true));
     }
 
     /**
-     * Parse Keys from Crypt Key
+     * Extract AES Keys from Crypt Key
      *
-     * @param string $key (64 bits)
+     * @param string $key (32 bits)
      *
      * @return array
      */
-    public static function parse(string $key): array
+    public static function extract(string $key): array
     {
         $keys = [];
-        switch (ord(substr($key, 0, 1)) & 1) {
-            case 0:
-                $keys['key'] = substr($key, 0, 32);
-                $keys['iv'] = substr($key, -32, 16);
-                break;
-            case 1:
-                $keys['key'] = substr($key, -32, 32);
-                $keys['iv'] = substr($key, 0, 16);
-                break;
-        }
+        $keys['key'] = &$key;
+        $keys['iv'] = 0 === ord(substr($key, 0, 1)) & 1 ? substr($key, 0, 16) : substr($key, -16, 16);
+
         unset($key);
         return $keys;
     }
 
     /**
-     * Mix Crypt Key
+     * Obscure Crypt Key
      *
-     * @param string $key (64 bits)
+     * @param string $key (32 bits)
      *
-     * @return string (80 bits)
+     * @return string (40 bits)
      */
-    public static function mix(string $key): string
+    public static function obscure(string $key): string
     {
         $unit = str_split($key, 4);
+
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, 0, 1);
             if ($k & 1 !== ord($unit_key) & 1) $v = strrev($v);
             $unit[$k] = $v . $unit_key;
         }
+
         $key = implode($unit);
+
         unset($unit, $k, $v, $unit_key);
         return $key;
     }
 
     /**
-     * Build Crypt Key
+     * Rebuild Crypt Key
      *
-     * @param string $key (80 bits)
+     * @param string $key (40 bits)
      *
-     * @return string (64 bits)
+     * @return string (32 bits)
      */
-    public static function build(string $key): string
+    public static function rebuild(string $key): string
     {
         $unit = str_split($key, 5);
+
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
             $unit[$k] = ($k & 1 !== ord($unit_key) & 1) ? strrev($unit_item) : $unit_item;
         }
+
         $key = implode($unit);
+
         unset($unit, $k, $v, $unit_key, $unit_item);
         return $key;
     }
