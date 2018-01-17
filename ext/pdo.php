@@ -51,8 +51,9 @@ class pdo
      * Build DSN & options
      *
      * @return string
+     * @throws \Exception
      */
-    private static function build(): string
+    private static function dsn(): string
     {
         //Build DSN
         $dsn = self::$type . ':';
@@ -79,22 +80,21 @@ class pdo
                 $dsn .= 'dbname=//' . self::$host . ':' . self::$port . '/' . self::$db_name . ';charset=' . self::$charset;
                 break;
             default:
-                exit('Database type NOT support!');
+                throw new \Exception('PDO: ' . self::$type . ' NOT support!');
         }
 
         return $dsn;
     }
 
     /**
+     * Connect Database
+     *
      * @return \PDO
+     * @throws \Exception
      */
     public static function connect(): \PDO
     {
-        try {
-            if ('' === (string)self::$db_name) throw new \PDOException('PDO: Database Name ERROR!');
-            return new \PDO(self::build(), (string)self::$user, (string)self::$pwd, self::$option);
-        } catch (\PDOException $error) {
-            exit('PDO: Failed to connect! ' . $error->getMessage());
-        }
+        if ('' === (string)self::$db_name) throw new \Exception('PDO: DB Name ERROR!');
+        return new \PDO(self::dsn(), (string)self::$user, (string)self::$pwd, self::$option);
     }
 }

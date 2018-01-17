@@ -224,7 +224,7 @@ class pdo_mysql extends pdo
     {
         //Delete not allowed
         if (empty($where)) {
-            debug(__CLASS__, 'Delete is not allowed!');
+            debug(__CLASS__, 'Delete NOT allowed!');
             return false;
         }
 
@@ -293,7 +293,12 @@ class pdo_mysql extends pdo
     public static function exec(string $sql): int
     {
         self::init();
-        return (int)self::$db_mysql->exec($sql);
+
+        $exec = self::$db_mysql->exec($sql);
+        if (false === $exec) $exec = -1;
+
+        unset($sql);
+        return $exec;
     }
 
     /**

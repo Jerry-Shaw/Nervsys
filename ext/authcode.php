@@ -184,8 +184,8 @@ class authcode extends crypt
         $image = imagecreate(self::$width, self::$height);
 
         if (false === $image) {
-            debug(__CLASS__, 'Auth Code image creation failed!');
-            return ['err' => 1, 'msg' => 'Image creation failed!'];
+            debug(__CLASS__, 'Auth Code Image create failed!');
+            return ['err' => 1, 'msg' => 'Image create failed!'];
         }
 
         //Fill image in white

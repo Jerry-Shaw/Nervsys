@@ -94,16 +94,8 @@ class sql extends mysql
                 //Get SQL file content
                 $sql = file_get_contents($file);
 
-                try {
-                    //Exec SQL
-                    parent::exec($sql);
-
-                    //Gather result
-                    $result[] = $dir . '/' . basename($file) . ' installed!';
-                } catch (\Throwable $exception) {
-                    //Catch Exceptions
-                    $result[] = $dir . '/' . basename($file) . ' install failed! ' . $exception->getMessage();
-                }
+                //Exec SQL & gather results
+                $result[] = -1 !== parent::exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
             }
         }
 

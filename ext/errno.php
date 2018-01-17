@@ -52,22 +52,21 @@ class errno
      */
     public static function load(string $module, string $file): void
     {
-        $path = realpath(ROOT . '/' . $module . '/' . self::$dir . '/' . $file . '.ini');
+        $file = '/' . $module . '/' . self::$dir . '/' . $file . '.ini';
 
+        $path = realpath(ROOT . $file);
         if (false === $path) {
-            debug(__CLASS__, '"' . $file . '.ini" NOT exist in "' . $module . '"!');
+            debug(__CLASS__, '[' . $file . '] NOT found!');
             return;
         }
 
         $error = parse_ini_file($path, false);
-
-        if (!is_array($error) || empty($error)) {
-            debug(__CLASS__, '"' . $file . '.ini" in "' . $module . '" is incorrect or empty!');
+        if (false === $error) {
+            debug(__CLASS__, '[' . $file . '] Incorrect!');
             return;
         }
 
         self::$pool += $error;
-
         unset($module, $file, $path, $error);
     }
 

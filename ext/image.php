@@ -50,7 +50,7 @@ class image
         //Get image data
         $img_info = getimagesize($file);
         if (!in_array($img_info['mime'], self::mime, true)) {
-            debug(__CLASS__, 'Image Mime-type not support!');
+            debug(__CLASS__, 'Image NOT support!');
             return false;
         }
 
@@ -103,7 +103,7 @@ class image
         $img_exif = exif_read_data($file);
         if (false === $img_exif || !isset($img_exif['Orientation'])) return;
         if (!in_array($img_exif['MimeType'], self::mime, true)) {
-            debug(__CLASS__, 'Image Mime-type not support!');
+            debug(__CLASS__, 'Image NOT support!');
             return;
         }
 

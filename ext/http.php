@@ -318,7 +318,7 @@ class http
         //Validate files
         foreach (self::$file as $key => $item) {
             if (!is_file($item)) {
-                debug(__CLASS__, '"' . $item . '" NOT exist!');
+                debug(__CLASS__, '[' . $item . '] NOT found!');
                 unset(self::$file[$key]);
                 continue;
             }

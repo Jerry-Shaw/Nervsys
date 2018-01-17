@@ -41,25 +41,24 @@ class redis
     public static $persist = true;
 
     /**
+     * Connect Redis
+     *
      * @return \Redis
+     * @throws \Exception
      */
     public static function connect(): \Redis
     {
-        try {
-            $redis = new \Redis();
+        $redis = new \Redis();
 
-            if (self::$persist ? !$redis->pconnect(self::$host, self::$port) : !$redis->connect(self::$host, self::$port)) throw new \RedisException('Redis: Host or Port ERROR!');
-            if ('' !== self::$auth && !$redis->auth((string)self::$auth)) throw new \RedisException('Redis: Authentication Failed!');
+        if (self::$persist ? !$redis->pconnect(self::$host, self::$port) : !$redis->connect(self::$host, self::$port)) throw new \Exception('Redis: Host or Port ERROR!');
+        if ('' !== self::$auth && !$redis->auth((string)self::$auth)) throw new \Exception('Redis: Authentication Failed!');
 
-            if ('' !== self::$prefix) $redis->setOption($redis::OPT_PREFIX, (string)self::$prefix . ':');
-            if (0 < self::$timeout) $redis->setOption($redis::OPT_READ_TIMEOUT, (int)self::$timeout);
-            $redis->setOption($redis::OPT_SERIALIZER, $redis::SERIALIZER_NONE);
+        if ('' !== self::$prefix) $redis->setOption($redis::OPT_PREFIX, (string)self::$prefix . ':');
+        if (0 < self::$timeout) $redis->setOption($redis::OPT_READ_TIMEOUT, (int)self::$timeout);
+        $redis->setOption($redis::OPT_SERIALIZER, $redis::SERIALIZER_NONE);
 
-            $redis->select((int)self::$db);
+        if (!$redis->select((int)self::$db)) throw new \Exception('Redis: DB ' . self::$db . ' NOT exist!');
 
-            return $redis;
-        } catch (\RedisException $error) {
-            exit('Redis: Failed to connect! ' . $error->getMessage());
-        }
+        return $redis;
     }
 }

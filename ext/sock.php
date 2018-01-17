@@ -84,7 +84,7 @@ class sock
             : socket_create(self::$domain, SOCK_DGRAM, SOL_UDP);
 
         if (false === $socket) {
-            debug(__CLASS__, 'Socket Creation Failed!');
+            debug(__CLASS__, 'Socket Create Failed!');
             return false;
         }
 

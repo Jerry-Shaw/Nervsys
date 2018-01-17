@@ -228,6 +228,7 @@ class cli extends router
                 $error = '';
             } catch (\Throwable $exception) {
                 $error = $exception->getMessage();
+                unset($exception);
             }
 
             //Save log
@@ -305,7 +306,7 @@ class cli extends router
         if (false === strpos(parent::$cmd, ':')) {
             if (isset(self::$config[parent::$cmd]) && is_string(self::$config[parent::$cmd])) return self::$config[parent::$cmd];
             else {
-                debug('CLI Config', 'CMD config ERROR! Please check "cfg.ini"!');
+                debug('CLI', '[core/cfg.ini] ERROR!');
                 return '';
             }
         } else {
@@ -314,14 +315,14 @@ class cli extends router
             foreach ($keys as $key) {
                 if (isset($cmd[$key])) $cmd = $cmd[$key];
                 else {
-                    debug('CLI Config', 'CMD not found! Please add to "cfg.ini"!');
+                    debug('CLI', '[core/cfg.ini] NOT configured!');
                     unset($cmd, $keys, $key);
                     return '';
                 }
             }
             if (is_string($cmd)) return $cmd;
             else {
-                debug('CLI Config', 'CMD config ERROR! Please check "cfg.ini"!');
+                debug('CLI', '[core/cfg.ini] setting incorrect!');
                 unset($cmd, $keys, $key);
                 return '';
             }
@@ -354,7 +355,7 @@ class cli extends router
 
         //Process create failed
         if (!is_resource($process)) {
-            debug('Execute Permission', 'Access denied! Check your "cfg.ini" and authority!');
+            debug('CLI', 'Access denied or [core/cfg.ini] incorrect!');
             exit;
         }
 
