@@ -52,20 +52,17 @@ class os
             self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
         }
 
-        try {
-            if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT exist!');
-            if (empty(self::$env)) forward_static_call([self::$platform, 'env_info']);
-            if (empty(self::$sys)) forward_static_call([self::$platform, 'sys_info']);
-        } catch (\Throwable $exception) {
-            debug('OS Controller', self::$os . ' NOT fully supported yet! ' . $exception->getMessage());
-            exit;
-        }
+        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
+
+        if (empty(self::$env)) forward_static_call([self::$platform, 'env_info']);
+        if (empty(self::$sys)) forward_static_call([self::$platform, 'sys_info']);
     }
 
     /**
      * Get PHP environment information
      *
      * @return array
+     * @throws \Exception
      */
     public static function get_env(): array
     {
@@ -77,6 +74,7 @@ class os
      * Get system hash code
      *
      * @return string
+     * @throws \Exception
      */
     public static function get_hash(): string
     {

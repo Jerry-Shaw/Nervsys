@@ -65,25 +65,17 @@ class winnt extends os
     public static function env_info(): void
     {
         exec('wmic process where ProcessId="' . getmypid() . '" get ProcessId, CommandLine, ExecutablePath /format:value', $output, $status);
-
-        //No authority
-        if (0 !== $status) {
-            debug('WinNT Controller', 'Access denied! Please check your authority!');
-            exit;
-        }
+        if (0 !== $status) throw new \Exception('WinNT Controller: Access denied!');
 
         unset($status);
-        self::format($output);
-        if (empty($output)) return;
 
-        //Process output data
-        foreach ($output as $info) {
-            if (false !== strpos($info['CommandLine'], 'api.php')) {
-                parent::$env['PHP_PID'] = &$info['ProcessId'];
-                parent::$env['PHP_CMD'] = &$info['CommandLine'];
-                parent::$env['PHP_EXE'] = '"' . $info['ExecutablePath'] . '"';
-            }
-        }
+        self::format($output);
+
+        $output = current($output);
+
+        parent::$env['PHP_PID'] = &$output['ProcessId'];
+        parent::$env['PHP_CMD'] = &$output['CommandLine'];
+        parent::$env['PHP_EXE'] = '"' . $output['ExecutablePath'] . '"';
 
         unset($output, $info);
     }
@@ -105,17 +97,11 @@ class winnt extends os
         $output = [];
         foreach ($queries as $query) {
             exec($query, $output, $status);
-
-            //No authority
-            if (0 !== $status) {
-                debug('WinNT Controller', 'Access denied! Please check your authority!');
-                exit;
-            }
+            if (0 !== $status) throw new \Exception('WinNT Controller: Access denied!');
         }
 
         self::format($output);
 
-        if (empty($output)) return;
         foreach ($output as $key => $value) if (1 < count($value)) parent::$sys[] = $value;
         unset($queries, $output, $query, $status, $key, $value);
     }
