@@ -102,8 +102,8 @@ class crypt
     public static function encrypt(string $string, string $key): string
     {
         $keys = self::aes_keys($key);
-        $string = (string)openssl_encrypt($string, self::$method, $keys['key'], OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING, $keys['iv']);
-        $string = (string)base64_encode($string);
+
+        $string = (string)openssl_encrypt($string, self::$method, $keys['key'], OPENSSL_ZERO_PADDING, $keys['iv']);
 
         unset($key, $keys);
         return $string;
@@ -120,8 +120,8 @@ class crypt
     public static function decrypt(string $string, string $key): string
     {
         $keys = self::aes_keys($key);
-        $string = (string)base64_decode($string, true);
-        $string = (string)openssl_decrypt($string, self::$method, $keys['key'], OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING, $keys['iv']);
+
+        $string = (string)openssl_decrypt($string, self::$method, $keys['key'], OPENSSL_ZERO_PADDING, $keys['iv']);
 
         unset($key, $keys);
         return $string;
