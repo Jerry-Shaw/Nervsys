@@ -65,7 +65,7 @@ class winnt extends os
     public static function env_info(): void
     {
         exec('wmic process where ProcessId="' . getmypid() . '" get ProcessId, CommandLine, ExecutablePath /format:value', $output, $status);
-        if (0 !== $status) throw new \Exception('WinNT Controller: Access denied!');
+        if (0 !== $status) throw new \Exception('WinNT: Access denied!');
 
         unset($status);
 
@@ -97,7 +97,7 @@ class winnt extends os
         $output = [];
         foreach ($queries as $query) {
             exec($query, $output, $status);
-            if (0 !== $status) throw new \Exception('WinNT Controller: Access denied!');
+            if (0 !== $status) throw new \Exception('WinNT: Access denied!');
         }
 
         self::format($output);

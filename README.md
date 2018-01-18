@@ -312,7 +312,7 @@ Remember one param named "c" or "cmd", the two are equal.
     c/cmd: command
     d/data: CGI data content
     p/pipe: CLI pipe content
-    r/return: return type (result (default) / error / data / cmd, multiple options)
+    r/record: record type (result (default) / error / data / cmd, multiple options)
     t/timeout: timeout for return (in microseconds, default value is 5000ms when r/return is set)
     l/log: log option
         
@@ -362,8 +362,8 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Output data will be also captured as in CGI mode and outputs via STDOUT.
         
-    Don't forget to use "-r result" or "--return result" to capture output result.
-    If the time is too short to run extenal programs, use "-t ms" or "--timeout ms"
+    Don't forget to use "-r result" or "--record result" to capture output data.
+    If time is too short to run extenal programs, use "-t ms" or "--timeout ms"
         
     In CLI mode, we have 3 globle variables named "PHP_PID", "PHP_CMD" and "PHP_EXE".
         

@@ -45,8 +45,8 @@ class sql extends mysql
         if (is_array(self::$dir) && !empty(self::$dir)) return;
 
         //Get dir from CMD
-        if (!empty(cli::$cmd_data)) {
-            self::$dir = cli::$cmd_data;
+        if (!empty(cli::$cmd_argv)) {
+            self::$dir = cli::$cmd_argv;
             return;
         }
 

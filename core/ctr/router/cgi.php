@@ -43,7 +43,7 @@ class cgi extends router
     public static function run(): void
     {
         //Prepare data
-        if ('' === parent::$cmd) self::get_data();
+        if ('' === parent::$cmd) self::prep_data();
         //Parse cmd data
         self::parse_cmd();
         //Execute cmd
@@ -51,9 +51,9 @@ class cgi extends router
     }
 
     /**
-     * Get CGI data
+     * Prepare CGI data
      */
-    private static function get_data(): void
+    private static function prep_data(): void
     {
         //Get data from HTTP POST / GET / REQUEST
         $data = !empty($_POST) ? $_POST : (!empty($_GET) ? $_GET : $_REQUEST);
@@ -61,7 +61,7 @@ class cgi extends router
             parent::$data = &$data;
             unset($data);
             //Try to get CMD & build structure
-            if (self::get_cmd()) {
+            if (self::prep_cmd()) {
                 if (!empty($_FILES)) parent::$data = array_merge(parent::$data, $_FILES);
                 parent::build_struct();
             }
@@ -77,17 +77,17 @@ class cgi extends router
         if (is_array($json) && !empty($json)) {
             parent::$data = &$json;
             unset($input, $json);
-            if (self::get_cmd()) parent::build_struct();
+            if (self::prep_cmd()) parent::build_struct();
             return;
         }
     }
 
     /**
-     * Get cmd value from data
+     * Prepare cmd data
      *
      * @return bool
      */
-    private static function get_cmd(): bool
+    private static function prep_cmd(): bool
     {
         foreach (['c', 'cmd'] as $key) {
             if (
