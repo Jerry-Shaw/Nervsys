@@ -354,7 +354,7 @@ Remember one param named "c" or "cmd", the two are equal.
     3. /path/php api.php --cmd mycmd -v a -b b c
     4. ...
         
-    If data should be send via pipes:
+    If data needs to be sent via pipe:
         
     1. /path/php api.php mycmd -p "some data"
     2. /path/php api.php -c mycmd --pipe "some data"
