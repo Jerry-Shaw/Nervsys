@@ -85,6 +85,6 @@ function load(string $lib): void
  */
 function debug(string $module, string $message): void
 {
-    if (0 !== DEBUG) 'cli' !== PHP_SAPI ? \core\ctr\router::$result[$module] = &$message : fwrite(STDOUT, $module . ': ' . $message . PHP_EOL);
+    if (0 !== DEBUG) \core\ctr\router::$result[$module] = &$message;
     unset($module, $message);
 }
