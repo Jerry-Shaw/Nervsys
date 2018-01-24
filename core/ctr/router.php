@@ -62,19 +62,6 @@ class router
     }
 
     /**
-     * Build data structure
-     */
-    protected static function build_struct(): void
-    {
-        $struct = array_keys(self::$data);
-        $hash = hash('sha256', implode('|', $struct));
-        if (self::$argv_hash === $hash) return;
-        self::$struct = &$struct;
-        self::$argv_hash = &$hash;
-        unset($struct, $hash);
-    }
-
-    /**
      * Output result
      */
     public static function output(): void
@@ -85,6 +72,44 @@ class router
         'cli' !== PHP_SAPI ? print $result : fwrite(STDOUT, $result . PHP_EOL);
 
         unset($result, $options);
-        exit;
+    }
+
+    /**
+     * Extract values from options
+     *
+     * @param array $opt
+     * @param array $keys
+     *
+     * @return array
+     */
+    protected static function opt_val(array &$opt, array $keys): array
+    {
+        $result = ['get' => false, 'data' => ''];
+
+        foreach ($keys as $key) {
+            if (isset($opt[$key])) {
+                $result = ['get' => true, 'data' => $opt[$key]];
+                unset($opt[$key]);
+            }
+        }
+
+        unset($keys, $key);
+        return $result;
+    }
+
+    /**
+     * Build data structure
+     */
+    protected static function build_struc(): void
+    {
+        $struc = array_keys(self::$data);
+        $hash = hash('sha256', implode('|', $struc));
+
+        if (self::$argv_hash === $hash) return;
+
+        self::$struct = &$struc;
+        self::$argv_hash = &$hash;
+
+        unset($struc, $hash);
     }
 }

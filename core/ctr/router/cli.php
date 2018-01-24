@@ -117,7 +117,7 @@ class cli extends router
         if (empty($opt)) return $optind;
 
         //Process cgi data value
-        $val = self::opt_val($opt, ['d', 'data']);
+        $val = parent::opt_val($opt, ['d', 'data']);
         if ($val['get']) {
             $data = self::parse_data($val['data']);
             if (!empty($data)) parent::$data = array_merge(parent::$data, $data);
@@ -125,19 +125,19 @@ class cli extends router
         }
 
         //Process cli data value
-        $val = self::opt_val($opt, ['p', 'pipe']);
+        $val = parent::opt_val($opt, ['p', 'pipe']);
         if ($val['get'] && '' !== $val['data']) self::$cli_data = &$val['data'];
 
         //Process return option
-        $val = self::opt_val($opt, ['r', 'record']);
+        $val = parent::opt_val($opt, ['r', 'record']);
         if ($val['get'] && '' !== $val['data']) self::$record = &$val['data'];
 
         //Process pipe read timeout
-        $val = self::opt_val($opt, ['t', 'timeout']);
+        $val = parent::opt_val($opt, ['t', 'timeout']);
         if ($val['get'] && is_numeric($val['data'])) self::$timeout = (int)$val['data'];
 
         //Process log option
-        $val = self::opt_val($opt, ['l', 'log']);
+        $val = parent::opt_val($opt, ['l', 'log']);
         if ($val['get']) self::$log = true;
 
         //Merge options to parent
@@ -146,7 +146,7 @@ class cli extends router
         //Get CMD & build data structure
         if (self::prep_cmd()) {
             $cmd = true;
-            parent::build_struct();
+            parent::build_struc();
         }
 
         unset($opt, $val);
@@ -185,7 +185,7 @@ class cli extends router
     private static function prep_cmd(): bool
     {
         $get = false;
-        $val = self::opt_val(parent::$data, ['c', 'cmd']);
+        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
             if (false !== strpos($val['data'], '/')) self::$cgi_mode = true;
@@ -217,29 +217,6 @@ class cli extends router
 
         unset($keys, $key);
         return '"' . trim($cmd, ' "\'\t\n\r\0\x0B') . '"';
-    }
-
-    /**
-     * Extract option value from data
-     *
-     * @param array $opt
-     * @param array $keys
-     *
-     * @return array
-     */
-    private static function opt_val(array &$opt, array $keys): array
-    {
-        $result = ['get' => false, 'data' => ''];
-
-        foreach ($keys as $key) {
-            if (isset($opt[$key])) {
-                $result = ['get' => true, 'data' => $opt[$key]];
-                unset($opt[$key]);
-            }
-        }
-
-        unset($keys, $key);
-        return $result;
     }
 
     /**
