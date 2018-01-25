@@ -545,3 +545,8 @@ Always remember to close "DEBUG" option (set to 0) when all are under production
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
 
 3.0以前的老版本已经停止了更新，源码位置：https://github.com/Jerry-Shaw/NervSys/tree/3.2
+    
+    
+**Credits**
+
+Chinese Translation: @MileHan
