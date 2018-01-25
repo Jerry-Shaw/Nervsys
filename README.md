@@ -1,4 +1,6 @@
-**Nervsys** is a very slight framework based on PHP7.1+ for universal API controlling. 
+# Nervsys
+
+A very slight framework based on PHP7.1+ for universal API controlling. 
 
 基于PHP7.1+的轻量级框架**Nervsys** for universal API controlling. 
 
@@ -47,7 +49,7 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... A
 功能性的扩展（类）打算移到第三部分来维护。不仅仅是扩展，基于神经元的子项目也应该有。
 每个人都可以加入这个项目，提供想法，代码，测试，建议等等。非常感谢！
 
-**Structure Introduce:**        
+## Structure:
 **结构说明:**       
         
       /                                 **Root directory
@@ -127,7 +129,7 @@ All script should under the right namespace for better calling by NervSys API.
 
 所有的脚本应该在正确的命名空间里，以便NervSys API调用。
 
-**Example:** 
+## Example:
 
 **示例：**
 
@@ -534,19 +536,21 @@ If you don't have a "cfg.php" under the root directory of the project, all setti
 
 如果项目跟目录中没有"cfg.php"文件，那么所有的设置都会继承自上一个cfg.php.
 
-**Notice**: once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name'). 
+## Notice:
+**通知:**
+
+Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name'). 
 If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, and run it under cgi, the results could be complex because one or more elements for debugging will be added to results as well.
 Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside.
 
-**通知**:  一旦路由的结果中只有一个元素，它将会以JSON格式输出里面的内容作为值，忽略掉('namespace/class_name/function_name')键名。
+一旦路由的结果中只有一个元素，它将会以JSON格式输出里面的内容作为值，忽略掉('namespace/class_name/function_name')键名。
 如果"DEBUG"选项 (在 "/core/cfg.php"中)被设置成1或者2，并且在CGI模式下运行的话，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
+    
+## Credits
+Chinese Translation: [MileHan](https://github.com/MileHan)
 
+## Old Version:
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
 
 3.0以前的老版本已经停止了更新，源码位置：https://github.com/Jerry-Shaw/NervSys/tree/3.2
-    
-    
-**Credits**
-
-Chinese Translation: @MileHan
