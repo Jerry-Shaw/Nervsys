@@ -540,11 +540,11 @@ If you don't have a "cfg.php" under the root directory of the project, all setti
 **通知:**
 
 Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name'). 
-If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, and run it under cgi, the results could be complex because one or more elements for debugging will be added to results as well.
+If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.
 Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside.
 
 一旦路由的结果中只有一个元素，它将会以JSON格式输出里面的内容作为值，忽略掉('namespace/class_name/function_name')键名。
-如果"DEBUG"选项 (在 "/core/cfg.php"中)被设置成1或者2，并且在CGI模式下运行的话，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
+如果"DEBUG"选项 (在 "/core/cfg.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
     
 ## Credits
