@@ -1,11 +1,9 @@
 # Nervsys
 
-A very slight framework based on PHP7.1+ for universal API controlling. 
-
+A very slight framework based on PHP7.1+ for universal API controlling.  
 基于PHP7.1+的轻量级框架**Nervsys** for universal API controlling. 
 
-Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode.
-
+Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode.  
 任何一种Web服务器或者PHP的命令行模式
 
 It can be used as:
@@ -23,30 +21,25 @@ It can be used as:
     4.更多......
     
 As normally use, it responses one result from one method to one request, just like what we do now on an ordinary web development. 
-But, it may response multiple results from multiple methods to one request, when we need it to "guess" what we need based on the data we gave.
-
+But, it may response multiple results from multiple methods to one request, when we need it to "guess" what we need based on the data we gave.  
 通常情况下，一个请求调用一个方法会返回一个结果，就像我们现在在一般的Web项目开发中做的那样。
 但是，当我们需要它根据我们给的数据“猜”出结果时，它可以从一个请求调用多个方法返回多种结果。
 
 Don't expect too much, it is just a newborn framework though~ 
 
-Extensions in "/ext/" makes it greater than we can image. 
-
+Extensions in "/ext/" makes it greater than we can image.  
 在"/ext/"下的扩展让它变得比我们想的更加强大。
 
-Version 5.0.0 is on going, and not compatible with versions before.
-
+Version 5.0.0 is on going, and not compatible with versions before.  
 版本5.0与之前的版本是不兼容的。
 
 Demos for Ver 5.0.0 is here: https://github.com/Jerry-Shaw/demo. 
-Just can try it in NervSys with detailed comments in the scripts.
-
+Just can try it in NervSys with detailed comments in the scripts.  
 版本5.0的demo地址：https://github.com/Jerry-Shaw/demo. 不妨试一试
 
-Functional extensions (class) are considered to moved out to the third part to maintain. Not only extensions, but sub-projects based on NervSys are expected. 
-Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... And many thanks!
-
-功能性的扩展（类）打算移到第三部分来维护。不仅仅是扩展，基于神经元的子项目也应该有。
+Functional extensions (class) are considered to moved out to the third part to maintain. Not only extensions, but sub-projects based on NervSys are expected.  
+Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... And many thanks!  
+功能性的扩展（类）打算移到第三部分来维护。不仅仅是扩展，基于神经元的子项目也应该有。  
 每个人都可以加入这个项目，提供想法，代码，测试，建议等等。非常感谢！
 
 ## Structure:
@@ -93,10 +86,9 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... A
            ├─upload.php                   Upload extension                          上传扩展
            └─...                          There will be more in the near future     近期会有更有用的扩展更新。
 
-Files of a project should be better containing just in one folder right under the ROOT folder. 
-Files inside a project can be placed as will.
-
-项目文件最好放在根目录下的一个文件夹里。
+Files of a project should be better containing just in one folder right under the ROOT folder.  
+Files inside a project can be placed as will.  
+项目文件最好放在根目录下的一个文件夹里。  
 项目中的文件可以按如下方式放置：
 
 Some example structures are as follows:
@@ -125,8 +117,7 @@ Some example structures are as follows:
               └─cfg.php           Config file for Project 2
     
     
-All script should under the right namespace for better calling by NervSys API.
-
+All script should under the right namespace for better calling by NervSys API.  
 所有的脚本应该在正确的命名空间里，以便NervSys API调用。
 
 ## Example:
@@ -252,15 +243,12 @@ All script should under the right namespace for better calling by NervSys API.
     }
 
 
-As said, it is an universal API controller. So, we can easily use it as follows as usual.
-
-It receives normal GET/POST data, and stream data in JSON format.
-
-Remember one param named "c" or "cmd", the two are equal.
-
-之前说过，它是一个通用的API控制器。所以我们可以和平常一样轻松的使用它。
-它能够接收GET/POST数据，和JSON格式的数据流。
-记住：参数“c”或者参数"cmd"，这两者是等价的。
+As said, it is an universal API controller. So, we can easily use it as follows as usual.  
+It receives normal GET/POST data, and stream data in JSON format.  
+Remember one param named "c" or "cmd", the two are equal.  
+之前说过，它是一个通用的API控制器。所以我们可以和平常一样轻松的使用它。  
+它能够接收GET/POST数据，和JSON格式的数据流。  
+记住：参数“c”或者参数"cmd"，这两者是等价的。  
 
 **Examples (using GET):**
 
@@ -388,8 +376,7 @@ Remember one param named "c" or "cmd", the two are equal.
     这些模块如果存在请求的方法名的话就会执行该方法。
     所有方法共享同一个数据源并且执行顺序与输入数据结构顺序相同。
     
-**CLI Command usage:**
-
+**CLI Command usage:**  
 **CLI命令行用法：**
     
     CLI options are as follows:
@@ -480,24 +467,20 @@ Remember one param named "c" or "cmd", the two are equal.
     All the globle variables can be fetched in "os::$env".
     所有的全局变量能够通过"os::$env"获取。
     
-**About "cfg.php" in Project root directory**
-
+**About "cfg.php" in Project root directory**  
 **关于在项目根目录的"cfg.php"**
 
 Each project could have a "cfg.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions. 
-So that, the scripts in this project will run under these settings.
-
+So that, the scripts in this project will run under these settings.  
 每个项目都会有一个"cfg.php"作为整个项目唯一的配置文件，这样我们才能设置扩展中需要的变量值或者其他一些特别的定义。
 这样，项目中的脚本都是在这些设置下执行的。
 
-For example, we can set project 1 to connect database A, but using database B in project 2; We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc...
-
+For example, we can set project 1 to connect database A, but using database B in project 2; We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc...  
 比如，我们设置项目1连接数据库A，让项目2连接数据库B。我们也可以在项目1中设置语言为"en-US"，在项目2中设置语言为"zh-CN"，等等。
 
 But, always remember, don't define same named constants in different "cfg.php"s. It'll conflict.
 All "cfg.php"s existed in the root directory of projects will be required in order right before inside script runs. 
-Static parameters in classes are encouraged to use instead of definitions in "cfg.php"s.
-
+Static parameters in classes are encouraged to use instead of definitions in "cfg.php"s.  
 但是，永远记住，不要在不同的"cfg.php"定义相同的常量，这会产生冲突。
 所有在项目根目录的的"cfg.php"需要在项目内的脚本运行前按顺序执行。
 我们更推荐在类中使用静态的参数，而不是在"cfg.php"中定义常量。
@@ -528,12 +511,10 @@ Some examples for "cfg.php":
     //More if needed
     ...
 
-If you want to set all variables inside classes. That is OK, just leave the "cfg.php" files away.
-
+If you want to set all variables inside classes. That is OK, just leave the "cfg.php" files away.  
 如果你想在类里面设置所有的变量，这也是可行的，只要将"cfg.php"删掉。
 
-If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before.
-
+If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before.  
 如果项目跟目录中没有"cfg.php"文件，那么所有的设置都会继承自上一个cfg.php.
 
 ## Notice:
@@ -541,18 +522,20 @@ If you don't have a "cfg.php" under the root directory of the project, all setti
 
 Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name'). 
 If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.
-Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside.
-
+Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside.  
 一旦路由的结果中只有一个元素，它将会以JSON格式输出里面的内容作为值，忽略掉('namespace/class_name/function_name')键名。
 如果"DEBUG"选项 (在 "/core/cfg.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
     
 ## Credits
-Extension pdo_mysql: [shawn](https://github.com/phpxiaowei)
-
+Extension pdo_mysql: [shawn](https://github.com/phpxiaowei)  
 Translation Chinese: [MileHan](https://github.com/MileHan)
 
 ## Old Version:
-Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
-
+Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2  
 3.0以前的老版本已经停止了更新，源码位置：https://github.com/Jerry-Shaw/NervSys/tree/3.2
+
+## Licensing
+
+This software is licensed under the terms of the GPLv3.  
+You can find a copy of the license in the LICENSE file.
