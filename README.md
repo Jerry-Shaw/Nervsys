@@ -524,17 +524,16 @@ Always remember to close "DEBUG" option (set to 0) when all are under production
 Version 5.0.0 is on going, and not compatible with versions before.  
 版本5.0与之前的版本是不兼容的。
 
-Demos for Ver 5.0.0 is here: https://github.com/Jerry-Shaw/demo. 
-Just can try it in NervSys with detailed comments in the scripts.  
-版本5.0的demo地址：https://github.com/Jerry-Shaw/demo. 不妨试一试
+Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just get it a try.  
+版本5.0的demo地址：[DEMO](https://github.com/Jerry-Shaw/demo). 不妨试一试
     
 ## Credits
-Extension pdo_mysql: [shawn](https://github.com/phpxiaowei)  
-Translation Chinese: [MileHan](https://github.com/MileHan)
+pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
+Chinese Translation: [MileHan](https://github.com/MileHan)
 
 ## Old Version:
-Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2  
-3.0以前的老版本已经停止了更新，源码位置：https://github.com/Jerry-Shaw/NervSys/tree/3.2
+Old version before 3.0.0 is discontinued and the source codes located here: [3.2.0](https://github.com/Jerry-Shaw/NervSys/tree/3.2)  
+3.0以前的老版本已经停止了更新，源码位置：[3.2.0](https://github.com/Jerry-Shaw/NervSys/tree/3.2)  
 
 ## Licensing
 
