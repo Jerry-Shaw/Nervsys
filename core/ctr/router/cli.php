@@ -65,6 +65,7 @@ class cli extends router
     {
         //Prepare data
         self::prep_data();
+
         //Execute & Record
         self::$cgi_mode ? self::exec_cgi() : self::exec_cli();
     }
@@ -91,6 +92,7 @@ class cli extends router
 
         //Prepare cmd
         self::prep_cmd();
+
         unset($cmd, $optind, $argument);
     }
 
@@ -173,6 +175,7 @@ class cli extends router
 
         //Decode data in HTTP Query
         parse_str($value, $data);
+
         unset($value, $json);
         return $data;
     }
@@ -233,6 +236,7 @@ class cli extends router
         if (!is_array($config) || empty($config)) throw new \Exception('[' . self::config . '] setting incorrect!');
 
         self::$config = array_merge($config, os::get_env());
+
         unset($path, $config);
     }
 
@@ -261,6 +265,7 @@ class cli extends router
 
         //Write result
         parent::$result = &$result;
+
         unset($result, $logs);
     }
 
@@ -288,6 +293,7 @@ class cli extends router
 
             //Close Pipes (keep process)
             foreach ($pipes as $pipe) fclose($pipe);
+
             unset($command, $process, $pipes, $pipe);
         } catch (\Throwable $exception) {
             debug('CLI', $exception->getMessage());
@@ -323,6 +329,7 @@ class cli extends router
 
         //Write result
         parent::$result = &$result;
+
         unset($resource, $result, $logs);
     }
 
@@ -335,8 +342,11 @@ class cli extends router
     {
         $time = time();
         $logs = ['time' => date('Y-m-d H:i:s', $time)] + $logs;
+
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
+
         file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
+
         unset($logs, $time, $key, $value);
     }
 
@@ -354,18 +364,18 @@ class cli extends router
 
         //Keep checking process
         while ($time <= self::$timeout) {
-            //Get status of process
+            //Get process status
             $status = proc_get_status($stream[0]);
 
-            //Get stream content when process terminated
-            if (false === $status['running']) {
+            //Wait for process
+            if ($status['running']) {
+                usleep(10);
+                $time += 10;
+                continue;
+            } else {
                 $result = trim(stream_get_contents($stream[1]));
                 break;
             }
-
-            //Wait for process
-            usleep(10);
-            $time += 10;
         }
 
         //Return false once the elapsed time reaches the limit
