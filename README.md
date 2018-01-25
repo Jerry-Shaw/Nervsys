@@ -548,7 +548,9 @@ Always remember to close "DEBUG" option (set to 0) when all are under production
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
     
 ## Credits
-Chinese Translation: [MileHan](https://github.com/MileHan)
+Extension pdo_mysql: [shawn](https://github.com/phpxiaowei)
+
+Translation Chinese: [MileHan](https://github.com/MileHan)
 
 ## Old Version:
 Old version before 3.0.0 is discontinued and the source codes located here: https://github.com/Jerry-Shaw/NervSys/tree/3.2
