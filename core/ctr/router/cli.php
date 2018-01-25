@@ -110,7 +110,7 @@ class cli extends router
          * d/data: CGI data content
          * p/pipe: CLI pipe content
          * r/record: record type (result (default) / error / data / cmd, multiple options)
-         * t/timeout: timeout for return (in microseconds, default value is 5000ms when r/return is set)
+         * t/timeout: timeout for return (in microseconds, default value is 2000ms when r/record is set)
          * l/log: log option
          */
         $opt = getopt('c:d:p:r:t:l', ['cmd:', 'data:', 'pipe', 'record:', 'timeout:', 'log'], $optind);
