@@ -129,7 +129,7 @@ All script should under the right namespace for better calling by NervSys API.
 
 **Example:** 
 
-示例：
+**示例：**
 
     root/                       **Root directory
         └─pr_1/                 **Project 1 folder
@@ -143,7 +143,7 @@ All script should under the right namespace for better calling by NervSys API.
 
 ****Format for test_1.php:** 
 
-test_1.php 模板格式
+****test_1.php 模板格式**
         
     //The right namespace follows the path structure
     //根据脚本路径定义命名空间
@@ -388,7 +388,7 @@ Remember one param named "c" or "cmd", the two are equal.
     
 **CLI Command usage:**
 
-CLI命令行用法：
+**CLI命令行用法：**
     
     CLI options are as follows:
         
@@ -473,7 +473,7 @@ CLI命令行用法：
     
     "PHP_PID"：当前php脚本运行的进程ID
     "PHP_CMD"：当前脚本运行的处理命令
-     "PHP_EXE"：php脚本的可执行路径
+    "PHP_EXE"：php脚本的可执行路径
         
     All the globle variables can be fetched in "os::$env".
     所有的全局变量能够通过"os::$env"获取。
