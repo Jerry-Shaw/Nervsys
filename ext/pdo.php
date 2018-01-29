@@ -39,6 +39,7 @@ class pdo
     public static $pwd     = '';
     public static $db_name = '';
     public static $charset = 'utf8mb4';
+    public static $timeout = 10;
     public static $persist = true;
 
     //Connect options
@@ -59,16 +60,20 @@ class pdo
         $dsn = self::$type . ':';
 
         //Build option
+        self::$option[\PDO::ATTR_CASE] = \PDO::CASE_NATURAL;
         self::$option[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;
         self::$option[\PDO::ATTR_PERSISTENT] = (bool)self::$persist;
-        self::$option[\PDO::ATTR_ORACLE_NULLS] = \PDO::NULL_TO_STRING;
+        self::$option[\PDO::ATTR_ORACLE_NULLS] = \PDO::NULL_NATURAL;
         self::$option[\PDO::ATTR_EMULATE_PREPARES] = false;
+        self::$option[\PDO::ATTR_STRINGIFY_FETCHES] = false;
+        self::$option[\PDO::ATTR_DEFAULT_FETCH_MODE] = \PDO::FETCH_ASSOC;
 
         switch (self::$type) {
             case 'mysql':
                 $dsn .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
                 self::$option[\PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . self::$charset;
                 self::$option[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                self::$option[\PDO::ATTR_TIMEOUT] = self::$timeout;
                 break;
             case 'mssql':
                 $dsn .= 'host=' . self::$host . ',' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;

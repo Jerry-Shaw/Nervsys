@@ -54,7 +54,8 @@ class redis
         if ('' !== self::$auth && !$redis->auth((string)self::$auth)) throw new \Exception('Redis: Authentication Failed!');
 
         if ('' !== self::$prefix) $redis->setOption($redis::OPT_PREFIX, (string)self::$prefix . ':');
-        if (0 < self::$timeout) $redis->setOption($redis::OPT_READ_TIMEOUT, (int)self::$timeout);
+
+        $redis->setOption($redis::OPT_READ_TIMEOUT, self::$timeout);
         $redis->setOption($redis::OPT_SERIALIZER, $redis::SERIALIZER_NONE);
 
         if (!$redis->select((int)self::$db)) throw new \Exception('Redis: DB ' . self::$db . ' NOT exist!');

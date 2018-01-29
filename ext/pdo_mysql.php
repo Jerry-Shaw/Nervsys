@@ -33,7 +33,6 @@ class pdo_mysql extends pdo
      * Extension config
      * Config is an array composed of the following elements:
      *
-     * 'init'    => false       //bool: PDO re-connect option
      * 'type'    => 'mysql'     //string: PDO DSN prefix (database type)
      * 'host'    => '127.0.0.1' //string: Database host address
      * 'port'    => 3306        //int: Database host port
@@ -41,15 +40,14 @@ class pdo_mysql extends pdo
      * 'pwd'     => ''          //string: Database password
      * 'db_name' => ''          //string: Database name
      * 'charset' => 'utf8mb4'   //string: Database charset
+     * 'timeout' => 10          //int: Connection timeout (in seconds)
      * 'persist' => true        //string: Persistent connection option
      *
-     * Config will be removed once used
-     * Do add 'init' => true to re-connect
+     * Config will be emptied once used
      *
      * @var array
      */
     public static $config = [
-        'init'    => false,
         'type'    => 'mysql',
         'host'    => '127.0.0.1',
         'port'    => 3306,
@@ -57,6 +55,7 @@ class pdo_mysql extends pdo
         'pwd'     => '',
         'db_name' => '',
         'charset' => 'utf8mb4',
+        'timeout' => 10,
         'persist' => true
     ];
 
@@ -68,16 +67,16 @@ class pdo_mysql extends pdo
      */
     private static function init(): void
     {
-        //No reconnection
-        if ((!isset(self::$config['init']) || false === (bool)self::$config['init']) && is_object(self::$db_mysql)) return;
+        //No re-connection
+        if (empty(self::$config) && is_object(self::$db_mysql)) return;
 
         //Read new config
-        $cfg = ['type', 'host', 'port', 'user', 'pwd', 'db_name', 'charset', 'persist'];
+        $cfg = ['type', 'host', 'port', 'user', 'pwd', 'db_name', 'charset', 'timeout', 'persist'];
 
         if (!empty(self::$config)) {
             //Set config for PDO
             foreach ($cfg as $key) if (isset(self::$config[$key])) self::$$key = self::$config[$key];
-            //Remove config
+            //Empty config
             self::$config = [];
         }
 
@@ -107,11 +106,11 @@ class pdo_mysql extends pdo
             return false;
         }
 
-        //Build "data"
-        $column = self::build_data($data);
-
         //Initialize
         self::init();
+
+        //Build "data"
+        $column = self::build_data($data);
 
         //Prepare & execute
         $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
@@ -143,6 +142,9 @@ class pdo_mysql extends pdo
             return false;
         }
 
+        //Initialize
+        self::init();
+
         //Build "data"
         $data_column = self::build_data($data);
 
@@ -157,9 +159,6 @@ class pdo_mysql extends pdo
         //Merge data
         $data = array_merge($data, $where);
         unset($where);
-
-        //Initialize
-        self::init();
 
         //Prepare & execute
         $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
@@ -193,11 +192,11 @@ class pdo_mysql extends pdo
      */
     public static function select(string $table, array $option = [], bool $column = false): array
     {
-        //Build options & get data bind
-        $data = self::build_opt($option);
-
         //Initialize
         self::init();
+
+        //Build options & get data bind
+        $data = self::build_opt($option);
 
         //Prepare & execute
         $sql = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
@@ -228,12 +227,13 @@ class pdo_mysql extends pdo
             return false;
         }
 
+        //Initialize
+        self::init();
+
         //Build "where"
         $where_opt = self::build_where($where);
 
-        //Prepare & execute SQL
-        self::init();
-
+        //Prepare & execute
         $sql = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($where);
@@ -252,8 +252,10 @@ class pdo_mysql extends pdo
      */
     public static function execute(string $sql, array $data = []): bool
     {
+        //Initialize
         self::init();
 
+        //Prepare & execute
         $stmt = self::$db_mysql->prepare($sql);
         $result = $stmt->execute($data);
 
@@ -272,8 +274,10 @@ class pdo_mysql extends pdo
      */
     public static function query(string $sql, array $data = [], bool $column = false): array
     {
+        //Initialize
         self::init();
 
+        //Prepare & execute
         $stmt = self::$db_mysql->prepare($sql);
         $stmt->execute($data);
 
@@ -292,8 +296,10 @@ class pdo_mysql extends pdo
      */
     public static function exec(string $sql): int
     {
+        //Initialize
         self::init();
 
+        //Execute directly
         $exec = self::$db_mysql->exec($sql);
         if (false === $exec) $exec = -1;
 
