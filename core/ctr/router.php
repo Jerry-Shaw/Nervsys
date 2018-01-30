@@ -66,11 +66,8 @@ class router
      */
     public static function output(): void
     {
-        if (empty(self::$result)) exit;
-
         $result = 1 === count(self::$result) ? json_encode(current(self::$result), JSON_OPT) : json_encode(self::$result, JSON_OPT);
         'cli' !== PHP_SAPI ? print $result : fwrite(STDOUT, $result . PHP_EOL);
-
         unset($result, $options);
     }
 
