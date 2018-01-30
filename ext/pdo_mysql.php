@@ -60,7 +60,7 @@ class pdo_mysql extends pdo
     ];
 
     //MySQL instance resource
-    private static $db_mysql = null;
+    private static $mysql = null;
 
     /**
      * Extension Initialization
@@ -68,7 +68,7 @@ class pdo_mysql extends pdo
     private static function init(): void
     {
         //No re-connection
-        if (empty(self::$config) && is_object(self::$db_mysql)) return;
+        if (empty(self::$config) && is_object(self::$mysql)) return;
 
         //Read new config
         $cfg = ['type', 'host', 'port', 'user', 'pwd', 'db_name', 'charset', 'timeout', 'persist'];
@@ -81,7 +81,7 @@ class pdo_mysql extends pdo
         }
 
         //Connect MySQL
-        self::$db_mysql = self::connect();
+        self::$mysql = self::connect();
 
         //Free memory
         unset($cfg, $key);
@@ -114,10 +114,10 @@ class pdo_mysql extends pdo
 
         //Prepare & execute
         $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
-        $stmt = self::$db_mysql->prepare($sql);
+        $stmt = self::$mysql->prepare($sql);
         $result = $stmt->execute($data);
 
-        $last = '' === $last ? (string)self::$db_mysql->lastInsertId() : (string)self::$db_mysql->lastInsertId($last);
+        $last = '' === $last ? (string)self::$mysql->lastInsertId() : (string)self::$mysql->lastInsertId($last);
 
         unset($table, $data, $column, $sql, $stmt);
         return $result;
@@ -162,7 +162,7 @@ class pdo_mysql extends pdo
 
         //Prepare & execute
         $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
-        $stmt = self::$db_mysql->prepare($sql);
+        $stmt = self::$mysql->prepare($sql);
         $result = $stmt->execute($data);
 
         unset($table, $data, $set_opt, $where_opt, $sql, $stmt);
@@ -200,7 +200,7 @@ class pdo_mysql extends pdo
 
         //Prepare & execute
         $sql = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
-        $stmt = self::$db_mysql->prepare($sql);
+        $stmt = self::$mysql->prepare($sql);
         $stmt->execute($data['bind']);
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
@@ -235,7 +235,7 @@ class pdo_mysql extends pdo
 
         //Prepare & execute
         $sql = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
-        $stmt = self::$db_mysql->prepare($sql);
+        $stmt = self::$mysql->prepare($sql);
         $result = $stmt->execute($where);
 
         unset($table, $where, $where_opt, $sql, $stmt);
@@ -256,7 +256,7 @@ class pdo_mysql extends pdo
         self::init();
 
         //Prepare & execute
-        $stmt = self::$db_mysql->prepare($sql);
+        $stmt = self::$mysql->prepare($sql);
         $result = $stmt->execute($data);
 
         unset($sql, $data, $stmt);
@@ -278,7 +278,7 @@ class pdo_mysql extends pdo
         self::init();
 
         //Prepare & execute
-        $stmt = self::$db_mysql->prepare($sql);
+        $stmt = self::$mysql->prepare($sql);
         $stmt->execute($data);
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
@@ -300,7 +300,7 @@ class pdo_mysql extends pdo
         self::init();
 
         //Execute directly
-        $exec = self::$db_mysql->exec($sql);
+        $exec = self::$mysql->exec($sql);
         if (false === $exec) $exec = -1;
 
         unset($sql);
@@ -314,7 +314,7 @@ class pdo_mysql extends pdo
      */
     public static function begin(): bool
     {
-        return self::$db_mysql->beginTransaction();
+        return self::$mysql->beginTransaction();
     }
 
     /**
@@ -324,7 +324,7 @@ class pdo_mysql extends pdo
      */
     public static function commit(): bool
     {
-        return self::$db_mysql->commit();
+        return self::$mysql->commit();
     }
 
     /**
@@ -334,7 +334,7 @@ class pdo_mysql extends pdo
      */
     public static function rollback(): bool
     {
-        return self::$db_mysql->rollBack();
+        return self::$mysql->rollBack();
     }
 
     /**
