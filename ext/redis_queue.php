@@ -109,10 +109,15 @@ class redis_queue extends redis
      * @return int
      * @throws \Exception
      */
-    public static function stop(string $key): int
+    public static function stop(string $key = ''): int
     {
         self::$redis = parent::connect();
-        return 'all' === $key ? call_user_func_array([self::$redis, 'del'], array_keys(self::process_list())) : self::$redis->del(self::$prefix_process . $key);
+
+        $process = '' === $key ? array_keys(self::process_list()) : [self::$prefix_process . $key];
+        $result = 0 < count($process) ? call_user_func_array([self::$redis, 'del'], $process) : 0;
+
+        unset($key, $process);
+        return $result;
     }
 
     /**
@@ -199,9 +204,8 @@ class redis_queue extends redis
         } while ($renew);
 
         //On exit
-        $process = self::process_list();
-        call_user_func_array([self::$redis, 'del'], array_keys($process));
-        unset($main_key, $time_wait, $opts, $list, $queue, $renew, $process);
+        self::stop();
+        unset($main_key, $time_wait, $opts, $list, $queue, $renew);
     }
 
     /**
@@ -220,8 +224,9 @@ class redis_queue extends redis
         //Connect Redis
         self::$redis = parent::connect();
 
-        //Process key
-        $process_key = self::$prefix_process . hash('md5', uniqid(mt_rand(), true));
+        //Process Hash & Key
+        $process_hash = hash('md5', uniqid(mt_rand(), true));
+        $process_key = self::$prefix_process . $process_hash;
 
         //Set timeout & lifetime
         $time_wait = (int)(self::$scan_wait / 2);
@@ -245,8 +250,8 @@ class redis_queue extends redis
         } while ($exist && $renew && $opts < self::$max_opts);
 
         //On exit
-        self::$redis->del($process_key);
-        unset($process_key, $time_wait, $list, $queue, $exist, $renew, $opts);
+        self::stop($process_hash);
+        unset($process_hash, $process_key, $time_wait, $list, $queue, $exist, $renew, $opts);
     }
 
     /**
@@ -284,9 +289,6 @@ class redis_queue extends redis
 
         //Check
         self::chk_queue($data, implode(PHP_EOL, $output));
-
-        //Reset
-        $output = null;
         unset($data, $output);
     }
 
