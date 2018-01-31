@@ -31,6 +31,26 @@ use core\ctr\os;
 
 class redis_queue extends redis
 {
+    /**
+     * API Command
+     *
+     * Examples:
+     * "example/queue-process", etc... (Controlled by API & Safe Key)
+     * "program" or "exe", etc... (Controlled by API & cfg.ini)
+     *
+     * Notice:
+     * When set cmd value, make sure it can be fully controlled by API.
+     * Otherwise, child processes won't start. Only main runs.
+     * It is very useful facing huge queue list.
+     *
+     * Recommended:
+     * Method "run" is ready for use, but is kept away from directly calling.
+     * No Safe Key in extensions, you can always call it from your own codes.
+     *
+     * @var string
+     */
+    public static $cmd = '';
+
     //Main process key
     public static $key_main = 'main';
 
@@ -43,11 +63,11 @@ class redis_queue extends redis
     //Queue process prefix
     public static $prefix_process = 'queue:process:';
 
-    //Queue scan wait
+    //Queue scan wait (in seconds)
     public static $scan_wait = 60;
 
-    //Process idle wait (less than scan wait)
-    public static $idle_wait = 10;
+    //Process idle wait (in seconds)
+    public static $idle_wait = 3;
 
     //Max running clients
     public static $max_runs = 10;
@@ -234,7 +254,7 @@ class redis_queue extends redis
             } else $operations = 0;
 
             //Too many jobs
-            if (0 < $operations && 0 === $operations % self::$max_opts) self::call_process($list);
+            if (0 < $operations && 0 === $operations % self::$max_opts && '' !== self::$cmd) self::call_process($list);
 
             //Renew main process
             $renew = self::$redis->expire($main_key, self::$scan_wait);
@@ -312,7 +332,7 @@ class redis_queue extends redis
         if ($needed > self::$max_runs) $needed = self::$max_runs;
 
         //Run child processes
-        for ($i = 0; $i < $needed; ++$i) pclose(popen(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . str_replace('\\', '/', __CLASS__) . '-run"', 'r'));
+        for ($i = 0; $i < $needed; ++$i) pclose(popen(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"', 'r'));
 
         unset($queue, $jobs, $process, $needed, $i);
     }
