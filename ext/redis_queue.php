@@ -70,7 +70,7 @@ class redis_queue extends redis
     public static $idle_wait = 3;
 
     //Max running clients
-    public static $max_runs = 10;
+    public static $max_runs = 5;
 
     //Max operations
     public static $max_opts = 200;
@@ -318,6 +318,8 @@ class redis_queue extends redis
      * Call processes
      *
      * @param array $queue
+     *
+     * @throws \Exception
      */
     private static function call_process(array $queue): void
     {
@@ -332,7 +334,7 @@ class redis_queue extends redis
         if ($needed > self::$max_runs) $needed = self::$max_runs;
 
         //Run child processes
-        for ($i = 0; $i < $needed; ++$i) pclose(popen(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"', 'r'));
+        for ($i = 0; $i < $needed; ++$i) pclose(popen(os::in_bg(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"'), 'r'));
 
         unset($queue, $jobs, $process, $needed, $i);
     }
