@@ -153,6 +153,28 @@ class redis_queue extends redis
     }
 
     /**
+     * Show fail list
+     *
+     * @param int $start
+     * @param int $end
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public static function fail_list(int $start = 0, int $end = -1): array
+    {
+        $list = [];
+
+        self::$redis = parent::connect();
+
+        $list['len'] = self::$redis->lLen(self::$fail_list);
+        $list['data'] = self::$redis->lRange(self::$fail_list, $start, $end);
+
+        unset($start, $end);
+        return $list;
+    }
+
+    /**
      * Start main process
      *
      * @throws \Exception
