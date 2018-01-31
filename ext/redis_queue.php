@@ -46,6 +46,9 @@ class redis_queue extends redis
     //Queue scan wait
     public static $scan_wait = 60;
 
+    //Process idle wait (less than scan wait)
+    public static $idle_wait = 10;
+
     //Max running clients
     public static $max_runs = 10;
 
@@ -201,25 +204,37 @@ class redis_queue extends redis
         self::$redis->set($main_key, time(), self::$scan_wait);
 
         //Operations
-        $opts = 0;
+        $operations = 0;
 
         //Start
         do {
             //Read list
             $list = self::queue_list();
 
+            //Idle wait on no job
+            if (empty($list)) {
+                //Renew main process
+                $renew = self::$redis->expire($main_key, self::$scan_wait);
+
+                //Sleep for Idle
+                sleep(self::$idle_wait);
+
+                //Reset operations
+                $operations = 0;
+                continue;
+            }
+
             //Listen
             $queue = self::$redis->brPop(array_keys($list), $time_wait);
 
             //Process
             if (is_array($queue)) {
-                ++$opts;
-                //Execute
+                ++$operations;
                 self::exec_queue($queue[1]);
-            } else $opts = 0;
+            } else $operations = 0;
 
             //Too many jobs
-            if (0 < $opts && 0 === $opts % self::$max_opts) self::call_process($list);
+            if (0 < $operations && 0 === $operations % self::$max_opts) self::call_process($list);
 
             //Renew main process
             $renew = self::$redis->expire($main_key, self::$scan_wait);
@@ -227,7 +242,7 @@ class redis_queue extends redis
 
         //On exit
         self::stop();
-        unset($main_key, $time_wait, $opts, $list, $queue, $renew);
+        unset($main_key, $time_wait, $operations, $list, $queue, $renew);
     }
 
     /**
@@ -254,11 +269,14 @@ class redis_queue extends redis
         $time_wait = (int)(self::$scan_wait / 2);
         self::$redis->set($process_key, 0, self::$scan_wait);
 
-        //Get queue list keys
-        $list = array_keys(self::queue_list());
-
         //Run
         do {
+            //Get queue list keys
+            $list = array_keys(self::queue_list());
+
+            //Exit on no job
+            if (empty($list)) break;
+
             //Listen
             $queue = self::$redis->brPop($list, $time_wait);
 
@@ -310,8 +328,10 @@ class redis_queue extends redis
         exec(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --record "result" --data "' . addcslashes($data, '"') . '"', $output);
 
         //Check
+        foreach ($output as $key => $value) $output[$key] = trim($value);
         self::chk_queue($data, implode(PHP_EOL, $output));
-        unset($data, $output);
+
+        unset($data, $output, $key, $value);
     }
 
     /**
