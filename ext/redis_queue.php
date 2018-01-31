@@ -59,20 +59,6 @@ class redis_queue extends redis
     private static $os_env = [];
 
     /**
-     * Initialize
-     *
-     * @throws \Exception
-     */
-    public static function init(): void
-    {
-        //Connect Redis
-        self::$redis = parent::connect();
-
-        //Get OS Variables
-        self::$os_env = os::get_env();
-    }
-
-    /**
      * Scan for keys
      *
      * @param string $pattern
@@ -171,6 +157,12 @@ class redis_queue extends redis
         //Only support CLI
         if ('cli' !== PHP_SAPI) exit;
 
+        //Get OS Variables
+        self::$os_env = os::get_env();
+
+        //Connect Redis
+        self::$redis = parent::connect();
+
         //Main process key
         $main_key = self::$prefix_process . self::$key_main;
 
@@ -221,6 +213,12 @@ class redis_queue extends redis
     {
         //Only support CLI
         if ('cli' !== PHP_SAPI) exit;
+
+        //Get OS Variables
+        self::$os_env = os::get_env();
+
+        //Connect Redis
+        self::$redis = parent::connect();
 
         //Process key
         $process_key = self::$prefix_process . hash('md5', uniqid(mt_rand(), true));
