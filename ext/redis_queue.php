@@ -91,14 +91,15 @@ class redis_queue extends redis
     private static function get_keys(string $pattern): array
     {
         $list = [];
-        $start = null;
+        $start = $offset = null;
 
         do {
+            $offset = $start;
             $keys = self::$redis->scan($start, $pattern, self::$max_runs);
             if (false !== $keys) foreach ($keys as $key) $list[] = $key;
-        } while (0 < $start);
+        } while (0 < $start && $offset !== $start);
 
-        unset($pattern, $start, $keys, $key);
+        unset($pattern, $start, $offset, $keys, $key);
         return $list;
     }
 
