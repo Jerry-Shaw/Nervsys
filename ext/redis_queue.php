@@ -91,7 +91,7 @@ class redis_queue extends redis
      */
     public static function add(string $key, array $data): int
     {
-        if (!isset($data['c']) && !isset($data['cmd'])) return false;
+        if (!isset($data['c']) && !isset($data['cmd'])) return 0;
 
         self::$redis = parent::connect();
         $add = (int)self::$redis->lPush(self::$prefix_queue . $key, json_encode($data));
