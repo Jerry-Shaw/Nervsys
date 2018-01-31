@@ -86,15 +86,15 @@ class redis_queue extends redis
      * @param string $key
      * @param array  $data
      *
-     * @return bool
+     * @return int
      * @throws \Exception
      */
-    public static function add(string $key, array $data): bool
+    public static function add(string $key, array $data): int
     {
         if (!isset($data['c']) && !isset($data['cmd'])) return false;
 
         self::$redis = parent::connect();
-        $add = self::$redis->lPush(self::$prefix_queue . $key, json_encode($data));
+        $add = (int)self::$redis->lPush(self::$prefix_queue . $key, json_encode($data));
 
         unset($key, $data);
         return $add;
