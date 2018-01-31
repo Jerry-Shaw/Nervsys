@@ -32,6 +32,18 @@ use core\ctr\os;
 class linux extends os
 {
     /**
+     * Build background command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function bg_cmd(string $cmd): string
+    {
+        return $cmd . ' > /dev/null 2>/dev/null &';
+    }
+
+    /**
      * Format system output data
      *
      * @param array $data

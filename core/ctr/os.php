@@ -52,10 +52,9 @@ class os
             self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
         }
 
-        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
+        if (false !== realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) return;
 
-        if (empty(self::$env)) forward_static_call([self::$platform, 'env_info']);
-        if (empty(self::$sys)) forward_static_call([self::$platform, 'sys_info']);
+        throw new \Exception(self::$os . ' Controller NOT found!');
     }
 
     /**
@@ -67,6 +66,9 @@ class os
     public static function get_env(): array
     {
         self::run();
+
+        if (empty(self::$env)) forward_static_call([self::$platform, 'env_info']);
+
         return self::$env;
     }
 
@@ -79,6 +81,24 @@ class os
     public static function get_hash(): string
     {
         self::run();
+
+        if (empty(self::$sys)) forward_static_call([self::$platform, 'sys_info']);
+
         return hash('sha256', json_encode(self::$sys));
+    }
+
+    /**
+     * Build background command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function in_bg(string $cmd): string
+    {
+        self::run();
+
+        return forward_static_call([self::$platform, 'bg_cmd'], $cmd);
     }
 }

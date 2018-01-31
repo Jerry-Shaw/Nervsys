@@ -32,6 +32,18 @@ use core\ctr\os;
 class winnt extends os
 {
     /**
+     * Build background command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function bg_cmd(string $cmd): string
+    {
+        return 'start "NervSys" /B ' . $cmd;
+    }
+
+    /**
      * Format system output data
      *
      * @param array $data
