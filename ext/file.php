@@ -58,7 +58,7 @@ class file
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) $path = str_replace('..', '', $path);
         //Format path with '/'
-        if (false !== strpos($path, '\\')) $path = str_replace('\\', '/', $path);
+        if (false !== strpos($path, '\\')) $path = strtr($path, '\\', '/');
 
         //Trim "/"
         $path = trim($path, '/');

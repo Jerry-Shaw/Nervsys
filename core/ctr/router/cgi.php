@@ -201,7 +201,7 @@ class cgi extends router
     {
         foreach ($lib as $class) {
             //Get root class
-            $space = '\\' . str_replace('/', '\\', $class);
+            $space = '\\' . strtr($class, '/', '\\');
             //Call methods
             class_exists($space) ? self::call_class($class, $space) : debug($class, 'Class [' . $space . '] NOT found!');
         }
