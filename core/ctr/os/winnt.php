@@ -44,6 +44,18 @@ class winnt extends os
     }
 
     /**
+     * Build command for proc_open
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function proc_cmd(string $cmd): string
+    {
+        return '"' . $cmd . '"';
+    }
+
+    /**
      * Format system output data
      *
      * @param array $data

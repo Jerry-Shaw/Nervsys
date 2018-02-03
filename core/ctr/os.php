@@ -95,10 +95,25 @@ class os
      * @return string
      * @throws \Exception
      */
-    public static function in_bg(string $cmd): string
+    public static function bg_cmd(string $cmd): string
     {
         self::run();
 
         return forward_static_call([self::$platform, 'bg_cmd'], $cmd);
+    }
+
+    /**
+     * Build command for proc_open
+     *
+     * @param string $cmd
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function proc_cmd(string $cmd): string
+    {
+        self::run();
+
+        return forward_static_call([self::$platform, 'proc_cmd'], $cmd);
     }
 }

@@ -27,7 +27,7 @@
 
 namespace core\ctr\router;
 
-use core\ctr\router, core\ctr\os;
+use core\ctr\os, core\ctr\router;
 
 class cli extends router
 {
@@ -284,7 +284,7 @@ class cli extends router
             if (!empty(self::$cmd_argv)) $command .= ' ' . implode(' ', self::$cmd_argv);
 
             //Create process
-            $process = proc_open('"' . $command . '"', [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
+            $process = proc_open(os::proc_cmd($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
             if (!is_resource($process)) throw new \Exception('Access denied or [' . $command . '] ERROR!');
             if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
 
