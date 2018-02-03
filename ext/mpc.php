@@ -212,9 +212,12 @@ class mpc
 
                 //Read data
                 $data = trim(stream_get_contents($item['pipe'][1]));
-                $json = json_decode($data, true);
 
-                $result[$key]['data'] = is_array($json) ? (!empty($json) ? current($json) : []) : $data;
+                //Process data
+                if ('' !== $data) {
+                    $json = json_decode($data, true);
+                    $result[$key]['data'] = !is_null($json) ? $json : $data;
+                } else $result[$key]['data'] = '';
 
                 //Close Pipes & process
                 foreach ($item['pipe'] as $pipe) fclose($pipe);
