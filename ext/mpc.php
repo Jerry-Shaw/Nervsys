@@ -27,6 +27,7 @@
 
 namespace ext;
 
+use core\ctr\os;
 use core\ctr\router\cli;
 
 class mpc
@@ -167,7 +168,7 @@ class mpc
             if (!empty($item['arg'])) $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
 
             //Create process
-            $process = proc_open('"' . $cmd . '"', [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, cli::work_path);
+            $process = proc_open(os::proc_cmd($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, cli::work_path);
 
             if (is_resource($process)) {
                 self::$resource[$key]['exec'] = true;
