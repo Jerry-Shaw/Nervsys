@@ -378,7 +378,7 @@ Remember one param named "c" or "cmd", the two are equal.
     d/data: CGI data content
     p/pipe: CLI pipe content
     r/record: record type (result (default) / error / data / cmd, multiple options)
-    t/timeout: timeout for return (in microseconds, default value is 2000ms when r/record is set)
+         * t/timeout: timeout for return (in microseconds; default "0" means wait till done. Works when r/record or l/log is set)
     l/log: log option
         
     In Chinese:
@@ -387,7 +387,7 @@ Remember one param named "c" or "cmd", the two are equal.
     d/data: CGI数据内容
     p/pipe: CLI管道内容 
     r/record: 记录类型 (result (default) / error / data / cmd, multiple options) 
-    t/timeout: 返回的超时设置（以ms为单位，如果r/record有设置，默认2000ms）
+    t/timeout: 返回的超时设置（以ms为单位，默认"0"表示等待直到完成，如果r/record或l/log有设置）
     l/log: 日志选项
         
     **Examples:
