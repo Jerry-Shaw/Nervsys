@@ -92,7 +92,6 @@ class cli extends router
 
         //Prepare cmd
         self::prep_cmd();
-
         unset($cmd, $optind, $argument);
     }
 
@@ -236,7 +235,6 @@ class cli extends router
         if (!is_array($config) || empty($config)) throw new \Exception('[' . self::config . '] setting incorrect!');
 
         self::$config = array_merge($config, os::get_env());
-
         unset($path, $config);
     }
 
@@ -246,17 +244,17 @@ class cli extends router
     private static function exec_cgi(): void
     {
         cgi::run();
-        $result = $logs = [];
+        $logs = $result = [];
 
-        //Save logs
+        //Write logs
         if (self::$log) {
             $logs['cmd'] = parent::$cmd;
             $logs['data'] = json_encode(parent::$data, JSON_OPT);
             $logs['result'] = json_encode(parent::$result, JSON_OPT);
-            self::log_rec($logs);
+            self::save_log($logs);
         }
 
-        //Save result
+        //Build result
         if ('' !== self::$record) {
             if (false !== strpos(self::$record, 'cmd')) $result['cmd'] = parent::$cmd;
             if (false !== strpos(self::$record, 'data')) $result['data'] = parent::$data;
@@ -264,9 +262,8 @@ class cli extends router
         }
 
         //Write result
-        parent::$result = &$result;
-
-        unset($result, $logs);
+        self::save_result($result);
+        unset($logs, $result);
     }
 
     /**
@@ -293,7 +290,6 @@ class cli extends router
 
             //Close Pipes (keep process)
             foreach ($pipes as $pipe) fclose($pipe);
-
             unset($command, $process, $pipes, $pipe);
         } catch (\Throwable $exception) {
             debug('CLI', $exception->getMessage());
@@ -308,15 +304,15 @@ class cli extends router
      */
     private static function cli_rec(array $resource): void
     {
-        $result = $logs = [];
+        $logs = $result = [];
 
-        //Save logs
+        //Write logs
         if (self::$log) {
             $logs['cmd'] = &$resource['cmd'];
             $logs['data'] = self::$cli_data;
             $logs['error'] = self::get_stream([$resource['proc'], $resource['pipe'][2]]);
             $logs['result'] = self::get_stream([$resource['proc'], $resource['pipe'][1]]);
-            self::log_rec($logs);
+            self::save_log($logs);
         }
 
         //Build result
@@ -328,26 +324,46 @@ class cli extends router
         }
 
         //Write result
-        parent::$result = &$result;
-
-        unset($resource, $result, $logs);
+        self::save_result($result);
+        unset($resource, $logs, $result);
     }
 
     /**
-     * Record logs
+     * Save logs
      *
      * @param array $logs
      */
-    private static function log_rec(array $logs): void
+    private static function save_log(array $logs): void
     {
         $time = time();
         $logs = ['time' => date('Y-m-d H:i:s', $time)] + $logs;
 
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
-
         file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
 
         unset($logs, $time, $key, $value);
+    }
+
+    /**
+     * Save result
+     *
+     * @param array $result
+     */
+    private static function save_result(array $result): void
+    {
+        switch (count($result)) {
+            case 0:
+                parent::$result = [];
+                break;
+            case 1:
+                parent::$result = current($result);
+                break;
+            default:
+                parent::$result = &$result;
+                break;
+        }
+
+        unset($result);
     }
 
     /**
@@ -362,24 +378,19 @@ class cli extends router
         $time = 0;
         $result = '';
 
-        //Keep checking process
+        //Keep watching process
         while (0 === self::$timeout || $time <= self::$timeout) {
-            //Get process status
-            $status = proc_get_status($stream[0]);
-
-            //Wait for process
-            if ($status['running']) {
+            if (proc_get_status($stream[0])['running']) {
                 usleep(10);
                 $time += 10;
-                continue;
             } else {
                 $result = trim(stream_get_contents($stream[1]));
                 break;
             }
         }
 
-        //Return false once the elapsed time reaches the limit
-        unset($stream, $time, $status);
+        //Return empty once elapsed time reaches the limit
+        unset($stream, $time);
         return $result;
     }
 }
