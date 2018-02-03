@@ -41,7 +41,7 @@ class cli extends router
     private static $cgi_mode = false;
 
     //Pipe timeout option
-    private static $timeout = 2000;
+    private static $timeout = 0;
 
     //Record option
     private static $record = '';
@@ -112,7 +112,7 @@ class cli extends router
          * d/data: CGI data content
          * p/pipe: CLI pipe content
          * r/record: record type (result (default) / error / data / cmd, multiple options)
-         * t/timeout: timeout for return (in microseconds, default value is 2000ms when r/record is set)
+         * t/timeout: timeout for return (in microseconds; default "0" means wait till done. Works when r/record or l/log is set)
          * l/log: log option
          */
         $opt = getopt('c:d:p:r:t:l', ['cmd:', 'data:', 'pipe', 'record:', 'timeout:', 'log'], $optind);
@@ -363,7 +363,7 @@ class cli extends router
         $result = '';
 
         //Keep checking process
-        while ($time <= self::$timeout) {
+        while (0 === self::$timeout || $time <= self::$timeout) {
             //Get process status
             $status = proc_get_status($stream[0]);
 
