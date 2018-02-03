@@ -37,8 +37,8 @@ class mpc
     //Wait timeout (in microseconds)
     public static $wait_time = 10000;
 
-    //Process timeout (in microseconds)
-    public static $process_time = 2000;
+    //Process timeout (in microseconds, "0" means wait till done)
+    public static $process_time = 0;
 
     //PHP cmd key name in "cfg.ini"
     public static $php_key = 'php';
@@ -201,7 +201,7 @@ class mpc
 
                 //Check running status
                 if (proc_get_status($item['proc'])['running']) {
-                    usleep(self::$process_time);
+                    usleep(0 < self::$process_time ? self::$process_time : 10);
                     continue;
                 }
 
