@@ -355,7 +355,7 @@ class redis_queue extends redis
 
         //Check
         foreach ($output as $key => $value) $output[$key] = trim($value);
-        self::chk_queue($data, implode(PHP_EOL, $output));
+        self::chk_queue($data, trim(implode(PHP_EOL, $output)));
 
         unset($data, $output, $key, $value);
     }
@@ -369,11 +369,14 @@ class redis_queue extends redis
      */
     private static function chk_queue(string $data, string $result): void
     {
-        //Decode in JSON
+        //Accept empty
+        if ('' === $result) return;
+
+        //Decode JSON
         $json = json_decode($result, true);
 
-        //Considerations
-        if (!is_null($json) && (empty($json) || true === current($json))) return;
+        //Accept true
+        if (is_array($json) && true === current($json)) return;
 
         //Save fail list
         self::$redis->lPush(self::$fail_list, json_encode(['data' => &$data, 'return' => &$result]));
