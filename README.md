@@ -147,22 +147,25 @@ All script should under the right namespace for better calling by NervSys API.
         * Important!!!
         * 重要！！！ 
         *
-        * This is the Safe Key area for NervSys API.
-        * The keys should be the function names which we want them to be visited by API,
-        * while the values should be the data MUST be send into the function.
-        * Don't write optional data in Safe Key values, 
-        * or, the request will be ignored if the optional data is not passed.
-        * All visitable functions should be public and static.
+        * This is the Safe Key config for NervSys API.
+        * The keys should be function names which we want them to be called by API,
+        * while the values should be the data MUST be sent to the function.
+        * Don't put optional data in Safe Key values, 
+        * otherwise, API will ignore the request if optional data is not passed.
+        
+        * All callable functions should be public.
         *
         * 这是NervSys API的安全键区。
         * 只有我们希望通过API访问到的方法名称能够作为键名，
         * 而键值是发送到这个方法的数据。
         * 不要在安全键值里写进可选数据，或者当可选数据未选中的时候，这个请求会被忽略
-        * 所有可访问的方法都是public（公有）和static（静态）的
+        
+        * 所有可访问的方法都是public（公有）的
         */
         public static $key = [
             test_a = [a, b, c],
-            test_b = [b, c]
+            test_b = [b, c],
+            test_c = [c]
         ];
         
         public static function test_a()
@@ -188,6 +191,22 @@ All script should under the right namespace for better calling by NervSys API.
             * Just use router::$data['d'] if exists as it is optional
             *
             * 这个函数必须参数b, c，变量d是参选参数
+            * 如果参数d被传入的话就用router::$data['d']获取
+            */
+            ... (Some code)
+            return something;
+        }
+        
+        /**
+        * A Non-Static method
+        */
+        public function test_c()
+        {
+            /**
+            * This function must need variable [c], variable [d] is optional
+            * Just use router::$data['d'] if exists as it is optional
+            *
+            * 这个函数必须参数c，变量d是参选参数
             * 如果参数d被传入的话就用router::$data['d']获取
             */
             ... (Some code)
@@ -475,8 +494,8 @@ But, always remember, don't define same named constants in different "cfg.php"s.
 但是，永远记住，不要在不同的"cfg.php"定义相同的常量，这会产生冲突。  
 All "cfg.php"s existed in the root directory of projects will be required in order right before inside script runs.  
 所有在项目根目录的的"cfg.php"需要在项目内的脚本运行前按顺序执行。  
-Static parameters in classes are encouraged to use instead of definitions in "cfg.php"s.  
-我们更推荐在类中使用静态的参数，而不是在"cfg.php"中定义常量。  
+Class variables are encouraged to use instead of definitions in "cfg.php"s.  
+我们更推荐使用类变量，而不是在"cfg.php"中定义常量。  
 
 Some examples for "cfg.php":
 

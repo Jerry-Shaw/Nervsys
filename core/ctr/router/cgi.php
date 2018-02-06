@@ -37,6 +37,9 @@ class cgi extends router
     //Method list
     private static $method = [];
 
+    //Object list
+    private static $object = [];
+
     /**
      * Run CGI Router
      */
@@ -278,11 +281,19 @@ class cgi extends router
         //Get reflection object for class method
         $reflect = new \ReflectionMethod($space, $method);
 
-        //Check visibility and property
-        if (!$reflect->isPublic() || !$reflect->isStatic()) return;
+        //Check visibility
+        if (!$reflect->isPublic()) return;
+
+        //Check property
+        if (!$reflect->isStatic()) {
+            //Create new object
+            if (!isset(self::$object[$class])) self::$object[$class] = new $space;
+            //Copy object
+            $space = self::$object[$class];
+        }
 
         //Calling method
-        $result = $space::$method();
+        $result = forward_static_call([$space, $method]);
 
         //Build data structure
         parent::build_struc();
