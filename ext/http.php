@@ -53,6 +53,9 @@ class http
     //Request Method
     public static $Method = 'GET';
 
+    //Referer
+    public static $Referer = '';
+
     //Last-Modified
     public static $Modified = '';
 
@@ -191,6 +194,7 @@ class http
         if (!self::$with_body) $opt[CURLOPT_NOBODY] = true;
         if (self::$with_header) $opt[CURLOPT_HEADER] = true;
         if ('' !== self::$Cookie) $opt[CURLOPT_COOKIE] = self::$Cookie;
+        if ('' !== self::$Referer) $opt[CURLOPT_REFERER] = self::$Referer;
         if ('' !== self::$ssl_key) $opt[CURLOPT_SSLKEY] = self::$ssl_key;
         if ('' !== self::$ssl_cert) $opt[CURLOPT_SSLCERT] = self::$ssl_cert;
         if ('' !== self::$user_pwd) $opt[CURLOPT_USERPWD] = self::$user_pwd;

@@ -49,9 +49,6 @@ class cli extends router
     //Log option
     private static $log = false;
 
-    //CLI configuration
-    private static $config = [];
-
     //CLI config file
     const config = ROOT . '/core/cfg.ini';
 
@@ -68,6 +65,42 @@ class cli extends router
 
         //Execute & Record
         self::$cgi_mode ? self::exec_cgi() : self::exec_cli();
+    }
+
+    /**
+     * Get cmd from config
+     *
+     * @param string $command
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function get_cmd(string $command): string
+    {
+        //Load config
+        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
+
+        $path = realpath(self::config);
+        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
+
+        $config = parse_ini_file($path, true);
+        if (false === $config) throw new \Exception('[' . self::config . '] setting incorrect!');
+
+        $config += os::get_env();
+
+        //Parse command
+        $keys = false === strpos($command, ':') ? [$command] : explode(':', $command);
+
+        foreach ($keys as $key) {
+            if (!isset($config[$key])) throw new \Exception('[' . $command . '] NOT configured!');
+            $config = $config[$key];
+        }
+
+        if (!is_string($config)) throw new \Exception('[' . $command . '] NOT configured!');
+
+        unset($command, $path, $keys, $key);
+
+        return '"' . trim($config, ' "\'\t\n\r\0\x0B') . '"';
     }
 
     /**
@@ -200,45 +233,6 @@ class cli extends router
     }
 
     /**
-     * Parse command
-     *
-     * @return string
-     * @throws \Exception
-     */
-    private static function parse_cmd(): string
-    {
-        $cmd = self::$config;
-        $keys = false === strpos(parent::$cmd, ':') ? [parent::$cmd] : explode(':', parent::$cmd);
-
-        foreach ($keys as $key) {
-            if (!isset($cmd[$key])) throw new \Exception('[' . parent::$cmd . '] NOT configured!');
-            $cmd = $cmd[$key];
-        }
-
-        if (!is_string($cmd)) throw new \Exception('[' . parent::$cmd . '] NOT configured!');
-
-        unset($keys, $key);
-        return '"' . trim($cmd, ' "\'\t\n\r\0\x0B') . '"';
-    }
-
-    /**
-     * Load CLI config file
-     */
-    private static function load_config(): void
-    {
-        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
-
-        $path = realpath(self::config);
-        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
-
-        $config = parse_ini_file($path, true);
-        if (!is_array($config) || empty($config)) throw new \Exception('[' . self::config . '] setting incorrect!');
-
-        self::$config = array_merge($config, os::get_env());
-        unset($path, $config);
-    }
-
-    /**
      * Execute CGI
      */
     private static function exec_cgi(): void
@@ -272,11 +266,9 @@ class cli extends router
     private static function exec_cli(): void
     {
         try {
-            //Load config
-            self::load_config();
+            //Get command from config
+            $command = self::get_cmd(parent::$cmd);
 
-            //Parse command
-            $command = self::parse_cmd();
             //Fill command argv
             if (!empty(self::$cmd_argv)) $command .= ' ' . implode(' ', self::$cmd_argv);
 
@@ -286,9 +278,9 @@ class cli extends router
             if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
 
             //Record CLI Runtime values
-            self::cli_rec(['cmd' => &$command, 'proc' => &$process, 'pipe' => &$pipes]);
+            self::cli_rec(['cmd' => &$command, 'pipe' => &$pipes, 'proc' => &$process]);
 
-            //Close Pipes (keep process)
+            //Close Pipes (ignore process)
             foreach ($pipes as $pipe) fclose($pipe);
             unset($command, $process, $pipes, $pipe);
         } catch (\Throwable $exception) {
@@ -369,28 +361,28 @@ class cli extends router
     /**
      * Get stream content
      *
-     * @param array $stream
+     * @param array $resource
      *
      * @return string
      */
-    private static function get_stream(array $stream): string
+    private static function get_stream(array $resource): string
     {
         $time = 0;
         $result = '';
 
-        //Keep watching process
+        //Keep checking pipe
         while (0 === self::$timeout || $time <= self::$timeout) {
-            if (proc_get_status($stream[0])['running']) {
+            if (proc_get_status($resource[0])['running']) {
                 usleep(10);
                 $time += 10;
             } else {
-                $result = trim(stream_get_contents($stream[1]));
+                $result = trim(stream_get_contents($resource[1]));
                 break;
             }
         }
 
         //Return empty once elapsed time reaches the limit
-        unset($stream, $time);
+        unset($resource, $time);
         return $result;
     }
 }
