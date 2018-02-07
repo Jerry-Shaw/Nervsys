@@ -280,7 +280,7 @@ class cli extends router
             //Record CLI Runtime values
             self::cli_rec(['cmd' => &$command, 'pipe' => &$pipes, 'proc' => &$process]);
 
-            //Close Pipes (ignore process)
+            //Close pipes (ignore process)
             foreach ($pipes as $pipe) fclose($pipe);
             unset($command, $process, $pipes, $pipe);
         } catch (\Throwable $exception) {

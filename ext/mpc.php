@@ -162,39 +162,45 @@ class mpc
     {
         $result = [];
 
+        //Collect data
         while (!empty($resource)) {
             foreach ($resource as $key => $item) {
                 //Build result
-                $result[$key] = ['exec' => $item['exec']];
+                if (!isset($result[$key])) {
+                    $result[$key]['exec'] = $item['exec'];
+                    $result[$key]['data'] = '';
+                }
 
                 //Unset failed process
                 if (!$item['exec']) {
+                    //Unset resource
                     unset($resource[$key]);
                     continue;
                 }
 
-                //Check status
-                if (proc_get_status($item['proc'])['running']) {
-                    usleep(0 < self::$process_time ? self::$process_time : 10);
+                //Unset finished process
+                if (feof($item['pipe'][1])) {
+                    //Close pipes & process
+                    foreach ($item['pipe'] as $pipe) fclose($pipe);
+                    proc_close($item['proc']);
+                    //Unset resource
+                    unset($resource[$key]);
                     continue;
                 }
 
-                //Read data
-                $data = trim(stream_get_contents($item['pipe'][1]));
-
-                //Process data
-                if ('' !== $data) {
-                    $json = json_decode($data, true);
-                    $result[$key]['data'] = !is_null($json) ? $json : $data;
-                }
-
-                //Close Pipes (ignore process)
-                foreach ($item['pipe'] as $pipe) fclose($pipe);
-                unset($resource[$key]);
+                //Read pipe
+                $result[$key]['data'] .= trim(fgets($item['pipe'][1], 4096));
             }
         }
 
-        unset($resource, $key, $item, $data, $json, $pipe);
+        //Process data
+        foreach ($result as $key => $item) {
+            if ('' === $item['data']) continue;
+            $json = json_decode($item['data'], true);
+            $result[$key]['data'] = !is_null($json) ? $json : $item['data'];
+        }
+
+        unset($resource, $key, $item, $pipe, $json);
         return $result;
     }
 }
