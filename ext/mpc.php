@@ -70,10 +70,11 @@ class mpc
      *
      * @param string $cmd
      * @param array  $argv
+     * @param string $key
      */
-    public static function add(string $cmd, array $argv): void
+    public static function add(string $cmd, array $argv, string $key = ''): void
     {
-        self::$jobs[] = ['cmd' => &$cmd, 'arg' => &$argv];
+        '' === $key ? self::$jobs[] = ['cmd' => &$cmd, 'arg' => &$argv] : self::$jobs[$key] = ['cmd' => &$cmd, 'arg' => &$argv];
         unset($cmd, $argv);
     }
 
@@ -196,6 +197,7 @@ class mpc
         //Process data
         foreach ($result as $key => $item) {
             if ('' === $item['data']) continue;
+
             $json = json_decode($item['data'], true);
             $result[$key]['data'] = !is_null($json) ? $json : $item['data'];
         }
