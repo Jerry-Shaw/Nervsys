@@ -190,7 +190,7 @@ class mpc
                 }
 
                 //Read pipe
-                $result[$key]['data'] .= trim(fgets($item['pipe'][1], 4096));
+                $result[$key]['data'] .= trim((string)fgets($item['pipe'][1], 4096));
             }
         }
 
