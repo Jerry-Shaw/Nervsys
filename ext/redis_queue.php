@@ -351,7 +351,7 @@ class redis_queue extends redis
     private static function exec_queue(string $data): void
     {
         //Execute
-        exec(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --record "result" --data "' . addcslashes($data, '"') . '"', $output);
+        exec(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --ret --data "' . addcslashes($data, '"') . '"', $output);
 
         //Check
         foreach ($output as $key => $value) $output[$key] = trim($value);

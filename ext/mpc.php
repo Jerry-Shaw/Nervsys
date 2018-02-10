@@ -94,7 +94,7 @@ class mpc
 
         //Build command
         self::$cmd = self::$php_exe . ' "' . ROOT . '/api.php"';
-        if (self::$wait) self::$cmd .= ' --record "result"';
+        if (self::$wait) self::$cmd .= ' --ret';
         if (0 < self::$process_time) self::$cmd .= ' --timeout ' . self::$process_time;
 
         $result = [];

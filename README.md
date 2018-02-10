@@ -416,10 +416,10 @@ Remember one param named "c" or "cmd", the two are equal.
     Full command should be as some type of follows:
     完整的命令应该像如下的某些类型：
         
-    1. /path/php api.php --return result/data/error --cmd "pr_1\ctr\test_1-test_a" --data "a=a&b=b&c=c"
-    2. /path/php api.php -r result/data -t 10000 -c "pr_1\ctr\test_1-test_b" -d "b=b&c=c"
-    3. /path/php api.php -r result -l -c "pr_1\ctr\test_1-test_a-test_b" -d "a=a&b=b&c=c"
-    4. /path/php api.php --return result --cmd "pr_1\ctr\test_1-test_a-test_b" --data "a=a&b=b&c=c"
+    1. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a" --data "a=a&b=b&c=c"
+    2. /path/php api.php -r -t 10000 -c "pr_1\ctr\test_1-test_b" -d "b=b&c=c"
+    3. /path/php api.php -r -l -c "pr_1\ctr\test_1-test_a-test_b" -d "a=a&b=b&c=c"
+    4. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a-test_b" --data "a=a&b=b&c=c"
     5. ...
         
     JSON data package is also support as CGI mode
@@ -460,9 +460,9 @@ Remember one param named "c" or "cmd", the two are equal.
     Output data will be also captured as in CGI mode and outputs via STDOUT.
     通过STDOUT和CGI模式也能获取到输出数据
         
-    Don't forget to use "-r result" or "--record result" to capture output data.
+    Don't forget to use "-r" or "--ret" to capture output data.
     If time is too short to run extenal programs, use "-t ms" or "--timeout ms"
-    不要忘记使用"-r result"或者 "--record result"捕获输出数据。
+    不要忘记使用"-r"或者 "--ret"捕获输出数据。
     如果时间太短而不能执行外部程序的话，可以使用"-t ms" 或者 "--timeout ms"命令。
         
     In CLI mode, we have 3 globle variables named "PHP_PID", "PHP_CMD" and "PHP_EXE".
