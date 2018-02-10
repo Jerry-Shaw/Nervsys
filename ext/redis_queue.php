@@ -117,7 +117,7 @@ class redis_queue extends redis
     {
         if (!isset($data['c']) && !isset($data['cmd'])) return 0;
 
-        self::$redis = parent::connect();
+        if (is_null(self::$redis)) self::$redis = parent::connect();
         $add = (int)self::$redis->lPush(self::$prefix_queue . $key, json_encode($data));
 
         unset($key, $data);
@@ -135,7 +135,7 @@ class redis_queue extends redis
      */
     public static function stop(string $key = ''): int
     {
-        self::$redis = parent::connect();
+        if (is_null(self::$redis)) self::$redis = parent::connect();
 
         $process = '' === $key ? array_keys(self::process_list()) : [self::$prefix_process . $key];
         $result = 0 < count($process) ? call_user_func_array([self::$redis, 'del'], $process) : 0;
@@ -189,7 +189,7 @@ class redis_queue extends redis
     {
         $list = [];
 
-        self::$redis = parent::connect();
+        if (is_null(self::$redis)) self::$redis = parent::connect();
 
         $list['len'] = self::$redis->lLen(self::$fail_list);
         $list['data'] = self::$redis->lRange(self::$fail_list, $start, $end);
@@ -212,7 +212,7 @@ class redis_queue extends redis
         self::$os_env = os::get_env();
 
         //Connect Redis
-        self::$redis = parent::connect();
+        if (is_null(self::$redis)) self::$redis = parent::connect();
 
         //Main process key
         $main_key = self::$prefix_process . self::$key_main;
@@ -280,7 +280,7 @@ class redis_queue extends redis
         self::$os_env = os::get_env();
 
         //Connect Redis
-        self::$redis = parent::connect();
+        if (is_null(self::$redis)) self::$redis = parent::connect();
 
         //Process Hash & Key
         $process_hash = hash('md5', uniqid(mt_rand(), true));
