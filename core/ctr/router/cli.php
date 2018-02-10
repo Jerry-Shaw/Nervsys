@@ -6,7 +6,7 @@
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 Jerry Shaw
+ * Copyright 2018 Jerry Shaw
  * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
@@ -43,8 +43,8 @@ class cli extends router
     //Pipe timeout option (in microseconds)
     private static $timeout = 0;
 
-    //Record option
-    private static $record = '';
+    //Return option
+    private static $ret = false;
 
     //Log option
     private static $log = false;
@@ -69,7 +69,7 @@ class cli extends router
         //Prepare data
         self::prep_data();
 
-        //Execute & Record
+        //Execute command
         self::$call_cgi ? self::exec_cgi() : self::exec_cli();
     }
 
@@ -166,11 +166,11 @@ class cli extends router
          * c/cmd: command
          * d/data: CGI data content
          * p/pipe: CLI pipe content
-         * r/record: record type (result (default) / error / data / cmd, multiple options)
-         * t/timeout: timeout for return (in microseconds; default "0" means wait till done. Works when r/record or l/log is set)
-         * l/log: log option
+         * r/ret: process return option
+         * l/log: process log option (cmd, data, error, result)
+         * t/timeout: timeout for return (in microseconds; default "0" means wait till done. Works when r/ret or l/log is set)
          */
-        $opt = getopt('c:d:p:r:t:l', ['cmd:', 'data:', 'pipe', 'record:', 'timeout:', 'log'], $optind);
+        $opt = getopt('c:d:p:t:rl', ['cmd:', 'data:', 'pipe', 'timeout:', 'ret', 'log'], $optind);
         if (empty($opt)) return $optind;
 
         //Process cgi data value
@@ -185,13 +185,13 @@ class cli extends router
         $val = parent::opt_val($opt, ['p', 'pipe']);
         if ($val['get'] && '' !== $val['data']) self::$cli_data = &$val['data'];
 
-        //Process return option
-        $val = parent::opt_val($opt, ['r', 'record']);
-        if ($val['get'] && '' !== $val['data']) self::$record = &$val['data'];
-
         //Process pipe read timeout
         $val = parent::opt_val($opt, ['t', 'timeout']);
         if ($val['get'] && is_numeric($val['data'])) self::$timeout = (int)$val['data'];
+
+        //Process return option
+        $val = parent::opt_val($opt, ['r', 'ret']);
+        if ($val['get']) self::$ret = true;
 
         //Process log option
         $val = parent::opt_val($opt, ['l', 'log']);
@@ -261,26 +261,19 @@ class cli extends router
     private static function exec_cgi(): void
     {
         cgi::run();
-        $logs = $result = [];
 
         //Write logs
         if (self::$log) {
+            $logs = [];
             $logs['cmd'] = parent::$cmd;
             $logs['data'] = json_encode(parent::$data, JSON_OPT);
             $logs['result'] = json_encode(parent::$result, JSON_OPT);
             self::save_log($logs);
+            unset($logs);
         }
 
         //Build result
-        if ('' !== self::$record) {
-            if (false !== strpos(self::$record, 'cmd')) $result['cmd'] = parent::$cmd;
-            if (false !== strpos(self::$record, 'data')) $result['data'] = parent::$data;
-            if (false !== strpos(self::$record, 'result')) $result['result'] = parent::$result;
-        }
-
-        //Write result
-        self::save_result($result);
-        unset($logs, $result);
+        if (!self::$ret) parent::$result = [];
     }
 
     /**
@@ -319,7 +312,7 @@ class cli extends router
      */
     private static function cli_rec(array $resource): void
     {
-        $logs = $result = [];
+        $logs = [];
 
         //Write logs
         if (self::$log) {
@@ -331,16 +324,9 @@ class cli extends router
         }
 
         //Build result
-        if ('' !== self::$record) {
-            if (false !== strpos(self::$record, 'cmd')) $result['cmd'] = &$resource['cmd'];
-            if (false !== strpos(self::$record, 'data')) $result['data'] = self::$cli_data;
-            if (false !== strpos(self::$record, 'error')) $result['error'] = $logs['error'] ?? self::get_stream([$resource['proc'], $resource['pipe'][2]]);
-            if (false !== strpos(self::$record, 'result')) $result['result'] = $logs['result'] ?? self::get_stream([$resource['proc'], $resource['pipe'][1]]);
-        }
+        if (self::$ret) parent::$result[$resource['cmd']] = $logs['result'] ?? self::get_stream([$resource['proc'], $resource['pipe'][1]]);
 
-        //Write result
-        self::save_result($result);
-        unset($resource, $logs, $result);
+        unset($resource, $logs);
     }
 
     /**
@@ -357,17 +343,6 @@ class cli extends router
         file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
 
         unset($logs, $time, $key, $value);
-    }
-
-    /**
-     * Save result
-     *
-     * @param array $result
-     */
-    private static function save_result(array $result): void
-    {
-        parent::$result = 0 < count($result) ? $result : [];
-        unset($result);
     }
 
     /**
