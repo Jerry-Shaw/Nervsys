@@ -354,7 +354,6 @@ class cli extends router
         $logs = ['time' => date('Y-m-d H:i:s', $time)] + $logs;
 
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
-
         file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
 
         unset($logs, $time, $key, $value);
@@ -367,18 +366,7 @@ class cli extends router
      */
     private static function save_result(array $result): void
     {
-        switch (count($result)) {
-            case 0:
-                parent::$result = [];
-                break;
-            case 1:
-                parent::$result = current($result);
-                break;
-            default:
-                parent::$result = &$result;
-                break;
-        }
-
+        parent::$result = 0 < count($result) ? $result : [];
         unset($result);
     }
 
