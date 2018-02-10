@@ -37,10 +37,10 @@ class cli extends router
     //CLI argv values
     public static $cmd_argv = [];
 
-    //CGI mode detection
-    private static $cgi_mode = false;
+    //CGI callable mode
+    private static $call_cgi = false;
 
-    //Pipe timeout option
+    //Pipe timeout option (in microseconds)
     private static $timeout = 0;
 
     //Record option
@@ -49,10 +49,16 @@ class cli extends router
     //Log option
     private static $log = false;
 
-    //CLI config file
+    //CLI configurations
+    private static $config = [];
+
+    //Wait cycle (in microseconds)
+    const wait = 1000;
+
+    //CLI config file path
     const config = ROOT . '/core/cfg.ini';
 
-    //Working path
+    //CLI working path
     const work_path = ROOT . '/core/cli/';
 
     /**
@@ -64,7 +70,7 @@ class cli extends router
         self::prep_data();
 
         //Execute & Record
-        self::$cgi_mode ? self::exec_cgi() : self::exec_cli();
+        self::$call_cgi ? self::exec_cgi() : self::exec_cli();
     }
 
     /**
@@ -77,16 +83,8 @@ class cli extends router
      */
     public static function get_cmd(string $command): string
     {
-        //Load config
-        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
-
-        $path = realpath(self::config);
-        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
-
-        $config = parse_ini_file($path, true);
-        if (false === $config) throw new \Exception('[' . self::config . '] setting incorrect!');
-
-        $config += os::get_env();
+        //Copy config
+        $config = self::load_cfg();
 
         //Parse command
         $keys = false === strpos($command, ':') ? [$command] : explode(':', $command);
@@ -98,9 +96,34 @@ class cli extends router
 
         if (!is_string($config)) throw new \Exception('[' . $command . '] NOT configured!');
 
-        unset($command, $path, $keys, $key);
+        $cmd = '"' . trim($config, ' "\'\t\n\r\0\x0B') . '"';
 
-        return '"' . trim($config, ' "\'\t\n\r\0\x0B') . '"';
+        unset($command, $config, $keys, $key);
+        return $cmd;
+    }
+
+    /**
+     * Load config from "cfg.ini" & "os::get_env"
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function load_cfg(): array
+    {
+        if (!empty(self::$config)) return self::$config;
+
+        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
+
+        $path = realpath(self::config);
+        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
+
+        $config = parse_ini_file($path, true);
+        if (false === $config) throw new \Exception('[' . self::config . '] setting incorrect!');
+
+        self::$config = $config + os::get_env();
+
+        unset($path, $config);
+        return self::$config;
     }
 
     /**
@@ -223,7 +246,7 @@ class cli extends router
         $val = parent::opt_val(parent::$data, ['c', 'cmd']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            if (false !== strpos($val['data'], '/')) self::$cgi_mode = true;
+            if (false !== strpos($val['data'], '/')) self::$call_cgi = true;
             parent::$cmd = &$val['data'];
             $get = true;
         }
@@ -331,6 +354,7 @@ class cli extends router
         $logs = ['time' => date('Y-m-d H:i:s', $time)] + $logs;
 
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
+
         file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
 
         unset($logs, $time, $key, $value);
@@ -373,8 +397,8 @@ class cli extends router
         //Keep checking pipe
         while (0 === self::$timeout || $time <= self::$timeout) {
             if (proc_get_status($resource[0])['running']) {
-                usleep(10);
-                $time += 10;
+                usleep(self::wait);
+                $time += self::wait;
             } else {
                 $result = trim(stream_get_contents($resource[1]));
                 break;
