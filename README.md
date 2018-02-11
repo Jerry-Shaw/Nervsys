@@ -20,8 +20,8 @@ It can be used as:
     3.通信客户端
     4.更多......
     
-As normally use, it responses one result from one method to one request, just like what we do now on an ordinary web development.    
-通常情况下，一个请求调用一个方法会返回一个结果，就像我们现在在一般的Web项目开发中做的那样。
+As normally use, it responses one result from one method to one request, just like what we do now on an ordinary web development.  
+通常情况下，一个请求调用一个方法会返回一个结果，就像我们现在在一般的Web项目开发中做的那样。  
 But, it may response multiple results from multiple methods to one request, when we need it to "guess" what we need based on the data we gave.  
 但是，当我们需要它根据我们给的数据“猜”出结果时，它可以从一个请求调用多个方法返回多种结果。
 
