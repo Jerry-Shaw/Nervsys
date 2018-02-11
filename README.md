@@ -433,8 +433,8 @@ Remember one param named "c" or "cmd", the two are equal.
     4. /path/php api.php pr_1\ctr\test_1 -d "a=a&b=b&c=c"
     5. ...
         
-    If we need call external programs, make sure the "c" or "cmd" name is listing in "cfg.ini" 
-    with the executable path as the value
+    If we need to call external programs, make sure the "c" or "cmd" key is listing in "cfg.ini" 
+    with the executable path as the value, or ever more.
     如果我们需要调用外部项目的话，确保在"cfg.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
         
     Something examples:
