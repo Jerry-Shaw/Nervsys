@@ -58,12 +58,14 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... A
       │     ├─cfg.ini                     Config file for CLI executable command    CLI可执行命令的配置文件
       │     └─cfg.php                     Config file for core system               核心系统的配置文件
       └─ext/                            **extension directory                       扩展目录
+           ├─font/                      **font directory
            ├─lib/                       **extension interface directory             扩展接口目录
            │    └─keys.php                Cryption Key generator interface          密钥生成接口
            ├─upload/                    **Upload extension related directory        扩展关联目录
            │       ├─en-US/             **Upload language folder (en-US)
            │       ├─zh-CN/             **Upload language folder (zh-CN)
            │       └─upload.ini           Upload error code file
+           ├─authcode.php                 Auth Code extension
            ├─crypt.php                    Encrypt/decrypt extension                 加密/解密扩展
            ├─errno.php                    Error code extension                      错误代码扩展
            ├─file.php                     Filesystem related IO extension           文件系统关联输入输出的扩展
@@ -71,10 +73,13 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... A
            ├─image.php                    Image processing extension                图像处理扩展
            ├─keygen.php                   Cryption Key generator extension          密钥生成扩展
            ├─lang.php                     Language extension                        语言扩展
+           ├─mpc.php                      Multi-Process Controller Extension
            ├─pdo.php                      PDO connector extension                   PDO连接器扩展
            ├─pdo_mysql.php                MySQL extension for PDO                   pdo_mysql扩展
            ├─redis.php                    Redis connector extension                 Redis连接器扩展
-           ├─redis_session.php            Session extension for Redis               redis_session扩展
+           ├─redis_lock.php               Lock extension on Redis
+           ├─redis_queue.php              Queue extension on Redis
+           ├─redis_session.php            Session extension on Redis                redis_session扩展
            ├─sock.php                     Socket extension                          Socket扩展
            ├─upload.php                   Upload extension                          上传扩展
            └─...                          There will be more in the near future     近期会有更有用的扩展更新。

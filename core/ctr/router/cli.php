@@ -49,16 +49,16 @@ class cli extends router
     //Pipe read time (in microseconds)
     private static $time = 0;
 
-    //CLI configurations
+    //Command configuration
     private static $config = [];
 
     //Wait cycle (in microseconds)
     const wait = 1000;
 
-    //CLI config file path
+    //Config file path
     const config = ROOT . '/core/cfg.ini';
 
-    //CLI working path
+    //Working path
     const work_path = ROOT . '/core/cli/';
 
     /**

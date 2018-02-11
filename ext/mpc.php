@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Multiple Processes calculation Extension
+ * Multi-Process Controller Extension
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
