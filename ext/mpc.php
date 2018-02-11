@@ -38,8 +38,8 @@ class mpc
     //Wait timeout (in microseconds)
     public static $wait_time = 10000;
 
-    //Process timeout (in microseconds, "0" means wait till done)
-    public static $process_time = 0;
+    //Read time (in microseconds)
+    public static $read_time = 0;
 
     //Max running processes
     public static $max_runs = 10;
@@ -95,7 +95,7 @@ class mpc
         //Build command
         self::$cmd = self::$php_exe . ' "' . ROOT . '/api.php"';
         if (self::$wait) self::$cmd .= ' --ret';
-        if (0 < self::$process_time) self::$cmd .= ' --timeout ' . self::$process_time;
+        if (0 < self::$read_time) self::$cmd .= ' --time ' . self::$read_time;
 
         $result = [];
 

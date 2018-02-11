@@ -396,18 +396,18 @@ Remember one param named "c" or "cmd", the two are equal.
     c/cmd: command
     d/data: CGI data content
     p/pipe: CLI pipe content
-    r/record: record type (result (default) / error / data / cmd, multiple options)
-         * t/timeout: timeout for return (in microseconds; default "0" means wait till done. Works when r/record or l/log is set)
-    l/log: log option
+    r/ret: process return option
+    l/log: process log option (cmd, data, error, result)
+    t/time: read time (in microseconds; default "0" means read till done. Works when r/ret or l/log is set)
         
     In Chinese:
     
     c/cmd: command
     d/data: CGI数据内容
     p/pipe: CLI管道内容 
-    r/record: 记录类型 (result (default) / error / data / cmd, multiple options) 
-    t/timeout: 返回的超时设置（以ms为单位，默认"0"表示等待直到完成，如果r/record或l/log有设置）
+    r/ret: 返回选项
     l/log: 日志选项
+    t/time: 读取时间（以ms为单位，默认"0"表示完成后读取，如果r/ret或l/log有设置）
         
     **Examples:
         
@@ -461,9 +461,9 @@ Remember one param named "c" or "cmd", the two are equal.
     通过STDOUT和CGI模式也能获取到输出数据
         
     Don't forget to use "-r" or "--ret" to capture output data.
-    If time is too short to run extenal programs, use "-t ms" or "--timeout ms"
+    If time is too short to run extenal programs, use "-t ms" or "--time ms"
     不要忘记使用"-r"或者 "--ret"捕获输出数据。
-    如果时间太短而不能执行外部程序的话，可以使用"-t ms" 或者 "--timeout ms"命令。
+    如果时间太短而不能执行外部程序的话，可以使用"-t ms" 或者 "--time ms"命令。
         
     In CLI mode, we have 3 globle variables named "PHP_PID", "PHP_CMD" and "PHP_EXE".
     在CLI模式中，有3个全局变量："PHP_PID", "PHP_CMD" 和 "PHP_EXE"

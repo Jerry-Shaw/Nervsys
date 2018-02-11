@@ -40,14 +40,14 @@ class cli extends router
     //CGI callable mode
     private static $call_cgi = false;
 
-    //Pipe timeout option (in microseconds)
-    private static $timeout = 0;
-
     //Return option
     private static $ret = false;
 
     //Log option
     private static $log = false;
+
+    //Pipe read time (in microseconds)
+    private static $time = 0;
 
     //CLI configurations
     private static $config = [];
@@ -168,9 +168,9 @@ class cli extends router
          * p/pipe: CLI pipe content
          * r/ret: process return option
          * l/log: process log option (cmd, data, error, result)
-         * t/timeout: timeout for return (in microseconds; default "0" means wait till done. Works when r/ret or l/log is set)
+         * t/time: read time (in microseconds; default "0" means read till done. Works when r/ret or l/log is set)
          */
-        $opt = getopt('c:d:p:t:rl', ['cmd:', 'data:', 'pipe', 'timeout:', 'ret', 'log'], $optind);
+        $opt = getopt('c:d:p:t:rl', ['cmd:', 'data:', 'pipe', 'time:', 'ret', 'log'], $optind);
         if (empty($opt)) return $optind;
 
         //Process cgi data value
@@ -185,9 +185,9 @@ class cli extends router
         $val = parent::opt_val($opt, ['p', 'pipe']);
         if ($val['get'] && '' !== $val['data']) self::$cli_data = &$val['data'];
 
-        //Process pipe read timeout
-        $val = parent::opt_val($opt, ['t', 'timeout']);
-        if ($val['get'] && is_numeric($val['data'])) self::$timeout = (int)$val['data'];
+        //Process pipe read time
+        $val = parent::opt_val($opt, ['t', 'time']);
+        if ($val['get'] && is_numeric($val['data'])) self::$time = (int)$val['data'];
 
         //Process return option
         $val = parent::opt_val($opt, ['r', 'ret']);
@@ -358,7 +358,7 @@ class cli extends router
         $result = '';
 
         //Keep checking pipe
-        while (0 === self::$timeout || $time <= self::$timeout) {
+        while (0 === self::$time || $time <= self::$time) {
             if (proc_get_status($resource[0])['running']) {
                 usleep(self::wait);
                 $time += self::wait;
