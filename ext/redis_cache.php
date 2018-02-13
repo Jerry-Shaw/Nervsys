@@ -111,7 +111,7 @@ class redis_cache extends redis
      */
     public static function build_key(array $keys = []): string
     {
-        if (empty($keys)) $keys = ['cmd' => router::$cmd, 'data' => router::$data];
+        if (empty($keys)) $keys = ['cmd' => router::$cmd, 'data' => router::$data, 'session' => &$_SESSION];
         $key = self::$prefix . hash('md5', json_encode($keys));
 
         unset($keys);
