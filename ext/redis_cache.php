@@ -31,11 +31,17 @@ use core\ctr\router;
 
 class redis_cache extends redis
 {
+    //Cache key
+    public static $key = null;
+
     //Cache life (in seconds)
     public static $life = 600;
 
     //Cache prefix
     public static $prefix = 'cache:';
+
+    //Bind session
+    public static $bind_session = false;
 
     //Redis connection
     private static $redis = null;
@@ -43,75 +49,61 @@ class redis_cache extends redis
     /**
      * Set cache
      *
-     * @param array  $data
-     * @param string $key
+     * @param array $data
      *
      * @return bool
      * @throws \Exception
      */
-    public static function set(array $data, string $key = ''): bool
+    public static function set(array $data): bool
     {
         if (empty($data)) return false;
 
         if (is_null(self::$redis)) self::$redis = parent::connect();
+        if (!self::$redis->set(self::prep_key(), json_encode($data), self::$life)) return false;
 
-        $key = '' === $key ? self::build_key() : self::$prefix . $key;
-
-        if (!self::$redis->setnx($key, json_encode($data))) return false;
-        self::$redis->expire($key, 0 < self::$life ? self::$life : 600);
-
-        unset($data, $key);
+        unset($data);
         return true;
     }
 
     /**
      * Get cache
      *
-     * @param string $key
-     *
      * @return array
      * @throws \Exception
      */
-    public static function get(string $key = ''): array
+    public static function get(): array
     {
         if (is_null(self::$redis)) self::$redis = parent::connect();
-
-        $cache = self::$redis->get('' === $key ? self::build_key() : self::$prefix . $key);
+        $cache = self::$redis->get(self::prep_key());
         if (false === $cache) return [];
 
         $data = json_decode($cache, true);
         if (!is_array($data)) return [];
 
-        unset($key, $cache);
+        unset($cache);
         return $data;
     }
 
     /**
      * Delete cache
      *
-     * @param string $key
-     *
      * @throws \Exception
      */
-    public static function del(string $key = ''): void
+    public static function del(): void
     {
         if (is_null(self::$redis)) self::$redis = parent::connect();
-
-        self::$redis->del('' === $key ? self::build_key() : self::$prefix . $key);
-
-        unset($key);
+        self::$redis->del(self::prep_key());
     }
 
     /**
-     * Build cache key
-     *
-     * @param array $keys
+     * Prepare cache key
      *
      * @return string
      */
-    public static function build_key(array $keys = []): string
+    private static function prep_key(): string
     {
-        if (empty($keys)) $keys = ['cmd' => router::$cmd, 'data' => router::$data, 'session' => &$_SESSION];
+        //Build keys
+        $keys = is_null(self::$key) ? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []] : self::$key;
         $key = self::$prefix . hash('md5', json_encode($keys));
 
         unset($keys);
