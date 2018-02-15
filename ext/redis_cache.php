@@ -31,11 +31,11 @@ use core\ctr\router;
 
 class redis_cache extends redis
 {
-    //Cache key
-    public static $key = null;
-
     //Cache life (in seconds)
     public static $life = 600;
+
+    //Cache name
+    public static $name = null;
 
     //Cache prefix
     public static $prefix = 'cache:';
@@ -56,13 +56,14 @@ class redis_cache extends redis
      */
     public static function set(array $data): bool
     {
-        if (empty($data)) return false;
+        $name = self::get_name();
+        $cache = json_encode($data);
 
         if (is_null(self::$redis)) self::$redis = parent::connect();
-        if (!self::$redis->set(self::prep_key(), json_encode($data), self::$life)) return false;
+        $result = 0 < self::$life ? self::$redis->set($name, $cache, self::$life) : self::$redis->set($name, $cache);
 
-        unset($data);
-        return true;
+        unset($data, $name, $cache);
+        return $result;
     }
 
     /**
@@ -74,7 +75,7 @@ class redis_cache extends redis
     public static function get(): array
     {
         if (is_null(self::$redis)) self::$redis = parent::connect();
-        $cache = self::$redis->get(self::prep_key());
+        $cache = self::$redis->get(self::get_name());
         if (false === $cache) return [];
 
         $data = json_decode($cache, true);
@@ -92,21 +93,20 @@ class redis_cache extends redis
     public static function del(): void
     {
         if (is_null(self::$redis)) self::$redis = parent::connect();
-        self::$redis->del(self::prep_key());
+        self::$redis->del(self::get_name());
     }
 
     /**
-     * Prepare cache key
+     * Get cache name
      *
      * @return string
      */
-    private static function prep_key(): string
+    private static function get_name(): string
     {
-        //Build keys
-        $keys = is_null(self::$key) ? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []] : self::$key;
-        $key = self::$prefix . hash('md5', json_encode($keys));
+        $keys = is_null(self::$name) ? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []] : self::$name;
+        $name = self::$prefix . hash('md5', json_encode($keys));
 
         unset($keys);
-        return $key;
+        return $name;
     }
 }
