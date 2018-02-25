@@ -40,7 +40,7 @@ class linux extends os
      */
     public static function bg_cmd(string $cmd): string
     {
-        return $cmd . ' > /dev/null 2>/dev/null &';
+        return '"' . $cmd . '" > /dev/null 2>/dev/null &';
     }
 
     /**

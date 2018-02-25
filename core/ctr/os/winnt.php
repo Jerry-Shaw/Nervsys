@@ -40,7 +40,7 @@ class winnt extends os
      */
     public static function bg_cmd(string $cmd): string
     {
-        return 'start "NervSys" /B ' . $cmd;
+        return 'start "NervSys" /B "' . $cmd . '"';
     }
 
     /**
