@@ -220,14 +220,14 @@ class cgi extends router
      */
     private static function call_class(string $class, string $space): void
     {
-        //Check API Safe Key
-        if (!isset($space::$key) || !is_array($space::$key)) {
-            debug($class, 'Safe Key NOT found!');
+        //Check API TrustZone
+        if (!isset($space::$tz) || !is_array($space::$tz)) {
+            debug($class, 'TrustZone NOT Open!');
             return;
         }
 
-        //Get API Safe Key list & method list
-        $key_list = array_keys($space::$key);
+        //Get API TrustZone list & method list
+        $key_list = array_keys($space::$tz);
         $method_list = get_class_methods($space);
 
         //Get requested api methods
@@ -246,8 +246,8 @@ class cgi extends router
         //Run method
         foreach ($key_methods as $method) {
             //Get intersect and difference set of data requirement structure
-            $inter = array_intersect(parent::$struct, $space::$key[$method]);
-            $diff = array_diff($space::$key[$method], $inter);
+            $inter = array_intersect(parent::$struct, $space::$tz[$method]);
+            $diff = array_diff($space::$tz[$method], $inter);
 
             //Skip running method when data structure not match
             if (!empty($diff)) {

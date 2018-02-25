@@ -35,7 +35,7 @@ class redis_queue extends redis
      * API Command
      *
      * Examples:
-     * "example/queue-process", etc... (Controlled by API & Safe Key)
+     * "example/queue-process", etc... (Controlled by API & TrustZone)
      * "program" or "exe", etc... (Controlled by API & cfg.ini)
      *
      * Notice:
@@ -45,7 +45,7 @@ class redis_queue extends redis
      *
      * Recommended:
      * Method "run" is ready for use, but is kept away from directly calling.
-     * No Safe Key in extensions, you can always call it from your own codes.
+     * TrustZone is closed in extensions, you can always call it from your own codes.
      *
      * @var string
      */
@@ -105,7 +105,7 @@ class redis_queue extends redis
 
     /**
      * Add queue
-     * Caution: Do NOT expose "add" to API Safe Key directly
+     * Caution: Do NOT expose "add" to API TrustZone directly
      *
      * @param string $key
      * @param array  $data
@@ -126,7 +126,7 @@ class redis_queue extends redis
 
     /**
      * Stop queue
-     * Caution: Do NOT expose "add" to API Safe Key directly
+     * Caution: Do NOT expose "stop" to API TrustZone directly
      *
      * @param string $key
      *

@@ -124,15 +124,15 @@ All script should under the right namespace for better calling by NervSys API.
         /**
         * Important!!!
         *
-        * This is the Safe Key config for NervSys API.
+        * This is the TrustZone config for NervSys API.
         * The keys should be function names which we want them to be called by API,
         * while the values should be the data MUST be sent to the function.
-        * Don't put optional data in Safe Key values, 
+        * Don't put optional data in TrustZone values, 
         * otherwise, API will ignore the request if optional data is not passed.
         
         * All callable functions should be public.
         */
-        public static $key = [
+        public static $tz = [
             test_a = [a, b, c],
             test_b = [b, c],
             test_c = [c]
@@ -186,7 +186,7 @@ All script should under the right namespace for better calling by NervSys API.
     //Class name shoule be exactly the same as the file name
     class test_2
     {
-        public static $key = [
+        public static $tz = [
             test_a = [a, b, c],
             test_b = [b, c],
             test_c = []
@@ -265,12 +265,12 @@ Remember one param named "c" or "cmd", the two are equal.
     Could it be an error calling?
         
     This is called loose mode. 
-    If we do this, all functions listed in Safe Key 
+    If we do this, all functions listed in TrustZone 
     will be checked with the input data structure, 
     and will be called if the structure matched or contained.
     "test_c" will always run right after, since it needs no required variables.
         
-    Call order is the Safe Key list order.
+    Call order is the TrustZone list order.
         
     So, it'll be very useful to calculate in multiple algorithms 
     with one same data pack. 

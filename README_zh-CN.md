@@ -129,7 +129,7 @@
         
         * 所有可访问的方法都是public（公有）的
         */
-        public static $key = [
+        public static $tz = [
             test_a = [a, b, c],
             test_b = [b, c],
             test_c = [c]
@@ -182,7 +182,7 @@
     //Class name shoule be exactly the same as the file name
     class test_2
     {
-        public static $key = [
+        public static $tz = [
             test_a = [a, b, c],
             test_b = [b, c],
             test_c = []
@@ -259,10 +259,10 @@
     它是一种错误的调用吗？
         
     这是一种宽松调用模式。
-    如果这样调用的话，在Safe Key中列出的方法都会被传入的数据结构核对一遍，如果结构匹配或者包含，则该方法会被调用。
+    如果这样调用的话，在TrustZone中列出的方法都会被传入的数据结构核对一遍，如果结构匹配或者包含，则该方法会被调用。
     方法"test_c"将始终在之后执行，因为它不需要任何参数。
         
-    调用顺序即Safe Key中列出的顺序。
+    调用顺序即TrustZone中列出的顺序。
         
     所以，在使用同一个数据包进行多算法计算时，NervSys API是非常有用的。
         
