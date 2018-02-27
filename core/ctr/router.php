@@ -43,6 +43,10 @@ class router
     //Data Structure
     public static $struct = [];
 
+    //Allowed Origins & headers
+    public static $cross_origins = [];
+    public static $cross_headers = [];
+
     //Argument hash
     private static $argv_hash = '';
 
@@ -51,6 +55,8 @@ class router
      */
     public static function start(): void
     {
+        self::cross_origin();
+
         'cli' !== PHP_SAPI ? cgi::run() : cli::run();
 
         if (2 > DEBUG) return;
@@ -121,5 +127,22 @@ class router
         self::$argv_hash = &$hash;
 
         unset($struc, $hash);
+    }
+
+    /**
+     * Start Cross-Origin Resource Sharing
+     */
+    private static function cross_origin(): void
+    {
+        if (empty(self::$cross_origins) || 'OPTIONS' !== $_SERVER['REQUEST_METHOD']) return;
+
+        header('Access-Control-Allow-Methods: OPTIONS');
+
+        foreach (self::$cross_origins as $origin) header('Access-Control-Allow-Origin: ' . $origin);
+
+        if (!empty(self::$cross_headers)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$cross_headers));
+
+        unset($origin);
+        exit;
     }
 }
