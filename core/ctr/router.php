@@ -139,12 +139,14 @@ class router
         if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
 
         $file = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
-        if (false === $file) return;
+        if (false === $file) exit;
 
         require $file;
         unset($unit, $file);
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
+
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
     }
 }
