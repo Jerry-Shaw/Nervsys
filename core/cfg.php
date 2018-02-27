@@ -56,14 +56,14 @@ define(
     JSON_UNESCAPED_LINE_TERMINATORS
 );
 
-//Document Root Definition
+//Root Path Definition
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
 
-//Autoload function
+//Register autoload function
 spl_autoload_register('load');
 
 /**
- * Load function
+ * Autoload function
  *
  * @param string $lib
  */

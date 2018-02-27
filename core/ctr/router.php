@@ -43,9 +43,8 @@ class router
     //Data Structure
     public static $struct = [];
 
-    //Allowed Origins & headers
-    public static $cross_origins = [];
-    public static $cross_headers = [];
+    //Allowed header
+    public static $header = [];
 
     //Argument hash
     private static $argv_hash = '';
@@ -130,19 +129,22 @@ class router
     }
 
     /**
-     * Start Cross-Origin Resource Sharing
+     * Config Cross-Origin Resource Sharing
      */
     private static function cross_origin(): void
     {
-        if (empty(self::$cross_origins) || 'OPTIONS' !== $_SERVER['REQUEST_METHOD']) return;
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === ('on' === $_SERVER['HTTPS'] ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
 
-        header('Access-Control-Allow-Methods: OPTIONS');
+        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
+        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
 
-        foreach (self::$cross_origins as $origin) header('Access-Control-Allow-Origin: ' . $origin);
+        $file = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
+        if (false === $file) return;
 
-        if (!empty(self::$cross_headers)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$cross_headers));
+        require $file;
+        unset($unit, $file);
 
-        unset($origin);
-        exit;
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
     }
 }
