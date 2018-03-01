@@ -420,6 +420,18 @@ _Configurations explanation:_
     ...
 
 
+_Special codes in config file_
+    
+    Important data should be carefully checked for granting permission firstly.
+      
+    Exit the code when the data is not passed the checking immediately to avoid CORS.
+    Or you can output some JSON data to let the client know the request was denied.
+      
+    Example:
+      
+    if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
+
+
 **About "cfg.php" in Project root directory**
 
 Each project could have a "cfg.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
