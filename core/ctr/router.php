@@ -90,6 +90,16 @@ class router
     }
 
     /**
+     * Check HTTPS protocol
+     *
+     * @return bool
+     */
+    public static function is_https(): bool
+    {
+        return (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
+
+    /**
      * Extract values from options
      *
      * @param array $opt
@@ -133,7 +143,7 @@ class router
      */
     private static function cross_origin(): void
     {
-        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === ('on' === $_SERVER['HTTPS'] ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
 
         $unit = parse_url($_SERVER['HTTP_ORIGIN']);
         if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
