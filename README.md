@@ -1,8 +1,7 @@
 # Nervsys
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
-
-Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode.  
+Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode. 
 
 It can be used as:
 
@@ -10,19 +9,22 @@ It can be used as:
     2. API controller for all types of Apps
     3. Client for program communication
     4. Or more...
-    
+
 As normally use, it responses one result from one method to one request, just like what we do now on an ordinary web development.  
-But, it may response multiple results from multiple methods to one request, when we need it to "guess" what we need based on the data we gave.  
+But, it may response multiple results from multiple methods to one request, when we need it to "guess" what we need based on the data we gave. 
 
-Don't expect too much, it is just a newborn framework though~ 
+Don't expect too much, it is just a newborn framework though~  
+Extensions in "/ext/" makes it growing. 
 
-Extensions in "/ext/" makes it greater than we can image.  
+Functional extensions (class) are considered to moved out to the third part to maintain.  
+Not only extensions, but sub-projects based on NervSys are expected.  
+Everyone can join the project. Ideas, codes, tests, suggests, supports, etc...  
 
-Functional extensions (class) are considered to moved out to the third part to maintain. Not only extensions, but sub-projects based on NervSys are expected.  
-Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... And many thanks!  
+Many thanks! 
+
 
 ## Structure:
-        
+
       /                                 **Root directory
       ├─api.php                           Main entry
       ├─README.md                         Readme
@@ -42,6 +44,11 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... A
       │     │    └─router.php             Main Router controller
       │     ├─cfg.ini                     Config file for CLI executable command
       │     └─cfg.php                     Config file for core system
+      ├─cors/                           **CORS config file directory
+      │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
+      │     ├─http.domain_2.8080.php      CORS config for "http://domain_2:8080"
+      │     ├─https.domain_3.443.php      CORS config for "https://domain_3:443"
+      │     └─...                         More individual CORS config files
       └─ext/                            **extension directory
            ├─font/                      **font directory
            ├─lib/                       **extension interface directory
@@ -70,7 +77,8 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, etc... A
            └─...                          There will be more in the near future
 
 Files of a project should be better containing just in one folder right under the ROOT folder.  
-Files inside a project can be placed as will.  
+Files inside a project can be placed as will. 
+
 
 Some example structures:
 
@@ -94,9 +102,9 @@ Some example structures:
               ├─model_c.php       Model c script
               ├─....php           Model ... script
               └─cfg.php           Config file for Project 2
-    
-    
-All script should under the right namespace for better calling by NervSys API.  
+
+All script should under the right namespace for better calling by NervSys API. 
+
 
 ## Example:
 
@@ -111,7 +119,7 @@ All script should under the right namespace for better calling by NervSys API.
 
 
 ****Format for test_1.php:** 
-        
+
     //The right namespace follows the path structure
     namespace pr_1\ctr;
         
@@ -219,6 +227,7 @@ As said, it is an universal API controller. So, we can easily use it as follows 
 It receives normal GET/POST data, and stream data in JSON format.  
 Remember one param named "c" or "cmd", the two are equal.  
 
+
 **Examples (using GET):**
 
     Usage:
@@ -313,9 +322,10 @@ Remember one param named "c" or "cmd", the two are equal.
     will run. With this, we can call EXACT multiple functions in EXACT multiple modules in one request.
     These modules share the same function names when exist. 
     All functions share the same source data and run with the input order.
-    
-**CLI Command usage:**  
-    
+
+
+**CLI Command usage:**
+
     CLI options are as follows:
         
     c/cmd: command
@@ -380,17 +390,49 @@ Remember one param named "c" or "cmd", the two are equal.
     "PHP_EXE" is php executable path, which we can execute another PHP process.
         
     All the globle variables can be fetched in "os::$env".
-    
-**About "cfg.php" in Project root directory**  
+
+
+**About "cors" folder**
+
+This is Cross-Origin Resource Sharing (CORS) config directory. Local resources are allowed to be requested from another domain outside the local domain by the config file names. In the config file, HTTP allowed headers should be put into router response headers for every domain that is allowed to request. Otherwise, no other requested headers will be accepted. 
+
+
+_File name explanation:_
+
+    "http.domain.80.php": allowed domain is "http://domain"
+    "http.domain.8080.php": allowed domain is "http://domain:8080"
+    "https.domain.443.php": allowed domain is "https://domain"
+    "https.domain.8000.php": allowed domain is "https://domain:8000"
+      
+    or, even
+      
+    "https.domain.80.php": allowed domain is "https://domain:80"
+    "http.domain.443.php": allowed domain is "http://domain:443"
+
+
+_Configurations explanation:_
+
+    Simply put the allowed headers into array, and passed to router header.
+     
+    \core\ctr\router::$header = ['X-Requested-With'];
+    \core\ctr\router::$header = ['X-Requested-With', 'Authentication'];
+    \core\ctr\router::$header = ['X-Requested-With', 'Custom_header_names'];
+    ...
+
+
+**About "cfg.php" in Project root directory**
 
 Each project could have a "cfg.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
-So that, the scripts in this project will run under these settings.  
+So that, the scripts in this project will run under these settings. 
 
-For example, we can set project 1 to connect database A, but using database B in project 2; We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc...  
+For example:  
+We can set project 1 to connect database A, but using database B in project 2;  
+We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc... 
 
 But, always remember, don't define same named constants in different "cfg.php"s. It'll conflict.  
 All "cfg.php"s existed in the root directory of projects will be required in order right before inside script runs.  
-Class variables are encouraged to use instead of definitions in "cfg.php"s.  
+Class variables are suggested to use instead of definitions in "cfg.php"s. 
+
 
 Some examples for "cfg.php":
 
@@ -419,26 +461,32 @@ Some examples for "cfg.php":
     ...
 
 If you want to set all variables inside classes. That is OK, just leave the "cfg.php" files away.  
+If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before. 
 
-If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before.  
 
 ## Notice:
 
-Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name'). 
-If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.
-Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside.  
+Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name').  
+If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.  
+Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside. 
+
 
 ## Demos
-Version 5.0.0 is on going, and not compatible with versions before.  
 
-Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just get it a try.  
-    
+Version 5.0.0 is on going, and not compatible with versions before.  
+Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just get it a try. 
+
+
 ## Credits
+
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-README Chinese Translation: [MileHan](https://github.com/MileHan), URL [README_zh-CN.md](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)
+README Chinese Translation: [MileHan](https://github.com/MileHan), URL [README_zh-CN.md](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
+
 
 ## Old Version:
-Old version before 3.0.0 is discontinued and the source codes located here: [3.2.0](https://github.com/Jerry-Shaw/NervSys/tree/3.2)  
+
+Old version before 3.0.0 is discontinued and the source codes located here: [3.2.0](https://github.com/Jerry-Shaw/NervSys/tree/3.2)
+
 
 ## Licensing
 
