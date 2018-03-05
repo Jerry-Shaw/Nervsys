@@ -5,9 +5,11 @@
  *
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
+ * Author jresun <jresun@163.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
+ * Copyright 2018 jresun
  *
  * This file is part of NervSys.
  *
@@ -257,16 +259,16 @@ class upload
     /**
      * Get and check the file extension
      *
-     * @param string $file_name
+     * @param string $name
      *
      * @return string
      */
-    private static function chk_ext(string $file_name): string
+    private static function chk_ext(string $name): string
     {
-        $ext = file::get_ext($file_name);
+        $ext = self::mime[$name] ?? file::get_ext($name);
         //Extension not allowed
         if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) || (empty(self::$file_ext) && !isset(self::mime[$ext]))) $ext = '';
-        unset($file_name);
+        unset($name);
         return $ext;
     }
 

@@ -4,8 +4,10 @@
  * Auth Code Extension
  *
  * Author 秋水之冰 <27206617@qq.com>
+ * Author jresun <jresun@163.com>
  *
  * Copyright 2017 秋水之冰
+ * Copyright 2018 jresun
  *
  * This file is part of NervSys.
  *
