@@ -265,7 +265,7 @@ class upload
      */
     private static function chk_ext(string $name): string
     {
-        $ext = self::mime[$name] ?? file::get_ext($name);
+        $ext = !isset(self::mime[$name]) ? file::get_ext($name) : $name;
         //Extension not allowed
         if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) || (empty(self::$file_ext) && !isset(self::mime[$ext]))) $ext = '';
         unset($name);
