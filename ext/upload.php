@@ -218,7 +218,7 @@ class upload
         //Get URL path
         $url_path = $save_path . $save_name . '.' . $file_ext;
         //Get real upload path
-        $file_path = FILE_PATH . $url_path;
+        $file_path = self::$path_root . $url_path;
 
         //Delete existing file
         if (is_file($file_path)) unlink($file_path);
@@ -284,7 +284,7 @@ class upload
         //Get URL path
         $url_path = $save_path . $save_name;
         //Get real upload path
-        $file_path = FILE_PATH . $url_path;
+        $file_path = self::$path_root . $url_path;
 
         //Delete existing file
         if (is_file($file_path)) unlink($file_path);
