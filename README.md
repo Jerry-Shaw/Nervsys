@@ -459,7 +459,6 @@ Some examples for "cfg.php":
     \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
         
     //define MySQL connection parameters for "pdo_mysql" extension
-    \ext\pdo_mysql::$config['init'] = true;
     \ext\pdo_mysql::$config['host'] = '192.168.1.100';
     \ext\pdo_mysql::$config['port'] = 4000;
     \ext\pdo_mysql::$config['pwd'] = 'PASSWORD';
@@ -475,7 +474,7 @@ Some examples for "cfg.php":
     ...
 
 If you want to set all variables inside classes. That is OK, just leave the "cfg.php" files away.  
-If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before. 
+If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before based on "/core/cfg.php".
 
 
 ## Notice:
