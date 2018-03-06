@@ -1,5 +1,7 @@
 # Nervsys
 
+[**Read Me**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
+
 基于PHP7.1+的轻量级框架**Nervsys** for universal API controlling. 
 
 任何一种Web服务器或者PHP的命令行模式

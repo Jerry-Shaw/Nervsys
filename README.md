@@ -1,6 +1,6 @@
 # Nervsys
 
-**[中文文档](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)**
+[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
 Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode. 
