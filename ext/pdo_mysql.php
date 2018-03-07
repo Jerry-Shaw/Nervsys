@@ -227,9 +227,13 @@ class pdo_mysql extends pdo
      *                    OR: 'a, b, ...',
      *                    OR: ['a'],
      *                    OR: 'a',
-     *         'limit' => [1, 20]
-     *                    OR: 1, 20
-     *                    OR: 1
+     *         'limit' => [0, 20] (from 0, read 20 rows)
+     *                    OR: [10, 20] (from 10, read 20 rows)
+     *                    OR: [20] (equals to [0, 20])
+     *                    OR: 1 (equals to [0, 1])
+     *                    OR: 20 (equals to [0, 20])
+     *                    OR: '1' (equals to [0, 1])
+     *                    OR: '10, 20' (equals to [10, 20])
      *     ],
      *     false (default, read all) / true (read column)
      * )
