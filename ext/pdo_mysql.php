@@ -90,7 +90,17 @@ class pdo_mysql extends pdo
     /**
      * Insert data
      *
-     * Usage: insert('myTable', ['col_a' => 'A', 'col_b' => 'B, ...], 'myID')
+     * Usage:
+     *
+     * insert(
+     *     'myTable',
+     *     [
+     *         'col_a' => 'A',
+     *         'col_b' => 'B,
+     *         ...
+     *     ],
+     *     'myID'
+     * )
      *
      * @param string $table
      * @param array  $data
@@ -126,7 +136,22 @@ class pdo_mysql extends pdo
     /**
      * Update data
      *
-     * Usage: update('myTable', ['col_a' => 'A', 'col_b' => 'B, ...], [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...])
+     * Usage:
+     *
+     * update(
+     *     'myTable',
+     *     [
+     *         'col_a' => 'A',
+     *         'col_b' => 'B,
+     *         ...
+     *     ],
+     *     [
+     *         ['col_c', 'a'],
+     *         ['col_d', '>', 'd'],
+     *         ['col_e', '!=', 'e', 'OR'],
+     *         ...
+     *     ]
+     * )
      *
      * @param string $table
      * @param array  $data
@@ -172,17 +197,42 @@ class pdo_mysql extends pdo
     /**
      * Select data
      *
-     * Usage: select(
-     * 'myTable',
-     * [
-     * 'field' => ['a', 'b', ...], / a,b,c / *
-     * 'join' => ['TableB' => ['myTable.a', '=', 'TableB.b'],...], / INNER JOIN TableB
-     * 'where' => [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...], / a = 'a' AND b = 'b'
-     * 'order' => [['a', 'DESC'],...], / a DESC
-     * 'group' => ['a', 'b',...], / ['a'] / a
-     * 'limit' => [1, 20] / 1 / 1, 20
-     * ],
-     * false)
+     * Usage:
+     *
+     * select(
+     *     'myTable',
+     *     [
+     *         'field' => ['a', 'b', ...],
+     *                    OR: 'a, b, c, ...',
+     *         'join' =>  [
+     *                        'TableB' => ['myTable.a', '=', 'TableB.b'],
+     *                        'TableC' => ['myTable.a', '<>', 'TableC.b'],
+     *                        ...
+     *                    ],
+     *                    OR: 'INNER JOIN TableB ON xxx (conditions)',
+     *         'where' => [
+     *                        ['col_c', 'a'],
+     *                        ['col_d', '>', 'd'],
+     *                        ['col_e', '!=', 'e', 'OR'],
+     *                        ...
+     *                    ],
+     *                    OR: 'a = "a" AND b = "b" OR c != "c" ...',
+     *         'order' => [
+     *                        ['a', 'DESC'],
+     *                        ['b', 'ASC'],
+     *                        ...
+     *                    ],
+     *                    OR: 'a DESC, b ASC, ...',
+     *         'group' => ['a', 'b', ...],
+     *                    OR: 'a, b, ...',
+     *                    OR: ['a'],
+     *                    OR: 'a',
+     *         'limit' => [1, 20]
+     *                    OR: 1, 20
+     *                    OR: 1
+     *     ],
+     *     false (default, read all) / true (read column)
+     * )
      *
      * @param string $table
      * @param array  $option
@@ -212,7 +262,17 @@ class pdo_mysql extends pdo
     /**
      * Delete data
      *
-     * Usage: delete('myTable', [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...])
+     * Usage:
+     *
+     * delete(
+     *     'myTable',
+     *     [
+     *         ['col_c', 'a'],
+     *         ['col_d', '>', 'd'],
+     *         ['col_e', '!=', 'e', 'OR'],
+     *         ...
+     *     ]
+     * )
      *
      * @param string $table
      * @param array  $where
