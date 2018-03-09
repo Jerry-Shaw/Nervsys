@@ -25,4 +25,4 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-\core\ctr\router::$header = ['X-Requested-With'];
+\core\ctr\router::$header = ['X-Requested-With', 'Content-Type', 'Content-Length'];
