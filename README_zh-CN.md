@@ -404,10 +404,10 @@ Some examples for "cfg.php":
     \ext\crypt::$keygen = '\demo\keygen';
     \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
         
-    //define MySQL connection parameters for "pdo_mysql" extension
-    \ext\pdo_mysql::$config['host'] = '192.168.1.100';
-    \ext\pdo_mysql::$config['port'] = 4000;
-    \ext\pdo_mysql::$config['pwd'] = 'PASSWORD';
+    //define MySQL connection parameters for "pdo" extension
+    \ext\pdo::$host = '192.168.1.100';
+    \ext\pdo::$port = 4000;
+    \ext\pdo::$pwd = 'PASSWORD';
         
     //parameters for "errno" extension
     \ext\errno::$lang = false;

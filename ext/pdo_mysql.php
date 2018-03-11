@@ -62,11 +62,11 @@ class pdo_mysql extends pdo
         //Check current hash
         if ($hash === self::$hash) return;
 
-        //Set current hash
-        self::$hash = &$hash;
-
         //Connect MySQL
         self::$mysql = self::$hash_map[$hash] ?? self::$hash_map[$hash] = parent::connect();
+
+        //Set current hash
+        self::$hash = &$hash;
 
         //Free memory
         unset($set, $hash);
