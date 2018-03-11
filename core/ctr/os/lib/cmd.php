@@ -1,12 +1,10 @@
 <?php
 
 /**
- * Crypt Key Generator Interface
+ * OS Command Controller Interface
  *
- * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 Jerry Shaw
  * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
