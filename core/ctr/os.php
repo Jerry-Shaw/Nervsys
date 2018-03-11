@@ -47,14 +47,13 @@ class os
     private static function run(): void
     {
         //Detect Operating System
-        if ('' === self::$os || '' === self::$platform) {
-            self::$os = PHP_OS;
-            self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
-        }
+        if ('' === self::$os) self::$os = PHP_OS;
 
-        if (false !== realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) return;
+        //Build Platform Namespace
+        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
 
-        throw new \Exception(self::$os . ' Controller NOT found!');
+        //Check OS Controller File
+        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
     }
 
     /**
