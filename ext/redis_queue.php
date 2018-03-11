@@ -335,7 +335,7 @@ class redis_queue extends redis
         if ($needed > self::$max_runs) $needed = self::$max_runs;
 
         //Build command
-        $cmd = os::bg_cmd(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
+        $cmd = os::cmd_bg(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
 
         //Run child processes
         for ($i = 0; $i < $needed; ++$i) pclose(popen($cmd, 'r'));

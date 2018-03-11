@@ -67,7 +67,7 @@ class os
     {
         self::run();
 
-        if (empty(self::$env)) forward_static_call([self::$platform, 'env_info']);
+        if (empty(self::$env)) forward_static_call([self::$platform, 'info_env']);
 
         return self::$env;
     }
@@ -82,24 +82,24 @@ class os
     {
         self::run();
 
-        if (empty(self::$sys)) forward_static_call([self::$platform, 'sys_info']);
+        if (empty(self::$sys)) forward_static_call([self::$platform, 'info_sys']);
 
         return hash('sha256', json_encode(self::$sys));
     }
 
     /**
-     * Build background command
+     * Build command for background process
      *
      * @param string $cmd
      *
      * @return string
      * @throws \Exception
      */
-    public static function bg_cmd(string $cmd): string
+    public static function cmd_bg(string $cmd): string
     {
         self::run();
 
-        return forward_static_call([self::$platform, 'bg_cmd'], $cmd);
+        return forward_static_call([self::$platform, 'cmd_bg'], $cmd);
     }
 
     /**
@@ -110,10 +110,10 @@ class os
      * @return string
      * @throws \Exception
      */
-    public static function proc_cmd(string $cmd): string
+    public static function cmd_proc(string $cmd): string
     {
         self::run();
 
-        return forward_static_call([self::$platform, 'proc_cmd'], $cmd);
+        return forward_static_call([self::$platform, 'cmd_proc'], $cmd);
     }
 }

@@ -27,34 +27,10 @@
 
 namespace core\ctr\os;
 
-use core\ctr\os;
+use core\ctr\os, core\ctr\os\lib\cmd;
 
-class winnt extends os
+class winnt extends os implements cmd
 {
-    /**
-     * Build background command
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    public static function bg_cmd(string $cmd): string
-    {
-        return 'start "NervSys" /B "' . $cmd . '"';
-    }
-
-    /**
-     * Build command for proc_open
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    public static function proc_cmd(string $cmd): string
-    {
-        return '"' . $cmd . '"';
-    }
-
     /**
      * Format system output data
      *
@@ -86,7 +62,7 @@ class winnt extends os
     /**
      * Get PHP environment information
      */
-    public static function env_info(): void
+    public static function info_env(): void
     {
         exec('wmic process where ProcessId="' . getmypid() . '" get ProcessId, CommandLine, ExecutablePath /format:value', $output, $status);
         if (0 !== $status) throw new \Exception('WinNT: Access denied!');
@@ -107,7 +83,7 @@ class winnt extends os
     /**
      * Get System information
      */
-    public static function sys_info(): void
+    public static function info_sys(): void
     {
         $queries = [
             'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
@@ -128,5 +104,29 @@ class winnt extends os
 
         foreach ($output as $key => $value) if (1 < count($value)) parent::$sys[] = $value;
         unset($queries, $output, $query, $status, $key, $value);
+    }
+
+    /**
+     * Build command for background process
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_bg(string $cmd): string
+    {
+        return 'start "Process" /B "' . $cmd . '"';
+    }
+
+    /**
+     * Build command for proc_open
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_proc(string $cmd): string
+    {
+        return '"' . $cmd . '"';
     }
 }
