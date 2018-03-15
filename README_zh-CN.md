@@ -223,39 +223,39 @@
         
     for test_1.php
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     3. ...
         
     上述是使用的具体方法名的严格模式，只有"test_a"方法被调用
         
     让我们看看更多
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
     3. ...
         
     我们在"pr_1\ctr\test_2"中调用了"test_b"方法，传入参数"b","c",而变量“a”明显是没用的，会被忽略掉。
         
     当我们做出如下操作的时候，会发生一些有趣的事情。
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
     3. ...
         
     是的，在"pr_1\ctr\test_1"中的"test_a"和"test_b"方法都会被调用，而且使用相同的参数"b","c"。"test_a"多使用一个参数"a".
         
     这次，我们这样做：
         
-    http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
+    http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
         
     对的，方法"test_c"会在稍后执行，因为它不需要任何参数。
     我们现在可以通过键的不同获取到一些复合的结果集。    
         
     那如果我们这样做会怎样呢？
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1&a=a&b=b&c=c
     3. ...
         
     它是一种错误的调用吗？
@@ -275,10 +275,10 @@
         
     当我们这样做时：
             
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_a&a=a&b=b
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c
-    3. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
-    4. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
+    1. http://HostName/api.php?c=pr_1\ctr\test_2-test_a&a=a&b=b
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&a=a&c=c
+    3. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
         
     因为输入的数据结构不匹配，所以这不可能发生。
     API会选择忽略调用"test_a"方法的请求，如果"DEBUG"有设置的话，还会通知我们"[what] is missing"。
@@ -287,8 +287,8 @@
         
     loose style:
     宽松模式：
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
         
     所有在"pr_1\ctr\test_1"和 "pr_1\test_2"中，匹配输入的数据结构的方法都会执行。
     有了这种操作方式，我们可以通过一个请求调用多个模块中的多个方法。
@@ -296,8 +296,8 @@
         
     strict style:
     严格模式：
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
         
     路径（"c"或"cmd"的值，用"-"符号分隔开，忽略顺序，POST方式相同）中的函数，
     并且在"pr_1\ctr\test_1" 和 "pr_1\test_2"中匹配输入的数据结构的函数会执行。

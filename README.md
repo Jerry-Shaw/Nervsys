@@ -267,16 +267,16 @@ Remember one param named "c" or "cmd", the two are equal.
         
     for test_1.php
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
     3. ...
         
     Above are the strict mode with detailed function name, only "test_a" is called.
         
     Let's see more:
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
     3. ...
         
     We called "test_b" in "pr_1\ctr\test_2" with params "b" and "c", 
@@ -284,8 +284,8 @@ Remember one param named "c" or "cmd", the two are equal.
         
     And there goes some interesting things, what if we do as follows?
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
     3. ...
         
     Right, both "test_a" and "test_b" in "pr_1\ctr\test_1" will be called 
@@ -293,15 +293,15 @@ Remember one param named "c" or "cmd", the two are equal.
         
     This time, we do it as:
         
-    http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
+    http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
         
     Yep. "test_c" will run right after, as it needs no required variables.
     We now can get some compound results with differences in keys.
         
     And what if we do as follows?
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1&a=a&b=b&c=c
     3. ...
         
     Could it be an error calling?
@@ -327,10 +327,10 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Once when we call as follows:
             
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_a&a=a&b=b
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c
-    3. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
-    4. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
+    1. http://HostName/api.php?c=pr_1\ctr\test_2-test_a&a=a&b=b
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&a=a&c=c
+    3. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
         
     This won't happen because the input data structure dismatched.
     API just chooses to ignore the request to "test_a" function,
@@ -339,16 +339,16 @@ Remember one param named "c" or "cmd", the two are equal.
     And what's more:
         
     loose style:
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
         
     All functions that match the input data strucuture in both "pr_1\ctr\test_1" and "pr_1\test_2"
     will run. With this, we can call multiple functions in multiple modules right in one request.
     These functions share the same source data, and do their own work.
         
     strict style:
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
         
     Functions placed in the URL (in "c"/"cmd" value, seperated by "-", order ignored, same in "POST") 
     and match the input data strucuture at the same time in both "pr_1\ctr\test_1" and "pr_1\test_2"
