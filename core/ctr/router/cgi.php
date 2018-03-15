@@ -226,25 +226,31 @@ class cgi extends router
             return;
         }
 
-        //Get API TrustZone list & method list
-        $key_list = array_keys($space::$tz);
-        $method_list = get_class_methods($space);
-
-        //Get requested api methods
-        $key_methods = !empty(self::$method) ? array_intersect(self::$method, $key_list, $method_list) : array_intersect($key_list, $method_list);
-
-        //Calling "init" method without permission & comparison
-        if (in_array('init', $method_list, true) && !in_array('init', $key_methods, true)) {
+        //Calling "init" method without permission
+        if (method_exists($space, 'init')) {
             try {
                 self::call_method($class, $space, 'init');
             } catch (\Throwable $exception) {
-                debug($class . '/init', 'Exec Failed! ' . $exception->getMessage());
+                debug($class . '/init', 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
 
-        //Run method
-        foreach ($key_methods as $method) {
+        //Check API TrustZone permission
+        if (empty($space::$tz)) return;
+
+        //Get API TrustZone list & method list
+        $tz_list = array_keys($space::$tz);
+        $func_list = get_class_methods($space);
+
+        //Get request list from API TrustZone list
+        $method_list = !empty(self::$method) ? array_intersect(self::$method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+
+        //Remove "init" method from request list when exists
+        if (in_array('init', $method_list, true)) unset($method_list[array_search('init', $method_list, true)]);
+
+        //Checking & Calling
+        foreach ($method_list as $method) {
             //Get intersect and difference set of data requirement structure
             $inter = array_intersect(parent::$struct, $space::$tz[$method]);
             $diff = array_diff($space::$tz[$method], $inter);
@@ -259,12 +265,12 @@ class cgi extends router
             try {
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
-                debug($class . '/' . $method, 'Exec Failed! ' . $exception->getMessage());
+                debug($class . '/' . $method, 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
 
-        unset($class, $space, $key_list, $method_list, $key_methods, $method, $inter, $diff);
+        unset($class, $space, $tz_list, $func_list, $method_list, $method, $inter, $diff);
     }
 
     /**
