@@ -43,6 +43,9 @@ class router
     //Data Structure
     public static $struct = [];
 
+    //Allowed header
+    public static $header = [];
+
     //Argument hash
     private static $argv_hash = '';
 
@@ -51,27 +54,16 @@ class router
      */
     public static function start(): void
     {
+        self::cross_origin();
+
         'cli' !== PHP_SAPI ? cgi::run() : cli::run();
 
-        //Debug values
-        if (DEBUG) {
-            self::$result['duration'] = round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 'ms';
-            self::$result['memory'] = round(memory_get_usage(true) / 1048576, 4) . 'MB';
-            self::$result['peak'] = round(memory_get_peak_usage(true) / 1048576, 4) . 'MB';
-        }
-    }
+        if (2 > DEBUG) return;
 
-    /**
-     * Build data structure
-     */
-    protected static function build_struct(): void
-    {
-        $struct = array_keys(self::$data);
-        $hash = hash('sha256', implode('|', $struct));
-        if (self::$argv_hash === $hash) return;
-        self::$struct = &$struct;
-        self::$argv_hash = &$hash;
-        unset($struct, $hash);
+        //Debug with Runtime Values
+        debug('duration', round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 's');
+        debug('memory', round(memory_get_usage(true) / 1048576, 4) . 'MB');
+        debug('peak', round(memory_get_peak_usage(true) / 1048576, 4) . 'MB');
     }
 
     /**
@@ -79,13 +71,92 @@ class router
      */
     public static function output(): void
     {
-        if (empty(self::$result)) exit;
+        //Build result
+        switch (count(self::$result)) {
+            case 0:
+                $output = '';
+                break;
+            case 1:
+                $output = json_encode(current(self::$result), JSON_OPT);
+                break;
+            default:
+                $output = json_encode(self::$result, JSON_OPT);
+                break;
+        }
 
-        $result = 1 === count(self::$result) ? json_encode(current(self::$result)) : json_encode(self::$result);
-        if ('cli' !== PHP_SAPI) echo $result;
-        else fwrite(STDOUT, $result . PHP_EOL);
+        //Output result
+        echo 'cli' !== PHP_SAPI ? $output : $output . PHP_EOL;
+        unset($output);
+    }
 
-        unset($result);
-        exit;
+    /**
+     * Check HTTPS protocol
+     *
+     * @return bool
+     */
+    public static function is_https(): bool
+    {
+        return (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
+
+    /**
+     * Extract values from options
+     *
+     * @param array $opt
+     * @param array $keys
+     *
+     * @return array
+     */
+    protected static function opt_val(array &$opt, array $keys): array
+    {
+        $result = ['get' => false, 'data' => ''];
+
+        foreach ($keys as $key) {
+            if (isset($opt[$key])) {
+                $result = ['get' => true, 'data' => $opt[$key]];
+                unset($opt[$key]);
+            }
+        }
+
+        unset($keys, $key);
+        return $result;
+    }
+
+    /**
+     * Build data structure
+     */
+    protected static function build_struc(): void
+    {
+        $struc = array_keys(self::$data);
+        $hash = hash('sha256', implode('|', $struc));
+
+        if (self::$argv_hash === $hash) return;
+
+        self::$struct = &$struc;
+        self::$argv_hash = &$hash;
+
+        unset($struc, $hash);
+    }
+
+    /**
+     * Config Cross-Origin Resource Sharing
+     */
+    private static function cross_origin(): void
+    {
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
+
+        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
+        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+
+        $file = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
+        if (false === $file) exit;
+
+        require $file;
+        unset($unit, $file);
+
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
+
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
     }
 }

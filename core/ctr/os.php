@@ -47,29 +47,27 @@ class os
     private static function run(): void
     {
         //Detect Operating System
-        if ('' === self::$os || '' === self::$platform) {
-            self::$os = PHP_OS;
-            self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
-        }
+        if ('' === self::$os) self::$os = PHP_OS;
 
-        try {
-            if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT exist!');
-            if (empty(self::$env)) call_user_func(self::$platform . '::env_info');
-            if (empty(self::$sys)) call_user_func(self::$platform . '::sys_info');
-        } catch (\Throwable $exception) {
-            debug(self::$os . ' NOT fully supported yet! ' . $exception->getMessage());
-            exit;
-        }
+        //Build Platform Namespace
+        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
+
+        //Check OS Controller File
+        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
     }
 
     /**
      * Get PHP environment information
      *
      * @return array
+     * @throws \Exception
      */
     public static function get_env(): array
     {
         self::run();
+
+        if (empty(self::$env)) forward_static_call([self::$platform, 'info_env']);
+
         return self::$env;
     }
 
@@ -77,10 +75,44 @@ class os
      * Get system hash code
      *
      * @return string
+     * @throws \Exception
      */
     public static function get_hash(): string
     {
         self::run();
+
+        if (empty(self::$sys)) forward_static_call([self::$platform, 'info_sys']);
+
         return hash('sha256', json_encode(self::$sys));
+    }
+
+    /**
+     * Build command for background process
+     *
+     * @param string $cmd
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function cmd_bg(string $cmd): string
+    {
+        self::run();
+
+        return forward_static_call([self::$platform, 'cmd_bg'], $cmd);
+    }
+
+    /**
+     * Build command for proc_open
+     *
+     * @param string $cmd
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function cmd_proc(string $cmd): string
+    {
+        self::run();
+
+        return forward_static_call([self::$platform, 'cmd_proc'], $cmd);
     }
 }

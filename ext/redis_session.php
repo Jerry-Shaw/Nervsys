@@ -30,13 +30,13 @@ namespace ext;
 class redis_session extends redis
 {
     //SESSION Prefix (After "parent::$prefix")
-    public static $sess_prefix = 'sess:';
+    public static $prefix_key = 'sess:';
 
     //SESSION Lifetime (in seconds)
-    public static $sess_life = 600;
+    public static $lifetime = 600;
 
     //Redis connection
-    private static $db_redis = null;
+    private static $redis = null;
 
     /**
      * Initialize SESSION
@@ -45,7 +45,7 @@ class redis_session extends redis
     {
         if (PHP_SESSION_ACTIVE === session_status()) return;
         //Connect Redis
-        if (is_null(self::$db_redis)) self::$db_redis = self::connect();
+        if (is_null(self::$redis)) self::$redis = self::connect();
 
         //Setup Session GC config
         ini_set('session.gc_divisor', 100);
@@ -94,7 +94,7 @@ class redis_session extends redis
      */
     public static function read(string $session_id): string
     {
-        return (string)self::$db_redis->get(self::$sess_prefix . $session_id);
+        return (string)self::$redis->get(self::$prefix_key . $session_id);
     }
 
     /**
@@ -105,7 +105,7 @@ class redis_session extends redis
      */
     public static function write(string $session_id, string $session_data): bool
     {
-        $write = self::$db_redis->set(self::$sess_prefix . $session_id, $session_data, self::$sess_life);
+        $write = self::$redis->set(self::$prefix_key . $session_id, $session_data, self::$lifetime);
         unset($session_id, $session_data);
         return (bool)$write;
     }
@@ -117,7 +117,7 @@ class redis_session extends redis
      */
     public static function destroy(string $session_id): bool
     {
-        self::$db_redis->del(self::$sess_prefix . $session_id);
+        self::$redis->del(self::$prefix_key . $session_id);
         unset($session_id);
         return true;
     }

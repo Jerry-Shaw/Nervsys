@@ -25,27 +25,45 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Debug mode
+ * 0: for production environment (Disable ERROR Reporting)
+ * 1: for development environment (Display all ERROR, WARNING, NOTICE)
+ * 2: for optimization development (Display all ERROR, WARNING, NOTICE and Runtime Values)
+ */
+define('DEBUG', 1);
+
 //Basic Settings
 set_time_limit(0);
-error_reporting(E_ALL);
 ignore_user_abort(true);
+error_reporting(0 === DEBUG ? 0 : E_ALL);
 date_default_timezone_set('PRC');
-header('Content-Type: text/plain; charset=UTF-8');
-
-//Debug mode
-define('DEBUG', true);
+header('Content-Type: application/json; charset=utf-8');
 
 //NervSys Version
 define('NS_VER', '5.0.0');
 
-//Document Root Definition
+//JSON Encode Options
+define(
+    'JSON_OPT',
+    JSON_PRETTY_PRINT |
+    JSON_NUMERIC_CHECK |
+    JSON_BIGINT_AS_STRING |
+    JSON_UNESCAPED_SLASHES |
+    JSON_UNESCAPED_UNICODE |
+    JSON_PRESERVE_ZERO_FRACTION |
+    JSON_PARTIAL_OUTPUT_ON_ERROR |
+    JSON_UNESCAPED_LINE_TERMINATORS
+);
+
+//Root Path Definition
 define('ROOT', realpath(substr(__DIR__, 0, -4)));
 
-//Autoload function
+//Register autoload function
 spl_autoload_register('load');
 
 /**
- * Load function
+ * Autoload function
  *
  * @param string $lib
  */
@@ -62,14 +80,11 @@ function load(string $lib): void
 /**
  * Debug function
  *
- * @param string $msg
+ * @param string $module
+ * @param string $message
  */
-function debug(string $msg): void
+function debug(string $module, string $message): void
 {
-    if (!DEBUG) return;
-
-    if ('cli' !== PHP_SAPI) echo $msg;
-    else fwrite(STDOUT, $msg . PHP_EOL);
-
-    unset($msg);
+    if (0 !== DEBUG) \core\ctr\router::$result[$module] = &$message;
+    unset($module, $message);
 }

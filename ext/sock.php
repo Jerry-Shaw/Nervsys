@@ -74,7 +74,7 @@ class sock
     {
         //Check Port
         if (1 > self::$port || 65535 < self::$port) {
-            debug('Socket Port ERROR!');
+            debug(__CLASS__, 'Socket Port ERROR!');
             return false;
         }
 
@@ -84,7 +84,7 @@ class sock
             : socket_create(self::$domain, SOCK_DGRAM, SOL_UDP);
 
         if (false === $socket) {
-            debug('Socket Creation Failed!');
+            debug(__CLASS__, 'Socket Create Failed!');
             return false;
         }
 
@@ -133,7 +133,7 @@ class sock
                 ) return false;
                 break;
             default:
-                debug('Socket Type ERROR!');
+                debug(__CLASS__, 'Socket Type ERROR!');
                 return false;
                 break;
         }

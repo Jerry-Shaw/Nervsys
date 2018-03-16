@@ -37,96 +37,95 @@ class cgi extends router
     //Method list
     private static $method = [];
 
+    //Object list
+    private static $object = [];
+
     /**
      * Run CGI Router
      */
     public static function run(): void
     {
         //Prepare data
-        if ('' === parent::$cmd) self::get_data();
-        //Parse cmd data
+        self::prep_data();
+
+        //Parse cmd
         self::parse_cmd();
+
         //Execute cmd
         self::execute_cmd();
     }
 
     /**
-     * Get CGI data
+     * Prepare CGI data
      */
-    private static function get_data(): void
+    private static function prep_data(): void
     {
-        //Get data from HTTP POST / GET / REQUEST
-        $data = !empty($_POST) ? $_POST : (!empty($_GET) ? $_GET : $_REQUEST);
-        if (!empty($data)) {
-            parent::$data = &$data;
-            unset($data);
-            //Try to get CMD & build structure
-            if (self::get_cmd()) {
-                if (!empty($_FILES)) parent::$data = array_merge(parent::$data, $_FILES);
-                parent::build_struct();
-            }
-            return;
-        }
+        if ('' !== parent::$cmd) return;
 
-        //Get data from raw input stream
+        self::read_http();
+        self::read_input();
+
+        self::prep_cmd();
+    }
+
+    /**
+     * Get data from HTTP Request
+     */
+    private static function read_http(): void
+    {
+        $data = !empty($_POST) ? $_POST : (!empty($_GET) ? $_GET : $_REQUEST);
+
+        if (!empty($data)) parent::$data += $data;
+        if (!empty($_FILES)) parent::$data += $_FILES;
+
+        unset($data);
+    }
+
+    /**
+     * Get data from raw input stream
+     */
+    private static function read_input(): void
+    {
         $input = file_get_contents('php://input');
         if (false === $input) return;
 
-        //Decode data in JSON
-        $json = json_decode($input, true);
-        if (is_array($json) && !empty($json)) {
-            parent::$data = &$json;
-            unset($input, $json);
-            if (self::get_cmd()) parent::build_struct();
-            return;
-        }
+        $data = json_decode($input, true);
+        if (is_array($data) && !empty($data)) parent::$data += $data;
+
+        unset($input, $data);
     }
 
     /**
-     * Get cmd value from data
-     *
-     * @return bool
+     * Prepare "cmd" data
      */
-    private static function get_cmd(): bool
+    private static function prep_cmd(): void
     {
-        foreach (['c', 'cmd'] as $key) {
-            if (
-                isset(parent::$data[$key]) &&
-                is_string(parent::$data[$key]) &&
-                false !== strpos(parent::$data[$key], '/')
-            ) {
-                parent::$cmd = parent::$data[$key];
-                unset(parent::$data[$key]);
-                return true;
-            }
-        }
-        return false;
+        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
+        if ($val['get'] && is_string($val['data']) && false !== strpos($val['data'], '/')) parent::$cmd = &$val['data'];
+
+        unset($val);
     }
 
     /**
-     * Parse cmd data
+     * Parse "cmd" data
      */
     private static function parse_cmd(): void
     {
-        if ('' === parent::$cmd) return;
         //Extract "cmd" list
         $list = self::get_list(parent::$cmd);
+
         //Parse "cmd" values
         foreach ($list as $item) {
-            //Get module
+            //Get module value
             $module = self::get_module($item);
+
+            //Save module & method & function
             if ('' !== $module) {
-                //Module goes here
-                //Add module to "self::$module" if not added
-                if (!isset(self::$module[$module])) self::$module[$module] = [];
-                //Add method to "self::$module" if not added
-                if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;
-            } else {
-                //Method goes here
-                //Add to "self::$method" if not added
-                if (!in_array($item, self::$method, true)) self::$method[] = $item;
-            }
+                if (!isset(self::$module[$module])) self::$module[$module] = [];//Save module
+                if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;//Save method
+            } elseif (!in_array($item, self::$method, true)) self::$method[] = $item;//Save function
         }
+
         unset($list, $item, $module);
     }
 
@@ -137,15 +136,19 @@ class cgi extends router
     {
         //Check module data
         if (empty(self::$module)) {
-            if (DEBUG) parent::$result['ERROR'] = 'Module Data ERROR!';
+            debug('CGI', 'Module NOT found!');
             return;
         }
+
+        //Build data structure
+        parent::build_struc();
 
         //Execute queue list
         foreach (self::$module as $module => $method) {
             //Load Module config file
             $file = realpath(ROOT . '/' . $module . '/cfg.php');
             if (false !== $file) require $file;
+
             //Call API
             self::call_api($method);
         }
@@ -162,10 +165,12 @@ class cgi extends router
     private static function get_list(string $lib): array
     {
         if (false === strpos($lib, '-')) return [$lib];
+
         //Spilt data when multiple modules/methods exist with "-"
         $list = explode('-', $lib);
         $list = array_filter($list);
         $list = array_unique($list);
+
         unset($lib);
         return $list;
     }
@@ -179,12 +184,13 @@ class cgi extends router
      */
     private static function get_module(string $lib): string
     {
-        //Trim "\" and "/"
-        $lib = trim($lib, '\\/');
-        //Detect module position
-        $pos = strpos($lib, '/');
+        //Trim with "/"
+        $lib = trim($lib, " /\t\n\r\0\x0B");
+
         //Detect module
+        $pos = strpos($lib, '/');
         $module = false !== $pos ? substr($lib, 0, $pos) : '';
+
         unset($lib, $pos);
         return $module;
     }
@@ -198,10 +204,11 @@ class cgi extends router
     {
         foreach ($lib as $class) {
             //Get root class
-            $space = '\\' . str_replace('/', '\\', $class);
+            $space = '\\' . strtr($class, '/', '\\');
             //Call methods
-            if (class_exists($space)) self::call_class($class, $space);
+            class_exists($space) ? self::call_class($class, $space) : debug($class, 'Class [' . $space . '] NOT found!');
         }
+
         unset($lib, $class, $space);
     }
 
@@ -213,31 +220,44 @@ class cgi extends router
      */
     private static function call_class(string $class, string $space): void
     {
-        //Check API Safe Key
-        if (!isset($space::$key) || !is_array($space::$key)) {
-            if (DEBUG) parent::$result[$class] = 'Safe Key ERROR!';
+        //Check API TrustZone
+        if (!isset($space::$tz) || !is_array($space::$tz)) {
+            debug($class, 'TrustZone NOT Open!');
             return;
         }
 
-        //Get API Safe Key list & method list
-        $key_list = array_keys($space::$key);
-        $method_list = get_class_methods($space);
+        //Calling "init" method without permission
+        if (method_exists($space, 'init')) {
+            try {
+                self::call_method($class, $space, 'init');
+            } catch (\Throwable $exception) {
+                debug($class . '/init', 'Method Calling Failed! ' . $exception->getMessage());
+                unset($exception);
+            }
+        }
 
-        //Get requested api methods
-        $key_methods = !empty(self::$method) ? array_intersect(self::$method, $key_list, $method_list) : array_intersect($key_list, $method_list);
+        //Check API TrustZone permission
+        if (empty($space::$tz)) return;
 
-        //Calling "init" without permission
-        if (in_array('init', $method_list, true) && !in_array('init', $key_methods, true)) self::call_method($class, $space, 'init');
+        //Get API TrustZone list & method list
+        $tz_list = array_keys($space::$tz);
+        $func_list = get_class_methods($space);
 
-        //Run method
-        foreach ($key_methods as $method) {
+        //Get request list from API TrustZone list
+        $method_list = !empty(self::$method) ? array_intersect(self::$method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+
+        //Remove "init" method from request list when exists
+        if (in_array('init', $method_list, true)) unset($method_list[array_search('init', $method_list, true)]);
+
+        //Checking & Calling
+        foreach ($method_list as $method) {
             //Get intersect and difference set of data requirement structure
-            $inter = array_intersect(parent::$struct, $space::$key[$method]);
-            $diff = array_diff($space::$key[$method], $inter);
+            $inter = array_intersect(parent::$struct, $space::$tz[$method]);
+            $diff = array_diff($space::$tz[$method], $inter);
 
             //Skip running method when data structure not match
             if (!empty($diff)) {
-                if (DEBUG) parent::$result[$class . '/' . $method] = 'Data Structure ERROR: [' . (implode(', ', $diff)) . '] were missing';
+                debug($class . '/' . $method, 'Missing Params [' . (implode(', ', $diff)) . ']!');
                 continue;
             }
 
@@ -245,11 +265,12 @@ class cgi extends router
             try {
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
-                if (DEBUG) parent::$result[$class . '/' . $method] = 'Method Calling Failed: ' . $exception->getMessage();
+                debug($class . '/' . $method, 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
-        unset($class, $space, $key_list, $method_list, $key_methods, $method, $inter, $diff);
+
+        unset($class, $space, $tz_list, $func_list, $method_list, $method, $inter, $diff);
     }
 
     /**
@@ -258,23 +279,34 @@ class cgi extends router
      * @param string $class
      * @param string $space
      * @param string $method
+     *
+     * @throws \ReflectionException
      */
     private static function call_method(string $class, string $space, string $method): void
     {
         //Get reflection object for class method
         $reflect = new \ReflectionMethod($space, $method);
 
-        //Check visibility and property
-        if (!$reflect->isPublic() || !$reflect->isStatic()) return;
+        //Check visibility
+        if (!$reflect->isPublic()) return;
+
+        //Check property
+        if (!$reflect->isStatic()) {
+            //Create new object
+            if (!isset(self::$object[$class])) self::$object[$class] = new $space;
+            //Copy object
+            $space = self::$object[$class];
+        }
 
         //Calling method
-        $result = $space::$method();
+        $result = forward_static_call([$space, $method]);
 
         //Build data structure
-        parent::build_struct();
+        parent::build_struc();
 
         //Save result
         if (isset($result)) parent::$result[$class . '/' . $method] = &$result;
+
         unset($class, $space, $method, $reflect, $result);
     }
 }

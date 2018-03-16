@@ -6,8 +6,8 @@
  * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 Jerry Shaw
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -27,35 +27,38 @@
 
 namespace core\ctr\router;
 
-use core\ctr\router, core\ctr\os;
+use core\ctr\os, core\ctr\router;
 
 class cli extends router
 {
-    //CGI command
-    private static $cgi_mode = false;
+    //CLI data values
+    public static $cli_data = '';
 
-    //CLI data value
-    private static $cli_data = '';
+    //CLI argv values
+    public static $cmd_argv = [];
 
-    //CMD data value
-    private static $cmd_data = [];
-
-    //Pipe read timeout
-    private static $timeout = 5000;
+    //CGI callable mode
+    private static $call_cgi = false;
 
     //Return option
-    private static $return = '';
+    private static $ret = false;
 
     //Log option
     private static $log = false;
 
-    //CLI config settings
+    //Pipe read time (in microseconds)
+    private static $time = 0;
+
+    //Command configuration
     private static $config = [];
 
-    //CLI config file
+    //Wait cycle (in microseconds)
+    const wait = 1000;
+
+    //Config file path
     const config = ROOT . '/core/cfg.ini';
 
-    //work path
+    //Working path
     const work_path = ROOT . '/core/cli/';
 
     /**
@@ -64,377 +67,309 @@ class cli extends router
     public static function run(): void
     {
         //Prepare data
-        self::get_data();
-        //Parse cmd data
-        self::parse_cmd();
-        //Execute cmd
-        self::execute_cmd();
+        self::prep_data();
+
+        //Execute command
+        self::$call_cgi ? self::exec_cgi() : self::exec_cli();
     }
 
     /**
-     * Get CLI data
+     * Get cmd from config
+     *
+     * @param string $command
+     *
+     * @return string
+     * @throws \Exception
      */
-    private static function get_data(): void
+    public static function get_cmd(string $command): string
+    {
+        //Copy config
+        $config = self::load_cfg();
+
+        //Parse command
+        $keys = false === strpos($command, ':') ? [$command] : explode(':', $command);
+
+        foreach ($keys as $key) {
+            if (!isset($config[$key])) throw new \Exception('[' . $command . '] NOT configured!');
+            $config = $config[$key];
+        }
+
+        if (!is_string($config)) throw new \Exception('[' . $command . '] NOT configured!');
+
+        $cmd = '"' . trim($config, ' "\'\t\n\r\0\x0B') . '"';
+
+        unset($command, $config, $keys, $key);
+        return $cmd;
+    }
+
+    /**
+     * Load config from "cfg.ini" & "os::get_env"
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function load_cfg(): array
+    {
+        if (!empty(self::$config)) return self::$config;
+
+        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
+
+        $path = realpath(self::config);
+        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
+
+        $config = parse_ini_file($path, true);
+        if (false === $config) throw new \Exception('[' . self::config . '] setting incorrect!');
+
+        self::$config = $config + os::get_env();
+
+        unset($path, $config);
+        return self::$config;
+    }
+
+    /**
+     * Prepare CLI data
+     */
+    private static function prep_data(): void
+    {
+        $cmd = false;
+
+        //Prepare option data
+        $optind = self::prep_opt($cmd);
+
+        //Merge arguments
+        $argument = array_slice($_SERVER['argv'], $optind);
+        if (empty($argument)) return;
+
+        //No command, point to first argument
+        if (!$cmd) parent::$data['cmd'] = array_shift($argument);
+
+        //Merge data to self::$cmd_data
+        if (!empty($argument)) self::$cmd_argv = &$argument;
+
+        //Prepare cmd
+        self::prep_cmd();
+        unset($cmd, $optind, $argument);
+    }
+
+    /**
+     * Prepare option data
+     *
+     * @param bool $cmd
+     *
+     * @return int
+     */
+    private static function prep_opt(bool &$cmd): int
     {
         /**
-         * Get CLI options
+         * CLI options
          *
          * c/cmd: command
          * d/data: CGI data content
          * p/pipe: CLI pipe content
-         * r/return: return type (result (default) / error / data / cmd, multiple options)
-         * t/timeout: timeout for return (in microseconds, default value is 5000ms when r/return is set)
-         * l/log: log option
+         * r/ret: process return option
+         * l/log: process log option (cmd, data, error, result)
+         * t/time: read time (in microseconds; default "0" means read till done. Works when r/ret or l/log is set)
          */
-        $command = false;
-        $opt = getopt('c:d:p:r:t:l', ['cmd:', 'data:', 'pipe', 'return:', 'timeout:', 'log'], $optind);
+        $opt = getopt('c:d:p:t:rl', ['cmd:', 'data:', 'pipe', 'time:', 'ret', 'log'], $optind);
+        if (empty($opt)) return $optind;
 
-        if (!empty($opt)) {
-            //Process cgi data value
-            $data_get = self::get_opt($opt, ['d', 'data']);
-            if ($data_get['get']) {
-                $cgi_data = self::parse_data($data_get['data']);
-                //Merge data to parent
-                if (!empty($cgi_data)) parent::$data = array_merge(parent::$data, $cgi_data);
-                unset($cgi_data);
-            }
-
-            //Process cli data value
-            $data_get = self::get_opt($opt, ['p', 'pipe']);
-            if ($data_get['get'] && '' !== $data_get['data']) self::$cli_data = &$data_get['data'];
-
-            //Process return option
-            $data_get = self::get_opt($opt, ['r', 'return']);
-            if ($data_get['get'] && '' !== $data_get['data']) self::$return = &$data_get['data'];
-
-            //Process pipe read timeout
-            $data_get = self::get_opt($opt, ['t', 'timeout']);
-            if ($data_get['get'] && is_numeric($data_get['data'])) self::$timeout = (int)$data_get['data'];
-
-            //Process log option
-            $data_get = self::get_opt($opt, ['l', 'log']);
-            if ($data_get['get']) self::$log = true;
-
-            //Merge options to parent
-            if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
-
-            //Get CMD & build data structure
-            if (self::get_cmd()) {
-                $command = true;
-                parent::build_struct();
-            }
-
-            unset($data_get);
+        //Process cgi data value
+        $val = parent::opt_val($opt, ['d', 'data']);
+        if ($val['get']) {
+            $data = self::parse_data($val['data']);
+            if (!empty($data)) parent::$data = array_merge(parent::$data, $data);
+            unset($data);
         }
 
-        //Merge arguments
-        $argv_data = array_slice($_SERVER['argv'], $optind);
-        if (empty($argv_data)) return;
+        //Process cli data value
+        $val = parent::opt_val($opt, ['p', 'pipe']);
+        if ($val['get'] && '' !== $val['data']) self::$cli_data = &$val['data'];
 
-        //No command, point to first argument
-        if (!$command) parent::$data['cmd'] = array_shift($argv_data);
+        //Process pipe read time
+        $val = parent::opt_val($opt, ['t', 'time']);
+        if ($val['get'] && is_numeric($val['data'])) self::$time = (int)$val['data'];
 
-        //Merge data to self::$cmd_data
-        if (!empty($argv_data)) self::$cmd_data = &$argv_data;
+        //Process return option
+        $val = parent::opt_val($opt, ['r', 'ret']);
+        if ($val['get']) self::$ret = true;
 
-        //Get CMD for CLI
-        self::get_cmd();
+        //Process log option
+        $val = parent::opt_val($opt, ['l', 'log']);
+        if ($val['get']) self::$log = true;
 
-        unset($command, $opt, $optind, $argv_data);
+        //Merge options to parent
+        if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
+
+        //Get CMD & build data structure
+        if (self::prep_cmd()) {
+            $cmd = true;
+            parent::build_struc();
+        }
+
+        unset($opt, $val);
+        return $optind;
     }
 
     /**
      * Parse data content
      *
-     * @param string $input
+     * @param string $value
      *
      * @return array
      */
-    private static function parse_data(string $input): array
+    private static function parse_data(string $value): array
     {
-        if ('' === $input) return [];
+        if ('' === $value) return [];
 
         //Decode data in JSON
-        $json = json_decode($input, true);
+        $json = json_decode($value, true);
         if (is_array($json)) {
-            unset($input);
+            unset($value);
             return $json;
         }
 
         //Decode data in HTTP Query
-        parse_str($input, $data);
-        unset($input, $json);
+        parse_str($value, $data);
+
+        unset($value, $json);
         return $data;
     }
 
     /**
-     * Get Option value from key name
-     *
-     * @param array $opt
-     * @param array $keys
-     *
-     * @return array
-     */
-    private static function get_opt(array &$opt, array $keys): array
-    {
-        $result = ['get' => false, 'data' => ''];
-
-        foreach ($keys as $key) {
-            if (isset($opt[$key])) {
-                $result = ['get' => true, 'data' => $opt[$key]];
-                unset($opt[$key]);
-            }
-        }
-
-        unset($keys, $key);
-        return $result;
-    }
-
-    /**
-     * Get cmd value from data
+     * Prepare cmd data
      *
      * @return bool
      */
-    private static function get_cmd(): bool
+    private static function prep_cmd(): bool
     {
         $get = false;
-        $data_get = self::get_opt(parent::$data, ['c', 'cmd']);
+        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
 
-        if ($data_get['get'] && is_string($data_get['data']) && '' !== $data_get['data']) {
-            parent::$cmd = &$data_get['data'];
+        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
+            if (false !== strpos($val['data'], '/')) self::$call_cgi = true;
+            parent::$cmd = &$val['data'];
             $get = true;
         }
 
-        unset($data_get);
+        unset($val);
         return $get;
     }
 
     /**
-     * Parse cmd data
+     * Execute CGI
      */
-    private static function parse_cmd(): void
+    private static function exec_cgi(): void
     {
-        if (false !== strpos(parent::$cmd, '/')) self::$cgi_mode = true;
-    }
+        cgi::run();
 
-    /**
-     * Execute cmd
-     */
-    private static function execute_cmd(): void
-    {
-        if (self::$cgi_mode) {
-            try {
-                cgi::run();
-                $error = '';
-            } catch (\Throwable $exception) {
-                $error = $exception->getMessage();
-            }
-
-            //Save log
-            if (self::$log) {
-                self::save_log([
-                    'cmd'    => parent::$cmd,
-                    'data'   => json_encode(parent::$data),
-                    'error'  => &$error,
-                    'result' => json_encode(parent::$result)
-                ]);
-            }
-
-            //Build result
-            $result = [];
-            if ('' !== self::$return) {
-                if (false !== strpos(self::$return, 'cmd')) $result['cmd'] = parent::$cmd;
-                if (false !== strpos(self::$return, 'data')) $result['data'] = parent::$data;
-                if (false !== strpos(self::$return, 'error')) $result['error'] = &$error;
-                if (false !== strpos(self::$return, 'result')) $result['result'] = parent::$result;
-            }
-
-            //Write result
-            parent::$result = &$result;
-            unset($error, $result);
-        } else {
-            //Load config file
-            self::load_config();
-            self::auto_config();
-
-            //Get command
-            $command = self::command();
-            if ('' === $command) return;
-            $command = self::quote_command($command);
-
-            if (!empty(self::$cmd_data)) $command .= ' ' . implode(' ', self::$cmd_data);
-
-            //Run command
-            parent::$result = self::run_exec($command);
-            unset($command);
-        }
-    }
-
-    /**
-     * Load CLI config file
-     */
-    private static function load_config(): void
-    {
-        if ('' === self::config) return;
-        $path = realpath(self::config);
-        if (false === $path) return;
-        $config = parse_ini_file($path, true);
-        if (!is_array($config) || empty($config)) return;
-        self::$config = array_merge(self::$config, $config);
-        unset($path, $config);
-    }
-
-    /**
-     * Automatically setup up config file
-     */
-    private static function auto_config(): void
-    {
-        $env_info = os::get_env();
-        if (empty($env_info)) return;
-        self::$config = array_merge(self::$config, $env_info);
-        unset($env_info);
-    }
-
-    /**
-     * Get command
-     *
-     * @return string
-     */
-    private static function command(): string
-    {
-        if (false === strpos(parent::$cmd, ':')) {
-            if (isset(self::$config[parent::$cmd]) && is_string(self::$config[parent::$cmd])) return self::$config[parent::$cmd];
-            else {
-                debug('CMD config ERROR! Please check "cfg.ini"!');
-                return '';
-            }
-        } else {
-            $cmd = self::$config;
-            $keys = explode(':', parent::$cmd);
-            foreach ($keys as $key) {
-                if (isset($cmd[$key])) $cmd = $cmd[$key];
-                else {
-                    debug('CMD not found! Please add to "cfg.ini"!');
-                    unset($cmd, $keys, $key);
-                    return '';
-                }
-            }
-            if (is_string($cmd)) return $cmd;
-            else {
-                debug('CMD config ERROR! Please check "cfg.ini"!');
-                unset($cmd, $keys, $key);
-                return '';
-            }
-        }
-    }
-
-    /**
-     * Add quotes to escape spaces in command path
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    private static function quote_command(string $cmd): string
-    {
-        return false === strpos($cmd, ' ') || ('"' === substr($cmd, 0, 1) && '"' === substr($cmd, -1, 1)) ? $cmd : '"' . $cmd . '"';
-    }
-
-    /**
-     * Run External Process
-     *
-     * @param string $command
-     *
-     * @return array
-     */
-    private static function run_exec(string $command): array
-    {
-        //Create process
-        $process = proc_open($command, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
-
-        //Process create failed
-        if (!is_resource($process)) {
-            debug('Access denied! Check your "cfg.ini" and authority!');
-            exit;
-        }
-
-        //Write input data
-        if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
-
-        //Build detailed result/log
-        $result = $log = [];
-
-        //Save log
+        //Write logs
         if (self::$log) {
-            $log['cmd'] = &$command;
-            $log['data'] = self::$cli_data;
-            $log['error'] = self::get_stream([$process, $pipes[2]]);
-            $log['result'] = self::get_stream([$process, $pipes[1]]);
-            self::save_log($log);
+            $logs = [];
+            $logs['cmd'] = parent::$cmd;
+            $logs['data'] = json_encode(parent::$data, JSON_OPT);
+            $logs['result'] = json_encode(parent::$result, JSON_OPT);
+            self::save_log($logs);
+            unset($logs);
         }
 
         //Build result
-        if ('' !== self::$return) {
-            if (false !== strpos(self::$return, 'cmd')) $result['cmd'] = &$command;
-            if (false !== strpos(self::$return, 'data')) $result['data'] = self::$cli_data;
-            if (false !== strpos(self::$return, 'error')) $result['error'] = $log['error'] ?? self::get_stream([$process, $pipes[2]]);
-            if (false !== strpos(self::$return, 'result')) $result['result'] = $log['result'] ?? self::get_stream([$process, $pipes[1]]);
-        }
-
-        //Close all pipes
-        foreach ($pipes as $pipe) fclose($pipe);
-
-        //Close Process
-        proc_close($process);
-
-        unset($command, $process, $pipes, $log, $pipe);
-        return $result;
+        if (!self::$ret) parent::$result = [];
     }
 
     /**
-     * Get the content of current stream
-     *
-     * @param array $stream
-     *
-     * @return string
+     * Execute CLI
      */
-    private static function get_stream(array $stream): string
+    private static function exec_cli(): void
     {
-        $time = 0;
-        $result = '';
+        try {
+            //Get command from config
+            $command = self::get_cmd(parent::$cmd);
 
-        //Keep checking process
-        while ($time <= self::$timeout) {
-            //Get status of process
-            $status = proc_get_status($stream[0]);
+            //Fill command argv
+            if (!empty(self::$cmd_argv)) $command .= ' ' . implode(' ', self::$cmd_argv);
 
-            //Get stream content when process terminated
-            if (false === $status['running']) {
-                $result = trim(stream_get_contents($stream[1]));
-                break;
-            }
+            //Create process
+            $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
+            if (!is_resource($process)) throw new \Exception('Access denied or [' . $command . '] ERROR!');
+            if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
 
-            //Wait for process
-            usleep(10);
-            $time += 10;
+            //Record CLI Runtime values
+            self::cli_rec(['cmd' => &$command, 'pipe' => &$pipes, 'proc' => &$process]);
+
+            //Close pipes (ignore process)
+            foreach ($pipes as $pipe) fclose($pipe);
+            unset($command, $process, $pipes, $pipe);
+        } catch (\Throwable $exception) {
+            debug('CLI', $exception->getMessage());
+            unset($exception);
+        }
+    }
+
+    /**
+     * Record CLI Runtime values
+     *
+     * @param array $resource
+     */
+    private static function cli_rec(array $resource): void
+    {
+        $logs = [];
+
+        //Write logs
+        if (self::$log) {
+            $logs['cmd'] = &$resource['cmd'];
+            $logs['data'] = self::$cli_data;
+            $logs['error'] = self::get_stream([$resource['proc'], $resource['pipe'][2]]);
+            $logs['result'] = self::get_stream([$resource['proc'], $resource['pipe'][1]]);
+            self::save_log($logs);
         }
 
-        //Return false once the elapsed time reaches the limit
-        unset($stream, $time, $status);
-        return $result;
+        //Build result
+        if (self::$ret) parent::$result[$resource['cmd']] = $logs['result'] ?? self::get_stream([$resource['proc'], $resource['pipe'][1]]);
+
+        unset($resource, $logs);
     }
 
     /**
      * Save logs
      *
-     * @param array $data
+     * @param array $logs
      */
-    private static function save_log(array $data): void
+    private static function save_log(array $logs): void
     {
         $time = time();
-        $logs = array_merge(['time' => date('Y-m-d H:i:s', $time)], $data);
+        $logs = ['time' => date('Y-m-d H:i:s', $time)] + $logs;
+
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
         file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
-        unset($data, $time, $logs, $key, $value);
+
+        unset($logs, $time, $key, $value);
+    }
+
+    /**
+     * Get stream content
+     *
+     * @param array $resource
+     *
+     * @return string
+     */
+    private static function get_stream(array $resource): string
+    {
+        $time = 0;
+        $result = '';
+
+        //Keep checking pipe
+        while (0 === self::$time || $time <= self::$time) {
+            if (proc_get_status($resource[0])['running']) {
+                usleep(self::wait);
+                $time += self::wait;
+            } else {
+                $result = trim(stream_get_contents($resource[1]));
+                break;
+            }
+        }
+
+        //Return empty once elapsed time reaches the limit
+        unset($resource, $time);
+        return $result;
     }
 }
