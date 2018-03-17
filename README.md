@@ -44,7 +44,7 @@ Many thanks!
       │     │    │       └─cli.php        CLI execution script
       │     │    ├─os.php                 Main OS controller
       │     │    └─router.php             Main Router controller
-      │     ├─cfg.ini                     Config file for CLI executable command
+      │     ├─cfg.ini                     Config file for CGI mapping and CLI commands
       │     └─cfg.php                     Config file for core system
       ├─cors/                           **CORS config file directory
       │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
@@ -123,7 +123,7 @@ All script should under the right namespace for better calling by NervSys API.
 ****Format for test_1.php:** 
 
     //The right namespace follows the path structure
-    namespace pr_1\ctr;
+    namespace pr_1/ctr;
         
     //Any other extensions and namespaces can be used here
     use ext\http;
@@ -267,41 +267,41 @@ Remember one param named "c" or "cmd", the two are equal.
         
     for test_1.php
         
-    1. http://HostName/api.php?c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
     3. ...
         
     Above are the strict mode with detailed function name, only "test_a" is called.
         
     Let's see more:
         
-    1. http://HostName/api.php?c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
     3. ...
         
-    We called "test_b" in "pr_1\ctr\test_2" with params "b" and "c", 
+    We called "test_b" in "pr_1/ctr/test_2" with params "b" and "c", 
     "a" is obviously usless and ignore.
         
     And there goes some interesting things, what if we do as follows?
         
-    1. http://HostName/api.php?c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
     3. ...
         
-    Right, both "test_a" and "test_b" in "pr_1\ctr\test_1" will be called 
+    Right, both "test_a" and "test_b" in "pr_1/ctr/test_1" will be called 
     sharing the same data of "b" and "c", "test_a" used one more "a".
         
     This time, we do it as:
         
-    http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
+    http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a-test_b-test_c&a=a&b=b&c=c
         
     Yep. "test_c" will run right after, as it needs no required variables.
     We now can get some compound results with differences in keys.
         
     And what if we do as follows?
         
-    1. http://HostName/api.php?c=pr_1\ctr\test_1&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_1&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1&a=a&b=b&c=c
     3. ...
         
     Could it be an error calling?
@@ -327,10 +327,10 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Once when we call as follows:
             
-    1. http://HostName/api.php?c=pr_1\ctr\test_2-test_a&a=a&b=b
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&a=a&c=c
-    3. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
-    4. http://HostName/api.php?cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_a&a=a&b=b
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c
+    3. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&whatever...(but missed some of "a", "b", "c")
         
     This won't happen because the input data structure dismatched.
     API just chooses to ignore the request to "test_a" function,
@@ -339,22 +339,41 @@ Remember one param named "c" or "cmd", the two are equal.
     And what's more:
         
     loose style:
-    1. http://HostName/api.php?c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
         
-    All functions that match the input data strucuture in both "pr_1\ctr\test_1" and "pr_1\test_2"
+    All functions that match the input data strucuture in both "pr_1/ctr/test_1" and "pr_1/test_2"
     will run. With this, we can call multiple functions in multiple modules right in one request.
     These functions share the same source data, and do their own work.
         
     strict style:
-    1. http://HostName/api.php?c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
         
     Functions placed in the URL (in "c"/"cmd" value, seperated by "-", order ignored, same in "POST") 
-    and match the input data strucuture at the same time in both "pr_1\ctr\test_1" and "pr_1\test_2"
+    and match the input data strucuture at the same time in both "pr_1/ctr/test_1" and "pr_1/test_2"
     will run. With this, we can call EXACT multiple functions in EXACT multiple modules in one request.
     These modules share the same function names when exist. 
     All functions share the same source data and run with the input order.
+        
+    If we want to hide the real request path, make sure the "c" or "cmd" key is listing in "cfg.ini"
+    under [CGI] section with the key as the input "c" or "cmd", and the real path and its possible
+    params as the value, or ever more. Settings can be compound.
+        
+    Something examples:
+        
+    "cfg.ini"
+        
+    [CGI]
+    mycmd_1 = "pr_1/ctr/test_1"
+    mycmd_2 = "pr_1/test_2-test_a"
+    mycmd_3 = "pr_1/test_2-test_a-test_b"
+    ...
+        
+    Then, the following two requests are equal.
+        
+    1. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=mycmd_1-mycmd_3&a=a&b=b&c=c
 
 
 **CLI Command usage:**
@@ -370,33 +389,34 @@ Remember one param named "c" or "cmd", the two are equal.
         
     **Examples:
         
-    Let's take "pr_1\ctr\test_1" as an example.
+    Let's take "pr_1/ctr/test_1" as an example.
     Full command should be as some type of follows:
         
-    1. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a" --data "a=a&b=b&c=c"
-    2. /path/php api.php -r -t 10000 -c "pr_1\ctr\test_1-test_b" -d "b=b&c=c"
-    3. /path/php api.php -r -l -c "pr_1\ctr\test_1-test_a-test_b" -d "a=a&b=b&c=c"
-    4. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a-test_b" --data "a=a&b=b&c=c"
+    1. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a" --data "a=a&b=b&c=c"
+    2. /path/php api.php -r -t 10000 -c "pr_1/ctr/test_1-test_b" -d "b=b&c=c"
+    3. /path/php api.php -r -l -c "pr_1/ctr/test_1-test_a-test_b" -d "a=a&b=b&c=c"
+    4. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a-test_b" --data "a=a&b=b&c=c"
     5. ...
         
     JSON data package is also support as CGI mode
         
     We can also do as follows:
         
-    1. /path/php api.php pr_1\ctr\test_1-test_a -d "a=a&b=b&c=c"
-    2. /path/php api.php pr_1\ctr\test_1-test_b -d "b=b&c=c"
-    3. /path/php api.php pr_1\ctr\test_1-test_a-test_b -d "a=a&b=b&c=c"
-    4. /path/php api.php pr_1\ctr\test_1 -d "a=a&b=b&c=c"
+    1. /path/php api.php pr_1/ctr/test_1-test_a -d "a=a&b=b&c=c"
+    2. /path/php api.php pr_1/ctr/test_1-test_b -d "b=b&c=c"
+    3. /path/php api.php pr_1/ctr/test_1-test_a-test_b -d "a=a&b=b&c=c"
+    4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
     5. ...
         
-    If we need to call external programs, make sure the "c" or "cmd" key is listing in "cfg.ini" 
-    with the executable path as the value, or ever more.
+    If we need to call external programs, make sure the "c" or "cmd" key is listing in "cfg.ini"
+    under [CLI] section with the executable path and its possible params as the value, or ever more.
         
     Something examples:
         
     "cfg.ini"
         
-    mycmd = "/xxx/path/mycmd"
+    [CLI]
+    mycmd = "/xxx/path/mycmd -c -d --more"
         
     Command:
         
