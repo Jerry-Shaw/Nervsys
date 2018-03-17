@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -101,7 +101,11 @@ class cgi extends router
     private static function prep_cmd(): void
     {
         $val = parent::opt_val(parent::$data, ['c', 'cmd']);
-        if ($val['get'] && is_string($val['data']) && false !== strpos($val['data'], '/')) parent::$cmd = &$val['data'];
+
+        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
+            if (!empty(parent::$cfg_cgi)) $val['data'] = strtr($val['data'], parent::$cfg_cgi);
+            if (false !== strpos($val['data'], '/')) parent::$cmd = &$val['data'];
+        }
 
         unset($val);
     }

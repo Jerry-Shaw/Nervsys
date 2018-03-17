@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -30,9 +30,17 @@ declare(strict_types = 1);
 //Check Version
 if (version_compare(PHP_VERSION, '7.1.0', '<')) exit('NervSys needs PHP 7.1.0 or higher!');
 
-//Load config file
+//Load Basic Config
 require __DIR__ . '/core/cfg.php';
 
-//Run & Output
-\core\ctr\router::start();
+//Load Router CORS
+\core\ctr\router::load_cors();
+
+//Load Router Config
+\core\ctr\router::load_cfg();
+
+//Run Process
+'cli' !== PHP_SAPI ? \core\ctr\router\cgi::run() : \core\ctr\router\cli::run();
+
+//Output Result
 \core\ctr\router::output();

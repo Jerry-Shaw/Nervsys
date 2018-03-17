@@ -49,14 +49,8 @@ class cli extends router
     //Pipe read time (in microseconds)
     private static $time = 0;
 
-    //Command configuration
-    private static $config = [];
-
     //Wait cycle (in microseconds)
     const wait = 1000;
-
-    //Config file path
-    const config = ROOT . '/core/cfg.ini';
 
     //Working path
     const work_path = ROOT . '/core/cli/';
@@ -83,47 +77,8 @@ class cli extends router
      */
     public static function get_cmd(string $command): string
     {
-        //Copy config
-        $config = self::load_cfg();
-
-        //Parse command
-        $keys = false === strpos($command, ':') ? [$command] : explode(':', $command);
-
-        foreach ($keys as $key) {
-            if (!isset($config[$key])) throw new \Exception('[' . $command . '] NOT configured!');
-            $config = $config[$key];
-        }
-
-        if (!is_string($config)) throw new \Exception('[' . $command . '] NOT configured!');
-
-        $cmd = '"' . trim($config, ' "\'\t\n\r\0\x0B') . '"';
-
-        unset($command, $config, $keys, $key);
-        return $cmd;
-    }
-
-    /**
-     * Load config from "cfg.ini" & "os::get_env"
-     *
-     * @return array
-     * @throws \Exception
-     */
-    private static function load_cfg(): array
-    {
-        if (!empty(self::$config)) return self::$config;
-
-        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
-
-        $path = realpath(self::config);
-        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
-
-        $config = parse_ini_file($path, true);
-        if (false === $config) throw new \Exception('[' . self::config . '] setting incorrect!');
-
-        self::$config = $config + os::get_env();
-
-        unset($path, $config);
-        return self::$config;
+        if (!isset(parent::$cfg_cli[$command]) || !is_string(parent::$cfg_cli[$command])) throw new \Exception('[' . $command . '] NOT configured!');
+        return '"' . trim(parent::$cfg_cli[$command], ' "\'\t\n\r\0\x0B') . '"';
     }
 
     /**
@@ -246,7 +201,9 @@ class cli extends router
         $val = parent::opt_val(parent::$data, ['c', 'cmd']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
+            if (!empty(parent::$cfg_cgi)) $val['data'] = strtr($val['data'], parent::$cfg_cgi);
             if (false !== strpos($val['data'], '/')) self::$call_cgi = true;
+
             parent::$cmd = &$val['data'];
             $get = true;
         }

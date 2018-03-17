@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -27,8 +27,6 @@
 
 namespace core\ctr;
 
-use core\ctr\router\cgi, core\ctr\router\cli;
-
 class router
 {
     //Argument cmd
@@ -46,24 +44,57 @@ class router
     //Allowed header
     public static $header = [];
 
+    //Config settings
+    protected static $cfg_cgi = [];
+    protected static $cfg_cli = [];
+
     //Argument hash
     private static $argv_hash = '';
 
+    //Config file path
+    const cfg_path = ROOT . '/core/cfg.ini';
+
     /**
-     * Router start
+     * Load CORS file for Cross Domain Request
      */
-    public static function start(): void
+    public static function load_cors(): void
     {
-        self::cross_origin();
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
 
-        'cli' !== PHP_SAPI ? cgi::run() : cli::run();
+        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
+        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
 
-        if (2 > DEBUG) return;
+        $file = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
+        if (false === $file) exit;
 
-        //Debug with Runtime Values
-        debug('duration', round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 's');
-        debug('memory', round(memory_get_usage(true) / 1048576, 4) . 'MB');
-        debug('peak', round(memory_get_peak_usage(true) / 1048576, 4) . 'MB');
+        require $file;
+        unset($unit, $file);
+
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
+
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
+    }
+
+    /**
+     * Load config file for CGI / CLI
+     *
+     * @throws \Exception
+     */
+    public static function load_cfg(): void
+    {
+        $cfg_path = realpath(self::cfg_path);
+        if (false === $cfg_path) return;
+
+        $cfg_setting = parse_ini_file($cfg_path, true);
+        if (false === $cfg_setting) return;
+
+        if (isset($cfg_setting['CGI'])) self::$cfg_cgi = &$cfg_setting['CGI'];
+        if (isset($cfg_setting['CLI'])) self::$cfg_cli = &$cfg_setting['CLI'];
+
+        self::$cfg_cli += os::get_env();
+
+        unset($cfg_path, $cfg_setting);
     }
 
     /**
@@ -71,6 +102,13 @@ class router
      */
     public static function output(): void
     {
+        //Output Runtime Values
+        if (2 === DEBUG) {
+            self::$result['duration'] = round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 's';
+            self::$result['memory'] = round(memory_get_usage(true) / 1048576, 4) . 'MB';
+            self::$result['peak'] = round(memory_get_peak_usage(true) / 1048576, 4) . 'MB';
+        }
+
         //Build result
         switch (count(self::$result)) {
             case 0:
@@ -136,27 +174,5 @@ class router
         self::$argv_hash = &$hash;
 
         unset($struc, $hash);
-    }
-
-    /**
-     * Config Cross-Origin Resource Sharing
-     */
-    private static function cross_origin(): void
-    {
-        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
-
-        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
-        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
-
-        $file = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
-        if (false === $file) exit;
-
-        require $file;
-        unset($unit, $file);
-
-        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
-
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
     }
 }
