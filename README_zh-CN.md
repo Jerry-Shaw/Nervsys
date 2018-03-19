@@ -443,5 +443,5 @@ README Chinese Translation: [MileHan](https://github.com/MileHan)
 
 ## Licensing
 
-This software is licensed under the terms of the GPLv3.  
-You can find a copy of the license in the LICENSE file.
+This software is licensed under the terms of the MIT License.  
+You can find a copy of the license in the LICENSE.md file.

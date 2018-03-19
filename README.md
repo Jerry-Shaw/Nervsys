@@ -554,5 +554,5 @@ Old version before 3.0.0 is discontinued and the source codes located here: [3.2
 
 ## Licensing
 
-This software is licensed under the terms of the GPLv3.  
-You can find a copy of the license in the LICENSE file.
+This software is licensed under the terms of the MIT License.  
+You can find a copy of the license in the LICENSE.md file.
