@@ -109,16 +109,16 @@ class cgi extends router
      */
     private static function prep_cmd(): void
     {
-        if (empty(parent::$cfg_cgi)) return;
+        if (empty(parent::$conf_cgi)) return;
 
         //Explode command
         $data = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
 
         //Parse mapping keys
         foreach ($data as $key => $value) {
-            if (isset(parent::$cfg_cgi[$value])) {
-                $data[$key] = parent::$cfg_cgi[$value];
-                self::$mapping[parent::$cfg_cgi[$value]] = $value;
+            if (isset(parent::$conf_cgi[$value])) {
+                $data[$key] = parent::$conf_cgi[$value];
+                self::$mapping[parent::$conf_cgi[$value]] = $value;
             }
         }
 
@@ -169,7 +169,7 @@ class cgi extends router
         //Execute queue list
         foreach (self::$module as $module => $method) {
             //Load Module config file
-            $file = realpath(ROOT . '/' . $module . '/cfg.php');
+            $file = realpath(ROOT . '/' . $module . '/conf.php');
             if (false !== $file) require $file;
 
             //Call API

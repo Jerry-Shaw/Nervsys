@@ -40,8 +40,8 @@
       │     │    │       └─cli.php        CLI execution script                      CLI执行脚本
       │     │    ├─os.php                 Main OS controller                        操作系统主控制器
       │     │    └─router.php             Main Router controller                    路由主控制器
-      │     ├─cfg.ini                     Config file for CLI executable command    CLI可执行命令的配置文件
-      │     └─cfg.php                     Config file for core system               核心系统的配置文件
+      │     ├─conf.ini                    Config file for CLI executable command    CLI可执行命令的配置文件
+      │     └─conf.php                    Config file for core system               核心系统的配置文件
       └─ext/                            **extension directory                       扩展目录
            ├─font/                      **font directory
            ├─lib/                       **extension interface directory             扩展接口目录
@@ -87,13 +87,13 @@
         │     │    └─xxx          xxx executable program
         │     ├─.../            **Other folders containing functional scripts
         │     │    └─....php      Model ... script
-        │     └─cfg.php           Config file for Project 1
+        │     └─conf.php          Config file for Project 1
         └─PR_2/                 **Project 2 folder
               ├─model_a.php       Model a script
               ├─model_b.php       Model b script
               ├─model_c.php       Model c script
               ├─....php           Model ... script
-              └─cfg.php           Config file for Project 2
+              └─conf.php          Config file for Project 2
     
     
 所有的脚本应该在正确的命名空间里，以便NervSys API调用。
@@ -107,7 +107,7 @@
               ├─xxx/            **Controller folder
               │    └─xxx.php      test 1 script
               ├─test_2.php        test 2 script
-              └─cfg.php           Config file for Project 1
+              └─conf.php          Config file for Project 1
 
 
 ****test_1.php 模板格式**
@@ -338,11 +338,11 @@
     4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
     5. ...
         
-    如果我们需要调用外部项目的话，确保在"cfg.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
+    如果我们需要调用外部项目的话，确保在"conf.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
         
     Something examples:
         
-    "cfg.ini"
+    "conf.ini"
         
     mycmd = "/xxx/path/mycmd"
         
@@ -383,20 +383,20 @@ _在配置文件里的特别codes_
     if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
     
     
-**关于在项目根目录的"cfg.php"**
+**关于在项目根目录的"conf.php"**
 
-每个项目都会有一个"cfg.php"作为整个项目唯一的配置文件，这样我们才能设置扩展中需要的变量值或者其他一些特别的定义。  
+每个项目都会有一个"conf.php"作为整个项目唯一的配置文件，这样我们才能设置扩展中需要的变量值或者其他一些特别的定义。  
 这样，项目中的脚本都是在这些设置下执行的。
 
 比如，我们设置项目1连接数据库A，让项目2连接数据库B。我们也可以在项目1中设置语言为"en-US"，在项目2中设置语言为"zh-CN"，等等。
 
-但是，永远记住，不要在不同的"cfg.php"定义相同的常量，这会产生冲突。  
-所有在项目根目录的的"cfg.php"需要在项目内的脚本运行前按顺序执行。  
-我们更推荐使用类变量，而不是在"cfg.php"中定义常量。  
+但是，永远记住，不要在不同的"conf.php"定义相同的常量，这会产生冲突。  
+所有在项目根目录的的"conf.php"需要在项目内的脚本运行前按顺序执行。  
+我们更推荐使用类变量，而不是在"conf.php"中定义常量。  
 
-Some examples for "cfg.php":
+Some examples for "conf.php":
 
-    //named constants (don't conflict with other "cfg.php"s)
+    //named constants (don't conflict with other "conf.php"s)
     define('DEF_1', 'xxxx');
     define('DEF_2', 'xxxxxxxx');
         
@@ -419,14 +419,14 @@ Some examples for "cfg.php":
     //More if needed
     ...
 
-如果你想在类里面设置所有的变量，这也是可行的，只要将"cfg.php"删掉。
+如果你想在类里面设置所有的变量，这也是可行的，只要将"conf.php"删掉。
 
-如果项目跟目录中没有"cfg.php"文件，那么所有的设置都会继承自上一个cfg.php.
+如果项目跟目录中没有"conf.php"文件，那么所有的设置都会继承自上一个conf.php.
 
 ## 通知:
 
 一旦路由的结果中只有一个元素，它将会以JSON格式输出里面的内容作为值，忽略掉('namespace/class_name/function_name')键名。
-如果"DEBUG"选项 (在 "/core/cfg.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
+如果"DEBUG"选项 (在 "/core/conf.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
 
 ## Demos

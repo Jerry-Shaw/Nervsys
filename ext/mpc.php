@@ -44,10 +44,10 @@ class mpc
     //Max running processes
     public static $max_runs = 10;
 
-    //PHP cmd key name in "cfg.ini"
+    //PHP cmd key name in "conf.ini"
     public static $php_key = 'php';
 
-    //PHP executable path in "cfg.ini"
+    //PHP executable path in "conf.ini"
     public static $php_exe = '';
 
     //Basic command

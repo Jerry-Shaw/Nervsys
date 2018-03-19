@@ -36,7 +36,7 @@ class redis_queue extends redis
      *
      * Examples:
      * "example/queue-process", etc... (Controlled by API & TrustZone)
-     * "program" or "exe", etc... (Controlled by API & cfg.ini)
+     * "program" or "exe", etc... (Controlled by API & conf.ini)
      *
      * Notice:
      * When set cmd value, make sure it can be fully controlled by API.

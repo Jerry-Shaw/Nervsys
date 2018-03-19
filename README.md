@@ -44,8 +44,8 @@ Many thanks!
       │     │    │       └─cli.php        CLI execution script
       │     │    ├─os.php                 Main OS controller
       │     │    └─router.php             Main Router controller
-      │     ├─cfg.ini                     Config file for CGI mapping and CLI commands
-      │     └─cfg.php                     Config file for core system
+      │     ├─conf.ini                    Config file for CGI mapping and CLI commands
+      │     └─conf.php                    Config file for core system
       ├─cors/                           **CORS config file directory
       │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
       │     ├─http.domain_2.8080.php      CORS config for "http://domain_2:8080"
@@ -97,13 +97,13 @@ Some example structures:
         │     │    └─xxx          xxx executable program
         │     ├─.../            **Other folders containing functional scripts
         │     │    └─....php      Model ... script
-        │     └─cfg.php           Config file for Project 1
+        │     └─conf.php          Config file for Project 1
         └─PR_2/                 **Project 2 folder
               ├─model_a.php       Model a script
               ├─model_b.php       Model b script
               ├─model_c.php       Model c script
               ├─....php           Model ... script
-              └─cfg.php           Config file for Project 2
+              └─conf.php          Config file for Project 2
 
 All script should under the right namespace for better calling by NervSys API. 
 
@@ -117,7 +117,7 @@ All script should under the right namespace for better calling by NervSys API.
               ├─xxx/            **Controller folder
               │    └─xxx.php      test 1 script
               ├─test_2.php        test 2 script
-              └─cfg.php           Config file for Project 1
+              └─conf.php          Config file for Project 1
 
 
 ****Format for test_1.php:** 
@@ -356,13 +356,13 @@ Remember one param named "c" or "cmd", the two are equal.
     These modules share the same function names when exist. 
     All functions share the same source data and run with the input order.
         
-    If we want to hide the real request path, make sure the "c" or "cmd" key is listing in "cfg.ini"
+    If we want to hide the real request path, make sure the "c" or "cmd" key is listing in "conf.ini"
     under [CGI] section with the key as the input "c" or "cmd", and the real path and its possible
     params as the value, or ever more. Settings can be compound.
         
     Something examples:
         
-    "cfg.ini"
+    "conf.ini"
         
     [CGI]
     mycmd_1 = "pr_1/ctr/test_1"
@@ -408,12 +408,12 @@ Remember one param named "c" or "cmd", the two are equal.
     4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
     5. ...
         
-    If we need to call external programs, make sure the "c" or "cmd" key is listing in "cfg.ini"
+    If we need to call external programs, make sure the "c" or "cmd" key is listing in "conf.ini"
     under [CLI] section with the executable path and its possible params as the value, or ever more.
         
     Something examples:
         
-    "cfg.ini"
+    "conf.ini"
         
     [CLI]
     mycmd = "/xxx/path/mycmd -c -d --more"
@@ -485,23 +485,23 @@ _Special codes in config file_
     if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
 
 
-**About "cfg.php" in Project root directory**
+**About "conf.php" in Project root directory**
 
-Each project could have a "cfg.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
+Each project could have a "conf.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
 So that, the scripts in this project will run under these settings. 
 
 For example:  
 We can set project 1 to connect database A, but using database B in project 2;  
 We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc... 
 
-But, always remember, don't define same named constants in different "cfg.php"s. It'll conflict.  
-All "cfg.php"s existed in the root directory of projects will be required in order right before inside script runs.  
-Class variables are suggested to use instead of definitions in "cfg.php"s. 
+But, always remember, don't define same named constants in different "conf.php"s. It'll conflict.  
+All "conf.php"s existed in the root directory of projects will be required in order right before inside script runs.  
+Class variables are suggested to use instead of definitions in "conf.php"s. 
 
 
-Some examples for "cfg.php":
+Some examples for "conf.php":
 
-    //named constants (don't conflict with other "cfg.php"s)
+    //named constants (don't conflict with other "conf.php"s)
     define('DEF_1', 'xxxx');
     define('DEF_2', 'xxxxxxxx');
         
@@ -524,14 +524,14 @@ Some examples for "cfg.php":
     //More if needed
     ...
 
-If you want to set all variables inside classes. That is OK, just leave the "cfg.php" files away.  
-If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before based on "/core/cfg.php".
+If you want to set all variables inside classes. That is OK, just leave the "conf.php" files away.  
+If you don't have a "conf.php" under the root directory of the project, all settings are inherited from the one before based on "/core/conf.php".
 
 
 ## Notice:
 
 Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name').  
-If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.  
+If "DEBUG" option (in "/core/conf.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.  
 Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside. 
 
 

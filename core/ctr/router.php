@@ -45,14 +45,14 @@ class router
     public static $header = [];
 
     //Config settings
-    protected static $cfg_cgi = [];
-    protected static $cfg_cli = [];
+    protected static $conf_cgi = [];
+    protected static $conf_cli = [];
 
     //Argument hash
     private static $argv_hash = '';
 
     //Config file path
-    const cfg_path = ROOT . '/core/cfg.ini';
+    const conf_path = ROOT . '/core/conf.ini';
 
     /**
      * Load CORS file for Cross Domain Request
@@ -81,20 +81,20 @@ class router
      *
      * @throws \Exception
      */
-    public static function load_cfg(): void
+    public static function load_conf(): void
     {
-        $cfg_path = realpath(self::cfg_path);
-        if (false === $cfg_path) return;
+        $conf_path = realpath(self::conf_path);
+        if (false === $conf_path) return;
 
-        $cfg_setting = parse_ini_file($cfg_path, true);
-        if (false === $cfg_setting) return;
+        $config = parse_ini_file($conf_path, true);
+        if (false === $config) return;
 
-        if (isset($cfg_setting['CGI'])) self::$cfg_cgi = &$cfg_setting['CGI'];
-        if (isset($cfg_setting['CLI'])) self::$cfg_cli = &$cfg_setting['CLI'];
+        if (isset($config['CGI'])) self::$conf_cgi = &$config['CGI'];
+        if (isset($config['CLI'])) self::$conf_cli = &$config['CLI'];
 
-        self::$cfg_cli += os::get_env();
+        self::$conf_cli += os::get_env();
 
-        unset($cfg_path, $cfg_setting);
+        unset($conf_path, $config);
     }
 
     /**

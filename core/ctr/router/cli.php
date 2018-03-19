@@ -77,8 +77,8 @@ class cli extends router
      */
     public static function get_cmd(string $command): string
     {
-        if (!isset(parent::$cfg_cli[$command]) || !is_string(parent::$cfg_cli[$command])) throw new \Exception('[' . $command . '] NOT configured!');
-        return '"' . trim(parent::$cfg_cli[$command], ' "\'\t\n\r\0\x0B') . '"';
+        if (!isset(parent::$conf_cli[$command]) || !is_string(parent::$conf_cli[$command])) throw new \Exception('[' . $command . '] NOT configured!');
+        return '"' . trim(parent::$conf_cli[$command], ' "\'\t\n\r\0\x0B') . '"';
     }
 
     /**
@@ -220,11 +220,11 @@ class cli extends router
         if (false !== strpos($cmd, '/')) return true;
 
         //Check CGI config
-        if (empty(parent::$cfg_cgi)) return false;
+        if (empty(parent::$conf_cgi)) return false;
 
         //Check mapping keys
         $data = false !== strpos($cmd, '-') ? explode('-', $cmd) : [$cmd];
-        $data = array_intersect_key(parent::$cfg_cgi, array_flip($data));
+        $data = array_intersect_key(parent::$conf_cgi, array_flip($data));
         $for_cgi = false !== strpos(implode($data), '/');
 
         unset($cmd, $data);
