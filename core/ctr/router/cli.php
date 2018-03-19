@@ -50,7 +50,7 @@ class cli extends router
     private static $time = 0;
 
     //Wait cycle (in microseconds)
-    const wait = 1000;
+    const work_wait = 1000;
 
     //Working path
     const work_path = ROOT . '/core/cli/';
@@ -197,19 +197,39 @@ class cli extends router
      */
     private static function prep_cmd(): bool
     {
-        $get = false;
         $val = parent::opt_val(parent::$data, ['c', 'cmd']);
+        if (!$val['get'] || !is_string($val['data']) || '' === $val['data']) return false;
 
-        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            if (!empty(parent::$cfg_cgi)) $val['data'] = strtr($val['data'], parent::$cfg_cgi);
-            if (false !== strpos($val['data'], '/')) self::$call_cgi = true;
-
-            parent::$cmd = &$val['data'];
-            $get = true;
-        }
+        parent::$cmd = &$val['data'];
+        self::$call_cgi = self::chk_cgi($val['data']);
 
         unset($val);
-        return $get;
+        return true;
+    }
+
+    /**
+     * Check CGI command
+     *
+     * @param string $cmd
+     *
+     * @return bool
+     */
+    private static function chk_cgi(string $cmd): bool
+    {
+        //Check NAMESPACE slashes
+        if (false !== strpos($cmd, '/')) return true;
+
+        //Check CGI config
+        if (empty(parent::$cfg_cgi)) return false;
+
+        //Check mapping keys
+        $data = false !== strpos($cmd, '-') ? explode('-', $cmd) : [$cmd];
+        $data = array_intersect_key(parent::$cfg_cgi, array_flip($data));
+        $for_cgi = false !== strpos(implode($data), '/');
+
+        unset($cmd, $data);
+
+        return $for_cgi;
     }
 
     /**
@@ -317,8 +337,8 @@ class cli extends router
         //Keep checking pipe
         while (0 === self::$time || $time <= self::$time) {
             if (proc_get_status($resource[0])['running']) {
-                usleep(self::wait);
-                $time += self::wait;
+                usleep(self::work_wait);
+                $time += self::work_wait;
             } else {
                 $result = trim(stream_get_contents($resource[1]));
                 break;

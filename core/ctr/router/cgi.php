@@ -40,13 +40,19 @@ class cgi extends router
     //Object list
     private static $object = [];
 
+    //Mapping list
+    private static $mapping = [];
+
     /**
      * Run CGI Router
      */
     public static function run(): void
     {
-        //Prepare data
-        self::prep_data();
+        //Read data
+        self::read_data();
+
+        //Prepare cmd
+        self::prep_cmd();
 
         //Parse cmd
         self::parse_cmd();
@@ -58,14 +64,17 @@ class cgi extends router
     /**
      * Prepare CGI data
      */
-    private static function prep_data(): void
+    private static function read_data(): void
     {
         if ('' !== parent::$cmd) return;
 
         self::read_http();
         self::read_input();
 
-        self::prep_cmd();
+        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
+        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) parent::$cmd = &$val['data'];
+
+        unset($val);
     }
 
     /**
@@ -100,14 +109,22 @@ class cgi extends router
      */
     private static function prep_cmd(): void
     {
-        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
+        if (empty(parent::$cfg_cgi)) return;
 
-        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            if (!empty(parent::$cfg_cgi)) $val['data'] = strtr($val['data'], parent::$cfg_cgi);
-            if (false !== strpos($val['data'], '/')) parent::$cmd = &$val['data'];
+        //Explode command
+        $data = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
+
+        //Parse mapping keys
+        foreach ($data as $key => $value) {
+            if (isset(parent::$cfg_cgi[$value])) {
+                $data[$key] = parent::$cfg_cgi[$value];
+                self::$mapping[parent::$cfg_cgi[$value]] = $value;
+            }
         }
 
-        unset($val);
+        //Rebuild command
+        parent::$cmd = implode('-', $data);
+        unset($data, $key, $value);
     }
 
     /**
@@ -116,10 +133,12 @@ class cgi extends router
     private static function parse_cmd(): void
     {
         //Extract "cmd" list
-        $list = self::get_list(parent::$cmd);
+        $list = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
 
         //Parse "cmd" values
         foreach ($list as $item) {
+            if ('' === $item) continue;
+
             //Get module value
             $module = self::get_module($item);
 
@@ -157,26 +176,6 @@ class cgi extends router
             self::call_api($method);
         }
         unset($module, $method, $file);
-    }
-
-    /**
-     * Get Module/Method list
-     *
-     * @param string $lib
-     *
-     * @return array
-     */
-    private static function get_list(string $lib): array
-    {
-        if (false === strpos($lib, '-')) return [$lib];
-
-        //Spilt data when multiple modules/methods exist with "-"
-        $list = explode('-', $lib);
-        $list = array_filter($list);
-        $list = array_unique($list);
-
-        unset($lib);
-        return $list;
     }
 
     /**
@@ -308,8 +307,8 @@ class cgi extends router
         //Build data structure
         parent::build_struc();
 
-        //Save result
-        if (isset($result)) parent::$result[$class . '/' . $method] = &$result;
+        //Save result (Try mapping keys)
+        if (isset($result)) parent::$result[self::$mapping[$class . '-' . $method] ?? (self::$mapping[$class] ?? $class) . '/' . $method] = &$result;
 
         unset($class, $space, $method, $reflect, $result);
     }
