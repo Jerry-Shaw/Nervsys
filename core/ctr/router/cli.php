@@ -259,6 +259,9 @@ class cli extends router
     private static function exec_cli(): void
     {
         try {
+            //Add OS environment
+            parent::$conf_cli += os::get_env();
+
             //Get command from config
             $command = self::get_cmd(parent::$cmd);
 

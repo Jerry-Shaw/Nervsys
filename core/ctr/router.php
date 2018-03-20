@@ -92,8 +92,6 @@ class router
         if (isset($config['CGI'])) self::$conf_cgi = &$config['CGI'];
         if (isset($config['CLI'])) self::$conf_cli = &$config['CLI'];
 
-        self::$conf_cli += os::get_env();
-
         unset($conf_path, $config);
     }
 
