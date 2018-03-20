@@ -159,7 +159,7 @@ class cgi extends router
     {
         //Check module data
         if (empty(self::$module)) {
-            debug('CGI', 'Module NOT found!');
+            debug('CGI', 'Command ERROR!');
             return;
         }
 
@@ -209,7 +209,7 @@ class cgi extends router
             //Get root class
             $space = '\\' . strtr($class, '/', '\\');
             //Call methods
-            class_exists($space) ? self::call_class($class, $space) : debug($class, 'Class [' . $space . '] NOT found!');
+            class_exists($space) ? self::call_class($class, $space) : debug(self::map_key($class), 'Class [' . $space . '] NOT found!');
         }
 
         unset($lib, $class, $space);
@@ -225,7 +225,7 @@ class cgi extends router
     {
         //Check API TrustZone
         if (!isset($space::$tz) || !is_array($space::$tz)) {
-            debug($class, 'TrustZone NOT Open!');
+            debug(self::map_key($class), 'TrustZone NOT Open!');
             return;
         }
 
@@ -234,7 +234,7 @@ class cgi extends router
             try {
                 self::call_method($class, $space, 'init');
             } catch (\Throwable $exception) {
-                debug($class . '/init', 'Method Calling Failed! ' . $exception->getMessage());
+                debug(self::map_key($class, 'init'), 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
@@ -260,7 +260,7 @@ class cgi extends router
 
             //Skip running method when data structure not match
             if (!empty($diff)) {
-                debug($class . '/' . $method, 'Missing Params [' . (implode(', ', $diff)) . ']!');
+                debug(self::map_key($class, $method), 'Missing Params [' . (implode(', ', $diff)) . ']!');
                 continue;
             }
 
@@ -268,7 +268,7 @@ class cgi extends router
             try {
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
-                debug($class . '/' . $method, 'Method Calling Failed! ' . $exception->getMessage());
+                debug(self::map_key($class, $method), 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
@@ -308,8 +308,23 @@ class cgi extends router
         parent::build_struc();
 
         //Save result (Try mapping keys)
-        if (isset($result)) parent::$result[self::$mapping[$class . '-' . $method] ?? (self::$mapping[$class] ?? $class) . '/' . $method] = &$result;
+        if (isset($result)) parent::$result[self::map_key($class, $method)] = &$result;
 
         unset($class, $space, $method, $reflect, $result);
+    }
+
+    /**
+     * Build mapped key
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return string
+     */
+    private static function map_key(string $class, string $method = ''): string
+    {
+        $key = '' !== $method ? (self::$mapping[$class . '-' . $method] ?? (self::$mapping[$class] ?? $class) . '/' . $method) : (self::$mapping[$class] ?? $class);
+        unset($class, $method);
+        return $key;
     }
 }
