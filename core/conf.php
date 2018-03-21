@@ -85,6 +85,8 @@ function load(string $lib): void
  */
 function debug(string $module, string $message): void
 {
-    if (1 === DEBUG) \core\ctr\router::$result[$module] = &$message;
+    if (0 === DEBUG) return;
+
+    \core\ctr\router::$result[$module] = &$message;
     unset($module, $message);
 }
