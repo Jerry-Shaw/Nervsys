@@ -68,6 +68,7 @@ class cgi extends router
     {
         if ('' !== parent::$cmd) return;
 
+        //Read data
         self::read_http();
         self::read_input();
 
@@ -84,6 +85,7 @@ class cgi extends router
     {
         $data = !empty($_POST) ? $_POST : (!empty($_GET) ? $_GET : $_REQUEST);
 
+        //Collect data
         if (!empty($data)) parent::$data += $data;
         if (!empty($_FILES)) parent::$data += $_FILES;
 
@@ -258,14 +260,10 @@ class cgi extends router
             $inter = array_intersect(parent::$struct, $space::$tz[$method]);
             $diff = array_diff($space::$tz[$method], $inter);
 
-            //Skip running method when data structure not match
-            if (!empty($diff)) {
-                debug(self::map_key($class, $method), 'Missing Params [' . (implode(', ', $diff)) . ']!');
-                continue;
-            }
-
-            //Call method
             try {
+                //Report missing params
+                if (!empty($diff)) throw new \Exception('Missing Params [' . (implode(', ', $diff)) . ']!');
+                //Call method
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
                 debug(self::map_key($class, $method), 'Method Calling Failed! ' . $exception->getMessage());
@@ -283,6 +281,7 @@ class cgi extends router
      * @param string $space
      * @param string $method
      *
+     * @throws \Exception
      * @throws \ReflectionException
      */
     private static function call_method(string $class, string $space, string $method): void
@@ -291,7 +290,10 @@ class cgi extends router
         $reflect = new \ReflectionMethod($space, $method);
 
         //Check visibility
-        if (!$reflect->isPublic()) return;
+        if (!$reflect->isPublic()) throw new \Exception('NOT Public!');
+
+        //Mapping data
+        $data = self::map_data($reflect);
 
         //Check property
         if (!$reflect->isStatic()) {
@@ -302,7 +304,7 @@ class cgi extends router
         }
 
         //Calling method
-        $result = forward_static_call([$space, $method]);
+        $result = empty($data) ? forward_static_call([$space, $method]) : forward_static_call_array([$space, $method], $data);
 
         //Build data structure
         parent::build_struc();
@@ -310,7 +312,55 @@ class cgi extends router
         //Save result (Try mapping keys)
         if (isset($result)) parent::$result[self::map_key($class, $method)] = &$result;
 
-        unset($class, $space, $method, $reflect, $result);
+        unset($class, $space, $method, $reflect, $data, $result);
+    }
+
+    /**
+     * Build mapped data
+     *
+     * @param $reflect
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function map_data($reflect): array
+    {
+        //Get method params
+        $params = $reflect->getParameters();
+        if (empty($params)) return [];
+
+        //Build data
+        $data = $diff = [];
+
+        //Process params
+        foreach ($params as $param) {
+            //Get param name
+            $name = $param->getName();
+
+            //Check param data
+            if (isset(parent::$data[$name])) {
+                switch ($param->getType()) {
+                    case 'int':
+                        $data[$name] = (int)parent::$data[$name];
+                        break;
+                    case 'array':
+                        $data[$name] = (array)parent::$data[$name];
+                        break;
+                    case 'string':
+                        $data[$name] = (string)parent::$data[$name];
+                        break;
+                    default:
+                        $data[$name] = parent::$data[$name];
+                        break;
+                }
+            } else $param->isOptional() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
+        }
+
+        //Report missing params
+        if (!empty($diff)) throw new \Exception('Missing Params [' . (implode(', ', $diff)) . ']!');
+
+        unset($reflect, $params, $diff, $param, $name);
+        return $data;
     }
 
     /**
