@@ -145,7 +145,11 @@ All script should under the right namespace for better calling by NervSys API.
         public static $tz = [
             test_a = [a, b, c],
             test_b = [b, c],
-            test_c = [c]
+            test_c = [c],
+            
+            //Leave empty but check via passing params
+            //or, use them as above
+            test_d = []
         ];
         
         /**
@@ -209,6 +213,32 @@ All script should under the right namespace for better calling by NervSys API.
             /**
             * This function must need variable [c], variable [d] is optional
             * Just use router::$data['d'] if exists as it is optional
+            */
+            ... (Some code)
+            return something;
+        }
+        
+        /**
+        * Params passing example
+        */
+        public function test_d(int $val_a, string $val_b, $val_c = 1, $val_d = [])
+        {
+            /**
+            * TrustZone config for this method is empty, but,
+            * there are params which will be checked and passed from API.
+            *
+            * The names of the params are equal to the data in router::$data.
+            * All params will be converted to the right type if defined,
+            * we don't need to build the data type manually.
+            * The original data in router::$data will not change.
+            *
+            * We can leave optional params if no need to pass, then, the default
+            * values will be used instead.
+            * 
+            * URL GET EXAMPLE:
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
+            * 
+            * Just write functions as usual.
             */
             ... (Some code)
             return something;
