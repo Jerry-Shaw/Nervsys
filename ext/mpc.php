@@ -44,10 +44,10 @@ class mpc
     //Max running processes
     public static $max_runs = 10;
 
-    //PHP cmd key name in "cfg.ini"
+    //PHP cmd key name in "conf.ini"
     public static $php_key = 'php';
 
-    //PHP executable path in "cfg.ini"
+    //PHP executable path in "conf.ini"
     public static $php_exe = '';
 
     //Basic command
@@ -126,7 +126,7 @@ class mpc
             if (!empty($item['arg'])) $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
 
             //Create process
-            $process = proc_open(os::proc_cmd($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, cli::work_path);
+            $process = proc_open(os::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, cli::work_path);
 
             //Store resource
             if (is_resource($process)) {

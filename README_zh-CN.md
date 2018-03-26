@@ -1,5 +1,7 @@
 # Nervsys
 
+[**Read Me**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
+
 基于PHP7.1+的轻量级框架**Nervsys** for universal API controlling. 
 
 任何一种Web服务器或者PHP的命令行模式
@@ -38,8 +40,8 @@
       │     │    │       └─cli.php        CLI execution script                      CLI执行脚本
       │     │    ├─os.php                 Main OS controller                        操作系统主控制器
       │     │    └─router.php             Main Router controller                    路由主控制器
-      │     ├─cfg.ini                     Config file for CLI executable command    CLI可执行命令的配置文件
-      │     └─cfg.php                     Config file for core system               核心系统的配置文件
+      │     ├─conf.ini                    Config file for CLI executable command    CLI可执行命令的配置文件
+      │     └─conf.php                    Config file for core system               核心系统的配置文件
       └─ext/                            **extension directory                       扩展目录
            ├─font/                      **font directory
            ├─lib/                       **extension interface directory             扩展接口目录
@@ -85,13 +87,13 @@
         │     │    └─xxx          xxx executable program
         │     ├─.../            **Other folders containing functional scripts
         │     │    └─....php      Model ... script
-        │     └─cfg.php           Config file for Project 1
+        │     └─conf.php          Config file for Project 1
         └─PR_2/                 **Project 2 folder
               ├─model_a.php       Model a script
               ├─model_b.php       Model b script
               ├─model_c.php       Model c script
               ├─....php           Model ... script
-              └─cfg.php           Config file for Project 2
+              └─conf.php          Config file for Project 2
     
     
 所有的脚本应该在正确的命名空间里，以便NervSys API调用。
@@ -105,13 +107,13 @@
               ├─xxx/            **Controller folder
               │    └─xxx.php      test 1 script
               ├─test_2.php        test 2 script
-              └─cfg.php           Config file for Project 1
+              └─conf.php          Config file for Project 1
 
 
 ****test_1.php 模板格式**
         
     //根据脚本路径定义命名空间
-    namespace pr_1\ctr;
+    namespace pr_1/ctr;
         
     //use 其他的扩展和命名空间
     use ext\http;
@@ -221,39 +223,39 @@
         
     for test_1.php
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
     3. ...
         
     上述是使用的具体方法名的严格模式，只有"test_a"方法被调用
         
     让我们看看更多
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
     3. ...
         
-    我们在"pr_1\ctr\test_2"中调用了"test_b"方法，传入参数"b","c",而变量“a”明显是没用的，会被忽略掉。
+    我们在"pr_1/ctr/test_2"中调用了"test_b"方法，传入参数"b","c",而变量“a”明显是没用的，会被忽略掉。
         
     当我们做出如下操作的时候，会发生一些有趣的事情。
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
     3. ...
         
-    是的，在"pr_1\ctr\test_1"中的"test_a"和"test_b"方法都会被调用，而且使用相同的参数"b","c"。"test_a"多使用一个参数"a".
+    是的，在"pr_1/ctr/test_1"中的"test_a"和"test_b"方法都会被调用，而且使用相同的参数"b","c"。"test_a"多使用一个参数"a".
         
     这次，我们这样做：
         
-    http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
+    http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a-test_b-test_c&a=a&b=b&c=c
         
     对的，方法"test_c"会在稍后执行，因为它不需要任何参数。
     我们现在可以通过键的不同获取到一些复合的结果集。    
         
     那如果我们这样做会怎样呢？
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1&a=a&b=b&c=c
     3. ...
         
     它是一种错误的调用吗？
@@ -273,10 +275,10 @@
         
     当我们这样做时：
             
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_a&a=a&b=b
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c
-    3. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
-    4. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_a&a=a&b=b
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c
+    3. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&whatever...(but missed some of "a", "b", "c")
         
     因为输入的数据结构不匹配，所以这不可能发生。
     API会选择忽略调用"test_a"方法的请求，如果"DEBUG"有设置的话，还会通知我们"[what] is missing"。
@@ -285,20 +287,20 @@
         
     loose style:
     宽松模式：
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
         
-    所有在"pr_1\ctr\test_1"和 "pr_1\test_2"中，匹配输入的数据结构的方法都会执行。
+    所有在"pr_1/ctr/test_1"和 "pr_1/test_2"中，匹配输入的数据结构的方法都会执行。
     有了这种操作方式，我们可以通过一个请求调用多个模块中的多个方法。
     这些方法共享同一个数据源，完成各自的工作。
         
     strict style:
     严格模式：
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
         
     路径（"c"或"cmd"的值，用"-"符号分隔开，忽略顺序，POST方式相同）中的函数，
-    并且在"pr_1\ctr\test_1" 和 "pr_1\test_2"中匹配输入的数据结构的函数会执行。
+    并且在"pr_1/ctr/test_1" 和 "pr_1/test_2"中匹配输入的数据结构的函数会执行。
     我们可以通过一个请求调用多个具体模块中的多个具体的方法。
     这些模块如果存在请求的方法名的话就会执行该方法。
     所有方法共享同一个数据源并且执行顺序与输入数据结构顺序相同。
@@ -317,30 +319,30 @@
         
     **Examples:
         
-    让我们用"pr_1\ctr\test_1"做一个例子。    
+    让我们用"pr_1/ctr/test_1"做一个例子。    
     完整的命令应该像如下的某些类型：
         
-    1. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a" --data "a=a&b=b&c=c"
-    2. /path/php api.php -r -t 10000 -c "pr_1\ctr\test_1-test_b" -d "b=b&c=c"
-    3. /path/php api.php -r -l -c "pr_1\ctr\test_1-test_a-test_b" -d "a=a&b=b&c=c"
-    4. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a-test_b" --data "a=a&b=b&c=c"
+    1. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a" --data "a=a&b=b&c=c"
+    2. /path/php api.php -r -t 10000 -c "pr_1/ctr/test_1-test_b" -d "b=b&c=c"
+    3. /path/php api.php -r -l -c "pr_1/ctr/test_1-test_a-test_b" -d "a=a&b=b&c=c"
+    4. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a-test_b" --data "a=a&b=b&c=c"
     5. ...
         
     JSON数据包也支持CGI模式
         
     We can also do as follows:
         
-    1. /path/php api.php pr_1\ctr\test_1-test_a -d "a=a&b=b&c=c"
-    2. /path/php api.php pr_1\ctr\test_1-test_b -d "b=b&c=c"
-    3. /path/php api.php pr_1\ctr\test_1-test_a-test_b -d "a=a&b=b&c=c"
-    4. /path/php api.php pr_1\ctr\test_1 -d "a=a&b=b&c=c"
+    1. /path/php api.php pr_1/ctr/test_1-test_a -d "a=a&b=b&c=c"
+    2. /path/php api.php pr_1/ctr/test_1-test_b -d "b=b&c=c"
+    3. /path/php api.php pr_1/ctr/test_1-test_a-test_b -d "a=a&b=b&c=c"
+    4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
     5. ...
         
-    如果我们需要调用外部项目的话，确保在"cfg.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
+    如果我们需要调用外部项目的话，确保在"conf.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
         
     Something examples:
         
-    "cfg.ini"
+    "conf.ini"
         
     mycmd = "/xxx/path/mycmd"
         
@@ -381,20 +383,20 @@ _在配置文件里的特别codes_
     if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
     
     
-**关于在项目根目录的"cfg.php"**
+**关于在项目根目录的"conf.php"**
 
-每个项目都会有一个"cfg.php"作为整个项目唯一的配置文件，这样我们才能设置扩展中需要的变量值或者其他一些特别的定义。  
+每个项目都会有一个"conf.php"作为整个项目唯一的配置文件，这样我们才能设置扩展中需要的变量值或者其他一些特别的定义。  
 这样，项目中的脚本都是在这些设置下执行的。
 
 比如，我们设置项目1连接数据库A，让项目2连接数据库B。我们也可以在项目1中设置语言为"en-US"，在项目2中设置语言为"zh-CN"，等等。
 
-但是，永远记住，不要在不同的"cfg.php"定义相同的常量，这会产生冲突。  
-所有在项目根目录的的"cfg.php"需要在项目内的脚本运行前按顺序执行。  
-我们更推荐使用类变量，而不是在"cfg.php"中定义常量。  
+但是，永远记住，不要在不同的"conf.php"定义相同的常量，这会产生冲突。  
+所有在项目根目录的的"conf.php"需要在项目内的脚本运行前按顺序执行。  
+我们更推荐使用类变量，而不是在"conf.php"中定义常量。  
 
-Some examples for "cfg.php":
+Some examples for "conf.php":
 
-    //named constants (don't conflict with other "cfg.php"s)
+    //named constants (don't conflict with other "conf.php"s)
     define('DEF_1', 'xxxx');
     define('DEF_2', 'xxxxxxxx');
         
@@ -402,11 +404,10 @@ Some examples for "cfg.php":
     \ext\crypt::$keygen = '\demo\keygen';
     \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
         
-    //define MySQL connection parameters for "pdo_mysql" extension
-    \ext\pdo_mysql::$config['init'] = true;
-    \ext\pdo_mysql::$config['host'] = '192.168.1.100';
-    \ext\pdo_mysql::$config['port'] = 4000;
-    \ext\pdo_mysql::$config['pwd'] = 'PASSWORD';
+    //define MySQL connection parameters for "pdo" extension
+    \ext\pdo::$host = '192.168.1.100';
+    \ext\pdo::$port = 4000;
+    \ext\pdo::$pwd = 'PASSWORD';
         
     //parameters for "errno" extension
     \ext\errno::$lang = false;
@@ -418,14 +419,14 @@ Some examples for "cfg.php":
     //More if needed
     ...
 
-如果你想在类里面设置所有的变量，这也是可行的，只要将"cfg.php"删掉。
+如果你想在类里面设置所有的变量，这也是可行的，只要将"conf.php"删掉。
 
-如果项目跟目录中没有"cfg.php"文件，那么所有的设置都会继承自上一个cfg.php.
+如果项目跟目录中没有"conf.php"文件，那么所有的设置都会继承自上一个conf.php.
 
 ## 通知:
 
 一旦路由的结果中只有一个元素，它将会以JSON格式输出里面的内容作为值，忽略掉('namespace/class_name/function_name')键名。
-如果"DEBUG"选项 (在 "/core/cfg.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
+如果"DEBUG"选项 (在 "/core/conf.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
 
 ## Demos
@@ -442,5 +443,5 @@ README Chinese Translation: [MileHan](https://github.com/MileHan)
 
 ## Licensing
 
-This software is licensed under the terms of the GPLv3.  
-You can find a copy of the license in the LICENSE file.
+This software is licensed under the terms of the MIT License.  
+You can find a copy of the license in the LICENSE.md file.

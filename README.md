@@ -1,6 +1,6 @@
 # Nervsys
 
-**[中文文档](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)**
+[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
 Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode. 
@@ -44,8 +44,8 @@ Many thanks!
       │     │    │       └─cli.php        CLI execution script
       │     │    ├─os.php                 Main OS controller
       │     │    └─router.php             Main Router controller
-      │     ├─cfg.ini                     Config file for CLI executable command
-      │     └─cfg.php                     Config file for core system
+      │     ├─conf.ini                    Config file for CGI mapping and CLI commands
+      │     └─conf.php                    Config file for core system
       ├─cors/                           **CORS config file directory
       │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
       │     ├─http.domain_2.8080.php      CORS config for "http://domain_2:8080"
@@ -97,13 +97,13 @@ Some example structures:
         │     │    └─xxx          xxx executable program
         │     ├─.../            **Other folders containing functional scripts
         │     │    └─....php      Model ... script
-        │     └─cfg.php           Config file for Project 1
+        │     └─conf.php          Config file for Project 1
         └─PR_2/                 **Project 2 folder
               ├─model_a.php       Model a script
               ├─model_b.php       Model b script
               ├─model_c.php       Model c script
               ├─....php           Model ... script
-              └─cfg.php           Config file for Project 2
+              └─conf.php          Config file for Project 2
 
 All script should under the right namespace for better calling by NervSys API. 
 
@@ -117,13 +117,13 @@ All script should under the right namespace for better calling by NervSys API.
               ├─xxx/            **Controller folder
               │    └─xxx.php      test 1 script
               ├─test_2.php        test 2 script
-              └─cfg.php           Config file for Project 1
+              └─conf.php          Config file for Project 1
 
 
 ****Format for test_1.php:** 
 
     //The right namespace follows the path structure
-    namespace pr_1\ctr;
+    namespace pr_1/ctr;
         
     //Any other extensions and namespaces can be used here
     use ext\http;
@@ -145,8 +145,43 @@ All script should under the right namespace for better calling by NervSys API.
         public static $tz = [
             test_a = [a, b, c],
             test_b = [b, c],
-            test_c = [c]
+            test_c = [c],
+            
+            //Leave empty but check via passing params
+            //or, use them as above
+            test_d = []
         ];
+        
+        /**
+        * Initial function for API
+        *
+        * It will be called directly when exists.
+        * Data, Authority or more should be checked here before other functions
+        * are called.
+        * It has the permission to modify the API TrustZone config in the class,
+        * so, one or all keys can be removed once some cases are not matched,
+        * just to avoid some requests which are not permitted.
+        *
+        * Suggestion: Don't return here, unless it really needs a return.
+        *
+        * examples as follows
+        */
+        public static function init()
+        {
+            if (some case) {
+                //Just remove one or more keys from TrustZone
+                //but let other functions ready for calling
+                unset(self::$tz['func_name_not_permitted']);
+            } elseif (denied) {
+                //Remove all from TrustZone
+                self::$tz = [];
+                //Give a return because no further function will be be called
+                return 'Sorry, you are not allowed to go any further!';
+            }
+            
+            //More code
+            //Data processing, function preparation, etc...
+        }
         
         public static function test_a()
         {
@@ -178,6 +213,32 @@ All script should under the right namespace for better calling by NervSys API.
             /**
             * This function must need variable [c], variable [d] is optional
             * Just use router::$data['d'] if exists as it is optional
+            */
+            ... (Some code)
+            return something;
+        }
+        
+        /**
+        * Params passing example
+        */
+        public function test_d(int $val_a, string $val_b, $val_c = 1, $val_d = [])
+        {
+            /**
+            * TrustZone config for this method is empty, but,
+            * there are params which will be checked and passed from API.
+            *
+            * The names of the params are equal to the data in router::$data.
+            * All params will be converted to the right type if defined,
+            * we don't need to build the data type manually.
+            * The original data in router::$data will not change.
+            *
+            * We can leave optional params if no need to pass, then, the default
+            * values will be used instead.
+            * 
+            * URL GET EXAMPLE:
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
+            * 
+            * Just write functions as usual.
             */
             ... (Some code)
             return something;
@@ -236,41 +297,41 @@ Remember one param named "c" or "cmd", the two are equal.
         
     for test_1.php
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
     3. ...
         
     Above are the strict mode with detailed function name, only "test_a" is called.
         
     Let's see more:
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
     3. ...
         
-    We called "test_b" in "pr_1\ctr\test_2" with params "b" and "c", 
+    We called "test_b" in "pr_1/ctr/test_2" with params "b" and "c", 
     "a" is obviously usless and ignore.
         
     And there goes some interesting things, what if we do as follows?
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
     3. ...
         
-    Right, both "test_a" and "test_b" in "pr_1\ctr\test_1" will be called 
+    Right, both "test_a" and "test_b" in "pr_1/ctr/test_1" will be called 
     sharing the same data of "b" and "c", "test_a" used one more "a".
         
     This time, we do it as:
         
-    http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a-test_b-test_c&a=a&b=b&c=c
+    http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a-test_b-test_c&a=a&b=b&c=c
         
     Yep. "test_c" will run right after, as it needs no required variables.
     We now can get some compound results with differences in keys.
         
     And what if we do as follows?
         
-    1. http://HostName/api.php&c=pr_1\ctr\test_1&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1&a=a&b=b&c=c
     3. ...
         
     Could it be an error calling?
@@ -296,10 +357,10 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Once when we call as follows:
             
-    1. http://HostName/api.php&c=pr_1\ctr\test_2-test_a&a=a&b=b
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c
-    3. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&a=a&c=c&d=d&xxx=xxx...
-    4. http://HostName/api.php&cmd=pr_1\ctr\test_2-test_a&whatever...(but missed some of "a", "b", "c")
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_a&a=a&b=b
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c
+    3. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&whatever...(but missed some of "a", "b", "c")
         
     This won't happen because the input data structure dismatched.
     API just chooses to ignore the request to "test_a" function,
@@ -308,22 +369,41 @@ Remember one param named "c" or "cmd", the two are equal.
     And what's more:
         
     loose style:
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
         
-    All functions that match the input data strucuture in both "pr_1\ctr\test_1" and "pr_1\test_2"
+    All functions that match the input data strucuture in both "pr_1/ctr/test_1" and "pr_1/test_2"
     will run. With this, we can call multiple functions in multiple modules right in one request.
     These functions share the same source data, and do their own work.
         
     strict style:
-    1. http://HostName/api.php&c=pr_1\ctr\test_1-pr_1\test_2-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php&cmd=pr_1\ctr\test_1-pr_1\test_2-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2-test_a&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
         
     Functions placed in the URL (in "c"/"cmd" value, seperated by "-", order ignored, same in "POST") 
-    and match the input data strucuture at the same time in both "pr_1\ctr\test_1" and "pr_1\test_2"
+    and match the input data strucuture at the same time in both "pr_1/ctr/test_1" and "pr_1/test_2"
     will run. With this, we can call EXACT multiple functions in EXACT multiple modules in one request.
     These modules share the same function names when exist. 
     All functions share the same source data and run with the input order.
+        
+    If we want to hide the real request path, make sure the "c" or "cmd" key is listing in "conf.ini"
+    under [CGI] section with the key as the input "c" or "cmd", and the real path and its possible
+    params as the value, or ever more. Settings can be compound.
+        
+    Something examples:
+        
+    "conf.ini"
+        
+    [CGI]
+    mycmd_1 = "pr_1/ctr/test_1"
+    mycmd_2 = "pr_1/test_2-test_a"
+    mycmd_3 = "pr_1/test_2-test_a-test_b"
+    ...
+        
+    Then, the following two requests are equal.
+        
+    1. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
+    2. http://HostName/api.php?cmd=mycmd_1-mycmd_3&a=a&b=b&c=c
 
 
 **CLI Command usage:**
@@ -339,33 +419,34 @@ Remember one param named "c" or "cmd", the two are equal.
         
     **Examples:
         
-    Let's take "pr_1\ctr\test_1" as an example.
+    Let's take "pr_1/ctr/test_1" as an example.
     Full command should be as some type of follows:
         
-    1. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a" --data "a=a&b=b&c=c"
-    2. /path/php api.php -r -t 10000 -c "pr_1\ctr\test_1-test_b" -d "b=b&c=c"
-    3. /path/php api.php -r -l -c "pr_1\ctr\test_1-test_a-test_b" -d "a=a&b=b&c=c"
-    4. /path/php api.php --ret --cmd "pr_1\ctr\test_1-test_a-test_b" --data "a=a&b=b&c=c"
+    1. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a" --data "a=a&b=b&c=c"
+    2. /path/php api.php -r -t 10000 -c "pr_1/ctr/test_1-test_b" -d "b=b&c=c"
+    3. /path/php api.php -r -l -c "pr_1/ctr/test_1-test_a-test_b" -d "a=a&b=b&c=c"
+    4. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a-test_b" --data "a=a&b=b&c=c"
     5. ...
         
     JSON data package is also support as CGI mode
         
     We can also do as follows:
         
-    1. /path/php api.php pr_1\ctr\test_1-test_a -d "a=a&b=b&c=c"
-    2. /path/php api.php pr_1\ctr\test_1-test_b -d "b=b&c=c"
-    3. /path/php api.php pr_1\ctr\test_1-test_a-test_b -d "a=a&b=b&c=c"
-    4. /path/php api.php pr_1\ctr\test_1 -d "a=a&b=b&c=c"
+    1. /path/php api.php pr_1/ctr/test_1-test_a -d "a=a&b=b&c=c"
+    2. /path/php api.php pr_1/ctr/test_1-test_b -d "b=b&c=c"
+    3. /path/php api.php pr_1/ctr/test_1-test_a-test_b -d "a=a&b=b&c=c"
+    4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
     5. ...
         
-    If we need to call external programs, make sure the "c" or "cmd" key is listing in "cfg.ini" 
-    with the executable path as the value, or ever more.
+    If we need to call external programs, make sure the "c" or "cmd" key is listing in "conf.ini"
+    under [CLI] section with the executable path and its possible params as the value, or ever more.
         
     Something examples:
         
-    "cfg.ini"
+    "conf.ini"
         
-    mycmd = "/xxx/path/mycmd"
+    [CLI]
+    mycmd = "/xxx/path/mycmd -c -d --more"
         
     Command:
         
@@ -434,23 +515,23 @@ _Special codes in config file_
     if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
 
 
-**About "cfg.php" in Project root directory**
+**About "conf.php" in Project root directory**
 
-Each project could have a "cfg.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
+Each project could have a "conf.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
 So that, the scripts in this project will run under these settings. 
 
 For example:  
 We can set project 1 to connect database A, but using database B in project 2;  
 We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc... 
 
-But, always remember, don't define same named constants in different "cfg.php"s. It'll conflict.  
-All "cfg.php"s existed in the root directory of projects will be required in order right before inside script runs.  
-Class variables are suggested to use instead of definitions in "cfg.php"s. 
+But, always remember, don't define same named constants in different "conf.php"s. It'll conflict.  
+All "conf.php"s existed in the root directory of projects will be required in order right before inside script runs.  
+Class variables are suggested to use instead of definitions in "conf.php"s. 
 
 
-Some examples for "cfg.php":
+Some examples for "conf.php":
 
-    //named constants (don't conflict with other "cfg.php"s)
+    //named constants (don't conflict with other "conf.php"s)
     define('DEF_1', 'xxxx');
     define('DEF_2', 'xxxxxxxx');
         
@@ -458,11 +539,10 @@ Some examples for "cfg.php":
     \ext\crypt::$keygen = '\demo\keygen';
     \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
         
-    //define MySQL connection parameters for "pdo_mysql" extension
-    \ext\pdo_mysql::$config['init'] = true;
-    \ext\pdo_mysql::$config['host'] = '192.168.1.100';
-    \ext\pdo_mysql::$config['port'] = 4000;
-    \ext\pdo_mysql::$config['pwd'] = 'PASSWORD';
+    //define MySQL connection parameters for "pdo" extension
+    \ext\pdo::$host = '192.168.1.100';
+    \ext\pdo::$port = 4000;
+    \ext\pdo::$pwd = 'PASSWORD';
         
     //parameters for "errno" extension
     \ext\errno::$lang = false;
@@ -474,14 +554,14 @@ Some examples for "cfg.php":
     //More if needed
     ...
 
-If you want to set all variables inside classes. That is OK, just leave the "cfg.php" files away.  
-If you don't have a "cfg.php" under the root directory of the project, all settings are inherited from the one before. 
+If you want to set all variables inside classes. That is OK, just leave the "conf.php" files away.  
+If you don't have a "conf.php" under the root directory of the project, all settings are inherited from the one before based on "/core/conf.php".
 
 
 ## Notice:
 
 Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name').  
-If "DEBUG" option (in "/core/cfg.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.  
+If "DEBUG" option (in "/core/conf.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.  
 Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside. 
 
 
@@ -504,5 +584,5 @@ Old version before 3.0.0 is discontinued and the source codes located here: [3.2
 
 ## Licensing
 
-This software is licensed under the terms of the GPLv3.  
-You can find a copy of the license in the LICENSE file.
+This software is licensed under the terms of the MIT License.  
+You can find a copy of the license in the LICENSE.md file.

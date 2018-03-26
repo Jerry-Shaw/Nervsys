@@ -27,34 +27,10 @@
 
 namespace core\ctr\os;
 
-use core\ctr\os;
+use core\ctr\os, core\ctr\os\lib\cmd;
 
-class linux extends os
+class linux extends os implements cmd
 {
-    /**
-     * Build background command
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    public static function bg_cmd(string $cmd): string
-    {
-        return '"' . $cmd . '" > /dev/null 2>/dev/null &';
-    }
-
-    /**
-     * Build command for proc_open
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    public static function proc_cmd(string $cmd): string
-    {
-        return $cmd;
-    }
-
     /**
      * Format system output data
      *
@@ -90,7 +66,7 @@ class linux extends os
     /**
      * Get PHP environment information
      */
-    public static function env_info(): void
+    public static function info_env(): void
     {
         //Get pid
         parent::$env['PHP_PID'] = getmypid();
@@ -118,7 +94,7 @@ class linux extends os
     /**
      * Get System information
      */
-    public static function sys_info(): void
+    public static function info_sys(): void
     {
         $queries = [
             'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
@@ -152,5 +128,29 @@ class linux extends os
         parent::$sys = &$output;
 
         unset($queries, $output, $query, $status, $key, $value);
+    }
+
+    /**
+     * Build command for background process
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_bg(string $cmd): string
+    {
+        return '"' . $cmd . '" > /dev/null 2>/dev/null &';
+    }
+
+    /**
+     * Build command for proc_open
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_proc(string $cmd): string
+    {
+        return $cmd;
     }
 }

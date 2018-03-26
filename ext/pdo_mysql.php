@@ -6,8 +6,8 @@
  * Author 空城 <694623056@qq.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 空城
- * Copyright 2017 秋水之冰
+ * Copyright 2018 空城
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -29,68 +29,63 @@ namespace ext;
 
 class pdo_mysql extends pdo
 {
-    /**
-     * Extension config
-     * Config is an array composed of the following elements:
-     *
-     * 'type'    => 'mysql'     //string: PDO DSN prefix (database type)
-     * 'host'    => '127.0.0.1' //string: Database host address
-     * 'port'    => 3306        //int: Database host port
-     * 'user'    => 'root'      //string: Database username
-     * 'pwd'     => ''          //string: Database password
-     * 'db_name' => ''          //string: Database name
-     * 'charset' => 'utf8mb4'   //string: Database charset
-     * 'timeout' => 10          //int: Connection timeout (in seconds)
-     * 'persist' => true        //string: Persistent connection option
-     *
-     * Config will be emptied once used
-     *
-     * @var array
-     */
-    public static $config = [
-        'type'    => 'mysql',
-        'host'    => '127.0.0.1',
-        'port'    => 3306,
-        'user'    => 'root',
-        'pwd'     => '',
-        'db_name' => '',
-        'charset' => 'utf8mb4',
-        'timeout' => 10,
-        'persist' => true
-    ];
+    //PDO setting hash
+    private static $hash = '';
 
     //MySQL instance resource
     private static $mysql = null;
+
+    //MySQL instance hash map
+    private static $hash_map = [];
 
     /**
      * Extension Initialization
      */
     private static function init(): void
     {
-        //No re-connection
-        if (empty(self::$config) && is_object(self::$mysql)) return;
+        //Read PDO settings
+        $set = [
+            parent::$type,
+            parent::$host,
+            parent::$port,
+            parent::$user,
+            parent::$pwd,
+            parent::$db_name,
+            parent::$charset,
+            parent::$timeout,
+            parent::$persist
+        ];
 
-        //Read new config
-        $cfg = ['type', 'host', 'port', 'user', 'pwd', 'db_name', 'charset', 'timeout', 'persist'];
+        //Build setting hash
+        $hash = hash('md5', implode(',', $set));
 
-        if (!empty(self::$config)) {
-            //Set config for PDO
-            foreach ($cfg as $key) if (isset(self::$config[$key])) self::$$key = self::$config[$key];
-            //Empty config
-            self::$config = [];
-        }
+        //Check current hash
+        if ($hash === self::$hash) return;
 
         //Connect MySQL
-        self::$mysql = self::connect();
+        self::$mysql = self::$hash_map[$hash] ?? self::$hash_map[$hash] = parent::connect();
+
+        //Set current hash
+        self::$hash = &$hash;
 
         //Free memory
-        unset($cfg, $key);
+        unset($set, $hash);
     }
 
     /**
      * Insert data
      *
-     * Usage: insert('myTable', ['col_a' => 'A', 'col_b' => 'B, ...], 'myID')
+     * Usage:
+     *
+     * insert(
+     *     'myTable',
+     *     [
+     *         'col_a' => 'A',
+     *         'col_b' => 'B,
+     *         ...
+     *     ],
+     *     'myID'
+     * )
      *
      * @param string $table
      * @param array  $data
@@ -126,7 +121,22 @@ class pdo_mysql extends pdo
     /**
      * Update data
      *
-     * Usage: update('myTable', ['col_a' => 'A', 'col_b' => 'B, ...], [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...])
+     * Usage:
+     *
+     * update(
+     *     'myTable',
+     *     [
+     *         'col_a' => 'A',
+     *         'col_b' => 'B,
+     *         ...
+     *     ],
+     *     [
+     *         ['col_c', 'a'],
+     *         ['col_d', '>', 'd'],
+     *         ['col_e', '!=', 'e', 'OR'],
+     *         ...
+     *     ]
+     * )
      *
      * @param string $table
      * @param array  $data
@@ -172,17 +182,46 @@ class pdo_mysql extends pdo
     /**
      * Select data
      *
-     * Usage: select(
-     * 'myTable',
-     * [
-     * 'field' => ['a', 'b', ...], / a,b,c / *
-     * 'join' => ['TableB' => ['myTable.a', '=', 'TableB.b'],...], / INNER JOIN TableB
-     * 'where' => [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...], / a = 'a' AND b = 'b'
-     * 'order' => [['a', 'DESC'],...], / a DESC
-     * 'group' => ['a', 'b',...], / ['a'] / a
-     * 'limit' => [1, 20] / 1 / 1, 20
-     * ],
-     * false)
+     * Usage:
+     *
+     * select(
+     *     'myTable',
+     *     [
+     *         'field' => ['a', 'b', ...],
+     *                    OR: 'a, b, c, ...',
+     *         'join' =>  [
+     *                        'TableB' => ['myTable.a', '=', 'TableB.b'],
+     *                        'TableC' => ['myTable.a', '<>', 'TableC.b'],
+     *                        ...
+     *                    ],
+     *                    OR: 'INNER JOIN TableB ON xxx (conditions)',
+     *         'where' => [
+     *                        ['col_c', 'a'],
+     *                        ['col_d', '>', 'd'],
+     *                        ['col_e', '!=', 'e', 'OR'],
+     *                        ...
+     *                    ],
+     *                    OR: 'a = "a" AND b = "b" OR c != "c" ...',
+     *         'order' => [
+     *                        ['a', 'DESC'],
+     *                        ['b', 'ASC'],
+     *                        ...
+     *                    ],
+     *                    OR: 'a DESC, b ASC, ...',
+     *         'group' => ['a', 'b', ...],
+     *                    OR: 'a, b, ...',
+     *                    OR: ['a'],
+     *                    OR: 'a',
+     *         'limit' => [0, 20] (from 0, read 20 rows)
+     *                    OR: [10, 20] (from 10, read 20 rows)
+     *                    OR: [20] (equals to [0, 20])
+     *                    OR: 1 (equals to [0, 1])
+     *                    OR: 20 (equals to [0, 20])
+     *                    OR: '1' (equals to [0, 1])
+     *                    OR: '10, 20' (equals to [10, 20])
+     *     ],
+     *     false (default, read all) / true (read column)
+     * )
      *
      * @param string $table
      * @param array  $option
@@ -212,7 +251,17 @@ class pdo_mysql extends pdo
     /**
      * Delete data
      *
-     * Usage: delete('myTable', [['col_c', 'a'],['col_d', '>', 'd'], ['col_e', '!=', 'e', 'AND'],...])
+     * Usage:
+     *
+     * delete(
+     *     'myTable',
+     *     [
+     *         ['col_c', 'a'],
+     *         ['col_d', '>', 'd'],
+     *         ['col_e', '!=', 'e', 'OR'],
+     *         ...
+     *     ]
+     * )
      *
      * @param string $table
      * @param array  $where

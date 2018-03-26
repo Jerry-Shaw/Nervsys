@@ -49,14 +49,8 @@ class cli extends router
     //Pipe read time (in microseconds)
     private static $time = 0;
 
-    //Command configuration
-    private static $config = [];
-
     //Wait cycle (in microseconds)
-    const wait = 1000;
-
-    //Config file path
-    const config = ROOT . '/core/cfg.ini';
+    const work_wait = 1000;
 
     //Working path
     const work_path = ROOT . '/core/cli/';
@@ -83,47 +77,8 @@ class cli extends router
      */
     public static function get_cmd(string $command): string
     {
-        //Copy config
-        $config = self::load_cfg();
-
-        //Parse command
-        $keys = false === strpos($command, ':') ? [$command] : explode(':', $command);
-
-        foreach ($keys as $key) {
-            if (!isset($config[$key])) throw new \Exception('[' . $command . '] NOT configured!');
-            $config = $config[$key];
-        }
-
-        if (!is_string($config)) throw new \Exception('[' . $command . '] NOT configured!');
-
-        $cmd = '"' . trim($config, ' "\'\t\n\r\0\x0B') . '"';
-
-        unset($command, $config, $keys, $key);
-        return $cmd;
-    }
-
-    /**
-     * Load config from "cfg.ini" & "os::get_env"
-     *
-     * @return array
-     * @throws \Exception
-     */
-    private static function load_cfg(): array
-    {
-        if (!empty(self::$config)) return self::$config;
-
-        if ('' === self::config) throw new \Exception('Config file path NOT defined!');
-
-        $path = realpath(self::config);
-        if (false === $path) throw new \Exception('File [' . self::config . '] NOT found!');
-
-        $config = parse_ini_file($path, true);
-        if (false === $config) throw new \Exception('[' . self::config . '] setting incorrect!');
-
-        self::$config = $config + os::get_env();
-
-        unset($path, $config);
-        return self::$config;
+        if (!isset(parent::$conf_cli[$command]) || !is_string(parent::$conf_cli[$command])) throw new \Exception('[' . $command . '] NOT configured!');
+        return '"' . trim(parent::$conf_cli[$command], ' "\'\t\n\r\0\x0B') . '"';
     }
 
     /**
@@ -242,17 +197,39 @@ class cli extends router
      */
     private static function prep_cmd(): bool
     {
-        $get = false;
         $val = parent::opt_val(parent::$data, ['c', 'cmd']);
+        if (!$val['get'] || !is_string($val['data']) || '' === $val['data']) return false;
 
-        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            if (false !== strpos($val['data'], '/')) self::$call_cgi = true;
-            parent::$cmd = &$val['data'];
-            $get = true;
-        }
+        parent::$cmd = &$val['data'];
+        self::$call_cgi = self::chk_cgi($val['data']);
 
         unset($val);
-        return $get;
+        return true;
+    }
+
+    /**
+     * Check CGI command
+     *
+     * @param string $cmd
+     *
+     * @return bool
+     */
+    private static function chk_cgi(string $cmd): bool
+    {
+        //Check NAMESPACE slashes
+        if (false !== strpos($cmd, '/')) return true;
+
+        //Check CGI config
+        if (empty(parent::$conf_cgi)) return false;
+
+        //Check mapping keys
+        $data = false !== strpos($cmd, '-') ? explode('-', $cmd) : [$cmd];
+        $data = array_intersect_key(parent::$conf_cgi, array_flip($data));
+        $for_cgi = false !== strpos(implode($data), '/');
+
+        unset($cmd, $data);
+
+        return $for_cgi;
     }
 
     /**
@@ -282,6 +259,9 @@ class cli extends router
     private static function exec_cli(): void
     {
         try {
+            //Add OS environment
+            parent::$conf_cli += os::get_env();
+
             //Get command from config
             $command = self::get_cmd(parent::$cmd);
 
@@ -289,7 +269,7 @@ class cli extends router
             if (!empty(self::$cmd_argv)) $command .= ' ' . implode(' ', self::$cmd_argv);
 
             //Create process
-            $process = proc_open(os::proc_cmd($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
+            $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
             if (!is_resource($process)) throw new \Exception('Access denied or [' . $command . '] ERROR!');
             if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
 
@@ -360,8 +340,8 @@ class cli extends router
         //Keep checking pipe
         while (0 === self::$time || $time <= self::$time) {
             if (proc_get_status($resource[0])['running']) {
-                usleep(self::wait);
-                $time += self::wait;
+                usleep(self::work_wait);
+                $time += self::work_wait;
             } else {
                 $result = trim(stream_get_contents($resource[1]));
                 break;

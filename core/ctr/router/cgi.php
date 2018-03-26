@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -40,13 +40,19 @@ class cgi extends router
     //Object list
     private static $object = [];
 
+    //Mapping list
+    private static $mapping = [];
+
     /**
      * Run CGI Router
      */
     public static function run(): void
     {
-        //Prepare data
-        self::prep_data();
+        //Read data
+        self::read_data();
+
+        //Prepare cmd
+        self::prep_cmd();
 
         //Parse cmd
         self::parse_cmd();
@@ -58,14 +64,18 @@ class cgi extends router
     /**
      * Prepare CGI data
      */
-    private static function prep_data(): void
+    private static function read_data(): void
     {
         if ('' !== parent::$cmd) return;
 
+        //Read data
         self::read_http();
         self::read_input();
 
-        self::prep_cmd();
+        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
+        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) parent::$cmd = &$val['data'];
+
+        unset($val);
     }
 
     /**
@@ -75,6 +85,7 @@ class cgi extends router
     {
         $data = !empty($_POST) ? $_POST : (!empty($_GET) ? $_GET : $_REQUEST);
 
+        //Collect data
         if (!empty($data)) parent::$data += $data;
         if (!empty($_FILES)) parent::$data += $_FILES;
 
@@ -100,10 +111,22 @@ class cgi extends router
      */
     private static function prep_cmd(): void
     {
-        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
-        if ($val['get'] && is_string($val['data']) && false !== strpos($val['data'], '/')) parent::$cmd = &$val['data'];
+        if (empty(parent::$conf_cgi)) return;
 
-        unset($val);
+        //Explode command
+        $data = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
+
+        //Parse mapping keys
+        foreach ($data as $key => $value) {
+            if (isset(parent::$conf_cgi[$value])) {
+                $data[$key] = parent::$conf_cgi[$value];
+                self::$mapping[parent::$conf_cgi[$value]] = $value;
+            }
+        }
+
+        //Rebuild command
+        parent::$cmd = implode('-', $data);
+        unset($data, $key, $value);
     }
 
     /**
@@ -112,10 +135,12 @@ class cgi extends router
     private static function parse_cmd(): void
     {
         //Extract "cmd" list
-        $list = self::get_list(parent::$cmd);
+        $list = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
 
         //Parse "cmd" values
         foreach ($list as $item) {
+            if ('' === $item) continue;
+
             //Get module value
             $module = self::get_module($item);
 
@@ -136,7 +161,7 @@ class cgi extends router
     {
         //Check module data
         if (empty(self::$module)) {
-            debug('CGI', 'Module NOT found!');
+            debug('CGI', 'Command ERROR!');
             return;
         }
 
@@ -146,33 +171,13 @@ class cgi extends router
         //Execute queue list
         foreach (self::$module as $module => $method) {
             //Load Module config file
-            $file = realpath(ROOT . '/' . $module . '/cfg.php');
+            $file = realpath(ROOT . '/' . $module . '/conf.php');
             if (false !== $file) require $file;
 
             //Call API
             self::call_api($method);
         }
         unset($module, $method, $file);
-    }
-
-    /**
-     * Get Module/Method list
-     *
-     * @param string $lib
-     *
-     * @return array
-     */
-    private static function get_list(string $lib): array
-    {
-        if (false === strpos($lib, '-')) return [$lib];
-
-        //Spilt data when multiple modules/methods exist with "-"
-        $list = explode('-', $lib);
-        $list = array_filter($list);
-        $list = array_unique($list);
-
-        unset($lib);
-        return $list;
     }
 
     /**
@@ -206,7 +211,7 @@ class cgi extends router
             //Get root class
             $space = '\\' . strtr($class, '/', '\\');
             //Call methods
-            class_exists($space) ? self::call_class($class, $space) : debug($class, 'Class [' . $space . '] NOT found!');
+            class_exists($space) ? self::call_class($class, $space) : debug(self::map_key($class), 'Class [' . $space . '] NOT found!');
         }
 
         unset($lib, $class, $space);
@@ -222,49 +227,51 @@ class cgi extends router
     {
         //Check API TrustZone
         if (!isset($space::$tz) || !is_array($space::$tz)) {
-            debug($class, 'TrustZone NOT Open!');
+            debug(self::map_key($class), 'TrustZone NOT Open!');
             return;
         }
 
-        //Get API TrustZone list & method list
-        $key_list = array_keys($space::$tz);
-        $method_list = get_class_methods($space);
-
-        //Get requested api methods
-        $key_methods = !empty(self::$method) ? array_intersect(self::$method, $key_list, $method_list) : array_intersect($key_list, $method_list);
-
-        //Calling "init" method without permission & comparison
-        if (in_array('init', $method_list, true) && !in_array('init', $key_methods, true)) {
+        //Calling "init" method without permission
+        if (method_exists($space, 'init')) {
             try {
                 self::call_method($class, $space, 'init');
             } catch (\Throwable $exception) {
-                debug($class . '/init', 'Exec Failed! ' . $exception->getMessage());
+                debug(self::map_key($class, 'init'), 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
 
-        //Run method
-        foreach ($key_methods as $method) {
+        //Check API TrustZone permission
+        if (empty($space::$tz)) return;
+
+        //Get API TrustZone list & method list
+        $tz_list = array_keys($space::$tz);
+        $func_list = get_class_methods($space);
+
+        //Get request list from API TrustZone list
+        $method_list = !empty(self::$method) ? array_intersect(self::$method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+
+        //Remove "init" method from request list when exists
+        if (in_array('init', $method_list, true)) unset($method_list[array_search('init', $method_list, true)]);
+
+        //Checking & Calling
+        foreach ($method_list as $method) {
             //Get intersect and difference set of data requirement structure
             $inter = array_intersect(parent::$struct, $space::$tz[$method]);
             $diff = array_diff($space::$tz[$method], $inter);
 
-            //Skip running method when data structure not match
-            if (!empty($diff)) {
-                debug($class . '/' . $method, 'Missing Params [' . (implode(', ', $diff)) . ']!');
-                continue;
-            }
-
-            //Call method
             try {
+                //Report missing params
+                if (!empty($diff)) throw new \Exception('Missing Params [' . (implode(', ', $diff)) . ']!');
+                //Call method
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
-                debug($class . '/' . $method, 'Exec Failed! ' . $exception->getMessage());
+                debug(self::map_key($class, $method), 'Method Calling Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
 
-        unset($class, $space, $key_list, $method_list, $key_methods, $method, $inter, $diff);
+        unset($class, $space, $tz_list, $func_list, $method_list, $method, $inter, $diff);
     }
 
     /**
@@ -274,6 +281,7 @@ class cgi extends router
      * @param string $space
      * @param string $method
      *
+     * @throws \Exception
      * @throws \ReflectionException
      */
     private static function call_method(string $class, string $space, string $method): void
@@ -282,7 +290,10 @@ class cgi extends router
         $reflect = new \ReflectionMethod($space, $method);
 
         //Check visibility
-        if (!$reflect->isPublic()) return;
+        if (!$reflect->isPublic()) throw new \Exception('NOT Public!');
+
+        //Mapping data
+        $data = self::map_data($reflect);
 
         //Check property
         if (!$reflect->isStatic()) {
@@ -293,14 +304,77 @@ class cgi extends router
         }
 
         //Calling method
-        $result = forward_static_call([$space, $method]);
+        $result = empty($data) ? forward_static_call([$space, $method]) : forward_static_call_array([$space, $method], $data);
 
         //Build data structure
         parent::build_struc();
 
-        //Save result
-        if (isset($result)) parent::$result[$class . '/' . $method] = &$result;
+        //Save result (Try mapping keys)
+        if (isset($result)) parent::$result[self::map_key($class, $method)] = &$result;
 
-        unset($class, $space, $method, $reflect, $result);
+        unset($class, $space, $method, $reflect, $data, $result);
+    }
+
+    /**
+     * Build mapped data
+     *
+     * @param $reflect
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function map_data($reflect): array
+    {
+        //Get method params
+        $params = $reflect->getParameters();
+        if (empty($params)) return [];
+
+        //Build data
+        $data = $diff = [];
+
+        //Process params
+        foreach ($params as $param) {
+            //Get param name
+            $name = $param->getName();
+
+            //Check param data
+            if (isset(parent::$data[$name])) {
+                switch ($param->getType()) {
+                    case 'int':
+                        $data[$name] = (int)parent::$data[$name];
+                        break;
+                    case 'array':
+                        $data[$name] = (array)parent::$data[$name];
+                        break;
+                    case 'string':
+                        $data[$name] = (string)parent::$data[$name];
+                        break;
+                    default:
+                        $data[$name] = parent::$data[$name];
+                        break;
+                }
+            } else $param->isOptional() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
+        }
+
+        //Report missing params
+        if (!empty($diff)) throw new \Exception('Missing Params [' . (implode(', ', $diff)) . ']!');
+
+        unset($reflect, $params, $diff, $param, $name);
+        return $data;
+    }
+
+    /**
+     * Build mapped key
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return string
+     */
+    private static function map_key(string $class, string $method = ''): string
+    {
+        $key = '' !== $method ? (self::$mapping[$class . '-' . $method] ?? (self::$mapping[$class] ?? $class) . '/' . $method) : (self::$mapping[$class] ?? $class);
+        unset($class, $method);
+        return $key;
     }
 }

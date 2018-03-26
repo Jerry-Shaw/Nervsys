@@ -7,7 +7,7 @@
  * Author 秋水之冰 <27206617@qq.com>
  *
  * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -85,6 +85,8 @@ function load(string $lib): void
  */
 function debug(string $module, string $message): void
 {
-    if (0 !== DEBUG) \core\ctr\router::$result[$module] = &$message;
+    if (0 === DEBUG) return;
+    \core\ctr\router::$result[$module] = &$message;
+
     unset($module, $message);
 }

@@ -1,13 +1,11 @@
 <?php
 
 /**
- * Cross-Origin Resource Sharing Config File
+ * OS Command Controller Interface
  *
- * Author Jerry Shaw <jerry-shaw@live.com>
  * Author 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Copyright 2018 秋水之冰
  *
  * This file is part of NervSys.
  *
@@ -25,4 +23,35 @@
  * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
  */
 
-\core\ctr\router::$header = ['X-Requested-With', 'Content-Type', 'Content-Length'];
+namespace core\ctr\os\lib;
+
+interface cmd
+{
+    /**
+     * Get PHP environment information
+     */
+    public static function info_env(): void;
+
+    /**
+     * Get System information
+     */
+    public static function info_sys(): void;
+
+    /**
+     * Build command for background process
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_bg(string $cmd): string;
+
+    /**
+     * Build command for proc_open
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_proc(string $cmd): string;
+}

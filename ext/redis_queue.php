@@ -36,7 +36,7 @@ class redis_queue extends redis
      *
      * Examples:
      * "example/queue-process", etc... (Controlled by API & TrustZone)
-     * "program" or "exe", etc... (Controlled by API & cfg.ini)
+     * "program" or "exe", etc... (Controlled by API & conf.ini)
      *
      * Notice:
      * When set cmd value, make sure it can be fully controlled by API.
@@ -335,7 +335,7 @@ class redis_queue extends redis
         if ($needed > self::$max_runs) $needed = self::$max_runs;
 
         //Build command
-        $cmd = os::bg_cmd(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
+        $cmd = os::cmd_bg(self::$os_env['PHP_EXE'] . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
 
         //Run child processes
         for ($i = 0; $i < $needed; ++$i) pclose(popen($cmd, 'r'));
