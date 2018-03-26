@@ -228,17 +228,19 @@ All script should under the right namespace for better calling by NervSys API.
             * there are params which will be checked and passed from API.
             *
             * The names of the params are equal to the data in router::$data.
-            * All params will be converted to the right type if defined,
-            * we don't need to build the data type manually.
-            * The original data in router::$data will not change.
+            * All params will be converted to the right type if declared, or, 
+            * kept in original type as input data type if not declared.
             *
-            * We can leave optional params if no need to pass, then, the default
-            * values will be used instead.
+            * We can request without optional params if no need to pass, then, 
+            * the default values will be used instead.
+            *
+            * We don't need to build the data manually, both value and order.
+            * The original data in router::$data will not change.
             * 
-            * URL GET EXAMPLE:
+            * URL GET EXAMPLE (Please read detail examples below):
             * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
             * 
-            * Just write functions as usual.
+            * NOTE: Just write functions as usual.
             */
             ... (Some code)
             return something;
