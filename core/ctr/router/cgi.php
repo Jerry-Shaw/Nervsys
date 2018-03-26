@@ -286,14 +286,11 @@ class cgi extends router
      */
     private static function call_method(string $class, string $space, string $method): void
     {
-        //Get reflection object for class method
+        //Get method reflection object
         $reflect = new \ReflectionMethod($space, $method);
 
         //Check visibility
-        if (!$reflect->isPublic()) throw new \Exception('NOT Public!');
-
-        //Mapping data
-        $data = self::map_data($reflect);
+        if (!$reflect->isPublic()) return;
 
         //Check property
         if (!$reflect->isStatic()) {
@@ -303,14 +300,17 @@ class cgi extends router
             $space = self::$object[$class];
         }
 
+        //Mapping data
+        $data = self::map_data($reflect);
+
         //Calling method
         $result = empty($data) ? forward_static_call([$space, $method]) : forward_static_call_array([$space, $method], $data);
 
-        //Build data structure
-        parent::build_struc();
-
         //Save result (Try mapping keys)
         if (isset($result)) parent::$result[self::map_key($class, $method)] = &$result;
+
+        //Build data structure
+        parent::build_struc();
 
         unset($class, $space, $method, $reflect, $data, $result);
     }

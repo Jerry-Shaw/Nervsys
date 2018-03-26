@@ -36,9 +36,9 @@ class sql extends mysql
     public static $dir = null;
 
     /**
-     * Initialize
+     * Prepare
      */
-    private static function init(): void
+    private static function prep(): void
     {
         //Check dir value
         if (is_string(self::$dir) && '' !== self::$dir) self::$dir = [self::$dir];
@@ -67,8 +67,8 @@ class sql extends mysql
      */
     public static function import(): array
     {
-        //Initialize
-        self::init();
+        //Prepare
+        self::prep();
 
         //Check dir value
         if (!is_array(self::$dir) || empty(self::$dir)) return [];
