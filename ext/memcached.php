@@ -3,7 +3,7 @@
 /**
  * Memcached Extension
  *
- * Author tggtzbh <tggtzbh@sina.coms>
+ * Author tggtzbh <tggtzbh@sina.com>
  *
  */
 
