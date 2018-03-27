@@ -343,6 +343,12 @@ class cgi extends router
                     case 'int':
                         $data[$name] = (int)parent::$data[$name];
                         break;
+                    case 'bool':
+                        $data[$name] = (bool)parent::$data[$name];
+                        break;
+                    case 'float':
+                        $data[$name] = (float)parent::$data[$name];
+                        break;
                     case 'array':
                         $data[$name] = (array)parent::$data[$name];
                         break;
