@@ -156,10 +156,11 @@ All script should under the right namespace for better calling by NervSys API.
         * Initial function for API
         *
         * It will be called directly when exists.
-        * Data, Authority or more should be checked here before other functions
+        * Data, authority or more should be checked here before other functions
         * are called.
+        *
         * It has the permission to modify the API TrustZone config in the class,
-        * so, one or all keys can be removed once some cases are not matched,
+        * so, one or more keys can be added/removed when some cases are matched,
         * just to avoid some requests which are not permitted.
         *
         * Suggestion: Don't return here, unless it really needs a return.
@@ -169,13 +170,14 @@ All script should under the right namespace for better calling by NervSys API.
         public static function init()
         {
             if (some case) {
-                //Just remove one or more keys from TrustZone
+                //Just add/remove one or more keys in TrustZone
                 //but let other functions ready for calling
+                self::$tz['func_name_ready_to_call'] = ['params'];
                 unset(self::$tz['func_name_not_permitted']);
             } elseif (denied) {
                 //Remove all from TrustZone
                 self::$tz = [];
-                //Give a return because no further function will be be called
+                //Give a return because no further functions will be be called
                 return 'Sorry, you are not allowed to go any further!';
             }
             
