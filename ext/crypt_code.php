@@ -23,8 +23,8 @@ namespace ext;
 
 class crypt_code extends crypt
 {
-    //Font filename (Place font file in "/ext/font/" folder)
-    public static $font = 'font_filename.ttf';
+    //Font filename (Place font files in "/ext/font/" folder)
+    public static $font = 'font.ttf';
 
     //Auth code type (any / num / calc / word)
     public static $type = 'any';
