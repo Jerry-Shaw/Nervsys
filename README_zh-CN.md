@@ -170,6 +170,30 @@
             ... (Some code)
             return something;
         }
+        /**
+        * 传输传递的示例
+        */
+        public function test_d(int $val_a, string $val_b, $val_c = 1, $val_d = [])
+        {
+            /**
+            * 虽然TrustZone配对于这个方法是没有的，但
+            * 这些参数都是通过API去检测
+            * 这些参数的名称等同于 router::$data中的数据
+            * 如果参数被申明了数据类型，都将会转换为正确的类型，
+            * 如果没有申明，那么将会在原始类型中保留为输入数据类型
+            *
+            * 但不需要设置参数时，也可以不传入参数，这时候，将会使用默认的参数值
+            *
+            * 我们不需要手工去构建这些数据，无论是值或者是顺序，在router::$data中的原始数据都不会改变
+            * 
+            * git请求的url示例
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
+            * 
+            * 注意：仅仅只是像我们往常一样书写的函数一样
+            */
+            ... (Some code)
+            return something;
+        }
     }
 
 
