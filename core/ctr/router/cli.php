@@ -72,6 +72,7 @@ class cli extends router
     public static function get_cmd(string $command): string
     {
         if (!isset(parent::$conf_cli[$command]) || !is_string(parent::$conf_cli[$command])) throw new \Exception('[' . $command . '] NOT configured!');
+
         return '"' . trim(parent::$conf_cli[$command], ' "\'\t\n\r\0\x0B') . '"';
     }
 
@@ -80,34 +81,34 @@ class cli extends router
      */
     private static function prep_data(): void
     {
-        $cmd = false;
-
         //Prepare option data
-        $optind = self::prep_opt($cmd);
+        $optind = self::prep_opt();
 
-        //Merge arguments
+        //Prepare cmd value
+        $get_cmd = self::prep_cmd();
+
+        //Extract arguments
         $argument = array_slice($_SERVER['argv'], $optind);
         if (empty($argument)) return;
 
-        //No command, point to first argument
-        if (!$cmd) parent::$data['cmd'] = array_shift($argument);
+        //Redirect cmd to first argument
+        if (!$get_cmd) parent::$data['cmd'] = array_shift($argument);
 
         //Merge data to self::$cmd_data
         if (!empty($argument)) self::$cmd_argv = &$argument;
 
-        //Prepare cmd
+        //Prepare cmd value
         self::prep_cmd();
-        unset($cmd, $optind, $argument);
+
+        unset($optind, $argument);
     }
 
     /**
      * Prepare option data
      *
-     * @param bool $cmd
-     *
      * @return int
      */
-    private static function prep_opt(bool &$cmd): int
+    private static function prep_opt(): int
     {
         /**
          * CLI options
@@ -148,12 +149,6 @@ class cli extends router
 
         //Merge options to parent
         if (!empty($opt)) parent::$data = array_merge(parent::$data, $opt);
-
-        //Get CMD & build data structure
-        if (self::prep_cmd()) {
-            $cmd = true;
-            parent::build_struc();
-        }
 
         unset($opt, $val);
         return $optind;
@@ -222,7 +217,6 @@ class cli extends router
         $for_cgi = false !== strpos(implode($data), '/');
 
         unset($cmd, $data);
-
         return $for_cgi;
     }
 
@@ -256,15 +250,17 @@ class cli extends router
             //Add OS environment
             parent::$conf_cli += os::get_env();
 
-            //Get command from config
+            //Get cmd from config
             $command = self::get_cmd(parent::$cmd);
 
-            //Fill command argv
+            //Fill cmd argv
             if (!empty(self::$cmd_argv)) $command .= ' ' . implode(' ', self::$cmd_argv);
 
             //Create process
             $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
             if (!is_resource($process)) throw new \Exception('Access denied or [' . $command . '] ERROR!');
+
+            //Write data via STDIN
             if ('' !== self::$cli_data) fwrite($pipes[0], self::$cli_data . PHP_EOL);
 
             //Record CLI Runtime values
@@ -272,6 +268,7 @@ class cli extends router
 
             //Close pipes (ignore process)
             foreach ($pipes as $pipe) fclose($pipe);
+
             unset($command, $process, $pipes, $pipe);
         } catch (\Throwable $exception) {
             debug('CLI', $exception->getMessage());

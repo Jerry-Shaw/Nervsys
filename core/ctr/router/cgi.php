@@ -37,6 +37,12 @@ class cgi extends router
     //Mapping list
     private static $mapping = [];
 
+    //Data Structure
+    private static $structure = [];
+
+    //Argument hash
+    private static $argv_hash = '';
+
     /**
      * Run CGI Router
      */
@@ -66,6 +72,7 @@ class cgi extends router
         self::read_http();
         self::read_input();
 
+        //Get cmd value
         $val = parent::opt_val(parent::$data, ['c', 'cmd']);
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) parent::$cmd = &$val['data'];
 
@@ -120,6 +127,7 @@ class cgi extends router
 
         //Rebuild command
         parent::$cmd = implode('-', $data);
+
         unset($data, $key, $value);
     }
 
@@ -159,19 +167,17 @@ class cgi extends router
             return;
         }
 
-        //Build data structure
-        parent::build_struc();
-
         //Execute queue list
         foreach (self::$module as $module => $method) {
             //Load Module config file
-            $file = realpath(ROOT . '/' . $module . '/conf.php');
-            if (false !== $file) require $file;
+            $conf = realpath(ROOT . '/' . $module . '/conf.php');
+            if (false !== $conf) require $conf;
 
             //Call API
             self::call_api($method);
         }
-        unset($module, $method, $file);
+
+        unset($module, $method, $conf);
     }
 
     /**
@@ -230,7 +236,7 @@ class cgi extends router
             try {
                 self::call_method($class, $space, 'init');
             } catch (\Throwable $exception) {
-                debug(self::map_key($class, 'init'), 'Method Calling Failed! ' . $exception->getMessage());
+                debug(self::map_key($class, 'init'), 'Execute Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
@@ -251,16 +257,16 @@ class cgi extends router
         //Checking & Calling
         foreach ($method_list as $method) {
             //Get intersect and difference set of data requirement structure
-            $inter = array_intersect(parent::$struct, $space::$tz[$method]);
+            $inter = array_intersect(self::$structure, $space::$tz[$method]);
             $diff = array_diff($space::$tz[$method], $inter);
 
             try {
                 //Report missing params
-                if (!empty($diff)) throw new \Exception('Missing Params [' . (implode(', ', $diff)) . ']!');
+                if (!empty($diff)) throw new \Exception('Missing params [' . (implode(', ', $diff)) . ']!');
                 //Call method
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
-                debug(self::map_key($class, $method), 'Method Calling Failed! ' . $exception->getMessage());
+                debug(self::map_key($class, $method), 'Execute Failed! ' . $exception->getMessage());
                 unset($exception);
             }
         }
@@ -286,27 +292,38 @@ class cgi extends router
         //Check visibility
         if (!$reflect->isPublic()) return;
 
-        //Check property
-        if (!$reflect->isStatic()) {
-            //Create new object
-            if (!isset(self::$object[$class])) self::$object[$class] = new $space;
-            //Copy object
-            $space = self::$object[$class];
-        }
+        //Build structure
+        self::build_struct();
 
         //Mapping data
         $data = self::map_data($reflect);
 
-        //Calling method
+        //Create object
+        if (!$reflect->isStatic()) $space = self::$object[$class] ?? self::$object[$class] = new $space;
+
+        //Call method (with params)
         $result = empty($data) ? forward_static_call([$space, $method]) : forward_static_call_array([$space, $method], $data);
 
         //Save result (Try mapping keys)
         if (isset($result)) parent::$result[self::map_key($class, $method)] = &$result;
 
-        //Build data structure
-        parent::build_struc();
-
         unset($class, $space, $method, $reflect, $data, $result);
+    }
+
+    /**
+     * Build data structure
+     */
+    private static function build_struct(): void
+    {
+        $struct = array_keys(parent::$data);
+        $hash = hash('sha256', implode('|', $struct));
+
+        if (self::$argv_hash === $hash) return;
+
+        self::$structure = &$struct;
+        self::$argv_hash = &$hash;
+
+        unset($struct, $hash);
     }
 
     /**
@@ -357,7 +374,7 @@ class cgi extends router
         }
 
         //Report missing params
-        if (!empty($diff)) throw new \Exception('Missing Params [' . (implode(', ', $diff)) . ']!');
+        if (!empty($diff)) throw new \Exception('Missing params [' . (implode(', ', $diff)) . ']!');
 
         unset($reflect, $params, $diff, $param, $name);
         return $data;
@@ -374,6 +391,7 @@ class cgi extends router
     private static function map_key(string $class, string $method = ''): string
     {
         $key = '' !== $method ? (self::$mapping[$class . '-' . $method] ?? (self::$mapping[$class] ?? $class) . '/' . $method) : (self::$mapping[$class] ?? $class);
+
         unset($class, $method);
         return $key;
     }

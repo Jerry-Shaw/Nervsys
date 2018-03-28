@@ -32,18 +32,12 @@ class router
     //Result data
     public static $result = [];
 
-    //Data Structure
-    public static $struct = [];
-
     //Allowed header
     public static $header = [];
 
     //Config settings
     protected static $conf_cgi = [];
     protected static $conf_cli = [];
-
-    //Argument hash
-    private static $argv_hash = '';
 
     //Config file path
     const conf_path = ROOT . '/core/conf.ini';
@@ -58,11 +52,11 @@ class router
         $unit = parse_url($_SERVER['HTTP_ORIGIN']);
         if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
 
-        $file = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
-        if (false === $file) exit;
+        $cors = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
+        if (false === $cors) exit;
 
-        require $file;
-        unset($unit, $file);
+        require $cors;
+        unset($unit, $cors);
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
@@ -77,16 +71,16 @@ class router
      */
     public static function load_conf(): void
     {
-        $conf_path = realpath(self::conf_path);
-        if (false === $conf_path) return;
+        $path = realpath(self::conf_path);
+        if (false === $path) return;
 
-        $config = parse_ini_file($conf_path, true);
-        if (false === $config) return;
+        $conf = parse_ini_file($path, true);
+        if (false === $conf) return;
 
-        if (isset($config['CGI'])) self::$conf_cgi = &$config['CGI'];
-        if (isset($config['CLI'])) self::$conf_cli = &$config['CLI'];
+        if (isset($conf['CGI'])) self::$conf_cgi = &$conf['CGI'];
+        if (isset($conf['CLI'])) self::$conf_cli = &$conf['CLI'];
 
-        unset($conf_path, $config);
+        unset($path, $conf);
     }
 
     /**
@@ -150,21 +144,5 @@ class router
 
         unset($keys, $key);
         return $result;
-    }
-
-    /**
-     * Build data structure
-     */
-    protected static function build_struc(): void
-    {
-        $struc = array_keys(self::$data);
-        $hash = hash('sha256', implode('|', $struc));
-
-        if (self::$argv_hash === $hash) return;
-
-        self::$struct = &$struc;
-        self::$argv_hash = &$hash;
-
-        unset($struc, $hash);
     }
 }
