@@ -37,12 +37,6 @@ class cgi extends router
     //Mapping list
     private static $mapping = [];
 
-    //Data Structure
-    private static $structure = [];
-
-    //Argument hash
-    private static $argv_hash = '';
-
     /**
      * Run CGI Router
      */
@@ -231,7 +225,7 @@ class cgi extends router
             return;
         }
 
-        //Calling "init" method without permission
+        //Call "init" method without permission
         if (method_exists($space, 'init')) {
             try {
                 self::call_method($class, $space, 'init');
@@ -254,15 +248,16 @@ class cgi extends router
         //Remove "init" method from request list when exists
         if (in_array('init', $method_list, true)) unset($method_list[array_search('init', $method_list, true)]);
 
-        //Checking & Calling
+        //Process method list
         foreach ($method_list as $method) {
-            //Get intersect and difference set of data requirement structure
-            $inter = array_intersect(self::$structure, $space::$tz[$method]);
-            $diff = array_diff($space::$tz[$method], $inter);
-
             try {
-                //Report missing TrustZone
+                //Compare data structure with method TrustZone
+                $inter = array_intersect(array_keys(parent::$data), $space::$tz[$method]);
+                $diff = array_diff($space::$tz[$method], $inter);
+
+                //Report missing TrustZone data
                 if (!empty($diff)) throw new \Exception('TrustZone missing [' . (implode(', ', $diff)) . ']!');
+
                 //Call method
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
@@ -292,9 +287,6 @@ class cgi extends router
         //Check visibility
         if (!$reflect->isPublic()) return;
 
-        //Build structure
-        self::build_struct();
-
         //Mapping data
         $data = self::map_data($reflect);
 
@@ -308,22 +300,6 @@ class cgi extends router
         if (isset($result)) parent::$result[self::map_key($class, $method)] = &$result;
 
         unset($class, $space, $method, $reflect, $data, $result);
-    }
-
-    /**
-     * Build data structure
-     */
-    private static function build_struct(): void
-    {
-        $struct = array_keys(parent::$data);
-        $hash = hash('sha256', implode('|', $struct));
-
-        if (self::$argv_hash === $hash) return;
-
-        self::$structure = &$struct;
-        self::$argv_hash = &$hash;
-
-        unset($struct, $hash);
     }
 
     /**
@@ -373,7 +349,7 @@ class cgi extends router
             } else $param->isOptional() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
         }
 
-        //Report missing argument
+        //Report missing argument data
         if (!empty($diff)) throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']!');
 
         unset($reflect, $params, $diff, $param, $name);
