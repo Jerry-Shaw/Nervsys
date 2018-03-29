@@ -136,6 +136,36 @@
             test_b = [b, c],
             test_c = [c]
         ];
+        /**
+        * API的初始化函数
+        *
+        * 但这个初始化函数存在的时候，将会被调用
+        * 在调用其他函数之前，数据，权限等都将在这个函数中检查
+        * 在这个方法中还可以修改 TrustZone 中的配置信息
+        * 在一些特殊的情况下，也可以删除一个或者全部的TrustZone中的配置项（键名）
+        * 去避免一些不被允许的请求
+        *
+        * 建议：不要在这个函数中使用 return ，除非你真的需要一个返回值
+        * Suggestion: Don't return here, unless it really needs a return.
+        *
+        * 一个示例
+        */
+        public static function init()
+        {
+            if (some case) {
+                // 去除 TrustZone 中的一个配置项
+                // 再去调用内中的其他的函数
+                unset(self::$tz['func_name_not_permitted']);
+            } elseif (denied) {
+                //删除 TrustZone 中的所有配置项
+                self::$tz = [];
+                // 需要给了一个返回值，因为这样将不会有进一步的函数被调用
+                return 'Sorry, you are not allowed to go any further!';
+            }
+            
+            //More code
+            //Data processing, function preparation, etc...
+        }
         
         public static function test_a()
         {
@@ -166,6 +196,34 @@
             /**
             * 这个函数必须参数c，变量d是参选参数
             * 如果参数d被传入的话就用router::$data['d']获取
+            */
+            ... (Some code)
+            return something;
+        }
+        /**
+        * 传输传递的示例
+        */
+        public function test_d(int $val_a, string $val_b, $val_c = 1, $val_d = [])
+        {
+            /**
+            * 虽然上面TrustZone中并没有配置这个方法(test_d), 
+            * 但是这个参数将从API中检测，并且通过
+            *
+            * 这个参数test_d 也可以在 router::$data 中获取得到
+            * 如果参数被申明了数据类型，都将会转换为正确的类型 （int $val_a）
+            * 如果没有申明，那么将会在原始类型保留为输入数据类型 
+            *
+            * 当不需要设置参数时，我们也可以不传入参数，这时候，将会使用默认的参数值 （$val_c = 1）
+            *
+            * api参数的书写顺序是自由的
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_c=10&val_b=b
+            * 上面的两个路由是等同的
+            * 
+            * 一个get请求的url示例
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
+            * 
+            * 注意：接下来就像平常一样写函数
             */
             ... (Some code)
             return something;

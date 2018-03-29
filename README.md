@@ -156,10 +156,11 @@ All script should under the right namespace for better calling by NervSys API.
         * Initial function for API
         *
         * It will be called directly when exists.
-        * Data, Authority or more should be checked here before other functions
+        * Data, authority or more should be checked here before other functions
         * are called.
+        *
         * It has the permission to modify the API TrustZone config in the class,
-        * so, one or all keys can be removed once some cases are not matched,
+        * so, one or more keys can be added/removed when some cases are matched,
         * just to avoid some requests which are not permitted.
         *
         * Suggestion: Don't return here, unless it really needs a return.
@@ -169,13 +170,14 @@ All script should under the right namespace for better calling by NervSys API.
         public static function init()
         {
             if (some case) {
-                //Just remove one or more keys from TrustZone
+                //Just add/remove one or more keys in TrustZone
                 //but let other functions ready for calling
+                self::$tz['func_name_ready_to_call'] = ['params'];
                 unset(self::$tz['func_name_not_permitted']);
             } elseif (denied) {
                 //Remove all from TrustZone
                 self::$tz = [];
-                //Give a return because no further function will be be called
+                //Give a return because no further functions will be be called
                 return 'Sorry, you are not allowed to go any further!';
             }
             
@@ -228,17 +230,19 @@ All script should under the right namespace for better calling by NervSys API.
             * there are params which will be checked and passed from API.
             *
             * The names of the params are equal to the data in router::$data.
-            * All params will be converted to the right type if defined,
-            * we don't need to build the data type manually.
-            * The original data in router::$data will not change.
+            * All params will be converted to the right type if declared, or, 
+            * kept in original type as input data type if not declared.
             *
-            * We can leave optional params if no need to pass, then, the default
-            * values will be used instead.
+            * We can request without optional params if no need to pass, then, 
+            * the default values will be used instead.
+            *
+            * We don't need to build the data manually, both value and order.
+            * The original data in router::$data will not change.
             * 
-            * URL GET EXAMPLE:
+            * URL GET EXAMPLE (Please read detail examples below):
             * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
             * 
-            * Just write functions as usual.
+            * NOTE: Just write functions as usual.
             */
             ... (Some code)
             return something;
@@ -574,7 +578,7 @@ Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just ge
 ## Credits
 
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-README Chinese Translation: [MileHan](https://github.com/MileHan), URL [README_zh-CN.md](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
+README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ). URL [中文文档](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
 
 
 ## Old Version:

@@ -3,32 +3,29 @@
 /**
  * Auth Code Extension
  *
- * Author 秋水之冰 <27206617@qq.com>
- * Author jresun <jresun@163.com>
+ * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 秋水之冰
- * Copyright 2018 jresun
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of NervSys.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * NervSys is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * NervSys is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace ext;
 
 class crypt_code extends crypt
 {
+    //Font filename (Place font files in "/ext/font/" folder)
+    public static $font = 'font.ttf';
+
     //Auth code type (any / num / calc / word)
     public static $type = 'any';
 
@@ -38,9 +35,6 @@ class crypt_code extends crypt
     //Image size
     public static $width  = 120;
     public static $height = 40;
-
-    //Font name
-    public static $font = 'georgiab';
 
     //Lifetime (in seconds)
     public static $life = 60;
@@ -173,7 +167,7 @@ class crypt_code extends crypt
         $codes['code'] = parent::sign(json_encode(['code' => $codes['code'], 'life' => time() + (0 < self::$life ? self::$life : 60)]));
 
         //Image properties
-        $font_file = __DIR__ . '/font/' . self::$font . '.ttf';
+        $font_file = __DIR__ . '/font/' . self::$font;
 
         $font_height = (int)(self::$height / 1.6);
         $font_width = (int)(self::$width / count($codes['char']));
