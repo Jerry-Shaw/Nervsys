@@ -261,8 +261,8 @@ class cgi extends router
             $diff = array_diff($space::$tz[$method], $inter);
 
             try {
-                //Report missing params
-                if (!empty($diff)) throw new \Exception('Missing params [' . (implode(', ', $diff)) . ']!');
+                //Report missing TrustZone
+                if (!empty($diff)) throw new \Exception('TrustZone missing [' . (implode(', ', $diff)) . ']!');
                 //Call method
                 self::call_method($class, $space, $method);
             } catch (\Throwable $exception) {
@@ -373,8 +373,8 @@ class cgi extends router
             } else $param->isOptional() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
         }
 
-        //Report missing params
-        if (!empty($diff)) throw new \Exception('Missing params [' . (implode(', ', $diff)) . ']!');
+        //Report missing argument
+        if (!empty($diff)) throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']!');
 
         unset($reflect, $params, $diff, $param, $name);
         return $data;
