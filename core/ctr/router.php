@@ -133,7 +133,7 @@ class router
      */
     protected static function opt_val(array &$opt, array $keys): array
     {
-        $result = ['get' => false, 'data' => ''];
+        $result = ['get' => false, 'data' => null];
 
         foreach ($keys as $key) {
             if (isset($opt[$key])) {
