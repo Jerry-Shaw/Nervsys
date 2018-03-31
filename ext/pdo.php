@@ -4,6 +4,7 @@
  * PDO Connector Extension
  *
  * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +24,7 @@ namespace ext;
 class pdo
 {
     /**
-     * Default settings for PDO
+     * PDO settings
      */
     public static $type    = 'mysql';
     public static $host    = '127.0.0.1';
@@ -35,11 +36,11 @@ class pdo
     public static $timeout = 10;
     public static $persist = true;
 
-    //Connect options
-    private static $option = [];
+    //Connection instance
+    private static $connect = null;
 
-    //Common Database types
-    const type = ['mysql', 'mssql', 'pgsql', 'oci'];
+    //Connection options
+    private static $option = [];
 
     /**
      * Build DSN & options
@@ -55,7 +56,7 @@ class pdo
         //Build option
         self::$option[\PDO::ATTR_CASE] = \PDO::CASE_NATURAL;
         self::$option[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;
-        self::$option[\PDO::ATTR_PERSISTENT] = (bool)self::$persist;
+        self::$option[\PDO::ATTR_PERSISTENT] = self::$persist;
         self::$option[\PDO::ATTR_ORACLE_NULLS] = \PDO::NULL_NATURAL;
         self::$option[\PDO::ATTR_EMULATE_PREPARES] = false;
         self::$option[\PDO::ATTR_STRINGIFY_FETCHES] = false;
@@ -85,14 +86,21 @@ class pdo
     }
 
     /**
-     * Connect Database
+     * Create PDO instance
      *
      * @return \PDO
      * @throws \Exception
      */
     public static function connect(): \PDO
     {
-        if ('' === (string)self::$db_name) throw new \Exception('PDO: DB Name ERROR!');
-        return new \PDO(self::dsn(), (string)self::$user, (string)self::$pwd, self::$option);
+        return self::$connect ?? self::$connect = new \PDO(self::dsn(), self::$user, self::$pwd, self::$option);
+    }
+
+    /**
+     * Close PDO instance
+     */
+    public static function close(): void
+    {
+        self::$connect = null;
     }
 }

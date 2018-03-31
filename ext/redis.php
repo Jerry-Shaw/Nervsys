@@ -4,6 +4,7 @@
  * Redis Connector Extension
  *
  * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,36 +24,57 @@ namespace ext;
 class redis
 {
     /**
-     * Default settings for Redis
+     * Redis settings
      */
-    public static $host    = '127.0.0.1';
-    public static $port    = 6379;
-    public static $auth    = '';
-    public static $db      = 0;
-    public static $prefix  = '';
-    public static $timeout = 10;
-    public static $persist = true;
+    public static $host       = '127.0.0.1';
+    public static $port       = 6379;
+    public static $auth       = '';
+    public static $db         = 0;
+    public static $prefix     = '';
+    public static $timeout    = 10;
+    public static $persist    = true;
+    public static $persist_id = null;
+
+    //Connection instance
+    private static $connect = null;
 
     /**
-     * Connect Redis
+     * Create new connection
+     *
+     * @return \Redis
+     * @throws \Exception
+     */
+    private static function create(): \Redis
+    {
+        self::$connect = new \Redis();
+        self::$persist ? self::$connect->pconnect(self::$host, self::$port, self::$timeout, self::$persist_id) : self::$connect->connect(self::$host, self::$port, self::$timeout);
+
+        if ('' !== self::$auth && !self::$connect->auth(self::$auth)) throw new \Exception('Redis: Authentication Failed!');
+        if (!self::$connect->select(self::$db)) throw new \Exception('Redis: DB [' . self::$db . '] NOT exist!');
+
+        self::$connect->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+        if ('' !== self::$prefix) self::$connect->setOption(\Redis::OPT_PREFIX, self::$prefix . ':');
+
+        return self::$connect;
+    }
+
+    /**
+     * Create Redis instance
      *
      * @return \Redis
      * @throws \Exception
      */
     public static function connect(): \Redis
     {
-        $redis = new \Redis();
+        return self::$connect ?? self::create();
+    }
 
-        if (self::$persist ? !$redis->pconnect(self::$host, self::$port) : !$redis->connect(self::$host, self::$port)) throw new \Exception('Redis: Host or Port ERROR!');
-        if ('' !== self::$auth && !$redis->auth((string)self::$auth)) throw new \Exception('Redis: Authentication Failed!');
-
-        if ('' !== self::$prefix) $redis->setOption($redis::OPT_PREFIX, (string)self::$prefix . ':');
-
-        $redis->setOption($redis::OPT_READ_TIMEOUT, self::$timeout);
-        $redis->setOption($redis::OPT_SERIALIZER, $redis::SERIALIZER_NONE);
-
-        if (!$redis->select((int)self::$db)) throw new \Exception('Redis: DB ' . self::$db . ' NOT exist!');
-
-        return $redis;
+    /**
+     * Close Redis instance
+     */
+    public static function close(): void
+    {
+        self::$connect->close();
+        self::$connect = null;
     }
 }
