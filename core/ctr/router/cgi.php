@@ -316,10 +316,8 @@ class cgi extends router
         $params = $reflect->getParameters();
         if (empty($params)) return [];
 
-        //Build data
+        //Process data
         $data = $diff = [];
-
-        //Process params
         foreach ($params as $param) {
             //Get param name
             $name = $param->getName();
@@ -341,6 +339,9 @@ class cgi extends router
                         break;
                     case 'string':
                         $data[$name] = (string)parent::$data[$name];
+                        break;
+                    case 'object':
+                        $data[$name] = (object)parent::$data[$name];
                         break;
                     default:
                         $data[$name] = parent::$data[$name];
