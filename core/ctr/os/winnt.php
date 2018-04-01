@@ -25,58 +25,26 @@ use core\ctr\os, core\ctr\os\lib\cmd;
 class winnt extends os implements cmd
 {
     /**
-     * Format system output data
-     *
-     * @param array $data
+     * Get PHP path
      */
-    private static function format(array &$data): void
+    public static function php_env(): string
     {
-        if (empty($data)) return;
-
-        $key = 0;
-        $list = [];
-
-        foreach ($data as $line) {
-            $line = trim($line);
-            if ('' === $line) {
-                ++$key;
-                continue;
-            }
-
-            if (false === strpos($line, '=')) continue;
-            list($name, $value) = explode('=', $line, 2);
-            if (!isset($list[$key][$name]) && '' !== $value) $list[$key][$name] = $value;
-        }
-
-        $data = array_values($list);
-        unset($key, $list, $line, $name, $value);
-    }
-
-    /**
-     * Get PHP environment information
-     */
-    public static function info_env(): void
-    {
-        exec('wmic process where ProcessId="' . getmypid() . '" get ProcessId, CommandLine, ExecutablePath /format:value', $output, $status);
+        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
         if (0 !== $status) throw new \Exception('WinNT: Access denied!');
 
-        unset($status);
+        $output = parse_ini_string(implode($output));
+        if (false === $output) throw new \Exception('WinNT: Access denied!');
 
-        self::format($output);
+        $env = &$output['ExecutablePath'];
 
-        $output = current($output);
-
-        parent::$env['PHP_PID'] = &$output['ProcessId'];
-        parent::$env['PHP_CMD'] = &$output['CommandLine'];
-        parent::$env['PHP_EXE'] = '"' . $output['ExecutablePath'] . '"';
-
-        unset($output, $info);
+        unset($output, $status);
+        return '"' . $env . '"';
     }
 
     /**
-     * Get System information
+     * Get system hash
      */
-    public static function info_sys(): void
+    public static function sys_hash(): string
     {
         $queries = [
             'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
@@ -93,10 +61,13 @@ class winnt extends os implements cmd
             if (0 !== $status) throw new \Exception('WinNT: Access denied!');
         }
 
-        self::format($output);
+        $output = array_filter($output);
+        $output = array_unique($output);
 
-        foreach ($output as $key => $value) if (1 < count($value)) parent::$sys[] = $value;
-        unset($queries, $output, $query, $status, $key, $value);
+        $hash = hash('sha256', json_encode($output));
+
+        unset($queries, $output, $query, $status);
+        return $hash;
     }
 
     /**

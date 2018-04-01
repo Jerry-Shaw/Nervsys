@@ -23,14 +23,14 @@ namespace core\ctr\os\lib;
 interface cmd
 {
     /**
-     * Get PHP environment information
+     * Get PHP path
      */
-    public static function info_env(): void;
+    public static function php_env(): string;
 
     /**
-     * Get System information
+     * Get system hash
      */
-    public static function info_sys(): void;
+    public static function sys_hash(): string;
 
     /**
      * Build command for background process
