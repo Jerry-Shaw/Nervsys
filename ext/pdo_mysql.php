@@ -23,38 +23,6 @@ namespace ext;
 
 class pdo_mysql extends pdo
 {
-    //MySQL instance pool
-    private static $pool = [];
-
-    /**
-     * Connect
-     *
-     * @return \PDO
-     * @throws \Exception
-     */
-    public static function connect(): \PDO
-    {
-        //Read config
-        $conf = [
-            parent::$type,
-            parent::$host,
-            parent::$port,
-            parent::$user,
-            parent::$pwd,
-            parent::$db_name,
-            parent::$persist
-        ];
-
-        //Build hash
-        $hash = hash('md5', implode(',', $conf));
-
-        //Connect
-        $mysql = self::$pool[$hash] ?? self::$pool[$hash] = parent::connect();
-
-        unset($conf, $hash);
-        return $mysql;
-    }
-
     /**
      * Insert data
      *

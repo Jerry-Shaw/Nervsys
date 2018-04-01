@@ -36,6 +36,8 @@ Many thanks!
       │     │    └─logs/                **CLI logging directory
       │     ├─ctr/                      **Controller directory
       │     │    ├─os/                  **OS controller directory
+      │     │    │   ├─lib/             **OS interface directory
+      │     │    │   │    └─cmd.php       OS command interface
       │     │    │   ├─linux.php          Linux Controller
       │     │    │   ├─winnt.php          WinNT Controller
       │     │    │   └─(need more...)     Need more controllers
@@ -59,8 +61,8 @@ Many thanks!
            │       ├─en-US/             **Upload language folder (en-US)
            │       ├─zh-CN/             **Upload language folder (zh-CN)
            │       └─upload.ini           Upload error code file
-           ├─authcode.php                 Auth Code extension
            ├─crypt.php                    Encrypt/decrypt extension
+           ├─crypt_code.php               Auth Code extension
            ├─errno.php                    Error code extension
            ├─file.php                     Filesystem related IO extension
            ├─http.php                     HTTP request extension

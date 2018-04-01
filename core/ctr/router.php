@@ -56,6 +56,7 @@ class router
         if (false === $cors) exit;
 
         require $cors;
+
         unset($unit, $cors);
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
@@ -110,6 +111,7 @@ class router
 
         //Output result
         echo 'cli' !== PHP_SAPI ? $output : $output . PHP_EOL;
+
         unset($output);
     }
 
@@ -133,11 +135,13 @@ class router
      */
     protected static function opt_val(array &$opt, array $keys): array
     {
-        $result = ['get' => false, 'data' => ''];
+        $result = ['get' => false, 'data' => null];
 
         foreach ($keys as $key) {
             if (isset($opt[$key])) {
-                $result = ['get' => true, 'data' => $opt[$key]];
+                $result['get'] = true;
+                $result['data'] = $opt[$key];
+
                 unset($opt[$key]);
             }
         }

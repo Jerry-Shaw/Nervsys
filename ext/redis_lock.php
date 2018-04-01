@@ -31,9 +31,6 @@ class redis_lock extends redis
     //Lock list
     private static $lock = [];
 
-    //Redis connection
-    private static $redis = null;
-
     //Retry properties
     const wait  = 1000;
     const retry = 10;
@@ -48,9 +45,6 @@ class redis_lock extends redis
      */
     public static function on(string $key): bool
     {
-        //Connect Redis
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-
         //Lock key
         $lock_key = self::$prefix . $key;
 
@@ -61,7 +55,6 @@ class redis_lock extends redis
             return true;
         }
 
-        //Wait lock
         $retry = 0;
 
         while ($retry <= self::retry) {
@@ -89,14 +82,11 @@ class redis_lock extends redis
      */
     public static function off(string $key): void
     {
-        //Connect Redis
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-
         //Lock key
         $lock_key = self::$prefix . $key;
 
         //Delete lock
-        self::$redis->del($lock_key);
+        self::connect()->del($lock_key);
 
         //Delete key
         $key = array_search($lock_key, self::$lock, true);
@@ -111,12 +101,13 @@ class redis_lock extends redis
      * @param string $key
      *
      * @return bool
+     * @throws \Exception
      */
     private static function lock(string $key): bool
     {
-        if (!self::$redis->setnx($key, time())) return false;
+        if (!self::connect()->setnx($key, time())) return false;
 
-        self::$redis->expire($key, self::$life);
+        self::connect()->expire($key, self::$life);
         self::$lock[] = &$key;
 
         unset($key);
@@ -131,7 +122,7 @@ class redis_lock extends redis
         if (empty(self::$lock)) return;
 
         //Delete locks
-        call_user_func_array([self::$redis, 'del'], self::$lock);
+        call_user_func_array([self::connect(), 'del'], self::$lock);
 
         //Clear keys
         self::$lock = [];
