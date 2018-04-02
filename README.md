@@ -36,6 +36,8 @@ Many thanks!
       │     │    └─logs/                **CLI logging directory
       │     ├─ctr/                      **Controller directory
       │     │    ├─os/                  **OS controller directory
+      │     │    │   ├─lib/             **OS interface directory
+      │     │    │   │    └─cmd.php       OS command interface
       │     │    │   ├─linux.php          Linux Controller
       │     │    │   ├─winnt.php          WinNT Controller
       │     │    │   └─(need more...)     Need more controllers
@@ -59,8 +61,8 @@ Many thanks!
            │       ├─en-US/             **Upload language folder (en-US)
            │       ├─zh-CN/             **Upload language folder (zh-CN)
            │       └─upload.ini           Upload error code file
-           ├─authcode.php                 Auth Code extension
            ├─crypt.php                    Encrypt/decrypt extension
+           ├─crypt_code.php               Auth Code extension
            ├─errno.php                    Error code extension
            ├─file.php                     Filesystem related IO extension
            ├─http.php                     HTTP request extension
@@ -156,10 +158,11 @@ All script should under the right namespace for better calling by NervSys API.
         * Initial function for API
         *
         * It will be called directly when exists.
-        * Data, Authority or more should be checked here before other functions
+        * Data, authority or more should be checked here before other functions
         * are called.
+        *
         * It has the permission to modify the API TrustZone config in the class,
-        * so, one or all keys can be removed once some cases are not matched,
+        * so, one or more keys can be added/removed when some cases are matched,
         * just to avoid some requests which are not permitted.
         *
         * Suggestion: Don't return here, unless it really needs a return.
@@ -169,13 +172,14 @@ All script should under the right namespace for better calling by NervSys API.
         public static function init()
         {
             if (some case) {
-                //Just remove one or more keys from TrustZone
+                //Just add/remove one or more keys in TrustZone
                 //but let other functions ready for calling
+                self::$tz['func_name_ready_to_call'] = ['params'];
                 unset(self::$tz['func_name_not_permitted']);
             } elseif (denied) {
                 //Remove all from TrustZone
                 self::$tz = [];
-                //Give a return because no further function will be be called
+                //Give a return because no further functions will be be called
                 return 'Sorry, you are not allowed to go any further!';
             }
             
@@ -468,11 +472,13 @@ Remember one param named "c" or "cmd", the two are equal.
     Don't forget to use "-r" or "--ret" to capture output data.
     If time is too short to run extenal programs, use "-t ms" or "--time ms"
         
-    In CLI mode, we have 3 globle variables named "PHP_PID", "PHP_CMD" and "PHP_EXE".
+    In CLI mode, there is a globle variable named "PHP_EXE",
+    with its value pointing to the running php executable path,
+    which we can execute another PHP process at anytime when needed.
         
-    "PHP_PID" is the Process ID that the current PHP runs with.
-    "PHP_CMD" is the Process Comand that the current script started with.
-    "PHP_EXE" is php executable path, which we can execute another PHP process.
+    Something we can do as follows:
+    /path/php /path/api.php -r PHP_EXE -v
+    /path/php /path/api.php -r PHP_EXE /path/api.php -r demo/demo
         
     All the globle variables can be fetched in "os::$env".
 
@@ -576,7 +582,7 @@ Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just ge
 ## Credits
 
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-README Chinese Translation: [MileHan](https://github.com/MileHan), URL [README_zh-CN.md](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
+README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ). URL [中文文档](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
 
 
 ## Old Version:

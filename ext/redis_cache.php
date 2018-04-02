@@ -3,26 +3,19 @@
 /**
  * Redis Cache Extension
  *
- * Author Jerry Shaw <jerry-shaw@live.com>
- * Author 秋水之冰 <27206617@qq.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2018 Jerry Shaw
- * Copyright 2018 秋水之冰
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of NervSys.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * NervSys is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * NervSys is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace ext;
@@ -43,9 +36,6 @@ class redis_cache extends redis
     //Bind session
     public static $bind_session = false;
 
-    //Redis connection
-    private static $redis = null;
-
     /**
      * Set cache
      *
@@ -59,8 +49,7 @@ class redis_cache extends redis
         $name = self::get_name();
         $cache = json_encode($data);
 
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-        $result = 0 < self::$life ? self::$redis->set($name, $cache, self::$life) : self::$redis->set($name, $cache);
+        $result = 0 < self::$life ? self::connect()->set($name, $cache, self::$life) : self::connect()->set($name, $cache);
 
         unset($data, $name, $cache);
         return $result;
@@ -74,8 +63,7 @@ class redis_cache extends redis
      */
     public static function get(): array
     {
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-        $cache = self::$redis->get(self::get_name());
+        $cache = self::connect()->get(self::get_name());
         if (false === $cache) return [];
 
         $data = json_decode($cache, true);
@@ -92,8 +80,7 @@ class redis_cache extends redis
      */
     public static function del(): void
     {
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-        self::$redis->del(self::get_name());
+        self::connect()->del(self::get_name());
     }
 
     /**
@@ -103,7 +90,7 @@ class redis_cache extends redis
      */
     private static function get_name(): string
     {
-        $keys = is_null(self::$name) ? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []] : self::$name;
+        $keys = self::$name ?? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []];
         $name = self::$prefix . hash('md5', json_encode($keys));
 
         unset($keys);

@@ -3,24 +3,19 @@
 /**
  * OS Command Controller Interface
  *
- * Author 秋水之冰 <27206617@qq.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2018 秋水之冰
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of NervSys.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * NervSys is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * NervSys is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace core\ctr\os\lib;
@@ -28,14 +23,14 @@ namespace core\ctr\os\lib;
 interface cmd
 {
     /**
-     * Get PHP environment information
+     * Get PHP path
      */
-    public static function info_env(): void;
+    public static function php_env(): string;
 
     /**
-     * Get System information
+     * Get system hash
      */
-    public static function info_sys(): void;
+    public static function sys_hash(): string;
 
     /**
      * Build command for background process

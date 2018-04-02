@@ -3,26 +3,19 @@
 /**
  * Redis Lock Extension
  *
- * Author Jerry Shaw <jerry-shaw@live.com>
- * Author 秋水之冰 <27206617@qq.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2018 Jerry Shaw
- * Copyright 2018 秋水之冰
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of NervSys.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * NervSys is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * NervSys is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace ext;
@@ -38,9 +31,6 @@ class redis_lock extends redis
     //Lock list
     private static $lock = [];
 
-    //Redis connection
-    private static $redis = null;
-
     //Retry properties
     const wait  = 1000;
     const retry = 10;
@@ -55,9 +45,6 @@ class redis_lock extends redis
      */
     public static function on(string $key): bool
     {
-        //Connect Redis
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-
         //Lock key
         $lock_key = self::$prefix . $key;
 
@@ -68,7 +55,6 @@ class redis_lock extends redis
             return true;
         }
 
-        //Wait lock
         $retry = 0;
 
         while ($retry <= self::retry) {
@@ -96,14 +82,11 @@ class redis_lock extends redis
      */
     public static function off(string $key): void
     {
-        //Connect Redis
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-
         //Lock key
         $lock_key = self::$prefix . $key;
 
         //Delete lock
-        self::$redis->del($lock_key);
+        self::connect()->del($lock_key);
 
         //Delete key
         $key = array_search($lock_key, self::$lock, true);
@@ -118,12 +101,13 @@ class redis_lock extends redis
      * @param string $key
      *
      * @return bool
+     * @throws \Exception
      */
     private static function lock(string $key): bool
     {
-        if (!self::$redis->setnx($key, time())) return false;
+        if (!self::connect()->setnx($key, time())) return false;
 
-        self::$redis->expire($key, self::$life);
+        self::connect()->expire($key, self::$life);
         self::$lock[] = &$key;
 
         unset($key);
@@ -138,7 +122,7 @@ class redis_lock extends redis
         if (empty(self::$lock)) return;
 
         //Delete locks
-        call_user_func_array([self::$redis, 'del'], self::$lock);
+        call_user_func_array([self::connect(), 'del'], self::$lock);
 
         //Clear keys
         self::$lock = [];

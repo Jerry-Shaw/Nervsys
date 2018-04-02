@@ -3,87 +3,83 @@
 /**
  * Operating System Module
  *
- * Author Jerry Shaw <jerry-shaw@live.com>
- * Author 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2017 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2017-2018 秋水之冰 <27206617@qq.com>
  *
- * Copyright 2017 Jerry Shaw
- * Copyright 2017 秋水之冰
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of NervSys.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * NervSys is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * NervSys is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace core\ctr;
 
 class os
 {
-    //Operating System
+    //OS name
     public static $os = '';
 
-    //PHP environment
-    protected static $env = [];
+    //PHP path
+    protected static $env = '';
 
-    //System information
-    protected static $sys = [];
+    //System hash
+    protected static $hash = '';
 
-    //Platform class name
+    //Platform name
     private static $platform = '';
 
     /**
-     * Run OS check
-     */
-    private static function run(): void
-    {
-        //Detect Operating System
-        if ('' === self::$os) self::$os = PHP_OS;
-
-        //Build Platform Namespace
-        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
-
-        //Check OS Controller File
-        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
-    }
-
-    /**
-     * Get PHP environment information
+     * Run OS controller
      *
-     * @return array
+     * @param string $method
+     * @param array  $data
+     *
+     * @return string
      * @throws \Exception
      */
-    public static function get_env(): array
+    private static function run(string $method, array $data = []): string
     {
-        self::run();
+        //Get OS & build namespace
+        if ('' === self::$os) self::$os = PHP_OS;
+        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
 
-        if (empty(self::$env)) forward_static_call([self::$platform, 'info_env']);
+        //Check OS Controller
+        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
 
-        return self::$env;
+        //Run OS method
+        $result = empty($data) ? forward_static_call([self::$platform, $method]) : forward_static_call_array([self::$platform, $method], $data);
+
+        unset($method, $data);
+        return $result;
     }
 
     /**
-     * Get system hash code
+     * Get PHP path
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function get_env(): string
+    {
+        return '' !== self::$env ? self::$env : self::$env = self::run('php_env');
+    }
+
+    /**
+     * Get system hash
      *
      * @return string
      * @throws \Exception
      */
     public static function get_hash(): string
     {
-        self::run();
-
-        if (empty(self::$sys)) forward_static_call([self::$platform, 'info_sys']);
-
-        return hash('sha256', json_encode(self::$sys));
+        return '' !== self::$hash ? self::$hash : self::$hash = self::run('sys_hash');
     }
 
     /**
@@ -96,9 +92,7 @@ class os
      */
     public static function cmd_bg(string $cmd): string
     {
-        self::run();
-
-        return forward_static_call([self::$platform, 'cmd_bg'], $cmd);
+        return self::run('cmd_bg', [$cmd]);
     }
 
     /**
@@ -111,8 +105,6 @@ class os
      */
     public static function cmd_proc(string $cmd): string
     {
-        self::run();
-
-        return forward_static_call([self::$platform, 'cmd_proc'], $cmd);
+        return self::run('cmd_proc', [$cmd]);
     }
 }
