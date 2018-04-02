@@ -36,11 +36,14 @@ class pdo
     public static $timeout = 10;
     public static $persist = true;
 
-    //Connection instance
+    //Current connection instance
     private static $connect = null;
 
     //Connection options
     private static $option = [];
+
+    //Connection pool
+    private static $pool = [];
 
     /**
      * Build DSN & options
@@ -62,6 +65,7 @@ class pdo
         self::$option[\PDO::ATTR_STRINGIFY_FETCHES] = false;
         self::$option[\PDO::ATTR_DEFAULT_FETCH_MODE] = \PDO::FETCH_ASSOC;
 
+        //Fill up DSN & option
         switch (self::$type) {
             case 'mysql':
                 $dsn .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
@@ -88,19 +92,43 @@ class pdo
     /**
      * Create PDO instance
      *
+     * @param string $name
+     *
      * @return \PDO
      * @throws \Exception
      */
-    public static function connect(): \PDO
+    public static function connect(string $name = ''): \PDO
     {
-        return self::$connect ?? self::$connect = new \PDO(self::dsn(), self::$user, self::$pwd, self::$option);
+        self::$connect = '' === $name
+            ? (self::$connect ?? new \PDO(self::dsn(), self::$user, self::$pwd, self::$option))
+            : (self::$pool[$name] ?? self::$pool[$name] = new \PDO(self::dsn(), self::$user, self::$pwd, self::$option));
+
+        unset($name);
+        return self::$connect;
     }
 
     /**
      * Close PDO instance
+     *
+     * @param string $name
      */
-    public static function close(): void
+    public static function close(string $name = ''): void
     {
-        self::$connect = null;
+        if ('' === $name) {
+            $key = array_search(self::$connect, self::$pool, true);
+
+            if (false !== $key) {
+                self::$pool[$key] = null;
+                unset(self::$pool[$key]);
+            }
+
+            self::$connect = null;
+        } else {
+            if (!isset(self::$pool[$name])) return;
+            if (self::$connect === self::$pool[$name]) self::$connect = null;
+
+            self::$pool[$name] = null;
+            unset(self::$pool[$name]);
+        }
     }
 }
