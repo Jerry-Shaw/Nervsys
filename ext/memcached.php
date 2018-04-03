@@ -31,14 +31,15 @@ class memcached
     public static $timeout  = 1;
 
     private static $memcached = null;
+    private static $pool = [];
 
     /**
-     * Connect Memcache
+     * Init Memcache
      *
      * @return \Memcached
      * @throws \Exception
      */
-    private static function connect(): \Memcached
+    private static function creat(): \Memcached
     {
         $mem = new \Memcached();
         $mem->addServer(self::$host, self::$port);
@@ -47,8 +48,43 @@ class memcached
         if ($mem->getStats() === false) {
             throw new \Exception('Memcached: Host or Port ERROR!');
         }
-        self::$memcached = $mem;
         return $mem;
+    }
+
+    /**
+     * Connect
+     *
+     * @param string $name
+     * @return \Memcached
+     * @throws \Exception
+     */
+    public static function connect(string $name=''): \Memcached
+    {
+        self::$memcached = ('' === $name)
+            ? (self::$memcached ?? self::creat())
+            : (self::$pool[$name] = self::$pool[$name] ?? self::creat());
+        return self::$memcached;
+    }
+
+    /**
+     * Disconnect
+     *
+     * @param string $name
+     * @return \Memcached
+     * @throws \Exception
+     */
+    public static function disconnect(string $name=''): void
+    {
+        if(self::$memcached !== null)
+        {
+            self::$memcached->quit();
+        }
+        if($name !== '')
+        {
+            self::$pool[$name]->quit();
+            unset(self::$pool[$name]);
+        }
+        self::$memcached == null;
     }
 
     /**
@@ -62,7 +98,7 @@ class memcached
     public static function get($key)
     {
         if (self::$memcached === null) {
-            self::connect();
+            self::connect('');
         }
         $mem = self::$memcached;
         $ret = $mem->get($key);
@@ -84,7 +120,7 @@ class memcached
     public static function set($key, $value): bool
     {
         if (self::$memcached === null) {
-            self::connect();
+            self::connect('');
         }
         $mem = self::$memcached;
         return $mem->set($key, $value);
