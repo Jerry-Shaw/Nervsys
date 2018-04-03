@@ -9,7 +9,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0 
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,7 +31,7 @@ class memcached
     public static $timeout  = 1;
 
     private static $memcached = null;
-    private static $pool = [];
+    private static $pool      = [];
 
     /**
      * Init Memcache
@@ -46,8 +46,9 @@ class memcached
         $mem->setOption($mem::OPT_COMPRESSION, self::$compress);
         $mem->setOption($mem::OPT_CONNECT_TIMEOUT, self::$timeout * 1000);
         if ($mem->getStats() === false) {
-            throw new \Exception('Memcached: Host or Port ERROR!');
+            throw new \Exception('Memcached: Connection failed!');
         }
+
         return $mem;
     }
 
@@ -55,10 +56,11 @@ class memcached
      * Connect
      *
      * @param string $name
+     *
      * @return \Memcached
      * @throws \Exception
      */
-    public static function connect(string $name=''): \Memcached
+    public static function connect(string $name = ''): \Memcached
     {
         self::$memcached = ('' === $name)
             ? (self::$memcached ?? self::creat())
@@ -70,17 +72,13 @@ class memcached
      * Disconnect
      *
      * @param string $name
-     * @return \Memcached
-     * @throws \Exception
      */
-    public static function disconnect(string $name=''): void
+    public static function disconnect(string $name = ''): void
     {
-        if(self::$memcached !== null)
-        {
+        if (self::$memcached !== null) {
             self::$memcached->quit();
         }
-        if($name !== '')
-        {
+        if ($name !== '') {
             self::$pool[$name]->quit();
             unset(self::$pool[$name]);
         }
@@ -100,11 +98,13 @@ class memcached
         if (self::$memcached === null) {
             self::connect('');
         }
-        $mem = self::$memcached;
-        $ret = $mem->get($key);
-        if ($mem->getResultCode() === $mem::RES_NOTFOUND) {
+
+        $ret = self::$memcached->get($key);
+
+        if (self::$memcached->getResultCode() === self::$memcached::RES_NOTFOUND) {
             $ret = null;
         }
+
         return $ret;
     }
 
@@ -122,7 +122,7 @@ class memcached
         if (self::$memcached === null) {
             self::connect('');
         }
-        $mem = self::$memcached;
-        return $mem->set($key, $value);
+
+        return self::$memcached->set($key, $value);
     }
 }
