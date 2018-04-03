@@ -480,7 +480,7 @@ Remember one param named "c" or "cmd", the two are equal.
     /path/php /path/api.php -r PHP_EXE -v
     /path/php /path/api.php -r PHP_EXE /path/api.php -r demo/demo
         
-    All the globle variables can be fetched in "os::$env".
+    "PHP_EXE" value can be fetched in "os::get_env()".
 
 
 **About "cors" folder**
