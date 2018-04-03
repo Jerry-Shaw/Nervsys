@@ -582,7 +582,7 @@ Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just ge
 ## Credits
 
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ). URL [中文文档](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
+README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ), [JreSun](https://github.com/JreSun). URL [中文文档](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md) 
 
 
 ## Old Version:
