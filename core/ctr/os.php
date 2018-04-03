@@ -23,61 +23,63 @@ namespace core\ctr;
 
 class os
 {
-    //Operating System
+    //OS name
     public static $os = '';
 
-    //PHP environment
-    protected static $env = [];
+    //PHP path
+    protected static $env = '';
 
-    //System information
-    protected static $sys = [];
+    //System hash
+    protected static $hash = '';
 
-    //Platform class name
+    //Platform name
     private static $platform = '';
 
     /**
-     * Run OS check
-     */
-    private static function run(): void
-    {
-        //Detect Operating System
-        if ('' === self::$os) self::$os = PHP_OS;
-
-        //Build Platform Namespace
-        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
-
-        //Check OS Controller File
-        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
-    }
-
-    /**
-     * Get PHP environment information
+     * Run OS controller
      *
-     * @return array
+     * @param string $method
+     * @param array  $data
+     *
+     * @return string
      * @throws \Exception
      */
-    public static function get_env(): array
+    private static function run(string $method, array $data = []): string
     {
-        self::run();
+        //Get OS & build namespace
+        if ('' === self::$os) self::$os = PHP_OS;
+        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
 
-        if (empty(self::$env)) forward_static_call([self::$platform, 'info_env']);
+        //Check OS Controller
+        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
 
-        return self::$env;
+        //Run OS method
+        $result = empty($data) ? forward_static_call([self::$platform, $method]) : forward_static_call_array([self::$platform, $method], $data);
+
+        unset($method, $data);
+        return $result;
     }
 
     /**
-     * Get system hash code
+     * Get PHP path
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function get_env(): string
+    {
+        return '' !== self::$env ? self::$env : self::$env = self::run('php_env');
+    }
+
+    /**
+     * Get system hash
      *
      * @return string
      * @throws \Exception
      */
     public static function get_hash(): string
     {
-        self::run();
-
-        if (empty(self::$sys)) forward_static_call([self::$platform, 'info_sys']);
-
-        return hash('sha256', json_encode(self::$sys));
+        return '' !== self::$hash ? self::$hash : self::$hash = self::run('sys_hash');
     }
 
     /**
@@ -90,9 +92,7 @@ class os
      */
     public static function cmd_bg(string $cmd): string
     {
-        self::run();
-
-        return forward_static_call([self::$platform, 'cmd_bg'], $cmd);
+        return self::run('cmd_bg', [$cmd]);
     }
 
     /**
@@ -105,8 +105,6 @@ class os
      */
     public static function cmd_proc(string $cmd): string
     {
-        self::run();
-
-        return forward_static_call([self::$platform, 'cmd_proc'], $cmd);
+        return self::run('cmd_proc', [$cmd]);
     }
 }

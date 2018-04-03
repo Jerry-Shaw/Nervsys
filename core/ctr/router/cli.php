@@ -248,7 +248,7 @@ class cli extends router
     {
         try {
             //Add OS environment
-            parent::$conf_cli += os::get_env();
+            parent::$conf_cli['PHP_EXE'] = os::get_env();
 
             //Get cmd from config
             $command = self::get_cmd(parent::$cmd);

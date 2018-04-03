@@ -35,7 +35,7 @@ date_default_timezone_set('PRC');
 header('Content-Type: application/json; charset=utf-8');
 
 //NervSys Version
-define('NS_VER', '5.1.6');
+define('NS_VER', '5.1.16');
 
 //JSON Encode Options
 define(

@@ -36,9 +36,6 @@ class redis_cache extends redis
     //Bind session
     public static $bind_session = false;
 
-    //Redis connection
-    private static $redis = null;
-
     /**
      * Set cache
      *
@@ -52,8 +49,7 @@ class redis_cache extends redis
         $name = self::get_name();
         $cache = json_encode($data);
 
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-        $result = 0 < self::$life ? self::$redis->set($name, $cache, self::$life) : self::$redis->set($name, $cache);
+        $result = 0 < self::$life ? self::connect()->set($name, $cache, self::$life) : self::connect()->set($name, $cache);
 
         unset($data, $name, $cache);
         return $result;
@@ -67,8 +63,7 @@ class redis_cache extends redis
      */
     public static function get(): array
     {
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-        $cache = self::$redis->get(self::get_name());
+        $cache = self::connect()->get(self::get_name());
         if (false === $cache) return [];
 
         $data = json_decode($cache, true);
@@ -85,8 +80,7 @@ class redis_cache extends redis
      */
     public static function del(): void
     {
-        if (is_null(self::$redis)) self::$redis = parent::connect();
-        self::$redis->del(self::get_name());
+        self::connect()->del(self::get_name());
     }
 
     /**
@@ -96,7 +90,7 @@ class redis_cache extends redis
      */
     private static function get_name(): string
     {
-        $keys = is_null(self::$name) ? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []] : self::$name;
+        $keys = self::$name ?? [router::$cmd, router::$data, self::$bind_session ? $_SESSION : []];
         $name = self::$prefix . hash('md5', json_encode($keys));
 
         unset($keys);

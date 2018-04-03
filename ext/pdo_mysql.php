@@ -1,7 +1,7 @@
 <?php
 
 /**
- * SQL Execution for PDO Extension
+ * MySQL Execution for PDO Extension
  *
  * Copyright 2018 空城 <694623056@qq.com>
  * Copyright 2018 秋水之冰 <27206617@qq.com>
@@ -23,49 +23,6 @@ namespace ext;
 
 class pdo_mysql extends pdo
 {
-    //PDO setting hash
-    private static $hash = '';
-
-    //MySQL instance resource
-    private static $mysql = null;
-
-    //MySQL instance hash map
-    private static $hash_map = [];
-
-    /**
-     * Extension Initialization
-     */
-    private static function init(): void
-    {
-        //Read PDO settings
-        $set = [
-            parent::$type,
-            parent::$host,
-            parent::$port,
-            parent::$user,
-            parent::$pwd,
-            parent::$db_name,
-            parent::$charset,
-            parent::$timeout,
-            parent::$persist
-        ];
-
-        //Build setting hash
-        $hash = hash('md5', implode(',', $set));
-
-        //Check current hash
-        if ($hash === self::$hash) return;
-
-        //Connect MySQL
-        self::$mysql = self::$hash_map[$hash] ?? self::$hash_map[$hash] = parent::connect();
-
-        //Set current hash
-        self::$hash = &$hash;
-
-        //Free memory
-        unset($set, $hash);
-    }
-
     /**
      * Insert data
      *
@@ -86,27 +43,22 @@ class pdo_mysql extends pdo
      * @param string $last
      *
      * @return bool
+     * @throws \Exception
      */
     public static function insert(string $table, array $data, string &$last = ''): bool
     {
         //No data to insert
-        if (empty($data)) {
-            debug(__CLASS__, 'No data to insert!');
-            return false;
-        }
-
-        //Initialize
-        self::init();
+        if (empty($data)) return false;
 
         //Build "data"
         $column = self::build_data($data);
 
         //Prepare & execute
         $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
-        $stmt = self::$mysql->prepare($sql);
+        $stmt = self::connect()->prepare($sql);
         $result = $stmt->execute($data);
 
-        $last = '' === $last ? (string)self::$mysql->lastInsertId() : (string)self::$mysql->lastInsertId($last);
+        $last = '' === $last ? (string)self::connect()->lastInsertId() : (string)self::connect()->lastInsertId($last);
 
         unset($table, $data, $column, $sql, $stmt);
         return $result;
@@ -137,17 +89,12 @@ class pdo_mysql extends pdo
      * @param array  $where
      *
      * @return bool
+     * @throws \Exception
      */
     public static function update(string $table, array $data, array $where): bool
     {
         //No data to update
-        if (empty($data)) {
-            debug(__CLASS__, 'No data to update!');
-            return false;
-        }
-
-        //Initialize
-        self::init();
+        if (empty($data)) return false;
 
         //Build "data"
         $data_column = self::build_data($data);
@@ -166,7 +113,7 @@ class pdo_mysql extends pdo
 
         //Prepare & execute
         $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
-        $stmt = self::$mysql->prepare($sql);
+        $stmt = self::connect()->prepare($sql);
         $result = $stmt->execute($data);
 
         unset($table, $data, $set_opt, $where_opt, $sql, $stmt);
@@ -222,18 +169,16 @@ class pdo_mysql extends pdo
      * @param bool   $column
      *
      * @return array
+     * @throws \Exception
      */
     public static function select(string $table, array $option = [], bool $column = false): array
     {
-        //Initialize
-        self::init();
-
         //Build options & get data bind
         $data = self::build_opt($option);
 
         //Prepare & execute
         $sql = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
-        $stmt = self::$mysql->prepare($sql);
+        $stmt = self::connect()->prepare($sql);
         $stmt->execute($data['bind']);
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
@@ -261,24 +206,19 @@ class pdo_mysql extends pdo
      * @param array  $where
      *
      * @return bool
+     * @throws \Exception
      */
     public static function delete(string $table, array $where): bool
     {
         //Delete not allowed
-        if (empty($where)) {
-            debug(__CLASS__, 'Delete NOT allowed!');
-            return false;
-        }
-
-        //Initialize
-        self::init();
+        if (empty($where)) return false;
 
         //Build "where"
         $where_opt = self::build_where($where);
 
         //Prepare & execute
         $sql = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
-        $stmt = self::$mysql->prepare($sql);
+        $stmt = self::connect()->prepare($sql);
         $result = $stmt->execute($where);
 
         unset($table, $where, $where_opt, $sql, $stmt);
@@ -292,14 +232,12 @@ class pdo_mysql extends pdo
      * @param array  $data
      *
      * @return bool
+     * @throws \Exception
      */
     public static function execute(string $sql, array $data = []): bool
     {
-        //Initialize
-        self::init();
-
         //Prepare & execute
-        $stmt = self::$mysql->prepare($sql);
+        $stmt = self::connect()->prepare($sql);
         $result = $stmt->execute($data);
 
         unset($sql, $data, $stmt);
@@ -314,14 +252,12 @@ class pdo_mysql extends pdo
      * @param bool   $column
      *
      * @return array
+     * @throws \Exception
      */
     public static function query(string $sql, array $data = [], bool $column = false): array
     {
-        //Initialize
-        self::init();
-
         //Prepare & execute
-        $stmt = self::$mysql->prepare($sql);
+        $stmt = self::connect()->prepare($sql);
         $stmt->execute($data);
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
@@ -336,14 +272,12 @@ class pdo_mysql extends pdo
      * @param string $sql
      *
      * @return int
+     * @throws \Exception
      */
     public static function exec(string $sql): int
     {
-        //Initialize
-        self::init();
-
         //Execute directly
-        $exec = self::$mysql->exec($sql);
+        $exec = self::connect()->exec($sql);
         if (false === $exec) $exec = -1;
 
         unset($sql);
@@ -354,30 +288,33 @@ class pdo_mysql extends pdo
      * Begin transaction
      *
      * @return bool
+     * @throws \Exception
      */
     public static function begin(): bool
     {
-        return self::$mysql->beginTransaction();
+        return self::connect()->beginTransaction();
     }
 
     /**
      * Commit transaction
      *
      * @return bool
+     * @throws \Exception
      */
     public static function commit(): bool
     {
-        return self::$mysql->commit();
+        return self::connect()->commit();
     }
 
     /**
      * Rollback transaction
      *
      * @return bool
+     * @throws \Exception
      */
     public static function rollback(): bool
     {
-        return self::$mysql->rollBack();
+        return self::connect()->rollBack();
     }
 
     /**
@@ -452,7 +389,7 @@ class pdo_mysql extends pdo
             $operator = strtoupper($item[1]);
 
             //Add missing elements
-            if (!in_array($operator, ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN', 'NOT EXISTS', 'IS NULL', 'IS NOT NULL'], true)) {
+            if (!in_array($operator, ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'NOT EXISTS', 'IS NULL', 'IS NOT NULL'], true)) {
                 if (isset($item[2])) $item[3] = $item[2];
                 $item[2] = $item[1];
                 $item[1] = '=';
@@ -607,7 +544,7 @@ class pdo_mysql extends pdo
                         $item[1] = '=';
                         break;
                     case 3:
-                        if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'IN', 'NOT IN', 'NOT EXISTS'], true)) {
+                        if (!in_array(strtoupper($item[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'NOT EXISTS'], true)) {
                             $item[3] = $item[2];
                             $item[2] = $item[1];
                             $item[1] = '=';

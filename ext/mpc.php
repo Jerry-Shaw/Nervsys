@@ -68,6 +68,7 @@ class mpc
     public static function add(string $cmd, array $argv, string $key = ''): void
     {
         '' === $key ? self::$jobs[] = ['cmd' => &$cmd, 'arg' => &$argv] : self::$jobs[$key] = ['cmd' => &$cmd, 'arg' => &$argv];
+
         unset($cmd, $argv);
     }
 
