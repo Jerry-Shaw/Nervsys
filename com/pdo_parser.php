@@ -1,7 +1,7 @@
 <?php
 
 /**
- * MySQL Executor
+ * PDO Database Parser Script
  *
  * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,14 +18,14 @@
  * limitations under the License.
  */
 
-namespace tools;
+namespace com;
 
+use ext\pdo;
 use ext\file;
 use core\ctr\router;
 use core\ctr\router\cli;
-use ext\pdo_mysql as mysql;
 
-class sql extends mysql
+class pdo_parser extends pdo
 {
     //Scan dir
     public static $dir = null;
@@ -59,6 +59,7 @@ class sql extends mysql
      * Import SQL
      *
      * @return array
+     * @throws \Exception
      */
     public static function import(): array
     {
@@ -90,7 +91,7 @@ class sql extends mysql
                 $sql = file_get_contents($file);
 
                 //Exec SQL & gather results
-                $result[] = -1 !== parent::exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
+                $result[] = -1 !== parent::connect()->exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
             }
         }
 
