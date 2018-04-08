@@ -424,13 +424,12 @@
     不要忘记使用"-r"或者 "--ret"捕获输出数据。
     如果时间太短而不能执行外部程序的话，可以使用"-t ms" 或者 "--time ms"命令。
         
-    在CLI模式中，有3个全局变量："PHP_PID", "PHP_CMD" 和 "PHP_EXE"
-    
-    "PHP_PID"：当前php脚本运行的进程ID
-    "PHP_CMD"：当前脚本运行的处理命令
+    在CLI模式中，有3个全局变量: "PHP_EXE"
+    它的值指向运行PHP的可执行文件的路径，我们可以随时在需要的时候执行另一个PHP程序。
+
     "PHP_EXE"：php脚本的可执行路径
         
-    所有的全局变量能够通过"os::$env"获取。
+    所有的全局变量能够通过"os::get_env()"获取。
     
 _在配置文件里的特别codes_
 
@@ -496,7 +495,7 @@ Some examples for "conf.php":
     
 ## Credits
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-README Chinese Translation: [MileHan](https://github.com/MileHan)
+README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ), [JreSun](https://github.com/JRE-Sun)
 
 ## Old Version:
 3.0以前的老版本已经停止了更新，源码位置：[3.2.0](https://github.com/Jerry-Shaw/NervSys/tree/3.2)  
