@@ -135,7 +135,9 @@ class redis_queue extends redis
         if (empty($process)) return 0;
 
         $result = call_user_func_array([self::connect(), 'del'], $process);
-        call_user_func_array([self::connect(), 'hDel'], array_unshift($process, self::$key_watch_process));
+
+        array_unshift($process, self::$key_watch_process);
+        call_user_func_array([self::connect(), 'hDel'], $process);
 
         unset($key, $process);
         return $result;

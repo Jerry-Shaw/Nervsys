@@ -79,7 +79,7 @@ class winnt extends os implements cmd
      */
     public static function cmd_bg(string $cmd): string
     {
-        return 'start "Process" /B "' . $cmd . '"';
+        return 'start "Process" /B ' . $cmd;
     }
 
     /**
