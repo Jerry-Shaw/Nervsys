@@ -32,41 +32,18 @@ class router
     //Result data
     public static $result = [];
 
-    //Allowed header
-    public static $header = [];
-
-    //Config settings
+    //CGI / CLI settings
     protected static $conf_cgi = [];
     protected static $conf_cli = [];
+
+    //CORS settings
+    private static $conf_cors = [];
 
     //Config file path
     const conf_path = ROOT . '/core/conf.ini';
 
     /**
-     * Load CORS file for Cross Domain Request
-     */
-    public static function load_cors(): void
-    {
-        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
-
-        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
-        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
-
-        $cors = realpath(ROOT . '/cors/' . implode('.', $unit) . '.php');
-        if (false === $cors) exit;
-
-        require $cors;
-
-        unset($unit, $cors);
-
-        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        if (!empty(self::$header)) header('Access-Control-Allow-Headers: ' . implode(', ', self::$header));
-
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
-    }
-
-    /**
-     * Load config file for CGI / CLI
+     * Load config file
      *
      * @throws \Exception
      */
@@ -80,8 +57,30 @@ class router
 
         if (isset($conf['CGI'])) self::$conf_cgi = &$conf['CGI'];
         if (isset($conf['CLI'])) self::$conf_cli = &$conf['CLI'];
+        if (isset($conf['CORS'])) self::$conf_cors = &$conf['CORS'];
 
         unset($path, $conf);
+    }
+
+    /**
+     * Load CORS setting
+     */
+    public static function load_cors(): void
+    {
+        if (empty(self::$conf_cors) || !isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
+
+        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
+        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+
+        $from = implode('.', $unit);
+        if (!isset(self::$conf_cors[$from])) exit;
+
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        if ('' !== self::$conf_cors[$from]) header('Access-Control-Allow-Headers: ' . self::$conf_cors[$from]);
+
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
+
+        unset($unit, $from);
     }
 
     /**
