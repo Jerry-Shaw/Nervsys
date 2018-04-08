@@ -310,7 +310,9 @@ class redis_queue extends redis
     {
         //Count running processes
         $running = count(self::show_process());
-        if (0 <= $running - self::$max_runs) return;
+
+        $left = self::$max_runs - $running;
+        if (0 >= $left) return;
 
         //Read queue list
         $queue = self::show_queue();
@@ -320,17 +322,17 @@ class redis_queue extends redis
         foreach ($queue as $key => $value) $jobs += self::connect()->lLen($key);
         if (0 === $jobs) return;
 
-        //Count needed processes
-        $needed = (int)(ceil($jobs / self::$max_execute) - $running);
-        if ($needed > self::$max_runs) $needed = self::$max_runs;
+        //Count need processes
+        $need = (int)(ceil($jobs / self::$max_execute) - $running);
+        if ($need > $left) $need = &$left;
 
         //Build command
         $cmd = os::cmd_bg(os::get_env() . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
 
         //Run child processes
-        for ($i = 0; $i < $needed; ++$i) pclose(popen($cmd, 'r'));
+        for ($i = 0; $i < $need; ++$i) pclose(popen($cmd, 'r'));
 
-        unset($running, $queue, $jobs, $needed, $cmd, $i);
+        unset($running, $left, $queue, $jobs, $key, $value, $need, $cmd, $i);
     }
 
     /**
