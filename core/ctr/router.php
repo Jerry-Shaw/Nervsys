@@ -69,18 +69,19 @@ class router
     {
         if (empty(self::$conf_cors) || !isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === (self::is_https() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) return;
 
-        $unit = parse_url($_SERVER['HTTP_ORIGIN']);
-        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+        $origin = $_SERVER['HTTP_ORIGIN'];
 
-        $from = implode('.', $unit);
-        if (!isset(self::$conf_cors[$from])) exit;
+        $unit = parse_url($origin);
+        if (!isset($unit['port'])) $origin .= 'https' === $unit['scheme'] ? ':443' : ':80';
+
+        if (!isset(self::$conf_cors[$origin])) exit;
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        if ('' !== self::$conf_cors[$from]) header('Access-Control-Allow-Headers: ' . self::$conf_cors[$from]);
+        header('Access-Control-Allow-Headers: ' . self::$conf_cors[$origin]);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) exit;
 
-        unset($unit, $from);
+        unset($origin, $unit);
     }
 
     /**
