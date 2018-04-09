@@ -365,18 +365,12 @@ class redis_queue extends redis
      */
     private static function chk_queue(string $data, string $result): void
     {
-        //Accept empty
-        if ('' === $result) return;
-
-        //Decode JSON
-        $json = json_decode($result, true);
-
-        //Accept true
-        if (is_array($json) && true === current($json)) return;
+        //Accept empty & true
+        if ('' === $result || true === json_decode($result, true)) return;
 
         //Save fail list
         self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => &$result]));
 
-        unset($data, $result, $json);
+        unset($data, $result);
     }
 }
