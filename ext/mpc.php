@@ -94,10 +94,8 @@ class mpc
         $result = [];
 
         foreach ($job_pack as $jobs) {
-            //Copy jobs
-            self::$jobs = $jobs;
             //Execute process
-            $data = self::execute();
+            $data = self::execute($jobs);
             //Merge result
             if (!empty($data)) $result += $data;
         }
@@ -108,14 +106,19 @@ class mpc
 
     /**
      * Execute processes
+     *
+     * @param array $jobs
+     *
+     * @return array
+     * @throws \Exception
      */
-    private static function execute(): array
+    private static function execute(array $jobs): array
     {
         //Resource list
         $resource = [];
 
         //Start process
-        foreach (self::$jobs as $key => $item) {
+        foreach ($jobs as $key => $item) {
             $cmd = self::$cmd . ' --cmd "' . $item['cmd'] . '"';
             if (!empty($item['arg'])) $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
 
@@ -133,7 +136,7 @@ class mpc
             }
         }
 
-        unset($key, $item, $cmd, $pipes);
+        unset($jobs, $key, $item, $cmd, $pipes);
 
         //Check wait options
         if (!self::$wait) return [];

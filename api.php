@@ -27,11 +27,11 @@ if (version_compare(PHP_VERSION, '7.1.0', '<')) exit('NervSys needs PHP 7.1.0 or
 //Load Basic Config
 require __DIR__ . '/core/conf.php';
 
-//Load Router CORS
-\core\ctr\router::load_cors();
-
 //Load Router Config
 \core\ctr\router::load_conf();
+
+//Load Router CORS
+\core\ctr\router::load_cors();
 
 //Run Process
 'cli' !== PHP_SAPI ? \core\ctr\router\cgi::run() : \core\ctr\router\cli::run();
