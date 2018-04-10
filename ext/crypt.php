@@ -29,7 +29,7 @@ class crypt
     public static $method = 'AES-256-CTR';
 
     //OpenSSL config file path
-    public static $ssl_cnf = 'D:/Programs/WebServer/Programs/PHP/extras/ssl/openssl.cnf';
+    public static $ssl_conf = '/ssl/openssl.cnf';
 
     /**
      * Get AES Crypt keys
@@ -68,7 +68,7 @@ class crypt
     public static function rsa_keys(): array
     {
         $keys = ['public' => '', 'private' => ''];
-        $config = ['config' => self::$ssl_cnf];
+        $config = ['config' => self::$ssl_conf];
 
         $openssl = openssl_pkey_new($config);
         if (false === $openssl) return $keys;

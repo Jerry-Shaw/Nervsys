@@ -62,7 +62,7 @@ class redis_queue extends redis
     //Process idle wait (in seconds)
     public static $idle_wait = 3;
 
-    //Max running clients
+    //Max child processes
     public static $max_runs = 5;
 
     //Max executed counts
@@ -135,7 +135,9 @@ class redis_queue extends redis
         if (empty($process)) return 0;
 
         $result = call_user_func_array([self::connect(), 'del'], $process);
-        call_user_func_array([self::connect(), 'hDel'], array_unshift($process, self::$key_watch_process));
+
+        array_unshift($process, self::$key_watch_process);
+        call_user_func_array([self::connect(), 'hDel'], $process);
 
         unset($key, $process);
         return $result;
@@ -235,10 +237,9 @@ class redis_queue extends redis
                 ++$counter;
                 self::exec_queue($queue[1]);
                 self::connect()->lRem($queue[0], $queue[1]);
+                //Call child processes
+                if (0 === $counter % self::$max_execute && '' !== self::$cmd) self::call_process();
             } else $counter = 0;
-
-            //Too many jobs
-            if (0 < $counter && 0 === $counter % self::$max_execute && '' !== self::$cmd) self::call_process();
 
             //Renew root process
             $renew = self::connect()->expire($root_key, self::$scan_wait);
@@ -307,28 +308,31 @@ class redis_queue extends redis
      */
     private static function call_process(): void
     {
-        //Get queue list
-        $list = self::show_queue();
+        //Count running processes
+        $running = count(self::show_process());
+
+        $left = self::$max_runs - $running;
+        if (0 >= $left) return;
+
+        //Read queue list
+        $queue = self::show_queue();
 
         //Count jobs
         $jobs = 0;
-        foreach ($list as $key => $value) $jobs += self::connect()->lLen($key);
+        foreach ($queue as $key => $value) $jobs += self::connect()->lLen($key);
         if (0 === $jobs) return;
 
-        //Read process list
-        $process = self::show_process();
-
-        //Count needed processes
-        $needed = (int)(ceil($jobs / self::$max_execute) - count($process) - 1);
-        if ($needed > self::$max_runs) $needed = self::$max_runs;
+        //Count need processes
+        $need = (int)(ceil($jobs / self::$max_execute) - $running);
+        if ($need > $left) $need = &$left;
 
         //Build command
         $cmd = os::cmd_bg(os::get_env() . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
 
         //Run child processes
-        for ($i = 0; $i < $needed; ++$i) pclose(popen($cmd, 'r'));
+        for ($i = 0; $i < $need; ++$i) pclose(popen($cmd, 'r'));
 
-        unset($list, $jobs, $process, $needed, $cmd, $i);
+        unset($running, $left, $queue, $jobs, $key, $value, $need, $cmd, $i);
     }
 
     /**
@@ -361,18 +365,12 @@ class redis_queue extends redis
      */
     private static function chk_queue(string $data, string $result): void
     {
-        //Accept empty
-        if ('' === $result) return;
-
-        //Decode JSON
-        $json = json_decode($result, true);
-
-        //Accept true
-        if (is_array($json) && true === current($json)) return;
+        //Accept empty & true
+        if ('' === $result || true === json_decode($result, true)) return;
 
         //Save fail list
         self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => &$result]));
 
-        unset($data, $result, $json);
+        unset($data, $result);
     }
 }
