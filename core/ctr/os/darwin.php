@@ -3,8 +3,6 @@
 /**
  * darwin Platform Module
  *
- * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2018 秋水之冰 <27206617@qq.com>
  * Copyright 2018 shawn <csk_shawn@163.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,19 +26,24 @@ class darwin extends os implements cmd
 {
     /**
      * Get PHP path
+     *
      * @throws \Exception
      */
     public static function php_env(): string
     {
         //Execute system command
+        //todo Are there any better commands?
         exec('lsof -p ' . getmypid(), $output, $status);
         if (0 !== $status) throw new \Exception('Darwin: Access denied!');
+
         $node_name = null;
         foreach ($output as $key => $command) {
             if (substr($command, -4, 4) === '/php') $node_name = $command;
         }
+
         if (!$node_name) throw new \Exception('Darwin: Not Fount PHP Process!');
-        $node_array = explode(' ',$node_name);
+
+        $node_array = explode(' ', $node_name);
         //Get executable path
         $env = (array_pop($node_array));
 
@@ -50,6 +53,7 @@ class darwin extends os implements cmd
 
     /**
      * Get system hash
+     *
      * @throws \Exception
      */
     public static function sys_hash(): string
