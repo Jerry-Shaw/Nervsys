@@ -488,7 +488,7 @@ Some examples for "conf.php":
 如果"DEBUG"选项 (在 "/core/conf.php"中)被设置成1或者2，结果将会非常复杂，因为调试的一个或更多的元素也会被添加到结果中。
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
 
-## Demos
+## Tests & Demos
 版本5.0与之前的版本是不兼容的。
 
 版本5.0的demo地址：[DEMO](https://github.com/Jerry-Shaw/demo). 不妨试一试
@@ -502,5 +502,5 @@ README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](h
 
 ## Licensing
 
-This software is licensed under the terms of the MIT License.  
+This software is licensed under the terms of the Apache 2.0 License.  
 You can find a copy of the license in the LICENSE.md file.

@@ -1,6 +1,6 @@
 # Nervsys
 
-[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
+[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**TESTS**](https://github.com/NervSys/tests)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
 Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode. 
@@ -573,9 +573,10 @@ If "DEBUG" option (in "/core/conf.php") is set to 1 or 2, the results could be c
 Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside. 
 
 
-## Demos
+## Tests & Demos
 
 Version 5.0.0 is on going, and not compatible with versions before.  
+Test scripts for Ver 5.0.0 is here: [**TESTS**](https://github.com/NervSys/tests).  
 Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just get it a try. 
 
 
@@ -592,5 +593,5 @@ Old version before 3.0.0 is discontinued and the source codes located here: [3.2
 
 ## Licensing
 
-This software is licensed under the terms of the MIT License.  
+This software is licensed under the terms of the Apache 2.0 License.  
 You can find a copy of the license in the LICENSE.md file.
