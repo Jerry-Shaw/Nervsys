@@ -1,7 +1,7 @@
 <?php
 
 /**
- * linux Platform Module
+ * darwin Platform Module
  *
  * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2018 秋水之冰 <27206617@qq.com>
