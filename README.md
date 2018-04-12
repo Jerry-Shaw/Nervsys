@@ -110,7 +110,7 @@ Some example structures:
 All script should under the right namespace for better calling by NervSys API. 
 
 
-## Reserved Words
+## Reserved Words:
   
 CGI: c/cmd
 CLI: c/cmd, d/data, p/pipe, r/ret, l/log, t/time
@@ -491,7 +491,7 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     "PHP_EXE" value can be fetched in "os::get_env()".
 
 
-## Chain Loading Example
+**Chain Loading Example:**
 
     //The right namespace follows the path structure
     namespace pr_1\ctr;
