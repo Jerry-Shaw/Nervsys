@@ -20,7 +20,7 @@ Extensions in "/ext/" makes it growing.
 
 Functional extensions (class) are considered to moved out to the third part to maintain.  
 Not only extensions, but sub-projects based on NervSys are expected.  
-Everyone can join the project. Ideas, codes, tests, suggests, supports, etc...  
+Everyone can join the project. Ideas, codes, tests, suggests, supports, giving short names like "NS" or "NSys", etc...  
 
 Many thanks! 
 
@@ -110,6 +110,14 @@ Some example structures:
 All script should under the right namespace for better calling by NervSys API. 
 
 
+## Reserved Words
+  
+CGI: c/cmd
+CLI: c/cmd, d/data, p/pipe, r/ret, l/log, t/time
+  
+These words above are reserved by NervSys core. So that, they should be kept away of using for variable names when passing params.
+
+
 ## Example:
 
     root/                       **Root directory
@@ -125,7 +133,7 @@ All script should under the right namespace for better calling by NervSys API.
 ****Format for test_1.php:** 
 
     //The right namespace follows the path structure
-    namespace pr_1/ctr;
+    namespace pr_1\ctr;
         
     //Any other extensions and namespaces can be used here
     use ext\http;
@@ -145,9 +153,9 @@ All script should under the right namespace for better calling by NervSys API.
         * All callable functions should be public.
         */
         public static $tz = [
-            test_a = [a, b, c],
-            test_b = [b, c],
-            test_c = [c],
+            test_a = [var_a, var_b, var_c],
+            test_b = [var_b, var_c],
+            test_c = [var_c],
             
             //Leave empty but check via passing params
             //or, use them as above
@@ -190,8 +198,8 @@ All script should under the right namespace for better calling by NervSys API.
         public static function test_a()
         {
             /**
-            * This function must need variables [a, b, c]
-            * We can fetch the data from router::$data['a'], router::$data['b'], ...
+            * This function must need variables [var_a, var_b, var_c]
+            * We can fetch the data from router::$data['var_a'], router::$data['var_b'], ...
             * The returned value will be captured by router
             * stored in router::$result['namespace/class_name/function_name']
             */
@@ -202,8 +210,8 @@ All script should under the right namespace for better calling by NervSys API.
         public static function test_b()
         {
             /**
-            * This function must need variables [b, c], variable [d] is optional
-            * Just use router::$data['d'] if exists as it is optional
+            * This function must need variables [var_b, var_c], variable [var_d] is optional
+            * Just use router::$data['var_d'] if exists as it is optional
             */
             ... (Some code)
             return something;
@@ -215,8 +223,8 @@ All script should under the right namespace for better calling by NervSys API.
         public function test_c()
         {
             /**
-            * This function must need variable [c], variable [d] is optional
-            * Just use router::$data['d'] if exists as it is optional
+            * This function must need variable [var_c], variable [var_d] is optional
+            * Just use router::$data['var_d'] if exists as it is optional
             */
             ... (Some code)
             return something;
@@ -225,7 +233,7 @@ All script should under the right namespace for better calling by NervSys API.
         /**
         * Params passing example
         */
-        public function test_d(int $val_a, string $val_b, $val_c = 1, $val_d = [])
+        public function test_d(int $var_a, string $var_b, $var_c = 1, $var_d = [])
         {
             /**
             * TrustZone config for this method is empty, but,
@@ -242,7 +250,7 @@ All script should under the right namespace for better calling by NervSys API.
             * The original data in router::$data will not change.
             * 
             * URL GET EXAMPLE (Please read detail examples below):
-            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&val_a=1&val_b=b&val_c=10
+            * http://HostName/api.php?cmd=pr_1/ctr/test_1-test_d&var_a=1&var_b=b&var_c=10
             * 
             * NOTE: Just write functions as usual.
             */
@@ -264,8 +272,8 @@ All script should under the right namespace for better calling by NervSys API.
     class test_2
     {
         public static $tz = [
-            test_a = [a, b, c],
-            test_b = [b, c],
+            test_a = [var_a, var_b, var_c],
+            test_b = [var_b, var_c],
             test_c = []
         ];
         
@@ -294,7 +302,7 @@ All script should under the right namespace for better calling by NervSys API.
 
 As said, it is an universal API controller. So, we can easily use it as follows as usual.  
 It receives normal GET/POST data, and stream data in JSON format.  
-Remember one param named "c" or "cmd", the two are equal.  
+Remember one param named "c" or "cmd", the two are equal and both reserved by NervSys core.  
 
 
 **Examples (using GET):**
@@ -303,41 +311,41 @@ Remember one param named "c" or "cmd", the two are equal.
         
     for test_1.php
         
-    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a&var_a=a&var_b=b&var_c=c
     3. ...
         
     Above are the strict mode with detailed function name, only "test_a" is called.
         
     Let's see more:
         
-    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_b&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_b&var_a=a&var_b=b&var_c=c
     3. ...
         
-    We called "test_b" in "pr_1/ctr/test_2" with params "b" and "c", 
-    "a" is obviously usless and ignore.
+    We called "test_b" in "pr_1/ctr/test_2" with params "var_b" and "var_c", 
+    "var_a" is obviously usless and ignore.
         
     And there goes some interesting things, what if we do as follows?
         
-    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-test_a-test_b&var_a=a&var_b=b&var_c=c
     3. ...
         
-    Right, both "test_a" and "test_b" in "pr_1/ctr/test_1" will be called 
-    sharing the same data of "b" and "c", "test_a" used one more "a".
+    Both "test_a" and "test_b" in "pr_1/ctr/test_1" will be called 
+    sharing the same data of "var_b" and "var_c", "test_a" used one more "var_a".
         
     This time, we do it as:
         
-    http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a-test_b-test_c&a=a&b=b&c=c
+    http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a-test_b-test_c&var_a=a&var_b=b&var_c=c
         
-    Yep. "test_c" will run right after, as it needs no required variables.
+    "test_c" will run right after, as it needs no required variables.
     We now can get some compound results with differences in keys.
         
     And what if we do as follows?
         
-    1. http://HostName/api.php?c=pr_1/ctr/test_1&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_1&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1&var_a=a&var_b=b&var_c=c
     3. ...
         
     Could it be an error calling?
@@ -363,28 +371,28 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Once when we call as follows:
             
-    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_a&a=a&b=b
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c
-    3. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&a=a&c=c&d=d&xxx=xxx...
-    4. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&whatever...(but missed some of "a", "b", "c")
+    1. http://HostName/api.php?c=pr_1/ctr/test_2-test_a&var_a=a&var_b=b
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&var_a=a&var_c=c
+    3. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&var_a=a&var_c=c&d=d&xxx=xxx...
+    4. http://HostName/api.php?cmd=pr_1/ctr/test_2-test_a&whatever...(but missed some of "var_a", "var_b", "var_c")
         
     This won't happen because the input data structure dismatched.
     API just chooses to ignore the request to "test_a" function,
-    and gives us a notice "[what] is missing" when "DEBUG" is set.
+    and gives us a notice "TrustZone missing [what]" when "DEBUG" is set.
         
     And what's more:
         
     loose style:
-    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2&var_a=a&var_b=b&var_c=c
         
     All functions that match the input data strucuture in both "pr_1/ctr/test_1" and "pr_1/test_2"
     will run. With this, we can call multiple functions in multiple modules right in one request.
     These functions share the same source data, and do their own work.
         
     strict style:
-    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2-test_a&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
+    1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2-test_a&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&var_a=a&var_b=b&var_c=c
         
     Functions placed in the URL (in "c"/"cmd" value, seperated by "-", order ignored, same in "POST") 
     and match the input data strucuture at the same time in both "pr_1/ctr/test_1" and "pr_1/test_2"
@@ -408,8 +416,8 @@ Remember one param named "c" or "cmd", the two are equal.
         
     Then, the following two requests are equal.
         
-    1. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&a=a&b=b&c=c
-    2. http://HostName/api.php?cmd=mycmd_1-mycmd_3&a=a&b=b&c=c
+    1. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?cmd=mycmd_1-mycmd_3&var_a=a&var_b=b&var_c=c
 
 
 **CLI Command usage:**
@@ -428,20 +436,20 @@ Remember one param named "c" or "cmd", the two are equal.
     Let's take "pr_1/ctr/test_1" as an example.
     Full command should be as some type of follows:
         
-    1. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a" --data "a=a&b=b&c=c"
-    2. /path/php api.php -r -t 10000 -c "pr_1/ctr/test_1-test_b" -d "b=b&c=c"
-    3. /path/php api.php -r -l -c "pr_1/ctr/test_1-test_a-test_b" -d "a=a&b=b&c=c"
-    4. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a-test_b" --data "a=a&b=b&c=c"
+    1. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a" --data "var_a=a&var_b=b&var_c=c"
+    2. /path/php api.php -r -t 10000 -c "pr_1/ctr/test_1-test_b" -d "var_b=b&var_c=c"
+    3. /path/php api.php -r -l -c "pr_1/ctr/test_1-test_a-test_b" -d "var_a=a&var_b=b&var_c=c"
+    4. /path/php api.php --ret --cmd "pr_1/ctr/test_1-test_a-test_b" --data "var_a=a&var_b=b&var_c=c"
     5. ...
         
     JSON data package is also support as CGI mode
         
     We can also do as follows:
         
-    1. /path/php api.php pr_1/ctr/test_1-test_a -d "a=a&b=b&c=c"
-    2. /path/php api.php pr_1/ctr/test_1-test_b -d "b=b&c=c"
-    3. /path/php api.php pr_1/ctr/test_1-test_a-test_b -d "a=a&b=b&c=c"
-    4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
+    1. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-test_a
+    2. /path/php api.php -d "var_b=b&var_c=c" pr_1/ctr/test_1-test_b
+    3. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-test_a-test_b
+    4. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1
     5. ...
         
     If we need to call external programs, make sure the "c" or "cmd" key is listing in "conf.ini"
@@ -481,6 +489,69 @@ Remember one param named "c" or "cmd", the two are equal.
     /path/php /path/api.php -r PHP_EXE /path/api.php -r demo/demo
         
     "PHP_EXE" value can be fetched in "os::get_env()".
+
+
+## Chain Loading Example
+
+    //The right namespace follows the path structure
+    namespace pr_1\ctr;
+        
+    //Class name should be exactly the same as the file name
+    class test_1
+    {
+        public static $tz = [
+            test_a = [var_a, var_b, var_c],
+            test_b = [var_d, var_e],
+            test_c = [var_f],
+            test_d = []
+        ];
+        
+        public static function test_a()
+        {
+            if (in case){
+                router::$data['var_d'] = 'something';
+                router::$data['var_e'] = 'something';
+            }
+            
+            return something;
+        }
+        
+        public static function test_b()
+        {
+            if (in case){
+                router::$data['var_f'] = 'something';
+            }
+            
+            return something;
+        }
+        
+        /**
+        * A Non-Static method
+        */
+        public function test_c()
+        {
+            if (in case){
+                router::$data['var_g'] = 'something';
+            }
+            
+            return something;
+        }
+        
+        /**
+        * Params passing example
+        */
+        public function test_d(string $var_g)
+        {
+            ... (Some code)
+            return something;
+        }
+    }
+
+      
+    We can simple give data for "var_a", "var_b" and "var_c" to make them all called.
+    
+    1. http://HostName/api.php?c=pr_1/ctr/test_1&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b-test_c-test_d&var_a=a&var_b=b&var_c=c
 
 
 **About "cors" folder**
