@@ -137,6 +137,7 @@ These words above are reserved by NervSys core. So that, they should be kept awa
         
     //Any other extensions and namespaces can be used here
     use ext\http;
+    use core\ctr\router;
         
     //Class name should be exactly the same as the file name
     class test_1
@@ -153,13 +154,13 @@ These words above are reserved by NervSys core. So that, they should be kept awa
         * All callable functions should be public.
         */
         public static $tz = [
-            test_a = [var_a, var_b, var_c],
-            test_b = [var_b, var_c],
-            test_c = [var_c],
+            'test_a' => ['var_a', 'var_b', 'var_c'],
+            'test_b' => ['var_b', 'var_c'],
+            'test_c' => ['var_c'],
             
             //Leave empty but check via passing params
             //or, use them as above
-            test_d = []
+            'test_d' => []
         ];
         
         /**
@@ -267,14 +268,15 @@ These words above are reserved by NervSys core. So that, they should be kept awa
         
     //Any other extensions and namespaces can be used here
     use ext\sock;
+    use core\ctr\router;
         
     //Class name shoule be exactly the same as the file name
     class test_2
     {
         public static $tz = [
-            test_a = [var_a, var_b, var_c],
-            test_b = [var_b, var_c],
-            test_c = []
+            'test_a' => ['var_a', 'var_b', 'var_c'],
+            'test_b' => ['var_b', 'var_c'],
+            'test_c' => []
         ];
         
         public static function test_a()
@@ -496,14 +498,18 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     //The right namespace follows the path structure
     namespace pr_1\ctr;
         
+    //Any other extensions and namespaces can be used here
+    use ext\crypt;
+    use core\ctr\router;
+        
     //Class name should be exactly the same as the file name
     class test_1
     {
         public static $tz = [
-            test_a = [var_a, var_b, var_c],
-            test_b = [var_d, var_e],
-            test_c = [var_f],
-            test_d = []
+            'test_a' => ['var_a', 'var_b', 'var_c'],
+            'test_b' => ['var_d', 'var_e'],
+            'test_c' => ['var_f'],
+            'test_d' => []
         ];
         
         public static function test_a()
