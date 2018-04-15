@@ -45,8 +45,8 @@ class upload
     //Path permission
     public static $path_mode = 0776;
 
-    //Allowed Extension/Mime-Type
-    const mime = [
+    //Allowed Extension/MIME-Type
+    const MIME = [
         //docs
         'xml'  => 'text/xml',
         'txt'  => 'text/plain',
@@ -174,14 +174,14 @@ class upload
         //Get base64 position
         $data_pos = strpos($base64, ';base64,');
 
-        //Mime-type not allowed
+        //MIME-Type not allowed
         if (false === $data_pos || 0 !== strpos($base64, 'data:')) return errno::get(1003, 1);
 
-        //Get Mime-type
+        //Get MIME-Type
         $mime_type = (string)substr($base64, 5, $data_pos - 5);
 
-        //Get extension from allowed Mime-type list
-        $file_ext = (string)array_search($mime_type, self::mime, true);
+        //Get extension from allowed MIME-Type list
+        $file_ext = (string)array_search($mime_type, self::MIME, true);
 
         //Check file extension
         $file_ext = self::chk_ext($file_ext);
@@ -258,9 +258,9 @@ class upload
      */
     private static function chk_ext(string $name): string
     {
-        $ext = !isset(self::mime[$name]) ? file::get_ext($name) : $name;
+        $ext = !isset(self::MIME[$name]) ? file::get_ext($name) : $name;
         //Extension not allowed
-        if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) || (empty(self::$file_ext) && !isset(self::mime[$ext]))) $ext = '';
+        if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) || (empty(self::$file_ext) && !isset(self::MIME[$ext]))) $ext = '';
         unset($name);
         return $ext;
     }

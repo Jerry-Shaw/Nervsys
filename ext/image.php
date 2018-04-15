@@ -22,8 +22,8 @@ namespace ext;
 
 class image
 {
-    //Support Mime-Type
-    const mime = ['image/gif', 'image/jpeg', 'image/png', 'image/bmp'];
+    //Support MIME-Type
+    const MIME = ['image/gif', 'image/jpeg', 'image/png', 'image/bmp'];
 
     /**
      * Resize image to giving size
@@ -42,7 +42,7 @@ class image
 
         //Get image data
         $img_info = getimagesize($file);
-        if (!in_array($img_info['mime'], self::mime, true)) {
+        if (!in_array($img_info['mime'], self::MIME, true)) {
             debug(__CLASS__, 'Image NOT support!');
             return false;
         }
@@ -95,7 +95,7 @@ class image
         //Get EXIF data
         $img_exif = exif_read_data($file);
         if (false === $img_exif || !isset($img_exif['Orientation'])) return;
-        if (!in_array($img_exif['MimeType'], self::mime, true)) {
+        if (!in_array($img_exif['MimeType'], self::MIME, true)) {
             debug(__CLASS__, 'Image NOT support!');
             return;
         }

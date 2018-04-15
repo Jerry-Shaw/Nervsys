@@ -44,10 +44,10 @@ class cli extends router
     private static $time = 0;
 
     //Wait cycle (in microseconds)
-    const work_wait = 1000;
+    const WORK_WAIT = 1000;
 
     //Working path
-    const work_path = ROOT . '/core/cli/';
+    const WORK_PATH = ROOT . '/core/cli/';
 
     /**
      * Run CLI Router
@@ -257,7 +257,7 @@ class cli extends router
             if (!empty(self::$cmd_argv)) $command .= ' ' . implode(' ', self::$cmd_argv);
 
             //Create process
-            $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::work_path);
+            $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::WORK_PATH);
             if (!is_resource($process)) throw new \Exception('Access denied or [' . $command . '] ERROR!');
 
             //Write data via STDIN
@@ -311,7 +311,7 @@ class cli extends router
         $logs = ['time' => date('Y-m-d H:i:s', $time)] + $logs;
 
         foreach ($logs as $key => $value) $logs[$key] = strtoupper($key) . ': ' . $value;
-        file_put_contents(self::work_path . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
+        file_put_contents(self::WORK_PATH . 'logs/' . date('Y-m-d', $time) . '.log', PHP_EOL . implode(PHP_EOL, $logs) . PHP_EOL, FILE_APPEND);
 
         unset($logs, $time, $key, $value);
     }
@@ -331,8 +331,8 @@ class cli extends router
         //Keep checking pipe
         while (0 === self::$time || $time <= self::$time) {
             if (proc_get_status($resource[0])['running']) {
-                usleep(self::work_wait);
-                $time += self::work_wait;
+                usleep(self::WORK_WAIT);
+                $time += self::WORK_WAIT;
             } else {
                 $result = trim(stream_get_contents($resource[1]));
                 break;

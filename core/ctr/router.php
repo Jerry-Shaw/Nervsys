@@ -40,7 +40,7 @@ class router
     private static $conf_cors = [];
 
     //Config file path
-    const conf_path = ROOT . '/core/conf.ini';
+    const CONF_PATH = ROOT . '/core/conf.ini';
 
     /**
      * Load config file
@@ -49,7 +49,7 @@ class router
      */
     public static function load_conf(): void
     {
-        $path = realpath(self::conf_path);
+        $path = realpath(self::CONF_PATH);
         if (false === $path) return;
 
         $conf = parse_ini_file($path, true);

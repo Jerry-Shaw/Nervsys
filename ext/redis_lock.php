@@ -32,8 +32,8 @@ class redis_lock extends redis
     private static $lock = [];
 
     //Retry properties
-    const wait  = 1000;
-    const retry = 10;
+    const WAIT  = 1000;
+    const RETRY = 10;
 
     /**
      * Lock on
@@ -57,9 +57,9 @@ class redis_lock extends redis
 
         $retry = 0;
 
-        while ($retry <= self::retry) {
+        while ($retry <= self::RETRY) {
             ++$retry;
-            usleep(self::wait);
+            usleep(self::WAIT);
 
             //Reset lock
             if (self::lock($lock_key)) {

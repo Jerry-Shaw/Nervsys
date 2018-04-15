@@ -123,7 +123,7 @@ class mpc
             if (!empty($item['arg'])) $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
 
             //Create process
-            $process = proc_open(os::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, cli::work_path);
+            $process = proc_open(os::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, cli::WORK_PATH);
 
             //Store resource
             if (is_resource($process)) {
