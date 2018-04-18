@@ -349,7 +349,7 @@ class redis_queue extends redis
 
         //Check
         foreach ($output as $key => $value) $output[$key] = trim($value);
-        self::chk_queue($data, trim(implode(PHP_EOL, $output)));
+        self::chk_queue($data, implode($output));
 
         unset($data, $output, $key, $value);
     }
