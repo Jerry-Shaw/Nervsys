@@ -78,13 +78,10 @@ class cgi extends router
      */
     private static function read_http(): void
     {
-        $data = !empty($_POST) ? $_POST : (!empty($_GET) ? $_GET : $_REQUEST);
-
-        //Collect data
-        if (!empty($data)) parent::$data += $data;
+        //Collecting data
         if (!empty($_FILES)) parent::$data += $_FILES;
-
-        unset($data);
+        if (!empty($_POST)) parent::$data += $_POST;
+        if (!empty($_GET)) parent::$data += $_GET;
     }
 
     /**
