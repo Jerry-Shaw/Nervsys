@@ -495,7 +495,8 @@ Some examples for "conf.php":
     
 ## Credits
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ), [JreSun](https://github.com/JRE-Sun)
+memcached Extension: [tggtzbh](https://github.com/tggtzbh)  
+README Chinese Translation: [MileHan](https://github.com/MileHan), [kristemZZ](https://github.com/kristemZZ), [JreSun](https://github.com/JRE-Sun).
 
 ## Old Version:
 3.0以前的老版本已经停止了更新，源码位置：[3.2.0](https://github.com/Jerry-Shaw/NervSys/tree/3.2)  
