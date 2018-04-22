@@ -32,7 +32,6 @@ class darwin extends os implements cmd
     public static function php_env(): string
     {
         //Execute system command
-        //todo Are there any better commands?
         exec('lsof -p ' . getmypid(), $output, $status);
         if (0 !== $status) throw new \Exception('Darwin: Access denied!');
 
@@ -48,7 +47,7 @@ class darwin extends os implements cmd
         $env = (array_pop($node_array));
 
         unset($output, $status, $node_name, $node_array);
-        return '"' . $env . '"';
+        return $env;
     }
 
     /**

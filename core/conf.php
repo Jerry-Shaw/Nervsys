@@ -25,7 +25,7 @@
  * 1: for development environment (Display all ERROR, WARNING, NOTICE)
  * 2: for optimization development (Display all ERROR, WARNING, NOTICE and Runtime Values)
  */
-define('DEBUG', 1);
+define('DEBUG', 0);
 
 //Basic Settings
 set_time_limit(0);
@@ -35,7 +35,7 @@ date_default_timezone_set('PRC');
 header('Content-Type: application/json; charset=utf-8');
 
 //NervSys Version
-define('NS_VER', '5.1.26');
+define('NS_VER', '5.2.0');
 
 //JSON Encode Options
 define(

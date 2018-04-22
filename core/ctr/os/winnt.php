@@ -38,7 +38,7 @@ class winnt extends os implements cmd
         $env = &$output['ExecutablePath'];
 
         unset($output, $status);
-        return '"' . $env . '"';
+        return $env;
     }
 
     /**

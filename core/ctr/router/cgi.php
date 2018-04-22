@@ -25,141 +25,38 @@ use core\ctr\router;
 
 class cgi extends router
 {
-    //Module list
-    private static $module = [];
-
     //Method list
     private static $method = [];
 
     //Object list
     private static $object = [];
 
-    //Mapping list
-    private static $mapping = [];
-
     /**
      * Run CGI Router
      */
     public static function run(): void
     {
-        //Read data
-        self::read_data();
+        $list = [];
 
-        //Prepare cmd
-        self::prep_cmd();
-
-        //Parse cmd
-        self::parse_cmd();
-
-        //Execute cmd
-        self::execute_cmd();
-    }
-
-    /**
-     * Prepare CGI data
-     */
-    private static function read_data(): void
-    {
-        if ('' !== parent::$cmd) return;
-
-        //Read data
-        self::read_http();
-        self::read_input();
-
-        //Get cmd value
-        $val = parent::opt_val(parent::$data, ['c', 'cmd']);
-        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) parent::$cmd = &$val['data'];
-
-        unset($val);
-    }
-
-    /**
-     * Get data from HTTP Request
-     */
-    private static function read_http(): void
-    {
-        //Collecting data
-        if (!empty($_FILES)) parent::$data += $_FILES;
-        if (!empty($_POST)) parent::$data += $_POST;
-        if (!empty($_GET)) parent::$data += $_GET;
-    }
-
-    /**
-     * Get data from raw input stream
-     */
-    private static function read_input(): void
-    {
-        $input = file_get_contents('php://input');
-        if (false === $input) return;
-
-        $data = json_decode($input, true);
-        if (is_array($data) && !empty($data)) parent::$data += $data;
-
-        unset($input, $data);
-    }
-
-    /**
-     * Prepare "cmd" data
-     */
-    private static function prep_cmd(): void
-    {
-        if (empty(parent::$conf_cgi)) return;
-
-        //Explode command
-        $data = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
-
-        //Parse mapping keys
-        foreach ($data as $key => $value) {
-            if (isset(parent::$conf_cgi[$value])) {
-                $data[$key] = parent::$conf_cgi[$value];
-                self::$mapping[parent::$conf_cgi[$value]] = $value;
-            }
-        }
-
-        //Rebuild command
-        parent::$cmd = implode('-', $data);
-
-        unset($data, $key, $value);
-    }
-
-    /**
-     * Parse "cmd" data
-     */
-    private static function parse_cmd(): void
-    {
-        //Extract "cmd" list
-        $list = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
-
-        //Parse "cmd" values
-        foreach ($list as $item) {
+        //Parse "CMD" values
+        foreach (parent::$cgi_cmd as $item) {
             if ('' === $item) continue;
 
-            //Get module value
-            $module = self::get_module($item);
+            //Get module name
+            $name = self::get_name($item);
 
             //Save module & method & function
-            if ('' !== $module) {
-                if (!isset(self::$module[$module])) self::$module[$module] = [];//Save module
-                if (!in_array($item, self::$module[$module], true)) self::$module[$module][] = $item;//Save method
+            if ('' !== $name) {
+                if (!isset($list[$name])) $list[$name] = [];//Save module
+                if (!in_array($item, $list[$name], true)) $list[$name][] = $item;//Save method
             } elseif (!in_array($item, self::$method, true)) self::$method[] = $item;//Save function
         }
 
-        unset($list, $item, $module);
-    }
-
-    /**
-     * Execute cmd
-     */
-    private static function execute_cmd(): void
-    {
         //Check module data
-        if (empty(self::$module)) {
-            debug('CGI', 'Command ERROR!');
-            return;
-        }
+        if (empty($list)) return;
 
         //Execute queue list
-        foreach (self::$module as $module => $method) {
+        foreach ($list as $module => $method) {
             //Load Module config file
             $conf = realpath(ROOT . '/' . $module . '/conf.php');
             if (false !== $conf) require $conf;
@@ -168,24 +65,20 @@ class cgi extends router
             self::call_api($method);
         }
 
-        unset($module, $method, $conf);
+        unset($list, $item, $name, $module, $method, $conf);
     }
 
     /**
-     * Get module value
+     * Get module name
      *
      * @param string $lib
      *
      * @return string
      */
-    private static function get_module(string $lib): string
+    private static function get_name(string $lib): string
     {
-        //Trim with "/"
-        $lib = trim($lib, " /\t\n\r\0\x0B");
-
-        //Detect module
-        $pos = strpos($lib, '/');
-        $module = false !== $pos ? substr($lib, 0, $pos) : '';
+        $pos = strpos($lib, '/', 1);
+        $module = false !== $pos ? substr($lib, 0, $pos + 1) : '';
 
         unset($lib, $pos);
         return $module;
@@ -199,9 +92,8 @@ class cgi extends router
     private static function call_api(array $lib): void
     {
         foreach ($lib as $class) {
-            //Get root class
-            $space = '\\' . strtr($class, '/', '\\');
-            //Call methods
+            //Call root class
+            $space = parent::prep_class($class);
             class_exists($space) ? self::call_class($class, $space) : debug(self::map_key($class), 'Class [' . $space . '] NOT found!');
         }
 
@@ -364,7 +256,7 @@ class cgi extends router
      */
     private static function map_key(string $class, string $method = ''): string
     {
-        $key = '' !== $method ? (self::$mapping[$class . '-' . $method] ?? (self::$mapping[$class] ?? $class) . '/' . $method) : (self::$mapping[$class] ?? $class);
+        $key = '' !== $method ? (parent::$cgi_data[$class . '-' . $method] ?? (parent::$cgi_data[$class] ?? $class) . '/' . $method) : (parent::$cgi_data[$class] ?? $class);
 
         unset($class, $method);
         return $key;

@@ -396,7 +396,7 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     1. http://HostName/api.php?c=pr_1/ctr/test_1-pr_1/test_2-test_a&var_a=a&var_b=b&var_c=c
     2. http://HostName/api.php?cmd=pr_1/ctr/test_1-pr_1/test_2-test_a-test_b&var_a=a&var_b=b&var_c=c
         
-    Functions placed in the URL (in "c"/"cmd" value, seperated by "-", order ignored, same in "POST") 
+    Functions placed in the URL (in "c"/"cmd" value, separated by "-", order ignored, same in "POST") 
     and match the input data strucuture at the same time in both "pr_1/ctr/test_1" and "pr_1/test_2"
     will run. With this, we can call EXACT multiple functions in EXACT multiple modules in one request.
     These modules share the same function names when exist. 
@@ -426,11 +426,11 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
 
     CLI options are as follows:
         
-    c/cmd: command
+    c/cmd: commands (separated by "-" when multiple)
     d/data: CGI data content
     p/pipe: CLI pipe content
-    r/ret: process return option
-    l/log: process log option (cmd, data, error, result)
+    r/ret: process return option (Available in CLI excutable mode only)
+    l/log: process log option (cmd, argv, pipe, error, result. Available in CLI excutable mode only)
     t/time: read time (in microseconds; default "0" means read till done. Works when r/ret or l/log is set)
         
     **Examples:
@@ -453,6 +453,9 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     3. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-test_a-test_b
     4. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1
     5. ...
+    
+    
+    **CLI excutable mode**
         
     If we need to call external programs, make sure the "c" or "cmd" key is listing in "conf.ini"
     under [CLI] section with the executable path and its possible params as the value, or ever more.

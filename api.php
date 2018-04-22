@@ -33,8 +33,14 @@ require __DIR__ . '/core/conf.php';
 //Load Router CORS
 \core\ctr\router::load_cors();
 
-//Run Process
-'cli' !== PHP_SAPI ? \core\ctr\router\cgi::run() : \core\ctr\router\cli::run();
+//Load Router Parser
+\core\ctr\router::load_parser();
+
+//Run CGI Process
+\core\ctr\router\cgi::run();
+
+//Run CLI Process
+if ('cli' === PHP_SAPI) \core\ctr\router\cli::run();
 
 //Output Result
 \core\ctr\router::output();

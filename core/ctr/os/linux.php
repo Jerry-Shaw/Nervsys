@@ -38,7 +38,7 @@ class linux extends os implements cmd
         $env = &$output[0];
 
         unset($output, $status);
-        return '"' . $env . '"';
+        return $env;
     }
 
     /**

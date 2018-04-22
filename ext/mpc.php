@@ -21,9 +21,10 @@
 namespace ext;
 
 use core\ctr\os;
+use core\ctr\router;
 use core\ctr\router\cli;
 
-class mpc
+class mpc extends router
 {
     //Wait for process result
     public static $wait = true;
@@ -80,8 +81,9 @@ class mpc
         //Empty job
         if (empty(self::$jobs)) return [];
 
-        //Check php cmd
-        if ('' === self::$php_exe) self::$php_exe = cli::get_cmd(self::$php_key);
+        //Get php config
+        if (!isset(parent::$conf_cli[self::$php_key])) throw new \Exception('[' . self::$php_key . '] NOT configured!');
+        if ('' === self::$php_exe) self::$php_exe = '"' . parent::$conf_cli[self::$php_key] . '"';
 
         //Split jobs
         $job_pack = count(self::$jobs) < self::$max_runs ? [self::$jobs] : array_chunk(self::$jobs, self::$max_runs, true);
@@ -171,7 +173,6 @@ class mpc
 
                 //Unset failed process
                 if (!$item['exec']) {
-                    //Unset resource
                     unset($resource[$key]);
                     continue;
                 }
@@ -181,7 +182,7 @@ class mpc
                     //Close pipes & process
                     foreach ($item['pipe'] as $pipe) fclose($pipe);
                     proc_close($item['proc']);
-                    //Unset resource
+
                     unset($resource[$key]);
                     continue;
                 }

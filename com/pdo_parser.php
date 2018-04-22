@@ -23,9 +23,8 @@ namespace com;
 use ext\pdo;
 use ext\file;
 use core\ctr\router;
-use core\ctr\router\cli;
 
-class pdo_parser extends pdo
+class pdo_parser extends router
 {
     //Scan dir
     public static $dir = null;
@@ -40,14 +39,14 @@ class pdo_parser extends pdo
         if (is_array(self::$dir) && !empty(self::$dir)) return;
 
         //Get dir from CMD
-        if (!empty(cli::$cmd_argv)) {
-            self::$dir = cli::$cmd_argv;
+        if (!empty(parent::$cli_data['argv'])) {
+            self::$dir = parent::$cli_data['argv'];
             return;
         }
 
         //Get dir from Router variables
-        if (isset(router::$data['dir'])) {
-            self::$dir = is_array(router::$data['dir']) ? router::$data['dir'] : [router::$data['dir']];
+        if (isset(parent::$data['dir'])) {
+            self::$dir = is_array(parent::$data['dir']) ? parent::$data['dir'] : [parent::$data['dir']];
             return;
         }
 
@@ -91,7 +90,7 @@ class pdo_parser extends pdo
                 $sql = file_get_contents($file);
 
                 //Exec SQL & gather results
-                $result[] = -1 !== parent::connect()->exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
+                $result[] = -1 !== pdo::connect()->exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
             }
         }
 
