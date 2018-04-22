@@ -45,7 +45,7 @@ class mpc extends router
     public static $php_exe = '';
 
     //Basic command
-    private static $cmd = '';
+    private static $mpc_cmd = '';
 
     //Process jobs
     private static $jobs = [];
@@ -89,9 +89,9 @@ class mpc extends router
         $job_pack = count(self::$jobs) < self::$max_runs ? [self::$jobs] : array_chunk(self::$jobs, self::$max_runs, true);
 
         //Build command
-        self::$cmd = self::$php_exe . ' "' . ROOT . '/api.php"';
-        if (self::$wait) self::$cmd .= ' --ret';
-        if (0 < self::$read_time) self::$cmd .= ' --time ' . self::$read_time;
+        self::$mpc_cmd = self::$php_exe . ' "' . ROOT . '/api.php"';
+        if (self::$wait) self::$mpc_cmd .= ' --ret';
+        if (0 < self::$read_time) self::$mpc_cmd .= ' --time ' . self::$read_time;
 
         $result = [];
 
@@ -121,7 +121,7 @@ class mpc extends router
 
         //Start process
         foreach ($jobs as $key => $item) {
-            $cmd = self::$cmd . ' --cmd "' . $item['cmd'] . '"';
+            $cmd = self::$mpc_cmd . ' --cmd "' . $item['cmd'] . '"';
             if (!empty($item['arg'])) $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
 
             //Create process
