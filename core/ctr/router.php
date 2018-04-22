@@ -117,13 +117,13 @@ class router
             self::read_input();
 
             //Prepare & Parse CMD
-            if (self::prep_cmd()) self::parse_cmd(false);
+            if (self::get_cmd()) self::parse_cmd(false);
         } else {
             //Read OPTION data
             $optind = self::read_opt();
 
             //Prepare CMD
-            $get_cmd = self::prep_cmd();
+            $get_cmd = self::get_cmd();
             if ($get_cmd) self::parse_cmd(true);
 
             //Extract arguments
@@ -137,7 +137,7 @@ class router
             if (!empty($argument)) self::$cli_data['argv'] = &$argument;
 
             //Prepare & Parse CMD
-            if (self::prep_cmd()) self::parse_cmd(true);
+            if (self::get_cmd()) self::parse_cmd(true);
 
             unset($optind, $get_cmd, $argument);
         }
@@ -298,6 +298,25 @@ class router
     }
 
     /**
+     * Get CMD data
+     *
+     * @return bool
+     */
+    private static function get_cmd(): bool
+    {
+        if ('' !== self::$cmd) return true;
+
+        $val = self::opt_val(self::$data, ['c', 'cmd']);
+        if ($val['get'] && is_string($val['data'])) {
+            self::$cmd = &$val['data'];
+            $get = true;
+        } else $get = false;
+
+        unset($val);
+        return $get;
+    }
+
+    /**
      * Call Pre-Run Methods
      */
     private static function pre_run(): void
@@ -336,50 +355,39 @@ class router
 
     /**
      * Prepare "CMD" for CGI
-     *
-     * @param string $cmd
-     *
-     * @return array
      */
-    private static function prep_cgi(string $cmd): array
+    private static function prep_cgi(): void
     {
         //Explode command
-        $data = false !== strpos($cmd, '-') ? explode('-', $cmd) : ('' !== $cmd ? [$cmd] : []);
+        self::$cgi_cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : ('' !== self::$cmd ? [self::$cmd] : []);
 
         //No CGI config keys
-        if (empty(self::$conf_cgi)) return $data;
+        if (empty(self::$conf_cgi)) return;
 
         //Mapping CGI config keys
-        foreach ($data as $key => $value) {
+        foreach (self::$cgi_cmd as $key => $value) {
             if (!isset(self::$conf_cgi[$value])) continue;
 
-            $data[$key] = self::$conf_cgi[$value];
+            self::$cgi_cmd[$key] = self::$conf_cgi[$value];
             self::$cgi_data[self::$conf_cgi[$value]] = $value;
         }
 
-        $data = array_unique($data);
+        self::$cgi_cmd = array_unique(self::$cgi_cmd);
 
-        unset($cmd, $key, $value);
-        return $data;
+        unset($key, $value);
     }
 
     /**
-     * Prepare CMD
-     *
-     * @return bool
+     * Prepare "CMD" for CLI
      */
-    private static function prep_cmd(): bool
+    private static function prep_cli(): void
     {
-        if ('' !== self::$cmd) return true;
+        //Explode command
+        $data = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : ('' !== self::$cmd ? [self::$cmd] : []);
+        foreach ($data as $item) if (isset(self::$conf_cli[$item])) self::$cli_cmd[] = $item;
+        self::$cli_cmd = array_unique(self::$cli_cmd);
 
-        $val = self::opt_val(self::$data, ['c', 'cmd']);
-        if ($val['get'] && is_string($val['data'])) {
-            self::$cmd = &$val['data'];
-            $get = true;
-        } else $get = false;
-
-        unset($val);
-        return $get;
+        unset($data, $item);
     }
 
     /**
@@ -392,18 +400,11 @@ class router
         //Merge Pre-Load Methods
         self::pre_load();
 
-        //Fill CMD for CGI
-        self::$cgi_cmd = self::prep_cgi(self::$cmd);
+        //Prepare CMD for CGI & CLI
+        self::prep_cgi();
+        if ($is_cli) self::prep_cli();
 
-        //Return for CGI
-        if (!$is_cli) return;
-
-        //Build CMD for CLI
-        $data = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : ('' !== self::$cmd ? [self::$cmd] : []);
-        foreach ($data as $item) if (isset(self::$conf_cli[$item])) self::$cli_cmd[] = $item;
-        self::$cli_cmd = array_unique(self::$cli_cmd);
-
-        unset($is_cli, $data, $item);
+        unset($is_cli);
     }
 
     /**
