@@ -24,7 +24,7 @@ use ext\pdo;
 use ext\file;
 use core\ctr\router;
 
-class pdo_parser extends router
+class pdo_parser extends pdo
 {
     //Scan dir
     public static $dir = null;
@@ -38,20 +38,21 @@ class pdo_parser extends router
         if (is_string(self::$dir) && '' !== self::$dir) self::$dir = [self::$dir];
         if (is_array(self::$dir) && !empty(self::$dir)) return;
 
-        //Get dir from CMD
-        if (!empty(parent::$cli_data['argv'])) {
-            self::$dir = parent::$cli_data['argv'];
+        //Get dir from CLI argv
+        $dir = router::get_cli_argv();
+        if (!empty($dir)) {
+            self::$dir = &$dir;
             return;
         }
 
         //Get dir from Router variables
-        if (isset(parent::$data['dir'])) {
-            self::$dir = is_array(parent::$data['dir']) ? parent::$data['dir'] : [parent::$data['dir']];
+        if (isset(router::$data['dir'])) {
+            self::$dir = is_array(router::$data['dir']) ? router::$data['dir'] : [router::$data['dir']];
             return;
         }
 
         //Default dir
-        self::$dir = ['sql'];
+        self::$dir = ['db'];
     }
 
     /**
@@ -90,7 +91,7 @@ class pdo_parser extends router
                 $sql = file_get_contents($file);
 
                 //Exec SQL & gather results
-                $result[] = -1 !== pdo::connect()->exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
+                $result[] = -1 !== parent::connect()->exec($sql) ? $dir . '/' . basename($file) . ' import succeed!' : $dir . '/' . basename($file) . ' import failed!';
             }
         }
 

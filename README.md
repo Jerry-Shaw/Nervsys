@@ -406,7 +406,7 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     under [CGI] section with the key as the input "c" or "cmd", and the real path and its possible
     params as the value, or ever more. Settings can be compound.
         
-    Something examples:
+    Some examples:
         
     "conf.ini"
         
@@ -428,9 +428,9 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
         
     c/cmd: commands (separated by "-" when multiple)
     d/data: CGI data content
-    p/pipe: CLI pipe content
-    r/ret: process return option (Available in CLI excutable mode only)
-    l/log: process log option (cmd, argv, pipe, error, result. Available in CLI excutable mode only)
+    p/pipe: CLI pipe data content
+    r/ret: process return option (Available in CLI executable mode only)
+    l/log: process log option (cmd, argv, pipe, error, result. Available in CLI executable mode only)
     t/time: read time (in microseconds; default "0" means read till done. Works when r/ret or l/log is set)
         
     **Examples:
@@ -455,12 +455,12 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     5. ...
     
     
-    **CLI excutable mode**
+    **CLI executable mode**
         
     If we need to call external programs, make sure the "c" or "cmd" key is listing in "conf.ini"
     under [CLI] section with the executable path and its possible params as the value, or ever more.
         
-    Something examples:
+    Some examples:
         
     "conf.ini"
         
@@ -494,8 +494,56 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     /path/php /path/api.php -r PHP_EXE /path/api.php -r demo/demo
         
     "PHP_EXE" value can be fetched in "os::get_env()".
+        
+    
+**Multiple commands containing both CGI and CLI**
+    
+    Only works under CLI executable mode.
+    Simple Example:
+    
+    /path/php /path/api.php -r -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-PHP_EXE -v
+        
 
+**CORS config**
 
+This is Cross-Origin Resource Sharing (CORS) config section. Local resources are allowed to be requested from another domain outside the local domain by the config settings.   
+In "conf.ini" file, [CORS] section, HTTP allowed headers should be the value put into router response headers for every domain that is allowed to request. Otherwise, no other requested headers will be accepted. 
+        
+    Some examples:
+
+    [CORS]
+    ; CORS settings
+    http://your.domain.com:80 = X-Requested-With, Content-Type, Content-Length
+    http://your.domain.com:800 = X-Requested-With, Content-Type, Content-Length
+    https://your.domain.com:443 = X-Requested-With, Content-Type, Content-Length
+    ...
+        
+
+**Pre-Run & Pre-Load config**
+
+[Pre-Run] & [Pre-Load] sections in "conf.ini". The two hold the Pre-Functional Methods which run before any other methods when a request would go to. Both of them accept string and array settings. There are some different things between the two sections.    
+[Pre-Run]: Run at the very beginning, even before the data collector in Router, accept no argument, no returned will be captured.   
+[Pre-Load]: Load as normal methods, run after the data collector in Router, accept arguments, all returned will be captured. Run with other requested methods but work at the beginning. Similar as other methods, affected by TrustZone settings and input data.
+        
+    Some examples:
+
+    [Pre-Run]
+    ; Run before router parser
+    ; No returned value will be captured
+    ;demo/fruit[] = size
+    ;demo/fruit[] = color
+    ; OR
+    ;demo/fruit = smell
+    
+    [Pre-Load]
+    ; Run after router parser, but before other methods
+    ; All returned values will be captured by router
+    ;demo/fruit[] = size
+    ;demo/fruit[] = color
+    ; OR
+    ;demo/fruit = smell
+    
+    
 **Chain Loading Example:**
 
     //The right namespace follows the path structure
@@ -563,34 +611,6 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     2. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b-test_c-test_d&var_a=a&var_b=b&var_c=c
 
 
-**About "cors" folder**
-
-This is Cross-Origin Resource Sharing (CORS) config directory. Local resources are allowed to be requested from another domain outside the local domain by the config file names. In the config file, HTTP allowed headers should be put into router response headers for every domain that is allowed to request. Otherwise, no other requested headers will be accepted. 
-
-
-_File name explanation:_
-
-    "http.domain.80.php": allowed domain is "http://domain"
-    "http.domain.8080.php": allowed domain is "http://domain:8080"
-    "https.domain.443.php": allowed domain is "https://domain"
-    "https.domain.8000.php": allowed domain is "https://domain:8000"
-      
-    or, even
-      
-    "https.domain.80.php": allowed domain is "https://domain:80"
-    "http.domain.443.php": allowed domain is "http://domain:443"
-
-
-_Configurations explanation:_
-
-    Simply put the allowed headers into array, and passed to router header.
-     
-    \core\ctr\router::$header = ['X-Requested-With'];
-    \core\ctr\router::$header = ['X-Requested-With', 'Authentication'];
-    \core\ctr\router::$header = ['X-Requested-With', 'Custom_header_names'];
-    ...
-
-
 _Special codes in config file_
     
     Important data should be carefully checked for granting permission firstly.
@@ -655,7 +675,7 @@ Always remember to close "DEBUG" option (set to 0) when all are under production
 
 ## Tests & Demos
 
-Version 5.0.0 is on going, and not compatible with versions before.  
+Version 5.2.0 is on going, and not compatible with versions before.  
 Test scripts for Ver 5.0.0 is here: [**TESTS**](https://github.com/NervSys/tests).  
 Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just get it a try. 
 

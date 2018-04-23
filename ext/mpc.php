@@ -24,7 +24,7 @@ use core\ctr\os;
 use core\ctr\router;
 use core\ctr\router\cli;
 
-class mpc extends router
+class mpc
 {
     //Wait for process result
     public static $wait = true;
@@ -57,6 +57,15 @@ class mpc extends router
     {
         //Reset jobs
         self::$jobs = [];
+
+        //Get php cli cmd
+        if ('' !== self::$php_exe) return;
+
+        $php_exe = router::get_cli_cmd(self::$php_key);
+        if ('' === $php_exe) throw new \Exception('[' . self::$php_key . '] NOT configured!');
+        self::$php_exe = '"' . $php_exe . '"';
+
+        unset($php_exe);
     }
 
     /**
@@ -80,10 +89,6 @@ class mpc extends router
     {
         //Empty job
         if (empty(self::$jobs)) return [];
-
-        //Get php config
-        if (!isset(parent::$conf_cli[self::$php_key])) throw new \Exception('[' . self::$php_key . '] NOT configured!');
-        if ('' === self::$php_exe) self::$php_exe = '"' . parent::$conf_cli[self::$php_key] . '"';
 
         //Split jobs
         $job_pack = count(self::$jobs) < self::$max_runs ? [self::$jobs] : array_chunk(self::$jobs, self::$max_runs, true);

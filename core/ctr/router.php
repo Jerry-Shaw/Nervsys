@@ -117,29 +117,29 @@ class router
             self::read_input();
 
             //Prepare & Parse CMD
-            if (self::get_cmd()) self::parse_cmd(false);
+            if (self::prep_cmd()) self::parse_cmd(false);
         } else {
             //Read OPTION data
             $optind = self::read_opt();
 
             //Prepare CMD
-            $get_cmd = self::get_cmd();
-            if ($get_cmd) self::parse_cmd(true);
+            $prep_cmd = self::prep_cmd();
+            if ($prep_cmd) self::parse_cmd(true);
 
             //Extract arguments
             $argument = array_slice($_SERVER['argv'], $optind);
             if (empty($argument)) return;
 
             //Redirect CMD to first argument
-            if (!$get_cmd) self::$data['c'] = array_shift($argument);
+            if (!$prep_cmd) self::$data['c'] = array_shift($argument);
 
             //Merge rest data to $cli_data['argv']
             if (!empty($argument)) self::$cli_data['argv'] = &$argument;
 
             //Prepare & Parse CMD
-            if (self::get_cmd()) self::parse_cmd(true);
+            if (self::prep_cmd()) self::parse_cmd(true);
 
-            unset($optind, $get_cmd, $argument);
+            unset($optind, $prep_cmd, $argument);
         }
     }
 
@@ -182,6 +182,28 @@ class router
     public static function is_https(): bool
     {
         return (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
+
+    /**
+     * Get CMD from CLI config
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function get_cli_cmd(string $cmd): string
+    {
+        return self::$conf_cli[$cmd] ?? '';
+    }
+
+    /**
+     * Get argv data from CLI process
+     *
+     * @return array
+     */
+    public static function get_cli_argv(): array
+    {
+        return self::$cli_data['argv'];
     }
 
     /**
@@ -236,9 +258,9 @@ class router
          *
          * c/cmd: commands (separated by "-" when multiple)
          * d/data: CGI data content
-         * p/pipe: CLI pipe content
-         * r/ret: process return option
-         * l/log: process log option (cmd, data, error, result)
+         * p/pipe: CLI pipe data content
+         * r/ret: process return option (Available in CLI executable mode only)
+         * l/log: process log option (cmd, argv, pipe, error, result. Available in CLI executable mode only)
          * t/time: read time (in microseconds; default "0" means read till done. Works when r/ret or l/log is set)
          */
         $opt = getopt('c:d:p:t:rl', ['cmd:', 'data:', 'pipe', 'time:', 'ret', 'log'], $optind);
@@ -298,25 +320,6 @@ class router
     }
 
     /**
-     * Get CMD data
-     *
-     * @return bool
-     */
-    private static function get_cmd(): bool
-    {
-        if ('' !== self::$cmd) return true;
-
-        $val = self::opt_val(self::$data, ['c', 'cmd']);
-        if ($val['get'] && is_string($val['data'])) {
-            self::$cmd = &$val['data'];
-            $get = true;
-        } else $get = false;
-
-        unset($val);
-        return $get;
-    }
-
-    /**
      * Call Pre-Run Methods
      */
     private static function pre_run(): void
@@ -351,6 +354,25 @@ class router
         self::$cmd = implode('-', $load);
 
         unset($load, $key, $item, $method);
+    }
+
+    /**
+     * Prepare CMD data
+     *
+     * @return bool
+     */
+    private static function prep_cmd(): bool
+    {
+        if ('' !== self::$cmd) return true;
+
+        $val = self::opt_val(self::$data, ['c', 'cmd']);
+        if ($val['get'] && is_string($val['data'])) {
+            self::$cmd = &$val['data'];
+            $get = true;
+        } else $get = false;
+
+        unset($val);
+        return $get;
     }
 
     /**
