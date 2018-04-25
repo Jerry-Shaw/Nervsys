@@ -25,12 +25,13 @@ Everyone can join the project. Ideas, codes, tests, suggests, supports, giving s
 Many thanks! 
 
 
-## Structure:
+## Structure Introduce:
 
       /                                 **Root directory
       ├─api.php                           Main entry
       ├─README.md                         Readme
       ├─LICENSE                           Lincese
+      ├─com/                            **For internal classes (Not decided yet)
       ├─core/                           **Core directory
       │     ├─cli/                      **CLI working directory
       │     │    └─logs/                **CLI logging directory
@@ -46,7 +47,7 @@ Many thanks!
       │     │    │       └─cli.php        CLI execution script
       │     │    ├─os.php                 Main OS controller
       │     │    └─router.php             Main Router controller
-      │     ├─conf.ini                    Config file for CGI mapping and CLI commands
+      │     ├─conf.ini                    Config file for router system
       │     └─conf.php                    Config file for core system
       ├─cors/                           **CORS config file directory
       │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
@@ -84,7 +85,210 @@ Files of a project should be better containing just in one folder right under th
 Files inside a project can be placed as will. 
 
 
-Some example structures:
+## Key Files Introduce:
+
+****conf.ini**
+    
+    There is only one "conf.ini" located in the path of "/core/". 
+    It is the configuration file for the whole router system.
+    
+    Sections are as follows:
+    
+_[CGI]_
+        
+    [CGI]
+    mycmd_1 = pr_1/ctr/test_1
+    mycmd_2 = pr_1/test_2-test_a
+    mycmd_3 = pr_1/test_2-test_a-test_b
+    ...
+    
+    This part is for CGI. 
+    
+    We can put any short cmd(s) instead of the full one(s). 
+    When router runs into these command(s), 
+    the shorter one(s) will be replaced with the full one(s), 
+    then executes them. 
+    
+    So, make sure that, the short cmd(s) don't rush into the 
+    same name with any other functions in classes when calling.
+    Or, the action and the results would be unpredictable.
+        
+_[CLI]_   
+      
+    [CLI]
+    mycmd_1 = /xxx/path/mycmd
+    mycmd_2 = /xxx/path/mycmd -a -b --more
+    mycmd_3 = /xxx/path/mycmd -adata -bdata --more="data"
+    ...
+    
+    This part is for CLI.
+    
+    Commands register here are allowed to be call by NervSys.
+    Otherwise, API won't execute the command and give a notice.
+    
+    Any programs in local drive can be registered.
+    Agruments can also be passed to the programs as well,
+    no matter setting in [CLI] section or entering in the cmd/shell.
+            
+_[CORS]_
+
+    [CORS]
+    http://your.domain.com:80 = X-Requested-With, Content-Type, Content-Length
+    http://your.domain.com:800 = X-Requested-With, Content-Type, Content-Length
+    https://your.domain.com:443 = X-Requested-With, Content-Type, Content-Length
+    ...
+
+    This is Cross-Origin Resource Sharing (CORS) config section. 
+    Local resources are allowed to be requested from another domain 
+    outside the local domain via API request by the config settings. 
+    
+    In [CORS] section, HTTP allowed headers should be the value 
+    for every domain that is registered. 
+    Otherwise, no other requested headers will be accepted. 
+    
+_[SIGNAL]_
+    
+    [SIGNAL]
+    1 = Process Terminated! Some reason...
+    2 = Process Terminated! Some reason...
+    3 = Process Terminated! Some reason...
+    ...
+    
+    This part controlls the Router Terminate Signal Messages.
+    
+    Every line should use a integer larger than 0 as the key with
+    the message as the value to tell router what happens.
+    
+    All processes will terminate when router receives a nonzero value 
+    from anywhere at anytime, called by "send_signal(int $signal)", 
+    except the function who sends the signal.
+    
+    Results that already exist will also be captured, then, output.
+    Reasons will be output in debug mode.
+
+_[Pre-Run] & [Pre-Load]_
+
+    [Pre-Run]
+    ; Run before router parser
+    ; No returned value will be captured
+    namespace/class_a[] = function_a
+    namespace/class_a[] = function_b
+    namespace/class_b = function_c
+    
+    [Pre-Load]
+    ; Run after router parser, but before other methods
+    ; All returned values will be captured by router
+    namespace/class_c[] = function_a
+    namespace/class_c[] = function_b
+    namespace/class_d = function_c
+    
+    These two sections hold the Pre-Functional Methods which run before 
+    any other methods when a request would go to. 
+    Both of them accept string and array settings. 
+    There are some some different things between the two sections.
+    
+    [Pre-Run]: Run at the very beginning, even before the data collector in Router, 
+    accept no argument, no returned will be captured.  
+    
+    [Pre-Load]: Load as normal methods, run after the data collector in Router, 
+    accept arguments, all returned will be captured. 
+    Run with other requested methods but work at the beginning. 
+    Similar as other methods, affected by TrustZone settings and input data.
+
+
+****conf.php**
+    
+    There is one located in "/core/" holds the settings for core system.
+    Don't modified this one too much, or, it will be harder to update.
+    
+    But there would be one located in every one level sub-directories, 
+    holding the separacted settings workd for its own directory, which 
+    we call it a sub-project, or, a project.
+    
+    Each project could have a "conf.php" as the only config file 
+    for the whole project script, in which we can set some values 
+    for extension's variables or some sepcial definitions.  
+    So that, the scripts in this project will run under these settings. 
+    
+    For example:  
+    We can set project 1 to connect database A, 
+    but using database B in project 2;  
+    
+    We can also set language to "en-US" in project 1, 
+    but "zh-CN" in project 2, etc... 
+    
+    But, always remember, don't define same named constants 
+    in different "conf.php"s. It'll conflict.  
+        
+    All "conf.php"s existed in the root directory of 
+    projects will be required in order right before inside script runs.  
+    Class variables are suggested to use instead of definitions in "conf.php"s. 
+
+_Some examples_
+
+    //named constants (don't conflict with other "conf.php"s)
+    define('DEF_1', 'xxxx');
+    define('DEF_2', 'xxxxxxxx');
+        
+    //define "keygen" & "ssl_cnf" for "crypt" extension
+    \ext\crypt::$keygen = '\demo\keygen';
+    \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
+        
+    //define MySQL connection parameters for "pdo" extension
+    \ext\pdo::$host = '192.168.1.100';
+    \ext\pdo::$port = 4000;
+    \ext\pdo::$pwd = 'PASSWORD';
+        
+    //parameters for "errno" extension
+    \ext\errno::$lang = false;
+    \ext\errno::load('cars', 'errno');
+        
+    //parameters for "http" extension
+    \ext\http::$send_payload = true;
+        
+    //More if needed
+    ...
+
+    If you want to set all variables inside classes. 
+    That is OK, just leave the "conf.php" files away.  
+    If you don't have a "conf.php" under the root directory of the project, 
+    all settings are inherited from the one before based on "/core/conf.php".
+
+_Special function codes_
+    
+    Important data should be carefully checked for granting permission firstly.
+      
+    Exit the code when the data is not passed the checking immediately to avoid CORS.
+    Or you can output some JSON data to let the client know the request was denied.
+      
+    Example:
+      
+    if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
+
+_NOTICE: DEBUG setting_
+
+    Once if there is only one element in router's result, 
+    it will output the inner content value in JSON and 
+    ignore the key('namespace/class_name/function_name'). 
+     
+    If "DEBUG" option (in "/core/conf.php") is set to 1 or 2, 
+    the results could be complex because one or more elements 
+    for debugging will be added to results as well.  
+    
+    Always remember to close "DEBUG" option (set to 0) 
+    when all are under production environment, or, 
+    the result structure will confuse us with more values inside. 
+
+
+## Reserved Words:
+  
+CGI: c/cmd
+CLI: c/cmd, d/data, p/pipe, r/ret, l/log, t/time
+  
+These words above are reserved by NervSys core. So that, they should be kept away of using for variable names when passing params.
+
+
+## Example structures:
 
     root/                       **Root directory
         ├─PR_1/                 **Project 1 folder
@@ -108,14 +312,6 @@ Some example structures:
               └─conf.php          Config file for Project 2
 
 All script should under the right namespace for better calling by NervSys API. 
-
-
-## Reserved Words:
-  
-CGI: c/cmd
-CLI: c/cmd, d/data, p/pipe, r/ret, l/log, t/time
-  
-These words above are reserved by NervSys core. So that, they should be kept away of using for variable names when passing params.
 
 
 ## Example:
@@ -503,46 +699,6 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     
     /path/php /path/api.php -r -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-PHP_EXE -v
         
-
-**CORS config**
-
-This is Cross-Origin Resource Sharing (CORS) config section. Local resources are allowed to be requested from another domain outside the local domain by the config settings.   
-In "conf.ini" file, [CORS] section, HTTP allowed headers should be the value put into router response headers for every domain that is allowed to request. Otherwise, no other requested headers will be accepted. 
-        
-    Some examples:
-
-    [CORS]
-    ; CORS settings
-    http://your.domain.com:80 = X-Requested-With, Content-Type, Content-Length
-    http://your.domain.com:800 = X-Requested-With, Content-Type, Content-Length
-    https://your.domain.com:443 = X-Requested-With, Content-Type, Content-Length
-    ...
-        
-
-**Pre-Run & Pre-Load config**
-
-[Pre-Run] & [Pre-Load] sections in "conf.ini". The two hold the Pre-Functional Methods which run before any other methods when a request would go to. Both of them accept string and array settings. There are some different things between the two sections.    
-[Pre-Run]: Run at the very beginning, even before the data collector in Router, accept no argument, no returned will be captured.   
-[Pre-Load]: Load as normal methods, run after the data collector in Router, accept arguments, all returned will be captured. Run with other requested methods but work at the beginning. Similar as other methods, affected by TrustZone settings and input data.
-        
-    Some examples:
-
-    [Pre-Run]
-    ; Run before router parser
-    ; No returned value will be captured
-    ;demo/fruit[] = size
-    ;demo/fruit[] = color
-    ; OR
-    ;demo/fruit = smell
-    
-    [Pre-Load]
-    ; Run after router parser, but before other methods
-    ; All returned values will be captured by router
-    ;demo/fruit[] = size
-    ;demo/fruit[] = color
-    ; OR
-    ;demo/fruit = smell
-    
     
 **Chain Loading Example:**
 
@@ -609,68 +765,6 @@ In "conf.ini" file, [CORS] section, HTTP allowed headers should be the value put
     
     1. http://HostName/api.php?c=pr_1/ctr/test_1&var_a=a&var_b=b&var_c=c
     2. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b-test_c-test_d&var_a=a&var_b=b&var_c=c
-
-
-_Special codes in config file_
-    
-    Important data should be carefully checked for granting permission firstly.
-      
-    Exit the code when the data is not passed the checking immediately to avoid CORS.
-    Or you can output some JSON data to let the client know the request was denied.
-      
-    Example:
-      
-    if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
-
-
-**About "conf.php" in Project root directory**
-
-Each project could have a "conf.php" as the only config file for the whole project script, in which we can set some values for extension's variables or some sepcial definitions.  
-So that, the scripts in this project will run under these settings. 
-
-For example:  
-We can set project 1 to connect database A, but using database B in project 2;  
-We can also set language to "en-US" in project 1, but "zh-CN" in project 2, etc... 
-
-But, always remember, don't define same named constants in different "conf.php"s. It'll conflict.  
-All "conf.php"s existed in the root directory of projects will be required in order right before inside script runs.  
-Class variables are suggested to use instead of definitions in "conf.php"s. 
-
-
-Some examples for "conf.php":
-
-    //named constants (don't conflict with other "conf.php"s)
-    define('DEF_1', 'xxxx');
-    define('DEF_2', 'xxxxxxxx');
-        
-    //define "keygen" & "ssl_cnf" for "crypt" extension
-    \ext\crypt::$keygen = '\demo\keygen';
-    \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
-        
-    //define MySQL connection parameters for "pdo" extension
-    \ext\pdo::$host = '192.168.1.100';
-    \ext\pdo::$port = 4000;
-    \ext\pdo::$pwd = 'PASSWORD';
-        
-    //parameters for "errno" extension
-    \ext\errno::$lang = false;
-    \ext\errno::load('cars', 'errno');
-        
-    //parameters for "http" extension
-    \ext\http::$send_payload = true;
-        
-    //More if needed
-    ...
-
-If you want to set all variables inside classes. That is OK, just leave the "conf.php" files away.  
-If you don't have a "conf.php" under the root directory of the project, all settings are inherited from the one before based on "/core/conf.php".
-
-
-## Notice:
-
-Once if there is only one element in router's result, it will output the inner content value in JSON and ignore the key('namespace/class_name/function_name').  
-If "DEBUG" option (in "/core/conf.php") is set to 1 or 2, the results could be complex because one or more elements for debugging will be added to results as well.  
-Always remember to close "DEBUG" option (set to 0) when all are under production environment, or, the result structure will confuse us with more values inside. 
 
 
 ## Tests & Demos

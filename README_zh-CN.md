@@ -392,19 +392,25 @@
         
     We can also do as follows:
         
-    1. /path/php api.php pr_1/ctr/test_1-test_a -d "a=a&b=b&c=c"
-    2. /path/php api.php pr_1/ctr/test_1-test_b -d "b=b&c=c"
-    3. /path/php api.php pr_1/ctr/test_1-test_a-test_b -d "a=a&b=b&c=c"
-    4. /path/php api.php pr_1/ctr/test_1 -d "a=a&b=b&c=c"
+    1. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-test_a
+    2. /path/php api.php -d "var_b=b&var_c=c" pr_1/ctr/test_1-test_b
+    3. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-test_a-test_b
+    4. /path/php api.php -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1
     5. ...
+
+
+
+    **CLI 执行模式**
+
         
-    如果我们需要调用外部项目的话，确保在"conf.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
+    如果我们需要调用外部项目的话，确保在【CLI】部分的"conf.ini"文件中有列入"c" or "cmd"，并且以可执行路径作为值
         
     Something examples:
         
     "conf.ini"
         
-    mycmd = "/xxx/path/mycmd"
+    [CLI]
+    mycmd = "/xxx/path/mycmd -c -d --more"
         
     Command:
         
@@ -430,6 +436,122 @@
     "PHP_EXE"：php脚本的可执行路径
         
     所有的全局变量能够通过"os::get_env()"获取。
+
+
+**包含CGI和CLI的多命令**   
+    只在CLI执行模式下有效
+    Simple Example:
+    
+    /path/php /path/api.php -r -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-PHP_EXE -v
+
+
+**CORS配置**
+
+这是跨域资源共享(CORS)的配置部分。远程主机可以通过配置文件来请求本地的资源。
+在"conf.ini"中，[CORS]部分，HTTP允许的headers应该是每个允许请求的主机路由响应头中的值。否则，将没有请求头被接收到。
+
+    Some examples:
+
+    [CORS]
+    ; CORS settings
+    http://your.domain.com:80 = X-Requested-With, Content-Type, Content-Length
+    http://your.domain.com:800 = X-Requested-With, Content-Type, Content-Length
+    https://your.domain.com:443 = X-Requested-With, Content-Type, Content-Length
+    ...
+
+
+**前置执行 和 前置加载 配置** 
+
+在"conf.ini"中的 [Pre-Run] 和 [Pre-Load] 部分，这两者定义了前置方法，能在其他请求前预先运行。它们都接受string和array设置。它们的区别在于：  
+[Pre-Run]: 最开始的时候执行，甚至在获取数据之前。它不接收参数，没有返回值。
+[Pre-Load]: 和普通的方法一样加载，在获取到数据之后执行。接受参数，捕获运行结果。和其他的被请求方法一起执行，但会比它们先执行。就像其他的方法一样，受TrustZone配置和输入的数据影响。
+
+
+    Some examples:
+
+    [Pre-Run]
+    ; Run before router parser
+    ; No returned value will be captured
+    ;demo/fruit[] = size
+    ;demo/fruit[] = color
+    ; OR
+    ;demo/fruit = smell
+    
+    [Pre-Load]
+    ; Run after router parser, but before other methods
+    ; All returned values will be captured by router
+    ;demo/fruit[] = size
+    ;demo/fruit[] = color
+    ; OR
+    ;demo/fruit = smell
+    
+    
+**链式加载 示例**    
+
+    //根据路径结构命名正确的namespace
+    namespace pr_1\ctr;
+        
+    //Any other extensions and namespaces can be used here
+    use ext\crypt;
+    use core\ctr\router;
+        
+    //类型需要和文件名一致
+    class test_1
+    {
+        public static $tz = [
+            'test_a' => ['var_a', 'var_b', 'var_c'],
+            'test_b' => ['var_d', 'var_e'],
+            'test_c' => ['var_f'],
+            'test_d' => []
+        ];
+        
+        public static function test_a()
+        {
+            if (in case){
+                router::$data['var_d'] = 'something';
+                router::$data['var_e'] = 'something';
+            }
+            
+            return something;
+        }
+        
+        public static function test_b()
+        {
+            if (in case){
+                router::$data['var_f'] = 'something';
+            }
+            
+            return something;
+        }
+        
+        /**
+        * A Non-Static method
+        */
+        public function test_c()
+        {
+            if (in case){
+                router::$data['var_g'] = 'something';
+            }
+            
+            return something;
+        }
+        
+        /**
+        * Params passing example
+        */
+        public function test_d(string $var_g)
+        {
+            ... (Some code)
+            return something;
+        }
+    }
+
+    我们可以简单的给"var_a", "var_b" and "var_c"赋值，来让它们都被调用
+
+    1. http://HostName/api.php?c=pr_1/ctr/test_1&var_a=a&var_b=b&var_c=c
+    2. http://HostName/api.php?c=pr_1/ctr/test_1-test_a-test_b-test_c-test_d&var_a=a&var_b=b&var_c=c
+
+
     
 _在配置文件里的特别codes_
 
@@ -489,8 +611,8 @@ Some examples for "conf.php":
 当处于生产环境时，或者，结果结构因为包含很多的值而使我们困惑的时候，永远记住关掉 "DEBUG"选项（将它设置成0）。
 
 ## Tests & Demos
-版本5.0与之前的版本是不兼容的。
-
+版本5.2.0正在开发，与之前的版本是不兼容的。
+给版本5.0.0编写的Test脚本地址：[**TESTS**](https://github.com/NervSys/tests).  
 版本5.0的demo地址：[DEMO](https://github.com/Jerry-Shaw/demo). 不妨试一试
     
 ## Credits

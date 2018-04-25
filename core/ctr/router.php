@@ -32,6 +32,9 @@ class router
     //Runtime Result
     public static $result = [];
 
+    //Router Signal
+    protected static $signal = 0;
+
     //CGI/CLI CMD
     protected static $cgi_cmd = [];
     protected static $cli_cmd = [];
@@ -46,6 +49,9 @@ class router
 
     //CORS Config
     private static $conf_cors = [];
+
+    //SIGNAL Config
+    private static $conf_signal = [];
 
     //Preload Config
     private static $conf_pre_run  = [];
@@ -71,6 +77,7 @@ class router
         if (isset($conf['CLI'])) self::$conf_cli += $conf['CLI'];
 
         if (isset($conf['CORS'])) self::$conf_cors = &$conf['CORS'];
+        if (isset($conf['SIGNAL'])) self::$conf_signal = &$conf['SIGNAL'];
 
         if (isset($conf['Pre-Run'])) self::$conf_pre_run = &$conf['Pre-Run'];
         if (isset($conf['Pre-Load'])) self::$conf_pre_load = &$conf['Pre-Load'];
@@ -172,6 +179,27 @@ class router
         echo 'cli' !== PHP_SAPI ? $output : $output . PHP_EOL;
 
         unset($output);
+    }
+
+    /**
+     * Send signal
+     *
+     * @param int $signal
+     */
+    public static function send_signal(int $signal): void
+    {
+        self::$signal = $signal;
+        unset($signal);
+    }
+
+    /**
+     * Get signal message
+     *
+     * @return string
+     */
+    public static function get_signal(): string
+    {
+        return self::$conf_signal[self::$signal] ?? 'Process Terminated!';
     }
 
     /**
