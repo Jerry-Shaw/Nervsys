@@ -87,7 +87,7 @@ Files inside a project can be placed as will.
 
 ## Key Files Introduce:
 
-**conf.ini**
+****conf.ini**
     
     There is only one "conf.ini" located in the path of "/core/". 
     It is the configuration file for the whole router system.
@@ -187,18 +187,16 @@ _[Pre-Run] & [Pre-Load]_
     Both of them accept string and array settings. 
     There are some some different things between the two sections.
     
-    [Pre-Run]: 
-    Run at the very beginning, even before the data collector in Router, 
+    [Pre-Run]: Run at the very beginning, even before the data collector in Router, 
     accept no argument, no returned will be captured.  
-     
-    [Pre-Load]: 
-    Load as normal methods, run after the data collector in Router, 
+    
+    [Pre-Load]: Load as normal methods, run after the data collector in Router, 
     accept arguments, all returned will be captured. 
     Run with other requested methods but work at the beginning. 
     Similar as other methods, affected by TrustZone settings and input data.
 
 
-**conf.php**
+****conf.php**
     
     There is one located in "/core/" holds the settings for core system.
     Don't modified this one too much, or, it will be harder to update.
