@@ -187,9 +187,15 @@ _[Pre-Run] & [Pre-Load]_
     Both of them accept string and array settings. 
     There are some some different things between the two sections.
     
-    [Pre-Run]: Run at the very beginning, even before the data collector in Router, accept no argument, no returned will be captured.  
+    [Pre-Run]: 
+    Run at the very beginning, even before the data collector in Router, 
+    accept no argument, no returned will be captured.  
      
-    [Pre-Load]: Load as normal methods, run after the data collector in Router, accept arguments, all returned will be captured. Run with other requested methods but work at the beginning. Similar as other methods, affected by TrustZone settings and input data.
+    [Pre-Load]: 
+    Load as normal methods, run after the data collector in Router, 
+    accept arguments, all returned will be captured. 
+    Run with other requested methods but work at the beginning. 
+    Similar as other methods, affected by TrustZone settings and input data.
 
 
 **conf.php**
