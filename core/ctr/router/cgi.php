@@ -92,8 +92,9 @@ class cgi extends router
     private static function call_api(array $lib): void
     {
         foreach ($lib as $class) {
-            //Call root class
+            //Prepare root class
             $space = parent::prep_class($class);
+            //Call root class
             class_exists($space) ? self::call_class($class, $space) : debug(self::map_key($class), 'Class [' . $space . '] NOT found!');
         }
 
@@ -140,6 +141,9 @@ class cgi extends router
         //Process method list
         foreach ($method_list as $method) {
             try {
+                //Check signal
+                if (0 !== parent::$signal) throw new \Exception(parent::get_signal());
+
                 //Compare data structure with method TrustZone
                 $inter = array_intersect(array_keys(parent::$data), $space::$tz[$method]);
                 $diff = array_diff($space::$tz[$method], $inter);

@@ -46,7 +46,7 @@ Many thanks!
       │     │    │       └─cli.php        CLI execution script
       │     │    ├─os.php                 Main OS controller
       │     │    └─router.php             Main Router controller
-      │     ├─conf.ini                    Config file for CGI mapping and CLI commands
+      │     ├─conf.ini                    Config file for router system
       │     └─conf.php                    Config file for core system
       ├─cors/                           **CORS config file directory
       │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"

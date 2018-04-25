@@ -25,7 +25,7 @@
  * 1: for development environment (Display all ERROR, WARNING, NOTICE)
  * 2: for optimization development (Display all ERROR, WARNING, NOTICE and Runtime Values)
  */
-define('DEBUG', 0);
+define('DEBUG', 1);
 
 //Basic Settings
 set_time_limit(0);

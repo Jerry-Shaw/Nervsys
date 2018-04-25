@@ -49,25 +49,30 @@ class cli extends router
         foreach (parent::$cli_cmd as $cmd) {
             if ('' === $cmd) continue;
 
-            //Get CMD ready
-            $command = '"' . parent::$conf_cli[$cmd] . '"';
-            if (!empty(parent::$cli_data['argv'])) $command .= ' ' . implode(' ', parent::$cli_data['argv']);
+            try {
+                //Check signal
+                if (0 !== parent::$signal) throw new \Exception(parent::get_signal());
 
-            //Create process
-            $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::WORK_PATH);
-            if (!is_resource($process)) {
-                debug($cmd, 'Access denied or [' . $cmd . '] ERROR!');
-                continue;
+                //Get CMD ready
+                $command = '"' . parent::$conf_cli[$cmd] . '"';
+                if (!empty(parent::$cli_data['argv'])) $command .= ' ' . implode(' ', parent::$cli_data['argv']);
+
+                //Create process
+                $process = proc_open(os::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, self::WORK_PATH);
+                if (!is_resource($process)) throw new \Exception('Access denied or [' . $cmd . '] ERROR!');
+
+                //Write data via STDIN
+                if ('' !== parent::$cli_data['pipe']) fwrite($pipes[0], parent::$cli_data['pipe'] . PHP_EOL);
+
+                //Record CLI Runtime values
+                self::cli_rec(['cmd' => &$cmd, 'pipe' => &$pipes, 'proc' => &$process]);
+
+                //Close pipes (ignore process)
+                foreach ($pipes as $pipe) fclose($pipe);
+            } catch (\Throwable $exception) {
+                debug($cmd, $exception->getMessage());
+                unset($exception);
             }
-
-            //Write data via STDIN
-            if ('' !== parent::$cli_data['pipe']) fwrite($pipes[0], parent::$cli_data['pipe'] . PHP_EOL);
-
-            //Record CLI Runtime values
-            self::cli_rec(['cmd' => &$cmd, 'pipe' => &$pipes, 'proc' => &$process]);
-
-            //Close pipes (ignore process)
-            foreach ($pipes as $pipe) fclose($pipe);
 
             unset($cmd, $command, $process, $pipes, $pipe);
         }
