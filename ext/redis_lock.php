@@ -22,9 +22,6 @@ namespace ext;
 
 class redis_lock extends redis
 {
-    //Lock life
-    public static $life = 3;
-
     //Lock prefix
     public static $prefix = 'lock:';
 
@@ -99,15 +96,16 @@ class redis_lock extends redis
      * Set lock
      *
      * @param string $key
+     * @param int    $life (in seconds)
      *
      * @return bool
      * @throws \Exception
      */
-    private static function lock(string $key): bool
+    private static function lock(string $key, int $life = 3): bool
     {
         if (!self::connect()->setnx($key, time())) return false;
 
-        self::connect()->expire($key, self::$life);
+        self::connect()->expire($key, $life);
         self::$lock[] = &$key;
 
         unset($key);
