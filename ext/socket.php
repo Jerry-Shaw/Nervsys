@@ -44,7 +44,7 @@ class socket
         $flags = 'tcp' === $type ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND;
         $socket = stream_socket_server($type . '://' . $host . ':' . $port, $errno, $errstr, $flags);
 
-        if (false === $socket || !stream_set_blocking($socket, $async)) throw new \Exception('Server Error (' . $errno . '): ' . $errstr);
+        if (false === $socket || stream_set_blocking($socket, !$async)) throw new \Exception('Server Error (' . $errno . '): ' . $errstr);
 
         self::$master = &$socket;
 
