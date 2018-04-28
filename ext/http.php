@@ -187,11 +187,13 @@ class http
 
         if (!self::$with_body) $opt[CURLOPT_NOBODY] = true;
         if (self::$with_header) $opt[CURLOPT_HEADER] = true;
+
         if ('' !== self::$Cookie) $opt[CURLOPT_COOKIE] = self::$Cookie;
         if ('' !== self::$Referer) $opt[CURLOPT_REFERER] = self::$Referer;
         if ('' !== self::$ssl_key) $opt[CURLOPT_SSLKEY] = self::$ssl_key;
         if ('' !== self::$ssl_cert) $opt[CURLOPT_SSLCERT] = self::$ssl_cert;
         if ('' !== self::$user_pwd) $opt[CURLOPT_USERPWD] = self::$user_pwd;
+
         if ('POST' === self::$Method) $opt[CURLOPT_POST] = true;
         if (!empty(self::$data)) $opt[CURLOPT_POSTFIELDS] = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data, JSON_OPT);
 

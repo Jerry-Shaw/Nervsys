@@ -25,25 +25,25 @@ namespace ext;
 class upload
 {
     //Allowed extensions
-    public static $file_ext = [];
+    public static $allowed = [];
 
-    //File name without extension
+    //File name (without extension)
     public static $file_name = '';
-
-    //Allowed File size (20MB by default)
-    public static $file_size = 20971520;
 
     //File permission
     public static $file_mode = 0664;
 
-    //Save path (Relative to "$path_root")
-    public static $path_save = '';
+    //Allowed File size (20MB by default)
+    public static $file_size = 20971520;
+
+    //Path permission
+    public static $path_mode = 0776;
 
     //Root path to save uploaded files
     public static $path_root = ROOT;
 
-    //Path permission
-    public static $path_mode = 0776;
+    //Save path (Relative to "$path_root")
+    public static $path_save = 'uploads';
 
     //Allowed Extension/MIME-Type
     const MIME = [
@@ -258,9 +258,10 @@ class upload
      */
     private static function chk_ext(string $name): string
     {
+        //Check allowed extensions
         $ext = !isset(self::MIME[$name]) ? file::get_ext($name) : $name;
-        //Extension not allowed
-        if ((!empty(self::$file_ext) && !in_array($ext, self::$file_ext, true)) || (empty(self::$file_ext) && !isset(self::MIME[$ext]))) $ext = '';
+        if ((!empty(self::$allowed) && !in_array($ext, self::$allowed, true)) || (empty(self::$allowed) && !isset(self::MIME[$ext]))) $ext = '';
+
         unset($name);
         return $ext;
     }
@@ -288,6 +289,7 @@ class upload
         if (move_uploaded_file($tmp_name, $file_path)) {
             //Set file permissions
             chmod($file_path, self::$file_mode);
+
             unset($tmp_name, $save_path, $save_name, $file_path);
             return $url_path;
         }
@@ -296,6 +298,7 @@ class upload
         if (copy($tmp_name, $file_path)) {
             //Set file permissions
             chmod($file_path, self::$file_mode);
+
             unset($tmp_name, $save_path, $save_name, $file_path);
             return $url_path;
         }
