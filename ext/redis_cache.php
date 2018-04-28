@@ -38,7 +38,7 @@ class redis_cache extends redis
     public static function set(string $name, array $data, int $life = 600): bool
     {
         $name = self::$prefix . $name;
-        $cache = json_encode($data, JSON_OPT);
+        $cache = json_encode($data);
 
         $result = 0 < $life ? self::connect()->set($name, $cache, $life) : self::connect()->set($name, $cache);
 

@@ -29,9 +29,6 @@ class socket
     //Client list
     public static $client = [];
 
-    //Buffer size
-    public static $size = 4096;
-
     /**
      * Create Server
      *
@@ -126,7 +123,7 @@ class socket
         $msg = fgetc($socket);
         if ('' === $msg) return '';
 
-        $msg .= fread($socket, self::$size - 1);
+        $msg .= fgets($socket);
 
         unset($socket);
         return trim($msg);
@@ -143,6 +140,7 @@ class socket
     public static function send($socket, string $data): bool
     {
         $data .= PHP_EOL;
+
         $send = strlen($data) === fwrite($socket, $data);
 
         unset($socket, $data);
