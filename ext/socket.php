@@ -81,20 +81,18 @@ class socket
      * Watch Client
      *
      * @param array    $read
+     * @param array    $write
      * @param int|null $timeout
-     *
-     * @return array
      */
-    public static function select(array $read = [], int $timeout = null): array
+    public static function watch(array &$read, array &$write, int $timeout = null): void
     {
-        $write = $except = [];
+        $except = [];
         $read[] = self::$master;
 
         $watch = stream_select($read, $write, $except, $timeout);
-        if (false === $watch) $read = [];
+        if (false === $watch) $read = $write = [];
 
-        unset($timeout, $write, $except, $watch);
-        return $read;
+        unset($timeout, $except, $watch);
     }
 
     /**
@@ -105,6 +103,8 @@ class socket
      */
     public static function accept(array &$read, array &$client): void
     {
+        if (empty($read)) return;
+
         $exist = array_search(self::$master, $read, true);
         if (false === $exist) return;
 
