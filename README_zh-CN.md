@@ -67,7 +67,7 @@
            ├─redis_lock.php               Lock extension on Redis
            ├─redis_queue.php              Queue extension on Redis
            ├─redis_session.php            Session extension on Redis                redis_session扩展
-           ├─sock.php                     Socket extension                          Socket扩展
+           ├─socket.php                   Socket extension                          Socket扩展
            ├─upload.php                   Upload extension                          上传扩展
            └─...                          There will be more in the near future     近期会有更有用的扩展更新。
 

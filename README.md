@@ -77,7 +77,7 @@ Many thanks!
            ├─redis_lock.php               Lock extension on Redis
            ├─redis_queue.php              Queue extension on Redis
            ├─redis_session.php            Session extension on Redis
-           ├─sock.php                     Socket extension
+           ├─socket.php                   Socket extension
            ├─upload.php                   Upload extension
            └─...                          There will be more in the near future
 
