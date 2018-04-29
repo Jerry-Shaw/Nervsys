@@ -23,110 +23,143 @@ namespace ext;
 
 class socket
 {
-    //Master socket
-    public static $master = null;
+    //Socket resource
+    public static $sock = null;
 
-    //Client list
-    public static $client = [];
+    //Socket type
+    private static $type = '';
+
+    /**
+     * Get Socket param data
+     *
+     * @param string $proto
+     * @param string $host
+     *
+     * @return array
+     */
+    private static function param(string $proto, string $host): array
+    {
+        $param = [];
+
+        $param['domain'] = false === strpos($host, ':') ? AF_INET : AF_INET6;
+        $param['type'] = 'udp' === $proto ? SOCK_DGRAM : SOCK_STREAM;
+        $param['protocol'] = getprotobyname($proto);
+
+        self::$type = &$proto;
+
+        unset($proto, $host);
+        return $param;
+    }
 
     /**
      * Create Server
      *
-     * @param string $type
+     * @param string $proto
      * @param string $host
      * @param int    $port
-     * @param bool   $async
+     * @param bool   $block
      *
      * @throws \Exception
      */
-    public static function server(string $type, string $host, int $port, bool $async = false): void
+    public static function server(string $proto, string $host, int $port, bool $block = false): void
     {
-        $flags = 'tcp' === $type ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND;
-        $socket = stream_socket_server($type . '://' . $host . ':' . $port, $errno, $errstr, $flags);
+        $param = self::param($proto, $host);
+        $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
-        if (false === $socket || stream_set_blocking($socket, !$async)) throw new \Exception('Server Error (' . $errno . '): ' . $errstr);
+        if (false === $socket) throw new \Exception('Server Create Error!');
 
-        self::$master = &$socket;
+        socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
 
-        unset($type, $host, $port, $async, $flags, $socket);
+        if (!socket_bind($socket, $host, $port)) throw new \Exception('Server Bind Error!');
+        if ('udp' !== $proto && !socket_listen($socket)) throw new \Exception('Server Listen Error!');
+
+        $block ? socket_set_block($socket) : socket_set_nonblock($socket);
+
+        self::$sock = &$socket;
+
+        unset($proto, $host, $port, $block, $param, $socket);
     }
 
     /**
      * Create Client
      *
-     * @param string $type
+     * @param string $proto
      * @param string $host
      * @param int    $port
-     * @param bool   $async
+     * @param bool   $block
      * @param int    $timeout
      *
      * @throws \Exception
      */
-    public static function client(string $type, string $host, int $port, bool $async = false, int $timeout = 10): void
+    public static function client(string $proto, string $host, int $port, bool $block = false, int $timeout = 10): void
     {
-        $flags = $async ? STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT : STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT;
-        $socket = stream_socket_client($type . '://' . $host . ':' . $port, $errno, $errstr, $timeout, $flags);
+        $param = self::param($proto, $host);
+        $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
-        if (false === $socket) throw new \Exception('Client Error (' . $errno . '): ' . $errstr);
+        if (false === $socket) throw new \Exception('Client Create Error!');
 
-        self::$master = &$socket;
+        socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => $timeout, 'usec' => 0]);
 
-        unset($type, $host, $port, $async, $timeout, $flags, $socket);
+        if ('udp' !== $proto && !socket_connect($socket, $host, $port)) throw new \Exception('Client Connect Error!');
+
+        $block ? socket_set_block($socket) : socket_set_nonblock($socket);
+
+        self::$sock = &$socket;
+
+        unset($proto, $host, $port, $block, $timeout, $param, $socket);
     }
 
     /**
-     * Watch Client
+     * Watch Connection
      *
      * @param array    $read
      * @param array    $write
      * @param int|null $timeout
+     *
+     * @return int
      */
-    public static function watch(array &$read, array &$write, int $timeout = null): void
+    public static function watch(array &$read, array &$write, int $timeout = null): int
     {
         $except = [];
-        $read[] = self::$master;
+        $read[] = self::$sock;
 
-        $watch = stream_select($read, $write, $except, $timeout);
+        $watch = socket_select($read, $write, $except, $timeout);
         if (false === $watch) $read = $write = [];
 
-        unset($timeout, $except, $watch);
+        unset($timeout, $except);
+        return (int)$watch;
     }
 
     /**
      * Accept Client
      *
-     * @param array $read
-     * @param array $client
+     * @param $client
+     *
+     * @return bool
      */
-    public static function accept(array &$read, array &$client): void
+    public static function accept(&$client): bool
     {
-        if (empty($read)) return;
+        $client = socket_accept(self::$sock);
 
-        $exist = array_search(self::$master, $read, true);
-        if (false === $exist) return;
-
-        $accept = stream_socket_accept(self::$master);
-        if (false !== $accept) $client[] = &$accept;
-
-        unset($read[$exist], $exist, $accept);
+        return false !== $client;
     }
 
     /**
      * Read message
      *
-     * @param $socket
+     * @param     $socket
+     * @param int $size
+     * @param int $flags
      *
      * @return string
      */
-    public static function read($socket): string
+    public static function read($socket, int $size = 4096, int $flags = 0): string
     {
-        $msg = fgetc($socket);
-        if ('' === $msg) return '';
+        'udp' === self::$type ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port) : socket_recv($socket, $msg, $size, $flags);
 
-        $msg .= fgets($socket);
-
-        unset($socket);
-        return trim($msg);
+        unset($socket, $size, $flags);
+        return trim((string)$msg);
     }
 
     /**
@@ -134,17 +167,20 @@ class socket
      *
      * @param        $socket
      * @param string $data
+     * @param string $host
+     * @param int    $port
+     * @param int    $flags
      *
      * @return bool
      */
-    public static function send($socket, string $data): bool
+    public static function send($socket, string $data, string $host = '', int $port = 0, int $flags = 0): bool
     {
         $data .= PHP_EOL;
+        $size = strlen($data);
+        $send = 'udp' === self::$type ? socket_sendto($socket, $data, $size, $flags, $host, $port) : socket_send($socket, $data, $size, $flags);
 
-        $send = strlen($data) === fwrite($socket, $data);
-
-        unset($socket, $data);
-        return $send;
+        unset($socket, $data, $host, $port, $flags);
+        return $size === $send;
     }
 
     /**
@@ -154,11 +190,7 @@ class socket
      */
     public static function close($socket): void
     {
-        fclose($socket);
-
-        $exist = array_search($socket, self::$client, true);
-        if (false !== $exist) unset(self::$client[$exist]);
-
+        socket_close($socket);
         unset($socket, $exist);
     }
 }
