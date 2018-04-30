@@ -1,6 +1,6 @@
 # Nervsys
 
-[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**TESTS**](https://github.com/NervSys/tests)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
+[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**TESTS**](https://github.com/NervSys/tests)  |  [**DEMO**](https://github.com/Jerry-Shaw/NS-Demo)
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
 Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode. 
@@ -771,7 +771,7 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
 
 Version 5.2.0 is on going, and not compatible with versions before.  
 Test scripts for Ver 5.0.0 is here: [**TESTS**](https://github.com/NervSys/tests).  
-Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/demo). Just get it a try. 
+Demos for Ver 5.0.0 is here: [DEMO](https://github.com/Jerry-Shaw/NS-Demo). Just get it a try. 
 
 
 ## Credits

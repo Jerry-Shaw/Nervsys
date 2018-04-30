@@ -1,6 +1,6 @@
 # Nervsys
 
-[**Read Me**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/demo)
+[**Read Me**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**DEMO**](https://github.com/Jerry-Shaw/NS-Demo)
 
 基于PHP7.1+的轻量级框架**Nervsys** for universal API controlling. 
 
@@ -613,7 +613,7 @@ Some examples for "conf.php":
 ## Tests & Demos
 版本5.2.0正在开发，与之前的版本是不兼容的。
 给版本5.0.0编写的Test脚本地址：[**TESTS**](https://github.com/NervSys/tests).  
-版本5.0的demo地址：[DEMO](https://github.com/Jerry-Shaw/demo). 不妨试一试
+版本5.0的demo地址：[DEMO](https://github.com/Jerry-Shaw/NS-Demo). 不妨试一试
     
 ## Credits
 pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
