@@ -66,12 +66,12 @@ class socket
         $param = self::param($proto, $host);
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
-        if (false === $socket) throw new \Exception('Server Create Error!');
+        if (false === $socket) throw new \Exception('Server ERROR!');
 
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
 
-        if (!socket_bind($socket, $host, $port)) throw new \Exception('Server Bind Error!');
-        if ('udp' !== $proto && !socket_listen($socket)) throw new \Exception('Server Listen Error!');
+        if (!socket_bind($socket, $host, $port)) throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($socket)));
+        if ('udp' !== $proto && !socket_listen($socket)) throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($socket)));
 
         $block ? socket_set_block($socket) : socket_set_nonblock($socket);
 
@@ -96,12 +96,12 @@ class socket
         $param = self::param($proto, $host);
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
-        if (false === $socket) throw new \Exception('Client Create Error!');
+        if (false === $socket) throw new \Exception('Client ERROR!');
 
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => $timeout, 'usec' => 0]);
 
-        if ('udp' !== $proto && !socket_connect($socket, $host, $port)) throw new \Exception('Client Connect Error!');
+        if ('udp' !== $proto && !socket_connect($socket, $host, $port)) throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($socket)));
 
         $block ? socket_set_block($socket) : socket_set_nonblock($socket);
 
