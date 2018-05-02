@@ -21,9 +21,9 @@
 
 namespace core\ctr\os;
 
-use core\ctr\os, core\ctr\os\lib\cmd;
+use core\ctr\os\lib\cmd;
 
-class linux extends os implements cmd
+class linux implements cmd
 {
     /**
      * Get PHP path

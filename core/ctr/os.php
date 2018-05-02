@@ -24,13 +24,13 @@ namespace core\ctr;
 class os
 {
     //OS name
-    public static $os = '';
+    private static $os = '';
 
     //PHP path
-    protected static $env = '';
+    private static $env = '';
 
     //System hash
-    protected static $hash = '';
+    private static $hash = '';
 
     //Platform name
     private static $platform = '';
@@ -92,7 +92,7 @@ class os
      */
     public static function cmd_bg(string $cmd): string
     {
-        return self::run('cmd_bg', [$cmd]);
+        return escapeshellcmd(self::run('cmd_bg', [$cmd]));
     }
 
     /**
@@ -105,6 +105,6 @@ class os
      */
     public static function cmd_proc(string $cmd): string
     {
-        return self::run('cmd_proc', [$cmd]);
+        return escapeshellcmd(self::run('cmd_proc', [$cmd]));
     }
 }

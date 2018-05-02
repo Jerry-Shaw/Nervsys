@@ -20,9 +20,9 @@
 
 namespace core\ctr\os;
 
-use core\ctr\os, core\ctr\os\lib\cmd;
+use core\ctr\os\lib\cmd;
 
-class winnt extends os implements cmd
+class winnt implements cmd
 {
     /**
      * Get PHP path
