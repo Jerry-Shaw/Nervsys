@@ -32,8 +32,8 @@ class os
     //System hash
     private static $hash = '';
 
-    //Platform name
-    private static $platform = '';
+    //Module name
+    private static $module = '';
 
     /**
      * Run OS controller
@@ -48,13 +48,13 @@ class os
     {
         //Get OS & build namespace
         if ('' === self::$os) self::$os = PHP_OS;
-        if ('' === self::$platform) self::$platform = '\\core\\ctr\\os\\' . strtolower(self::$os);
+        if ('' === self::$module) self::$module = '\\core\\ctr\\os\\' . strtolower(self::$os);
 
         //Check OS Controller
-        if (false === realpath(ROOT . strtr(self::$platform, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
+        if (false === realpath(ROOT . strtr(self::$module, '\\', '/') . '.php')) throw new \Exception(self::$os . ' Controller NOT found!');
 
         //Run OS method
-        $result = empty($data) ? forward_static_call([self::$platform, $method]) : forward_static_call_array([self::$platform, $method], $data);
+        $result = empty($data) ? forward_static_call([self::$module, $method]) : forward_static_call_array([self::$module, $method], $data);
 
         unset($method, $data);
         return $result;
