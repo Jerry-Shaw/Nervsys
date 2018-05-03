@@ -4,6 +4,7 @@
  * Image Extension
  *
  * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,28 +38,20 @@ class image
      */
     public static function resize(string $file, int $width, int $height, bool $crop = false): bool
     {
-        //Rotate image
-        self::rotate($file);
-
         //Get image data
         $img_info = getimagesize($file);
-        if (!in_array($img_info['mime'], self::MIME, true)) {
-            debug(__CLASS__, 'Image NOT support!');
-            return false;
-        }
+
+        if (!in_array($img_info['mime'], self::MIME, true)) return false;
 
         //Get new size
-        $img_size = [];
-        $crop ? self::img_crop($img_size, $img_info[0], $img_info[1], $width, $height) : self::img_size($img_size, $img_info[0], $img_info[1], $width, $height);
+        $img_size = $crop ? self::img_crop($img_info[0], $img_info[1], $width, $height) : self::img_zoom($img_info[0], $img_info[1], $width, $height);
 
         //No need to resize/crop
         if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) return true;
 
         //Process image
         $type = substr($img_info['mime'], 6);
-        $img_create = 'imagecreatefrom' . $type;
-        $img_output = 'image' . $type;
-        $img_source = $img_create($file);
+        $img_src = call_user_func('imagecreatefrom' . $type, $file);
         $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
 
         //Transparent for GIF/PNG
@@ -76,12 +69,12 @@ class image
                 break;
         }
 
-        imagecopyresampled($img_thumb, $img_source, 0, 0, $img_size['img_x'], $img_size['img_y'], $img_size['img_w'], $img_size['img_h'], $img_size['src_w'], $img_size['src_h']);
-        $result = $img_output($img_thumb, $file);
-        imagedestroy($img_source);
+        imagecopyresampled($img_thumb, $img_src, 0, 0, $img_size['img_x'], $img_size['img_y'], $img_size['img_w'], $img_size['img_h'], $img_size['src_w'], $img_size['src_h']);
+        $result = call_user_func('image' . $type, $img_thumb, $file);
+        imagedestroy($img_src);
         imagedestroy($img_thumb);
 
-        unset($file, $width, $height, $crop, $img_info, $img_size, $type, $img_create, $img_output, $img_source, $img_thumb, $transparent);
+        unset($file, $width, $height, $crop, $img_info, $img_size, $type, $img_src, $img_thumb, $transparent);
         return $result;
     }
 
@@ -89,56 +82,60 @@ class image
      * Rotate image
      *
      * @param string $file
+     *
+     * @return bool
      */
-    private static function rotate(string $file): void
+    public static function rotate(string $file): bool
     {
         //Get EXIF data
         $img_exif = exif_read_data($file);
-        if (false === $img_exif || !isset($img_exif['Orientation'])) return;
-        if (!in_array($img_exif['MimeType'], self::MIME, true)) {
-            debug(__CLASS__, 'Image NOT support!');
-            return;
-        }
+
+        if (
+            false === $img_exif ||
+            !isset($img_exif['Orientation']) ||
+            !in_array($img_exif['MimeType'], self::MIME, true)
+        ) return false;
 
         //Process image
         $type = substr($img_exif['MimeType'], 6);
-        $img_create = 'imagecreatefrom' . $type;
-        $img_output = 'image' . $type;
-        $img_source = $img_create($file);
+        $img_src = call_user_func('imagecreatefrom' . $type, $file);
 
         //Rotate image when needed
         switch ($img_exif['Orientation']) {
             case 8:
-                $img_source = imagerotate($img_source, 90, 0);
+                $img_src = imagerotate($img_src, 90, 0);
                 break;
             case 3:
-                $img_source = imagerotate($img_source, 180, 0);
+                $img_src = imagerotate($img_src, 180, 0);
                 break;
             case 6:
-                $img_source = imagerotate($img_source, -90, 0);
+                $img_src = imagerotate($img_src, -90, 0);
                 break;
             default:
-                imagedestroy($img_source);
-                return;
+                imagedestroy($img_src);
+                return true;
         }
 
-        $img_output($img_source, $file);
-        imagedestroy($img_source);
+        $result = call_user_func('image' . $type, $img_src, $file);
+        imagedestroy($img_src);
 
-        unset($file, $img_exif, $type, $img_create, $img_output, $img_source);
+        unset($file, $img_exif, $type, $img_src);
+        return $result;
     }
 
     /**
      * Get image coordinates
      *
-     * @param array $size
-     * @param int   $img_w
-     * @param int   $img_h
-     * @param int   $to_w
-     * @param int   $to_h
+     * @param int $img_w
+     * @param int $img_h
+     * @param int $to_w
+     * @param int $to_h
+     *
+     * @return array
      */
-    private static function img_crop(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void
+    private static function img_crop(int $img_w, int $img_h, int $to_w, int $to_h): array
     {
+        $size = [];
         $size['img_w'] = &$to_w;
         $size['img_h'] = &$to_h;
         $size['src_w'] = $img_w;
@@ -146,7 +143,7 @@ class image
         $size['img_x'] = $size['img_y'] = 0;
 
         //Incorrect width/height
-        if (0 >= $img_w || 0 >= $img_h) return;
+        if (0 >= $img_w || 0 >= $img_h) return $size;
 
         //Calculate new width and height
         $ratio_img = $img_w / $img_h;
@@ -166,25 +163,28 @@ class image
         }
 
         unset($img_w, $img_h, $to_w, $to_h, $ratio_img, $ratio_need, $ratio_diff);
+        return $size;
     }
 
     /**
      * Get new image size
      *
-     * @param array $size
-     * @param int   $img_w
-     * @param int   $img_h
-     * @param int   $to_w
-     * @param int   $to_h
+     * @param int $img_w
+     * @param int $img_h
+     * @param int $to_w
+     * @param int $to_h
+     *
+     * @return array
      */
-    private static function img_size(array &$size, int $img_w, int $img_h, int $to_w, int $to_h): void
+    private static function img_zoom(int $img_w, int $img_h, int $to_w, int $to_h): array
     {
+        $size = [];
         $size['img_x'] = $size['img_y'] = 0;
         $size['img_w'] = $size['src_w'] = $img_w;
         $size['img_h'] = $size['src_h'] = $img_h;
 
         //Incorrect width/height
-        if (0 >= $img_w || 0 >= $img_h) return;
+        if (0 >= $img_w || 0 >= $img_h) return $size;
 
         //Calculate new width and height
         $ratio_img = $img_w / $img_h;
@@ -203,5 +203,6 @@ class image
         }
 
         unset($img_w, $img_h, $to_w, $to_h, $ratio_img, $ratio_need, $ratio_diff);
+        return $size;
     }
 }
