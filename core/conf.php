@@ -22,8 +22,9 @@
 /**
  * Debug mode
  * 0: for production environment (Disable ERROR Reporting)
- * 1: for development environment (Display all ERROR, WARNING, NOTICE)
- * 2: for optimization development (Display all ERROR, WARNING, NOTICE and Runtime Values)
+ * 1: for developers (Only PHP level ERROR, WARNING, NOTICE)
+ * 2: for beginners (Show PHP level ERROR, WARNING, NOTICE, and debug messages)
+ * 3: for optimization (Show PHP level ERROR, WARNING, NOTICE, debug messages and runtime values)
  */
 define('DEBUG', 1);
 
@@ -35,7 +36,7 @@ date_default_timezone_set('PRC');
 header('Content-Type: application/json; charset=utf-8');
 
 //NervSys Version
-define('NS_VER', '5.2.8');
+define('NS_VER', '5.2.10');
 
 //JSON Encode Options
 define(
@@ -79,8 +80,6 @@ function load(string $lib): void
  */
 function debug(string $module, string $message): void
 {
-    if (0 === DEBUG) return;
-    \core\ctr\router::$result[$module] = &$message;
-
+    if (1 < DEBUG) \core\ctr\router::$result[$module] = &$message;
     unset($module, $message);
 }
