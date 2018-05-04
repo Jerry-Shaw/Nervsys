@@ -414,17 +414,27 @@ class router
         //No CGI config keys
         if (empty(self::$conf_cgi)) return;
 
-        //Mapping CGI config keys
-        foreach (self::$cgi_cmd as $key => $value) {
-            if (!isset(self::$conf_cgi[$value])) continue;
+        //Mapping CGI configurations
+        foreach (self::$conf_cgi as $name => $item) {
+            $key = array_search($name, self::$cgi_cmd, true);
 
-            self::$cgi_cmd[$key] = self::$conf_cgi[$value];
-            self::$cgi_data[self::$conf_cgi[$value]] = $value;
+            if (false !== $key) {
+                self::$cgi_cmd[$key] = $item;
+                self::$cgi_data[$item] = $name;
+            } else {
+                foreach (self::$cgi_cmd as $key => $val) {
+                    if (0 !== strpos($val, $name)) continue;
+
+                    $cmd = str_replace($name, $item, $val);
+                    self::$cgi_cmd[$key] = $cmd;
+                    self::$cgi_data[$cmd] = $val;
+                }
+            }
         }
 
         self::$cgi_cmd = array_unique(self::$cgi_cmd);
 
-        unset($key, $value);
+        unset($name, $item, $key, $val, $cmd);
     }
 
     /**
