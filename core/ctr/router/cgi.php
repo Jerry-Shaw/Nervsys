@@ -26,7 +26,7 @@ use core\ctr\router;
 class cgi extends router
 {
     //Method list
-    private static $method = [];
+    protected static $method = [];
 
     //Object list
     private static $object = [];
