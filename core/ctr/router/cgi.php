@@ -119,9 +119,9 @@ class cgi extends router
         if (method_exists($space, 'init')) {
             try {
                 self::call_method($class, $space, 'init');
-            } catch (\Throwable $exception) {
-                debug(self::map_key($class, 'init'), 'Execute Failed! ' . $exception->getMessage());
-                unset($exception);
+            } catch (\Throwable $throwable) {
+                debug(self::map_key($class, 'init'), 'Execute Failed! ' . $throwable->getMessage());
+                unset($throwable);
             }
         }
 
@@ -153,9 +153,9 @@ class cgi extends router
 
                 //Call method
                 self::call_method($class, $space, $method);
-            } catch (\Throwable $exception) {
-                debug(self::map_key($class, $method), 'Execute Failed! ' . $exception->getMessage());
-                unset($exception);
+            } catch (\Throwable $throwable) {
+                debug(self::map_key($class, $method), 'Execute Failed! ' . $throwable->getMessage());
+                unset($throwable);
             }
         }
 

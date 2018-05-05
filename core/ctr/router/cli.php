@@ -39,9 +39,9 @@ class cli extends router
         try {
             //Acquire OS environment for 'PHP_EXE' value
             if (in_array('PHP_EXE', parent::$cli_cmd, true)) parent::$conf_cli['PHP_EXE'] = os::get_env();
-        } catch (\Throwable $exception) {
-            debug(parent::$cli_cmd, $exception->getMessage());
-            unset($exception);
+        } catch (\Throwable $throwable) {
+            debug(parent::$cli_cmd, $throwable->getMessage());
+            unset($throwable);
             exit;
         }
 
@@ -69,9 +69,9 @@ class cli extends router
 
                 //Close pipes (ignore process)
                 foreach ($pipes as $pipe) fclose($pipe);
-            } catch (\Throwable $exception) {
-                debug($cmd, $exception->getMessage());
-                unset($exception);
+            } catch (\Throwable $throwable) {
+                debug($cmd, $throwable->getMessage());
+                unset($throwable);
             }
 
             unset($cmd, $command, $process, $pipes, $pipe);
