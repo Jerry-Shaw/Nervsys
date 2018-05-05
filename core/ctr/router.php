@@ -156,7 +156,7 @@ class router
     public static function output(): void
     {
         //Output Runtime Values
-        if (2 === DEBUG) {
+        if (3 === DEBUG) {
             self::$result['duration'] = round(microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'], 4) . 's';
             self::$result['memory'] = round(memory_get_usage(true) / 1048576, 4) . 'MB';
             self::$result['peak'] = round(memory_get_peak_usage(true) / 1048576, 4) . 'MB';
