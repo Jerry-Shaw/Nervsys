@@ -56,7 +56,13 @@ class pdo_mysql extends pdo
         //Prepare & execute
         $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
         $stmt = self::connect()->prepare($sql);
-        $result = $stmt->execute($data);
+
+        try {
+            $result = $stmt->execute($data);
+        } catch (\Throwable $throwable) {
+            debug('MySQL', $throwable->getMessage() . PHP_EOL . $stmt->debugDumpParams());
+            return false;
+        }
 
         $last = '' === $last ? (string)self::connect()->lastInsertId() : (string)self::connect()->lastInsertId($last);
 
@@ -114,7 +120,13 @@ class pdo_mysql extends pdo
         //Prepare & execute
         $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
         $stmt = self::connect()->prepare($sql);
-        $result = $stmt->execute($data);
+
+        try {
+            $result = $stmt->execute($data);
+        } catch (\Throwable $throwable) {
+            debug('MySQL', $throwable->getMessage() . PHP_EOL . $stmt->debugDumpParams());
+            return false;
+        }
 
         unset($table, $data, $set_opt, $where_opt, $sql, $stmt);
         return $result;
@@ -179,7 +191,13 @@ class pdo_mysql extends pdo
         //Prepare & execute
         $sql = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
         $stmt = self::connect()->prepare($sql);
-        $stmt->execute($data['bind']);
+
+        try {
+            $stmt->execute($data['bind']);
+        } catch (\Throwable $throwable) {
+            debug('MySQL', $throwable->getMessage() . PHP_EOL . $stmt->debugDumpParams());
+            return [];
+        }
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
@@ -205,13 +223,13 @@ class pdo_mysql extends pdo
      * @param string $table
      * @param array  $where
      *
-     * @return bool
+     * @return int
      * @throws \Exception
      */
-    public static function delete(string $table, array $where): bool
+    public static function delete(string $table, array $where): int
     {
         //Delete not allowed
-        if (empty($where)) return false;
+        if (empty($where)) return 0;
 
         //Build "where"
         $where_opt = self::build_where($where);
@@ -219,7 +237,15 @@ class pdo_mysql extends pdo
         //Prepare & execute
         $sql = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
         $stmt = self::connect()->prepare($sql);
-        $result = $stmt->execute($where);
+
+        try {
+            $stmt->execute($where);
+        } catch (\Throwable $throwable) {
+            debug('MySQL', $throwable->getMessage() . PHP_EOL . $stmt->debugDumpParams());
+            return 0;
+        }
+
+        $result = $stmt->rowCount();
 
         unset($table, $where, $where_opt, $sql, $stmt);
         return $result;
@@ -238,7 +264,13 @@ class pdo_mysql extends pdo
     {
         //Prepare & execute
         $stmt = self::connect()->prepare($sql);
-        $result = $stmt->execute($data);
+
+        try {
+            $result = $stmt->execute($data);
+        } catch (\Throwable $throwable) {
+            debug('MySQL', $throwable->getMessage() . PHP_EOL . $stmt->debugDumpParams());
+            return false;
+        }
 
         unset($sql, $data, $stmt);
         return $result;
@@ -258,7 +290,13 @@ class pdo_mysql extends pdo
     {
         //Prepare & execute
         $stmt = self::connect()->prepare($sql);
-        $stmt->execute($data);
+
+        try {
+            $stmt->execute($data);
+        } catch (\Throwable $throwable) {
+            debug('MySQL', $throwable->getMessage() . PHP_EOL . $stmt->debugDumpParams());
+            return [];
+        }
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 

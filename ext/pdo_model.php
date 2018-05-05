@@ -172,10 +172,10 @@ class pdo_model extends pdo
      *
      * @param array $where
      *
-     * @return bool
+     * @return int
      * @throws \Exception
      */
-    public static function delete(array $where): bool
+    public static function delete(array $where): int
     {
         return pdo_mysql::delete(self::get_table(get_called_class()), $where);
     }
