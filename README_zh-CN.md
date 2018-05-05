@@ -612,7 +612,7 @@ Some examples for "conf.php":
 
 ## Tests & Demos
 版本5.2.0正在开发，与之前的版本是不兼容的。
-给版本5.0.0编写的Test脚本地址：[**TESTS**](https://github.com/NervSys/tests).  
+给版本5.0.0编写的Test脚本地址：[**TESTS**](https://github.com/NervSys/NS-Tests).  
 版本5.0的demo地址：[DEMO](https://github.com/Jerry-Shaw/NS-Demo). 不妨试一试
     
 ## Credits
