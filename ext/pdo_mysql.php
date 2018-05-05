@@ -60,7 +60,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
             return false;
         }
 
@@ -124,7 +124,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
             return false;
         }
 
@@ -195,7 +195,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($data['bind']);
         } catch (\Throwable $throwable) {
-            debug($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
             return [];
         }
 
@@ -241,7 +241,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($where);
         } catch (\Throwable $throwable) {
-            debug($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
             return 0;
         }
 
@@ -268,7 +268,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
             return false;
         }
 
@@ -294,7 +294,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
             return [];
         }
 
