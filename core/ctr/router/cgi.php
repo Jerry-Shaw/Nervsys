@@ -240,7 +240,7 @@ class cgi extends router
                         $data[$name] = parent::$data[$name];
                         break;
                 }
-            } else $param->isOptional() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
+            } else $param->isDefaultValueAvailable() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
         }
 
         //Report missing argument data
