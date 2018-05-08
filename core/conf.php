@@ -26,7 +26,7 @@
  * 2: for beginners (Show PHP level ERROR, WARNING, NOTICE, and debug messages)
  * 3: for optimization (Show PHP level ERROR, WARNING, NOTICE, debug messages and runtime values)
  */
-define('DEBUG', 1);
+define('DEBUG', 2);
 
 //Basic Settings
 set_time_limit(0);
