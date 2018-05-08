@@ -356,12 +356,11 @@ class router
 
         foreach (self::$conf_pre_run as $key => $item) {
             $class = self::prep_class($key);
-
-            if (is_string($item)) forward_static_call([$class, $item]);
-            else foreach ($item as $method) forward_static_call([$class, $method]);
+            $method = is_string($item) ? [$item] : $item;
+            foreach ($method as $function) forward_static_call([$class, $function]);
         }
 
-        unset($key, $item, $class, $method);
+        unset($key, $item, $class, $method, $function);
     }
 
     /**
