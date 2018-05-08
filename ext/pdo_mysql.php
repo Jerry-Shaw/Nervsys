@@ -387,7 +387,7 @@ class pdo_mysql extends pdo
             //Process value
             if (self::use_bind($value)) {
                 //Generate bind value
-                $bind = ':d_' . strtr($key, '.', '_');
+                $bind = ':d_' . hash('crc32b', $key);
                 //Add to column
                 $column[self::escape($key)] = $bind;
                 //Add to data
@@ -471,7 +471,7 @@ class pdo_mysql extends pdo
 
                 foreach ($item[2] as $name => $value) {
                     //Generate bind value
-                    $bind = ':w_' . strtr($item[0], '.', '_') . '_' . $name . '_' . mt_rand();
+                    $bind = ':w_' . hash('crc32b', $item[0]) . '_' . $name . '_' . mt_rand();
                     //Add to bind list
                     $list[] = $bind;
                     //Add to "where"
@@ -486,7 +486,7 @@ class pdo_mysql extends pdo
             } else {
                 if (self::use_bind($item[2])) {
                     //Generate bind value
-                    $bind = ':w_' . strtr($item[0], '.', '_') . '_' . mt_rand();
+                    $bind = ':w_' . hash('crc32b', $item[0]) . '_' . mt_rand();
                     //Add to option
                     $option[] = $bind;
                     //Add to "where"
