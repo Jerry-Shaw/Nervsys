@@ -469,9 +469,9 @@ class pdo_mysql extends pdo
                 //Reset bind list
                 $list = [];
 
-                foreach ($item[2] as $name => $value) {
+                foreach ($item[2] as $value) {
                     //Generate bind value
-                    $bind = ':w_' . hash('crc32b', $item[0]) . '_' . $name . '_' . mt_rand();
+                    $bind = ':w_' . hash('crc32b', $item[0]) . '_' . mt_rand();
                     //Add to bind list
                     $list[] = $bind;
                     //Add to "where"
@@ -482,7 +482,7 @@ class pdo_mysql extends pdo
                 $option[] = implode(', ', $list);
 
                 //Free memory
-                unset($list, $name, $value, $bind);
+                unset($list, $value, $bind);
             } else {
                 if (self::use_bind($item[2])) {
                     //Generate bind value
