@@ -29,6 +29,9 @@ class router
     //Runtime Data
     public static $data = [];
 
+    //Runtime Error
+    public static $error = [];
+
     //Runtime Result
     public static $result = [];
 
@@ -151,6 +154,17 @@ class router
     }
 
     /**
+     * Set error
+     *
+     * @param array $error
+     */
+    public static function error(array $error): void
+    {
+        self::$error = &$error;
+        unset($error);
+    }
+
+    /**
      * Output result
      */
     public static function output(): void
@@ -163,22 +177,16 @@ class router
         }
 
         //Build result
-        switch (count(self::$result)) {
-            case 0:
-                $output = '';
-                break;
-            case 1:
-                $output = json_encode(current(self::$result), JSON_OPT);
-                break;
-            default:
-                $output = json_encode(self::$result, JSON_OPT);
-                break;
-        }
+        $count = count(self::$result);
+        $result = 0 === $count ? '' : (1 === $count ? current(self::$result) : self::$result);
 
-        //Output result
-        echo 'cli' !== PHP_SAPI ? $output : $output . PHP_EOL;
+        //Build output
+        $output = !empty(self::$error) ? self::$error + ['data' => &$result] : $result;
 
-        unset($output);
+        //Output
+        echo json_encode($output, JSON_OPT) . ('cli' !== PHP_SAPI ? '' : PHP_EOL);
+
+        unset($count, $result, $output);
     }
 
     /**
@@ -327,7 +335,6 @@ class router
      */
     private static function read_http(): void
     {
-        //Collecting data
         if (!empty($_FILES)) self::$data += $_FILES;
         if (!empty($_POST)) self::$data += $_POST;
         if (!empty($_GET)) self::$data += $_GET;
@@ -373,14 +380,14 @@ class router
         $load = [];
         foreach (self::$conf_pre_load as $key => $item) {
             $load[] = $key;
-            if (is_string($item)) $load[] = $item;
-            else foreach ($item as $method) $load[] = $method;
+            $list = is_string($item) ? [$item] : $item;
+            foreach ($list as $value) $load[] = $value;
         }
 
         if ('' !== self::$cmd) $load[] = self::$cmd;
         self::$cmd = implode('-', $load);
 
-        unset($load, $key, $item, $method);
+        unset($load, $key, $item, $list, $value);
     }
 
     /**
