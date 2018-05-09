@@ -431,7 +431,7 @@ class router
                 foreach (self::$cgi_cmd as $key => $val) {
                     if (0 !== strpos($val, $name)) continue;
 
-                    $cmd = str_replace($name, $item, $val);
+                    $cmd = substr_replace($val, $item, 0, strlen($name));
                     self::$cgi_cmd[$key] = $cmd;
                     self::$cgi_data[$cmd] = $val;
                 }
