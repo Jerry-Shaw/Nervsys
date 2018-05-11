@@ -523,10 +523,10 @@ class pdo_mysql extends pdo
         self::opt_join($opt);
         //Process "where"
         $data['bind'] = self::opt_where($opt);
-        //Process "order"
-        self::opt_order($opt);
         //Process "group"
         self::opt_group($opt);
+        //Process "order"
+        self::opt_order($opt);
         //Process "limit"
         $data['bind'] += self::opt_limit($opt);
 
