@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Output Data Parser
+ * CMD Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,11 +18,18 @@
  * limitations under the License.
  */
 
-namespace core\parser;
+namespace core\pool;
 
-class output
+class cmd
 {
-    public static $json_opt = 0;
+    //Original CMD
+    public static $cmd = '';
 
+    //Parsed CMD
+    public static $cmd_cgi = [];
+    public static $cmd_cli = [];
 
+    //Parameter
+    public static $param_cgi = [];
+    public static $param_cli = [];
 }

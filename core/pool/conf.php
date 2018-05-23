@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Model Pooling Module
+ * Config Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,12 +18,21 @@
  * limitations under the License.
  */
 
-namespace core\module;
+namespace core\pool;
 
-class model
+class conf
 {
-    //Object instance pool
-    public static $object = [];
+    //Config settings
+    public static $CGI    = [];
+    public static $CLI    = [];
+    public static $CORS   = [];
+    public static $INIT   = [];
+    public static $SIGNAL = [];
 
+    //Runtime settings
+    public static $IS_HTTPS = true;
+    public static $IS_CGI   = 'cli' !== PHP_SAPI;
 
+    //Config file path
+    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'conf.ini';
 }

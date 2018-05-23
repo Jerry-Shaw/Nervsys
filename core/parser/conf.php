@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Config Setting Parser
+ * Config Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,98 +20,41 @@
 
 namespace core\parser;
 
-use core\module\data;
+use core\pool\conf as pool_conf;
 
 class conf
 {
-    //Config file path
-    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'conf.ini';
-
     /**
      * Load config settings
      */
     public static function load(): void
     {
-        $path = realpath(self::CONF_PATH);
+        //Check HTTPS
+        pool_conf::$IS_HTTPS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+
+        //Check config file
+        $path = realpath(pool_conf::CONF_PATH);
 
         if (false === $path) {
+            //todo log (debug): config not found
             return;
         }
 
+        //Read config file
         $conf = parse_ini_file($path, true);
 
         if (false === $conf) {
+            //todo log (debug): config error
             return;
         }
 
         foreach ($conf as $key => $val) {
-            data::$conf[$key] = $val;
-        }
-
-        data::$mode['https'] = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
-
-        unset($path, $conf, $key, $val);
-    }
-
-    /**
-     * Check Cross-origin resource sharing permission
-     */
-    public static function chk_cors(): void
-    {
-        if (
-            empty(data::$conf['CORS'])
-            || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (data::$mode['https'] ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
-        ) {
-            return;
-        }
-
-        if (!isset(data::$conf['CORS'][$_SERVER['HTTP_ORIGIN']])) {
-            exit;
-        }
-
-        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . data::$conf['CORS'][$_SERVER['HTTP_ORIGIN']]);
-
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
-        }
-    }
-
-    /**
-     * Call INIT functions
-     */
-    public static function call_init(): void
-    {
-        if (empty(data::$conf['INIT'])) {
-            return;
-        }
-
-        foreach (data::$conf['INIT'] as $key => $item) {
-            $class = self::prep_class($key);
-            $method = is_string($item) ? [$item] : $item;
-
-            foreach ($method as $function) {
-                forward_static_call([$class, $function]);
+            if (isset(pool_conf::$$key)) {
+                pool_conf::$$key = $val;
             }
         }
 
-        unset($key, $item, $class, $method, $function);
-    }
-
-    /**
-     * Prepare Root Class
-     *
-     * @param string $library
-     *
-     * @return string
-     */
-    private static function prep_class(string $library): string
-    {
-        $library = ltrim($library, '\\');
-        $library = '\\' . strtr($library, '/', '\\');
-
-        return $library;
+        unset($path, $conf, $key, $val);
     }
 }

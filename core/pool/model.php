@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Operator Handler
+ * Model Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,30 +18,12 @@
  * limitations under the License.
  */
 
-namespace core\handler;
+namespace core\pool;
 
-use core\pool\conf as pool_conf;
-
-class operator
+class model
 {
-    /**
-     * Call INIT functions
-     */
-    public static function call_init(): void
-    {
-        if (empty(pool_conf::$INIT)) {
-            return;
-        }
+    //Object instance pool
+    public static $object = [];
 
-        foreach (pool_conf::$INIT as $key => $item) {
-            $class = '\\' . strtr(ltrim($key, '\\'), '/', '\\');
-            $method = is_string($item) ? [$item] : $item;
 
-            foreach ($method as $function) {
-                forward_static_call([$class, $function]);
-            }
-        }
-
-        unset($key, $item, $class, $method, $function);
-    }
 }

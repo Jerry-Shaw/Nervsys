@@ -20,8 +20,13 @@
 
 namespace core\handler;
 
-use core\parser\conf;
-use core\parser\input;
+use core\pool\conf as pool_conf;
+
+use core\parser\cmd as parser_cmd;
+use core\parser\conf as parser_conf;
+use core\parser\data as parser_data;
+
+use core\handler\operator as handler_operator;
 
 class observer
 {
@@ -31,18 +36,52 @@ class observer
     public static function start(): void
     {
         //Load config settings
-        conf::load();
+        parser_conf::load();
 
         //Check CORS permission
-        conf::chk_cors();
+        self::chk_cors();
 
         //Call INIT setting functions
-        conf::call_init();
+        handler_operator::call_init();
 
-        //Prepare input data
-        input::prep_data();
+        //Prepare data
+        parser_data::prep_data();
+
+        //Prepare cmd
+        parser_cmd::prep_cmd();
+
+
+    }
+
+    public static function output(): void
+    {
 
     }
 
 
+    /**
+     * Check Cross-origin resource sharing permission
+     */
+    public static function chk_cors(): void
+    {
+        if (
+            empty(pool_conf::$CORS)
+            || !isset($_SERVER['HTTP_ORIGIN'])
+            || $_SERVER['HTTP_ORIGIN'] === (pool_conf::$IS_HTTPS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
+        ) {
+            return;
+        }
+
+        if (!isset(pool_conf::$CORS[$_SERVER['HTTP_ORIGIN']])) {
+            //todo log (debug): CORS failed
+            exit;
+        }
+
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        header('Access-Control-Allow-Headers: ' . pool_conf::$CORS[$_SERVER['HTTP_ORIGIN']]);
+
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+            exit;
+        }
+    }
 }

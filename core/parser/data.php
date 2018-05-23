@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Input Data Parser
+ * Data Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,16 +20,24 @@
 
 namespace core\parser;
 
-use core\module\data;
+use core\pool\cmd as pool_cmd;
+use core\pool\conf as pool_conf;
+use core\pool\data as pool_data;
 
-class input
+class data
 {
     /**
-     * Parse input data
+     * Prepare data
      */
     public static function prep_data(): void
     {
-        if ('cli' === data::$mode['sapi']) {
+        if (pool_conf::$IS_CGI) {
+            //Read HTTP
+            self::read_http();
+
+            //Read raw data
+            self::read_raw();
+        } else {
             //Read option
             $optind = self::read_opt();
 
@@ -37,84 +45,21 @@ class input
             self::read_argv($optind);
 
             unset($optind);
-        } else {
-            //Read HTTP
-            self::read_http();
-
-            //Read raw input
-            self::read_raw();
         }
 
-        //Extract cmd value
-        $val = self::opt_val(data::$data, ['cmd', 'c']);
+        //Check cmd
+        if ('' === pool_cmd::$cmd) {
+            $val = self::opt_val(pool_data::$data, ['cmd', 'c']);
 
-        if (!$val['get'] || '' === $val['data']) {
-            return;
-        }
-
-        //Extract cmd
-        data::$cmd['cgi'] = data::$cmd['cli'] = false !== strpos($val['data'], '-') ? explode('-', $val['data']) : [$val['data']];
-
-        //Prepare CGI cmd
-        self::prep_cgi();
-
-        //Prepare CLI cmd
-        self::prep_cli();
-
-        unset($val);
-    }
-
-    /**
-     * Prepare cgi cmd
-     */
-    private static function prep_cgi(): void
-    {
-        if (empty(data::$conf['CGI'])) {
-            return;
-        }
-
-        //Mapping CGI config
-        foreach (data::$conf['CGI'] as $name => $item) {
-            $key = array_search($name, data::$cmd['cgi'], true);
-
-            if (false !== $key) {
-                data::$cmd['cgi'][$key] = $item;
-                data::$cgi[$item] = $name;
+            if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
+                pool_cmd::$cmd = &$val['data'];
             } else {
-                foreach (data::$cmd['cgi'] as $key => $val) {
-                    if (0 !== strpos($val, $name)) {
-                        continue;
-                    }
-
-                    $cmd = substr_replace($val, $item, 0, strlen($name));
-
-                    data::$cmd['cgi'][$key] = $cmd;
-                    data::$cgi[$cmd] = $val;
-                }
+                //todo error (sys): cmd error
+                exit;
             }
+
+            unset($val);
         }
-
-        unset($name, $item, $key, $val, $cmd);
-    }
-
-    /**
-     * Prepare cli cmd
-     */
-    public static function prep_cli(): void
-    {
-        if (empty(data::$conf['CLI'])) {
-            data::$cmd['cli'] = [];
-            return;
-        }
-
-        //Check CLI config
-        foreach (data::$cmd['cli'] as $key => $item) {
-            if (!isset(data::$conf['CLI'][$item])) {
-                unset(data::$cmd['cli'][$key]);
-            }
-        }
-
-        unset($key, $item);
     }
 
     /**
@@ -124,22 +69,22 @@ class input
     {
         //Read FILES
         if (!empty($_FILES)) {
-            data::$data += $_FILES;
+            pool_data::$data += $_FILES;
         }
 
         //Read POST
         if (!empty($_POST)) {
-            data::$data += $_POST;
+            pool_data::$data += $_POST;
         }
 
         //Read GET
         if (!empty($_GET)) {
-            data::$data += $_GET;
+            pool_data::$data += $_GET;
         }
     }
 
     /**
-     * Read raw input data
+     * Read raw data data
      */
     private static function read_raw(): void
     {
@@ -152,7 +97,7 @@ class input
         $data = json_decode($input, true);
 
         if (is_array($data) && !empty($data)) {
-            data::$data += $data;
+            pool_data::$data += $data;
         }
 
         unset($input, $data);
@@ -183,36 +128,36 @@ class input
         //Get cmd value
         $val = self::opt_val($opt, ['cmd', 'c']);
 
-        if ($val['get'] && '' !== $val['data']) {
-            data::$data['cmd'] = &$val['data'];
+        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
+            pool_data::$data += [$val['key'] => $val['data']];
         }
 
         //Get cgi data value
         $val = self::opt_val($opt, ['data', 'd']);
 
-        if ($val['get'] && '' !== $val['data']) {
-            data::$data += self::opt_data($val['data']);
+        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
+            pool_data::$data += self::opt_data($val['data']);
         }
 
         //Get pipe data value
         $val = self::opt_val($opt, ['pipe', 'p']);
 
         if ($val['get'] && '' !== $val['data']) {
-            data::$cli['pipe'] = &$val['data'];
+            pool_cmd::$param_cli['pipe'] = &$val['data'];
         }
 
         //Get pipe timeout value
         $val = self::opt_val($opt, ['time', 't']);
 
         if ($val['get'] && is_numeric($val['data'])) {
-            data::$cli['time'] = (int)$val['data'];
+            pool_cmd::$param_cli['time'] = (int)$val['data'];
         }
 
         //Get return option
         $val = self::opt_val($opt, ['ret', 'r']);
 
         if ($val['get']) {
-            data::$cli['ret'] = true;
+            pool_cmd::$param_cli['ret'] = true;
         }
 
         unset($opt, $val);
@@ -233,12 +178,15 @@ class input
             return;
         }
 
-        //Check cmd value
-        $value = self::opt_val(data::$data, ['cmd', 'c']);
-        data::$data['cmd'] = $value['get'] ? $value['data'] : array_shift($argument);
+        //Check cmd
+        $value = self::opt_val(pool_data::$data, ['cmd', 'c']);
 
-        //Set arguments
-        if (!empty($argument)) data::$cli['argv'] = &$argument;
+        !$value['get'] || !is_string($value['data']) || '' === $value['data']
+            ? pool_data::$data['cmd'] = array_shift($argument)
+            : pool_data::$data[$value['key']] = &$value['data'];
+
+        //Set argument
+        if (!empty($argument)) pool_cmd::$param_cli['argv'] = &$argument;
 
         unset($optind, $argument, $value);
     }
@@ -253,16 +201,17 @@ class input
      */
     private static function opt_val(array &$opt, array $keys): array
     {
-        $result = ['get' => false];
+        $result = ['get' => false, 'key' => '', 'data' => ''];
 
         foreach ($keys as $key) {
-            if (!isset($opt[$key])) continue;
+            if (isset($opt[$key])) {
+                $result['get'] = true;
+                $result['key'] = $key;
+                $result['data'] = $opt[$key];
 
-            $result['get'] = true;
-            $result['data'] = $opt[$key];
-
-            unset($opt[$key]);
-            return $result;
+                unset($opt[$key]);
+                return $result;
+            }
         }
 
         unset($keys, $key);

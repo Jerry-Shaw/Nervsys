@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Data Pooling Module
+ * Data Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,37 +18,13 @@
  * limitations under the License.
  */
 
-namespace core\module;
+namespace core\pool;
 
 class data
 {
     //Input data pool
     public static $data = [];
 
-    //CGI data
-    public static $cgi = [];
-
-    //CLI data
-    public static $cli = [];
-
-    //CMD data
-    public static $cmd = [
-        'cgi' => [],
-        'cli' => []
-    ];
-
-    //Config settings
-    public static $conf = [
-        'CGI'    => [],
-        'CLI'    => [],
-        'CORS'   => [],
-        'INIT'   => [],
-        'SIGNAL' => []
-    ];
-
-    //Running mode
-    public static $mode = [
-        'sapi'  => 'cli' === PHP_SAPI ? 'cli' : 'cgi',
-        'https' => true
-    ];
+    //Output data pool
+    public static $result = [];
 }

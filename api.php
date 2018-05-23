@@ -68,12 +68,5 @@ spl_autoload_register(
 //Start observer
 \core\handler\observer::start();
 
-
-var_dump(\core\module\data::$cmd, \core\module\data::$conf);
-
-
-exit;
-
-
-
-
+//Output results
+\core\handler\observer::output();
