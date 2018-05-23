@@ -65,26 +65,8 @@ spl_autoload_register(
     }
 );
 
-//Load config settings
-\core\parser\conf::load();
-
-//Check CORS permission
-\core\parser\conf::chk_cors();
-
-//Call INIT setting functions
-\core\parser\conf::call_init();
-
-//Parse input data
-\core\parser\input::parse();
-
-//Prepare cmd data
-\core\parser\input::prep_cmd();
-
 //Start observer
 \core\handler\observer::start();
-
-
-
 
 
 var_dump(\core\module\data::$cmd, \core\module\data::$conf);

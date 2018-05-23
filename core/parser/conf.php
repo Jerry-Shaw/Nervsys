@@ -48,7 +48,7 @@ class conf
             data::$conf[$key] = $val;
         }
 
-        data::$conf['HTTPS'] = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+        data::$mode['https'] = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         unset($path, $conf, $key, $val);
@@ -60,10 +60,9 @@ class conf
     public static function chk_cors(): void
     {
         if (
-            !isset(data::$conf['CORS'])
-            || empty(data::$conf['CORS'])
+            empty(data::$conf['CORS'])
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (data::$conf['HTTPS'] ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
+            || $_SERVER['HTTP_ORIGIN'] === (data::$mode['https'] ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
         ) {
             return;
         }
@@ -85,7 +84,7 @@ class conf
      */
     public static function call_init(): void
     {
-        if (!isset(data::$conf['INIT']) || empty(data::$conf['INIT'])) {
+        if (empty(data::$conf['INIT'])) {
             return;
         }
 

@@ -20,12 +20,29 @@
 
 namespace core\handler;
 
+use core\parser\conf;
+use core\parser\input;
+
 class observer
 {
-
+    /**
+     * Start observer
+     */
     public static function start(): void
     {
-        
+        //Load config settings
+        conf::load();
+
+        //Check CORS permission
+        conf::chk_cors();
+
+        //Call INIT setting functions
+        conf::call_init();
+
+        //Prepare input data
+        input::prep_data();
+
     }
+
 
 }

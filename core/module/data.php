@@ -22,8 +22,8 @@ namespace core\module;
 
 class data
 {
-    //CMD data
-    public static $cmd = [];
+    //Input data pool
+    public static $data = [];
 
     //CGI data
     public static $cgi = [];
@@ -31,12 +31,24 @@ class data
     //CLI data
     public static $cli = [];
 
-    //Config settings
-    public static $conf = [];
+    //CMD data
+    public static $cmd = [
+        'cgi' => [],
+        'cli' => []
+    ];
 
-    //Input data pool
-    public static $data = [];
+    //Config settings
+    public static $conf = [
+        'CGI'    => [],
+        'CLI'    => [],
+        'CORS'   => [],
+        'INIT'   => [],
+        'SIGNAL' => []
+    ];
 
     //Running mode
-    public static $mode = 'cli' === PHP_SAPI ? 'cli' : 'cgi';
+    public static $mode = [
+        'sapi'  => 'cli' === PHP_SAPI ? 'cli' : 'cgi',
+        'https' => true
+    ];
 }

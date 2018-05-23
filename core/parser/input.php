@@ -27,9 +27,9 @@ class input
     /**
      * Parse input data
      */
-    public static function parse(): void
+    public static function prep_data(): void
     {
-        if ('cli' === data::$mode) {
+        if ('cli' === data::$mode['sapi']) {
             //Read option
             $optind = self::read_opt();
 
@@ -48,92 +48,74 @@ class input
         //Extract cmd value
         $val = self::opt_val(data::$data, ['cmd', 'c']);
 
-        if ($val['get'] && '' !== $val['data']) {
-            data::$cmd['cmd'] = &$val['data'];
-        }
-
-        unset($val);
-    }
-
-
-
-    public static function prep_cmd(): void
-    {
-        //Check cmd value
-        if (!isset(data::$cmd['cmd']) || '' === data::$cmd['cmd']){
+        if (!$val['get'] || '' === $val['data']) {
             return;
         }
 
         //Extract cmd
-        $cmd = false !== strpos(data::$cmd['cmd'], '-') ? explode('-', data::$cmd['cmd']) : [data::$cmd['cmd']];
+        data::$cmd['cgi'] = data::$cmd['cli'] = false !== strpos($val['data'], '-') ? explode('-', $val['data']) : [$val['data']];
 
         //Prepare CGI cmd
-        self::prep_cgi($cmd);
+        self::prep_cgi();
 
+        //Prepare CLI cmd
+        self::prep_cli();
 
-        exit;
-
-
-
-        //Explode command
-        $data = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : ('' !== self::$cmd ? [self::$cmd] : []);
-        foreach ($data as $item) if (isset(self::$conf_cli[$item])) self::$cli_cmd[] = $item;
-        self::$cli_cmd = array_unique(self::$cli_cmd);
-
-        unset($data, $item);
+        unset($val);
     }
-
 
     /**
      * Prepare cgi cmd
-     *
-     * @param array $cmd
      */
-    private static function prep_cgi(array $cmd): void
+    private static function prep_cgi(): void
     {
-        //Map CGI config
-        if (isset(data::$conf['CGI']) && !empty(data::$conf['CGI'])) {
-            foreach (data::$conf['CGI'] as $name => $item) {
-                $key = array_search($name, $cmd, true);
+        if (empty(data::$conf['CGI'])) {
+            return;
+        }
 
-                if (false !== $key) {
-                    $cmd[$key] = $item;
-                    data::$cgi[$item] = $name;
-                } else {
-                    foreach ($cmd as $key => $val) {
-                        if (0 !== strpos($val, $name)) {
-                            continue;
-                        }
+        //Mapping CGI config
+        foreach (data::$conf['CGI'] as $name => $item) {
+            $key = array_search($name, data::$cmd['cgi'], true);
 
-                        $cmd = substr_replace($val, $item, 0, strlen($name));
-
-                        $cmd[$key] = $cmd;
-                        data::$cgi[$cmd] = $val;
+            if (false !== $key) {
+                data::$cmd['cgi'][$key] = $item;
+                data::$cgi[$item] = $name;
+            } else {
+                foreach (data::$cmd['cgi'] as $key => $val) {
+                    if (0 !== strpos($val, $name)) {
+                        continue;
                     }
+
+                    $cmd = substr_replace($val, $item, 0, strlen($name));
+
+                    data::$cmd['cgi'][$key] = $cmd;
+                    data::$cgi[$cmd] = $val;
                 }
             }
         }
 
-        //Add LOAD config
-        if (isset(data::$conf['LOAD']) && !empty(data::$conf['LOAD'])) {
-
-
-            var_dump(data::$conf['LOAD']);
-
-
-        }
-
-
-
-
-
-
-        //Copy cmd
-        //data::$cmd['cgi'] = array_unique($cmd);
+        unset($name, $item, $key, $val, $cmd);
     }
 
+    /**
+     * Prepare cli cmd
+     */
+    public static function prep_cli(): void
+    {
+        if (empty(data::$conf['CLI'])) {
+            data::$cmd['cli'] = [];
+            return;
+        }
 
+        //Check CLI config
+        foreach (data::$cmd['cli'] as $key => $item) {
+            if (!isset(data::$conf['CLI'][$item])) {
+                unset(data::$cmd['cli'][$key]);
+            }
+        }
 
+        unset($key, $item);
+    }
 
     /**
      * Read HTTP data
