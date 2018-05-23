@@ -30,8 +30,8 @@ class conf
     public static $SIGNAL = [];
 
     //Runtime settings
+    public static $IS_CGI   = true;
     public static $IS_HTTPS = true;
-    public static $IS_CGI   = 'cli' !== PHP_SAPI;
 
     //Config file path
     const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'conf.ini';

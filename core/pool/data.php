@@ -25,6 +25,9 @@ class data
     //Input data pool
     public static $data = [];
 
-    //Output data pool
+    //Output error msg
+    public static $error = [];
+
+    //Output data result
     public static $result = [];
 }

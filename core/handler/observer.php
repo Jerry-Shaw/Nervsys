@@ -21,11 +21,13 @@
 namespace core\handler;
 
 use core\pool\conf as pool_conf;
+use core\pool\data as pool_data;
 
 use core\parser\cmd as parser_cmd;
 use core\parser\conf as parser_conf;
 use core\parser\data as parser_data;
 
+use core\handler\error as handler_error;
 use core\handler\operator as handler_operator;
 
 class observer
@@ -35,6 +37,12 @@ class observer
      */
     public static function start(): void
     {
+        //Detect running mode
+        pool_conf::$IS_CGI = 'cli' !== PHP_SAPI;
+
+        //Set error report level
+        handler_error::$level = (int)ini_get('error_reporting');
+
         //Load config settings
         parser_conf::load();
 
@@ -53,16 +61,33 @@ class observer
 
     }
 
-    public static function output(): void
+    /**
+     * Collect results
+     *
+     * @return string
+     */
+    public static function collect(): string
     {
+        //Build result
+        $count = count(pool_data::$result);
+        $result = 0 === $count ? '' : (1 === $count ? current(pool_data::$result) : pool_data::$result);
 
+        //Build json output
+        $output = !empty(pool_data::$error) ? pool_data::$error + ['data' => &$result] : $result;
+        $json = json_encode($output, 0 === handler_error::$level ? 3906 : 4034);
+
+        if (!pool_conf::$IS_CGI) {
+            $json .= PHP_EOL;
+        }
+
+        unset($count, $result, $output);
+        return $json;
     }
-
 
     /**
      * Check Cross-origin resource sharing permission
      */
-    public static function chk_cors(): void
+    private static function chk_cors(): void
     {
         if (
             empty(pool_conf::$CORS)

@@ -69,4 +69,4 @@ spl_autoload_register(
 \core\handler\observer::start();
 
 //Output results
-\core\handler\observer::output();
+echo \core\handler\observer::collect();
