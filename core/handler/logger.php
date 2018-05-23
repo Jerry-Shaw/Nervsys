@@ -200,6 +200,10 @@ class logger
         $file = self::$file_path . $name . '-' . date('Ymd') . '.log';
 
         foreach ($logs as $value) {
+            if (!is_string($value)) {
+                $value = json_encode($value, 4034);
+            }
+
             file_put_contents($file, $value . PHP_EOL, FILE_APPEND);
         }
 
