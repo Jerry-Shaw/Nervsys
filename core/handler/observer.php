@@ -37,12 +37,6 @@ class observer
      */
     public static function start(): void
     {
-        //Detect running mode
-        pool_conf::$IS_CGI = 'cli' !== PHP_SAPI;
-
-        //Set error report level
-        handler_error::$level = (int)ini_get('error_reporting');
-
         //Load config settings
         parser_conf::load();
 

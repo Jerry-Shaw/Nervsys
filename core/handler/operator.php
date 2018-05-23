@@ -44,4 +44,6 @@ class operator
 
         unset($key, $item, $class, $method, $function);
     }
+
+
 }

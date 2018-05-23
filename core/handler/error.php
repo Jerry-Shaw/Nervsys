@@ -45,6 +45,14 @@ class error
      */
     public static $level = 0;
 
+    public static function start(): void
+    {
+        self::$level = (int)ini_get('error_reporting');
+        set_error_handler([__CLASS__, 'error_handler'], self::$level);
+    }
 
-
+    public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): bool
+    {
+        return false;
+    }
 }

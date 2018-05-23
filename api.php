@@ -65,8 +65,14 @@ spl_autoload_register(
     }
 );
 
-//Start observer
+//Set running mode
+\core\pool\conf::$IS_CGI = 'cli' !== PHP_SAPI;
+
+//Start error handler
+\core\handler\error::start();
+
+//Start observer handler
 \core\handler\observer::start();
 
-//Output results
+//Output observer results
 echo \core\handler\observer::collect();
