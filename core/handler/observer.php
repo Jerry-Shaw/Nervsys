@@ -53,7 +53,6 @@ class observer
         parser_cmd::prep_cmd();
 
 
-
     }
 
     /**

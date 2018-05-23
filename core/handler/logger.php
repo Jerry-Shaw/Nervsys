@@ -22,14 +22,26 @@ namespace core\handler;
 
 class logger
 {
-    //Log level
-    public static $log_level = 0;
+    //Active levels
+    public static $log_level = [1, 2, 3, 4, 5, 6, 7, 8];
 
-    //Log file path
+    //Log path
     public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
 
+    //Log levels
+    const levels = [
+        'emergency' => 1,
+        'alert'     => 2,
+        'critical'  => 3,
+        'error'     => 4,
+        'warning'   => 5,
+        'notice'    => 6,
+        'info'      => 7,
+        'debug'     => 8
+    ];
+
     /**
-     * Log
+     * Write log
      *
      * @param string $message
      * @param string $level
@@ -37,11 +49,17 @@ class logger
      */
     public static function log(string $message, string $level = 'debug', array $context = []): void
     {
-        if (!in_array($level, ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug'], true)) {
-            $level = 'notice';
+        if (!isset(self::levels[$level])) {
+            $level = 'debug';
+        }
+
+        if (!in_array(self::levels[$level], self::$log_level, true)) {
+            return;
         }
 
         self::$level($message, $context);
+
+        unset($message, $level, $context);
     }
 
     /**

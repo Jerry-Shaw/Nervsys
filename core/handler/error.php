@@ -68,7 +68,7 @@ class error
         E_USER_NOTICE       => 'notice',
         E_STRICT            => 'notice',
         E_DEPRECATED        => 'notice',
-        E_USER_DEPRECATED   => 'notice',
+        E_USER_DEPRECATED   => 'notice'
     ];
 
     public static function start(): void
