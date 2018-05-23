@@ -31,12 +31,16 @@ class logger
     /**
      * Log
      *
-     * @param string $level
      * @param string $message
+     * @param string $level
      * @param array  $context
      */
-    public static function log(string $level, string $message, array $context = []): void
+    public static function log(string $message, string $level = 'debug', array $context = []): void
     {
+        if (!in_array($level, ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug'], true)) {
+            $level = 'notice';
+        }
+
         self::$level($message, $context);
     }
 
@@ -48,7 +52,7 @@ class logger
      */
     private static function emergency(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -62,7 +66,7 @@ class logger
      */
     private static function alert(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -76,7 +80,7 @@ class logger
      */
     private static function critical(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -90,7 +94,7 @@ class logger
      */
     private static function error(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -104,7 +108,7 @@ class logger
      */
     private static function warning(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -118,7 +122,7 @@ class logger
      */
     private static function notice(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -132,7 +136,7 @@ class logger
      */
     private static function info(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -146,7 +150,7 @@ class logger
      */
     private static function debug(string $message, array $context = []): void
     {
-        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        array_unshift($context, $message);
         self::save(__FUNCTION__, $context);
 
         unset($message, $context);
@@ -172,7 +176,7 @@ class logger
         }
 
         //Add datetime
-        array_unshift($logs, date('Y-m-d H:i:s'));
+        array_unshift($logs, date('Y-m-d H:i:s'), 'System ' . strtoupper($name) . ':');
 
         //Generate log file
         $file = self::$file_path . $name . '-' . date('Ymd') . '.log';
