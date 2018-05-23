@@ -45,6 +45,30 @@ class error
      */
     public static $level = 0;
 
+    //Error levels
+    const levels = [
+        //Error level
+        E_ERROR             => 'error',
+        E_PARSE             => 'error',
+        E_CORE_ERROR        => 'error',
+        E_COMPILE_ERROR     => 'error',
+        E_USER_ERROR        => 'error',
+
+        //Warning level
+        E_WARNING           => 'warning',
+        E_CORE_WARNING      => 'warning',
+        E_COMPILE_WARNING   => 'warning',
+        E_USER_WARNING      => 'warning',
+        E_RECOVERABLE_ERROR => 'warning',
+
+        //Notice level
+        E_NOTICE            => 'notice',
+        E_USER_NOTICE       => 'notice',
+        E_STRICT            => 'notice',
+        E_DEPRECATED        => 'notice',
+        E_USER_DEPRECATED   => 'notice',
+    ];
+
     public static function start(): void
     {
         self::$level = (int)ini_get('error_reporting');
@@ -53,6 +77,12 @@ class error
 
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): bool
     {
+        $log_level = self::levels[$errno] ?? 'notice';
+        $log_message = $errstr . ' in ' . $errfile . ' on line ' . $errline;
+
+        logger::log($log_level, $log_message);
+        exit;
+
         return false;
     }
 }

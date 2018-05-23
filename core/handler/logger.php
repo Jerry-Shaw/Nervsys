@@ -22,5 +22,167 @@ namespace core\handler;
 
 class logger
 {
+    //Log level
+    public static $log_level = 0;
 
+    //Log file path
+    public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
+
+    /**
+     * Log
+     *
+     * @param string $level
+     * @param string $message
+     * @param array  $context
+     */
+    public static function log(string $level, string $message, array $context = []): void
+    {
+        self::$level($message, $context);
+    }
+
+    /**
+     * Log emergency
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function emergency(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log alert
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function alert(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log critical
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function critical(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log error
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function error(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log warning
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function warning(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log notice
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function notice(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log info
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function info(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Log debug
+     *
+     * @param string $message
+     * @param array  $context
+     */
+    private static function debug(string $message, array $context = []): void
+    {
+        array_unshift($context, strtoupper(__FUNCTION__), $message);
+        self::save(__FUNCTION__, $context);
+
+        unset($message, $context);
+    }
+
+    /**
+     * Save logs
+     *
+     * @param string $name
+     * @param array  $logs
+     */
+    private static function save(string $name, array $logs): void
+    {
+        //Check log path
+        if (false === realpath(self::$file_path)) {
+            $mkdir = mkdir(self::$file_path, 0664, true);
+
+            if (!$mkdir) {
+                return;
+            }
+
+            unset($mkdir);
+        }
+
+        //Add datetime
+        array_unshift($logs, date('Y-m-d H:i:s'));
+
+        //Generate log file
+        $file = self::$file_path . $name . '-' . date('Ymd') . '.log';
+
+        foreach ($logs as $value) {
+            file_put_contents($file, $value . PHP_EOL, FILE_APPEND);
+        }
+
+        file_put_contents($file, PHP_EOL, FILE_APPEND);
+
+        unset($name, $logs, $file, $value);
+    }
 }
