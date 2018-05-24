@@ -71,13 +71,13 @@ class operator
 
             //Check class
             if (!class_exists($class)) {
-                trigger_error($class . ': Class NOT found!', E_USER_WARNING);
+                logger::log('warning', $class . ': Class NOT found!');
                 continue;
             }
 
             //Check TrustZone
             if (!isset($class::$tz) || !is_array($class::$tz)) {
-                trigger_error($class . ': TrustZone NOT Open!', E_USER_NOTICE);
+                logger::log('notice', $class . ': TrustZone NOT Open!');
                 continue;
             }
 

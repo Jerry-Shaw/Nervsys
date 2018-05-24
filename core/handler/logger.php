@@ -190,8 +190,9 @@ class logger
             unset($mkdir);
         }
 
-        //Add datetime & log level
+        //Add datetime & log level & end of line
         array_unshift($logs, date('Y-m-d H:i:s'), 'System ' . strtoupper($name) . ':');
+        $logs[] = PHP_EOL;
 
         //Generate log file name
         $file = self::$file_path . $name . '-' . date('Ymd') . '.log';
@@ -201,11 +202,16 @@ class logger
                 $value = json_encode($value, 4034);
             }
 
-            //Write log file
-            file_put_contents($file, $value . PHP_EOL, FILE_APPEND);
-        }
+            $value .= PHP_EOL;
 
-        file_put_contents($file, PHP_EOL, FILE_APPEND);
+            //Write log file
+            file_put_contents($file, $value, FILE_APPEND);
+
+            //Output log
+            if (0 < error::$level) {
+                echo $value;
+            }
+        }
 
         unset($name, $logs, $file, $value);
     }
