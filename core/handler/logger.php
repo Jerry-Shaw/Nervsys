@@ -68,7 +68,7 @@ class logger
     private static function emergency(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -82,7 +82,7 @@ class logger
     private static function alert(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -96,7 +96,7 @@ class logger
     private static function critical(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -110,7 +110,7 @@ class logger
     private static function error(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -124,7 +124,7 @@ class logger
     private static function warning(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -138,7 +138,7 @@ class logger
     private static function notice(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -152,7 +152,7 @@ class logger
     private static function info(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
@@ -166,18 +166,18 @@ class logger
     private static function debug(string $message, array $context = []): void
     {
         array_unshift($context, $message);
-        self::save(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $context);
 
         unset($message, $context);
     }
 
     /**
-     * Save logs
+     * Handle logs
      *
-     * @param string $name
+     * @param string $type
      * @param array  $logs
      */
-    private static function save(string $name, array $logs): void
+    private static function handle(string $type, array $logs): void
     {
         //Check log path
         if (false === realpath(self::$file_path)) {
@@ -190,29 +190,33 @@ class logger
             unset($mkdir);
         }
 
-        //Add datetime & log level & end of line
-        array_unshift($logs, date('Y-m-d H:i:s'), 'System ' . strtoupper($name) . ':');
-        $logs[] = PHP_EOL;
+        //Add datetime & log level & empty line
+        array_unshift($logs, date('Y-m-d H:i:s'), 'System ' . strtoupper($type) . ':');
+        $logs[] = '';
 
         //Generate log file name
-        $file = self::$file_path . $name . '-' . date('Ymd') . '.log';
+        $file = self::$file_path . $type . '-' . date('Ymd') . '.log';
 
-        foreach ($logs as $value) {
+        //Write log
+        foreach ($logs as &$value) {
             if (!is_string($value)) {
                 $value = json_encode($value, 4034);
             }
 
-            $value .= PHP_EOL;
-
             //Write log file
+            $value .= PHP_EOL;
             file_put_contents($file, $value, FILE_APPEND);
+        }
 
-            //Output log
-            if (0 < error::$level) {
+        unset($value);
+
+        //Output log
+        if (0 < error::$level) {
+            foreach ($logs as $value) {
                 echo $value;
             }
         }
 
-        unset($name, $logs, $file, $value);
+        unset($type, $logs, $file, $value);
     }
 }

@@ -100,13 +100,13 @@ class cmd
 
         //Build cli cmd
         $order = [];
-        foreach ($cmd as $key => $item) {
+        foreach ($cmd as $item) {
             if (isset(config::$CLI[$item])) {
                 $order[$item] = config::$CLI[$item];
             }
         }
 
-        unset($cmd, $key, $item);
+        unset($cmd, $item);
         return $order;
     }
 }

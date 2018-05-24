@@ -30,7 +30,7 @@ use core\parser\setting;
 class observer
 {
     /**
-     * Start observer
+     * Observer start
      */
     public static function start(): void
     {
@@ -43,10 +43,8 @@ class observer
         //Call INIT setting functions
         operator::run_init();
 
-        //Prepare data
+        //Prepare input & cmd
         input::prep();
-
-        //Prepare cmd
         cmd::prep();
 
         //Run cgi
@@ -55,6 +53,32 @@ class observer
         //Run cli
         if (!config::$IS_CGI) {
             operator::run_cli();
+        }
+    }
+
+    /**
+     * Send signal
+     *
+     * @param int $signal
+     */
+    public static function send(int $signal): void
+    {
+        unit::$signal = &$signal;
+        unset($signal);
+    }
+
+    /**
+     * Observer stop
+     *
+     * @return bool
+     */
+    public static function stop(): bool
+    {
+        if (0 === unit::$signal) {
+            return false;
+        } else {
+            logger::log('info', config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
+            return true;
         }
     }
 

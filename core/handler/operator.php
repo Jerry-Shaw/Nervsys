@@ -20,9 +20,11 @@
 
 namespace core\handler;
 
+use core\pool\unit;
 use core\pool\order;
 use core\pool\config;
-use core\pool\unit;
+
+use core\parser\trustzone;
 
 class operator
 {
@@ -39,7 +41,7 @@ class operator
         }
 
         foreach (config::$INIT as $key => $item) {
-            $class = self::class_name($key);
+            $class = self::build_class($key);
             $method = is_string($item) ? [$item] : $item;
 
             foreach ($method as $function) {
@@ -50,24 +52,19 @@ class operator
         unset($key, $item, $class, $method, $function);
     }
 
-
+    /**
+     * Run cgi process
+     */
     public static function run_cgi(): void
     {
-        $position = 0;
-        foreach (order::$cmd_cgi as $cmd) {
-            //Move position
-            if (false !== strpos($cmd, '/') && isset(self::$order[$position])) {
-                ++$position;
-            }
-
-            self::$order[$position][] = $cmd;
-        }
+        //Build order list
+        self::build_order();
 
         //Run cmd
         foreach (self::$order as $method) {
             //Get class name
             $name = array_shift($method);
-            $class = self::class_name($name);
+            $class = self::build_class($name);
 
             //Check class
             if (!class_exists($class)) {
@@ -83,62 +80,71 @@ class operator
 
             //Call "init" method
             if (method_exists($class, 'init')) {
-                try {
-                    self::call_method($name, $class, 'init');
-                } catch (\Throwable $throwable) {
-                    logger::log('debug', $class . ': ' . $throwable->getMessage());
-                    unset($throwable);
+                self::build_caller($name, $class, 'init');
+
+                //Check observer status
+                if (observer::stop()) {
+                    return;
                 }
             }
 
-            //Check API TrustZone permission
+            //Check TrustZone permission
             if (empty($class::$tz)) {
                 continue;
             }
 
-
-
-
-            //Get API TrustZone list & method list
+            //Get TrustZone list & function list & target list
             $tz_list = array_keys($class::$tz);
             $func_list = get_class_methods($class);
+            $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
-            //Get request list from API TrustZone list
-            $method_list = !empty(self::$method) ? array_intersect(self::$method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+            unset($tz_list, $func_list, $method);
 
-            //Remove "init" method from request list when exists
-            if (in_array('init', $method_list, true)) {
-                unset($method_list[array_search('init', $method_list, true)]);
-            }
+            //Handle target list
+            foreach ($target_list as $target) {
+                //Get TrustZone data
+                $tz_data = trustzone::prep($class::$tz[$target]);
 
-            //Process method list
-            foreach ($method_list as $method) {
-                try {
-                    //Check signal
-                    //if (0 !== unit::$signal) throw new \Exception(parent::get_signal());
+                //Run pre functions
+                if (!empty($tz_data['pre'])) {
+                    foreach ($tz_data['pre'] as $item) {
+                        self::build_caller($item['name'], self::build_class($item['name']), $item['method']);
 
-                    //Compare data structure with method TrustZone
-                    $inter = array_intersect(array_keys(unit::$data), $class::$tz[$method]);
-                    $diff = array_diff($class::$tz[$method], $inter);
-
-                    //Report missing TrustZone data
-                    if (!empty($diff)) {
-                        throw new \Exception('TrustZone missing [' . (implode(', ', $diff)) . ']!');
+                        //Check observer status
+                        if (observer::stop()) {
+                            return;
+                        }
                     }
+                }
 
-                    //Call method
-                    self::call_method($name, $class, $method);
-                } catch (\Throwable $throwable) {
-                    logger::log('debug', $class . ': ' . $throwable->getMessage());
-                    unset($throwable);
+                //Check TrustZone
+                if (trustzone::fail($name, $target, array_keys(unit::$data), $tz_data['param'])) {
+                    continue;
+                }
+
+                //Build method caller
+                self::build_caller($name, $class, $target);
+
+                //Check observer status
+                if (observer::stop()) {
+                    return;
+                }
+
+                //Run post functions
+                if (!empty($tz_data['post'])) {
+                    foreach ($tz_data['post'] as $item) {
+                        self::build_caller($item['name'], self::build_class($item['name']), $item['method']);
+
+                        //Check observer status
+                        if (observer::stop()) {
+                            return;
+                        }
+                    }
                 }
             }
-            //var_dump($class, $method);
-
-
         }
 
-
+        unset($method, $name, $class, $target_list, $target, $tz_data, $item);
     }
 
 
@@ -150,29 +156,66 @@ class operator
 
 
     /**
+     * Build cgi order list
+     */
+    private static function build_order(): void
+    {
+        $position = 0;
+        foreach (order::$cmd_cgi as $item) {
+            //Move position
+            if (false !== strpos($item, '/') && isset(self::$order[$position])) {
+                ++$position;
+            }
+
+            self::$order[$position][] = $item;
+        }
+
+        unset($position, $item);
+    }
+
+    /**
      * Get root class name
      *
      * @param string $library
      *
      * @return string
      */
-    private static function class_name(string $library): string
+    private static function build_class(string $library): string
     {
         return '\\' . ltrim(strtr($library, '/', '\\'), '\\');
     }
 
     /**
-     * Build mapped data
+     * Build mapped name
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return string
+     */
+    private static function build_name(string $class, string $method = ''): string
+    {
+        $name = '' !== $method
+            ? (order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method)
+            : (order::$param_cgi[$class] ?? $class);
+
+        unset($class, $method);
+        return $name;
+    }
+
+    /**
+     * Build argument data
      *
      * @param $reflect
      *
      * @return array
      * @throws \Exception
      */
-    private static function map_data($reflect): array
+    private static function build_argv($reflect): array
     {
         //Get method params
         $params = $reflect->getParameters();
+
         if (empty($params)) {
             return [];
         }
@@ -213,7 +256,7 @@ class operator
             }
         }
 
-        //Report missing argument data
+        //Report argument missing
         if (!empty($diff)) {
             throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']!');
         }
@@ -223,60 +266,43 @@ class operator
     }
 
     /**
-     * Build mapped key
-     *
-     * @param string $class
-     * @param string $method
-     *
-     * @return string
-     */
-    private static function map_key(string $class, string $method = ''): string
-    {
-        $key = '' !== $method
-            ? (order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method)
-            : (order::$param_cgi[$class] ?? $class);
-
-        unset($class, $method);
-        return $key;
-    }
-
-
-    /**
-     * Method Caller
+     * Build method caller
      *
      * @param string $name
      * @param string $class
      * @param string $method
-     *
-     * @throws \Exception
-     * @throws \ReflectionException
      */
-    private static function call_method(string $name, string $class, string $method): void
+    private static function build_caller(string $name, string $class, string $method): void
     {
-        //Get method reflection object
-        $reflect = new \ReflectionMethod($class, $method);
+        try {
+            //Reflection method
+            $reflect = new \ReflectionMethod($class, $method);
 
-        //Check visibility
-        if (!$reflect->isPublic()) {
-            return;
+            //Check visibility
+            if (!$reflect->isPublic()) {
+                throw new \Exception('NOT for public!');
+            }
+
+            //Mapping params
+            $params = self::build_argv($reflect);
+
+            //Create object
+            if (!$reflect->isStatic()) {
+                $class = unit::$object[$name] ?? unit::$object[$name] = new $class;
+            }
+
+            //Call method (with params)
+            $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
+
+            //Save result (Try mapping keys)
+            if (isset($result)) {
+                unit::$result[self::build_name($name, $method)] = &$result;
+            }
+        } catch (\Throwable $throwable) {
+            logger::log('debug', $name . '-' . $method . ': ' . $throwable->getMessage());
+            unset($throwable);
         }
 
-        //Mapping data
-        $data = self::map_data($reflect);
-
-        //Create object
-        if (!$reflect->isStatic()) {
-            $class = unit::$object[$name] ?? unit::$object[$name] = new $class;
-        }
-
-        //Call method (with params)
-        $result = empty($data) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $data);
-
-        //Save result (Try mapping keys)
-        if (isset($result)) {
-            unit::$result[self::map_key($name, $method)] = &$result;
-        }
-
-        unset($name, $class, $method, $reflect, $data, $result);
+        unset($name, $class, $method, $reflect, $params, $result);
     }
 }
