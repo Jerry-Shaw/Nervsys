@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CMD Pool
+ * Config Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,16 +20,19 @@
 
 namespace core\pool;
 
-class cmd
+class config
 {
-    //Original CMD
-    public static $cmd = '';
+    //Config settings
+    public static $CGI    = [];
+    public static $CLI    = [];
+    public static $CORS   = [];
+    public static $INIT   = [];
+    public static $SIGNAL = [];
 
-    //Parsed CMD
-    public static $cmd_cgi = [];
-    public static $cmd_cli = [];
+    //Runtime settings
+    public static $IS_CGI   = true;
+    public static $IS_HTTPS = true;
 
-    //Parameter
-    public static $param_cgi = [];
-    public static $param_cli = [];
+    //Config file path
+    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'conf.ini';
 }

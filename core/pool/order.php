@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Data Pool
+ * CMD Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,14 +20,16 @@
 
 namespace core\pool;
 
-class data
+class order
 {
-    //Input data pool
-    public static $data = [];
+    //Original CMD
+    public static $cmd = '';
 
-    //Output error msg
-    public static $error = [];
+    //Parsed CMD
+    public static $cmd_cgi = [];
+    public static $cmd_cli = [];
 
-    //Output data result
-    public static $result = [];
+    //Parameter
+    public static $param_cgi = [];
+    public static $param_cli = [];
 }

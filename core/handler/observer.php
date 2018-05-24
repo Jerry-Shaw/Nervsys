@@ -20,12 +20,12 @@
 
 namespace core\handler;
 
-use core\pool\conf as pool_conf;
-use core\pool\data as pool_data;
+use core\pool\config as pool_conf;
+use core\pool\unit as pool_data;
 
 use core\parser\cmd as parser_cmd;
-use core\parser\conf as parser_conf;
-use core\parser\data as parser_data;
+use core\parser\setting as parser_conf;
+use core\parser\input as parser_data;
 
 use core\handler\error as handler_error;
 use core\handler\operator as handler_operator;

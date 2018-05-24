@@ -20,11 +20,11 @@
 
 namespace core\parser;
 
-use core\pool\cmd as pool_cmd;
-use core\pool\conf as pool_conf;
-use core\pool\data as pool_data;
+use core\pool\order as pool_cmd;
+use core\pool\config as pool_conf;
+use core\pool\unit as pool_data;
 
-class data
+class input
 {
     /**
      * Prepare data

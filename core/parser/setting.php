@@ -20,9 +20,9 @@
 
 namespace core\parser;
 
-use core\pool\conf as pool_conf;
+use core\pool\config as pool_conf;
 
-class conf
+class setting
 {
     /**
      * Load config settings

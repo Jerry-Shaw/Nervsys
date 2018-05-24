@@ -66,7 +66,7 @@ spl_autoload_register(
 );
 
 //Set running mode
-\core\pool\conf::$IS_CGI = 'cli' !== PHP_SAPI;
+\core\pool\config::$IS_CGI = 'cli' !== PHP_SAPI;
 
 //Start error handler
 \core\handler\error::start();

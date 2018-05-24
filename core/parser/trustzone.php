@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Operator Handler
+ * TrustZone Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,32 +18,9 @@
  * limitations under the License.
  */
 
-namespace core\handler;
+namespace core\parser;
 
-use core\pool\config as pool_conf;
-
-class operator
+class trustzone
 {
-    /**
-     * Call INIT functions
-     */
-    public static function call_init(): void
-    {
-        if (empty(pool_conf::$INIT)) {
-            return;
-        }
-
-        foreach (pool_conf::$INIT as $key => $item) {
-            $class = '\\' . strtr(ltrim($key, '\\'), '/', '\\');
-            $method = is_string($item) ? [$item] : $item;
-
-            foreach ($method as $function) {
-                forward_static_call([$class, $function]);
-            }
-        }
-
-        unset($key, $item, $class, $method, $function);
-    }
-
 
 }

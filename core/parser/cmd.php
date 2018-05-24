@@ -20,8 +20,8 @@
 
 namespace core\parser;
 
-use core\pool\cmd as pool_cmd;
-use core\pool\conf as pool_conf;
+use core\pool\order as pool_cmd;
+use core\pool\config as pool_conf;
 
 class cmd
 {
