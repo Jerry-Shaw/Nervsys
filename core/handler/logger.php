@@ -20,13 +20,12 @@
 
 namespace core\handler;
 
+use core\pool\config;
+
 class logger
 {
     //Log path
     public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
-
-    //Active levels
-    public static $active = [];
 
     //Log levels
     const levels = [
@@ -50,7 +49,7 @@ class logger
     public static function log(string $level, string $message, array $context = []): void
     {
         //Ignore incorrect log levels
-        if (!in_array($level, self::levels, true) || !in_array($level, self::$active, true)) {
+        if (!in_array($level, self::levels, true) || 0 === (int)config::$LOGGER[$level]) {
             return;
         }
 
@@ -203,8 +202,9 @@ class logger
                 $value = json_encode($value, 4034);
             }
 
-            //Write log file
             $value .= PHP_EOL;
+
+            //Write log file
             file_put_contents($file, $value, FILE_APPEND);
         }
 

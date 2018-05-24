@@ -72,18 +72,6 @@ spl_autoload_register(
 //Set error level
 \core\handler\error::$level = (int)ini_get('error_reporting');
 
-//Set active log levels
-\core\handler\logger::$active = [
-    'emergency',
-    'alert',
-    'critical',
-    'error',
-    'warning',
-    'notice',
-    'info',
-    'debug'
-];
-
 //Start error handler
 \core\handler\error::start();
 

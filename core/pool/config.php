@@ -28,6 +28,7 @@ class config
     public static $CORS   = [];
     public static $INIT   = [];
     public static $SIGNAL = [];
+    public static $LOGGER = [];
 
     //Runtime settings
     public static $IS_CGI   = true;
