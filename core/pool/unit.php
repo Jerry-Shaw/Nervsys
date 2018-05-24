@@ -33,4 +33,7 @@ class unit
 
     //Output data result
     public static $result = [];
+
+    //Operator signal value
+    public static $signal = 0;
 }

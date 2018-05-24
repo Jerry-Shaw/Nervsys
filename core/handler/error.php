@@ -89,14 +89,12 @@ class error
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): bool
     {
-        $log_level = self::levels[$errno] ?? 'notice';
-        $log_message = $errstr . ' in ' . $errfile . ' on line ' . $errline;
+        $level = self::levels[$errno] ?? 'notice';
+        $error = 'error' !== $level && self::$level < $errno;
 
-        logger::log($log_level, $log_message);
+        logger::log($level, $errstr, ['Caught in ' . $errfile . ' on line ' . $errline]);
 
-        $error = 'error' !== $log_level && self::$level < $errno;
-
-        unset($errno, $errstr, $errfile, $errline, $log_level, $log_message);
+        unset($errno, $errstr, $errfile, $errline, $level);
         return $error;
     }
 }
