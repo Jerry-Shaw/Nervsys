@@ -31,68 +31,82 @@ class cmd
     public static function prep(): void
     {
         //Extract cmd
-        order::$cmd_cgi = order::$cmd_cli = false !== strpos(order::$cmd, '-')
-            ? explode('-', order::$cmd)
-            : [order::$cmd];
+        $cmd = false !== strpos(order::$cmd, '-') ? explode('-', order::$cmd) : [order::$cmd];
 
         //Prepare CGI cmd
-        self::prep_cgi();
+        order::$cmd_cgi = self::prep_cgi($cmd);
 
         //Prepare CLI cmd
-        self::prep_cli();
+        order::$cmd_cli = self::prep_cli($cmd);
     }
-
 
     /**
      * Prepare cgi cmd
+     *
+     * @param array $cmd
+     *
+     * @return array
      */
-    private static function prep_cgi(): void
+    private static function prep_cgi(array $cmd): array
     {
         if (empty(config::$CGI)) {
-            return;
+            return $cmd;
         }
 
         //Mapping CGI config
         foreach (config::$CGI as $name => $item) {
-            $key = array_search($name, order::$cmd_cgi, true);
+            $keys = array_keys($cmd, $name, true);
 
-            if (false !== $key) {
-                order::$cmd_cgi[$key] = $item;
+            if (!empty($keys)) {
+                foreach ($keys as $key) {
+                    $cmd[$key] = $item;
+                }
+
                 order::$param_cgi[$item] = $name;
             } else {
-                foreach (order::$cmd_cgi as $key => $val) {
-                    if (0 !== strpos($val, $name)) {
+                foreach ($cmd as $key => $value) {
+                    if (0 !== strpos($value, $name)) {
                         continue;
                     }
 
-                    $cmd = substr_replace($val, $item, 0, strlen($name));
+                    $order = substr_replace($value, $item, 0, strlen($name));
 
-                    order::$cmd_cgi[$key] = $cmd;
-                    order::$param_cgi[$cmd] = $val;
+                    $cmd[$key] = $order;
+                    order::$param_cgi[$order] = $value;
                 }
             }
         }
 
-        unset($name, $item, $key, $val, $cmd);
+        //Rebuild cgi cmd
+        $order = implode('-', $cmd);
+        $cmd = false !== strpos($order, '-') ? explode('-', $order) : [$order];
+
+        unset($name, $item, $keys, $key, $value, $order);
+        return $cmd;
     }
 
     /**
      * Prepare cli cmd
+     *
+     * @param array $cmd
+     *
+     * @return array
      */
-    private static function prep_cli(): void
+    private static function prep_cli(array $cmd): array
     {
-        if (empty(config::$CLI)) {
-            order::$cmd_cli = [];
-            return;
+        if (config::$IS_CGI || empty(config::$CLI)) {
+            return [];
         }
 
-        //Check CLI config
-        foreach (order::$cmd_cli as $key => $item) {
-            if (!isset(config::$CLI[$item])) {
-                unset(order::$cmd_cli[$key]);
+        //Build cli cmd
+        $order = [];
+        foreach ($cmd as $key => $item) {
+            if (isset(config::$CLI[$item])) {
+                $order[$item] = config::$CLI[$item];
             }
         }
 
-        unset($key, $item);
+        unset($cmd, $key, $item);
+        return $order;
     }
 }

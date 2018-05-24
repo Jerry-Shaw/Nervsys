@@ -21,6 +21,7 @@
 namespace core\handler;
 
 use core\pool\config as pool_conf;
+use core\pool\order;
 
 class operator
 {
@@ -43,6 +44,26 @@ class operator
         }
 
         unset($key, $item, $class, $method, $function);
+    }
+
+
+    public static function run_cgi(): void
+    {
+
+
+
+
+
+        
+        var_dump(order::$cmd, order::$cmd_cgi, order::$param_cgi);
+
+
+    }
+
+
+    public static function run_cli(): void
+    {
+
     }
 
 

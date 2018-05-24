@@ -28,6 +28,9 @@ class unit
     //Output error msg
     public static $error = [];
 
+    //Model object list
+    public static $object = [];
+
     //Output data result
     public static $result = [];
 }

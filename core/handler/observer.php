@@ -49,7 +49,13 @@ class observer
         //Prepare cmd
         cmd::prep();
 
+        //Run cgi
+        operator::run_cgi();
 
+        //Run cli
+        if (!config::$IS_CGI) {
+            operator::run_cli();
+        }
     }
 
     /**
