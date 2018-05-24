@@ -22,44 +22,41 @@ namespace core\handler;
 
 class logger
 {
-    //Active levels
-    public static $log_level = [1, 2, 3, 4, 5, 6, 7, 8];
-
     //Log path
     public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
 
+    //Active levels
+    public static $active = [];
+
     //Log levels
     const levels = [
-        'emergency' => 1,
-        'alert'     => 2,
-        'critical'  => 3,
-        'error'     => 4,
-        'warning'   => 5,
-        'notice'    => 6,
-        'info'      => 7,
-        'debug'     => 8
+        'emergency',
+        'alert',
+        'critical',
+        'error',
+        'warning',
+        'notice',
+        'info',
+        'debug'
     ];
 
     /**
      * Write log
      *
-     * @param string $message
      * @param string $level
+     * @param string $message
      * @param array  $context
      */
-    public static function log(string $message, string $level = 'debug', array $context = []): void
+    public static function log(string $level, string $message, array $context = []): void
     {
-        if (!isset(self::levels[$level])) {
-            $level = 'debug';
-        }
-
-        if (!in_array(self::levels[$level], self::$log_level, true)) {
+        //Ignore incorrect log levels
+        if (!in_array($level, self::levels, true) || !in_array($level, self::$active, true)) {
             return;
         }
 
         self::$level($message, $context);
 
-        unset($message, $level, $context);
+        unset($level, $message, $context);
     }
 
     /**
@@ -193,10 +190,10 @@ class logger
             unset($mkdir);
         }
 
-        //Add datetime
+        //Add datetime & log level
         array_unshift($logs, date('Y-m-d H:i:s'), 'System ' . strtoupper($name) . ':');
 
-        //Generate log file
+        //Generate log file name
         $file = self::$file_path . $name . '-' . date('Ymd') . '.log';
 
         foreach ($logs as $value) {
@@ -204,6 +201,7 @@ class logger
                 $value = json_encode($value, 4034);
             }
 
+            //Write log file
             file_put_contents($file, $value . PHP_EOL, FILE_APPEND);
         }
 

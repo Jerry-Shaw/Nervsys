@@ -20,8 +20,6 @@
 
 namespace core\handler;
 
-use core\handler\logger as handler_logger;
-
 class error
 {
     /*
@@ -71,18 +69,30 @@ class error
         E_USER_DEPRECATED   => 'notice'
     ];
 
+    /**
+     * Start error handler
+     */
     public static function start(): void
     {
-        self::$level = (int)ini_get('error_reporting');
         set_error_handler([__CLASS__, 'error_handler'], E_ALL);
     }
 
+    /**
+     * Error handler
+     *
+     * @param int    $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int    $errline
+     *
+     * @return bool
+     */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): bool
     {
         $log_level = self::levels[$errno] ?? 'notice';
         $log_message = $errstr . ' in ' . $errfile . ' on line ' . $errline;
 
-        handler_logger::log($log_message, $log_level);
+        logger::log($log_level, $log_message);
 
         $error = 'error' !== $log_level && self::$level < $errno;
 

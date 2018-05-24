@@ -55,6 +55,7 @@ spl_autoload_register(
             return;
         }
 
+        //Check library path
         $lib_file = realpath(ROOT . DIRECTORY_SEPARATOR . strtr($library, '\\', DIRECTORY_SEPARATOR) . '.php');
 
         if (is_string($lib_file)) {
@@ -67,6 +68,21 @@ spl_autoload_register(
 
 //Set running mode
 \core\pool\config::$IS_CGI = 'cli' !== PHP_SAPI;
+
+//Set error level
+\core\handler\error::$level = (int)ini_get('error_reporting');
+
+//Set active log levels
+\core\handler\logger::$active = [
+    'emergency',
+    'alert',
+    'critical',
+    'error',
+    'warning',
+    'notice',
+    'info',
+    'debug'
+];
 
 //Start error handler
 \core\handler\error::start();

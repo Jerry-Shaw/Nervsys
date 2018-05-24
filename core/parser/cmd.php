@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CMD Parser
+ * Command Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,20 +20,20 @@
 
 namespace core\parser;
 
-use core\pool\order as pool_cmd;
-use core\pool\config as pool_conf;
+use core\pool\order;
+use core\pool\config;
 
 class cmd
 {
     /**
      * Prepare cmd
      */
-    public static function prep_cmd(): void
+    public static function prep(): void
     {
         //Extract cmd
-        pool_cmd::$cmd_cgi = pool_cmd::$cmd_cli = false !== strpos(pool_cmd::$cmd, '-')
-            ? explode('-', pool_cmd::$cmd)
-            : [pool_cmd::$cmd];
+        order::$cmd_cgi = order::$cmd_cli = false !== strpos(order::$cmd, '-')
+            ? explode('-', order::$cmd)
+            : [order::$cmd];
 
         //Prepare CGI cmd
         self::prep_cgi();
@@ -48,27 +48,27 @@ class cmd
      */
     private static function prep_cgi(): void
     {
-        if (empty(pool_conf::$CGI)) {
+        if (empty(config::$CGI)) {
             return;
         }
 
         //Mapping CGI config
-        foreach (pool_conf::$CGI as $name => $item) {
-            $key = array_search($name, pool_cmd::$cmd_cgi, true);
+        foreach (config::$CGI as $name => $item) {
+            $key = array_search($name, order::$cmd_cgi, true);
 
             if (false !== $key) {
-                pool_cmd::$cmd_cgi[$key] = $item;
-                pool_cmd::$param_cgi[$item] = $name;
+                order::$cmd_cgi[$key] = $item;
+                order::$param_cgi[$item] = $name;
             } else {
-                foreach (pool_cmd::$cmd_cgi as $key => $val) {
+                foreach (order::$cmd_cgi as $key => $val) {
                     if (0 !== strpos($val, $name)) {
                         continue;
                     }
 
                     $cmd = substr_replace($val, $item, 0, strlen($name));
 
-                    pool_cmd::$cmd_cgi[$key] = $cmd;
-                    pool_cmd::$param_cgi[$cmd] = $val;
+                    order::$cmd_cgi[$key] = $cmd;
+                    order::$param_cgi[$cmd] = $val;
                 }
             }
         }
@@ -81,15 +81,15 @@ class cmd
      */
     private static function prep_cli(): void
     {
-        if (empty(pool_conf::$CLI)) {
-            pool_cmd::$cmd_cli = [];
+        if (empty(config::$CLI)) {
+            order::$cmd_cli = [];
             return;
         }
 
         //Check CLI config
-        foreach (pool_cmd::$cmd_cli as $key => $item) {
-            if (!isset(pool_conf::$CLI[$item])) {
-                unset(pool_cmd::$cmd_cli[$key]);
+        foreach (order::$cmd_cli as $key => $item) {
+            if (!isset(config::$CLI[$item])) {
+                unset(order::$cmd_cli[$key]);
             }
         }
 

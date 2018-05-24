@@ -20,15 +20,12 @@
 
 namespace core\handler;
 
-use core\pool\config as pool_conf;
-use core\pool\unit as pool_data;
+use core\pool\unit;
+use core\pool\config;
 
-use core\parser\cmd as parser_cmd;
-use core\parser\setting as parser_conf;
-use core\parser\input as parser_data;
-
-use core\handler\error as handler_error;
-use core\handler\operator as handler_operator;
+use core\parser\cmd;
+use core\parser\input;
+use core\parser\setting;
 
 class observer
 {
@@ -38,19 +35,19 @@ class observer
     public static function start(): void
     {
         //Load config settings
-        parser_conf::load();
+        setting::load();
 
         //Check CORS permission
         self::chk_cors();
 
         //Call INIT setting functions
-        handler_operator::call_init();
+        operator::run_init();
 
         //Prepare data
-        parser_data::prep_data();
+        input::prep();
 
         //Prepare cmd
-        parser_cmd::prep_cmd();
+        cmd::prep();
 
 
     }
@@ -63,14 +60,14 @@ class observer
     public static function collect(): string
     {
         //Build result
-        $count = count(pool_data::$result);
-        $result = 0 === $count ? '' : (1 === $count ? current(pool_data::$result) : pool_data::$result);
+        $count = count(unit::$result);
+        $result = 0 === $count ? '' : (1 === $count ? current(unit::$result) : unit::$result);
 
         //Build json output
-        $output = !empty(pool_data::$error) ? pool_data::$error + ['data' => &$result] : $result;
-        $json = json_encode($output, 0 === handler_error::$level ? 3906 : 4034);
+        $output = !empty(unit::$error) ? unit::$error + ['data' => &$result] : $result;
+        $json = json_encode($output, 0 === error::$level ? 3906 : 4034);
 
-        if (!pool_conf::$IS_CGI) {
+        if (!config::$IS_CGI) {
             $json .= PHP_EOL;
         }
 
@@ -79,25 +76,64 @@ class observer
     }
 
     /**
+     * Get IP
+     *
+     * @return string
+     */
+    public static function get_ip(): string
+    {
+        //IP check list
+        $chk_list = [
+            'HTTP_CLIENT_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_FORWARDED',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR'
+        ];
+
+        //Check ip values
+        foreach ($chk_list as $key) {
+            if (!isset($_SERVER[$key])) {
+                continue;
+            }
+
+            $ip_list = false !== strpos($_SERVER[$key], ',') ? explode(',', $_SERVER[$key]) : [$_SERVER[$key]];
+
+            foreach ($ip_list as $ip) {
+                $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
+
+                if (false !== $ip) {
+                    unset($chk_list, $key, $ip_list);
+                    return $ip;
+                }
+            }
+        }
+
+        unset($chk_list, $key, $ip_list, $ip);
+        return 'unknown';
+    }
+
+    /**
      * Check Cross-origin resource sharing permission
      */
     private static function chk_cors(): void
     {
         if (
-            empty(pool_conf::$CORS)
+            empty(config::$CORS)
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (pool_conf::$IS_HTTPS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
+            || $_SERVER['HTTP_ORIGIN'] === (config::$IS_HTTPS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
         ) {
             return;
         }
 
-        if (!isset(pool_conf::$CORS[$_SERVER['HTTP_ORIGIN']])) {
-            //todo log (debug): CORS failed
+        if (!isset(config::$CORS[$_SERVER['HTTP_ORIGIN']])) {
+            logger::log('info', 'CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
             exit;
         }
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . pool_conf::$CORS[$_SERVER['HTTP_ORIGIN']]);
+        header('Access-Control-Allow-Headers: ' . config::$CORS[$_SERVER['HTTP_ORIGIN']]);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             exit;

@@ -27,7 +27,7 @@ class operator
     /**
      * Call INIT functions
      */
-    public static function call_init(): void
+    public static function run_init(): void
     {
         if (empty(pool_conf::$INIT)) {
             return;

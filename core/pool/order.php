@@ -1,7 +1,7 @@
 <?php
 
 /**
- * CMD Pool
+ * Order Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *

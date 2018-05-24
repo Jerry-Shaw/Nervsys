@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Config Parser
+ * Setting Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,7 +20,7 @@
 
 namespace core\parser;
 
-use core\pool\config as pool_conf;
+use core\pool\config;
 
 class setting
 {
@@ -30,14 +30,14 @@ class setting
     public static function load(): void
     {
         //Check HTTPS
-        pool_conf::$IS_HTTPS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+        config::$IS_HTTPS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         //Check config file
-        $path = realpath(pool_conf::CONF_PATH);
+        $path = realpath(config::CONF_PATH);
 
         if (false === $path) {
-            //todo log (debug): config not found
+            trigger_error('Config file NOT found!', E_USER_NOTICE);
             return;
         }
 
@@ -45,13 +45,13 @@ class setting
         $conf = parse_ini_file($path, true);
 
         if (false === $conf) {
-            //todo log (debug): config error
+            trigger_error('Config file ERROR!', E_USER_NOTICE);
             return;
         }
 
         foreach ($conf as $key => $val) {
-            if (isset(pool_conf::$$key)) {
-                pool_conf::$$key = $val;
+            if (isset(config::$$key)) {
+                config::$$key = $val;
             }
         }
 

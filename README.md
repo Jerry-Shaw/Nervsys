@@ -47,7 +47,7 @@ Many thanks!
       │     │    │       └─cli.php        CLI execution script
       │     │    ├─os.php                 Main OS controller
       │     │    └─router.php             Main Router controller
-      │     ├─conf.ini                    Config file for router system
+      │     ├─config.ini                    Config file for router system
       │     └─conf.php                    Config file for core system
       ├─cors/                           **CORS config file directory
       │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
@@ -87,9 +87,9 @@ Files inside a project can be placed as will.
 
 ## Key Files Introduce:
 
-****conf.ini**
+****config.ini**
     
-    There is only one "conf.ini" located in the path of "/core/". 
+    There is only one "config.ini" located in the path of "/core/". 
     It is the configuration file for the whole router system.
     
     Sections are as follows:
@@ -598,13 +598,13 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     These modules share the same function names when exist. 
     All functions share the same source data and run with the input order.
         
-    If we want to hide the real request path, make sure the "c" or "cmd" key is listing in "conf.ini"
+    If we want to hide the real request path, make sure the "c" or "cmd" key is listing in "config.ini"
     under [CGI] section with the key as the input "c" or "cmd", and the real path and its possible
     params as the value, or ever more. Settings can be compound.
         
     Some examples:
         
-    "conf.ini"
+    "config.ini"
         
     [CGI]
     mycmd_1 = "pr_1/ctr/test_1"
@@ -653,12 +653,12 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     
     **CLI executable mode**
         
-    If we need to call external programs, make sure the "c" or "cmd" key is listing in "conf.ini"
+    If we need to call external programs, make sure the "c" or "cmd" key is listing in "config.ini"
     under [CLI] section with the executable path and its possible params as the value, or ever more.
         
     Some examples:
         
-    "conf.ini"
+    "config.ini"
         
     [CLI]
     mycmd = "/xxx/path/mycmd -c -d --more"

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Data Parser
+ * Input Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,42 +20,37 @@
 
 namespace core\parser;
 
-use core\pool\order as pool_cmd;
-use core\pool\config as pool_conf;
-use core\pool\unit as pool_data;
+use core\pool\unit;
+use core\pool\order;
+use core\pool\config;
 
 class input
 {
     /**
      * Prepare data
      */
-    public static function prep_data(): void
+    public static function prep(): void
     {
-        if (pool_conf::$IS_CGI) {
-            //Read HTTP
+        if (config::$IS_CGI) {
+            //Read HTTP & input
             self::read_http();
-
-            //Read raw data
             self::read_raw();
         } else {
-            //Read option
+            //Read option & argument
             $optind = self::read_opt();
-
-            //Read argument
             self::read_argv($optind);
 
             unset($optind);
         }
 
         //Check cmd
-        if ('' === pool_cmd::$cmd) {
-            $val = self::opt_val(pool_data::$data, ['cmd', 'c']);
+        if ('' === order::$cmd) {
+            $val = self::opt_val(unit::$data, ['cmd', 'c']);
 
             if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-                pool_cmd::$cmd = &$val['data'];
+                order::$cmd = &$val['data'];
             } else {
-                //todo error (sys): cmd error
-                exit;
+                trigger_error('Command NOT found!', E_USER_ERROR);
             }
 
             unset($val);
@@ -69,17 +64,17 @@ class input
     {
         //Read FILES
         if (!empty($_FILES)) {
-            pool_data::$data += $_FILES;
+            unit::$data += $_FILES;
         }
 
         //Read POST
         if (!empty($_POST)) {
-            pool_data::$data += $_POST;
+            unit::$data += $_POST;
         }
 
         //Read GET
         if (!empty($_GET)) {
-            pool_data::$data += $_GET;
+            unit::$data += $_GET;
         }
     }
 
@@ -97,7 +92,7 @@ class input
         $data = json_decode($input, true);
 
         if (is_array($data) && !empty($data)) {
-            pool_data::$data += $data;
+            unit::$data += $data;
         }
 
         unset($input, $data);
@@ -129,35 +124,35 @@ class input
         $val = self::opt_val($opt, ['cmd', 'c']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            pool_data::$data += [$val['key'] => $val['data']];
+            unit::$data += [$val['key'] => $val['data']];
         }
 
         //Get cgi data value
         $val = self::opt_val($opt, ['data', 'd']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            pool_data::$data += self::opt_data($val['data']);
+            unit::$data += self::opt_data($val['data']);
         }
 
         //Get pipe data value
         $val = self::opt_val($opt, ['pipe', 'p']);
 
         if ($val['get'] && '' !== $val['data']) {
-            pool_cmd::$param_cli['pipe'] = &$val['data'];
+            order::$param_cli['pipe'] = &$val['data'];
         }
 
         //Get pipe timeout value
         $val = self::opt_val($opt, ['time', 't']);
 
         if ($val['get'] && is_numeric($val['data'])) {
-            pool_cmd::$param_cli['time'] = (int)$val['data'];
+            order::$param_cli['time'] = (int)$val['data'];
         }
 
         //Get return option
         $val = self::opt_val($opt, ['ret', 'r']);
 
         if ($val['get']) {
-            pool_cmd::$param_cli['ret'] = true;
+            order::$param_cli['ret'] = true;
         }
 
         unset($opt, $val);
@@ -179,14 +174,14 @@ class input
         }
 
         //Check cmd
-        $value = self::opt_val(pool_data::$data, ['cmd', 'c']);
+        $value = self::opt_val(unit::$data, ['cmd', 'c']);
 
         !$value['get'] || !is_string($value['data']) || '' === $value['data']
-            ? pool_data::$data['cmd'] = array_shift($argument)
-            : pool_data::$data[$value['key']] = &$value['data'];
+            ? unit::$data['cmd'] = array_shift($argument)
+            : unit::$data[$value['key']] = &$value['data'];
 
         //Set argument
-        if (!empty($argument)) pool_cmd::$param_cli['argv'] = &$argument;
+        if (!empty($argument)) order::$param_cli['argv'] = &$argument;
 
         unset($optind, $argument, $value);
     }

@@ -34,5 +34,5 @@ class config
     public static $IS_HTTPS = true;
 
     //Config file path
-    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'conf.ini';
+    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'config.ini';
 }
