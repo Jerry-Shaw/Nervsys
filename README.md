@@ -1,5 +1,10 @@
 # Nervsys
 
+# NOTICE: Nervsys 6.0.0 is out. New README is under construction.
+
+# for 5.2.x, see below.
+
+
 [**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**TESTS**](https://github.com/NervSys/NS-Tests)  |  [**DEMO**](https://github.com/Jerry-Shaw/NS-Demo)
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
