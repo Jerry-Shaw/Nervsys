@@ -163,6 +163,7 @@ class crypt_code extends crypt
      * Get Auth Code values
      *
      * @return array
+     * @throws \Exception
      */
     public static function get(): array
     {
@@ -191,8 +192,7 @@ class crypt_code extends crypt
         $image = imagecreate(self::$width, self::$height);
 
         if (false === $image) {
-            trigger_error('Auth Code Image create failed!', E_USER_ERROR);
-            return ['err' => 1, 'msg' => 'Auth Code Image create failed!'];
+            throw new \Exception('Auth Code Image create failed!');
         }
 
         //Fill image in white

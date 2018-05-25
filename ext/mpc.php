@@ -20,6 +20,7 @@
 
 namespace ext;
 
+use core\handler\logger;
 use core\handler\platform;
 
 use core\pool\config;
@@ -64,11 +65,11 @@ class mpc
         }
 
         //Get command
-        $php_exe = config::$CLI[self::$php_key] ?? '';
+        if (!isset(config::$CLI[self::$php_key])) {
+            throw new \Exception('[' . self::$php_key . '] NOT found!');
+        }
 
-        '' !== $php_exe
-            ? self::$php_exe = '"' . $php_exe . '"'
-            : trigger_error('[' . self::$php_key . '] NOT found!', E_USER_ERROR);
+        self::$php_exe = config::$CLI[self::$php_key];
 
         unset($php_exe);
     }
@@ -133,7 +134,6 @@ class mpc
      * @param array $jobs
      *
      * @return array
-     * @throws \Exception
      */
     private static function execute(array $jobs): array
     {
@@ -157,7 +157,7 @@ class mpc
                 $resource[$key]['pipe'] = $pipes;
                 $resource[$key]['proc'] = $process;
             } else {
-                trigger_error('Access denied or command ERROR!', E_USER_ERROR);
+                logger::log('warning', $item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
                 $resource[$key]['exec'] = false;
             }
         }

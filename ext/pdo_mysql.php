@@ -62,8 +62,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
-            return false;
+            throw new \Exception($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
         }
 
         $last = '' === $last ? (string)self::connect()->lastInsertId() : (string)self::connect()->lastInsertId($last);
@@ -133,8 +132,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
-            return false;
+            throw new \Exception($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
         }
 
         unset($table, $data, $set_opt, $where_opt, $sql, $stmt);
@@ -204,8 +202,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($data['bind']);
         } catch (\Throwable $throwable) {
-            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
-            return [];
+            throw new \Exception($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
         }
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
@@ -252,8 +249,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($where);
         } catch (\Throwable $throwable) {
-            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
-            return 0;
+            throw new \Exception($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
         }
 
         $result = $stmt->rowCount();
@@ -279,8 +275,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
-            return false;
+            throw new \Exception($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
         }
 
         unset($sql, $data, $stmt);
@@ -305,8 +300,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
-            return [];
+            throw new \Exception($throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
         }
 
         $result = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);

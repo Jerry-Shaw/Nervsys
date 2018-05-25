@@ -134,6 +134,7 @@ class crypt
      * @param string $key
      *
      * @return string
+     * @throws \Exception
      */
     private static function rsa_type(string $key): string
     {
@@ -141,17 +142,13 @@ class crypt
         $end = strpos($key, ' KEY-----', $start);
 
         if (false === $end) {
-            trigger_error('RSA Key ERROR!', E_USER_WARNING);
-            unset($key, $start, $end);
-            return '';
+            throw new \Exception('RSA Key ERROR!');
         }
 
         $type = strtolower(substr($key, $start, $end - $start));
 
         if (!in_array($type, ['public', 'private'], true)) {
-            trigger_error('RSA Key NOT support!', E_USER_WARNING);
-            unset($key, $start, $end, $type);
-            return '';
+            throw new \Exception('RSA Key NOT support!');
         }
 
         unset($key, $start, $end);
@@ -165,6 +162,7 @@ class crypt
      * @param string $key
      *
      * @return string
+     * @throws \Exception
      */
     public static function rsa_encrypt(string $string, string $key): string
     {
@@ -195,6 +193,7 @@ class crypt
      * @param string $key
      *
      * @return string
+     * @throws \Exception
      */
     public static function rsa_decrypt(string $string, string $key): string
     {
@@ -263,6 +262,7 @@ class crypt
      * @param string $rsa_key
      *
      * @return string
+     * @throws \Exception
      */
     public static function sign(string $string, string $rsa_key = ''): string
     {
@@ -285,6 +285,7 @@ class crypt
      * @param string $rsa_key
      *
      * @return string
+     * @throws \Exception
      */
     public static function verify(string $string, string $rsa_key = ''): string
     {

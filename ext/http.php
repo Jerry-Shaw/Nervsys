@@ -320,7 +320,6 @@ class http
     {
         //Check URL
         if (!self::chk_url()) {
-            trigger_error('No URL entry or URL ERROR!', E_USER_NOTICE);
             return [];
         }
 
@@ -369,30 +368,27 @@ class http
     {
         //Check URL
         if (!self::chk_url()) {
-            trigger_error('No URL entry or URL ERROR!', E_USER_NOTICE);
             return [];
         }
 
         //Check Method
         if (!in_array(self::$Method, ['POST', 'PUT'], true)) {
-            trigger_error('Method NOT allowed!', E_USER_NOTICE);
-            return [];
+            self::$Method = 'POST';
         }
 
         //Validate files
         foreach (self::$file as $key => $item) {
             if (!is_file($item)) {
-                trigger_error('[' . $item . '] NOT found!', E_USER_NOTICE);
                 unset(self::$file[$key]);
                 continue;
             }
+
             //Attach file to data
             self::$data[$key] = new \CURLFile($item);
         }
 
         //Check files
         if (empty(self::$file)) {
-            trigger_error('No file to upload!', E_USER_NOTICE);
             return [];
         }
 

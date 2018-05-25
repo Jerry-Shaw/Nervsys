@@ -43,6 +43,8 @@ class errno
      *
      * @param string $module
      * @param string $file
+     *
+     * @throws \Exception
      */
     public static function load(string $module, string $file): void
     {
@@ -51,15 +53,13 @@ class errno
         $path = realpath(ROOT . $file);
 
         if (false === $path) {
-            trigger_error('[' . $file . '] NOT found!', E_USER_NOTICE);
-            return;
+            throw new \Exception('[' . $file . '] NOT found!');
         }
 
         $error = parse_ini_file($path, false);
 
         if (false === $error) {
-            trigger_error('[' . $file . '] ERROR!', E_USER_WARNING);
-            return;
+            throw new \Exception('[' . $file . '] ERROR!');
         }
 
         self::$pool += $error;
