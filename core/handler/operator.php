@@ -32,13 +32,15 @@ class operator
     private static $order = [];
 
     /**
-     * Run INIT/LOAD command
-     *
-     * @param array $cmd
+     * Call INIT command
      */
-    public static function init_load(array $cmd): void
+    public static function call_init(): void
     {
-        foreach ($cmd as $key => $item) {
+        if (empty(config::$INIT)) {
+            return;
+        }
+
+        foreach (config::$INIT as $key => $item) {
             $class = self::build_class($key);
             $method = is_string($item) ? [$item] : $item;
 
@@ -47,7 +49,28 @@ class operator
             }
         }
 
-        unset($cmd, $key, $item, $class, $method, $function);
+        unset($key, $item, $class, $method, $function);
+    }
+
+    /**
+     * Call LOAD command
+     *
+     * @param string $key
+     */
+    private static function call_load(string $key): void
+    {
+        if (!isset(config::$LOAD[$key])) {
+            return;
+        }
+
+        $cmd = is_string(config::$LOAD[$key]) ? [config::$LOAD[$key]] : config::$LOAD[$key];
+
+        foreach ($cmd as $val) {
+            list($k, $v) = explode('-', $val, 2);
+            forward_static_call([self::build_class($k), $v]);
+        }
+
+        unset($key, $cmd, $val, $k, $v);
     }
 
     /**
@@ -64,10 +87,8 @@ class operator
             $name = array_shift($method);
             $class = self::build_class($name);
 
-            //Run LOAD command
-            if (isset(config::$LOAD[$name])) {
-                self::init_load(is_array(config::$LOAD[$name]) ? config::$LOAD[$name] : [config::$LOAD[$name]]);
-            }
+            //Call LOAD command
+            self::call_load(strstr($name, '/', true));
 
             //Check class
             if (!class_exists($class)) {
@@ -110,8 +131,8 @@ class operator
 
                 //Run pre functions
                 if (!empty($tz_data['pre'])) {
-                    foreach ($tz_data['pre'] as $item) {
-                        self::build_caller($item['name'], self::build_class($item['name']), $item['method']);
+                    foreach ($tz_data['pre'] as $val) {
+                        self::build_caller($val['name'], self::build_class($val['name']), $val['method']);
 
                         //Check observer status
                         if (observer::stop()) {
@@ -135,8 +156,8 @@ class operator
 
                 //Run post functions
                 if (!empty($tz_data['post'])) {
-                    foreach ($tz_data['post'] as $item) {
-                        self::build_caller($item['name'], self::build_class($item['name']), $item['method']);
+                    foreach ($tz_data['post'] as $val) {
+                        self::build_caller($val['name'], self::build_class($val['name']), $val['method']);
 
                         //Check observer status
                         if (observer::stop()) {
@@ -147,7 +168,7 @@ class operator
             }
         }
 
-        unset($method, $name, $class, $target_list, $target, $tz_data, $item);
+        unset($method, $name, $class, $target_list, $target, $tz_data, $val);
     }
 
     /**
