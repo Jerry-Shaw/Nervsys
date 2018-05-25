@@ -32,7 +32,11 @@ class file
     public static function get_ext(string $path): string
     {
         $ext = pathinfo($path, PATHINFO_EXTENSION);
-        if ('' !== $ext) $ext = strtolower($ext);
+
+        if ('' !== $ext) {
+            $ext = strtolower($ext);
+        }
+
         unset($path);
         return $ext;
     }
@@ -49,15 +53,22 @@ class file
     public static function get_path(string $path, string $root = ROOT, int $mode = 0776): string
     {
         //Parent directory is not allowed
-        if (false !== strpos($path, '..')) $path = str_replace('..', '', $path);
+        if (false !== strpos($path, '..')) {
+            $path = str_replace('..', '', $path);
+        }
+
         //Format path with '/'
-        if (false !== strpos($path, '\\')) $path = strtr($path, '\\', '/');
+        if (false !== strpos($path, '\\')) {
+            $path = strtr($path, '\\', '/');
+        }
 
         //Trim "/"
         $path = trim($path, '/');
 
         //Return "/" when path is empty
-        if ('' === $path) return is_readable($root) ? '/' : '';
+        if ('' === $path) {
+            return is_readable($root) ? '/' : '';
+        }
 
         //Add "/"
         $path = '/' . $path;
@@ -92,18 +103,26 @@ class file
     {
         //Check path
         $path = realpath($path);
-        if (false === $path) return [];
+
+        if (false === $path) {
+            return [];
+        }
 
         //Get file list
         $path .= '/';
         $list = glob($path . $pattern, GLOB_NOSORT | GLOB_BRACE);
 
         //Return list on non-recursive
-        if (!$recursive) return $list;
+        if (!$recursive) {
+            return $list;
+        }
 
         //Get file list recursively
         $dirs = glob($path . '*', GLOB_NOSORT | GLOB_ONLYDIR);
-        foreach ($dirs as $dir) $list = array_merge($list, self::get_list($dir, $pattern, true));
+
+        foreach ($dirs as $dir) {
+            $list = array_merge($list, self::get_list($dir, $pattern, true));
+        }
 
         unset($path, $pattern, $recursive, $dirs, $dir);
         return $list;

@@ -41,13 +41,19 @@ class image
         //Get image data
         $img_info = getimagesize($file);
 
-        if (!in_array($img_info['mime'], self::MIME, true)) return false;
+        if (!in_array($img_info['mime'], self::MIME, true)) {
+            return false;
+        }
 
         //Get new size
-        $img_size = $crop ? self::img_crop($img_info[0], $img_info[1], $width, $height) : self::img_zoom($img_info[0], $img_info[1], $width, $height);
+        $img_size = $crop
+            ? self::img_crop($img_info[0], $img_info[1], $width, $height)
+            : self::img_zoom($img_info[0], $img_info[1], $width, $height);
 
         //No need to resize/crop
-        if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) return true;
+        if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) {
+            return true;
+        }
 
         //Process image
         $type = substr($img_info['mime'], 6);
@@ -69,8 +75,21 @@ class image
                 break;
         }
 
-        imagecopyresampled($img_thumb, $img_src, 0, 0, $img_size['img_x'], $img_size['img_y'], $img_size['img_w'], $img_size['img_h'], $img_size['src_w'], $img_size['src_h']);
+        imagecopyresampled(
+            $img_thumb,
+            $img_src,
+            0,
+            0,
+            $img_size['img_x'],
+            $img_size['img_y'],
+            $img_size['img_w'],
+            $img_size['img_h'],
+            $img_size['src_w'],
+            $img_size['src_h']
+        );
+
         $result = call_user_func('image' . $type, $img_thumb, $file);
+
         imagedestroy($img_src);
         imagedestroy($img_thumb);
 
@@ -91,10 +110,12 @@ class image
         $img_exif = exif_read_data($file);
 
         if (
-            false === $img_exif ||
-            !isset($img_exif['Orientation']) ||
-            !in_array($img_exif['MimeType'], self::MIME, true)
-        ) return false;
+            false === $img_exif
+            || !isset($img_exif['Orientation'])
+            || !in_array($img_exif['MimeType'], self::MIME, true)
+        ) {
+            return false;
+        }
 
         //Process image
         $type = substr($img_exif['MimeType'], 6);
@@ -143,7 +164,9 @@ class image
         $size['img_x'] = $size['img_y'] = 0;
 
         //Incorrect width/height
-        if (0 >= $img_w || 0 >= $img_h) return $size;
+        if (0 >= $img_w || 0 >= $img_h) {
+            return $size;
+        }
 
         //Calculate new width and height
         $ratio_img = $img_w / $img_h;
@@ -184,7 +207,9 @@ class image
         $size['img_h'] = $size['src_h'] = $img_h;
 
         //Incorrect width/height
-        if (0 >= $img_w || 0 >= $img_h) return $size;
+        if (0 >= $img_w || 0 >= $img_h) {
+            return $size;
+        }
 
         //Calculate new width and height
         $ratio_img = $img_w / $img_h;

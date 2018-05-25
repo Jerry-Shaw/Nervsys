@@ -50,13 +50,23 @@ class redis
     private static function create(): \Redis
     {
         $redis = new \Redis();
-        self::$persist ? $redis->pconnect(self::$host, self::$port, self::$timeout, self::$persist_id) : $redis->connect(self::$host, self::$port, self::$timeout);
+        self::$persist
+            ? $redis->pconnect(self::$host, self::$port, self::$timeout, self::$persist_id)
+            : $redis->connect(self::$host, self::$port, self::$timeout);
 
-        if ('' !== self::$auth && !$redis->auth(self::$auth)) throw new \Exception('Redis: Authentication Failed!');
-        if (!$redis->select(self::$db)) throw new \Exception('Redis: DB [' . self::$db . '] NOT exist!');
+        if ('' !== self::$auth && !$redis->auth(self::$auth)) {
+            throw new \Exception('Redis: Authentication Failed!');
+        }
+
+        if (!$redis->select(self::$db)) {
+            throw new \Exception('Redis: DB [' . self::$db . '] NOT exist!');
+        }
+
+        if ('' !== self::$prefix) {
+            $redis->setOption(\Redis::OPT_PREFIX, self::$prefix . ':');
+        }
 
         $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-        if ('' !== self::$prefix) $redis->setOption(\Redis::OPT_PREFIX, self::$prefix . ':');
 
         return $redis;
     }
@@ -97,8 +107,13 @@ class redis
             self::$connect->close();
             self::$connect = null;
         } else {
-            if (!isset(self::$pool[$name])) return;
-            if (self::$connect === self::$pool[$name]) self::$connect = null;
+            if (!isset(self::$pool[$name])) {
+                return;
+            }
+
+            if (self::$connect === self::$pool[$name]) {
+                self::$connect = null;
+            }
 
             self::$pool[$name]->close();
             self::$pool[$name] = null;

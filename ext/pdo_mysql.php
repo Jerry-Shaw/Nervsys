@@ -48,7 +48,9 @@ class pdo_mysql extends pdo
     public static function insert(string $table, array $data, string &$last = ''): bool
     {
         //No data to insert
-        if (empty($data)) return false;
+        if (empty($data)) {
+            return false;
+        }
 
         //Build "data"
         $column = self::build_data($data);
@@ -60,7 +62,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
             return false;
         }
 
@@ -100,14 +102,20 @@ class pdo_mysql extends pdo
     public static function update(string $table, array $data, array $where): bool
     {
         //No data to update
-        if (empty($data)) return false;
+        if (empty($data)) {
+            return false;
+        }
 
         //Build "data"
         $data_column = self::build_data($data);
 
         //Get "SET"
         $set_opt = [];
-        foreach ($data_column as $key => $item) $set_opt[] = $key . ' = ' . $item;
+
+        foreach ($data_column as $key => $item) {
+            $set_opt[] = $key . ' = ' . $item;
+        }
+
         unset($data_column, $key, $item);
 
         //Build "where"
@@ -115,6 +123,7 @@ class pdo_mysql extends pdo
 
         //Merge data
         $data = array_merge($data, $where);
+
         unset($where);
 
         //Prepare & execute
@@ -124,7 +133,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
             return false;
         }
 
@@ -195,7 +204,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($data['bind']);
         } catch (\Throwable $throwable) {
-            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
             return [];
         }
 
@@ -229,7 +238,9 @@ class pdo_mysql extends pdo
     public static function delete(string $table, array $where): int
     {
         //Delete not allowed
-        if (empty($where)) return 0;
+        if (empty($where)) {
+            return 0;
+        }
 
         //Build "where"
         $where_opt = self::build_where($where);
@@ -241,7 +252,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($where);
         } catch (\Throwable $throwable) {
-            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
             return 0;
         }
 
@@ -268,7 +279,7 @@ class pdo_mysql extends pdo
         try {
             $result = $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
             return false;
         }
 
@@ -294,7 +305,7 @@ class pdo_mysql extends pdo
         try {
             $stmt->execute($data);
         } catch (\Throwable $throwable) {
-            debug('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString);
+            trigger_error('MySQL', $throwable->getMessage() . '. SQL Dump: ' . $stmt->queryString, E_USER_ERROR);
             return [];
         }
 
@@ -316,7 +327,10 @@ class pdo_mysql extends pdo
     {
         //Execute directly
         $exec = self::connect()->exec($sql);
-        if (false === $exec) $exec = -1;
+
+        if (false === $exec) {
+            $exec = -1;
+        }
 
         unset($sql);
         return $exec;
@@ -394,7 +408,9 @@ class pdo_mysql extends pdo
                 $data[$bind] = $value;
                 //Free memory
                 unset($bind);
-            } else $column[self::escape($key)] = addslashes($value);
+            } else {
+                $column[self::escape($key)] = addslashes($value);
+            }
         }
 
         unset($key, $value);
@@ -418,7 +434,9 @@ class pdo_mysql extends pdo
             unset($where[$key]);
 
             //Ignore incomplete items
-            if (2 > count($item)) continue;
+            if (2 > count($item)) {
+                continue;
+            }
 
             //Set "in_value" mode
             $in_value = false;
@@ -428,7 +446,10 @@ class pdo_mysql extends pdo
 
             //Add missing elements
             if (!in_array($operator, ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'NOT EXISTS', 'IS NULL', 'IS NOT NULL'], true)) {
-                if (isset($item[2])) $item[3] = $item[2];
+                if (isset($item[2])) {
+                    $item[3] = $item[2];
+                }
+
                 $item[2] = $item[1];
                 $item[1] = '=';
             } elseif (in_array($operator, ['IN', 'NOT IN', 'NOT EXISTS'], true)) {
@@ -443,7 +464,9 @@ class pdo_mysql extends pdo
             }
 
             //Add missing logic gate
-            if (!isset($item[3]) && 0 < $key) $item[3] = 'AND';
+            if (!isset($item[3]) && 0 < $key) {
+                $item[3] = 'AND';
+            }
 
             //Add logic gate to option
             if (isset($item[3])) {
@@ -459,10 +482,14 @@ class pdo_mysql extends pdo
             $option[] = $item[1];
 
             //Continue when no value passed
-            if (!isset($item[2])) continue;
+            if (!isset($item[2])) {
+                continue;
+            }
 
             //"in_value" mode
-            if ($in_value) $option[] = '(';
+            if ($in_value) {
+                $option[] = '(';
+            }
 
             //Process values
             if (is_array($item[2])) {
@@ -493,11 +520,15 @@ class pdo_mysql extends pdo
                     $where[$bind] = $item[2];
                     //Free memory
                     unset($bind);
-                } else $option[] = addslashes($item[2]);
+                } else {
+                    $option[] = addslashes($item[2]);
+                }
             }
 
             //"in_value" mode
-            if ($in_value) $option[] = ')';
+            if ($in_value) {
+                $option[] = ')';
+            }
         }
 
         unset($key, $item, $in_value, $operator);
@@ -545,16 +576,28 @@ class pdo_mysql extends pdo
         //Default field value
         $field = '*';
 
-        if (!isset($opt['field'])) return $field;
+        if (!isset($opt['field'])) {
+            return $field;
+        }
+
         $opt_data = $opt['field'];
         unset($opt['field']);
 
         if (is_array($opt_data) && !empty($opt_data)) {
             $column = [];
-            foreach ($opt_data as $value) $column[] = self::escape($value);
-            if (!empty($column)) $field = implode(', ', $column);
+
+            foreach ($opt_data as $value) {
+                $column[] = self::escape($value);
+            }
+
+            if (!empty($column)) {
+                $field = implode(', ', $column);
+            }
+
             unset($column, $value);
-        } elseif (is_string($opt_data) && '' !== $opt_data) $field = &$opt_data;
+        } elseif (is_string($opt_data) && '' !== $opt_data) {
+            $field = &$opt_data;
+        }
 
         unset($opt_data);
         return $field;
@@ -567,7 +610,10 @@ class pdo_mysql extends pdo
      */
     private static function opt_join(array &$opt): void
     {
-        if (!isset($opt['join'])) return;
+        if (!isset($opt['join'])) {
+            return;
+        }
+
         $opt_data = $opt['join'];
         unset($opt['join']);
 
@@ -586,20 +632,28 @@ class pdo_mysql extends pdo
                             $item[3] = $item[2];
                             $item[2] = $item[1];
                             $item[1] = '=';
-                        } else $item[3] = 'INNER';
+                        } else {
+                            $item[3] = 'INNER';
+                        }
                         break;
                 }
 
-                if (!in_array($item[3], ['INNER', 'LEFT', 'RIGHT'], true)) $item[3] = 'INNER';
+                if (!in_array($item[3], ['INNER', 'LEFT', 'RIGHT'], true)) {
+                    $item[3] = 'INNER';
+                }
 
                 $join[] = $item[3] . ' JOIN ' . self::escape($table) . ' ON ' . $item[0] . ' ' . $item[1] . ' ' . $item[2];
             }
 
-            if (!empty($join)) $opt['join'] = implode(' ', $join);
+            if (!empty($join)) {
+                $opt['join'] = implode(' ', $join);
+            }
 
             unset($join, $table, $item);
 
-        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['join'] = false !== stripos($opt_data, 'JOIN') ? $opt_data : 'INNER JOIN ' . $opt_data;
+        } elseif (is_string($opt_data) && '' !== $opt_data) {
+            $opt['join'] = false !== stripos($opt_data, 'JOIN') ? $opt_data : 'INNER JOIN ' . $opt_data;
+        }
 
         unset($opt_data);
     }
@@ -613,12 +667,16 @@ class pdo_mysql extends pdo
      */
     private static function opt_where(array &$opt): array
     {
-        if (!isset($opt['where'])) return [];
+        if (!isset($opt['where'])) {
+            return [];
+        }
+
         $opt_data = $opt['where'];
         unset($opt['where']);
 
-        if (is_array($opt_data) && !empty($opt_data)) $opt['where'] = implode(' ', self::build_where($opt_data));
-        elseif (is_string($opt_data) && '' !== $opt_data) {
+        if (is_array($opt_data) && !empty($opt_data)) {
+            $opt['where'] = implode(' ', self::build_where($opt_data));
+        } elseif (is_string($opt_data) && '' !== $opt_data) {
             $opt['where'] = 'WHERE ' . $opt_data;
             $opt_data = [];
         }
@@ -633,7 +691,10 @@ class pdo_mysql extends pdo
      */
     private static function opt_order(array &$opt): void
     {
-        if (!isset($opt['order'])) return;
+        if (!isset($opt['order'])) {
+            return;
+        }
+
         $opt_data = $opt['order'];
         unset($opt['order']);
 
@@ -642,14 +703,22 @@ class pdo_mysql extends pdo
 
             foreach ($opt_data as $key => $value) {
                 $value = strtoupper($value);
-                if (!in_array($value, ['DESC', 'ASC'], true)) $value = 'DESC';
+
+                if (!in_array($value, ['DESC', 'ASC'], true)) {
+                    $value = 'DESC';
+                }
 
                 $column[] = self::escape($key) . ' ' . $value;
             }
 
-            if (!empty($column)) $opt['order'] = 'ORDER BY ' . implode(', ', $column);
+            if (!empty($column)) {
+                $opt['order'] = 'ORDER BY ' . implode(', ', $column);
+            }
+
             unset($column, $key, $value);
-        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['order'] = 'ORDER BY ' . $opt_data;
+        } elseif (is_string($opt_data) && '' !== $opt_data) {
+            $opt['order'] = 'ORDER BY ' . $opt_data;
+        }
 
         unset($opt_data);
     }
@@ -661,18 +730,28 @@ class pdo_mysql extends pdo
      */
     private static function opt_group(array &$opt): void
     {
-        if (!isset($opt['group'])) return;
+        if (!isset($opt['group'])) {
+            return;
+        }
+
         $opt_data = $opt['group'];
         unset($opt['group']);
 
         if (is_array($opt_data) && !empty($opt_data)) {
             $column = [];
 
-            foreach ($opt_data as $key) $column[] = self::escape($key);
-            if (!empty($column)) $opt['group'] = 'GROUP BY ' . implode(', ', $column);
+            foreach ($opt_data as $key) {
+                $column[] = self::escape($key);
+            }
+
+            if (!empty($column)) {
+                $opt['group'] = 'GROUP BY ' . implode(', ', $column);
+            }
 
             unset($column, $key);
-        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['group'] = 'GROUP BY ' . $opt_data;
+        } elseif (is_string($opt_data) && '' !== $opt_data) {
+            $opt['group'] = 'GROUP BY ' . $opt_data;
+        }
 
         unset($opt_data);
     }
@@ -686,7 +765,10 @@ class pdo_mysql extends pdo
      */
     private static function opt_limit(array &$opt): array
     {
-        if (!isset($opt['limit'])) return [];
+        if (!isset($opt['limit'])) {
+            return [];
+        }
+
         $opt_data = $opt['limit'];
         unset($opt['limit']);
         $data = [];
@@ -702,7 +784,9 @@ class pdo_mysql extends pdo
         } elseif (is_numeric($opt_data)) {
             $opt['limit'] = 'LIMIT :l_start, :l_offset';
             $data = [':l_start' => 0, ':l_offset' => (int)$opt_data];
-        } elseif (is_string($opt_data) && '' !== $opt_data) $opt['limit'] = 'LIMIT ' . $opt_data;
+        } elseif (is_string($opt_data) && '' !== $opt_data) {
+            $opt['limit'] = 'LIMIT ' . $opt_data;
+        }
 
         unset($opt_data);
         return $data;
@@ -721,7 +805,10 @@ class pdo_mysql extends pdo
         $char = ['(', ' ', '.', '*', ')'];
 
         foreach ($char as $key) {
-            if (false === strpos($value, $key)) continue;
+            if (false === strpos($value, $key)) {
+                continue;
+            }
+
             $pass = false;
             break;
         }

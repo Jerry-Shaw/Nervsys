@@ -87,7 +87,10 @@ class redis_lock extends redis
 
         //Delete key
         $key = array_search($lock_key, self::$lock, true);
-        if (false !== $key) unset(self::$lock[$key]);
+
+        if (false !== $key) {
+            unset(self::$lock[$key]);
+        }
 
         unset($key, $lock_key);
     }
@@ -103,7 +106,9 @@ class redis_lock extends redis
      */
     private static function lock(string $key, int $life = 3): bool
     {
-        if (!self::connect()->setnx($key, time())) return false;
+        if (!self::connect()->setnx($key, time())) {
+            return false;
+        }
 
         self::connect()->expire($key, $life);
         self::$lock[] = &$key;
@@ -117,7 +122,9 @@ class redis_lock extends redis
      */
     private static function clear(): void
     {
-        if (empty(self::$lock)) return;
+        if (empty(self::$lock)) {
+            return;
+        }
 
         //Delete locks
         call_user_func_array([self::connect(), 'del'], self::$lock);

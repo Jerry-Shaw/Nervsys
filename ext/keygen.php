@@ -46,7 +46,10 @@ class keygen implements key
     {
         $keys = [];
         $keys['key'] = &$key;
-        $keys['iv'] = 0 === ord(substr($key, 0, 1)) & 1 ? substr($key, 0, 16) : substr($key, -16, 16);
+
+        $keys['iv'] = 0 === ord(substr($key, 0, 1)) & 1
+            ? substr($key, 0, 16)
+            : substr($key, -16, 16);
 
         unset($key);
         return $keys;
@@ -65,7 +68,11 @@ class keygen implements key
 
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, 0, 1);
-            if ($k & 1 !== ord($unit_key) & 1) $v = strrev($v);
+
+            if ($k & 1 !== ord($unit_key) & 1) {
+                $v = strrev($v);
+            }
+
             $unit[$k] = $v . $unit_key;
         }
 
@@ -89,6 +96,7 @@ class keygen implements key
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
+
             $unit[$k] = ($k & 1 !== ord($unit_key) & 1) ? strrev($unit_item) : $unit_item;
         }
 

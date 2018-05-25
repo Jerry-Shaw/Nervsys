@@ -45,6 +45,7 @@ class memcached
         $mem->addServer(self::$host, self::$port);
         $mem->setOption($mem::OPT_COMPRESSION, self::$compress);
         $mem->setOption($mem::OPT_CONNECT_TIMEOUT, self::$timeout * 1000);
+
         if ($mem->getStats() === false) {
             throw new \Exception('Memcached: Connection failed!');
         }
@@ -65,6 +66,7 @@ class memcached
         self::$memcached = ('' === $name)
             ? (self::$memcached ?? self::creat())
             : (self::$pool[$name] = self::$pool[$name] ?? self::creat());
+
         return self::$memcached;
     }
 

@@ -69,14 +69,21 @@ class socket
         $param = self::param($proto, $host);
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
-        if (false === $socket) throw new \Exception('Server ERROR!');
+        if (false === $socket) {
+            throw new \Exception('Server ERROR!');
+        }
 
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, ['sec' => self::$timeout, 'usec' => 0]);
         socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => self::$timeout, 'usec' => 0]);
 
-        if (!socket_bind($socket, $host, $port)) throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($socket)));
-        if ('udp' !== $proto && !socket_listen($socket)) throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($socket)));
+        if (!socket_bind($socket, $host, $port)) {
+            throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($socket)));
+        }
+
+        if ('udp' !== $proto && !socket_listen($socket)) {
+            throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($socket)));
+        }
 
         $block ? socket_set_block($socket) : socket_set_nonblock($socket);
 
@@ -101,7 +108,9 @@ class socket
         $param = self::param($proto, $host);
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
-        if (false === $socket) throw new \Exception('Client ERROR!');
+        if (false === $socket) {
+            throw new \Exception('Client ERROR!');
+        }
 
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, ['sec' => self::$timeout, 'usec' => 0]);
@@ -109,7 +118,9 @@ class socket
 
         if ($broadcast) socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1);
 
-        if ('udp' !== $proto && !socket_connect($socket, $host, $port)) throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($socket)));
+        if ('udp' !== $proto && !socket_connect($socket, $host, $port)) {
+            throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($socket)));
+        }
 
         $block ? socket_set_block($socket) : socket_set_nonblock($socket);
 
@@ -133,7 +144,10 @@ class socket
         $read[] = self::$sock;
 
         $watch = socket_select($read, $write, $except, $timeout);
-        if (false === $watch) $read = $write = [];
+
+        if (false === $watch) {
+            $read = $write = [];
+        }
 
         unset($timeout, $except);
         return (int)$watch;
@@ -164,7 +178,9 @@ class socket
      */
     public static function read($socket, int $size = 4096, int $flags = 0): string
     {
-        'udp' === self::$type ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port) : socket_recv($socket, $msg, $size, $flags);
+        'udp' === self::$type
+            ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port)
+            : socket_recv($socket, $msg, $size, $flags);
 
         unset($socket, $size, $flags);
         return trim((string)$msg);
@@ -185,7 +201,10 @@ class socket
     {
         $data .= PHP_EOL;
         $size = strlen($data);
-        $send = 'udp' === self::$type ? socket_sendto($socket, $data, $size, $flags, $host, $port) : socket_send($socket, $data, $size, $flags);
+
+        $send = 'udp' === self::$type
+            ? socket_sendto($socket, $data, $size, $flags, $host, $port)
+            : socket_send($socket, $data, $size, $flags);
 
         unset($socket, $data, $host, $port, $flags);
         return $size === $send;

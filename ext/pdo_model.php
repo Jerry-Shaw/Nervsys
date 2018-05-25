@@ -37,11 +37,18 @@ class pdo_model extends pdo
     private static function get_table(string $class): string
     {
         //Read "db" setting
-        if (isset($class::$db)) parent::connect($class::$db);
+        if (isset($class::$db)) {
+            parent::connect($class::$db);
+        }
 
         //Read "table" setting
-        if (isset(self::$pool[$class])) return self::$pool[$class];
-        if (isset($class::$table)) return self::$pool[$class] = $class::$table;
+        if (isset(self::$pool[$class])) {
+            return self::$pool[$class];
+        }
+
+        if (isset($class::$table)) {
+            return self::$pool[$class] = $class::$table;
+        }
 
         //Set table based on class name
         return self::$pool[$class] = strstr($class, '\\', true) . str_replace('\\', '_', strrchr($class, '\\'));;

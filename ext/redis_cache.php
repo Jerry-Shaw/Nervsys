@@ -57,10 +57,16 @@ class redis_cache extends redis
     public static function get(string $name): array
     {
         $cache = self::connect()->get(self::$prefix . $name);
-        if (false === $cache) return [];
+
+        if (false === $cache) {
+            return [];
+        }
 
         $data = json_decode($cache, true);
-        if (!is_array($data)) return [];
+
+        if (!is_array($data)) {
+            return [];
+        }
 
         unset($name, $cache);
         return $data;

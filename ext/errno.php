@@ -49,18 +49,21 @@ class errno
         $file = '/' . $module . '/' . self::$dir . '/' . $file . '.ini';
 
         $path = realpath(ROOT . $file);
+
         if (false === $path) {
-            debug(__CLASS__, '[' . $file . '] NOT found!');
+            trigger_error('[' . $file . '] NOT found!', E_USER_NOTICE);
             return;
         }
 
         $error = parse_ini_file($path, false);
+
         if (false === $error) {
-            debug(__CLASS__, '[' . $file . '] Incorrect!');
+            trigger_error('[' . $file . '] ERROR!', E_USER_WARNING);
             return;
         }
 
         self::$pool += $error;
+
         unset($module, $file, $path, $error);
     }
 

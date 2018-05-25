@@ -109,12 +109,20 @@ class http
         $unit = parse_url($url);
 
         //Check main components
-        if (false === $unit || !isset($unit['scheme']) || !isset($unit['host'])) return [];
+        if (false === $unit || !isset($unit['scheme']) || !isset($unit['host'])) {
+            return [];
+        }
 
         //Prepare URL unit
-        if (!isset($unit['path'])) $unit['path'] = '/';
+        if (!isset($unit['path'])) {
+            $unit['path'] = '/';
+        }
+
         $unit['query'] = !isset($unit['query']) ? '' : '?' . $unit['query'];
-        if (!isset($unit['port'])) $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+
+        if (!isset($unit['port'])) {
+            $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
+        }
 
         unset($url);
         return $unit;
@@ -144,14 +152,26 @@ class http
 
         unset($unit);
 
-        if ('' !== self::$ETag) $header[] = 'If-None-Match: ' . self::$ETag;
-        if ('' !== self::$Cookie) $header[] = 'Cookie: ' . self::$Cookie;
-        if ('' !== self::$Modified) $header[] = 'If-Modified-Since: ' . self::$Modified;
+        if ('' !== self::$ETag) {
+            $header[] = 'If-None-Match: ' . self::$ETag;
+        }
 
-        if (empty(self::$Header)) return $header;
+        if ('' !== self::$Cookie) {
+            $header[] = 'Cookie: ' . self::$Cookie;
+        }
+
+        if ('' !== self::$Modified) {
+            $header[] = 'If-Modified-Since: ' . self::$Modified;
+        }
+
+        if (empty(self::$Header)) {
+            return $header;
+        }
 
         //Prepare other Header content
-        foreach (self::$Header as $key => $value) $header[] = $key . ': ' . $value;
+        foreach (self::$Header as $key => $value) {
+            $header[] = $key . ': ' . $value;
+        }
 
         unset($key, $value);
         return $header;
@@ -185,17 +205,45 @@ class http
         $opt[CURLOPT_USERAGENT] = self::$user_agent;
         $opt[CURLOPT_CUSTOMREQUEST] = self::$Method;
 
-        if (!self::$with_body) $opt[CURLOPT_NOBODY] = true;
-        if (self::$with_header) $opt[CURLOPT_HEADER] = true;
+        if (!self::$with_body) {
+            $opt[CURLOPT_NOBODY] = true;
+        }
 
-        if ('' !== self::$Cookie) $opt[CURLOPT_COOKIE] = self::$Cookie;
-        if ('' !== self::$Referer) $opt[CURLOPT_REFERER] = self::$Referer;
-        if ('' !== self::$ssl_key) $opt[CURLOPT_SSLKEY] = self::$ssl_key;
-        if ('' !== self::$ssl_cert) $opt[CURLOPT_SSLCERT] = self::$ssl_cert;
-        if ('' !== self::$user_pwd) $opt[CURLOPT_USERPWD] = self::$user_pwd;
+        if (self::$with_header) {
+            $opt[CURLOPT_HEADER] = true;
+        }
 
-        if ('POST' === self::$Method) $opt[CURLOPT_POST] = true;
-        if (!empty(self::$data)) $opt[CURLOPT_POSTFIELDS] = !self::$send_payload ? (empty(self::$file) ? http_build_query(self::$data) : self::$data) : json_encode(self::$data, JSON_OPT);
+        if ('' !== self::$Cookie) {
+            $opt[CURLOPT_COOKIE] = self::$Cookie;
+        }
+
+        if ('' !== self::$Referer) {
+            $opt[CURLOPT_REFERER] = self::$Referer;
+        }
+
+        if ('' !== self::$ssl_key) {
+            $opt[CURLOPT_SSLKEY] = self::$ssl_key;
+        }
+
+        if ('' !== self::$ssl_cert) {
+            $opt[CURLOPT_SSLCERT] = self::$ssl_cert;
+        }
+
+        if ('' !== self::$user_pwd) {
+            $opt[CURLOPT_USERPWD] = self::$user_pwd;
+        }
+
+        if ('POST' === self::$Method) {
+            $opt[CURLOPT_POST] = true;
+        }
+
+        if (!empty(self::$data)) {
+            $opt[CURLOPT_POSTFIELDS] = !self::$send_payload
+                ? (empty(self::$file)
+                    ? http_build_query(self::$data)
+                    : self::$data)
+                : json_encode(self::$data, JSON_OPT);
+        }
 
         //Follow settings
         if (0 < self::$max_follow) {
@@ -208,6 +256,7 @@ class http
 
         //Merge CURL
         self::$curl[$url] = &$curl;
+
         unset($url, $port, $header, $opt, $curl);
     }
 
@@ -219,7 +268,9 @@ class http
     private static function curl_run(): array
     {
         //No CURL resource
-        if (empty(self::$curl)) return [];
+        if (empty(self::$curl)) {
+            return [];
+        }
 
         //Run CURL
         if (1 === count(self::$curl)) {
@@ -232,7 +283,9 @@ class http
             $curl = curl_multi_init();
 
             //Add handles
-            foreach (self::$curl as $url => $res) curl_multi_add_handle($curl, $res);
+            foreach (self::$curl as $url => $res) {
+                curl_multi_add_handle($curl, $res);
+            }
 
             //execute handles
             while (CURLM_OK === curl_multi_exec($curl, $running) && 0 < $running) ;
@@ -267,26 +320,37 @@ class http
     {
         //Check URL
         if (!self::chk_url()) {
-            debug(__CLASS__, 'No URL entry or URL ERROR!');
+            trigger_error('No URL entry or URL ERROR!', E_USER_NOTICE);
             return [];
         }
 
         //Correct Method
-        if ('GET' === self::$Method && !empty(self::$data)) self::$Method = 'POST';
+        if ('GET' === self::$Method && !empty(self::$data)) {
+            self::$Method = 'POST';
+        }
 
         //Merge URL
         $list = is_string(self::$url) ? [self::$url] : self::$url;
 
         //Choose Content-Type
-        if (!self::$send_payload) self::$content_type = 'application/x-www-form-urlencoded';
+        if (!self::$send_payload) {
+            self::$content_type = 'application/x-www-form-urlencoded';
+        }
 
         //Prepare CURL
         foreach ($list as $url) {
             //No URL
-            if ('' === $url) continue;
+            if ('' === $url) {
+                continue;
+            }
+
             //Get URL unit
             $unit = self::get_unit($url);
-            if (empty($unit)) continue;
+
+            if (empty($unit)) {
+                continue;
+            }
+
             //Get CURL ready
             self::curl_ready($url, $unit['port'], self::get_header($unit));
         }
@@ -305,20 +369,20 @@ class http
     {
         //Check URL
         if (!self::chk_url()) {
-            debug(__CLASS__, 'No URL entry or URL ERROR!');
+            trigger_error('No URL entry or URL ERROR!', E_USER_NOTICE);
             return [];
         }
 
         //Check Method
         if (!in_array(self::$Method, ['POST', 'PUT'], true)) {
-            debug(__CLASS__, 'Method NOT allowed!');
+            trigger_error('Method NOT allowed!', E_USER_NOTICE);
             return [];
         }
 
         //Validate files
         foreach (self::$file as $key => $item) {
             if (!is_file($item)) {
-                debug(__CLASS__, '[' . $item . '] NOT found!');
+                trigger_error('[' . $item . '] NOT found!', E_USER_NOTICE);
                 unset(self::$file[$key]);
                 continue;
             }
@@ -328,7 +392,7 @@ class http
 
         //Check files
         if (empty(self::$file)) {
-            debug(__CLASS__, 'No file to upload!');
+            trigger_error('No file to upload!', E_USER_NOTICE);
             return [];
         }
 
@@ -336,15 +400,24 @@ class http
         $list = is_string(self::$url) ? [self::$url] : self::$url;
 
         //Choose Content-Type
-        if (!self::$send_payload) self::$content_type = 'multipart/form-data';
+        if (!self::$send_payload) {
+            self::$content_type = 'multipart/form-data';
+        }
 
         //Prepare CURL
         foreach ($list as $url) {
             //No URL
-            if ('' === $url) continue;
+            if ('' === $url) {
+                continue;
+            }
+
             //Get URL unit
             $unit = self::get_unit($url);
-            if (empty($unit)) continue;
+
+            if (empty($unit)) {
+                continue;
+            }
+
             //Get CURL ready
             self::curl_ready($url, $unit['port'], self::get_header($unit));
         }

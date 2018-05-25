@@ -110,31 +110,41 @@ class upload
         errno::load('ext', 'upload');
 
         //File not exist
-        if (!isset($_FILES[$name]) || empty($_FILES[$name])) return errno::get(1007, 1);
+        if (!isset($_FILES[$name]) || empty($_FILES[$name])) {
+            return errno::get(1007, 1);
+        }
 
         //Copy file
         $file = &$_FILES[$name];
 
         //Upload failed when uploading, returned from server
-        if (0 !== $file['error']) return self::get_error($file['error']);
+        if (0 !== $file['error']) {
+            return self::get_error($file['error']);
+        }
 
         //Get file size
         $file_size = self::chk_size($file['size']);
 
         //File too large
-        if (0 === $file_size) return errno::get(1004, 1);
+        if (0 === $file_size) {
+            return errno::get(1004, 1);
+        }
 
         //Check file extension
         $file_ext = self::chk_ext($file['name']);
 
         //Extension not allowed
-        if ('' === $file_ext) return errno::get(1003, 1);
+        if ('' === $file_ext) {
+            return errno::get(1003, 1);
+        }
 
         //Get upload path
         $save_path = file::get_path(self::$path_save, self::$path_root, self::$path_mode);
 
         //Upload path Error
-        if ('' === $save_path) return errno::get(1002, 1);
+        if ('' === $save_path) {
+            return errno::get(1002, 1);
+        }
 
         //Get file name
         $save_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
@@ -143,7 +153,9 @@ class upload
         $url = self::save_file($file['tmp_name'], $save_path, $save_name . '.' . $file_ext);
 
         //Failed to move/copy from tmp file
-        if ('' === $url) return errno::get(1001, 1);
+        if ('' === $url) {
+            return errno::get(1001, 1);
+        }
 
         //Upload done
         $result = errno::get(1000, 0);
@@ -175,7 +187,9 @@ class upload
         $data_pos = strpos($base64, ';base64,');
 
         //MIME-Type not allowed
-        if (false === $data_pos || 0 !== strpos($base64, 'data:')) return errno::get(1003, 1);
+        if (false === $data_pos || 0 !== strpos($base64, 'data:')) {
+            return errno::get(1003, 1);
+        }
 
         //Get MIME-Type
         $mime_type = (string)substr($base64, 5, $data_pos - 5);
@@ -187,25 +201,33 @@ class upload
         $file_ext = self::chk_ext($file_ext);
 
         //Extension not allowed
-        if ('' === $file_ext) return errno::get(1003, 1);
+        if ('' === $file_ext) {
+            return errno::get(1003, 1);
+        }
 
         //Get binary data
         $binary_data = base64_decode(substr($base64, $data_pos + 8));
 
         //Image data error
-        if (false === $binary_data) return errno::get(1006, 1);
+        if (false === $binary_data) {
+            return errno::get(1006, 1);
+        }
 
         //Get file size
         $file_size = self::chk_size(strlen($binary_data));
 
         //File too large
-        if (0 === $file_size) return errno::get(1004, 1);
+        if (0 === $file_size) {
+            return errno::get(1004, 1);
+        }
 
         //Get upload path
         $save_path = file::get_path(self::$path_save, self::$path_root, self::$path_mode);
 
         //Upload path Error
-        if ('' === $save_path) return errno::get(1002, 1);
+        if ('' === $save_path) {
+            return errno::get(1002, 1);
+        }
 
         //Get file name
         $save_name = '' !== self::$file_name ? self::$file_name : hash('md5', uniqid(mt_rand(), true));
@@ -216,13 +238,17 @@ class upload
         $file_path = self::$path_root . $url_path;
 
         //Delete existing file
-        if (is_file($file_path)) unlink($file_path);
+        if (is_file($file_path)) {
+            unlink($file_path);
+        }
 
         //Write to file
         $save_file = (int)file_put_contents($file_path, $binary_data);
 
         //File write failed
-        if (0 === $save_file) return errno::get(1001, 1);
+        if (0 === $save_file) {
+            return errno::get(1001, 1);
+        }
 
         //Set file permissions
         chmod($file_path, self::$file_mode);
@@ -260,7 +286,13 @@ class upload
     {
         //Check allowed extensions
         $ext = !isset(self::MIME[$name]) ? file::get_ext($name) : $name;
-        if ((!empty(self::$allowed) && !in_array($ext, self::$allowed, true)) || (empty(self::$allowed) && !isset(self::MIME[$ext]))) $ext = '';
+
+        if (
+            (!empty(self::$allowed) && !in_array($ext, self::$allowed, true))
+            || (empty(self::$allowed) && !isset(self::MIME[$ext]))
+        ) {
+            $ext = '';
+        }
 
         unset($name);
         return $ext;
@@ -283,7 +315,9 @@ class upload
         $file_path = self::$path_root . $url_path;
 
         //Delete existing file
-        if (is_file($file_path)) unlink($file_path);
+        if (is_file($file_path)) {
+            unlink($file_path);
+        }
 
         //Move tmp file
         if (move_uploaded_file($tmp_name, $file_path)) {

@@ -57,12 +57,16 @@ class mpc
         self::$jobs = [];
 
         //Get php cli cmd
-        if ('' !== self::$php_exe) return;
+        if ('' !== self::$php_exe) {
+            return;
+        }
 
         //Get command
         $php_exe = config::$CLI[self::$php_key] ?? '';
 
-        '' !== $php_exe ? self::$php_exe = '"' . $php_exe . '"' : trigger_error('[' . self::$php_key . '] NOT found!', E_USER_ERROR);
+        '' !== $php_exe
+            ? self::$php_exe = '"' . $php_exe . '"'
+            : trigger_error('[' . self::$php_key . '] NOT found!', E_USER_ERROR);
 
         unset($php_exe);
     }
@@ -87,23 +91,34 @@ class mpc
     public static function commit(): array
     {
         //Empty job
-        if (empty(self::$jobs)) return [];
+        if (empty(self::$jobs)) {
+            return [];
+        }
 
         //Split jobs
         $job_pack = count(self::$jobs) < self::$max_runs ? [self::$jobs] : array_chunk(self::$jobs, self::$max_runs, true);
 
         //Build command
         self::$mpc_cmd = self::$php_exe . ' "' . ROOT . '/api.php"';
-        if (self::$wait) self::$mpc_cmd .= ' --ret';
-        if (0 < self::$read_time) self::$mpc_cmd .= ' --time ' . self::$read_time;
+
+        if (self::$wait) {
+            self::$mpc_cmd .= ' --ret';
+        }
+
+        if (0 < self::$read_time) {
+            self::$mpc_cmd .= ' --time ' . self::$read_time;
+        }
 
         $result = [];
 
         foreach ($job_pack as $jobs) {
             //Execute process
             $data = self::execute($jobs);
+
             //Merge result
-            if (!empty($data)) $result += $data;
+            if (!empty($data)) {
+                $result += $data;
+            }
         }
 
         unset($job_pack, $jobs, $data);
@@ -126,7 +141,10 @@ class mpc
         //Start process
         foreach ($jobs as $key => $item) {
             $cmd = self::$mpc_cmd . ' --cmd "' . $item['cmd'] . '"';
-            if (!empty($item['arg'])) $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
+
+            if (!empty($item['arg'])) {
+                $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
+            }
 
             //Create process
             $process = proc_open($cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
@@ -137,7 +155,7 @@ class mpc
                 $resource[$key]['pipe'] = $pipes;
                 $resource[$key]['proc'] = $process;
             } else {
-                debug(__CLASS__, 'Access denied or [' . $item['cmd'] . '] ERROR!');
+                trigger_error('Access denied or command ERROR!', E_USER_ERROR);
                 $resource[$key]['exec'] = false;
             }
         }
@@ -145,8 +163,13 @@ class mpc
         unset($jobs, $key, $item, $cmd, $pipes);
 
         //Check wait options
-        if (!self::$wait) return [];
-        if (0 < self::$wait_time) usleep(self::$wait_time);
+        if (!self::$wait) {
+            return [];
+        }
+
+        if (0 < self::$wait_time) {
+            usleep(self::$wait_time);
+        }
 
         //Collect result
         $result = self::collect($resource);
@@ -184,7 +207,10 @@ class mpc
                 //Unset finished process
                 if (feof($item['pipe'][1])) {
                     //Close pipes & process
-                    foreach ($item['pipe'] as $pipe) fclose($pipe);
+                    foreach ($item['pipe'] as $pipe) {
+                        fclose($pipe);
+                    }
+
                     proc_close($item['proc']);
 
                     unset($resource[$key]);
@@ -198,7 +224,9 @@ class mpc
 
         //Process data
         foreach ($result as $key => $item) {
-            if ('' === $item['data']) continue;
+            if ('' === $item['data']) {
+                continue;
+            }
 
             $json = json_decode($item['data'], true);
             $result[$key]['data'] = !is_null($json) ? $json : $item['data'];

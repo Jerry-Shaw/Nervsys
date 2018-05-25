@@ -56,7 +56,7 @@ class operator
         //Build order list
         self::build_order();
 
-        //Run cmd
+        //Process orders
         foreach (self::$order as $method) {
             //Get class name
             $name = array_shift($method);
@@ -148,6 +148,7 @@ class operator
      */
     public static function run_cli(): void
     {
+        //Process orders
         foreach (order::$cmd_cli as $key => $cmd) {
             //Prepare command
             $command = '"' . $cmd . '"';
@@ -182,7 +183,9 @@ class operator
             }
 
             //Close pipes (ignore process)
-            foreach ($pipes as $pipe) fclose($pipe);
+            foreach ($pipes as $pipe) {
+                fclose($pipe);
+            }
         }
 
         unset($key, $cmd, $command, $process, $pipes, $pipe);

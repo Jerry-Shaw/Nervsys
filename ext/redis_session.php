@@ -34,7 +34,9 @@ class redis_session extends redis
      */
     public static function start(): void
     {
-        if (PHP_SESSION_ACTIVE === session_status()) return;
+        if (PHP_SESSION_ACTIVE === session_status()) {
+            return;
+        }
 
         //Setup Session GC config
         ini_set('session.gc_divisor', 100);

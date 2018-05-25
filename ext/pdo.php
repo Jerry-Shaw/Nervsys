@@ -124,8 +124,13 @@ class pdo
 
             self::$connect = null;
         } else {
-            if (!isset(self::$pool[$name])) return;
-            if (self::$connect === self::$pool[$name]) self::$connect = null;
+            if (!isset(self::$pool[$name])) {
+                return;
+            }
+
+            if (self::$connect === self::$pool[$name]) {
+                self::$connect = null;
+            }
 
             self::$pool[$name] = null;
             unset(self::$pool[$name]);

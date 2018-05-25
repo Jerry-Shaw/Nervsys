@@ -62,7 +62,11 @@ class crypt_code extends crypt
     private static function gen_num(): array
     {
         $result = [];
-        for ($i = 0; $i < self::$count; ++$i) $result['char'][] = (string)mt_rand(0, 9);
+
+        for ($i = 0; $i < self::$count; ++$i) {
+            $result['char'][] = (string)mt_rand(0, 9);
+        }
+
         $result['code'] = implode($result['char']);
 
         unset($i);
@@ -102,6 +106,7 @@ class crypt_code extends crypt
                     $res = $num_1 + $num_2;
                     break;
             }
+
             unset($num_1, $opt, $num_2);
             return $res;
         };
@@ -143,7 +148,11 @@ class crypt_code extends crypt
         $result = [];
 
         $list = range('A', 'Z');
-        for ($i = 0; $i < self::$count; ++$i) $result['char'][] = $list[mt_rand(0, 25)];
+
+        for ($i = 0; $i < self::$count; ++$i) {
+            $result['char'][] = $list[mt_rand(0, 25)];
+        }
+
         $result['code'] = implode($result['char']);
 
         unset($i);
@@ -158,7 +167,9 @@ class crypt_code extends crypt
     public static function get(): array
     {
         //Check Auth Code type
-        if (!in_array(self::$type, ['any', 'num', 'calc', 'word'], true)) self::$type = 'any';
+        if (!in_array(self::$type, ['any', 'num', 'calc', 'word'], true)) {
+            self::$type = 'any';
+        }
 
         //Generate Auth Code
         $codes = forward_static_call([__CLASS__, 'gen_' . self::$type]);
@@ -180,8 +191,8 @@ class crypt_code extends crypt
         $image = imagecreate(self::$width, self::$height);
 
         if (false === $image) {
-            debug(__CLASS__, 'Auth Code Image create failed!');
-            return ['err' => 1, 'msg' => 'Image create failed!'];
+            trigger_error('Auth Code Image create failed!', E_USER_ERROR);
+            return ['err' => 1, 'msg' => 'Auth Code Image create failed!'];
         }
 
         //Fill image in white
@@ -192,24 +203,55 @@ class crypt_code extends crypt
         //Generator random colors
         for ($i = 0; $i < 255; ++$i) {
             $color = imagecolorallocate($image, mt_rand(0, 180), mt_rand(0, 180), mt_rand(0, 180));
-            if (false !== $color) $colors[] = $color;
+
+            if (false !== $color) {
+                $colors[] = $color;
+            }
         }
 
         $color_index = count($colors) - 1;
 
         //Draw text
         foreach ($codes['char'] as $text) {
-            imagettftext($image, (int)($font_size * mt_rand(88, 112) / 100), mt_rand(-18, 18), $left_padding, $top_padding, $colors[mt_rand(0, $color_index)], $font_file, $text);
+            imagettftext(
+                $image,
+                (int)($font_size * mt_rand(88, 112) / 100),
+                mt_rand(-18, 18),
+                $left_padding,
+                $top_padding,
+                $colors[mt_rand(0, $color_index)],
+                $font_file,
+                $text
+            );
+
             $left_padding += $font_size;
         }
 
         unset($codes['char'], $text);
 
         //Draw arcs
-        for ($i = 0; $i < 5; ++$i) imagearc($image, mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, self::$width), mt_rand(0, self::$height), mt_rand(0, 360), mt_rand(0, 360), $colors[mt_rand(0, $color_index)]);
+        for ($i = 0; $i < 5; ++$i) {
+            imagearc(
+                $image,
+                mt_rand(0, self::$width),
+                mt_rand(0, self::$height),
+                mt_rand(0, self::$width),
+                mt_rand(0, self::$height),
+                mt_rand(0, 360),
+                mt_rand(0, 360),
+                $colors[mt_rand(0, $color_index)]
+            );
+        }
 
         //Draw pixels
-        for ($i = 0; $i < 500; ++$i) imagesetpixel($image, mt_rand(0, self::$width), mt_rand(0, self::$height), $colors[mt_rand(0, $color_index)]);
+        for ($i = 0; $i < 500; ++$i) {
+            imagesetpixel(
+                $image,
+                mt_rand(0, self::$width),
+                mt_rand(0, self::$height),
+                $colors[mt_rand(0, $color_index)]
+            );
+        }
 
         unset($colors, $color_index, $i);
 
@@ -243,10 +285,16 @@ class crypt_code extends crypt
     public static function valid(string $code, string $input): bool
     {
         $res = parent::verify($code);
-        if ('' === $res) return false;
+
+        if ('' === $res) {
+            return false;
+        }
 
         $json = json_decode($res, true);
-        if (is_null($json) || !isset($json['life']) || !isset($json['code'])) return false;
+
+        if (is_null($json) || !isset($json['life']) || !isset($json['code'])) {
+            return false;
+        }
 
         $result = $json['life'] > time() && $json['code'] === strtoupper($input) ? true : false;
 

@@ -23,6 +23,8 @@ namespace ext;
 
 use core\handler\platform;
 
+use core\pool\config;
+
 class redis_queue extends redis
 {
     /**
@@ -78,10 +80,15 @@ class redis_queue extends redis
      */
     private static function get_keys(string $key): array
     {
-        if (!self::connect()->exists($key)) return [];
+        if (!self::connect()->exists($key)) {
+            return [];
+        }
 
         $keys = self::connect()->hGetAll($key);
-        if (empty($keys)) return [];
+
+        if (empty($keys)) {
+            return [];
+        }
 
         foreach ($keys as $k => $v) {
             if (!self::connect()->exists($k)) {
@@ -107,7 +114,9 @@ class redis_queue extends redis
     public static function add(string $key, array $data): int
     {
         //Command should always exist
-        if (!isset($data['c']) && !isset($data['cmd'])) return 0;
+        if (!isset($data['c']) && !isset($data['cmd'])) {
+            return 0;
+        }
 
         //Queue list key
         $list_key = self::$prefix_list . $key;
@@ -132,7 +141,10 @@ class redis_queue extends redis
     public static function stop(string $key = ''): int
     {
         $process = '' === $key ? array_keys(self::show_process()) : [self::$prefix_process . $key];
-        if (empty($process)) return 0;
+
+        if (empty($process)) {
+            return 0;
+        }
 
         $result = call_user_func_array([self::connect(), 'del'], $process);
 
@@ -193,13 +205,17 @@ class redis_queue extends redis
     public static function start(): void
     {
         //Only support CLI
-        if ('cli' !== PHP_SAPI) exit;
+        if (config::$IS_CGI) {
+            exit;
+        }
 
         //Root process key
         $root_key = self::$prefix_process . 'root';
 
         //Exit when root process is running
-        if (self::connect()->exists($root_key)) exit;
+        if (self::connect()->exists($root_key)) {
+            exit;
+        }
 
         //Set lifetime
         $time_wait = (int)(self::$scan_wait / 2);
@@ -237,9 +253,14 @@ class redis_queue extends redis
                 ++$counter;
                 self::exec_queue($queue[1]);
                 self::connect()->lRem($queue[0], $queue[1]);
+
                 //Call child processes
-                if (0 === $counter % self::$max_execute && '' !== self::$cmd) self::call_process();
-            } else $counter = 0;
+                if (0 === $counter % self::$max_execute && '' !== self::$cmd) {
+                    self::call_process();
+                }
+            } else {
+                $counter = 0;
+            }
 
             //Renew root process
             $renew = self::connect()->expire($root_key, self::$scan_wait);
@@ -259,7 +280,9 @@ class redis_queue extends redis
     public static function run(): void
     {
         //Only support CLI
-        if ('cli' !== PHP_SAPI) exit;
+        if (config::$IS_CGI) {
+            exit;
+        }
 
         //Process Hash & Key
         $process_hash = hash('md5', uniqid(mt_rand(), true));
@@ -278,7 +301,9 @@ class redis_queue extends redis
             $list = self::show_queue();
 
             //Exit on no job
-            if (empty($list)) break;
+            if (empty($list)) {
+                break;
+            }
 
             //Listen
             $queue = self::connect()->brPop(array_keys($list), $time_wait);
@@ -312,7 +337,10 @@ class redis_queue extends redis
         $running = count(self::show_process());
 
         $left = self::$max_runs - $running;
-        if (0 >= $left) return;
+
+        if (0 >= $left) {
+            return;
+        }
 
         //Read queue list
         $queue = self::show_queue();
@@ -320,17 +348,25 @@ class redis_queue extends redis
         //Count jobs
         $jobs = 0;
         foreach ($queue as $key => $value) $jobs += self::connect()->lLen($key);
-        if (0 === $jobs) return;
+
+        if (0 === $jobs) {
+            return;
+        }
 
         //Count need processes
         $need = (int)(ceil($jobs / self::$max_execute) - $running);
-        if ($need > $left) $need = &$left;
+
+        if ($need > $left) {
+            $need = &$left;
+        }
 
         //Build command
         $cmd = platform::cmd_bg(platform::sys_path() . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
 
         //Run child processes
-        for ($i = 0; $i < $need; ++$i) pclose(popen($cmd, 'r'));
+        for ($i = 0; $i < $need; ++$i) {
+            pclose(popen($cmd, 'r'));
+        }
 
         unset($running, $left, $queue, $jobs, $key, $value, $need, $cmd, $i);
     }
@@ -347,8 +383,12 @@ class redis_queue extends redis
         //Execute
         exec(platform::sys_path() . ' ' . ROOT . '/api.php --ret --data "' . addcslashes($data, '"') . '"', $output);
 
+        //Collect
+        foreach ($output as $key => $value) {
+            $output[$key] = trim($value);
+        }
+
         //Check
-        foreach ($output as $key => $value) $output[$key] = trim($value);
         self::chk_queue($data, implode($output));
 
         unset($data, $output, $key, $value);
@@ -366,7 +406,9 @@ class redis_queue extends redis
     private static function chk_queue(string $data, string $result): void
     {
         //Accept empty & true
-        if ('' === $result || true === json_decode($result, true)) return;
+        if ('' === $result || true === json_decode($result, true)) {
+            return;
+        }
 
         //Save fail list
         self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => &$result]));
