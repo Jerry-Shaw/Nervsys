@@ -45,7 +45,7 @@ class setting
         $conf = parse_ini_file($path, true);
 
         if (false === $conf) {
-            trigger_error('Config file ERROR!', E_USER_NOTICE);
+            trigger_error('Config file ERROR!', E_USER_WARNING);
             return;
         }
 
