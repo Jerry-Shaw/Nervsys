@@ -1,10 +1,9 @@
 <?php
 
 /**
- * API Script
+ * API Entry
  *
- * Copyright 2016-2018 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2017-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,28 +18,65 @@
  * limitations under the License.
  */
 
+//Declare strict types
 declare(strict_types = 1);
 
-//Check Version
-if (version_compare(PHP_VERSION, '7.1.0', '<')) exit('NervSys needs PHP 7.1.0 or higher!');
+//Check PHP version
+if (version_compare(PHP_VERSION, '7.1.0', '<')) {
+    exit('NervSys needs PHP 7.1.0 or higher!');
+}
 
-//Load Basic Config
-require __DIR__ . '/core/conf.php';
+//Set time limit
+set_time_limit(0);
 
-//Load Router Config
-\core\ctr\router::load_conf();
+//Set error level
+error_reporting(E_ALL);
 
-//Load Router CORS
-\core\ctr\router::load_cors();
+//Set ignore user abort
+ignore_user_abort(true);
 
-//Load Router Parser
-\core\ctr\router::load_parser();
+//Set default timezone
+date_default_timezone_set('PRC');
 
-//Run CGI Process
-\core\ctr\router\cgi::run();
+//Set response header
+header('Content-Type: application/json; charset=utf-8');
 
-//Run CLI Process
-if ('cli' === PHP_SAPI) \core\ctr\router\cli::run();
+//Define NervSys version
+define('NS_VER', '6.0.0');
 
-//Output Result
-\core\ctr\router::output();
+//Define absolute root path
+define('ROOT', realpath(__DIR__));
+
+//Register autoload function
+spl_autoload_register(
+    static function (string $library): void
+    {
+        if (false === strpos($library, '\\')) {
+            return;
+        }
+
+        //Check library path
+        $lib_file = realpath(ROOT . DIRECTORY_SEPARATOR . strtr($library, '\\', DIRECTORY_SEPARATOR) . '.php');
+
+        if (is_string($lib_file)) {
+            require $lib_file;
+        }
+
+        unset($library, $lib_file);
+    }
+);
+
+//Set running mode
+\core\pool\config::$IS_CGI = 'cli' !== PHP_SAPI;
+
+//Set error level
+\core\handler\error::$level = (int)ini_get('error_reporting');
+
+//Start error handler
+\core\handler\error::start();
+
+//Start observer handler
+\core\handler\observer::start();
+
+//Output observer results
+echo \core\handler\observer::collect();
