@@ -163,7 +163,7 @@ class operator
             $command = '"' . $cmd . '"';
 
             //Append arguments
-            if (!empty(order::$param_cli['argv'])) {
+            if (isset(order::$param_cli['argv']) && !empty(order::$param_cli['argv'])) {
                 $command .= ' ' . implode(' ', order::$param_cli['argv']);
             }
 
@@ -176,23 +176,27 @@ class operator
             }
 
             //Send data via pipe
-            if ('' !== order::$param_cli['pipe']) {
+            if (isset(order::$param_cli['pipe']) && '' !== order::$param_cli['pipe']) {
                 fwrite($pipes[0], order::$param_cli['pipe'] . PHP_EOL);
             }
 
-            //Collect
-            $date = self::read_pipe([$process, $pipes[1]]);
+            //Collect return
+            if (isset(order::$param_cli['ret']) && order::$param_cli['ret']) {
+                $data = self::read_pipe([$process, $pipes[1]]);
 
-            //Save result
-            if ('' !== $date) {
-                unit::$result[$key] = &$date;
+                //Save result
+                if ('' !== $data) {
+                    unit::$result[$key] = &$data;
+                }
+
+                unset($data);
             }
 
             //Close pipes (ignore process)
             foreach ($pipes as $pipe) fclose($pipe);
         }
 
-        unset($key, $cmd, $command, $process, $pipes, $date, $pipe);
+        unset($key, $cmd, $command, $process, $pipes, $pipe);
     }
 
     /**
@@ -356,13 +360,15 @@ class operator
     {
         $time = 0;
         $data = '';
-        $wait = 1000;
+
+        //Set timeout
+        $timeout = order::$param_cli['time'] ?? 0;
 
         //Keep checking pipe
-        while (0 === order::$param_cli['time'] || $time <= order::$param_cli['time']) {
+        while (0 === $timeout || $time <= $timeout) {
             if (proc_get_status($resource[0])['running']) {
-                usleep($wait);
-                $time += $wait;
+                usleep(1000);
+                $time += 1000;
             } else {
                 $data = trim(stream_get_contents($resource[1]));
                 break;
@@ -370,7 +376,7 @@ class operator
         }
 
         //Return empty once elapsed time reaches the limit
-        unset($resource, $time, $wait);
+        unset($resource, $time, $timeout);
         return $data;
     }
 }
