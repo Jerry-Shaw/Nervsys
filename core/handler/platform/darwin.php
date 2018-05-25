@@ -25,11 +25,11 @@ use core\handler\platform\lib\os;
 class darwin implements os
 {
     /**
-     * Get PHP path
+     * Get PHP system path
      *
      * @throws \Exception
      */
-    public static function sys_env(): string
+    public static function sys_path(): string
     {
         exec('lsof -p ' . getmypid(), $output, $status);
 

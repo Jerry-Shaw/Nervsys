@@ -42,7 +42,7 @@ date_default_timezone_set('PRC');
 header('Content-Type: application/json; charset=utf-8');
 
 //Define NervSys version
-define('NS_VER', '6.0.0 RC');
+define('NS_VER', '6.0.0');
 
 //Define absolute root path
 define('ROOT', realpath(__DIR__));

@@ -36,10 +36,6 @@ class operator
      */
     public static function run_init(): void
     {
-        if (empty(config::$INIT)) {
-            return;
-        }
-
         foreach (config::$INIT as $key => $item) {
             $class = self::build_class($key);
             $method = is_string($item) ? [$item] : $item;
@@ -152,13 +148,7 @@ class operator
      */
     public static function run_cli(): void
     {
-        //Process order
         foreach (order::$cmd_cli as $key => $cmd) {
-            //Check observer status
-            if (observer::stop()) {
-                return;
-            }
-
             //Prepare command
             $command = '"' . $cmd . '"';
 
@@ -180,11 +170,10 @@ class operator
                 fwrite($pipes[0], order::$param_cli['pipe'] . PHP_EOL);
             }
 
-            //Collect return
+            //Collect result
             if (order::$param_cli['ret']) {
                 $data = self::read_pipe([$process, $pipes[1]]);
 
-                //Save result
                 if ('' !== $data) {
                     unit::$result[$key] = &$data;
                 }
@@ -216,16 +205,16 @@ class operator
      */
     private static function build_order(): void
     {
-        $position = 0;
+        $key = 0;
         foreach (order::$cmd_cgi as $item) {
-            if (false !== strpos($item, '/') && isset(self::$order[$position])) {
-                ++$position;
+            if (false !== strpos($item, '/') && isset(self::$order[$key])) {
+                ++$key;
             }
 
-            self::$order[$position][] = $item;
+            self::$order[$key][] = $item;
         }
 
-        unset($position, $item);
+        unset($key, $item);
     }
 
     /**
@@ -259,7 +248,7 @@ class operator
 
             //Save result (Try mapping keys)
             if (isset($result)) {
-                unit::$result[self::build_name($name, $method)] = &$result;
+                unit::$result[self::build_key($name, $method)] = &$result;
             }
         } catch (\Throwable $throwable) {
             logger::log('debug', $name . '-' . $method . ': ' . $throwable->getMessage());
@@ -267,6 +256,22 @@ class operator
         }
 
         unset($name, $class, $method, $reflect, $params, $result);
+    }
+
+    /**
+     * Build mapped key
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return string
+     */
+    private static function build_key(string $class, string $method): string
+    {
+        $key = order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method;
+
+        unset($class, $method);
+        return $key;
     }
 
     /**
@@ -286,8 +291,9 @@ class operator
             return [];
         }
 
-        //Process data
         $data = $diff = [];
+
+        //Process params
         foreach ($params as $param) {
             //Get param name
             $name = $param->getName();
@@ -324,29 +330,11 @@ class operator
 
         //Report argument missing
         if (!empty($diff)) {
-            throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']!');
+            throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']');
         }
 
         unset($reflect, $params, $diff, $param, $name);
         return $data;
-    }
-
-    /**
-     * Build mapped name
-     *
-     * @param string $class
-     * @param string $method
-     *
-     * @return string
-     */
-    private static function build_name(string $class, string $method = ''): string
-    {
-        $name = '' !== $method
-            ? (order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method)
-            : (order::$param_cgi[$class] ?? $class);
-
-        unset($class, $method);
-        return $name;
     }
 
     /**
@@ -361,7 +349,6 @@ class operator
         $timer = 0;
         $result = '';
 
-        //Keep checking pipe
         while (0 === order::$param_cli['time'] || $timer <= order::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);
@@ -372,7 +359,6 @@ class operator
             }
         }
 
-        //Return empty once elapsed time reaches the limit
         unset($process, $timer);
         return $result;
     }

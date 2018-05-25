@@ -34,6 +34,6 @@ class unit
     //Output data result
     public static $result = [];
 
-    //Operator signal value
+    //Observer signal value
     public static $signal = 0;
 }

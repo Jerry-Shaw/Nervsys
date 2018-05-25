@@ -37,20 +37,22 @@ class observer
         //Load config settings
         setting::load();
 
-        //Check CORS permission
+        //Check CORS permissions
         self::chk_cors();
 
-        //Call INIT setting functions
-        operator::run_init();
+        //Run INIT setting functions
+        if (!empty(config::$INIT)) {
+            operator::run_init();
+        }
 
         //Prepare input & cmd
         input::prep();
         cmd::prep();
 
-        //Run cgi
+        //Run cgi process
         operator::run_cgi();
 
-        //Run cli
+        //Run cli process
         if (!config::$IS_CGI) {
             operator::run_cli();
         }

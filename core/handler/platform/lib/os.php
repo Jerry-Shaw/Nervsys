@@ -23,9 +23,9 @@ namespace core\handler\platform\lib;
 interface os
 {
     /**
-     * Get PHP path
+     * Get PHP system path
      */
-    public static function sys_env(): string;
+    public static function sys_path(): string;
 
     /**
      * Get system hash

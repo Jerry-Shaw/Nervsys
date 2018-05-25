@@ -42,6 +42,8 @@ class cmd
         if (!config::$IS_CGI) {
             order::$cmd_cli = self::prep_cli($cmd);
         }
+
+        unset($cmd);
     }
 
     /**
@@ -100,7 +102,7 @@ class cmd
     {
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            config::$CLI['PHP'] = platform::sys_env();
+            config::$CLI['PHP'] = platform::sys_path();
         }
 
         //Check cli config

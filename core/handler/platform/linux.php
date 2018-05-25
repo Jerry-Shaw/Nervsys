@@ -25,9 +25,9 @@ use core\handler\platform\lib\os;
 class linux implements os
 {
     /**
-     * Get PHP path
+     * Get PHP system path
      */
-    public static function sys_env(): string
+    public static function sys_path(): string
     {
         exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
 

@@ -47,11 +47,9 @@ class input
         if ('' === order::$cmd) {
             $val = self::opt_val(unit::$data, ['cmd', 'c']);
 
-            if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-                order::$cmd = &$val['data'];
-            } else {
-                trigger_error('Command NOT found!', E_USER_ERROR);
-            }
+            $val['get'] && is_string($val['data']) && '' !== $val['data']
+                ? order::$cmd = &$val['data']
+                : trigger_error('Command NOT found!', E_USER_ERROR);
 
             unset($val);
         }

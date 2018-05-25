@@ -25,9 +25,9 @@ use core\handler\platform\lib\os;
 class winnt implements os
 {
     /**
-     * Get PHP path
+     * Get PHP system path
      */
-    public static function sys_env(): string
+    public static function sys_path(): string
     {
         exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
 

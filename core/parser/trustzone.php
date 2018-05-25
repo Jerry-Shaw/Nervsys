@@ -58,12 +58,11 @@ class trustzone
         //Compare data with TrustZone
         $inter = array_intersect($data, $param);
         $diff = array_diff($param, $inter);
-
         $failed = !empty($diff);
 
         //Report TrustZone missing
         if ($failed) {
-            logger::log('debug', $name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']!');
+            logger::log('debug', $name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']');
         }
 
         unset($name, $method, $data, $param, $inter, $diff);
@@ -87,12 +86,7 @@ class trustzone
         foreach ($cmd as $item) {
             if (false !== strpos($item, '-')) {
                 list($name, $method) = explode('-', $item, 2);
-
-                //Add order
-                $order[] = [
-                    'name'   => &$name,
-                    'method' => &$method
-                ];
+                $order[] = ['name' => &$name, 'method' => &$method];
             }
         }
 

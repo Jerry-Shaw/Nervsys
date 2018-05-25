@@ -28,9 +28,9 @@ class platform implements os
     private static $handler = '';
 
     /**
-     * Get PHP path
+     * Get PHP system path
      */
-    public static function sys_env(): string
+    public static function sys_path(): string
     {
         return forward_static_call([self::handler(), __FUNCTION__]);
     }
