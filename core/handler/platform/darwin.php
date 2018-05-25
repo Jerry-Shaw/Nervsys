@@ -39,7 +39,7 @@ class darwin implements os
 
         $node_name = null;
         foreach ($output as $item) {
-            if (substr($item, -4, 4) === '/php') {
+            if ('/php' === strrchr($item, '/')) {
                 $node_name = $item;
             }
         }

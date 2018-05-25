@@ -41,7 +41,9 @@ class observer
         self::chk_cors();
 
         //Call INIT command
-        operator::call_init();
+        if (!empty(config::$INIT)) {
+            operator::call_init();
+        }
 
         //Prepare input & cmd
         input::prep();

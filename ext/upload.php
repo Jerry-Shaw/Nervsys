@@ -172,6 +172,7 @@ class upload
      * @param string $base64
      *
      * @return array
+     * @throws \Exception
      */
     public static function base64(string $base64): array
     {

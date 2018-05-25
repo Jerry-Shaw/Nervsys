@@ -36,10 +36,6 @@ class operator
      */
     public static function call_init(): void
     {
-        if (empty(config::$INIT)) {
-            return;
-        }
-
         foreach (config::$INIT as $key => $item) {
             $class = self::build_class($key);
             $method = is_string($item) ? [$item] : $item;
@@ -55,10 +51,12 @@ class operator
     /**
      * Call LOAD command
      *
-     * @param string $key
+     * @param string $name
      */
-    private static function call_load(string $key): void
+    public static function call_load(string $name): void
     {
+        $key = strstr($name, '/', true);
+
         if (!isset(config::$LOAD[$key])) {
             return;
         }
@@ -70,7 +68,7 @@ class operator
             forward_static_call([self::build_class($k), $v]);
         }
 
-        unset($key, $cmd, $val, $k, $v);
+        unset($name, $key, $cmd, $val, $k, $v);
     }
 
     /**
@@ -88,7 +86,7 @@ class operator
             $class = self::build_class($name);
 
             //Call LOAD command
-            self::call_load(strstr($name, '/', true));
+            self::call_load($name);
 
             //Check class
             if (!class_exists($class)) {
