@@ -1,0 +1,39 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en_US\n"
+"X-Generator: Poedit 1.8.2\n"
+
+msgid "upload_done"
+msgstr "Successfully uploaded!"
+
+msgid "upload_failed"
+msgstr "Upload failed!"
+
+msgid "upload_err_format"
+msgstr "Sorry, the file format is not allowed here."
+
+msgid "upload_err_size"
+msgstr "Sorry, the file is too big to be uploaded."
+
+msgid "upload_err_path"
+msgstr "Sorry, we failed to keep your file in the right place."
+
+msgid "upload_err_crc"
+msgstr "Sorry, the file was not completely uploaded, please try again."
+
+msgid "upload_err_empty"
+msgstr "Sorry, the file you uploaded was an empty file, please check it."
+
+msgid "upload_err_receive"
+msgstr "Sorry, we failed to receive your file."
+
+msgid "upload_err_save"
+msgstr "Sorry, the file was failed to be saved."
