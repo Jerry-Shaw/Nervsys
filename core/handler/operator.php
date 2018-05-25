@@ -32,11 +32,13 @@ class operator
     private static $order = [];
 
     /**
-     * Run INIT functions
+     * Run INIT/LOAD command
+     *
+     * @param array $cmd
      */
-    public static function run_init(): void
+    public static function init_load(array $cmd): void
     {
-        foreach (config::$INIT as $key => $item) {
+        foreach ($cmd as $key => $item) {
             $class = self::build_class($key);
             $method = is_string($item) ? [$item] : $item;
 
@@ -45,7 +47,7 @@ class operator
             }
         }
 
-        unset($key, $item, $class, $method, $function);
+        unset($cmd, $key, $item, $class, $method, $function);
     }
 
     /**
@@ -61,6 +63,11 @@ class operator
             //Get class name
             $name = array_shift($method);
             $class = self::build_class($name);
+
+            //Run LOAD command
+            if (isset(config::$LOAD[$name])) {
+                self::init_load(is_array(config::$LOAD[$name]) ? config::$LOAD[$name] : [config::$LOAD[$name]]);
+            }
 
             //Check class
             if (!class_exists($class)) {

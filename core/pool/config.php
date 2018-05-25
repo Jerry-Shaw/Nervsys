@@ -27,6 +27,7 @@ class config
     public static $CLI    = [];
     public static $CORS   = [];
     public static $INIT   = [];
+    public static $LOAD   = [];
     public static $SIGNAL = [];
     public static $LOGGER = [];
 

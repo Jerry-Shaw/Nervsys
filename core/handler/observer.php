@@ -40,9 +40,9 @@ class observer
         //Check CORS permissions
         self::chk_cors();
 
-        //Run INIT setting functions
+        //Run INIT command
         if (!empty(config::$INIT)) {
-            operator::run_init();
+            operator::init_load(config::$INIT);
         }
 
         //Prepare input & cmd
