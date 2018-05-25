@@ -681,15 +681,15 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     Don't forget to use "-r" or "--ret" to capture output data.
     If time is too short to run extenal programs, use "-t ms" or "--time ms"
         
-    In CLI mode, there is a globle variable named "PHP_EXE",
+    In CLI mode, there is a globle variable named "PHP",
     with its value pointing to the running php executable path,
     which we can execute another PHP process at anytime when needed.
         
     Something we can do as follows:
-    /path/php /path/api.php -r PHP_EXE -v
-    /path/php /path/api.php -r PHP_EXE /path/api.php -r demo/demo
+    /path/php /path/api.php -r PHP -v
+    /path/php /path/api.php -r PHP /path/api.php -r demo/demo
         
-    "PHP_EXE" value can be fetched in "os::get_env()".
+    "PHP" value can be fetched in "os::get_env()".
         
     
 **Multiple commands containing both CGI and CLI**
@@ -697,7 +697,7 @@ Remember one param named "c" or "cmd", the two are equal and both reserved by Ne
     Only works under CLI executable mode.
     Simple Example:
     
-    /path/php /path/api.php -r -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-PHP_EXE -v
+    /path/php /path/api.php -r -d "var_a=a&var_b=b&var_c=c" pr_1/ctr/test_1-PHP -v
         
     
 **Chain Loading Example:**

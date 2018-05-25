@@ -37,7 +37,9 @@ class cmd
         order::$cmd_cgi = self::prep_cgi($cmd);
 
         //Prepare CLI cmd
-        order::$cmd_cli = self::prep_cli($cmd);
+        if (!config::$IS_CGI) {
+            order::$cmd_cli = self::prep_cli($cmd);
+        }
     }
 
     /**
@@ -94,14 +96,20 @@ class cmd
      */
     private static function prep_cli(array $cmd): array
     {
-        if (config::$IS_CGI || empty(config::$CLI)) {
+        //Check PHP command
+        if (in_array('PHP', $cmd, true)) {
+            config::$CLI['PHP'] = platform::sys_env();
+        }
+
+        //Check cli config
+        if (empty(config::$CLI)) {
             return [];
         }
 
         //Build cli cmd
         $order = [];
         foreach ($cmd as $item) {
-            if (isset(config::$CLI[$item])) {
+            if (isset(config::$CLI[$item]) && '' !== config::$CLI[$item]) {
                 $order[$item] = config::$CLI[$item];
             }
         }

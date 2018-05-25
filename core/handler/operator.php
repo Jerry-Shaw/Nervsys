@@ -147,10 +147,52 @@ class operator
         unset($method, $name, $class, $target_list, $target, $tz_data, $item);
     }
 
+    /**
+     * Run cli process
+     */
     public static function run_cli(): void
     {
+        //Process order
+        foreach (order::$cmd_cli as $key => $cmd) {
+            //Check observer status
+            if (observer::stop()) {
+                return;
+            }
 
+            //Prepare command
+            $command = '"' . $cmd . '"';
 
+            //Append arguments
+            if (!empty(order::$param_cli['argv'])) {
+                $command .= ' ' . implode(' ', order::$param_cli['argv']);
+            }
+
+            //Create process
+            $process = proc_open($command, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+
+            if (!is_resource($process)) {
+                logger::log('debug', $key . ' -> ' . $cmd . ': Access denied or command ERROR!');
+                continue;
+            }
+
+            //Send data via pipe
+            if ('' !== order::$param_cli['pipe']) {
+                fwrite($pipes[0], order::$param_cli['pipe'] . PHP_EOL);
+            }
+
+            //Collect
+            $date = self::read_pipe([$process, $pipes[1]]);
+
+            //Save result
+            if ('' !== $date) {
+                unit::$result[$key] = &$date;
+            }
+
+            //Close pipes (ignore process)
+            foreach ($pipes as $pipe) fclose($pipe);
+        }
+
+        unset($key, $cmd, $command, $process, $pipes, $date, $pipe);
     }
 
     /**
@@ -301,5 +343,34 @@ class operator
 
         unset($class, $method);
         return $name;
+    }
+
+    /**
+     * Get stream content
+     *
+     * @param array $resource
+     *
+     * @return string
+     */
+    private static function read_pipe(array $resource): string
+    {
+        $time = 0;
+        $data = '';
+        $wait = 1000;
+
+        //Keep checking pipe
+        while (0 === order::$param_cli['time'] || $time <= order::$param_cli['time']) {
+            if (proc_get_status($resource[0])['running']) {
+                usleep($wait);
+                $time += $wait;
+            } else {
+                $data = trim(stream_get_contents($resource[1]));
+                break;
+            }
+        }
+
+        //Return empty once elapsed time reaches the limit
+        unset($resource, $time, $wait);
+        return $data;
     }
 }
