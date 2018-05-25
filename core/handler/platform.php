@@ -56,6 +56,18 @@ class platform implements os
     }
 
     /**
+     * Build proc_open command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_proc(string $cmd): string
+    {
+        return forward_static_call([self::handler(), __FUNCTION__], $cmd);
+    }
+
+    /**
      * Get platform handler
      *
      * @return string

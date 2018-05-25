@@ -20,6 +20,8 @@
 
 namespace ext;
 
+use core\handler\platform;
+
 use core\pool\config;
 
 class mpc
@@ -147,7 +149,7 @@ class mpc
             }
 
             //Create process
-            $process = proc_open($cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+            $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
             //Store resource
             if (is_resource($process)) {

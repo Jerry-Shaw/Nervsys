@@ -159,7 +159,7 @@ class operator
             }
 
             //Create process
-            $process = proc_open($command, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+            $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
             if (!is_resource($process)) {
                 logger::log('debug', $key . ' -> ' . $cmd . ': Access denied or command ERROR!');

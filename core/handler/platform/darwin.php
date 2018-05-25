@@ -98,4 +98,16 @@ class darwin implements os
     {
         return 'open "' . $cmd . '" > /dev/null 2>/dev/null &';
     }
+
+    /**
+     * Build proc_open command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_proc(string $cmd): string
+    {
+        return $cmd;
+    }
 }

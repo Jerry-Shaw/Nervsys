@@ -89,4 +89,16 @@ class winnt implements os
     {
         return 'start "" /B ' . $cmd;
     }
+
+    /**
+     * Build proc_open command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_proc(string $cmd): string
+    {
+        return '"' . $cmd . '"';
+    }
 }
