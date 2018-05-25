@@ -20,12 +20,12 @@
 
 namespace core\handler;
 
-use core\pool\unit;
-use core\pool\config;
-
 use core\parser\cmd;
 use core\parser\input;
 use core\parser\setting;
+
+use core\pool\config;
+use core\pool\unit;
 
 class observer
 {

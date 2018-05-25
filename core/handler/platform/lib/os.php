@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Config Pool
+ * OS handler interface
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,22 +18,26 @@
  * limitations under the License.
  */
 
-namespace core\pool;
+namespace core\handler\platform\lib;
 
-class config
+interface os
 {
-    //Config settings
-    public static $CGI    = [];
-    public static $CLI    = [];
-    public static $CORS   = [];
-    public static $INIT   = [];
-    public static $LOGGER = [];
-    public static $SIGNAL = [];
+    /**
+     * Get PHP path
+     */
+    public static function sys_env(): string;
 
-    //Runtime settings
-    public static $IS_CGI   = true;
-    public static $IS_HTTPS = true;
+    /**
+     * Get system hash
+     */
+    public static function sys_hash(): string;
 
-    //Config file path
-    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'config.ini';
+    /**
+     * Build background command
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function cmd_bg(string $cmd): string;
 }

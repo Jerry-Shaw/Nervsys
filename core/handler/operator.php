@@ -20,11 +20,11 @@
 
 namespace core\handler;
 
-use core\pool\unit;
-use core\pool\order;
-use core\pool\config;
-
 use core\parser\trustzone;
+
+use core\pool\config;
+use core\pool\order;
+use core\pool\unit;
 
 class operator
 {
@@ -32,7 +32,7 @@ class operator
     private static $order = [];
 
     /**
-     * Call INIT functions
+     * Run INIT functions
      */
     public static function run_init(): void
     {
@@ -147,30 +147,10 @@ class operator
         unset($method, $name, $class, $target_list, $target, $tz_data, $item);
     }
 
-
     public static function run_cli(): void
     {
 
 
-    }
-
-
-    /**
-     * Build cgi order list
-     */
-    private static function build_order(): void
-    {
-        $position = 0;
-        foreach (order::$cmd_cgi as $item) {
-            //Move position
-            if (false !== strpos($item, '/') && isset(self::$order[$position])) {
-                ++$position;
-            }
-
-            self::$order[$position][] = $item;
-        }
-
-        unset($position, $item);
     }
 
     /**
@@ -186,21 +166,61 @@ class operator
     }
 
     /**
-     * Build mapped name
+     * Build cgi order list
+     */
+    private static function build_order(): void
+    {
+        $position = 0;
+        foreach (order::$cmd_cgi as $item) {
+            if (false !== strpos($item, '/') && isset(self::$order[$position])) {
+                ++$position;
+            }
+
+            self::$order[$position][] = $item;
+        }
+
+        unset($position, $item);
+    }
+
+    /**
+     * Build method caller
      *
+     * @param string $name
      * @param string $class
      * @param string $method
-     *
-     * @return string
      */
-    private static function build_name(string $class, string $method = ''): string
+    private static function build_caller(string $name, string $class, string $method): void
     {
-        $name = '' !== $method
-            ? (order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method)
-            : (order::$param_cgi[$class] ?? $class);
+        try {
+            //Reflection method
+            $reflect = new \ReflectionMethod($class, $method);
 
-        unset($class, $method);
-        return $name;
+            //Check visibility
+            if (!$reflect->isPublic()) {
+                throw new \Exception('NOT for public!');
+            }
+
+            //Mapping params
+            $params = self::build_argv($reflect);
+
+            //Create object
+            if (!$reflect->isStatic()) {
+                $class = unit::$object[$name] ?? unit::$object[$name] = new $class;
+            }
+
+            //Call method (with params)
+            $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
+
+            //Save result (Try mapping keys)
+            if (isset($result)) {
+                unit::$result[self::build_name($name, $method)] = &$result;
+            }
+        } catch (\Throwable $throwable) {
+            logger::log('debug', $name . '-' . $method . ': ' . $throwable->getMessage());
+            unset($throwable);
+        }
+
+        unset($name, $class, $method, $reflect, $params, $result);
     }
 
     /**
@@ -266,43 +286,20 @@ class operator
     }
 
     /**
-     * Build method caller
+     * Build mapped name
      *
-     * @param string $name
      * @param string $class
      * @param string $method
+     *
+     * @return string
      */
-    private static function build_caller(string $name, string $class, string $method): void
+    private static function build_name(string $class, string $method = ''): string
     {
-        try {
-            //Reflection method
-            $reflect = new \ReflectionMethod($class, $method);
+        $name = '' !== $method
+            ? (order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method)
+            : (order::$param_cgi[$class] ?? $class);
 
-            //Check visibility
-            if (!$reflect->isPublic()) {
-                throw new \Exception('NOT for public!');
-            }
-
-            //Mapping params
-            $params = self::build_argv($reflect);
-
-            //Create object
-            if (!$reflect->isStatic()) {
-                $class = unit::$object[$name] ?? unit::$object[$name] = new $class;
-            }
-
-            //Call method (with params)
-            $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
-
-            //Save result (Try mapping keys)
-            if (isset($result)) {
-                unit::$result[self::build_name($name, $method)] = &$result;
-            }
-        } catch (\Throwable $throwable) {
-            logger::log('debug', $name . '-' . $method . ': ' . $throwable->getMessage());
-            unset($throwable);
-        }
-
-        unset($name, $class, $method, $reflect, $params, $result);
+        unset($class, $method);
+        return $name;
     }
 }
