@@ -136,24 +136,15 @@ class input
 
         //Get pipe data value
         $val = self::opt_val($opt, ['pipe', 'p']);
-
-        if ($val['get'] && '' !== $val['data']) {
-            order::$param_cli['pipe'] = &$val['data'];
-        }
+        order::$param_cli['pipe'] = $val['get'] ? (string)$val['data'] : '';
 
         //Get pipe timeout value
         $val = self::opt_val($opt, ['time', 't']);
-
-        if ($val['get'] && is_numeric($val['data'])) {
-            order::$param_cli['time'] = (int)$val['data'];
-        }
+        order::$param_cli['time'] = $val['get'] ? (int)$val['data'] : 0;
 
         //Get return option
         $val = self::opt_val($opt, ['ret', 'r']);
-
-        if ($val['get']) {
-            order::$param_cli['ret'] = true;
-        }
+        order::$param_cli['ret'] = &$val['get'];
 
         unset($opt, $val);
         return $optind;
@@ -167,23 +158,20 @@ class input
     private static function read_argv(int $optind): void
     {
         //Extract arguments
-        $argument = array_slice($_SERVER['argv'], $optind);
+        order::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind);
 
-        if (empty($argument)) {
+        if (empty(order::$param_cli['argv'])) {
             return;
         }
 
-        //Check cmd
+        //Recheck cmd
         $value = self::opt_val(unit::$data, ['cmd', 'c']);
 
         !$value['get'] || !is_string($value['data']) || '' === $value['data']
-            ? unit::$data['cmd'] = array_shift($argument)
+            ? unit::$data['cmd'] = array_shift(order::$param_cli['argv'])
             : unit::$data[$value['key']] = &$value['data'];
 
-        //Set argument
-        if (!empty($argument)) order::$param_cli['argv'] = &$argument;
-
-        unset($optind, $argument, $value);
+        unset($optind, $value);
     }
 
     /**

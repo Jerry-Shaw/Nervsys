@@ -31,5 +31,5 @@ class order
 
     //Parameter
     public static $param_cgi = [];
-    public static $param_cli = [];
+    public static $param_cli = ['pipe' => '', 'time' => 0, 'ret' => false];
 }

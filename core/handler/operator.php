@@ -163,7 +163,7 @@ class operator
             $command = '"' . $cmd . '"';
 
             //Append arguments
-            if (isset(order::$param_cli['argv']) && !empty(order::$param_cli['argv'])) {
+            if (!empty(order::$param_cli['argv'])) {
                 $command .= ' ' . implode(' ', order::$param_cli['argv']);
             }
 
@@ -176,12 +176,12 @@ class operator
             }
 
             //Send data via pipe
-            if (isset(order::$param_cli['pipe']) && '' !== order::$param_cli['pipe']) {
+            if ('' !== order::$param_cli['pipe']) {
                 fwrite($pipes[0], order::$param_cli['pipe'] . PHP_EOL);
             }
 
             //Collect return
-            if (isset(order::$param_cli['ret']) && order::$param_cli['ret']) {
+            if (order::$param_cli['ret']) {
                 $data = self::read_pipe([$process, $pipes[1]]);
 
                 //Save result
@@ -352,31 +352,28 @@ class operator
     /**
      * Get stream content
      *
-     * @param array $resource
+     * @param array $process
      *
      * @return string
      */
-    private static function read_pipe(array $resource): string
+    private static function read_pipe(array $process): string
     {
-        $time = 0;
-        $data = '';
-
-        //Set timeout
-        $timeout = order::$param_cli['time'] ?? 0;
+        $timer = 0;
+        $result = '';
 
         //Keep checking pipe
-        while (0 === $timeout || $time <= $timeout) {
-            if (proc_get_status($resource[0])['running']) {
+        while (0 === order::$param_cli['time'] || $timer <= order::$param_cli['time']) {
+            if (proc_get_status($process[0])['running']) {
                 usleep(1000);
-                $time += 1000;
+                $timer += 1000;
             } else {
-                $data = trim(stream_get_contents($resource[1]));
+                $result = trim(stream_get_contents($process[1]));
                 break;
             }
         }
 
         //Return empty once elapsed time reaches the limit
-        unset($resource, $time, $timeout);
-        return $data;
+        unset($process, $timer);
+        return $result;
     }
 }
