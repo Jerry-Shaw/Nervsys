@@ -25,7 +25,7 @@ use core\handler\platform\lib\os;
 class platform implements os
 {
     //Platform handler
-    public static $handler = '';
+    private static $handler = '';
 
     /**
      * Get PHP path
@@ -62,14 +62,14 @@ class platform implements os
      */
     private static function handler(): string
     {
-        if ('' === self::$handler) {
-            self::$handler = '\\core\\handler\\platform\\' . strtolower(PHP_OS);
+        if ('' !== self::$handler) {
+            return self::$handler;
         }
 
-        if (!class_exists(self::$handler)) {
-            trigger_error(PHP_OS . ': OS NOT supported!', E_USER_ERROR);
-        }
+        $handler = '\\core\\handler\\platform\\' . strtolower(PHP_OS);
 
-        return self::$handler;
+        class_exists($handler) ? self::$handler = &$handler : trigger_error(PHP_OS . ': NOT supported!', E_USER_ERROR);
+
+        return $handler;
     }
 }
