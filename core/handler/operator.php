@@ -38,10 +38,7 @@ class operator
      */
     public static function init_load(array $cmd): void
     {
-        $list = is_string($cmd) ? [$cmd] : $cmd;
-
-        //Call commands
-        foreach ($list as $item) {
+        foreach ($cmd as $item) {
             list($order, $method) = explode('-', $item, 2);
             forward_static_call([self::build_class($order), $method]);
 
@@ -51,7 +48,7 @@ class operator
             }
         }
 
-        unset($cmd, $list, $item, $order, $method);
+        unset($cmd, $item, $order, $method);
     }
 
     /**
@@ -72,7 +69,7 @@ class operator
             $load_name = strstr($order, '/', true);
 
             if (isset(config::$LOAD[$load_name])) {
-                self::init_load(config::$LOAD[$load_name]);
+                self::init_load(is_string(config::$LOAD[$load_name]) ? [config::$LOAD[$load_name]] : config::$LOAD[$load_name]);
 
                 //Check observer status
                 if (observer::stop()) {
@@ -110,6 +107,7 @@ class operator
             //Get TrustZone list & function list & target list
             $tz_list = array_keys($class::$tz);
             $func_list = get_class_methods($class);
+
             $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
             unset($tz_list, $func_list, $method);
@@ -370,6 +368,7 @@ class operator
         $timer = 0;
         $result = '';
 
+        //Keep watching & reading
         while (0 === order::$param_cli['time'] || $timer <= order::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);

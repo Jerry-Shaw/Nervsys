@@ -41,7 +41,7 @@ class observer
         self::chk_cors();
 
         //Check observer status
-        if (self::stop()) {
+        if (self::stop(true)) {
             return;
         }
 
@@ -51,7 +51,7 @@ class observer
         }
 
         //Check observer status
-        if (self::stop()) {
+        if (self::stop(true)) {
             return;
         }
 
@@ -65,7 +65,7 @@ class observer
         operator::run_cgi();
 
         //Check observer status
-        if (self::stop()) {
+        if (self::stop(true)) {
             return;
         }
 
@@ -87,16 +87,22 @@ class observer
     }
 
     /**
-     * Observer stop
+     * Stop observer
+     *
+     * @param bool $log
      *
      * @return bool
      */
-    public static function stop(): bool
+    public static function stop(bool $log = false): bool
     {
         if (0 === unit::$signal) {
             return false;
         } else {
-            logger::log('info', config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
+            if ($log) {
+                //Log observer status
+                logger::log('info', config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
+            }
+
             return true;
         }
     }
