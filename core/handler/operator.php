@@ -40,9 +40,15 @@ class operator
     {
         $list = is_string($cmd) ? [$cmd] : $cmd;
 
+        //Call commands
         foreach ($list as $item) {
             list($order, $method) = explode('-', $item, 2);
             forward_static_call([self::build_class($order), $method]);
+
+            //Check observer status
+            if (observer::stop()) {
+                return;
+            }
         }
 
         unset($cmd, $list, $item, $order, $method);
@@ -67,6 +73,11 @@ class operator
 
             if (isset(config::$LOAD[$load_name])) {
                 self::init_load(config::$LOAD[$load_name]);
+
+                //Check observer status
+                if (observer::stop()) {
+                    return;
+                }
             }
 
             //Check class

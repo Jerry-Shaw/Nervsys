@@ -40,17 +40,34 @@ class observer
         //Check CORS permissions
         self::chk_cors();
 
+        //Check observer status
+        if (self::stop()) {
+            return;
+        }
+
         //Call INIT commands
         if (!empty(config::$INIT)) {
             operator::init_load(config::$INIT);
         }
 
-        //Prepare input & cmd
+        //Check observer status
+        if (self::stop()) {
+            return;
+        }
+
+        //Prepare input
         input::prep();
+
+        //Prepare cmd
         cmd::prep();
 
         //Run cgi process
         operator::run_cgi();
+
+        //Check observer status
+        if (self::stop()) {
+            return;
+        }
 
         //Run cli process
         if (!config::$IS_CGI) {
@@ -161,14 +178,15 @@ class observer
 
         if (!isset(config::$CORS[$_SERVER['HTTP_ORIGIN']])) {
             logger::log('info', 'CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
-            exit;
+            self::send(1);
         }
 
+        //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . config::$CORS[$_SERVER['HTTP_ORIGIN']]);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
+            self::send(1);
         }
     }
 }
