@@ -32,43 +32,20 @@ class operator
     private static $order = [];
 
     /**
-     * Call INIT command
-     */
-    public static function call_init(): void
-    {
-        foreach (config::$INIT as $key => $item) {
-            $class = self::build_class($key);
-            $method = is_string($item) ? [$item] : $item;
-
-            foreach ($method as $function) {
-                forward_static_call([$class, $function]);
-            }
-        }
-
-        unset($key, $item, $class, $method, $function);
-    }
-
-    /**
-     * Call LOAD command
+     * Call INIT/LOAD commands
      *
-     * @param string $name
+     * @param array $cmd
      */
-    public static function call_load(string $name): void
+    public static function init_load(array $cmd): void
     {
-        $key = strstr($name, '/', true);
+        $list = is_string($cmd) ? [$cmd] : $cmd;
 
-        if (!isset(config::$LOAD[$key])) {
-            return;
+        foreach ($list as $item) {
+            list($order, $method) = explode('-', $item, 2);
+            forward_static_call([self::build_class($order), $method]);
         }
 
-        $cmd = is_string(config::$LOAD[$key]) ? [config::$LOAD[$key]] : config::$LOAD[$key];
-
-        foreach ($cmd as $val) {
-            list($k, $v) = explode('-', $val, 2);
-            forward_static_call([self::build_class($k), $v]);
-        }
-
-        unset($name, $key, $cmd, $val, $k, $v);
+        unset($cmd, $list, $item, $order, $method);
     }
 
     /**
@@ -81,12 +58,16 @@ class operator
 
         //Process orders
         foreach (self::$order as $method) {
-            //Get class name
-            $name = array_shift($method);
-            $class = self::build_class($name);
+            //Get order class
+            $order = array_shift($method);
+            $class = self::build_class($order);
 
-            //Call LOAD command
-            self::call_load($name);
+            //Call LOAD commands
+            $load_name = strstr($order, '/', true);
+
+            if (isset(config::$LOAD[$load_name])) {
+                self::init_load(config::$LOAD[$load_name]);
+            }
 
             //Check class
             if (!class_exists($class)) {
@@ -102,7 +83,7 @@ class operator
 
             //Call "init" method
             if (method_exists($class, 'init')) {
-                self::build_caller($name, $class, 'init');
+                self::build_caller($order, $class, 'init');
 
                 //Check observer status
                 if (observer::stop()) {
@@ -129,8 +110,8 @@ class operator
 
                 //Run pre functions
                 if (!empty($tz_data['pre'])) {
-                    foreach ($tz_data['pre'] as $val) {
-                        self::build_caller($val['name'], self::build_class($val['name']), $val['method']);
+                    foreach ($tz_data['pre'] as $tz_item) {
+                        self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
 
                         //Check observer status
                         if (observer::stop()) {
@@ -140,12 +121,12 @@ class operator
                 }
 
                 //Check TrustZone
-                if (trustzone::fail($name, $target, array_keys(unit::$data), $tz_data['param'])) {
+                if (trustzone::fail($order, $target, array_keys(unit::$data), $tz_data['param'])) {
                     continue;
                 }
 
                 //Build method caller
-                self::build_caller($name, $class, $target);
+                self::build_caller($order, $class, $target);
 
                 //Check observer status
                 if (observer::stop()) {
@@ -154,8 +135,8 @@ class operator
 
                 //Run post functions
                 if (!empty($tz_data['post'])) {
-                    foreach ($tz_data['post'] as $val) {
-                        self::build_caller($val['name'], self::build_class($val['name']), $val['method']);
+                    foreach ($tz_data['post'] as $tz_item) {
+                        self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
 
                         //Check observer status
                         if (observer::stop()) {
@@ -166,7 +147,7 @@ class operator
             }
         }
 
-        unset($method, $name, $class, $target_list, $target, $tz_data, $val);
+        unset($method, $order, $class, $load_name, $target_list, $target, $tz_data, $tz_item);
     }
 
     /**
@@ -249,11 +230,11 @@ class operator
     /**
      * Build method caller
      *
-     * @param string $name
+     * @param string $order
      * @param string $class
      * @param string $method
      */
-    private static function build_caller(string $name, string $class, string $method): void
+    private static function build_caller(string $order, string $class, string $method): void
     {
         try {
             //Reflection method
@@ -269,7 +250,7 @@ class operator
 
             //Create object
             if (!$reflect->isStatic()) {
-                $class = unit::$object[$name] ?? unit::$object[$name] = new $class;
+                $class = unit::$object[$order] ?? unit::$object[$order] = new $class;
             }
 
             //Call method (with params)
@@ -277,14 +258,14 @@ class operator
 
             //Save result (Try mapping keys)
             if (isset($result)) {
-                unit::$result[self::build_key($name, $method)] = &$result;
+                unit::$result[self::build_key($order, $method)] = &$result;
             }
         } catch (\Throwable $throwable) {
-            logger::log('debug', $name . '-' . $method . ': ' . $throwable->getMessage());
+            logger::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
             unset($throwable);
         }
 
-        unset($name, $class, $method, $reflect, $params, $result);
+        unset($order, $class, $method, $reflect, $params, $result);
     }
 
     /**

@@ -82,15 +82,15 @@ class trustzone
             return [];
         }
 
-        $order = [];
+        $data = [];
         foreach ($cmd as $item) {
             if (false !== strpos($item, '-')) {
-                list($name, $method) = explode('-', $item, 2);
-                $order[] = ['name' => &$name, 'method' => &$method];
+                list($order, $method) = explode('-', $item, 2);
+                $data[] = ['order' => &$order, 'method' => &$method];
             }
         }
 
-        unset($cmd, $item, $name, $method);
-        return $order;
+        unset($cmd, $item, $order, $method);
+        return $data;
     }
 }
