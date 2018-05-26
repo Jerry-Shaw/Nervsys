@@ -14,8 +14,7 @@ At the very beginning, as we hoped. The unit could process more like a nerve cel
 * Requirements:  
 PHP7.1+ and above. Any kind of web server or running under CLI mode.  
 
-* Usage examples:
-
+* Usage examples:  
     1. Ordinary framework for Web-developing
     2. API controller for all types of Apps
     3. Client for program communication
@@ -318,8 +317,11 @@ Every class which is exposed to API should always contain a static array variabl
 Two types of $tz:  
   
 In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.  
+  
 In the example above, $tz for function "test_a" is written in simple mode, while, $tz for function "test_b" is written in full mode.  
+  
 In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when unit data structure is not matched $tz settings.  
+  
 In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.
 
 
@@ -364,7 +366,8 @@ api.php?cmd=DirA/ctr/TestA-test_a-test_b-test_c&param_a=xxx&param_b[]=yyy&param_
 Calling in MULTIPLE class:  
 api.php?cmd=DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
   
-Result: All REQUESTED functions that qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
+Result:  
+All REQUESTED functions that qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
 
 
 **Judging-Calling examples:**
@@ -375,7 +378,8 @@ api.php?cmd=DirA/ctr/TestA&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&p
 Calling in MULTIPLE class:  
 api.php?cmd=DirA/ctr/TestA-DirA/TestB&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
   
-Result: All functions IN $tz will be looked over. Those ones which qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
+Result:  
+All functions IN $tz will be looked over. Those ones which qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
 
 
 ## Command Line
