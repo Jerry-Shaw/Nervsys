@@ -28,17 +28,17 @@ use core\pool\order;
 class cmd
 {
     /**
-     * Prepare cmd
+     * Prepare CMD
      */
     public static function prep(): void
     {
-        //Extract cmd
+        //Extract CMD
         $cmd = false !== strpos(order::$cmd, '-') ? explode('-', order::$cmd) : [order::$cmd];
 
-        //Prepare CGI cmd
+        //Prepare CGI CMD
         order::$cmd_cgi = self::prep_cgi($cmd);
 
-        //Prepare CLI cmd
+        //Prepare CLI CMD
         if (!config::$IS_CGI) {
             order::$cmd_cli = self::prep_cli($cmd);
         }
@@ -47,7 +47,7 @@ class cmd
     }
 
     /**
-     * Prepare cgi cmd
+     * Prepare CGI CMD
      *
      * @param array $cmd
      *
@@ -83,7 +83,7 @@ class cmd
             }
         }
 
-        //Rebuild cgi cmd
+        //Rebuild CGI CMD
         $order = implode('-', $cmd);
         $cmd = false !== strpos($order, '-') ? explode('-', $order) : [$order];
 
@@ -92,7 +92,7 @@ class cmd
     }
 
     /**
-     * Prepare cli cmd
+     * Prepare CLI CMD
      *
      * @param array $cmd
      *
@@ -105,12 +105,12 @@ class cmd
             config::$CLI['PHP'] = platform::sys_path();
         }
 
-        //Check cli config
+        //Check CLI config
         if (empty(config::$CLI)) {
             return [];
         }
 
-        //Build cli cmd
+        //Build CLI CMD
         $order = [];
         foreach ($cmd as $item) {
             if (isset(config::$CLI[$item]) && '' !== config::$CLI[$item]) {

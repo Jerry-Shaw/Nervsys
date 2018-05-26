@@ -52,7 +52,7 @@ class platform implements os
      */
     public static function cmd_bg(string $cmd): string
     {
-        return forward_static_call([self::handler(), __FUNCTION__], $cmd);
+        return escapeshellcmd(forward_static_call([self::handler(), __FUNCTION__], $cmd));
     }
 
     /**
@@ -64,7 +64,7 @@ class platform implements os
      */
     public static function cmd_proc(string $cmd): string
     {
-        return forward_static_call([self::handler(), __FUNCTION__], $cmd);
+        return escapeshellcmd(forward_static_call([self::handler(), __FUNCTION__], $cmd));
     }
 
     /**
@@ -79,7 +79,6 @@ class platform implements os
         }
 
         $handler = '\\core\\handler\\platform\\' . strtolower(PHP_OS);
-
         class_exists($handler) ? self::$handler = &$handler : trigger_error(PHP_OS . ': NOT supported!', E_USER_ERROR);
 
         return $handler;

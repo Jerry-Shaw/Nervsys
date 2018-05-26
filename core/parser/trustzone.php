@@ -70,7 +70,7 @@ class trustzone
     }
 
     /**
-     * Prepare TrustZone cmd
+     * Prepare TrustZone CMD
      *
      * @param array $cmd
      *

@@ -1,296 +1,254 @@
 # Nervsys
 
-# NOTICE: Nervsys 6.0.0 is out. New README is under construction.
-
-# for 5.2.x, see below.
+Stable Version: 6.0.0
 
 
-[**中文文档**](https://github.com/Jerry-Shaw/NervSys/blob/master/README_zh-CN.md)  |  [**TESTS**](https://github.com/NervSys/NS-Tests)  |  [**DEMO**](https://github.com/Jerry-Shaw/NS-Demo)
+## About
+
+* What is Nervsys?
 
 A very slight framework based on PHP7.1+ for universal API controlling.  
-Requirements: PHP7.1+ and above. Any kind of web server or running under CLI mode. 
 
-It can be used as:
+* Why called "Nervsys"?
 
-    1. Normal develop framework for Web
+At the very beginning, as we hoped. The unit could process more like a nerve cell, and build together as a pure data-based calling system. Exact commands would be unnecessary to tell the system what to do.
+
+* Requirements:
+
+PHP7.1+ and above. Any kind of web server or running under CLI mode.  
+
+* Usage examples:
+
+    1. Ordinary framework for Web-developing
     2. API controller for all types of Apps
     3. Client for program communication
-    4. Or more...
-
-As normally use, it responses one result from one method to one request, just like what we do now on an ordinary web development.  
-But, it may response multiple results from multiple methods to one request, when we need it to "guess" what we need based on the data we gave. 
-
-Don't expect too much, it is just a newborn framework though~  
-Extensions in "/ext/" makes it growing. 
-
-Functional extensions (class) are considered to moved out to the third part to maintain.  
-Not only extensions, but sub-projects based on NervSys are expected.  
-Everyone can join the project. Ideas, codes, tests, suggests, supports, giving short names like "NS" or "NSys", etc...  
-
-Many thanks! 
+    4. More...
 
 
-## Structure Introduce:
+## Structure
 
-      /                                 **Root directory
-      ├─api.php                           Main entry
-      ├─README.md                         Readme
-      ├─LICENSE                           Lincese
-      ├─com/                            **For internal classes (Not decided yet)
-      ├─core/                           **Core directory
-      │     ├─cli/                      **CLI working directory
-      │     │    └─logs/                **CLI logging directory
-      │     ├─ctr/                      **Controller directory
-      │     │    ├─os/                  **OS controller directory
-      │     │    │   ├─lib/             **OS interface directory
-      │     │    │   │    └─cmd.php       OS command interface
-      │     │    │   ├─linux.php          Linux Controller
-      │     │    │   ├─winnt.php          WinNT Controller
-      │     │    │   └─(need more...)     Need more controllers
-      │     │    ├─router/              **Router directory
-      │     │    │       ├─cgi.php        CGI execution script
-      │     │    │       └─cli.php        CLI execution script
-      │     │    ├─os.php                 Main OS controller
-      │     │    └─router.php             Main Router controller
-      │     ├─config.ini                    Config file for router system
-      │     └─conf.php                    Config file for core system
-      ├─cors/                           **CORS config file directory
-      │     ├─http.domain_1.80.php        CORS config for "http://domain_1:80"
-      │     ├─http.domain_2.8080.php      CORS config for "http://domain_2:8080"
-      │     ├─https.domain_3.443.php      CORS config for "https://domain_3:443"
-      │     └─...                         More individual CORS config files
-      └─ext/                            **extension directory
-           ├─font/                      **font directory
-           ├─lib/                       **extension interface directory
-           │    └─keys.php                Cryption Key generator interface
-           ├─upload/                    **Upload extension related directory
-           │       ├─en-US/             **Upload language folder (en-US)
-           │       ├─zh-CN/             **Upload language folder (zh-CN)
-           │       └─upload.ini           Upload error code file
-           ├─crypt.php                    Encrypt/decrypt extension
-           ├─crypt_code.php               Auth Code extension
-           ├─errno.php                    Error code extension
-           ├─file.php                     Filesystem related IO extension
-           ├─http.php                     HTTP request extension
-           ├─image.php                    Image processing extension
-           ├─keygen.php                   Cryption Key generator extension
-           ├─lang.php                     Language pack extension
-           ├─mpc.php                      Multi-Process Controller Extension
-           ├─pdo.php                      PDO connector extension
-           ├─pdo_mysql.php                MySQL extension for PDO
-           ├─redis.php                    Redis connector extension
-           ├─redis_lock.php               Lock extension on Redis
-           ├─redis_queue.php              Queue extension on Redis
-           ├─redis_session.php            Session extension on Redis
-           ├─socket.php                   Socket extension
-           ├─upload.php                   Upload extension
-           └─...                          There will be more in the near future
+    /
+    ├─core/
+    │     ├─handler/
+    │     │        ├─platform/
+    │     │        │         ├─lib/
+    │     │        │         │    └─os.php      OS interface
+    │     │        │         ├─darwin.php       darwin OS handler
+    │     │        │         ├─linux.php        linux OS handler
+    │     │        │         ├─winnt.php        winnt OS handler
+    │     │        │         └─...
+    │     │        ├─error.php                  error handler
+    │     │        ├─logger.php                 logger handler
+    │     │        ├─observer.php               observer handler
+    │     │        ├─operator.php               operator handler
+    │     │        └─platform.php               platform handler
+    │     ├─parser/
+    │     │       ├─cmd.php                     command parser
+    │     │       ├─input.php                   input data parser
+    │     │       ├─setting.php                 setting config parser
+    │     │       └─trustzone.php               TrustZone data parser
+    │     ├─pool/
+    │     │     ├─config.php                    config data pool
+    │     │     ├─order.php                     cmd order pool
+    │     │     └─unit.php                      io unit data poll
+    │     └─setting.ini                         setting config file
+    └─ext/
+         ├─font/
+         ├─lib/
+         │    └─key.php                         keygen interface
+         ├─upload/
+         │       ├─en-US/                       en-US language folder for upload
+         │       ├─zh-CN/                       zh-CN language folder for upload
+         │       └─upload.ini                   error code file for upload
+         ├─crypt.php                            Encrypt/decrypt extension
+         ├─crypt_code.php                       Auth Code extension from crypt
+         ├─errno.php                            Error code extension
+         ├─file.php                             Filesystem related IO extension
+         ├─http.php                             HTTP request extension
+         ├─image.php                            Image processing extension
+         ├─keygen.php                           keygen extension for crypt
+         ├─lang.php                             Language pack extension
+         ├─memcached.php                        Memcached Extension
+         ├─mpc.php                              Multi-Process Controller Extension
+         ├─pdo.php                              PDO connector extension
+         ├─pdo_model.php                        MySQL model extension from PDO
+         ├─pdo_mysql.php                        MySQL extension from PDO
+         ├─redis.php                            Redis connector extension
+         ├─redis_cache.php                      Redis cache extension from Redis
+         ├─redis_lock.php                       Redis lock extension from Redis
+         ├─redis_queue.php                      Redis queue extension from Redis
+         ├─redis_session.php                    Redis session extension from Redis
+         ├─socket.php                           Socket extension
+         ├─upload.php                           Upload extension
+         └─...
+          
 
-Files of a project should be better containing just in one folder right under the ROOT folder.  
-Files inside a project can be placed as will. 
+## Reserved Words
+  
+CGI: c/cmd
+CLI: c/cmd, d/data, p/pipe, t/time, r/ret
+  
+The words above are reserved by NervSys core. So that, they should be taken carefully when doing API calling.
 
 
-## Key Files Introduce:
+## Config "setting.ini"
 
-****config.ini**
-    
-    There is only one "config.ini" located in the path of "/core/". 
-    It is the configuration file for the whole router system.
-    
-    Sections are as follows:
-    
-_[CGI]_
-        
+"setting.ini" locates right under "core" folder, which contains most of the important setting sections.
+
+### CGI
+
     [CGI]
-    mycmd_1 = pr_1/ctr/test_1
-    mycmd_2 = pr_1/test_2-test_a
-    mycmd_3 = pr_1/test_2-test_a-test_b
-    ...
+    This section works for CGI process.
+    This section holds all the short commands mapping values.
     
-    This part is for CGI. 
+    Example & explain:
     
-    We can put any short cmd(s) instead of the full one(s). 
-    When router runs into these command(s), 
-    the shorter one(s) will be replaced with the full one(s), 
-    then executes them. 
+    seting: MyCMD = dirA/dirB/model-func
+    usage: cmd=MyCMD
+    explain: sending "cmd" with the value "MyCMD", it will be redirected to "dirA/dirB/model-func" instead
     
-    So, make sure that, the short cmd(s) don't rush into the 
-    same name with any other functions in classes when calling.
-    Or, the action and the results would be unpredictable.
-        
-_[CLI]_   
-      
+    seting: MyCMD = dirA/dirB/model
+    usage: cmd=MyCMD-func
+    explain: sending "cmd" with the value "MyCMD-func", "MyCMD" will be replaced to "dirA/dirB/model" instead
+    
+    seting: MyCMD = dirA/dirB
+    usage: cmd=MyCMD/model-func
+    explain: sending "cmd" with the value "MyCMD-func", "MyCMD" will be replaced to "dirA/dirB" instead
+
+
+### CLI
+
     [CLI]
-    mycmd_1 = /xxx/path/mycmd
-    mycmd_2 = /xxx/path/mycmd -a -b --more
-    mycmd_3 = /xxx/path/mycmd -adata -bdata --more="data"
-    ...
+    This section works for CLI process.
+    This section holds all the valid local program commands.
     
-    This part is for CLI.
+    Example & explain:
     
-    Commands register here are allowed to be call by NervSys.
-    Otherwise, API won't execute the command and give a notice.
+    seting: MyCMD = /xxx/path/mycmd
+    usage: --cmd="MyCMD"
+    explain: sending "cmd" with the value "MyCMD", "/xxx/path/mycmd" will be called instead
     
-    Any programs in local drive can be registered.
-    Agruments can also be passed to the programs as well,
-    no matter setting in [CLI] section or entering in the cmd/shell.
-            
-_[CORS]_
+    seting: MyCMD = /xxx/path/mycmd -a -b --more
+    usage: --cmd="MyCMD"
+    explain: sending "cmd" with the value "MyCMD", "/xxx/path/mycmd -a -b --more" will be called instead
+    
+    Notice: Programs which are not configged in this section will not be called anyway.
+    
+
+### CORS
 
     [CORS]
-    http://your.domain.com:80 = X-Requested-With, Content-Type, Content-Length
-    http://your.domain.com:800 = X-Requested-With, Content-Type, Content-Length
-    https://your.domain.com:443 = X-Requested-With, Content-Type, Content-Length
-    ...
+    This section works for HTTP Request.
+    This section holds Cross-Origin Resource Sharing settings.
+    
+    Example & explain:
+    
+    seting:
+    http://your.domain.com = X-Requested-With, Content-Type, Content-Length
+    https://your.domain.com = X-Requested-With, Content-Type, Content-Length
+    http://your.domain.com:800 = X-Requested-With, Content-Type, Content-Length, Custom-Header
 
-    This is Cross-Origin Resource Sharing (CORS) config section. 
-    Local resources are allowed to be requested from another domain 
-    outside the local domain via API request by the config settings. 
+    explain:
+    All requests via ajax from the domains above in the section are allowed, with the request headers accepted.
     
-    In [CORS] section, HTTP allowed headers should be the value 
-    for every domain that is registered. 
-    Otherwise, no other requested headers will be accepted. 
     
-_[SIGNAL]_
+### INIT
+
+    [INIT]
+    This section works for all.
+    This section holds system startup initial functions.
     
+    Example & explain:
+    
+    Single setting:
+    SomeDesc = dirA/dirB/model-func
+    
+    explain: 
+    "\dirA\dirB\model::func()" will be called on startup without any agruments. 
+    
+    
+    Multiple setting:
+    DescA = dirA/dirB/model-func
+    DescB[] = dirB/dirB/model-funcA
+    DescB[] = dirB/dirB/model-funcB
+    
+    explain: 
+    "\dirA\dirB\model::func()" & "\dirB\dirB\model::funcA()" & "\dirB\dirB\model::funcB()"
+    will be called on startup without any agruments. 
+    
+    Notice: 
+    The "Desc" key in "INIT" has no means for system, but for developers to know what they are for. 
+    No agrument accepted and no returned value will be captured.
+
+    
+### LOAD
+
+    [LOAD]
+    This section works for all.
+    This section holds "/subfolder/" startup initial functions.
+    
+    Example & explain:
+    
+    Single setting:
+    dirA = dirB/model-func
+    
+    explain: 
+    "\dirB\model::func($params)" will be called only once right before calling functions under dirA. 
+    
+    
+    Multiple setting:
+    dirA = dirX/model-func
+    dirB[] = dirX/model-funcA
+    dirB[] = dirX/model-funcB
+    
+    explain: 
+    "\dirX\model::func($params)" will be called only once right before calling functions under dirA.
+    "\dirX\model::funcA($params)" & "\dirX\model::funcB($params)" will be called only once right before calling functions under dirB.
+    
+    Notice: 
+    The keys in "LOAD" section point to a subfolder, while the setting functions will be called when the folder is being accessed. 
+    Arguments are automatically accepted from API. No returned value will be captured.
+
+
+### SIGNAL
+
     [SIGNAL]
+    This section works for all.
+    This section contains custom set observer signals and messages.
+    
+    Some example:
+    
     1 = Process Terminated! Some reason...
     2 = Process Terminated! Some reason...
     3 = Process Terminated! Some reason...
     ...
     
-    This part controlls the Router Terminate Signal Messages.
-    
-    Every line should use a integer larger than 0 as the key with
-    the message as the value to tell router what happens.
-    
-    All processes will terminate when router receives a nonzero value 
-    from anywhere at anytime, called by "send_signal(int $signal)", 
-    except the function who sends the signal.
-    
-    Results that already exist will also be captured, then, output.
-    Reasons will be output in debug mode.
-
-_[Pre-Run] & [Pre-Load]_
-
-    [Pre-Run]
-    ; Run before router parser
-    ; No returned value will be captured
-    namespace/class_a[] = function_a
-    namespace/class_a[] = function_b
-    namespace/class_b = function_c
-    
-    [Pre-Load]
-    ; Run after router parser, but before other methods
-    ; All returned values will be captured by router
-    namespace/class_c[] = function_a
-    namespace/class_c[] = function_b
-    namespace/class_d = function_c
-    
-    These two sections hold the Pre-Functional Methods which run before 
-    any other methods when a request would go to. 
-    Both of them accept string and array settings. 
-    There are some some different things between the two sections.
-    
-    [Pre-Run]: Run at the very beginning, even before the data collector in Router, 
-    accept no argument, no returned will be captured.  
-    
-    [Pre-Load]: Load as normal methods, run after the data collector in Router, 
-    accept arguments, all returned will be captured. 
-    Run with other requested methods but work at the beginning. 
-    Similar as other methods, affected by TrustZone settings and input data.
+    Once when observer received a signal not equal to 0, process terminated, corresponding message will be logged and showed up.
 
 
-****conf.php**
-    
-    There is one located in "/core/" holds the settings for core system.
-    Don't modified this one too much, or, it will be harder to update.
-    
-    But there would be one located in every one level sub-directories, 
-    holding the separacted settings workd for its own directory, which 
-    we call it a sub-project, or, a project.
-    
-    Each project could have a "conf.php" as the only config file 
-    for the whole project script, in which we can set some values 
-    for extension's variables or some sepcial definitions.  
-    So that, the scripts in this project will run under these settings. 
-    
-    For example:  
-    We can set project 1 to connect database A, 
-    but using database B in project 2;  
-    
-    We can also set language to "en-US" in project 1, 
-    but "zh-CN" in project 2, etc... 
-    
-    But, always remember, don't define same named constants 
-    in different "conf.php"s. It'll conflict.  
-        
-    All "conf.php"s existed in the root directory of 
-    projects will be required in order right before inside script runs.  
-    Class variables are suggested to use instead of definitions in "conf.php"s. 
+### LOGGER
 
-_Some examples_
-
-    //named constants (don't conflict with other "conf.php"s)
-    define('DEF_1', 'xxxx');
-    define('DEF_2', 'xxxxxxxx');
-        
-    //define "keygen" & "ssl_cnf" for "crypt" extension
-    \ext\crypt::$keygen = '\demo\keygen';
-    \ext\crypt::$ssl_cnf = '/extras/ssl/openssl.cnf';
-        
-    //define MySQL connection parameters for "pdo" extension
-    \ext\pdo::$host = '192.168.1.100';
-    \ext\pdo::$port = 4000;
-    \ext\pdo::$pwd = 'PASSWORD';
-        
-    //parameters for "errno" extension
-    \ext\errno::$lang = false;
-    \ext\errno::load('cars', 'errno');
-        
-    //parameters for "http" extension
-    \ext\http::$send_payload = true;
-        
-    //More if needed
-    ...
-
-    If you want to set all variables inside classes. 
-    That is OK, just leave the "conf.php" files away.  
-    If you don't have a "conf.php" under the root directory of the project, 
-    all settings are inherited from the one before based on "/core/conf.php".
-
-_Special function codes_
+    [LOGGER]
+    This section works for all.
+    This section contains custom set log levels.
     
-    Important data should be carefully checked for granting permission firstly.
-      
-    Exit the code when the data is not passed the checking immediately to avoid CORS.
-    Or you can output some JSON data to let the client know the request was denied.
-      
-    Example:
-      
-    if ('some key' !== $_SERVER['HTTP_Key']) exit('{"err": 1, "msg": "Request Denied!"}');
-
-_NOTICE: DEBUG setting_
-
-    Once if there is only one element in router's result, 
-    it will output the inner content value in JSON and 
-    ignore the key('namespace/class_name/function_name'). 
-     
-    If "DEBUG" option (in "/core/conf.php") is set to 1 or 2, 
-    the results could be complex because one or more elements 
-    for debugging will be added to results as well.  
+    emergency = on
+    alert = on
+    critical = on
+    error = on
+    warning = on
+    notice = on
+    info = on
+    debug = on
     
-    Always remember to close "DEBUG" option (set to 0) 
-    when all are under production environment, or, 
-    the result structure will confuse us with more values inside. 
-
-
-## Reserved Words:
-  
-CGI: c/cmd
-CLI: c/cmd, d/data, p/pipe, r/ret, l/log, t/time
-  
-These words above are reserved by NervSys core. So that, they should be kept away of using for variable names when passing params.
+    Don't delete these levels, just change the value to "off" or "0", if there is no need to log them.
+    
+    
+    
+    
+    
+    
+    
 
 
 ## Example structures:

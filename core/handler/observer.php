@@ -58,10 +58,10 @@ class observer
         //Prepare input
         input::prep();
 
-        //Prepare cmd
+        //Prepare CMD
         cmd::prep();
 
-        //Run cgi process
+        //Run CGI process
         operator::run_cgi();
 
         //Check observer status
@@ -69,7 +69,7 @@ class observer
             return;
         }
 
-        //Run cli process
+        //Run CLI process
         if (!config::$IS_CGI) {
             operator::run_cli();
         }

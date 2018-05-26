@@ -43,7 +43,7 @@ class input
             unset($optind);
         }
 
-        //Check cmd
+        //Check CMD
         if ('' === order::$cmd) {
             $val = self::opt_val(unit::$data, ['cmd', 'c']);
 
@@ -118,14 +118,14 @@ class input
             return $optind;
         }
 
-        //Get cmd value
+        //Get CMD value
         $val = self::opt_val($opt, ['cmd', 'c']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
             unit::$data += [$val['key'] => $val['data']];
         }
 
-        //Get cgi data value
+        //Get CGI data value
         $val = self::opt_val($opt, ['data', 'd']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
@@ -162,7 +162,7 @@ class input
             return;
         }
 
-        //Recheck cmd
+        //Recheck CMD
         $value = self::opt_val(unit::$data, ['cmd', 'c']);
 
         !$value['get'] || !is_string($value['data']) || '' === $value['data']

@@ -59,7 +59,7 @@ class operator
     }
 
     /**
-     * Run cgi process
+     * Run CGI process
      */
     public static function run_cgi(): void
     {
@@ -167,7 +167,7 @@ class operator
     }
 
     /**
-     * Run cli process
+     * Run CLI process
      */
     public static function run_cli(): void
     {
@@ -227,7 +227,7 @@ class operator
     }
 
     /**
-     * Build cgi order list
+     * Build CGI order list
      */
     private static function build_order(): void
     {

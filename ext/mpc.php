@@ -39,7 +39,7 @@ class mpc
     //Max running processes
     public static $max_runs = 10;
 
-    //PHP cmd key name in "conf.ini"
+    //PHP key name in "setting.ini"
     public static $php_key = 'php';
 
     //PHP executable path in "conf.ini"
@@ -59,7 +59,7 @@ class mpc
         //Reset jobs
         self::$jobs = [];
 
-        //Get php cli cmd
+        //Get php CLI CMD
         if ('' !== self::$php_exe) {
             return;
         }
