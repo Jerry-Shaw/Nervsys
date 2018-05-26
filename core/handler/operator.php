@@ -39,8 +39,15 @@ class operator
     public static function init_load(array $cmd): void
     {
         foreach ($cmd as $item) {
+            //Get order & method
             list($order, $method) = explode('-', $item, 2);
-            forward_static_call([self::build_class($order), $method]);
+
+            try {
+                forward_static_call([self::build_class($order), $method]);
+            } catch (\Throwable $throwable) {
+                logger::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
+                unset($throwable);
+            }
 
             //Check observer status
             if (observer::stop()) {
