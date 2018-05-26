@@ -347,7 +347,9 @@ class redis_queue extends redis
 
         //Count jobs
         $jobs = 0;
-        foreach ($queue as $key => $value) $jobs += self::connect()->lLen($key);
+        foreach ($queue as $key => $value) {
+            $jobs += self::connect()->lLen($key);
+        }
 
         if (0 === $jobs) {
             return;
@@ -361,7 +363,7 @@ class redis_queue extends redis
         }
 
         //Build command
-        $cmd = platform::cmd_bg(platform::sys_path() . ' ' . ROOT . '/api.php --cmd "' . self::$cmd . '"');
+        $cmd = platform::cmd_bg(platform::sys_path() . ' ' . ROOT . DIRECTORY_SEPARATOR . 'api.php --cmd "' . self::$cmd . '"');
 
         //Run child processes
         for ($i = 0; $i < $need; ++$i) {
@@ -381,7 +383,7 @@ class redis_queue extends redis
     private static function exec_queue(string $data): void
     {
         //Execute
-        exec(platform::sys_path() . ' ' . ROOT . '/api.php --ret --data "' . addcslashes($data, '"') . '"', $output);
+        exec(platform::sys_path() . ' ' . ROOT . DIRECTORY_SEPARATOR . 'api.php --ret --data "' . addcslashes($data, '"') . '"', $output);
 
         //Collect
         foreach ($output as $key => $value) {

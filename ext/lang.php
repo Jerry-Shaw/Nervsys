@@ -44,7 +44,7 @@ class lang
     {
         putenv('LANG=' . self::$lang);
         setlocale(LC_ALL, self::$lang);
-        bindtextdomain($file, ROOT . '/' . $module . '/' . self::$dir . '/');
+        bindtextdomain($file, ROOT . DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR);
         textdomain($file);
 
         unset($module, $file);

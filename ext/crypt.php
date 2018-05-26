@@ -227,7 +227,9 @@ class crypt
      */
     public static function hash_pwd(string $string, string $key): string
     {
-        if (32 > strlen($key)) $key = str_pad($key, 32, $key);
+        if (32 > strlen($key)) {
+            $key = str_pad($key, 32, $key);
+        }
 
         $noises = str_split($key, 8);
 

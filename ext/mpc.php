@@ -102,7 +102,7 @@ class mpc
         $job_pack = count(self::$jobs) < self::$max_runs ? [self::$jobs] : array_chunk(self::$jobs, self::$max_runs, true);
 
         //Build command
-        self::$mpc_cmd = self::$php_exe . ' "' . ROOT . '/api.php"';
+        self::$mpc_cmd = self::$php_exe . ' "' . ROOT . DIRECTORY_SEPARATOR . 'api.php"';
 
         if (self::$wait) {
             self::$mpc_cmd .= ' --ret';

@@ -57,21 +57,21 @@ class file
             $path = str_replace('..', '', $path);
         }
 
-        //Format path with '/'
+        //Format path with DIRECTORY_SEPARATOR
         if (false !== strpos($path, '\\')) {
-            $path = strtr($path, '\\', '/');
+            $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
         }
 
         //Trim "/"
-        $path = trim($path, '/');
+        $path = trim($path, DIRECTORY_SEPARATOR);
 
         //Return "/" when path is empty
         if ('' === $path) {
-            return is_readable($root) ? '/' : '';
+            return is_readable($root) ? DIRECTORY_SEPARATOR : '';
         }
 
-        //Add "/"
-        $path = '/' . $path;
+        //Add DIRECTORY_SEPARATOR
+        $path = DIRECTORY_SEPARATOR . $path;
 
         //Create directories
         $dir = $root . $path;
@@ -83,7 +83,7 @@ class file
         }
 
         //Check path property
-        $path = is_readable($dir) ? $path . '/' : '';
+        $path = is_readable($dir) ? $path . DIRECTORY_SEPARATOR : '';
 
         unset($root, $mode, $dir);
         return $path;
@@ -109,7 +109,7 @@ class file
         }
 
         //Get file list
-        $path .= '/';
+        $path .= DIRECTORY_SEPARATOR;
         $list = glob($path . $pattern, GLOB_NOSORT | GLOB_BRACE);
 
         //Return list on non-recursive

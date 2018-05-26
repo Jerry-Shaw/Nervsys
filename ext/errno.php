@@ -21,6 +21,8 @@
 
 namespace ext;
 
+use core\pool\unit;
+
 class errno
 {
     /**
@@ -48,7 +50,7 @@ class errno
      */
     public static function load(string $module, string $file): void
     {
-        $file = '/' . $module . '/' . self::$dir . '/' . $file . '.ini';
+        $file = DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR . $file . '.ini';
 
         $path = realpath(ROOT . $file);
 
@@ -68,7 +70,18 @@ class errno
     }
 
     /**
-     * Get a standard error result
+     * Set standard error result into unit error
+     *
+     * @param int $code
+     * @param int $errno
+     */
+    public static function set(int $code, int $errno = 0): void
+    {
+        unit::$error = self::get($code, $errno);
+    }
+
+    /**
+     * Get standard error result
      * Language pack needs to be loaded before getting an error message on multi-language support system
      *
      * @param int $code

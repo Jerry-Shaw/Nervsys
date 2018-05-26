@@ -116,7 +116,9 @@ class socket
         socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, ['sec' => self::$timeout, 'usec' => 0]);
         socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => self::$timeout, 'usec' => 0]);
 
-        if ($broadcast) socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1);
+        if ($broadcast) {
+            socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1);
+        }
 
         if ('udp' !== $proto && !socket_connect($socket, $host, $port)) {
             throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($socket)));
