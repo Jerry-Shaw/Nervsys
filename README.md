@@ -1,20 +1,17 @@
 # Nervsys
 
-Stable Version: 6.0.0
+Stable Version: 6.0.0  
 
 
 ## About
 
-* What is Nervsys?
-
+* What is Nervsys?  
 A very slight framework based on PHP7.1+ for universal API controlling.  
 
-* Why called "Nervsys"?
+* Why called "Nervsys"?  
+At the very beginning, as we hoped. The unit could process more like a nerve cell, and build together as a pure data-based calling system. Exact commands would be unnecessary to tell the system what to do.  
 
-At the very beginning, as we hoped. The unit could process more like a nerve cell, and build together as a pure data-based calling system. Exact commands would be unnecessary to tell the system what to do.
-
-* Requirements:
-
+* Requirements:  
 PHP7.1+ and above. Any kind of web server or running under CLI mode.  
 
 * Usage examples:
@@ -85,8 +82,8 @@ PHP7.1+ and above. Any kind of web server or running under CLI mode.
 
 ## Reserved Words
   
-CGI: c/cmd
-CLI: c/cmd, d/data, p/pipe, t/time, r/ret
+CGI: c/cmd  
+CLI: c/cmd, d/data, p/pipe, t/time, r/ret  
   
 The words above are reserved by NervSys core. So that, they should be taken carefully when doing API calling.
 
@@ -316,16 +313,13 @@ class TestA
 
 ### TrustZone
 
-Every class which is exposed to API should always contain a static array variable named $tz. The content in $tz controls the exact method calling actions in the owner class.
-
-Two types of $tz:
-
-In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.
-
-In the example above, $tz for function "test_a" is written in simple mode, while, $tz for function "test_b" is written in full mode. 
-
-In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when unit data structure is not matched $tz settings.
-
+Every class which is exposed to API should always contain a static array variable named $tz. The content in $tz controls the exact method calling actions in the owner class.  
+  
+Two types of $tz:  
+  
+In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.  
+In the example above, $tz for function "test_a" is written in simple mode, while, $tz for function "test_b" is written in full mode.  
+In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when unit data structure is not matched $tz settings.  
 In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.
 
 
@@ -341,11 +335,11 @@ Parameters in functions will be automatically filled by API once existing in uni
 
 ### Simple-Calling
 
-As one of the basic support features, works good on web development.
-
-Method: GET, POST
-DataType: application/json, application/x-www-form-urlencoded, multipart/form-data
-
+As one of the basic support features, works good on web development.  
+  
+Method: GET, POST  
+DataType: application/json, application/x-www-form-urlencoded, multipart/form-data  
+  
 GET examples: 
 api.php?cmd=DirA/ctr/TestA-test_a&param_a=xxx&param_b[]=yyy&param_b[]=zzz
 api.php?cmd=DirA/ctr/TestA-test_b&param_c=xxx&param_d[]=yyy&param_d[]=zzz
@@ -354,33 +348,33 @@ api.php?cmd=DirA/ctr/TestA-test_c&param_a=xxx&param_c=xxx&param_b[]=yyy&param_b[
 
 ### Multiple-Calling & Judging-Calling
 
-As said, it is expected to process data like a nerve cell, Multiple-Calling & Judging-Calling MUST be supported.
-
-Method: GET, POST
-DataType: application/json, application/x-www-form-urlencoded, multipart/form-data
-
+As said, it is expected to process data like a nerve cell, Multiple-Calling & Judging-Calling MUST be supported.  
+  
+Method: GET, POST  
+DataType: application/json, application/x-www-form-urlencoded, multipart/form-data  
+  
 Let's suppose that, "TestB.php" in example has the functions and $tz with allowed parameters API needs below.
 
 
 **Multiple-Calling examples:**
 
 Calling in SINGLE class:  
-api.php?cmd=DirA/ctr/TestA-test_a-test_b-test_c&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz
-
+api.php?cmd=DirA/ctr/TestA-test_a-test_b-test_c&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
+  
 Calling in MULTIPLE class:  
-api.php?cmd=DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz
-
+api.php?cmd=DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
+  
 Result: All REQUESTED functions that qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
 
 
 **Judging-Calling examples:**
 
 Calling in SINGLE class:  
-api.php?cmd=DirA/ctr/TestA&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz
-
+api.php?cmd=DirA/ctr/TestA&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
+  
 Calling in MULTIPLE class:  
-api.php?cmd=DirA/ctr/TestA-DirA/TestB&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz
-
+api.php?cmd=DirA/ctr/TestA-DirA/TestB&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
+  
 Result: All functions IN $tz will be looked over. Those ones which qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
 
 
@@ -402,35 +396,29 @@ In this mode, PHP script will be called when the command and data matches the cl
 
 **Different option example: The two work the same.**
 
-* /path/php api.php -r -c "DirA/ctr/TestA-test_a" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz"
-
+* /path/php api.php -r -c "DirA/ctr/TestA-test_a" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz"
 
 
 **More examples:**
 
-* /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"
-
-* /path/php api.php -r -c "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"
-
-* /path/php api.php -r -c "DirA/ctr/TestA" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"
-
+* /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"  
+* /path/php api.php -r -c "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"  
+* /path/php api.php -r -c "DirA/ctr/TestA" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"  
 * /path/php api.php -r -c "DirA/ctr/TestA-DirA/TestB" -d "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz"
 
 
 **External calling examples:**
 
-* /path/php api.php --cmd "MyCMD" --pipe "xxxxxxxx"
-* /path/php api.php --ret --cmd "MyCMD" --pipe "xxxxxxxx"
-* /path/php api.php --ret --cmd "MyCMD_A-MyCMD_B" --pipe "xxxxxxxx" --time "1000"
+* /path/php api.php --cmd "MyCMD" --pipe "xxxxxxxx"  
+* /path/php api.php --ret --cmd "MyCMD" --pipe "xxxxxxxx"  
+* /path/php api.php --ret --cmd "MyCMD_A-MyCMD_B" --pipe "xxxxxxxx" --time "1000"  
 
 
 **Mixed calling examples:**
 
-* /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-MyCMD" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"
-
-* /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c-MyCMD_A" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"
-
+* /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-MyCMD" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
+* /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c-MyCMD_A" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-MyCMD_A-MyCMD_B" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz" --pipe "xxxxxxxx" --pipe "xxxxxxxx" --time "1000"
 
 
