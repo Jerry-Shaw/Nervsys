@@ -74,6 +74,10 @@ class error
      */
     public static function start(): void
     {
+        //Set error level
+        self::$level = (int)ini_get('error_reporting');
+
+        //Set error handler
         set_error_handler([__CLASS__, 'error_handler'], E_ALL);
     }
 

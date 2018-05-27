@@ -29,7 +29,10 @@ class setting
      */
     public static function load(): void
     {
-        //Check HTTPS
+        //Running mode detection
+        config::$IS_CGI = 'cli' !== PHP_SAPI;
+
+        //HTTPS mode detection
         config::$IS_HTTPS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
@@ -49,6 +52,7 @@ class setting
             return;
         }
 
+        //Set config value
         foreach ($conf as $key => $val) {
             if (isset(config::$$key)) {
                 config::$$key = $val;
