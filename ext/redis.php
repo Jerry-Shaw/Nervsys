@@ -3,8 +3,7 @@
 /**
  * Redis Connector Extension
  *
- * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +22,7 @@ namespace ext;
 
 class redis
 {
-    /**
-     * Redis settings
-     */
+    //Redis settings
     public static $host       = '127.0.0.1';
     public static $port       = 6379;
     public static $auth       = '';
@@ -50,6 +47,7 @@ class redis
     private static function create(): \Redis
     {
         $redis = new \Redis();
+
         self::$persist
             ? $redis->pconnect(self::$host, self::$port, self::$timeout, self::$persist_id)
             : $redis->connect(self::$host, self::$port, self::$timeout);
@@ -106,11 +104,8 @@ class redis
 
             self::$connect->close();
             self::$connect = null;
-        } else {
-            if (!isset(self::$pool[$name])) {
-                return;
-            }
-
+            unset($key);
+        } elseif (isset(self::$pool[$name])) {
             if (self::$connect === self::$pool[$name]) {
                 self::$connect = null;
             }
@@ -119,5 +114,7 @@ class redis
             self::$pool[$name] = null;
             unset(self::$pool[$name]);
         }
+
+        unset($name);
     }
 }

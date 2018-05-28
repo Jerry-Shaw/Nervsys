@@ -122,7 +122,7 @@ class input
         $val = self::opt_val($opt, ['cmd', 'c']);
 
         if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            unit::$data += [$val['key'] => $val['data']];
+            unit::$data += [$val['key'] => data::decode($val['data'])];
         }
 
         //Get CGI data value
@@ -134,7 +134,7 @@ class input
 
         //Get pipe data value
         $val = self::opt_val($opt, ['pipe', 'p']);
-        order::$param_cli['pipe'] = $val['get'] ? (string)$val['data'] : '';
+        order::$param_cli['pipe'] = $val['get'] ? data::decode((string)$val['data']) : '';
 
         //Get pipe timeout value
         $val = self::opt_val($opt, ['time', 't']);
@@ -166,7 +166,7 @@ class input
         $value = self::opt_val(unit::$data, ['cmd', 'c']);
 
         !$value['get'] || !is_string($value['data']) || '' === $value['data']
-            ? unit::$data['cmd'] = array_shift(order::$param_cli['argv'])
+            ? unit::$data['cmd'] = data::decode(array_shift(order::$param_cli['argv']))
             : unit::$data[$value['key']] = &$value['data'];
 
         unset($optind, $value);
@@ -209,7 +209,7 @@ class input
     private static function opt_data(string $value): array
     {
         //Decode data in JSON
-        $data = json_decode($value, true);
+        $data = json_decode(data::decode($value), true);
 
         //Decode data in HTTP Query
         if (!is_array($data)) {

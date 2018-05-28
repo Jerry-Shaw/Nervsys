@@ -3,8 +3,7 @@
 /**
  * PDO Connector Extension
  *
- * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +22,7 @@ namespace ext;
 
 class pdo
 {
-    /**
-     * PDO settings
-     */
+    //PDO settings
     public static $type    = 'mysql';
     public static $host    = '127.0.0.1';
     public static $port    = 3306;
@@ -123,11 +120,8 @@ class pdo
             }
 
             self::$connect = null;
-        } else {
-            if (!isset(self::$pool[$name])) {
-                return;
-            }
-
+            unset($key);
+        } elseif (isset(self::$pool[$name])) {
             if (self::$connect === self::$pool[$name]) {
                 self::$connect = null;
             }
@@ -135,5 +129,7 @@ class pdo
             self::$pool[$name] = null;
             unset(self::$pool[$name]);
         }
+
+        unset($name);
     }
 }

@@ -3,7 +3,7 @@
 /**
  * Multi-Process Controller Extension
  *
- * Copyright 2017-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ namespace ext;
 
 use core\handler\logger;
 use core\handler\platform;
+
+use core\parser\data;
 
 use core\pool\config;
 
@@ -70,8 +72,6 @@ class mpc
         }
 
         self::$php_exe = config::$CLI[self::$php_key];
-
-        unset($php_exe);
     }
 
     /**
@@ -83,9 +83,9 @@ class mpc
      */
     public static function add(string $cmd, array $argv, string $key = ''): void
     {
-        '' === $key ? self::$jobs[] = ['cmd' => &$cmd, 'arg' => &$argv] : self::$jobs[$key] = ['cmd' => &$cmd, 'arg' => &$argv];
+        '' === $key ? self::$jobs[] = ['cmd' => &$cmd, 'argv' => &$argv] : self::$jobs[$key] = ['cmd' => &$cmd, 'argv' => &$argv];
 
-        unset($cmd, $argv);
+        unset($cmd, $argv, $key);
     }
 
     /**
@@ -142,10 +142,10 @@ class mpc
 
         //Start process
         foreach ($jobs as $key => $item) {
-            $cmd = self::$mpc_cmd . ' --cmd "' . $item['cmd'] . '"';
+            $cmd = self::$mpc_cmd . ' --cmd "' . data::encode($item['cmd']) . '"';
 
-            if (!empty($item['arg'])) {
-                $cmd .= ' --data "' . addcslashes(json_encode($item['arg']), '"') . '"';
+            if (!empty($item['argv'])) {
+                $cmd .= ' --data "' . data::encode(json_encode($item['argv'])) . '"';
             }
 
             //Create process
