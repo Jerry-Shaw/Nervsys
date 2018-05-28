@@ -3,8 +3,7 @@
 /**
  * Errno Extension
  *
- * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2017-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +26,8 @@ class errno
 {
     /**
      * Error file directory
-     * Related to "ROOT/module/"
-     * Error file should be located in "ROOT/module/$dir/filename.ini"
+     * Related to "ROOT/$dir/"
+     * Error file should be located in "ROOT/$dir/self::$dir/filename.ini"
      *
      * @var string
      */
@@ -43,15 +42,14 @@ class errno
     /**
      * Load error file from module
      *
-     * @param string $module
+     * @param string $dir
      * @param string $file
      *
      * @throws \Exception
      */
-    public static function load(string $module, string $file): void
+    public static function load(string $dir, string $file): void
     {
-        $file = DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR . $file . '.ini';
-
+        $file = DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR . $file . '.ini';
         $path = realpath(ROOT . $file);
 
         if (false === $path) {
@@ -66,7 +64,7 @@ class errno
 
         self::$pool += $error;
 
-        unset($module, $file, $path, $error);
+        unset($dir, $file, $path, $error);
     }
 
     /**

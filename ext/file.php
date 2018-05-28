@@ -3,7 +3,7 @@
 /**
  * File I/O Extension
  *
- * Copyright 2017 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,19 +98,19 @@ class file
      * @param bool   $recursive
      *
      * @return array
+     * @throws \Exception
      */
     public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array
     {
         //Check path
-        $path = realpath($path);
+        $pathname = realpath($path);
 
-        if (false === $path) {
-            return [];
+        if (false === $pathname) {
+            throw new \Exception('[' . $path . '] can not be accessed!');
         }
 
-        //Get file list
-        $path .= DIRECTORY_SEPARATOR;
-        $list = glob($path . $pattern, GLOB_NOSORT | GLOB_BRACE);
+        $pathname .= DIRECTORY_SEPARATOR;
+        $list = glob($pathname . $pattern, GLOB_NOSORT | GLOB_BRACE);
 
         //Return list on non-recursive
         if (!$recursive) {
@@ -118,13 +118,13 @@ class file
         }
 
         //Get file list recursively
-        $dirs = glob($path . '*', GLOB_NOSORT | GLOB_ONLYDIR);
+        $dirs = glob($pathname . '*', GLOB_NOSORT | GLOB_ONLYDIR);
 
         foreach ($dirs as $dir) {
             $list = array_merge($list, self::get_list($dir, $pattern, true));
         }
 
-        unset($path, $pattern, $recursive, $dirs, $dir);
+        unset($path, $pattern, $recursive, $pathname, $dirs, $dir);
         return $list;
     }
 }

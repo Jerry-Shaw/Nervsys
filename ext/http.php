@@ -3,8 +3,7 @@
 /**
  * HTTP Request Extension
  *
- * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2017 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,87 +22,154 @@ namespace ext;
 
 class http
 {
-    //Request URL
+    //URL (string / array)
     public static $url = null;
 
-    //Protocol Version
+    //HTTP Version
     public static $ver = '2.0';
 
     //Request Data
     public static $data = [];
 
-    //File Path
+    //Upload files
     public static $file = [];
 
-    //ETag
-    public static $ETag = '';
+    //Request type
+    public static $payload = true;
 
-    //Cookie
-    public static $Cookie = '';
+    //HTTP options
+    public static $ETag         = '';       //ETag
+    public static $Cookie       = '';       //Cookie
+    public static $Header       = [];       //Header
+    public static $Method       = 'GET';    //Method
+    public static $Referer      = '';       //Referer
+    public static $Modified     = '';       //Last-Modified
+    public static $accept       = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept
+    public static $user_agent   = 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')';       //User Agent
+    public static $content_type = 'application/json; charset=utf-8';                        //Content-type
 
-    //Header value
-    public static $Header = [];
-
-    //Request Method
-    public static $Method = 'GET';
-
-    //Referer
-    public static $Referer = '';
-
-    //Last-Modified
-    public static $Modified = '';
-
-    //SSL KEY
-    public static $ssl_key = '';
-
-    //SSL CERT
+    //SSL certificates
+    public static $ssl_key  = '';
     public static $ssl_cert = '';
 
-    //Authority
+    //Authorization
     public static $user_pwd = '';
 
-    //Max follow level
-    public static $max_follow = 0;
-
-    //Return with body
-    public static $with_body = true;
-
-    //Return with header
+    //cURL options
+    public static $max_follow  = 0;
+    public static $with_body   = true;
     public static $with_header = false;
 
-    //Send via "Request Payload"
-    public static $send_payload = false;
-
-    //HTTP Accept
-    public static $accept = 'text/plain,text/html,text/xml,application/json,*;q=0';
-
-    //User-Agent
-    public static $user_agent = 'Mozilla/5.0 (Compatible; NervSys API ' . NS_VER . '; Powered by NervSys!)';
-
-    //Content-Type
-    private static $content_type = 'application/json; charset=utf-8';
-
-    //CURL Resource
+    //cURL Resource pool
     private static $curl = [];
 
     /**
-     * Check requested URLs
+     * Request
      *
-     * @return bool
+     * @param string $url
+     * @param array  $data
+     * @param array  $file
+     *
+     * @return array
+     * @throws \Exception
      */
-    private static function chk_url(): bool
+    public static function request(string $url = '', array $data = [], array $file = []): array
     {
-        return (is_string(self::$url) || is_array(self::$url)) && !empty(self::$url) ? true : false;
+        //Prepare
+        $list_url = self::prep_url($url);
+        $list_data = self::prep_data($data, $file);
+
+        //Prepare cURL
+        foreach ($list_url as $target) {
+            //Prepare URL unit
+            $unit = self::prep_unit($target);
+
+            if (empty($unit)) {
+                continue;
+            }
+
+            //Add cURL
+            self::curl_add($target, $unit['port'], $list_data, self::prep_header($unit));
+        }
+
+        unset($url, $data, $list_url, $list_data, $target, $unit);
+        return self::curl_run();
     }
 
     /**
-     * Prepare unit for URL
+     * Prepare URL list
+     *
+     * @param string $url
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function prep_url(string $url): array
+    {
+        $list = '' === $url ? (is_string(self::$url) ? [self::$url] : (is_array(self::$url) ? self::$url : [])) : [$url];
+
+        if (empty($list)) {
+            throw new \Exception('NO URLs in request list!');
+        }
+
+        unset($url);
+        return $list;
+    }
+
+    /**
+     * Prepare data & file
+     *
+     * @param array $data
+     * @param array $file
+     *
+     * @return array
+     */
+    private static function prep_data(array $data, array $file = []): array
+    {
+        $data = empty($data) ? self::$data : $data;
+
+        if (!empty($data) && !self::$payload) {
+            self::$content_type = 'application/x-www-form-urlencoded';
+        }
+
+        $file = empty($file) ? self::$file : $file;
+
+        if (!empty($file)) {
+            //Create cURL files
+            foreach ($file as $key => $item) {
+                if (file_exists($item)) {
+                    $file[$key] = new \CURLFile($item);
+                } else {
+                    unset($file[$key]);
+                }
+            }
+
+            unset($key, $item);
+
+            if (!self::$payload) {
+                self::$content_type = 'multipart/form-data';
+            }
+        }
+
+        if ((!empty($data) || !empty($file)) && !in_array(self::$Method, ['PUT', 'POST'], true)) {
+            self::$Method = 'POST';
+        }
+
+        self::$data = self::$file = [];
+        $list = ['data' => &$data, 'file' => &$file];
+
+        unset($data, $file);
+        return $list;
+    }
+
+    /**
+     * Prepare URL units
      *
      * @param string $url
      *
      * @return array
      */
-    private static function get_unit(string $url): array
+    private static function prep_unit(string $url): array
     {
         //Parse URL
         $unit = parse_url($url);
@@ -118,7 +184,7 @@ class http
             $unit['path'] = '/';
         }
 
-        $unit['query'] = !isset($unit['query']) ? '' : '?' . $unit['query'];
+        $unit['query'] = isset($unit['query']) ? '?' . $unit['query'] : '';
 
         if (!isset($unit['port'])) {
             $unit['port'] = 'https' === $unit['scheme'] ? 443 : 80;
@@ -129,15 +195,14 @@ class http
     }
 
     /**
-     * Prepare header for URL
+     * Prepare header
      *
      * @param array $unit
      *
      * @return array
      */
-    private static function get_header(array $unit): array
+    private static function prep_header(array $unit): array
     {
-        //Prepare HTTP Header
         $header = [
             self::$Method . ' ' . $unit['path'] . $unit['query'] . ' HTTP/' . self::$ver,
             'Host: ' . $unit['host'] . ':' . $unit['port'],
@@ -168,7 +233,6 @@ class http
             return $header;
         }
 
-        //Prepare other Header content
         foreach (self::$Header as $key => $value) {
             $header[] = $key . ': ' . $value;
         }
@@ -178,13 +242,14 @@ class http
     }
 
     /**
-     * CURL ready
+     * Add cURL
      *
      * @param string $url
      * @param int    $port
+     * @param array  $data
      * @param array  $header
      */
-    private static function curl_ready(string $url, int $port, array $header): void
+    private static function curl_add(string $url, int $port, array $data, array $header): void
     {
         //Initialize
         $opt = [];
@@ -237,44 +302,39 @@ class http
             $opt[CURLOPT_POST] = true;
         }
 
-        if (!empty(self::$data)) {
-            $opt[CURLOPT_POSTFIELDS] = !self::$send_payload
-                ? (empty(self::$file)
-                    ? http_build_query(self::$data)
-                    : self::$data)
-                : json_encode(self::$data, JSON_OPT);
-        }
-
-        //Follow settings
         if (0 < self::$max_follow) {
             $opt[CURLOPT_FOLLOWLOCATION] = true;
             $opt[CURLOPT_MAXREDIRS] = self::$max_follow;
         }
 
-        //Set CURL options
+        if (!empty($data['data']) || !empty($data['file'])) {
+            $post_data = array_merge($data['data'], $data['file']);
+
+            $opt[CURLOPT_POSTFIELDS] = !self::$payload
+                ? (empty($data['file']) ? http_build_query($post_data) : $post_data)
+                : json_encode($post_data);
+
+            unset($post_data);
+        }
+
+        //Set cURL options
         curl_setopt_array($curl, $opt);
 
-        //Merge CURL
+        //Add cURL
         self::$curl[$url] = &$curl;
 
-        unset($url, $port, $header, $opt, $curl);
+        unset($url, $port, $data, $header, $opt, $curl);
     }
 
     /**
-     * CURL run
+     * Run cURL
      *
      * @return array
      */
     private static function curl_run(): array
     {
-        //No CURL resource
-        if (empty(self::$curl)) {
-            return [];
-        }
-
-        //Run CURL
         if (1 === count(self::$curl)) {
-            //Single CURL
+            //Single cURL
             $curl = current(self::$curl);
             $response = [key(self::$curl) => (string)curl_exec($curl)];
             curl_close($curl);
@@ -283,143 +343,34 @@ class http
             $curl = curl_multi_init();
 
             //Add handles
-            foreach (self::$curl as $url => $res) {
+            foreach (self::$curl as $res) {
                 curl_multi_add_handle($curl, $res);
             }
 
             //execute handles
             while (CURLM_OK === curl_multi_exec($curl, $running) && 0 < $running) ;
 
-            //Merge response
+            //Get response
             $response = [];
+
             foreach (self::$curl as $url => $res) {
                 $response[$url] = (string)curl_multi_getcontent($res);
+
                 //Remove handles
                 curl_multi_remove_handle($curl, $res);
             }
 
             //close handle
             curl_multi_close($curl);
-            unset($url, $res);
+
+            unset($res, $url);
         }
 
         unset($curl);
 
-        //Free CURL list
+        //Free cURL list
         self::$curl = [];
 
         return $response;
-    }
-
-    /**
-     * Run CURL
-     *
-     * @return array
-     */
-    public static function request(): array
-    {
-        //Check URL
-        if (!self::chk_url()) {
-            return [];
-        }
-
-        //Correct Method
-        if ('GET' === self::$Method && !empty(self::$data)) {
-            self::$Method = 'POST';
-        }
-
-        //Merge URL
-        $list = is_string(self::$url) ? [self::$url] : self::$url;
-
-        //Choose Content-Type
-        if (!self::$send_payload) {
-            self::$content_type = 'application/x-www-form-urlencoded';
-        }
-
-        //Prepare CURL
-        foreach ($list as $url) {
-            //No URL
-            if ('' === $url) {
-                continue;
-            }
-
-            //Get URL unit
-            $unit = self::get_unit($url);
-
-            if (empty($unit)) {
-                continue;
-            }
-
-            //Get CURL ready
-            self::curl_ready($url, $unit['port'], self::get_header($unit));
-        }
-
-        //Execute CURL
-        unset($list, $url, $unit);
-        return self::curl_run();
-    }
-
-    /**
-     * Run CURLFile
-     *
-     * @return array
-     */
-    public static function upload(): array
-    {
-        //Check URL
-        if (!self::chk_url()) {
-            return [];
-        }
-
-        //Check Method
-        if (!in_array(self::$Method, ['POST', 'PUT'], true)) {
-            self::$Method = 'POST';
-        }
-
-        //Validate files
-        foreach (self::$file as $key => $item) {
-            if (!is_file($item)) {
-                unset(self::$file[$key]);
-                continue;
-            }
-
-            //Attach file to data
-            self::$data[$key] = new \CURLFile($item);
-        }
-
-        //Check files
-        if (empty(self::$file)) {
-            return [];
-        }
-
-        //Merge URL
-        $list = is_string(self::$url) ? [self::$url] : self::$url;
-
-        //Choose Content-Type
-        if (!self::$send_payload) {
-            self::$content_type = 'multipart/form-data';
-        }
-
-        //Prepare CURL
-        foreach ($list as $url) {
-            //No URL
-            if ('' === $url) {
-                continue;
-            }
-
-            //Get URL unit
-            $unit = self::get_unit($url);
-
-            if (empty($unit)) {
-                continue;
-            }
-
-            //Get CURL ready
-            self::curl_ready($url, $unit['port'], self::get_header($unit));
-        }
-
-        //Execute CURL
-        unset($key, $item, $list, $url, $unit);
-        return self::curl_run();
     }
 }

@@ -3,7 +3,7 @@
 /**
  * Language Extension
  *
- * Copyright 2017 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ class lang
 {
     /**
      * Language file directory
-     * Related to "ROOT/module/"
-     * Language file should be located in "ROOT/module/$dir/$lang/LC_MESSAGES/filename.mo"
+     * Related to "ROOT/$dir/"
+     * Language file should be located in "ROOT/$dir/self::$dir/$lang/LC_MESSAGES/filename.mo"
      *
      * @var string
      */
@@ -35,27 +35,28 @@ class lang
     public static $lang = 'en-US';
 
     /**
-     * Load language pack from module
+     * Load language file
      *
-     * @param string $module
+     * @param string $dir
      * @param string $file
      */
-    public static function load(string $module, string $file): void
+    public static function load(string $dir, string $file): void
     {
         putenv('LANG=' . self::$lang);
         setlocale(LC_ALL, self::$lang);
-        bindtextdomain($file, ROOT . DIRECTORY_SEPARATOR . $module . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR);
+
+        bindtextdomain($file, ROOT . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR);
         textdomain($file);
 
-        unset($module, $file);
+        unset($dir, $file);
     }
 
     /**
-     * Translate list in language
+     * Get translated list
      *
      * @param array $list
      */
-    public static function trans(array &$list): void
+    public static function get(array &$list): void
     {
         foreach ($list as $key => $item) {
             unset($list[$key]);

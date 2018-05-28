@@ -207,7 +207,7 @@ class upload
         }
 
         //Get binary data
-        $binary_data = base64_decode(substr($base64, $data_pos + 8));
+        $binary_data = base64_decode(substr($base64, $data_pos + 8), true);
 
         //Image data error
         if (false === $binary_data) {

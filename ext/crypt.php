@@ -3,7 +3,7 @@
 /**
  * Crypt Extension
  *
- * Copyright 2017-2018 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ class crypt
      * Get RSA Key-Pairs (Public Key & Private Key)
      *
      * @return array
+     * @throws \Exception
      */
     public static function rsa_keys(): array
     {
@@ -73,7 +74,7 @@ class crypt
         $openssl = openssl_pkey_new($config);
 
         if (false === $openssl) {
-            return $keys;
+            throw new \Exception('OpenSSL config ERROR!');
         }
 
         $public = openssl_pkey_get_details($openssl);
@@ -166,23 +167,17 @@ class crypt
      */
     public static function rsa_encrypt(string $string, string $key): string
     {
-        $type = self::rsa_type($key);
-
-        if ('' === $type) {
-            return '';
-        }
-
-        $encrypt = 'public' === $type
+        $encrypt = 'public' === self::rsa_type($key)
             ? openssl_public_encrypt($string, $string, $key)
             : openssl_private_encrypt($string, $string, $key);
 
         if (!$encrypt) {
-            return '';
+            throw new \Exception('RSA encrypt failed!');
         }
 
         $string = (string)base64_encode($string);
 
-        unset($key, $type, $encrypt);
+        unset($key, $encrypt);
         return $string;
     }
 
@@ -197,23 +192,17 @@ class crypt
      */
     public static function rsa_decrypt(string $string, string $key): string
     {
-        $type = self::rsa_type($key);
-
-        if ('' === $type) {
-            return '';
-        }
-
         $string = (string)base64_decode($string, true);
 
-        $decrypt = 'private' === $type
+        $decrypt = 'private' === self::rsa_type($key)
             ? openssl_private_decrypt($string, $string, $key)
             : openssl_public_decrypt($string, $string, $key);
 
         if (!$decrypt) {
-            return '';
+            throw new \Exception('RSA decrypt failed!');
         }
 
-        unset($key, $type, $decrypt);
+        unset($key, $decrypt);
         return $string;
     }
 
@@ -291,9 +280,9 @@ class crypt
      */
     public static function verify(string $string, string $rsa_key = ''): string
     {
-        //Prepare signature
+        //Check signature
         if (false === strpos($string, '-')) {
-            return '';
+            throw new \Exception('Signature ERROR!');
         }
 
         list($mix, $enc) = explode('-', $string, 2);
