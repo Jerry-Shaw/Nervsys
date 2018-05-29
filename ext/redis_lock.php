@@ -91,6 +91,19 @@ class redis_lock extends redis
     }
 
     /**
+     * Clear all locks
+     */
+    public static function clear(): void
+    {
+        if (!empty(self::$lock)) {
+            //Delete locks
+            call_user_func_array([self::connect(), 'del'], self::$lock);
+            //Clear keys
+            self::$lock = [];
+        }
+    }
+
+    /**
      * Set lock
      *
      * @param string $key
@@ -109,18 +122,5 @@ class redis_lock extends redis
 
         unset($key);
         return true;
-    }
-
-    /**
-     * Clear all locks
-     */
-    private static function clear(): void
-    {
-        if (!empty(self::$lock)) {
-            //Delete locks
-            call_user_func_array([self::connect(), 'del'], self::$lock);
-            //Clear keys
-            self::$lock = [];
-        }
     }
 }
