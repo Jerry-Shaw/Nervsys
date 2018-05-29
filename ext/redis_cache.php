@@ -28,35 +28,35 @@ class redis_cache extends redis
     /**
      * Set cache
      *
-     * @param string $name
+     * @param string $key
      * @param array  $data
      * @param int    $life (in seconds)
      *
      * @return bool
      * @throws \Exception
      */
-    public static function set(string $name, array $data, int $life = 600): bool
+    public static function set(string $key, array $data, int $life = 600): bool
     {
-        $name = self::$prefix . $name;
+        $key = self::$prefix . $key;
         $cache = json_encode($data);
 
-        $result = 0 < $life ? self::connect()->set($name, $cache, $life) : self::connect()->set($name, $cache);
+        $result = 0 < $life ? self::connect()->set($key, $cache, $life) : self::connect()->set($key, $cache);
 
-        unset($name, $data, $life, $cache);
+        unset($key, $data, $life, $cache);
         return $result;
     }
 
     /**
      * Get cache
      *
-     * @param string $name
+     * @param string $key
      *
      * @return array
      * @throws \Exception
      */
-    public static function get(string $name): array
+    public static function get(string $key): array
     {
-        $cache = self::connect()->get(self::$prefix . $name);
+        $cache = self::connect()->get(self::$prefix . $key);
 
         if (false === $cache) {
             return [];
@@ -68,23 +68,23 @@ class redis_cache extends redis
             return [];
         }
 
-        unset($name, $cache);
+        unset($key, $cache);
         return $data;
     }
 
     /**
      * Delete cache
      *
-     * @param string $name
+     * @param string $key
      *
      * @return int
      * @throws \Exception
      */
-    public static function del(string $name): int
+    public static function del(string $key): int
     {
-        $result = self::connect()->del(self::$prefix . $name);
+        $result = self::connect()->del(self::$prefix . $key);
 
-        unset($name);
+        unset($key);
         return $result;
     }
 }

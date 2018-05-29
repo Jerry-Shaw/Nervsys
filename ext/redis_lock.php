@@ -25,6 +25,9 @@ class redis_lock extends redis
     //Lock prefix
     public static $prefix = 'lock:';
 
+    //Lock life (in seconds)
+    public static $life = 3;
+
     //Lock list
     private static $lock = [];
 
@@ -42,31 +45,23 @@ class redis_lock extends redis
      */
     public static function on(string $key): bool
     {
-        //Lock key
+        $retry = 0;
         $lock_key = self::$prefix . $key;
 
         //Set lock
-        if (self::lock($lock_key)) {
-            register_shutdown_function([__CLASS__, 'clear']);
-            unset($key, $lock_key);
-            return true;
-        }
-
-        $retry = 0;
-
         while ($retry <= self::RETRY) {
-            ++$retry;
-            usleep(self::WAIT);
-
-            //Reset lock
             if (self::lock($lock_key)) {
                 register_shutdown_function([__CLASS__, 'clear']);
-                unset($key, $lock_key, $retry);
+
+                unset($key, $retry, $lock_key);
                 return true;
             }
+
+            usleep(self::WAIT);
+            ++$retry;
         }
 
-        unset($key, $lock_key, $retry);
+        unset($key, $retry, $lock_key);
         return false;
     }
 
@@ -99,18 +94,17 @@ class redis_lock extends redis
      * Set lock
      *
      * @param string $key
-     * @param int    $life (in seconds)
      *
      * @return bool
      * @throws \Exception
      */
-    private static function lock(string $key, int $life = 3): bool
+    private static function lock(string $key): bool
     {
         if (!self::connect()->setnx($key, time())) {
             return false;
         }
 
-        self::connect()->expire($key, $life);
+        self::connect()->expire($key, self::$life);
         self::$lock[] = &$key;
 
         unset($key);
@@ -122,14 +116,11 @@ class redis_lock extends redis
      */
     private static function clear(): void
     {
-        if (empty(self::$lock)) {
-            return;
+        if (!empty(self::$lock)) {
+            //Delete locks
+            call_user_func_array([self::connect(), 'del'], self::$lock);
+            //Clear keys
+            self::$lock = [];
         }
-
-        //Delete locks
-        call_user_func_array([self::connect(), 'del'], self::$lock);
-
-        //Clear keys
-        self::$lock = [];
     }
 }
