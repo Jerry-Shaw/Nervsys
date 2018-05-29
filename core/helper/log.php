@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Logger Handler
+ * Logger Helper
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,11 +18,11 @@
  * limitations under the License.
  */
 
-namespace core\handler;
+namespace core\helper;
 
 use core\pool\config;
 
-class logger
+class log
 {
     //Log path
     public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;

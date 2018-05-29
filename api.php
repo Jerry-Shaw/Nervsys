@@ -67,7 +67,7 @@ spl_autoload_register(
 );
 
 //Start error handler
-\core\handler\error::start();
+\core\helper\error::start();
 
 //Start observer handler
 \core\handler\observer::start();

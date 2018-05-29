@@ -33,11 +33,12 @@ PHP7.1+ and above. Any kind of web server or running under CLI mode.
     │     │        │         ├─linux.php        linux OS handler
     │     │        │         ├─winnt.php        winnt OS handler
     │     │        │         └─...
-    │     │        ├─error.php                  error handler
-    │     │        ├─logger.php                 logger handler
     │     │        ├─observer.php               observer handler
     │     │        ├─operator.php               operator handler
     │     │        └─platform.php               platform handler
+    │     ├─helper/
+    │     │       ├─error.php                   error helper
+    │     │       └─log.php                     log helper
     │     ├─parser/
     │     │       ├─cmd.php                     command parser
     │     │       ├─data.php                    data parser
@@ -78,7 +79,7 @@ PHP7.1+ and above. Any kind of web server or running under CLI mode.
          ├─socket.php                           Socket extension
          ├─upload.php                           Upload extension
          └─...
-          
+
 
 ## Reserved Words
   

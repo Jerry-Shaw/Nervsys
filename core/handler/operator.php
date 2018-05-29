@@ -20,6 +20,9 @@
 
 namespace core\handler;
 
+use core\helper\log;
+
+use core\parser\data;
 use core\parser\trustzone;
 
 use core\pool\config;
@@ -45,7 +48,7 @@ class operator
             try {
                 forward_static_call([self::build_class($order), $method]);
             } catch (\Throwable $throwable) {
-                logger::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
+                log::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
                 unset($throwable);
             }
 
@@ -86,13 +89,13 @@ class operator
 
             //Check class
             if (!class_exists($class)) {
-                logger::log('warning', $class . ': Class NOT found!');
+                log::log('warning', $class . ': Class NOT found!');
                 continue;
             }
 
             //Check TrustZone
             if (!isset($class::$tz) || !is_array($class::$tz)) {
-                logger::log('notice', $class . ': TrustZone NOT Open!');
+                log::log('notice', $class . ': TrustZone NOT Open!');
                 continue;
             }
 
@@ -185,7 +188,7 @@ class operator
             $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
             if (!is_resource($process)) {
-                logger::log('debug', $key . ' -> ' . $cmd . ': Access denied or command ERROR!');
+                log::log('debug', $key . ' -> ' . $cmd . ': Access denied or command ERROR!');
                 continue;
             }
 
@@ -261,8 +264,8 @@ class operator
                 throw new \Exception('NOT for public!');
             }
 
-            //Mapping params
-            $params = self::build_argv($reflect);
+            //Build arguments
+            $params = data::build_argv($reflect, unit::$data);
 
             //Create object
             if (!$reflect->isStatic()) {
@@ -277,7 +280,7 @@ class operator
                 unit::$result[self::build_key($order, $method)] = &$result;
             }
         } catch (\Throwable $throwable) {
-            logger::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
+            log::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
             unset($throwable);
         }
 
@@ -298,69 +301,6 @@ class operator
 
         unset($class, $method);
         return $key;
-    }
-
-    /**
-     * Build argument data
-     *
-     * @param $reflect
-     *
-     * @return array
-     * @throws \Exception
-     */
-    private static function build_argv($reflect): array
-    {
-        //Get method params
-        $params = $reflect->getParameters();
-
-        if (empty($params)) {
-            return [];
-        }
-
-        $data = $diff = [];
-
-        //Process params
-        foreach ($params as $param) {
-            //Get param name
-            $name = $param->getName();
-
-            //Check param data
-            if (isset(unit::$data[$name])) {
-                switch ($param->getType()) {
-                    case 'int':
-                        $data[$name] = (int)unit::$data[$name];
-                        break;
-                    case 'bool':
-                        $data[$name] = (bool)unit::$data[$name];
-                        break;
-                    case 'float':
-                        $data[$name] = (float)unit::$data[$name];
-                        break;
-                    case 'array':
-                        $data[$name] = (array)unit::$data[$name];
-                        break;
-                    case 'string':
-                        $data[$name] = (string)unit::$data[$name];
-                        break;
-                    case 'object':
-                        $data[$name] = (object)unit::$data[$name];
-                        break;
-                    default:
-                        $data[$name] = unit::$data[$name];
-                        break;
-                }
-            } else {
-                $param->isDefaultValueAvailable() ? $data[$name] = $param->getDefaultValue() : $diff[] = $name;
-            }
-        }
-
-        //Report argument missing
-        if (!empty($diff)) {
-            throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']');
-        }
-
-        unset($reflect, $params, $diff, $param, $name);
-        return $data;
     }
 
     /**

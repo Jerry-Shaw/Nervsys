@@ -20,6 +20,9 @@
 
 namespace core\handler;
 
+use core\helper\error;
+use core\helper\log;
+
 use core\parser\cmd;
 use core\parser\input;
 use core\parser\setting;
@@ -100,7 +103,7 @@ class observer
         } else {
             if ($log) {
                 //Log observer status
-                logger::log('info', config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
+                log::log('info', config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
             }
 
             return true;
@@ -183,7 +186,7 @@ class observer
         }
 
         if (!isset(config::$CORS[$_SERVER['HTTP_ORIGIN']])) {
-            logger::log('info', 'CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
+            log::log('info', 'CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
             self::send(1);
         }
 

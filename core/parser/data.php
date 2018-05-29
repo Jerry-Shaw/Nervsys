@@ -55,4 +55,68 @@ class data
 
         return $value;
     }
+
+    /**
+     * Build argument
+     *
+     * @param object $reflect
+     * @param array  $input
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public static function build_argv(object $reflect, array $input): array
+    {
+        //Get method params
+        $params = $reflect->getParameters();
+
+        if (empty($params)) {
+            return [];
+        }
+
+        $data = $diff = [];
+
+        //Process params
+        foreach ($params as $param) {
+            //Get param name
+            $name = $param->getName();
+
+            //Check param data
+            if (isset($input[$name])) {
+                switch ($param->getType()) {
+                    case 'int':
+                        $data[] = (int)$input[$name];
+                        break;
+                    case 'bool':
+                        $data[] = (bool)$input[$name];
+                        break;
+                    case 'float':
+                        $data[] = (float)$input[$name];
+                        break;
+                    case 'array':
+                        $data[] = (array)$input[$name];
+                        break;
+                    case 'string':
+                        $data[] = (string)$input[$name];
+                        break;
+                    case 'object':
+                        $data[] = (object)$input[$name];
+                        break;
+                    default:
+                        $data[] = $input[$name];
+                        break;
+                }
+            } else {
+                $param->isDefaultValueAvailable() ? $data[] = $param->getDefaultValue() : $diff[] = $name;
+            }
+        }
+
+        //Report argument missing
+        if (!empty($diff)) {
+            throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']');
+        }
+
+        unset($reflect, $input, $params, $diff, $param, $name);
+        return $data;
+    }
 }

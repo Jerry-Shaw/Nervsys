@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Error Handler
+ * Error Helper
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-namespace core\handler;
+namespace core\helper;
 
 class error
 {
@@ -96,7 +96,7 @@ class error
         $level = self::levels[$errno] ?? 'notice';
         $error = 'error' !== $level && self::$level < $errno;
 
-        logger::log($level, $errstr, ['Caught in ' . $errfile . ' on line ' . $errline]);
+        log::log($level, $errstr, ['Caught in ' . $errfile . ' on line ' . $errline]);
 
         unset($errno, $errstr, $errfile, $errline, $level);
         return $error;

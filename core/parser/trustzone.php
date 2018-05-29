@@ -20,7 +20,7 @@
 
 namespace core\parser;
 
-use core\handler\logger;
+use core\helper\log;
 
 class trustzone
 {
@@ -62,7 +62,7 @@ class trustzone
 
         //Report TrustZone missing
         if ($failed) {
-            logger::log('debug', $name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']');
+            log::log('debug', $name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']');
         }
 
         unset($name, $method, $data, $param, $inter, $diff);

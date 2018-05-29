@@ -20,8 +20,9 @@
 
 namespace ext;
 
-use core\handler\logger;
 use core\handler\platform;
+
+use core\helper\log;
 
 use core\parser\data;
 
@@ -157,7 +158,7 @@ class mpc
                 $resource[$key]['pipe'] = $pipes;
                 $resource[$key]['proc'] = $process;
             } else {
-                logger::log('warning', $item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
+                log::log('warning', $item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
                 $resource[$key]['exec'] = false;
             }
         }
