@@ -40,6 +40,7 @@ PHP7.1+ and above. Any kind of web server or running under CLI mode.
     │     │        └─platform.php               platform handler
     │     ├─parser/
     │     │       ├─cmd.php                     command parser
+    │     │       ├─data.php                    data parser
     │     │       ├─input.php                   input data parser
     │     │       ├─setting.php                 setting config parser
     │     │       └─trustzone.php               TrustZone data parser
@@ -203,9 +204,10 @@ The words above are reserved by NervSys core. So that, they should be taken care
     before calling functions under dirB.
     
     Notice: 
-    The keys in "LOAD" section point to a subfolder, while the setting functions will be called 
-    when the folder is being accessed. 
-    Arguments are automatically accepted from API. No returned value will be captured.
+    The keys in "LOAD" section point to the first level subfolders, while the setting values point to 
+    the functions which will be called when the subfolder is being accessed. 
+    Arguments are automatically accepted from API.
+    No returned value will be captured.
 
 
 ### SIGNAL
