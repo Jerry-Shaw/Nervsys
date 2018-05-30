@@ -23,14 +23,8 @@ namespace ext;
 
 class upload
 {
-    //Upload file
-    public static $file = null;
-
     //File name prefix
     public static $prefix = '';
-
-    //Allowed extensions
-    public static $allowed = [];
 
     //File permission
     public static $file_mode = 0664;
@@ -95,65 +89,16 @@ class upload
     ];
 
     /**
-     * Prepare upload files
-     *
-     * @param string $file
-     * @param string $type
-     *
-     * @return array
-     * @throws \Exception
-     */
-    private static function prep(string $file, string $type): array
-    {
-        $list = '' === $file ? (is_string(self::$file) ? [self::$file] : (is_array(self::$file) ? self::$file : [])) : [$file];
-
-        if ('file' === $type) {
-            foreach ($list as $key => $item) {
-                unset($list[$key]);
-
-                if (isset($_FILES[$item]) && isset($_FILES[$item]['tmp_name'])) {
-                    $list[$item] = $_FILES[$item];
-                }
-            }
-        } else {
-            foreach ($list as $key => $item) {
-                unset($list[$key]);
-
-                //Get base64 position
-                $pos = strpos($item, ';base64,');
-
-                //Base64 data error
-                if (false === $pos || 0 !== strpos($item, 'data:')) {
-                    continue;
-                }
-
-                $mime = (string)substr($item, 5, $pos - 5);
-
-                $list[$key]['ext'] = (string)array_search($mime, self::MIME, true);
-                $list[$key]['type'] = &$mime;
-                $list[$key]['data'] = base64_decode(substr($item, $pos + 8), true);
-
-                unset($pos, $mime);
-            }
-        }
-
-        if (empty($list)) {
-            throw new \Exception('NO uploaded files!');
-        }
-
-        unset($file, $type, $key, $item);
-        return $list;
-    }
-
-    /**
      * Upload file
      *
-     * @param string $name
+     * @param        $upload
+     * @param string $path
+     * @param array  $ext
      *
      * @return array
      * @throws \Exception
      */
-    public static function file(string $name = ''): array
+    public static function file($upload, string $path = '', array $ext = []): array
     {
         //Load language pack
         lang::$dir = 'upload';
@@ -163,11 +108,8 @@ class upload
         errno::$dir = 'upload';
         errno::load('ext', 'upload');
 
-        //Get files
-        $files = self::prep($name, 'file');
-
-        //Reset files
-        self::$file = null;
+        //Prepare file list
+        $files = self::prep_file(is_string($upload) ? [$upload] : $upload);
 
         //Upload
         $result = [];
@@ -188,7 +130,7 @@ class upload
             }
 
             //Check file extension
-            $file_ext = self::chk_ext($file['name']);
+            $file_ext = self::chk_ext($file['name'], $ext);
 
             //Extension not allowed
             if ('' === $file_ext) {
@@ -197,7 +139,7 @@ class upload
             }
 
             //Get upload path
-            $save_path = file::get_path(self::$path_save, self::$path_root, self::$path_mode);
+            $save_path = file::get_path('' === $path ? self::$path_save : $path, self::$path_root, self::$path_mode);
 
             //Upload path Error
             if ('' === $save_path) {
@@ -229,19 +171,21 @@ class upload
             $result[$key] += errno::get(1000, 0);
         }
 
-        unset($name, $files, $key, $file, $file_size, $file_ext, $save_path, $save_name, $url_path);
+        unset($upload, $path, $ext, $files, $key, $file, $file_size, $file_ext, $save_path, $save_name, $url_path);
         return $result;
     }
 
     /**
      * Upload file via base64
      *
-     * @param string $base64
+     * @param        $base64
+     * @param string $path
+     * @param array  $ext
      *
      * @return array
      * @throws \Exception
      */
-    public static function base64(string $base64 = ''): array
+    public static function base64($base64, string $path = '', array $ext = []): array
     {
         //Load language pack
         lang::$dir = 'upload';
@@ -251,17 +195,14 @@ class upload
         errno::$dir = 'upload';
         errno::load('ext', 'upload');
 
-        //Get files
-        $files = self::prep($base64, 'base64');
-
-        //Reset files
-        self::$file = null;
+        //Get base64 list
+        $files = self::prep_base64(is_string($base64) ? [$base64] : $base64);
 
         //Upload
         $result = [];
         foreach ($files as $key => $file) {
             //Check file extension
-            $file_ext = self::chk_ext($file['ext']);
+            $file_ext = self::chk_ext($file['ext'], $ext);
 
             //Extension not allowed
             if ('' === $file_ext) {
@@ -285,7 +226,7 @@ class upload
             }
 
             //Get upload path
-            $save_path = file::get_path(self::$path_save, self::$path_root, self::$path_mode);
+            $save_path = file::get_path('' === $path ? self::$path_save : $path, self::$path_root, self::$path_mode);
 
             //Upload path Error
             if ('' === $save_path) {
@@ -331,8 +272,70 @@ class upload
             $result[$key] += errno::get(1000, 0);
         }
 
-        unset($base64, $files, $key, $file, $file_ext, $file_size, $save_path, $save_name, $url_path, $file_path, $save_file);
+        unset($base64, $path, $ext, $files, $key, $file, $file_ext, $file_size, $save_path, $save_name, $url_path, $file_path, $save_file);
         return $result;
+    }
+
+    /**
+     * Prepare file upload
+     *
+     * @param array $list
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function prep_file(array $list): array
+    {
+        foreach ($list as $key => $item) {
+            unset($list[$key]);
+
+            if (isset($_FILES[$item]) && isset($_FILES[$item]['tmp_name'])) {
+                $list[$item] = $_FILES[$item];
+            }
+        }
+
+        if (empty($list)) {
+            throw new \Exception('NO upload files!');
+        }
+
+        unset($key, $item);
+        return $list;
+    }
+
+    /**
+     * Prepare base64 upload
+     *
+     * @param array $list
+     *
+     * @return array
+     * @throws \Exception
+     */
+    private static function prep_base64(array $list): array
+    {
+        foreach ($list as $key => $item) {
+            unset($list[$key]);
+
+            //Get base64 position
+            $pos = strpos($item, ';base64,');
+
+            //Base64 data error
+            if (false === $pos || 0 !== strpos($item, 'data:')) {
+                continue;
+            }
+
+            $mime = (string)substr($item, 5, $pos - 5);
+
+            $list[$key]['ext'] = (string)array_search($mime, self::MIME, true);
+            $list[$key]['type'] = &$mime;
+            $list[$key]['data'] = base64_decode(substr($item, $pos + 8), true);
+        }
+
+        if (empty($list)) {
+            throw new \Exception('NO uploaded files!');
+        }
+
+        unset($key, $item, $pos, $mime);
+        return $list;
     }
 
     /**
@@ -352,22 +355,23 @@ class upload
      * Get and check the file extension
      *
      * @param string $name
+     * @param array  $allowed
      *
      * @return string
      */
-    private static function chk_ext(string $name): string
+    private static function chk_ext(string $name, array $allowed): string
     {
         //Check allowed extensions
         $ext = !isset(self::MIME[$name]) ? file::get_ext($name) : $name;
 
         if (
-            (!empty(self::$allowed) && !in_array($ext, self::$allowed, true))
-            || (empty(self::$allowed) && !isset(self::MIME[$ext]))
+            (!empty($allowed) && !in_array($ext, $allowed, true))
+            || (empty($allowed) && !isset(self::MIME[$ext]))
         ) {
             $ext = '';
         }
 
-        unset($name);
+        unset($name, $allowed);
         return $ext;
     }
 
