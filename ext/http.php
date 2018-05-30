@@ -109,7 +109,7 @@ class http
         $list = '' === $url ? (is_string(self::$url) ? [self::$url] : (is_array(self::$url) ? self::$url : [])) : [$url];
 
         if (empty($list)) {
-            throw new \Exception('NO URLs in request list!');
+            throw new \Exception('No URLs in request list!');
         }
 
         unset($url);

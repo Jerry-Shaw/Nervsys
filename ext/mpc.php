@@ -76,27 +76,46 @@ class mpc
     }
 
     /**
-     * Add to process list
+     * Add job
      *
      * @param string $cmd
-     * @param array  $argv
      * @param string $key
+     *
+     * @return int
      */
-    public static function add(string $cmd, array $argv = [], string $key = ''): void
+    public static function add(string $cmd, string $key = ''): int
     {
-        '' === $key ? self::$jobs[] = ['cmd' => &$cmd, 'argv' => &$argv] : self::$jobs[$key] = ['cmd' => &$cmd, 'argv' => &$argv];
+        $job = count(self::$jobs);
+        self::$jobs[$job] = ['key' => '' === $key ? $job : $key, 'cmd' => &$cmd];
 
-        unset($cmd, $argv, $key);
+        unset($cmd, $key);
+        return $job;
     }
 
     /**
-     * Commit to process
+     * Set data
+     *
+     * @param int    $job
+     * @param string $type
+     * @param array  $value
+     */
+    public static function set(int $job, string $type, array $value): void
+    {
+        self::$jobs[$job][$type] = &$value;
+
+        unset($job, $type, $value);
+    }
+
+    /**
+     * Commit process
+     *
+     * @return array
+     * @throws \Exception
      */
     public static function commit(): array
     {
-        //Empty job
         if (empty(self::$jobs)) {
-            return [];
+            throw new \Exception('No MPC jobs!');
         }
 
         //Split jobs
@@ -145,14 +164,24 @@ class mpc
         foreach ($jobs as $key => $item) {
             $cmd = self::$mpc_cmd . ' --cmd "' . data::encode($item['cmd']) . '"';
 
+            //Append data
+            if (!empty($item['data'])) {
+                $cmd .= ' --data "' . data::encode(json_encode($item['data'])) . '"';
+            }
+
+            //Append pipe
+            if (!empty($item['pipe'])) {
+                $cmd .= ' --pipe "' . data::encode(json_encode($item['pipe'])) . '"';
+            }
+
+            //Append argv
             if (!empty($item['argv'])) {
-                $cmd .= ' --data "' . data::encode(json_encode($item['argv'])) . '"';
+                $cmd .= ' ' . implode(' ', $item['argv']);
             }
 
             //Create process
             $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
-            //Store resource
             if (is_resource($process)) {
                 $resource[$key]['exec'] = true;
                 $resource[$key]['pipe'] = $pipes;
@@ -192,7 +221,6 @@ class mpc
     {
         $result = [];
 
-        //Collect data
         while (!empty($resource)) {
             foreach ($resource as $key => $item) {
                 //Build result
@@ -209,7 +237,6 @@ class mpc
 
                 //Unset finished process
                 if (feof($item['pipe'][1])) {
-                    //Close pipes & process
                     foreach ($item['pipe'] as $pipe) {
                         fclose($pipe);
                     }

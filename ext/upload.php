@@ -295,7 +295,7 @@ class upload
         }
 
         if (empty($list)) {
-            throw new \Exception('NO upload files!');
+            throw new \Exception('No upload files!');
         }
 
         unset($key, $item);
@@ -331,7 +331,7 @@ class upload
         }
 
         if (empty($list)) {
-            throw new \Exception('NO uploaded files!');
+            throw new \Exception('No upload files!');
         }
 
         unset($key, $item, $pos, $mime);
