@@ -82,7 +82,7 @@ class mpc
      * @param array  $argv
      * @param string $key
      */
-    public static function add(string $cmd, array $argv, string $key = ''): void
+    public static function add(string $cmd, array $argv = [], string $key = ''): void
     {
         '' === $key ? self::$jobs[] = ['cmd' => &$cmd, 'argv' => &$argv] : self::$jobs[$key] = ['cmd' => &$cmd, 'argv' => &$argv];
 
