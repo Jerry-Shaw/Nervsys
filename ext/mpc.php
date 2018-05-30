@@ -93,17 +93,17 @@ class mpc
     }
 
     /**
-     * Set data
+     * Set attr
      *
      * @param int    $job
-     * @param string $type
+     * @param string $attr
      * @param array  $value
      */
-    public static function set(int $job, string $type, array $value): void
+    public static function set(int $job, string $attr, array $value): void
     {
-        self::$jobs[$job][$type] = &$value;
+        self::$jobs[$job][$attr] = &$value;
 
-        unset($job, $type, $value);
+        unset($job, $attr, $value);
     }
 
     /**
@@ -161,7 +161,7 @@ class mpc
         $resource = [];
 
         //Start process
-        foreach ($jobs as $key => $item) {
+        foreach ($jobs as $item) {
             $cmd = self::$mpc_cmd . ' --cmd "' . data::encode($item['cmd']) . '"';
 
             //Append data
@@ -183,16 +183,16 @@ class mpc
             $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
             if (is_resource($process)) {
-                $resource[$key]['exec'] = true;
-                $resource[$key]['pipe'] = $pipes;
-                $resource[$key]['proc'] = $process;
+                $resource[$item['key']]['exec'] = true;
+                $resource[$item['key']]['pipe'] = $pipes;
+                $resource[$item['key']]['proc'] = $process;
             } else {
                 log::warning($item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
-                $resource[$key]['exec'] = false;
+                $resource[$item['key']]['exec'] = false;
             }
         }
 
-        unset($jobs, $key, $item, $cmd, $pipes);
+        unset($jobs, $item, $cmd, $pipes);
 
         //Check wait options
         if (!self::$wait) {
