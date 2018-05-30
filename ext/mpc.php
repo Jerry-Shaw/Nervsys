@@ -158,7 +158,7 @@ class mpc
                 $resource[$key]['pipe'] = $pipes;
                 $resource[$key]['proc'] = $process;
             } else {
-                log::log('warning', $item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
+                log::warning($item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
                 $resource[$key]['exec'] = false;
             }
         }

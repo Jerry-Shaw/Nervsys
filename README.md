@@ -93,6 +93,23 @@ The words above are reserved by NervSys core. So that, they should be taken care
 
 "setting.ini" locates right under "core" folder, which contains most of the important setting sections.
 
+### LOG
+
+    [LOG]
+    This section works for all.
+    This section contains custom set log levels.
+    
+    emergency = on
+    alert = on
+    critical = on
+    error = on
+    warning = on
+    notice = on
+    info = on
+    debug = on
+    
+    Don't delete these levels, just change the value to "off" or "0", if there is no need to log them.
+
 ### CGI
 
     [CGI]
@@ -226,24 +243,6 @@ The words above are reserved by NervSys core. So that, they should be taken care
     
     Once when observer received a signal not equal to 0, process terminated, corresponding message 
     will be logged and showed up.
-
-
-### LOGGER
-
-    [LOGGER]
-    This section works for all.
-    This section contains custom set log levels.
-    
-    emergency = on
-    alert = on
-    critical = on
-    error = on
-    warning = on
-    notice = on
-    info = on
-    debug = on
-    
-    Don't delete these levels, just change the value to "off" or "0", if there is no need to log them.
 
 
 ## Examples

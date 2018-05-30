@@ -23,13 +23,13 @@ namespace core\pool;
 class config
 {
     //Config settings
+    public static $LOG    = [];
     public static $CGI    = [];
     public static $CLI    = [];
     public static $CORS   = [];
     public static $INIT   = [];
     public static $LOAD   = [];
     public static $SIGNAL = [];
-    public static $LOGGER = [];
 
     //Runtime settings
     public static $IS_CGI   = true;

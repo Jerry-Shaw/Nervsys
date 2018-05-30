@@ -37,7 +37,7 @@ class trustzone
 
         $data['pre'] = isset($trustzone['pre']) ? self::prep_cmd($trustzone['pre']) : [];
         $data['post'] = isset($trustzone['post']) ? self::prep_cmd($trustzone['post']) : [];
-        $data['param'] = isset($trustzone['param']) ? $trustzone['param'] : $trustzone;
+        $data['param'] = isset($trustzone['param']) ? $trustzone['param'] : (is_int(key($trustzone)) ? $trustzone : []);
 
         unset($trustzone);
         return $data;
@@ -62,7 +62,7 @@ class trustzone
 
         //Report TrustZone missing
         if ($failed) {
-            log::log('debug', $name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']');
+            log::debug($name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']');
         }
 
         unset($name, $method, $data, $param, $inter, $diff);

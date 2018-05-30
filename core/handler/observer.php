@@ -103,7 +103,7 @@ class observer
         } else {
             if ($log) {
                 //Log observer status
-                log::log('info', config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
+                log::info(config::$SIGNAL[unit::$signal] ?? 'Process Terminated!');
             }
 
             return true;
@@ -186,7 +186,7 @@ class observer
         }
 
         if (!isset(config::$CORS[$_SERVER['HTTP_ORIGIN']])) {
-            log::log('info', 'CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
+            log::info('CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
             self::send(1);
         }
 

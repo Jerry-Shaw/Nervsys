@@ -48,7 +48,7 @@ class operator
             try {
                 forward_static_call([self::build_class($order), $method]);
             } catch (\Throwable $throwable) {
-                log::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
+                log::debug($order . '-' . $method . ': ' . $throwable->getMessage());
                 unset($throwable);
             }
 
@@ -89,13 +89,13 @@ class operator
 
             //Check class
             if (!class_exists($class)) {
-                log::log('warning', $class . ': Class NOT found!');
+                log::warning($class . ': Class NOT found!');
                 continue;
             }
 
             //Check TrustZone
             if (!isset($class::$tz) || !is_array($class::$tz)) {
-                log::log('notice', $class . ': TrustZone NOT Open!');
+                log::notice($class . ': TrustZone NOT Open!');
                 continue;
             }
 
@@ -188,7 +188,7 @@ class operator
             $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
             if (!is_resource($process)) {
-                log::log('debug', $key . ' -> ' . $cmd . ': Access denied or command ERROR!');
+                log::debug($key . ' -> ' . $cmd . ': Access denied or command ERROR!');
                 continue;
             }
 
@@ -280,7 +280,7 @@ class operator
                 unit::$result[self::build_key($order, $method)] = &$result;
             }
         } catch (\Throwable $throwable) {
-            log::log('debug', $order . '-' . $method . ': ' . $throwable->getMessage());
+            log::debug($order . '-' . $method . ': ' . $throwable->getMessage());
             unset($throwable);
         }
 

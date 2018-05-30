@@ -96,7 +96,7 @@ class error
         $level = self::levels[$errno] ?? 'notice';
         $error = 'error' !== $level && self::$level < $errno;
 
-        log::log($level, $errstr, ['Caught in ' . $errfile . ' on line ' . $errline]);
+        log::$level($errstr, ['Caught in ' . $errfile . ' on line ' . $errline]);
 
         unset($errno, $errstr, $errfile, $errline, $level);
         return $error;

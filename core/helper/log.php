@@ -27,47 +27,15 @@ class log
     //Log path
     public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
 
-    //Log levels
-    const levels = [
-        'emergency',
-        'alert',
-        'critical',
-        'error',
-        'warning',
-        'notice',
-        'info',
-        'debug'
-    ];
-
-    /**
-     * Write log
-     *
-     * @param string $level
-     * @param string $message
-     * @param array  $context
-     */
-    public static function log(string $level, string $message, array $context = []): void
-    {
-        //Ignore incorrect log levels
-        if (!in_array($level, self::levels, true) || 0 === (int)config::$LOGGER[$level]) {
-            return;
-        }
-
-        self::$level($message, $context);
-
-        unset($level, $message, $context);
-    }
-
     /**
      * Log emergency
      *
      * @param string $message
      * @param array  $context
      */
-    private static function emergency(string $message, array $context = []): void
+    public static function emergency(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -78,10 +46,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function alert(string $message, array $context = []): void
+    public static function alert(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -92,10 +59,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function critical(string $message, array $context = []): void
+    public static function critical(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -106,10 +72,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function error(string $message, array $context = []): void
+    public static function error(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -120,10 +85,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function warning(string $message, array $context = []): void
+    public static function warning(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -134,10 +98,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function notice(string $message, array $context = []): void
+    public static function notice(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -148,10 +111,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function info(string $message, array $context = []): void
+    public static function info(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -162,10 +124,9 @@ class log
      * @param string $message
      * @param array  $context
      */
-    private static function debug(string $message, array $context = []): void
+    public static function debug(string $message, array $context = []): void
     {
-        array_unshift($context, $message);
-        self::handle(__FUNCTION__, $context);
+        self::handle(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -173,11 +134,17 @@ class log
     /**
      * Handle logs
      *
-     * @param string $type
-     * @param array  $logs
+     * @param string $level
+     * @param string $message
+     * @param array  $context
      */
-    private static function handle(string $type, array $logs): void
+    private static function handle(string $level, string $message, array $context): void
     {
+        //Check setting
+        if (!isset(config::$LOG[$level]) || 0 === (int)config::$LOG[$level]) {
+            return;
+        }
+
         //Check log path
         if (false === realpath(self::$file_path)) {
             $mkdir = mkdir(self::$file_path, 0664, true);
@@ -189,22 +156,21 @@ class log
             unset($mkdir);
         }
 
-        //Add datetime & log level & empty line
-        array_unshift($logs, date('Y-m-d H:i:s'), 'System ' . strtoupper($type) . ':');
-        $logs[] = '';
+        //Add datetime & log message & empty line
+        array_unshift($context, date('Y-m-d H:i:s'), strtoupper($level) . ': ' . $message);
+        $context[] = '';
 
         //Generate log file name
-        $file = self::$file_path . $type . '-' . date('Ymd') . '.log';
+        $file = self::$file_path . $level . '-' . date('Ymd') . '.log';
 
         //Write log
-        foreach ($logs as &$value) {
+        foreach ($context as &$value) {
             if (!is_string($value)) {
                 $value = json_encode($value, 4034);
             }
 
             $value .= PHP_EOL;
 
-            //Write log file
             file_put_contents($file, $value, FILE_APPEND);
         }
 
@@ -212,11 +178,11 @@ class log
 
         //Output log
         if (0 < error::$level) {
-            foreach ($logs as $value) {
+            foreach ($context as $value) {
                 echo $value;
             }
         }
 
-        unset($type, $logs, $file, $value);
+        unset($level, $context, $file, $value);
     }
 }
