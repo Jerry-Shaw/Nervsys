@@ -22,8 +22,8 @@
 declare(strict_types = 1);
 
 //Check PHP version
-if (version_compare(PHP_VERSION, '7.1.0', '<')) {
-    exit('NervSys needs PHP 7.1.0 or higher!');
+if (version_compare(PHP_VERSION, '7.2.0', '<')) {
+    exit('NervSys needs PHP 7.2.0 or higher!');
 }
 
 //Set time limit

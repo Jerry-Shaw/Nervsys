@@ -6,13 +6,13 @@ Stable Version: 6.0.0
 ## About
 
 * What is Nervsys?  
-A very slight framework based on PHP7.1+ for universal API controlling.  
+A very slight framework based on PHP7.2+ for universal API controlling.  
 
 * Why called "Nervsys"?  
 At the very beginning, as we hoped. The unit could process more like a nerve cell, and build together as a pure data-based calling system. Exact commands would be unnecessary to tell the system what to do.  
 
 * Requirements:  
-PHP7.1+ and above. Any kind of web server or running under CLI mode.  
+PHP7.2+ and above. Any kind of web server or running under CLI mode.  
 
 * Usage examples:  
     1. Ordinary framework for Web-developing
