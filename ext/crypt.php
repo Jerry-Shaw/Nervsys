@@ -68,7 +68,7 @@ class crypt
      */
     public static function rsa_keys(): array
     {
-        $keys = ['public' => '', 'private' => ''];
+        $keys   = ['public' => '', 'private' => ''];
         $config = ['config' => self::$ssl_conf];
 
         $openssl = openssl_pkey_new($config);
@@ -140,7 +140,7 @@ class crypt
     private static function rsa_type(string $key): string
     {
         $start = strlen('-----BEGIN ');
-        $end = strpos($key, ' KEY-----', $start);
+        $end   = strpos($key, ' KEY-----', $start);
 
         if (false === $end) {
             throw new \Exception('RSA Key ERROR!');

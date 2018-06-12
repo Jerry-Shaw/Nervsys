@@ -55,8 +55,8 @@ class image
         }
 
         //Process image
-        $type = substr($img_info['mime'], 6);
-        $img_src = call_user_func('imagecreatefrom' . $type, $file);
+        $type      = substr($img_info['mime'], 6);
+        $img_src   = call_user_func('imagecreatefrom' . $type, $file);
         $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
 
         //Transparent for GIF/PNG
@@ -117,7 +117,7 @@ class image
         }
 
         //Process image
-        $type = substr($img_exif['MimeType'], 6);
+        $type    = substr($img_exif['MimeType'], 6);
         $img_src = call_user_func('imagecreatefrom' . $type, $file);
 
         //Rotate image when needed
@@ -155,7 +155,7 @@ class image
      */
     private static function img_crop(int $img_w, int $img_h, int $to_w, int $to_h): array
     {
-        $size = [];
+        $size          = [];
         $size['img_w'] = &$to_w;
         $size['img_h'] = &$to_h;
         $size['src_w'] = $img_w;
@@ -168,17 +168,17 @@ class image
         }
 
         //Calculate new width and height
-        $ratio_img = $img_w / $img_h;
+        $ratio_img  = $img_w / $img_h;
         $ratio_need = $to_w / $to_h;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
         if (0 < $ratio_diff && $img_h > $to_h) {
-            $crop_w = (int)($img_w - $img_h * $ratio_need);
+            $crop_w        = (int)($img_w - $img_h * $ratio_need);
             $size['img_x'] = (int)($crop_w / 2);
             $size['src_w'] = $img_w - $crop_w;
             unset($crop_w);
         } elseif (0 > $ratio_diff && $img_w > $to_w) {
-            $crop_h = (int)($img_h - $img_w / $ratio_need);
+            $crop_h        = (int)($img_h - $img_w / $ratio_need);
             $size['img_y'] = (int)($crop_h / 2);
             $size['src_h'] = $img_h - $size['img_y'] * 2;
             unset($crop_h);
@@ -200,7 +200,7 @@ class image
      */
     private static function img_zoom(int $img_w, int $img_h, int $to_w, int $to_h): array
     {
-        $size = [];
+        $size          = [];
         $size['img_x'] = $size['img_y'] = 0;
         $size['img_w'] = $size['src_w'] = $img_w;
         $size['img_h'] = $size['src_h'] = $img_h;
@@ -211,7 +211,7 @@ class image
         }
 
         //Calculate new width and height
-        $ratio_img = $img_w / $img_h;
+        $ratio_img  = $img_w / $img_h;
         $ratio_need = $to_w / $to_h;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 

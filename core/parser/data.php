@@ -23,7 +23,7 @@ namespace core\parser;
 class data
 {
     //Base64 data header
-    const base64 = 'data:text/argv;base64,';
+    const BASE64 = 'data:text/argv;base64,';
 
     /**
      * Encode data in base64 with data header
@@ -34,7 +34,7 @@ class data
      */
     public static function encode(string $value): string
     {
-        return self::base64 . base64_encode($value);
+        return self::BASE64 . base64_encode($value);
     }
 
     /**
@@ -46,11 +46,11 @@ class data
      */
     public static function decode(string $value): string
     {
-        if (0 !== strpos($value, self::base64)) {
+        if (0 !== strpos($value, self::BASE64)) {
             return $value;
         }
 
-        $value = substr($value, strlen(self::base64));
+        $value = substr($value, strlen(self::BASE64));
         $value = base64_decode($value, true);
 
         return $value;
@@ -68,9 +68,7 @@ class data
     public static function build_argv(object $reflect, array $input): array
     {
         //Get method params
-        $params = $reflect->getParameters();
-
-        if (empty($params)) {
+        if (empty($params = $reflect->getParameters())) {
             return [];
         }
 

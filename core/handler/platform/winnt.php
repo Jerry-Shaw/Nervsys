@@ -32,13 +32,13 @@ class winnt implements os
         exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
 
         if (0 !== $status) {
-            trigger_error('WinNT: Access denied!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Access denied!');
         }
 
         $output = parse_ini_string(implode($output));
 
         if (false === $output) {
-            trigger_error('WinNT: Access failed!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Access failed!');
         }
 
         $env = &$output['ExecutablePath'];
@@ -61,11 +61,12 @@ class winnt implements os
         ];
 
         $output = [];
+
         foreach ($queries as $query) {
             exec($query, $output, $status);
 
             if (0 !== $status) {
-                trigger_error('WinNT: Access denied!', E_USER_ERROR);
+                throw new \Exception(PHP_OS . ': Access denied!');
             }
         }
 

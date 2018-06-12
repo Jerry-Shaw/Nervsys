@@ -43,8 +43,8 @@ class socket
     {
         $param = [];
 
-        $param['domain'] = false === strpos($host, ':') ? AF_INET : AF_INET6;
-        $param['type'] = 'udp' === $proto ? SOCK_DGRAM : SOCK_STREAM;
+        $param['domain']   = false === strpos($host, ':') ? AF_INET : AF_INET6;
+        $param['type']     = 'udp' === $proto ? SOCK_DGRAM : SOCK_STREAM;
         $param['protocol'] = getprotobyname($proto);
 
         self::$type = &$proto;
@@ -65,7 +65,7 @@ class socket
      */
     public static function server(string $proto, string $host, int $port, bool $block = false): void
     {
-        $param = self::param($proto, $host);
+        $param  = self::param($proto, $host);
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
         if (false === $socket) {
@@ -104,7 +104,7 @@ class socket
      */
     public static function client(string $proto, string $host, int $port, bool $block = false, bool $broadcast = false): void
     {
-        $param = self::param($proto, $host);
+        $param  = self::param($proto, $host);
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
         if (false === $socket) {

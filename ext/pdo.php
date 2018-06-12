@@ -54,21 +54,21 @@ class pdo
         $dsn = self::$type . ':';
 
         //Build option
-        self::$option[\PDO::ATTR_CASE] = \PDO::CASE_NATURAL;
-        self::$option[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;
-        self::$option[\PDO::ATTR_PERSISTENT] = self::$persist;
-        self::$option[\PDO::ATTR_ORACLE_NULLS] = \PDO::NULL_NATURAL;
-        self::$option[\PDO::ATTR_EMULATE_PREPARES] = false;
-        self::$option[\PDO::ATTR_STRINGIFY_FETCHES] = false;
+        self::$option[\PDO::ATTR_CASE]               = \PDO::CASE_NATURAL;
+        self::$option[\PDO::ATTR_ERRMODE]            = \PDO::ERRMODE_EXCEPTION;
+        self::$option[\PDO::ATTR_PERSISTENT]         = self::$persist;
+        self::$option[\PDO::ATTR_ORACLE_NULLS]       = \PDO::NULL_NATURAL;
+        self::$option[\PDO::ATTR_EMULATE_PREPARES]   = false;
+        self::$option[\PDO::ATTR_STRINGIFY_FETCHES]  = false;
         self::$option[\PDO::ATTR_DEFAULT_FETCH_MODE] = \PDO::FETCH_ASSOC;
 
         //Fill up DSN & option
         switch (self::$type) {
             case 'mysql':
-                $dsn .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
-                self::$option[\PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . self::$charset;
+                $dsn                                               .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
+                self::$option[\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . self::$charset;
                 self::$option[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
-                self::$option[\PDO::ATTR_TIMEOUT] = self::$timeout;
+                self::$option[\PDO::ATTR_TIMEOUT]                  = self::$timeout;
                 break;
             case 'mssql':
                 $dsn .= 'host=' . self::$host . ',' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;

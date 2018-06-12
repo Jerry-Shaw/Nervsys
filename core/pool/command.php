@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Order Pool
+ * Command Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,16 +20,16 @@
 
 namespace core\pool;
 
-class order
+class command
 {
-    //Original CMD
+    //Input CMD
     public static $cmd = '';
 
     //Parsed CMD
     public static $cmd_cgi = [];
     public static $cmd_cli = [];
 
-    //Parameter
+    //Parameters
     public static $param_cgi = [];
     public static $param_cli = ['pipe' => '', 'time' => 0, 'ret' => false];
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit Pool
+ * Configure Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,20 +20,19 @@
 
 namespace core\pool;
 
-class unit
+class configure
 {
-    //Input data pool
-    public static $data = [];
+    //Configurations
+    public static $log  = [];
+    public static $cgi  = [];
+    public static $cli  = [];
+    public static $cors = [];
+    public static $init = [];
+    public static $load = [];
 
-    //Output error msg
-    public static $error = [];
+    public static $is_cgi   = true;
+    public static $is_https = true;
 
-    //Model object list
-    public static $object = [];
-
-    //Output data result
-    public static $result = [];
-
-    //Observer signal value
-    public static $signal = 0;
+    //Setting file path
+    const PATH = ROOT . 'core' . DIRECTORY_SEPARATOR . 'settings.ini';
 }

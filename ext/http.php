@@ -76,7 +76,7 @@ class http
     public static function request(string $url = '', array $data = [], array $file = []): array
     {
         //Prepare
-        $list_url = self::prep_url($url);
+        $list_url  = self::prep_url($url);
         $list_data = self::prep_data($data, $file);
 
         //Prepare cURL
@@ -156,7 +156,7 @@ class http
         }
 
         self::$data = self::$file = [];
-        $list = ['data' => &$data, 'file' => &$file];
+        $list       = ['data' => &$data, 'file' => &$file];
 
         unset($data, $file);
         return $list;
@@ -252,23 +252,23 @@ class http
     private static function curl_add(string $url, int $port, array $data, array $header): void
     {
         //Initialize
-        $opt = [];
+        $opt  = [];
         $curl = curl_init();
 
         //Build options
-        $opt[CURLOPT_URL] = $url;
-        $opt[CURLOPT_PORT] = $port;
-        $opt[CURLOPT_TIMEOUT] = 60;
-        $opt[CURLOPT_NOSIGNAL] = true;
-        $opt[CURLOPT_AUTOREFERER] = true;
-        $opt[CURLOPT_COOKIESESSION] = true;
+        $opt[CURLOPT_URL]            = $url;
+        $opt[CURLOPT_PORT]           = $port;
+        $opt[CURLOPT_TIMEOUT]        = 60;
+        $opt[CURLOPT_NOSIGNAL]       = true;
+        $opt[CURLOPT_AUTOREFERER]    = true;
+        $opt[CURLOPT_COOKIESESSION]  = true;
         $opt[CURLOPT_RETURNTRANSFER] = true;
         $opt[CURLOPT_SSL_VERIFYHOST] = 2;
         $opt[CURLOPT_SSL_VERIFYPEER] = false;
-        $opt[CURLOPT_HTTPHEADER] = $header;
-        $opt[CURLOPT_ENCODING] = 'identity,*;q=0';
-        $opt[CURLOPT_USERAGENT] = self::$user_agent;
-        $opt[CURLOPT_CUSTOMREQUEST] = self::$Method;
+        $opt[CURLOPT_HTTPHEADER]     = $header;
+        $opt[CURLOPT_ENCODING]       = 'identity,*;q=0';
+        $opt[CURLOPT_USERAGENT]      = self::$user_agent;
+        $opt[CURLOPT_CUSTOMREQUEST]  = self::$Method;
 
         if (!self::$with_body) {
             $opt[CURLOPT_NOBODY] = true;
@@ -304,7 +304,7 @@ class http
 
         if (0 < self::$max_follow) {
             $opt[CURLOPT_FOLLOWLOCATION] = true;
-            $opt[CURLOPT_MAXREDIRS] = self::$max_follow;
+            $opt[CURLOPT_MAXREDIRS]      = self::$max_follow;
         }
 
         if (!empty($data['data']) || !empty($data['file'])) {
@@ -335,7 +335,7 @@ class http
     {
         if (1 === count(self::$curl)) {
             //Single cURL
-            $curl = current(self::$curl);
+            $curl     = current(self::$curl);
             $response = [key(self::$curl) => (string)curl_exec($curl)];
             curl_close($curl);
         } else {

@@ -22,20 +22,67 @@ namespace core\handler;
 
 use core\helper\log;
 
+use core\parser\cmd;
 use core\parser\data;
+use core\parser\input;
+use core\parser\output;
 use core\parser\trustzone;
 
-use core\pool\config;
-use core\pool\order;
-use core\pool\unit;
+use core\pool\command;
+use core\pool\process;
+use core\pool\configure;
 
-class operator
+class operator extends process
 {
     //Order list
     private static $order = [];
 
     /**
-     * Call INIT/LOAD commands
+     * Start operator
+     */
+    public static function start(): void
+    {
+        //Check CORS
+        self::chk_cors();
+
+        //Call INIT
+        if (!empty(configure::$init)) {
+            self::init_load(configure::$init);
+        }
+
+        //Read input
+        input::read();
+
+        //Prepare CMD
+        cmd::prep();
+
+        //Run CGI process
+        self::run_cgi();
+
+        //Run CLI process
+        if (!configure::$is_cgi) {
+            self::run_cli();
+        }
+    }
+
+    /**
+     * Stop operator
+     *
+     * @param int    $errno
+     * @param string $message
+     */
+    public static function stop(int $errno = 0, string $message = ''): void
+    {
+        output::$error['err'] = 0 < $errno ? $errno : 1;
+        output::$error['msg'] = '' !== $message ? $message : 'Process terminated!';
+
+        output::json();
+
+        exit;
+    }
+
+    /**
+     * Call INIT/LOAD
      *
      * @param array $cmd
      */
@@ -48,13 +95,8 @@ class operator
             try {
                 forward_static_call([self::build_class($order), $method]);
             } catch (\Throwable $throwable) {
-                log::debug($order . '-' . $method . ': ' . $throwable->getMessage());
+                error::exception_handler($throwable);
                 unset($throwable);
-            }
-
-            //Check observer status
-            if (observer::stop()) {
-                return;
             }
         }
 
@@ -62,9 +104,75 @@ class operator
     }
 
     /**
+     * Get IP
+     *
+     * @return string
+     */
+    public static function get_ip(): string
+    {
+        //IP check list
+        $chk_list = [
+            'HTTP_CLIENT_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_FORWARDED',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR'
+        ];
+
+        //Check ip values
+        foreach ($chk_list as $key) {
+            if (!isset($_SERVER[$key])) {
+                continue;
+            }
+
+            $ip_list = false !== strpos($_SERVER[$key], ',') ? explode(',', $_SERVER[$key]) : [$_SERVER[$key]];
+
+            foreach ($ip_list as $ip) {
+                $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
+
+                if (false !== $ip) {
+                    unset($chk_list, $key, $ip_list);
+                    return $ip;
+                }
+            }
+        }
+
+        unset($chk_list, $key, $ip_list, $ip);
+        return 'unknown';
+    }
+
+    /**
+     * Check Cross-origin resource sharing permission
+     */
+    private static function chk_cors(): void
+    {
+        if (
+            empty(configure::$cors)
+            || !isset($_SERVER['HTTP_ORIGIN'])
+            || $_SERVER['HTTP_ORIGIN'] === (configure::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
+        ) {
+            return;
+        }
+
+        if (!isset(configure::$cors[$_SERVER['HTTP_ORIGIN']])) {
+            log::info('CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
+            self::stop(1, 'Access denied!');
+        }
+
+        //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        header('Access-Control-Allow-Headers: ' . configure::$cors[$_SERVER['HTTP_ORIGIN']]);
+
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+            exit;
+        }
+    }
+
+    /**
      * Run CGI process
      */
-    public static function run_cgi(): void
+    private static function run_cgi(): void
     {
         //Build order list
         self::build_order();
@@ -76,15 +184,8 @@ class operator
             $class = self::build_class($order);
 
             //Call LOAD commands
-            $load_name = strstr($order, '/', true);
-
-            if (isset(config::$LOAD[$load_name])) {
-                self::init_load(is_string(config::$LOAD[$load_name]) ? [config::$LOAD[$load_name]] : config::$LOAD[$load_name]);
-
-                //Check observer status
-                if (observer::stop()) {
-                    return;
-                }
+            if (isset(configure::$load[$load_name = strstr($order, '/', true)])) {
+                self::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
             }
 
             //Check class
@@ -102,11 +203,6 @@ class operator
             //Call "init" method
             if (method_exists($class, 'init')) {
                 self::build_caller($order, $class, 'init');
-
-                //Check observer status
-                if (observer::stop()) {
-                    return;
-                }
             }
 
             //Check TrustZone permission
@@ -114,54 +210,45 @@ class operator
                 continue;
             }
 
-            //Get TrustZone list & function list & target list
-            $tz_list = array_keys($class::$tz);
+            //Get TrustZone list & function list
+            $tz_list   = array_keys($class::$tz);
             $func_list = get_class_methods($class);
 
-            $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+            //Get target list
+            $target_list = !empty($method)
+                ? array_intersect($method, $tz_list, $func_list)
+                : array_intersect($tz_list, $func_list);
 
             unset($tz_list, $func_list, $method);
 
             //Handle target list
             foreach ($target_list as $target) {
-                //Get TrustZone data
-                $tz_data = trustzone::prep($class::$tz[$target]);
+                try {
+                    //Get TrustZone data
+                    $tz_data = trustzone::load($class::$tz[$target]);
 
-                //Run pre functions
-                if (!empty($tz_data['pre'])) {
-                    foreach ($tz_data['pre'] as $tz_item) {
-                        self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
-
-                        //Check observer status
-                        if (observer::stop()) {
-                            return;
+                    //Run pre functions
+                    if (!empty($tz_data['pre'])) {
+                        foreach ($tz_data['pre'] as $tz_item) {
+                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
                         }
                     }
-                }
 
-                //Check TrustZone
-                if (trustzone::fail($order, $target, array_keys(unit::$data), $tz_data['param'])) {
-                    continue;
-                }
+                    //Check TrustZone
+                    trustzone::verify(array_keys(self::$data), $tz_data['param']);
 
-                //Build method caller
-                self::build_caller($order, $class, $target);
+                    //Build method caller
+                    self::build_caller($order, $class, $target);
 
-                //Check observer status
-                if (observer::stop()) {
-                    return;
-                }
-
-                //Run post functions
-                if (!empty($tz_data['post'])) {
-                    foreach ($tz_data['post'] as $tz_item) {
-                        self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
-
-                        //Check observer status
-                        if (observer::stop()) {
-                            return;
+                    //Run post functions
+                    if (!empty($tz_data['post'])) {
+                        foreach ($tz_data['post'] as $tz_item) {
+                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
                         }
                     }
+                } catch (\Throwable $throwable) {
+                    error::exception_handler($throwable);
+                    unset($throwable);
                 }
             }
         }
@@ -172,45 +259,49 @@ class operator
     /**
      * Run CLI process
      */
-    public static function run_cli(): void
+    private static function run_cli(): void
     {
         //Process orders
-        foreach (order::$cmd_cli as $key => $cmd) {
-            //Prepare command
-            $command = '"' . $cmd . '"';
+        foreach (command::$cmd_cli as $key => $cmd) {
+            try {
+                //Prepare command
+                $command = '"' . $cmd . '"';
 
-            //Append arguments
-            if (!empty(order::$param_cli['argv'])) {
-                $command .= ' ' . implode(' ', order::$param_cli['argv']);
-            }
-
-            //Create process
-            $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
-
-            if (!is_resource($process)) {
-                log::debug($key . ' -> ' . $cmd . ': Access denied or command ERROR!');
-                continue;
-            }
-
-            //Send data via pipe
-            if ('' !== order::$param_cli['pipe']) {
-                fwrite($pipes[0], order::$param_cli['pipe'] . PHP_EOL);
-            }
-
-            //Collect result
-            if (order::$param_cli['ret']) {
-                $data = self::read_pipe([$process, $pipes[1]]);
-
-                if ('' !== $data) {
-                    unit::$result[$key] = &$data;
+                //Append arguments
+                if (!empty(command::$param_cli['argv'])) {
+                    $command .= ' ' . implode(' ', command::$param_cli['argv']);
                 }
 
-                unset($data);
-            }
+                //Create process
+                $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
-            //Close pipes (ignore process)
-            foreach ($pipes as $pipe) {
-                fclose($pipe);
+                if (!is_resource($process)) {
+                    throw new \Exception($key . ' => ' . $cmd . ': Access denied or command ERROR!');
+                }
+
+                //Send data via pipe
+                if ('' !== command::$param_cli['pipe']) {
+                    fwrite($pipes[0], command::$param_cli['pipe'] . PHP_EOL);
+                }
+
+                //Collect result
+                if (command::$param_cli['ret']) {
+                    $data = self::read_pipe([$process, $pipes[1]]);
+
+                    if ('' !== $data) {
+                        self::$result[$key] = &$data;
+                    }
+
+                    unset($data);
+                }
+
+                //Close pipes (ignore process)
+                foreach ($pipes as $pipe) {
+                    fclose($pipe);
+                }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable);
+                unset($throwable);
             }
         }
 
@@ -220,13 +311,13 @@ class operator
     /**
      * Get root class name
      *
-     * @param string $library
+     * @param string $lib
      *
      * @return string
      */
-    private static function build_class(string $library): string
+    private static function build_class(string $lib): string
     {
-        return '\\' . ltrim(strtr($library, '/', '\\'), '\\');
+        return '\\' . ltrim(strtr($lib, '/', '\\'), '\\');
     }
 
     /**
@@ -235,7 +326,7 @@ class operator
     private static function build_order(): void
     {
         $key = 0;
-        foreach (order::$cmd_cgi as $item) {
+        foreach (command::$cmd_cgi as $item) {
             if (false !== strpos($item, '/') && isset(self::$order[$key])) {
                 ++$key;
             }
@@ -252,36 +343,33 @@ class operator
      * @param string $order
      * @param string $class
      * @param string $method
+     *
+     * @throws \ReflectionException
      */
     private static function build_caller(string $order, string $class, string $method): void
     {
-        try {
-            //Reflection method
-            $reflect = new \ReflectionMethod($class, $method);
+        //Reflection method
+        $reflect = new \ReflectionMethod($class, $method);
 
-            //Check visibility
-            if (!$reflect->isPublic()) {
-                throw new \Exception('NOT for public!');
-            }
+        //Check visibility
+        if (!$reflect->isPublic()) {
+            throw new \Exception($order . ' => ' . $method . ': NOT for public!');
+        }
 
-            //Build arguments
-            $params = data::build_argv($reflect, unit::$data);
+        //Build arguments
+        $params = data::build_argv($reflect, self::$data);
 
-            //Create object
-            if (!$reflect->isStatic()) {
-                $class = unit::$object[$order] ?? unit::$object[$order] = new $class;
-            }
+        //Create object
+        if (!$reflect->isStatic()) {
+            $class = factory::new($class);
+        }
 
-            //Call method (with params)
-            $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
+        //Call method (with params)
+        $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
 
-            //Save result (Try mapping keys)
-            if (isset($result)) {
-                unit::$result[self::build_key($order, $method)] = &$result;
-            }
-        } catch (\Throwable $throwable) {
-            log::debug($order . '-' . $method . ': ' . $throwable->getMessage());
-            unset($throwable);
+        //Save result (Try mapping keys)
+        if (isset($result)) {
+            self::$result[self::build_key($order, $method)] = &$result;
         }
 
         unset($order, $class, $method, $reflect, $params, $result);
@@ -297,7 +385,7 @@ class operator
      */
     private static function build_key(string $class, string $method): string
     {
-        $key = order::$param_cgi[$class . '-' . $method] ?? (order::$param_cgi[$class] ?? $class) . '/' . $method;
+        $key = command::$param_cgi[$class . '-' . $method] ?? (command::$param_cgi[$class] ?? $class) . '/' . $method;
 
         unset($class, $method);
         return $key;
@@ -312,11 +400,11 @@ class operator
      */
     private static function read_pipe(array $process): string
     {
-        $timer = 0;
+        $timer  = 0;
         $result = '';
 
         //Keep watching & reading
-        while (0 === order::$param_cli['time'] || $timer <= order::$param_cli['time']) {
+        while (0 === command::$param_cli['time'] || $timer <= command::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);
                 $timer += 1000;

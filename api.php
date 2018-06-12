@@ -21,11 +21,6 @@
 //Declare strict types
 declare(strict_types = 1);
 
-//Check PHP version
-if (version_compare(PHP_VERSION, '7.2.0', '<')) {
-    exit('NervSys needs PHP 7.2.0 or higher!');
-}
-
 //Set time limit
 set_time_limit(0);
 
@@ -41,36 +36,17 @@ date_default_timezone_set('PRC');
 //Set response header
 header('Content-Type: application/json; charset=utf-8');
 
-//Define NervSys version
-define('NS_VER', '6.0.0');
+//Require initial script
+require __DIR__ . '/core/settings.php';
 
-//Define absolute root path
-define('ROOT', realpath(__DIR__));
+//Track error
+\core\handler\error::track();
 
-//Register autoload function
-spl_autoload_register(
-    static function (string $library): void
-    {
-        if (false === strpos($library, '\\')) {
-            return;
-        }
+//Load settings
+\core\parser\settings::load();
 
-        //Check library path
-        $lib_file = realpath(ROOT . DIRECTORY_SEPARATOR . strtr($library, '\\', DIRECTORY_SEPARATOR) . '.php');
+//Start operator
+\core\handler\operator::start();
 
-        if (is_string($lib_file)) {
-            require $lib_file;
-        }
-
-        unset($library, $lib_file);
-    }
-);
-
-//Start error handler
-\core\helper\error::start();
-
-//Start observer handler
-\core\handler\observer::start();
-
-//Output observer collection
-echo \core\handler\observer::collect();
+//Output JSON
+\core\parser\output::json();

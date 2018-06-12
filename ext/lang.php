@@ -24,8 +24,8 @@ class lang
 {
     /**
      * Language file directory
-     * Related to "ROOT/$dir/"
-     * Language file should be located in "ROOT/$dir/self::$dir/$lang/LC_MESSAGES/filename.mo"
+     * Related to "ROOT$dir/"
+     * Language file should be located in "ROOT$dir/self::$dir/$lang/LC_MESSAGES/filename.mo"
      *
      * @var string
      */
@@ -45,7 +45,7 @@ class lang
         putenv('LANG=' . self::$lang);
         setlocale(LC_ALL, self::$lang);
 
-        bindtextdomain($file, ROOT . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR);
+        bindtextdomain($file, ROOT . $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR);
         textdomain($file);
 
         unset($dir, $file);

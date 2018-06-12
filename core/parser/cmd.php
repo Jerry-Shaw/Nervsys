@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Command Parser
+ * CMD Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -22,25 +22,30 @@ namespace core\parser;
 
 use core\handler\platform;
 
-use core\pool\config;
-use core\pool\order;
+use core\pool\command;
+use core\pool\configure;
 
-class cmd
+class cmd extends command
 {
     /**
      * Prepare CMD
      */
     public static function prep(): void
     {
+        //Check CMD
+        if ('' === self::$cmd) {
+            throw new \Exception('Command NOT found!');
+        }
+
         //Extract CMD
-        $cmd = false !== strpos(order::$cmd, '-') ? explode('-', order::$cmd) : [order::$cmd];
+        $cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : [self::$cmd];
 
         //Prepare CGI CMD
-        order::$cmd_cgi = self::prep_cgi($cmd);
+        self::$cmd_cgi = self::prep_cgi($cmd);
 
         //Prepare CLI CMD
-        if (!config::$IS_CGI) {
-            order::$cmd_cli = self::prep_cli($cmd);
+        if (!configure::$is_cgi) {
+            self::$cmd_cli = self::prep_cli($cmd);
         }
 
         unset($cmd);
@@ -55,40 +60,36 @@ class cmd
      */
     private static function prep_cgi(array $cmd): array
     {
-        if (empty(config::$CGI)) {
+        if (empty(settings::$cgi)) {
             return $cmd;
         }
 
         //Mapping CGI config
-        foreach (config::$CGI as $name => $item) {
-            $keys = array_keys($cmd, $name, true);
-
-            if (!empty($keys)) {
+        foreach (settings::$cgi as $name => $item) {
+            if (!empty($keys = array_keys($cmd, $name, true))) {
+                //Replace mapped CMD
                 foreach ($keys as $key) {
                     $cmd[$key] = $item;
                 }
-
-                order::$param_cgi[$item] = $name;
+                //Add mapping params
+                self::$param_cgi[$item] = $name;
             } else {
-                foreach ($cmd as $key => $value) {
-                    if (0 !== strpos($value, $name)) {
-                        continue;
+                foreach ($cmd as $key => $val) {
+                    if (0 === strpos($val, $name)) {
+                        //Replace mapped CMD
+                        $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
+                        //Add mapping params
+                        self::$param_cgi[$cmd[$key]] = $val;
                     }
-
-                    $order = substr_replace($value, $item, 0, strlen($name));
-
-                    $cmd[$key] = $order;
-                    order::$param_cgi[$order] = $value;
                 }
             }
         }
 
         //Rebuild CGI CMD
-        $order = implode('-', $cmd);
-        $cmd = false !== strpos($order, '-') ? explode('-', $order) : [$order];
+        $order = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
 
-        unset($name, $item, $keys, $key, $value, $order);
-        return $cmd;
+        unset($cmd, $name, $item, $keys, $key, $val);
+        return $order;
     }
 
     /**
@@ -102,19 +103,19 @@ class cmd
     {
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            config::$CLI['PHP'] = platform::sys_path();
+            settings::$cli['PHP'] = platform::sys_path();
         }
 
-        //Check CLI config
-        if (empty(config::$CLI)) {
+        //Check CLI settings
+        if (empty(settings::$cli)) {
             return [];
         }
 
         //Build CLI CMD
         $order = [];
         foreach ($cmd as $item) {
-            if (isset(config::$CLI[$item]) && '' !== config::$CLI[$item]) {
-                $order[$item] = config::$CLI[$item];
+            if (isset(settings::$cli[$item]) && '' !== settings::$cli[$item]) {
+                $order[$item] = settings::$cli[$item];
             }
         }
 

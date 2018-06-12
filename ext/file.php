@@ -58,11 +58,9 @@ class file
         }
 
         //Format path with DIRECTORY_SEPARATOR
-        if (false !== strpos($path, '\\')) {
-            $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
-        }
+        $path = strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]);
 
-        //Trim "/"
+        //Trim DIRECTORY_SEPARATOR
         $path = trim($path, DIRECTORY_SEPARATOR);
 
         //Return "/" when path is empty
@@ -71,7 +69,7 @@ class file
         }
 
         //Add DIRECTORY_SEPARATOR
-        $path = DIRECTORY_SEPARATOR . $path;
+        $path .= DIRECTORY_SEPARATOR;
 
         //Create directories
         $dir = $root . $path;
@@ -83,7 +81,7 @@ class file
         }
 
         //Check path property
-        $path = is_readable($dir) ? $path . DIRECTORY_SEPARATOR : '';
+        $path = is_readable($dir) ? $path : '';
 
         unset($root, $mode, $dir);
         return $path;
@@ -103,14 +101,12 @@ class file
     public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array
     {
         //Check path
-        $pathname = realpath($path);
-
-        if (false === $pathname) {
+        if (false === $pathname = realpath($path)) {
             throw new \Exception('[' . $path . '] can not be accessed!');
         }
 
         $pathname .= DIRECTORY_SEPARATOR;
-        $list = glob($pathname . $pattern, GLOB_NOSORT | GLOB_BRACE);
+        $list     = glob($pathname . $pattern, GLOB_NOSORT | GLOB_BRACE);
 
         //Return list on non-recursive
         if (!$recursive) {

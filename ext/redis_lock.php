@@ -45,7 +45,7 @@ class redis_lock extends redis
      */
     public static function on(string $key): bool
     {
-        $retry = 0;
+        $retry    = 0;
         $lock_key = self::$prefix . $key;
 
         //Set lock

@@ -20,23 +20,21 @@
 
 namespace core\parser;
 
-use core\helper\log;
-
 class trustzone
 {
     /**
-     * Prepare TrustZone data
+     * Load TrustZone
      *
      * @param array $trustzone
      *
      * @return array
      */
-    public static function prep(array $trustzone): array
+    public static function load(array $trustzone): array
     {
         $data = [];
 
-        $data['pre'] = isset($trustzone['pre']) ? self::prep_cmd($trustzone['pre']) : [];
-        $data['post'] = isset($trustzone['post']) ? self::prep_cmd($trustzone['post']) : [];
+        $data['pre']   = isset($trustzone['pre']) ? self::prep_cmd($trustzone['pre']) : [];
+        $data['post']  = isset($trustzone['post']) ? self::prep_cmd($trustzone['post']) : [];
         $data['param'] = isset($trustzone['param']) ? $trustzone['param'] : (is_int(key($trustzone)) ? $trustzone : []);
 
         unset($trustzone);
@@ -44,29 +42,22 @@ class trustzone
     }
 
     /**
-     * Check TrustZone data
+     * Verify TrustZone data
      *
-     * @param string $name
-     * @param string $method
-     * @param array  $data
-     * @param array  $param
+     * @param array $data
+     * @param array $param
      *
-     * @return bool
+     * @throws \Exception
      */
-    public static function fail(string $name, string $method, array $data, array $param): bool
+    public static function verify(array $data, array $param): void
     {
         //Compare data with TrustZone
-        $inter = array_intersect($data, $param);
-        $diff = array_diff($param, $inter);
-        $failed = !empty($diff);
-
-        //Report TrustZone missing
-        if ($failed) {
-            log::debug($name . '-' . $method . ': ' . 'TrustZone missing [' . (implode(', ', $diff)) . ']');
+        if (!empty($param) && !empty($diff = array_diff($param, array_intersect($data, $param)))) {
+            //Report TrustZone missing
+            throw new \Exception('TrustZone missing [' . (implode(', ', $diff)) . ']');
         }
 
-        unset($name, $method, $data, $param, $inter, $diff);
-        return $failed;
+        unset($data, $param, $diff);
     }
 
     /**
@@ -78,11 +69,8 @@ class trustzone
      */
     private static function prep_cmd(array $cmd): array
     {
-        if (!is_array($cmd) || empty($cmd)) {
-            return [];
-        }
-
         $data = [];
+
         foreach ($cmd as $item) {
             if (false !== strpos($item, '-')) {
                 list($order, $method) = explode('-', $item, 2);

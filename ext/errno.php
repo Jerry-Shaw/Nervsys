@@ -20,14 +20,14 @@
 
 namespace ext;
 
-use core\pool\unit;
+use core\parser\output;
 
 class errno
 {
     /**
      * Error file directory
-     * Related to "ROOT/$dir/"
-     * Error file should be located in "ROOT/$dir/self::$dir/filename.ini"
+     * Related to "ROOT$dir/"
+     * Error file should be located in "ROOT$dir/self::$dir/filename.ini"
      *
      * @var string
      */
@@ -49,16 +49,13 @@ class errno
      */
     public static function load(string $dir, string $file): void
     {
-        $file = DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR . $file . '.ini';
-        $path = realpath(ROOT . $file);
+        $file = $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR . $file . '.ini';
 
-        if (false === $path) {
+        if (false === $path = realpath(ROOT . $file)) {
             throw new \Exception('[' . $file . '] NOT found!');
         }
 
-        $error = parse_ini_file($path, false);
-
-        if (false === $error) {
+        if (false === $error = parse_ini_file($path, false)) {
             throw new \Exception('[' . $file . '] ERROR!');
         }
 
@@ -68,14 +65,14 @@ class errno
     }
 
     /**
-     * Set standard error result into unit error
+     * Set standard error result into output error
      *
      * @param int $code
      * @param int $errno
      */
     public static function set(int $code, int $errno = 0): void
     {
-        unit::$error = self::get($code, $errno);
+        output::$error = self::get($code, $errno);
     }
 
     /**

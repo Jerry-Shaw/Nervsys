@@ -181,10 +181,10 @@ class crypt_code extends crypt
         $font_file = __DIR__ . DIRECTORY_SEPARATOR . 'font' . DIRECTORY_SEPARATOR . self::$font;
 
         $font_height = (int)(self::$height / 1.6);
-        $font_width = (int)(self::$width / count($codes['char']));
-        $font_size = $font_width < $font_height ? $font_width : $font_height;
+        $font_width  = (int)(self::$width / count($codes['char']));
+        $font_size   = $font_width < $font_height ? $font_width : $font_height;
 
-        $top_padding = (int)(self::$height - (self::$height - $font_size) / 1.8);
+        $top_padding  = (int)(self::$height - (self::$height - $font_size) / 1.8);
         $left_padding = (int)((self::$width - $font_size * count($codes['char'])) / 2);
 
         //Create image

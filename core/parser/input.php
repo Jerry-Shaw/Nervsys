@@ -20,39 +20,36 @@
 
 namespace core\parser;
 
-use core\pool\config;
-use core\pool\order;
-use core\pool\unit;
+use core\pool\process;
+use core\pool\command;
+use core\pool\configure;
 
-class input
+class input extends process
 {
     /**
-     * Prepare data
+     * Read input
      */
-    public static function prep(): void
+    public static function read(): void
     {
-        if (config::$IS_CGI) {
+        if (configure::$is_cgi) {
             //Read HTTP & input
             self::read_http();
             self::read_raw();
         } else {
             //Read option & argument
-            $optind = self::read_opt();
-            self::read_argv($optind);
-
-            unset($optind);
+            self::read_argv(self::read_opt());
         }
 
-        //Check CMD
-        if ('' === order::$cmd) {
-            $val = self::opt_val(unit::$data, ['cmd', 'c']);
-
-            $val['get'] && is_string($val['data']) && '' !== $val['data']
-                ? order::$cmd = &$val['data']
-                : trigger_error('Command NOT found!', E_USER_ERROR);
-
-            unset($val);
+        //Check command
+        if ('' === command::$cmd
+            && !empty($val = self::opt_val(self::$data, ['cmd', 'c']))
+            && is_string($val['data'])
+        ) {
+            //Copy command
+            command::$cmd = &$val['data'];
         }
+
+        unset($val);
     }
 
     /**
@@ -62,35 +59,33 @@ class input
     {
         //Read FILES
         if (!empty($_FILES)) {
-            unit::$data += $_FILES;
+            self::$data += $_FILES;
         }
 
         //Read POST
         if (!empty($_POST)) {
-            unit::$data += $_POST;
+            self::$data += $_POST;
         }
 
         //Read GET
         if (!empty($_GET)) {
-            unit::$data += $_GET;
+            self::$data += $_GET;
         }
     }
 
     /**
-     * Read raw data data
+     * Read raw data
      */
     private static function read_raw(): void
     {
-        $input = file_get_contents('php://input');
-
-        if (false === $input || '' === $input) {
+        //Read data
+        if (empty($input = file_get_contents('php://input'))) {
             return;
         }
 
-        $data = json_decode($input, true);
-
-        if (is_array($data) && !empty($data)) {
-            unit::$data += $data;
+        //Decode dara in JSON
+        if (is_array($data = json_decode($input, true))) {
+            self::$data += $data;
         }
 
         unset($input, $data);
@@ -112,37 +107,33 @@ class input
          * t/time: read timeout (in microseconds; default "0" means read till done)
          * r/ret: process return option (Available in CLI executable mode only)
          */
-        $opt = getopt('c:d:p:t:r', ['cmd:', 'data:', 'pipe', 'time:', 'ret'], $optind);
-
-        if (empty($opt)) {
+        //Get options
+        if (empty($opt = getopt('c:d:p:t:r', ['cmd:', 'data:', 'pipe', 'time:', 'ret'], $optind))) {
             return $optind;
         }
 
         //Get CMD value
-        $val = self::opt_val($opt, ['cmd', 'c']);
-
-        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            unit::$data += [$val['key'] => data::decode($val['data'])];
+        if (!empty($val = self::opt_val($opt, ['cmd', 'c'])) && is_string($val['data'])) {
+            self::$data += [$val['key'] => data::decode($val['data'])];
         }
 
         //Get CGI data value
-        $val = self::opt_val($opt, ['data', 'd']);
-
-        if ($val['get'] && is_string($val['data']) && '' !== $val['data']) {
-            unit::$data += self::opt_data($val['data']);
+        if (!empty($val = self::opt_val($opt, ['data', 'd'])) && is_string($val['data'])) {
+            self::$data += self::opt_data($val['data']);
         }
 
         //Get pipe data value
-        $val = self::opt_val($opt, ['pipe', 'p']);
-        order::$param_cli['pipe'] = $val['get'] ? data::decode((string)$val['data']) : '';
+        if (!empty($val = self::opt_val($opt, ['pipe', 'p'])) && is_string($val['data'])) {
+            command::$param_cli['pipe'] = data::decode($val['data']);
+        }
 
         //Get pipe timeout value
-        $val = self::opt_val($opt, ['time', 't']);
-        order::$param_cli['time'] = $val['get'] ? (int)$val['data'] : 0;
+        if (!empty($val = self::opt_val($opt, ['time', 't']))) {
+            command::$param_cli['time'] = (int)$val['data'];
+        }
 
         //Get return option
-        $val = self::opt_val($opt, ['ret', 'r']);
-        order::$param_cli['ret'] = &$val['get'];
+        command::$param_cli['ret'] = !empty(self::opt_val($opt, ['ret', 'r']));
 
         unset($opt, $val);
         return $optind;
@@ -156,18 +147,14 @@ class input
     private static function read_argv(int $optind): void
     {
         //Extract arguments
-        order::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind);
-
-        if (empty(order::$param_cli['argv'])) {
+        if (empty(command::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
             return;
         }
 
         //Recheck CMD
-        $value = self::opt_val(unit::$data, ['cmd', 'c']);
-
-        !$value['get'] || !is_string($value['data']) || '' === $value['data']
-            ? unit::$data['cmd'] = data::decode(array_shift(order::$param_cli['argv']))
-            : unit::$data[$value['key']] = &$value['data'];
+        empty($value = self::opt_val(self::$data, ['cmd', 'c'])) || !is_string($value['data'])
+            ? self::$data['cmd'] = data::decode(array_shift(command::$param_cli['argv']))
+            : self::$data[$value['key']] = &$value['data'];
 
         unset($optind, $value);
     }
@@ -182,21 +169,17 @@ class input
      */
     private static function opt_val(array &$opt, array $keys): array
     {
-        $result = ['get' => false, 'key' => '', 'data' => ''];
-
         foreach ($keys as $key) {
             if (isset($opt[$key])) {
-                $result['get'] = true;
-                $result['key'] = $key;
-                $result['data'] = $opt[$key];
+                $data = ['key' => &$key, 'data' => &$opt[$key]];
 
-                unset($opt[$key]);
-                return $result;
+                unset($opt[$key], $keys, $key);
+                return $data;
             }
         }
 
         unset($keys, $key);
-        return $result;
+        return [];
     }
 
     /**
@@ -208,11 +191,8 @@ class input
      */
     private static function opt_data(string $value): array
     {
-        //Decode data in JSON
-        $data = json_decode(data::decode($value), true);
-
-        //Decode data in HTTP Query
-        if (!is_array($data)) {
+        //Decode data in JSON/QUERY
+        if (!is_array($data = json_decode(data::decode($value), true))) {
             parse_str($value, $data);
         }
 

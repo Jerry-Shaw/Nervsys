@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Logger Helper
+ * Log Helper
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,12 +20,12 @@
 
 namespace core\helper;
 
-use core\pool\config;
+use core\pool\configure;
 
 class log
 {
     //Log path
-    public static $file_path = ROOT . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
+    public static $path = ROOT . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
 
     /**
      * Log emergency
@@ -35,7 +35,7 @@ class log
      */
     public static function emergency(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -48,7 +48,7 @@ class log
      */
     public static function alert(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -61,7 +61,7 @@ class log
      */
     public static function critical(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -74,7 +74,7 @@ class log
      */
     public static function error(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -87,7 +87,7 @@ class log
      */
     public static function warning(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -100,7 +100,7 @@ class log
      */
     public static function notice(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -113,7 +113,7 @@ class log
      */
     public static function info(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
@@ -126,63 +126,65 @@ class log
      */
     public static function debug(string $message, array $context = []): void
     {
-        self::handle(__FUNCTION__, $message, $context);
+        self::save(__FUNCTION__, $message, $context);
 
         unset($message, $context);
     }
 
     /**
-     * Handle logs
+     * Save logs
      *
      * @param string $level
      * @param string $message
      * @param array  $context
      */
-    private static function handle(string $level, string $message, array $context): void
+    private static function save(string $level, string $message, array $context): void
     {
-        //Check setting
-        if (!isset(config::$LOG[$level]) || 0 === (int)config::$LOG[$level]) {
+        //Check configure
+        if (!isset(configure::$log[$level]) || 0 === (int)configure::$log[$level]) {
             return;
         }
 
         //Check log path
-        if (false === realpath(self::$file_path)) {
-            $mkdir = mkdir(self::$file_path, 0664, true);
+        if (false === realpath(self::$path) && !mkdir(self::$path, 0776, true) && !chmod(self::$path, 0776)) {
+            self::show('warning', 'Log path: "' . self::$path . '" NOT exist!', ['Access denied!', 'Please check permissions!']);
+            self::show($level, $message, $context);
 
-            if (!$mkdir) {
-                return;
-            }
-
-            unset($mkdir);
+            return;
         }
 
         //Add datetime & log message & empty line
-        array_unshift($context, date('Y-m-d H:i:s'), strtoupper($level) . ': ' . $message);
+        array_unshift($context, date('Y-m-d H:i:s'), ucfirst($level) . ': ' . $message);
         $context[] = '';
 
         //Generate log file name
-        $file = self::$file_path . $level . '-' . date('Ymd') . '.log';
+        $file = self::$path . $level . '-' . date('Ymd') . '.log';
 
         //Write log
-        foreach ($context as &$value) {
-            if (!is_string($value)) {
-                $value = json_encode($value, 4034);
-            }
-
-            $value .= PHP_EOL;
-
-            file_put_contents($file, $value, FILE_APPEND);
+        foreach ($context as $value) {
+            file_put_contents($file, (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL, FILE_APPEND);
         }
 
-        unset($value);
+        unset($level, $message, $context, $file, $value);
+    }
 
-        //Output log
-        if (0 < error::$level) {
-            foreach ($context as $value) {
-                echo $value;
-            }
+    /**
+     * Show logs
+     *
+     * @param string $level
+     * @param string $message
+     * @param array  $context
+     */
+    public static function show(string $level, string $message, array $context): void
+    {
+        echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+
+        foreach ($context as $value) {
+            echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
         }
 
-        unset($level, $context, $file, $value);
+        echo PHP_EOL . PHP_EOL;
+
+        unset($level, $message, $context, $value);
     }
 }

@@ -49,6 +49,7 @@ class platform implements os
      * @param string $cmd
      *
      * @return string
+     * @throws \Exception
      */
     public static function cmd_bg(string $cmd): string
     {
@@ -61,6 +62,7 @@ class platform implements os
      * @param string $cmd
      *
      * @return string
+     * @throws \Exception
      */
     public static function cmd_proc(string $cmd): string
     {
@@ -71,16 +73,14 @@ class platform implements os
      * Get platform handler
      *
      * @return string
+     * @throws \Exception
      */
     private static function handler(): string
     {
-        if ('' !== self::$handler) {
-            return self::$handler;
+        if ('' === self::$handler && !class_exists(self::$handler = '\\core\\handler\\platform\\' . strtolower(PHP_OS))) {
+            throw new \Exception(PHP_OS . ': NOT support!');
         }
 
-        $handler = '\\core\\handler\\platform\\' . strtolower(PHP_OS);
-        class_exists($handler) ? self::$handler = &$handler : trigger_error(PHP_OS . ': NOT supported!', E_USER_ERROR);
-
-        return $handler;
+        return self::$handler;
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Config Pool
+ * Process Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,21 +20,11 @@
 
 namespace core\pool;
 
-class config
+class process
 {
-    //Config settings
-    public static $LOG    = [];
-    public static $CGI    = [];
-    public static $CLI    = [];
-    public static $CORS   = [];
-    public static $INIT   = [];
-    public static $LOAD   = [];
-    public static $SIGNAL = [];
+    //Data pool
+    public static $data = [];
 
-    //Runtime settings
-    public static $IS_CGI   = true;
-    public static $IS_HTTPS = true;
-
-    //Config file path
-    const CONF_PATH = ROOT . DIRECTORY_SEPARATOR . 'core' . DIRECTORY_SEPARATOR . 'setting.ini';
+    //Result pool
+    public static $result = [];
 }

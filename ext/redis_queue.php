@@ -132,7 +132,7 @@ class redis_queue extends redis
     {
         $list = [];
 
-        $list['len'] = self::connect()->lLen(self::$key_fail);
+        $list['len']  = self::connect()->lLen(self::$key_fail);
         $list['data'] = self::connect()->lRange(self::$key_fail, $start, $end);
 
         unset($start, $end);
@@ -201,7 +201,7 @@ class redis_queue extends redis
         //Build process command
         $command = [
             platform::sys_path(),
-            ROOT . DIRECTORY_SEPARATOR . 'api.php',
+            ROOT . 'api.php',
             '--cmd "' . strtr(__CLASS__, '\\', '/') . '-process"',
             '--ret'
         ];
@@ -260,7 +260,7 @@ class redis_queue extends redis
     {
         //Process Hash & Key
         $process_hash = hash('md5', uniqid(mt_rand(), true));
-        $process_key = self::$prefix_process . $process_hash;
+        $process_key  = self::$prefix_process . $process_hash;
 
         //Set timeout & lifetime
         $time_wait = (int)(self::$scan_wait / 2);

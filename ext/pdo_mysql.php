@@ -56,7 +56,7 @@ class pdo_mysql extends pdo
         $column = self::build_data($data);
 
         //Prepare & execute
-        $sql = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
+        $sql  = 'INSERT INTO ' . self::escape($table) . ' (' . implode(', ', array_keys($column)) . ') VALUES(' . implode(', ', $column) . ')';
         $stmt = self::connect()->prepare($sql);
 
         try {
@@ -126,7 +126,7 @@ class pdo_mysql extends pdo
         unset($where);
 
         //Prepare & execute
-        $sql = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
+        $sql  = 'UPDATE ' . self::escape($table) . ' SET ' . implode(', ', $set_opt) . ' ' . implode(' ', $where_opt);
         $stmt = self::connect()->prepare($sql);
 
         try {
@@ -196,7 +196,7 @@ class pdo_mysql extends pdo
         $data = self::build_opt($option);
 
         //Prepare & execute
-        $sql = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
+        $sql  = 'SELECT ' . $data['field'] . ' FROM ' . self::escape($table) . ' ' . implode(' ', $option);
         $stmt = self::connect()->prepare($sql);
 
         try {
@@ -243,7 +243,7 @@ class pdo_mysql extends pdo
         $where_opt = self::build_where($where);
 
         //Prepare & execute
-        $sql = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
+        $sql  = 'DELETE FROM ' . self::escape($table) . ' ' . implode(' ', $where_opt);
         $stmt = self::connect()->prepare($sql);
 
         try {
@@ -447,7 +447,7 @@ class pdo_mysql extends pdo
                 $item[2] = $item[1];
                 $item[1] = '=';
             } elseif (in_array($operator, ['IN', 'NOT IN', 'NOT EXISTS'], true)) {
-                $item[1] = $operator;
+                $item[1]  = $operator;
                 $in_value = true;
             } elseif (in_array($operator, ['IS NULL', 'IS NOT NULL'], true)) {
                 $item[1] = $operator;
@@ -464,7 +464,7 @@ class pdo_mysql extends pdo
 
             //Add logic gate to option
             if (isset($item[3])) {
-                $gate = strtoupper($item[3]);
+                $gate     = strtoupper($item[3]);
                 $option[] = in_array($gate, ['AND', 'OR', 'NOT'], true) ? $gate : 'AND';
                 unset($gate);
             }
@@ -539,7 +539,7 @@ class pdo_mysql extends pdo
      */
     private static function build_opt(array &$opt): array
     {
-        $data = [];
+        $data         = [];
         $data['bind'] = [];
 
         //Process "field"
@@ -672,7 +672,7 @@ class pdo_mysql extends pdo
             $opt['where'] = implode(' ', self::build_where($opt_data));
         } elseif (is_string($opt_data) && '' !== $opt_data) {
             $opt['where'] = 'WHERE ' . $opt_data;
-            $opt_data = [];
+            $opt_data     = [];
         }
 
         return $opt_data;
@@ -774,10 +774,10 @@ class pdo_mysql extends pdo
             }
 
             $opt['limit'] = 'LIMIT :l_start, :l_offset';
-            $data = [':l_start' => (int)$opt_data[0], ':l_offset' => (int)$opt_data[1]];
+            $data         = [':l_start' => (int)$opt_data[0], ':l_offset' => (int)$opt_data[1]];
         } elseif (is_numeric($opt_data)) {
             $opt['limit'] = 'LIMIT :l_start, :l_offset';
-            $data = [':l_start' => 0, ':l_offset' => (int)$opt_data];
+            $data         = [':l_start' => 0, ':l_offset' => (int)$opt_data];
         } elseif (is_string($opt_data) && '' !== $opt_data) {
             $opt['limit'] = 'LIMIT ' . $opt_data;
         }

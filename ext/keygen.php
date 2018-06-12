@@ -43,7 +43,7 @@ class keygen implements key
      */
     public static function extract(string $key): array
     {
-        $keys = [];
+        $keys        = [];
         $keys['key'] = &$key;
 
         $keys['iv'] = 0 === ord(substr($key, 0, 1)) & 1
@@ -93,9 +93,9 @@ class keygen implements key
         $unit = str_split($key, 5);
 
         foreach ($unit as $k => $v) {
-            $unit_key = substr($v, -1, 1);
+            $unit_key  = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
-            $unit[$k] = ($k & 1 !== ord($unit_key) & 1) ? strrev($unit_item) : $unit_item;
+            $unit[$k]  = ($k & 1 !== ord($unit_key) & 1) ? strrev($unit_item) : $unit_item;
         }
 
         $key = implode($unit);

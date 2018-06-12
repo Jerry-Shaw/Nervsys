@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable Version: 6.0.0  
+Beta Version: 6.2.0  
 
 
 ## About
@@ -24,6 +24,7 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
 ## Structure
 
     /
+    ├─api.php                                   API entry script
     ├─core/
     │     ├─handler/
     │     │        ├─platform/
@@ -33,23 +34,25 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │     │        │         ├─linux.php        linux OS handler
     │     │        │         ├─winnt.php        winnt OS handler
     │     │        │         └─...
-    │     │        ├─observer.php               observer handler
+    │     │        ├─error.php                  error handler
+    │     │        ├─factory.php                factory handler
     │     │        ├─operator.php               operator handler
     │     │        └─platform.php               platform handler
     │     ├─helper/
-    │     │       ├─error.php                   error helper
     │     │       └─log.php                     log helper
     │     ├─parser/
     │     │       ├─cmd.php                     command parser
     │     │       ├─data.php                    data parser
     │     │       ├─input.php                   input data parser
+    │     │       ├─output.php                  output data parser
     │     │       ├─setting.php                 setting config parser
     │     │       └─trustzone.php               TrustZone data parser
     │     ├─pool/
-    │     │     ├─config.php                    config data pool
-    │     │     ├─order.php                     cmd order pool
-    │     │     └─unit.php                      io unit data poll
-    │     └─setting.ini                         setting config file
+    │     │     ├─command.php                   command pool
+    │     │     ├─configure.php                 configure pool
+    │     │     └─process.php                   process date poll
+    │     ├─settings.ini                        setting config file
+    │     └─settings.php                        setting script file
     └─ext/
          ├─font/
          ├─lib/
@@ -228,22 +231,24 @@ The words above are reserved by NervSys core. So that, they should be taken care
     No returned value will be captured.
 
 
-### SIGNAL
+### PATH
 
-    [SIGNAL]
-    This section works for all.
-    This section contains custom set observer signals and messages.
+    [PATH]
+    This section works for autoload function.
+    This section contains custom paths to include.
+    Only works for non-namespace-class include paths.
     
     Some example:
     
-    1 = Process Terminated! Some reason...
-    2 = Process Terminated! Some reason...
-    3 = Process Terminated! Some reason...
+    1 = pathA ; Relative path to ROOT
+    2 = /pathB/ ; Absolute path
+    3 = pathA/pathB/ ; Relative path to ROOT
+    4 = /pathA/pathB ; Absolute path
     ...
-    
-    Once when observer received a signal not equal to 0, process terminated, corresponding message 
-    will be logged and showed up.
 
+    Notice: 
+    The last "/" of the path is not required.
+    
 
 ## Examples
     

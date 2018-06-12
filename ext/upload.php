@@ -166,9 +166,9 @@ class upload
             }
 
             //Upload done
-            $result[$key]['file_url'] = &$url_path;
+            $result[$key]['file_url']  = &$url_path;
             $result[$key]['file_size'] = &$file_size;
-            $result[$key] += errno::get(1000, 0);
+            $result[$key]              += errno::get(1000, 0);
         }
 
         unset($upload, $path, $ext, $files, $key, $file, $file_size, $file_ext, $save_path, $save_name, $url_path);
@@ -267,9 +267,9 @@ class upload
             chmod($file_path, self::$file_mode);
 
             //Upload done
-            $result[$key]['file_url'] = &$url_path;
+            $result[$key]['file_url']  = &$url_path;
             $result[$key]['file_size'] = &$file_size;
-            $result[$key] += errno::get(1000, 0);
+            $result[$key]              += errno::get(1000, 0);
         }
 
         unset($base64, $path, $ext, $files, $key, $file, $file_ext, $file_size, $save_path, $save_name, $url_path, $file_path, $save_file);
@@ -325,7 +325,7 @@ class upload
 
             $mime = (string)substr($item, 5, $pos - 5);
 
-            $list[$key]['ext'] = (string)array_search($mime, self::MIME, true);
+            $list[$key]['ext']  = (string)array_search($mime, self::MIME, true);
             $list[$key]['type'] = &$mime;
             $list[$key]['data'] = base64_decode(substr($item, $pos + 8), true);
         }
