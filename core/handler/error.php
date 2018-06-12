@@ -127,7 +127,7 @@ class error
      *
      * @param $exception
      */
-    public static function exception_handler(object $exception): void
+    public static function exception_handler(\Throwable $exception): void
     {
         try {
             //Get errno & level
