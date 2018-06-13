@@ -358,7 +358,7 @@ class operator extends process
 
         //Create object
         if (!$reflect->isStatic()) {
-            $class = factory::new($class);
+            $class = factory::get($class);
         }
 
         //Build arguments
