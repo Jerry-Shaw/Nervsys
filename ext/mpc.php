@@ -42,13 +42,10 @@ class mpc
     //Max running processes
     public static $max_runs = 10;
 
-    //PHP key name in "setting.ini"
+    //PHP key name in "settings.ini"
     public static $php_key = 'php';
 
-    //PHP executable path in "conf.ini"
-    public static $php_exe = '';
-
-    //Basic command
+    //Basic MPC command
     private static $mpc_cmd = '';
 
     //Process jobs
@@ -62,48 +59,42 @@ class mpc
         //Reset jobs
         self::$jobs = [];
 
-        //Get php CLI CMD
-        if ('' !== self::$php_exe) {
+        //Check mpc_cmd
+        if ('' !== self::$mpc_cmd) {
             return;
         }
 
-        //Get command
+        //Check php_key
         if (!isset(configure::$cli[self::$php_key])) {
             throw new \Exception('[' . self::$php_key . '] NOT found!');
         }
 
-        self::$php_exe = configure::$cli[self::$php_key];
+        //Build command
+        self::$mpc_cmd = configure::$cli[self::$php_key] . ' "' . ROOT . 'api.php"';
+
+        //Add wait option
+        if (self::$wait) {
+            self::$mpc_cmd .= ' --ret';
+        }
+
+        //Add read time option
+        if (0 < self::$read_time) {
+            self::$mpc_cmd .= ' --time ' . self::$read_time;
+        }
     }
 
     /**
      * Add job
      *
      * @param string $cmd
-     * @param string $key
-     *
-     * @return int
+     * @param array  $param
+     * @param string $job_key
      */
-    public static function add(string $cmd, string $key = ''): int
+    public static function add(string $cmd, array $param = [], string $job_key = ''): void
     {
-        $job              = count(self::$jobs);
-        self::$jobs[$job] = ['key' => '' === $key ? $job : $key, 'cmd' => &$cmd];
+        '' === $job_key ? self::$jobs[] = [&$cmd, &$param] : self::$jobs[$job_key] = [&$cmd, &$param];
 
-        unset($cmd, $key);
-        return $job;
-    }
-
-    /**
-     * Set attr
-     *
-     * @param int    $job
-     * @param string $attr
-     * @param array  $value
-     */
-    public static function set(int $job, string $attr, array $value): void
-    {
-        self::$jobs[$job][$attr] = &$value;
-
-        unset($job, $attr, $value);
+        unset($cmd, $param, $job_key);
     }
 
     /**
@@ -121,31 +112,52 @@ class mpc
         //Split jobs
         $job_pack = count(self::$jobs) < self::$max_runs ? [self::$jobs] : array_chunk(self::$jobs, self::$max_runs, true);
 
-        //Build command
-        self::$mpc_cmd = self::$php_exe . ' "' . ROOT . 'api.php"';
-
-        if (self::$wait) {
-            self::$mpc_cmd .= ' --ret';
-        }
-
-        if (0 < self::$read_time) {
-            self::$mpc_cmd .= ' --time ' . self::$read_time;
-        }
-
         $result = [];
 
         foreach ($job_pack as $jobs) {
             //Execute process
-            $data = self::execute($jobs);
-
-            //Merge result
-            if (!empty($data)) {
+            if (!empty($data = self::execute($jobs))) {
                 $result += $data;
             }
         }
 
         unset($job_pack, $jobs, $data);
         return $result;
+    }
+
+    /**
+     * Build params
+     *
+     * @param array $param
+     *
+     * @return array
+     */
+    private static function build_param(array $param): array
+    {
+        $params = [];
+
+        //Get argv
+        if (isset($param['argv'])) {
+            $params['argv'] = &$param['argv'];
+            unset($param['argv']);
+        }
+
+        //Get pipe
+        if (isset($param['pipe'])) {
+            $params['pipe'] = &$param['pipe'];
+            unset($param['pipe']);
+        }
+
+        //Get data
+        if (isset($param['data'])) {
+            $params['data'] = &$param['data'];
+            unset($param['data']);
+        } elseif (!empty($param)) {
+            $params['data'] = &$param;
+        }
+
+        unset($param);
+        return $params;
     }
 
     /**
@@ -162,44 +174,49 @@ class mpc
         $resource = [];
 
         //Start process
-        foreach ($jobs as $item) {
-            $cmd = self::$mpc_cmd . ' --cmd "' . data::encode($item['cmd']) . '"';
+        foreach ($jobs as $key => $item) {
+            //Build param
+            $param = self::build_param($item[1]);
+
+            //Build CMD
+            $cmd = self::$mpc_cmd . ' --cmd "' . data::encode($item[0]) . '"';
 
             //Append data
-            if (!empty($item['data'])) {
-                $cmd .= ' --data "' . data::encode(json_encode($item['data'])) . '"';
+            if (isset($param['data'])) {
+                $cmd .= ' --data "' . data::encode(json_encode($param['data'])) . '"';
             }
 
             //Append pipe
-            if (!empty($item['pipe'])) {
-                $cmd .= ' --pipe "' . data::encode(json_encode($item['pipe'])) . '"';
+            if (!empty($param['pipe'])) {
+                $cmd .= ' --pipe "' . data::encode(json_encode($param['pipe'])) . '"';
             }
 
             //Append argv
-            if (!empty($item['argv'])) {
-                $cmd .= ' ' . implode(' ', $item['argv']);
+            if (!empty($param['argv'])) {
+                $cmd .= ' ' . implode(' ', $param['argv']);
             }
 
             //Create process
-            $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
-
-            if (is_resource($process)) {
-                $resource[$item['key']]['exec'] = true;
-                $resource[$item['key']]['pipe'] = $pipes;
-                $resource[$item['key']]['proc'] = $process;
-            } else {
-                log::warning($item['cmd'] . ': Access denied or command ERROR!', [$cmd, $item]);
-                $resource[$item['key']]['exec'] = false;
+            if (!is_resource($process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes))) {
+                log::warning($item[0] . ': Access denied or command ERROR!', [$cmd, $param]);
+                $resource[$key]['exec'] = false;
+                continue;
             }
+
+            //Add resource list
+            $resource[$key]['exec'] = true;
+            $resource[$key]['pipe'] = $pipes;
+            $resource[$key]['proc'] = $process;
         }
 
-        unset($jobs, $item, $cmd, $pipes);
+        unset($jobs, $key, $item, $param, $cmd, $pipes);
 
         //Check wait options
         if (!self::$wait) {
             return [];
         }
 
+        //Check wait_time option
         if (0 < self::$wait_time) {
             usleep(self::$wait_time);
         }
@@ -230,13 +247,13 @@ class mpc
                     $result[$key]['data'] = '';
                 }
 
-                //Unset failed process
+                //Remove failed process
                 if (!$item['exec']) {
                     unset($resource[$key]);
                     continue;
                 }
 
-                //Unset finished process
+                //Remove finished process
                 if (feof($item['pipe'][1])) {
                     foreach ($item['pipe'] as $pipe) {
                         fclose($pipe);
@@ -259,8 +276,7 @@ class mpc
                 continue;
             }
 
-            $json                 = json_decode($item['data'], true);
-            $result[$key]['data'] = !is_null($json) ? $json : $item['data'];
+            $result[$key]['data'] = !is_null($json = json_decode($item['data'], true)) ? $json : $item['data'];
         }
 
         unset($resource, $key, $item, $pipe, $json);
