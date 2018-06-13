@@ -68,14 +68,20 @@ class operator extends process
     /**
      * Stop operator
      *
-     * @param int    $errno
      * @param string $message
+     * @param int    $errno
      */
-    public static function stop(int $errno = 0, string $message = ''): void
+    public static function stop(string $message = '', int $errno = 0): void
     {
-        output::$error['err'] = 0 < $errno ? $errno : 1;
-        output::$error['msg'] = '' !== $message ? $message : 'Process terminated!';
+        if (0 !== $errno) {
+            output::$error['err'] = &$errno;
+        }
 
+        if ('' !== $message) {
+            output::$error['msg'] = &$message;
+        }
+
+        unset($message, $errno);
         output::json();
 
         exit;
@@ -157,7 +163,7 @@ class operator extends process
 
         if (!isset(configure::$cors[$_SERVER['HTTP_ORIGIN']])) {
             log::info('CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
-            self::stop(1, 'Access denied!');
+            self::stop('Access denied!', 1);
         }
 
         //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
