@@ -24,8 +24,8 @@ declare(strict_types = 1);
 //Set error level
 error_reporting(E_ALL | E_STRICT);
 
-//Require setting script
-require __DIR__ . '/core/settings.php';
+//Load initial script
+require __DIR__ . '/core/initial.php';
 
 //Track error
 \core\handler\error::track();
