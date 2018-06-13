@@ -356,13 +356,13 @@ class operator extends process
             throw new \Exception($order . ' => ' . $method . ': NOT for public!');
         }
 
-        //Build arguments
-        $params = data::build_argv($reflect, self::$data);
-
         //Create object
         if (!$reflect->isStatic()) {
             $class = factory::new($class);
         }
+
+        //Build arguments
+        $params = data::build_argv($reflect, self::$data);
 
         //Call method (with params)
         $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);

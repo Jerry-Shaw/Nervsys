@@ -28,7 +28,7 @@ class log
     public static $show = false;
 
     //Log path
-    public static $path = ROOT . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
+    public static $path = ROOT . 'logs' . DIRECTORY_SEPARATOR;
 
     /**
      * Log emergency

@@ -20,15 +20,13 @@
 
 namespace ext;
 
-use core\handler\observer;
+use core\handler\factory;
 use core\handler\operator;
 use core\handler\platform;
 
-use core\helper\log;
-
 use core\parser\data;
 
-use core\pool\config;
+use core\pool\configure;
 
 class redis_queue extends redis
 {
@@ -166,10 +164,8 @@ class redis_queue extends redis
      */
     public static function chk_cli(): void
     {
-        //Only support CLI
-        if (config::$IS_CGI) {
-            log::info('Redis queue only support CLI!');
-            observer::send(1);
+        if (configure::$is_cgi) {
+            operator::stop(1, 'Redis queue only support CLI!');
         }
     }
 
@@ -185,7 +181,7 @@ class redis_queue extends redis
 
         //Exit when root process is running
         if (self::connect()->exists($root_key)) {
-            exit;
+            operator::stop(1, 'Root queue process is running!');
         }
 
         //Set lifetime
@@ -201,9 +197,8 @@ class redis_queue extends redis
         //Build process command
         $command = [
             platform::sys_path(),
-            ROOT . 'api.php',
-            '--cmd "' . strtr(__CLASS__, '\\', '/') . '-process"',
-            '--ret'
+            ROOT . 'api.php --ret',
+            '--cmd "' . strtr(__CLASS__, '\\', '/') . '-process"'
         ];
 
         self::$command = platform::cmd_bg(implode(' ', $command));
@@ -211,35 +206,25 @@ class redis_queue extends redis
         unset($command);
 
         do {
-            //Read list
-            $list = self::show_queue();
-
-            //Read process
-            $runs = count(self::show_process());
-
             //Idle wait on no job or process runs
-            if (empty($list) || 1 < $runs) {
-                //Renew root process
+            if (empty($list = self::show_queue()) || 1 < $runs = count(self::show_process())) {
                 $renew = self::connect()->expire($root_key, self::$scan_wait);
                 sleep(self::$idle_wait);
                 continue;
             }
 
             //Listen
-            $queue = self::connect()->brPop(array_keys($list), $time_wait);
-
-            if (empty($queue)) {
-                //Renew root process
+            if (empty($queue = self::connect()->brPop(array_keys($list), $time_wait))) {
                 $renew = self::connect()->expire($root_key, self::$scan_wait);
                 sleep(self::$idle_wait);
                 continue;
             }
 
+            //Re-add queue list
+            self::connect()->rPush($queue[0], $queue[1]);
+
             //Call process
             self::call_process();
-
-            //Re-add queue
-            self::connect()->rPush($queue[0], $queue[1]);
 
             //Renew root process
             $renew = self::connect()->expire($root_key, self::$scan_wait);
@@ -273,19 +258,13 @@ class redis_queue extends redis
         register_shutdown_function([__CLASS__, 'stop'], $process_hash);
 
         do {
-            //Get queue list
-            $list = self::show_queue();
-
-            //Exit on no job
-            if (empty($list)) {
+            //Listen queue
+            if (empty($list = self::show_queue())) {
                 break;
             }
 
-            //Listen
-            $queue = self::connect()->brPop(array_keys($list), $time_wait);
-
-            //Execute job
-            if (!empty($queue)) {
+            //Execute queue
+            if (!empty($queue = self::connect()->brPop(array_keys($list), $time_wait))) {
                 self::exec_queue($queue[1]);
                 self::connect()->lRem($queue[0], $queue[1]);
             }
@@ -318,9 +297,7 @@ class redis_queue extends redis
             return [];
         }
 
-        $keys = self::connect()->hGetAll($key);
-
-        if (empty($keys)) {
+        if (empty($keys = self::connect()->hGetAll($key))) {
             return [];
         }
 
@@ -345,11 +322,8 @@ class redis_queue extends redis
     private static function exec_queue(string $data): void
     {
         //Decode data in JSON
-        $input = json_decode($data, true);
-
-        if (!is_array($input)) {
+        if (!is_array($input = json_decode($data, true))) {
             self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => 'Data ERROR!']));
-
             return;
         }
 
@@ -360,8 +334,8 @@ class redis_queue extends redis
         //Call LOAD commands
         $load_name = strstr($order, '/', true);
 
-        if (isset(config::$LOAD[$load_name])) {
-            operator::init_load(is_string(config::$LOAD[$load_name]) ? [config::$LOAD[$load_name]] : config::$LOAD[$load_name]);
+        if (isset(configure::$load[$load_name])) {
+            operator::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
         }
 
         try {
@@ -371,17 +345,16 @@ class redis_queue extends redis
             //Not public
             if (!$reflect->isPublic()) {
                 self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => 'NOT for public!']));
-
                 return;
+            }
+
+            //Create object
+            if (!$reflect->isStatic()) {
+                $class = factory::new($class);
             }
 
             //Build arguments
             $params = data::build_argv($reflect, $input);
-
-            //Create object
-            if (!$reflect->isStatic()) {
-                $class = unit::$object[$order] ?? unit::$object[$order] = new $class;
-            }
 
             //Call method (with params)
             $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
@@ -410,13 +383,10 @@ class redis_queue extends redis
         //Decode result
         $json = json_decode($result, true);
 
-        //Accept empty & true
-        if (is_null($json) || true === $json) {
-            return;
+        //Save failed queue (Accept null & true)
+        if (!is_null($json) && true !== $json) {
+            self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => &$result]));
         }
-
-        //Save fail list
-        self::connect()->lPush(self::$key_fail, json_encode(['data' => &$data, 'return' => &$result]));
 
         unset($data, $result, $json);
     }
@@ -430,9 +400,8 @@ class redis_queue extends redis
     {
         //Count running processes
         $runs = count(self::show_process());
-        $left = self::$max_runs - $runs + 1;
 
-        if (0 >= $left) {
+        if (0 >= $left = self::$max_runs - $runs + 1) {
             return;
         }
 

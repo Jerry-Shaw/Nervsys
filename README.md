@@ -1,6 +1,6 @@
 # Nervsys
 
-Beta Version: 6.2.0  
+Stable Version: 6.2.0  
 
 
 ## About
@@ -24,7 +24,6 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
 ## Structure
 
     /
-    ├─api.php                                   API entry script
     ├─core/
     │     ├─handler/
     │     │        ├─platform/
@@ -51,37 +50,39 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │     │     ├─command.php                   command pool
     │     │     ├─configure.php                 configure pool
     │     │     └─process.php                   process date poll
-    │     ├─settings.ini                        setting config file
-    │     └─settings.php                        setting script file
-    └─ext/
-         ├─font/
-         ├─lib/
-         │    └─key.php                         keygen interface
-         ├─upload/
-         │       ├─en-US/                       en-US language folder for upload
-         │       ├─zh-CN/                       zh-CN language folder for upload
-         │       └─upload.ini                   error code file for upload
-         ├─crypt.php                            Encrypt/decrypt extension
-         ├─crypt_code.php                       Auth Code extension from crypt
-         ├─errno.php                            Error code extension
-         ├─file.php                             Filesystem related IO extension
-         ├─http.php                             HTTP request extension
-         ├─image.php                            Image processing extension
-         ├─keygen.php                           keygen extension for crypt
-         ├─lang.php                             Language pack extension
-         ├─memcached.php                        Memcached Extension
-         ├─mpc.php                              Multi-Process Controller Extension
-         ├─pdo.php                              PDO connector extension
-         ├─pdo_model.php                        MySQL model extension from PDO
-         ├─pdo_mysql.php                        MySQL extension from PDO
-         ├─redis.php                            Redis connector extension
-         ├─redis_cache.php                      Redis cache extension from Redis
-         ├─redis_lock.php                       Redis lock extension from Redis
-         ├─redis_queue.php                      Redis queue extension from Redis
-         ├─redis_session.php                    Redis session extension from Redis
-         ├─socket.php                           Socket extension
-         ├─upload.php                           Upload extension
-         └─...
+    │     ├─initial.php                         initial script file
+    │     └─settings.ini                        setting config file
+    ├─ext/
+    │    ├─font/
+    │    ├─lib/
+    │    │    └─key.php                         keygen interface
+    │    ├─upload/
+    │    │       ├─en-US/                       en-US language folder for upload
+    │    │       ├─zh-CN/                       zh-CN language folder for upload
+    │    │       └─upload.ini                   error code file for upload
+    │    ├─crypt.php                            Encrypt/decrypt extension
+    │    ├─crypt_code.php                       Auth Code extension from crypt
+    │    ├─errno.php                            Error code extension
+    │    ├─file.php                             Filesystem related IO extension
+    │    ├─http.php                             HTTP request extension
+    │    ├─image.php                            Image processing extension
+    │    ├─keygen.php                           keygen extension for crypt
+    │    ├─lang.php                             Language pack extension
+    │    ├─memcached.php                        Memcached Extension
+    │    ├─mpc.php                              Multi-Process Controller Extension
+    │    ├─pdo.php                              PDO connector extension
+    │    ├─pdo_model.php                        MySQL model extension from PDO
+    │    ├─pdo_mysql.php                        MySQL extension from PDO
+    │    ├─redis.php                            Redis connector extension
+    │    ├─redis_cache.php                      Redis cache extension from Redis
+    │    ├─redis_lock.php                       Redis lock extension from Redis
+    │    ├─redis_queue.php                      Redis queue extension from Redis
+    │    ├─redis_session.php                    Redis session extension from Redis
+    │    ├─socket.php                           Socket extension
+    │    ├─upload.php                           Upload extension
+    │    └─...
+    ├─logs/
+    └─api.php                                   API entry script
 
 
 ## Reserved Words
@@ -92,9 +93,9 @@ CLI: c/cmd, d/data, p/pipe, t/time, r/ret
 The words above are reserved by NervSys core. So that, they should be taken carefully when doing API calling.
 
 
-## Config "setting.ini"
+## Config "settings.ini"
 
-"setting.ini" locates right under "core" folder, which contains most of the important setting sections.
+"settings.ini" locates right under "core" folder, which contains most of the important setting sections.
 
 ### LOG
 

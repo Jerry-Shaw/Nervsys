@@ -26,7 +26,7 @@ use core\helper\log;
 
 use core\parser\data;
 
-use core\pool\config;
+use core\pool\configure;
 
 class mpc
 {
@@ -68,11 +68,11 @@ class mpc
         }
 
         //Get command
-        if (!isset(config::$CLI[self::$php_key])) {
+        if (!isset(configure::$cli[self::$php_key])) {
             throw new \Exception('[' . self::$php_key . '] NOT found!');
         }
 
-        self::$php_exe = config::$CLI[self::$php_key];
+        self::$php_exe = configure::$cli[self::$php_key];
     }
 
     /**
@@ -154,6 +154,7 @@ class mpc
      * @param array $jobs
      *
      * @return array
+     * @throws \Exception
      */
     private static function execute(array $jobs): array
     {
@@ -187,7 +188,7 @@ class mpc
                 $resource[$item['key']]['pipe'] = $pipes;
                 $resource[$item['key']]['proc'] = $process;
             } else {
-                log::warning($item['cmd'] . ': Access denied or command ERROR!', [$cmd]);
+                log::warning($item['cmd'] . ': Access denied or command ERROR!', [$cmd, $item]);
                 $resource[$item['key']]['exec'] = false;
             }
         }

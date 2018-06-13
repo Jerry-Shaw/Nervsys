@@ -60,12 +60,11 @@ class errno
         }
 
         self::$pool += $error;
-
         unset($dir, $file, $path, $error);
     }
 
     /**
-     * Set standard error result into output error
+     * Set standard error to output
      *
      * @param int $code
      * @param int $errno
@@ -76,7 +75,7 @@ class errno
     }
 
     /**
-     * Get standard error result
+     * Get standard error
      * Language pack needs to be loaded before getting an error message on multi-language support system
      *
      * @param int $code
