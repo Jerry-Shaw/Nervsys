@@ -50,13 +50,21 @@ spl_autoload_register(
             if (false !== $file = realpath(ROOT . strtr($lib, '\\', DIRECTORY_SEPARATOR) . '.php')) {
                 require $file;
             }
+        } elseif ('' !== $path = get_include_path()) {
+            //Get include paths
+            $paths = false !== strpos($path, PATH_SEPARATOR) ? explode(PATH_SEPARATOR, $path) : [$path];
 
-            unset($file);
-        } else {
             //Load from include path
-            require $lib . '.php';
+            foreach ($paths as $path) {
+                if (false !== $file = realpath($path . $lib . '.php')) {
+                    require $file;
+                    break;
+                }
+            }
+
+            unset($paths);
         }
 
-        unset($lib);
+        unset($lib, $file, $path);
     }
 );
