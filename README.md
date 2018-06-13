@@ -241,13 +241,22 @@ The words above are reserved by NervSys core. So that, they should be taken care
     Some example:
     
     1 = pathA ; Relative path to ROOT
-    2 = /pathB/ ; Absolute path
-    3 = pathA/pathB/ ; Relative path to ROOT
-    4 = /pathA/pathB ; Absolute path
+    2 = pathA/pathB/ ; Relative path to ROOT
+    3 = pathA\pathB ; Relative path to ROOT
+    4 = pathA\pathB\ ; Relative path to ROOT
+    5 = /pathB/ ; Absolute path
+    6 = /pathA/pathB ; Absolute path
+    7 = /pathA/pathB/ ; Absolute path
+    8 = \pathA\pathB ; Absolute path
+    9 = \pathA\pathB\ ; Absolute path
+    svr_path = D:\server\lib ; Absolute path
+    lib_path = E:\lib\ ; Absolute path
+    some_key = F: ; Absolute path
     ...
 
     Notice: 
-    The last "/" of the path is not required.
+    The last "/" of the path is not required.  
+    The keys has no means for system, but for developers to know what they are for.  
     
 
 ## Examples

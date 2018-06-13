@@ -21,22 +21,10 @@
 //Declare strict types
 declare(strict_types = 1);
 
-//Set time limit
-set_time_limit(0);
-
 //Set error level
-error_reporting(E_ALL);
+error_reporting(E_ALL | E_STRICT);
 
-//Set ignore user abort
-ignore_user_abort(true);
-
-//Set default timezone
-date_default_timezone_set('PRC');
-
-//Set response header
-header('Content-Type: application/json; charset=utf-8');
-
-//Require initial script
+//Require setting script
 require __DIR__ . '/core/settings.php';
 
 //Track error
@@ -48,5 +36,5 @@ require __DIR__ . '/core/settings.php';
 //Start operator
 \core\handler\operator::start();
 
-//Output JSON
+//Output JSON result
 \core\parser\output::json();

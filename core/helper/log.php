@@ -24,6 +24,9 @@ use core\pool\configure;
 
 class log
 {
+    //Log show
+    public static $show = false;
+
     //Log path
     public static $path = ROOT . 'temp' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR;
 
@@ -177,14 +180,17 @@ class log
      */
     public static function show(string $level, string $message, array $context): void
     {
-        echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+        if (self::$show) {
+            echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
 
-        foreach ($context as $value) {
-            echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
+            foreach ($context as $value) {
+                echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
+            }
+
+            echo PHP_EOL . PHP_EOL;
+            unset($value);
         }
 
-        echo PHP_EOL . PHP_EOL;
-
-        unset($level, $message, $context, $value);
+        unset($level, $message, $context);
     }
 }

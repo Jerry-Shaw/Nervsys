@@ -74,7 +74,10 @@ class settings extends configure
             $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
             $path = rtrim($path, DIRECTORY_SEPARATOR);
 
-            $path = '/' !== substr($path, 0, 1) ? ROOT . $path . DIRECTORY_SEPARATOR : $path . DIRECTORY_SEPARATOR;
+            //Set relative/absolute paths
+            $path = 0 !== strpos($path, '/') || false === strpos($path, ':', 1)
+                ? ROOT . $path . DIRECTORY_SEPARATOR
+                : $path . DIRECTORY_SEPARATOR;
         }
 
         //Set include path

@@ -23,6 +23,18 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
     exit('NervSys needs PHP 7.2.0 or higher!');
 }
 
+//Set time limit
+set_time_limit(0);
+
+//Set ignore user abort
+ignore_user_abort(true);
+
+//Set default timezone
+date_default_timezone_set('PRC');
+
+//Set response header
+header('Content-Type: application/json; charset=utf-8');
+
 //Define NervSys version
 define('NS_VER', '6.2.0');
 
@@ -34,12 +46,14 @@ spl_autoload_register(
     static function (string $lib): void
     {
         if (false !== strpos($lib, '\\')) {
+            //Load from namespace path
             if (false !== $file = realpath(ROOT . strtr($lib, '\\', DIRECTORY_SEPARATOR) . '.php')) {
                 require $file;
             }
 
             unset($file);
         } else {
+            //Load from include path
             require $lib . '.php';
         }
 
