@@ -157,15 +157,25 @@ class log
         array_unshift($context, date('Y-m-d H:i:s'), ucfirst($level) . ': ' . $message);
         $context[] = '';
 
-        //Generate log file name
-        $file = self::$path . $level . '-' . date('Ymd') . '.log';
+        //Get log file path
+        $log = self::$path . $level . '-' . date('Ymd') . '.log';
 
-        //Write log
-        foreach ($context as $value) {
-            file_put_contents($file, (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL, FILE_APPEND);
+        //Open log file handle
+        static $file;
+        if (is_null($file)) {
+            $file = fopen($log, 'ab');
         }
 
-        unset($level, $message, $context, $file, $value);
+        //Build logs
+        $logs = '';
+        foreach ($context as $item) {
+            $logs .= (is_string($item) ? $item : json_encode($item, 4034)) . PHP_EOL;
+        }
+
+        //Write log
+        fwrite($file, $logs);
+
+        unset($level, $message, $context, $log, $file, $logs, $item);
     }
 
     /**
