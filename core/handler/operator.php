@@ -68,20 +68,17 @@ class operator extends process
     /**
      * Stop operator
      *
-     * @param string $message
-     * @param int    $errno
+     * @param string $msg
+     * @param int    $err
      */
-    public static function stop(string $message = '', int $errno = 0): void
+    public static function stop(string $msg = '', int $err = 1): void
     {
-        if (0 !== $errno) {
-            output::$error['err'] = &$errno;
+        if ('' !== $msg) {
+            output::$error['err'] = &$err;
+            output::$error['msg'] = &$msg;
         }
 
-        if ('' !== $message) {
-            output::$error['msg'] = &$message;
-        }
-
-        unset($message, $errno);
+        unset($msg, $err);
         output::json();
 
         exit;
@@ -99,6 +96,7 @@ class operator extends process
             list($order, $method) = explode('-', $item, 2);
 
             try {
+                //Call method
                 forward_static_call([self::build_class($order), $method]);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
@@ -163,7 +161,7 @@ class operator extends process
 
         if (!isset(configure::$cors[$_SERVER['HTTP_ORIGIN']])) {
             log::info('CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
-            self::stop('Access denied!', 1);
+            self::stop('Access denied!');
         }
 
         //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
@@ -332,6 +330,7 @@ class operator extends process
     private static function build_order(): void
     {
         $key = 0;
+
         foreach (command::$cmd_cgi as $item) {
             if (false !== strpos($item, '/') && isset(self::$order[$key])) {
                 ++$key;
