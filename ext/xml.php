@@ -41,21 +41,7 @@ class xml extends fileOperate
         self::setFile($filename);
         return self::$_instance;
     }
-
-
-    /**
-     * get file mime
-     * @param string $file
-     * @return string
-     */
-    protected static function fileMime(string $file):string
-    {
-        $res = finfo_open(FILEINFO_MIME);
-        $file = @finfo_file($res,$file);
-        finfo_close($res);
-        if (!$file) return '';
-        return $file;
-    }
+    
 
     //set xml file path
     public static function setFile($filename):void
