@@ -105,12 +105,7 @@ class error
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): void
     {
-        //Set log show option
-        log::$show = 0 < (self::$level & $errno) ? true : false;
-
-        //Handle error
         self::exception_handler(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
-
         unset($errno, $errstr, $errfile, $errline);
     }
 
@@ -122,12 +117,7 @@ class error
     public static function shutdown_handler(): void
     {
         if (!is_null($error = error_get_last()) && 'error' === self::LEVELS[$error['type']]) {
-            //Set log show option
-            log::$show = true;
-
-            //Handle shutdown
             self::exception_handler(new \ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']));
-
             unset($error);
         }
     }
@@ -141,7 +131,7 @@ class error
     {
         //Get errno & level
         $errno = $throwable->getCode();
-        $level = self::LEVELS[$errno] ?? 'error';
+        $level = self::LEVELS[$errno] ?? 'debug';
 
         //Build message
         $message = 'Exception caught in ' . $throwable->getFile() . ' on line ' . $throwable->getLine() . ': ' . $throwable->getMessage();

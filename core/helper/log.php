@@ -24,9 +24,6 @@ use core\pool\configure;
 
 class log
 {
-    //Log show
-    public static $show = false;
-
     //Log path
     public static $path = ROOT . 'logs' . DIRECTORY_SEPARATOR;
 
@@ -150,7 +147,7 @@ class log
 
         //Check log path
         if (false === realpath(self::$path) && !mkdir(self::$path, 0776, true) && !chmod(self::$path, 0776)) {
-            self::show('warning', 'Log path: "' . self::$path . '" NOT exist!', ['Access denied!', 'Please check permissions!']);
+            array_unshift($context, 'Log path: "' . self::$path . '" NOT exist!');
             self::show($level, $message, $context);
 
             return;
@@ -180,16 +177,19 @@ class log
      */
     public static function show(string $level, string $message, array $context): void
     {
-        if (self::$show) {
-            echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
-
-            foreach ($context as $value) {
-                echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
-            }
-
-            echo PHP_EOL . PHP_EOL;
-            unset($value);
+        //Check configure
+        if (!isset(configure::$log['show']) || 0 === (int)configure::$log['show']) {
+            return;
         }
+
+        echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+
+        foreach ($context as $value) {
+            echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
+        }
+
+        echo PHP_EOL . PHP_EOL;
+        unset($value);
 
         unset($level, $message, $context);
     }
