@@ -20,8 +20,6 @@
 
 namespace core\handler;
 
-use core\helper\log;
-
 use core\parser\cmd;
 use core\parser\data;
 use core\parser\input;
@@ -160,8 +158,7 @@ class operator extends process
         }
 
         if (!isset(configure::$cors[$_SERVER['HTTP_ORIGIN']])) {
-            log::info('CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
-            self::stop('Access denied!');
+            self::stop('Access NOT permitted!');
         }
 
         //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
@@ -194,13 +191,11 @@ class operator extends process
 
             //Check class
             if (!class_exists($class)) {
-                log::warning($class . ': Class NOT found!');
                 continue;
             }
 
             //Check TrustZone
             if (!isset($class::$tz) || !is_array($class::$tz)) {
-                log::notice($class . ': TrustZone NOT Open!');
                 continue;
             }
 

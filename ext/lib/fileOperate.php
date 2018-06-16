@@ -1,8 +1,9 @@
 <?php
+
 /**
- * Crypt Extension
+ * fileOperate abstract class
  *
- * Copyright 2016-2018 SealingP <464485940@qq.com>
+ * Copyright 2018 SealingP <464485940@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,35 +17,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace ext\lib;
-//file operation class
+
 abstract class fileOperate
 {
     /**
-     * clean head '/' and foot '/',Win:change '\' to '/',
+     * clean head '/' and foot '/'
+     *
      * @param string $path
+     *
      * @return void
      */
-    protected static function clean(string &$path):void
+    protected static function clean(string &$path): void
     {
-        $path = strtr($path,['\\'=>'/']);
-
-        stripos($path,'/') === 0 && $path = substr($path,1);
-
-        strrpos($path,'/') == strlen($path) - 1 &&
-        $path = substr_replace($path,'',strlen($path)-1,strlen($path)-1);
+        $path = strtr($path, ['\\' => DIRECTORY_SEPARATOR]);
+        $path = trim($path, DIRECTORY_SEPARATOR);
     }
+
     /**
      * get file mime
+     *
      * @param string $file
+     *
      * @return string
      */
-    protected static function fileMime(string $file):string
+    protected static function fileMime(string $file): string
     {
-        $res = finfo_open(FILEINFO_MIME);
-        $file = @finfo_file($res,$file);
+        $res  = finfo_open(FILEINFO_MIME);
+        $file = finfo_file($res, $file);
+
         finfo_close($res);
-        if (!$file) return '';
-        return $file;
+
+        return (string)$file;
     }
 }
