@@ -20,6 +20,7 @@
 
 namespace core\parser;
 
+use core\handler\operator;
 use core\handler\platform;
 
 use core\pool\command;
@@ -34,7 +35,7 @@ class cmd extends command
     {
         //Check CMD
         if ('' === self::$cmd) {
-            throw new \Exception('Command NOT found!');
+            operator::stop('CMD NOT found!');
         }
 
         //Extract CMD

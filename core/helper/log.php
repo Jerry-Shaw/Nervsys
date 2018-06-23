@@ -36,7 +36,6 @@ class log
     public static function emergency(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -49,7 +48,6 @@ class log
     public static function alert(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -62,7 +60,6 @@ class log
     public static function critical(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -75,7 +72,6 @@ class log
     public static function error(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -88,7 +84,6 @@ class log
     public static function warning(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -101,7 +96,6 @@ class log
     public static function notice(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -114,7 +108,6 @@ class log
     public static function info(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -127,8 +120,26 @@ class log
     public static function debug(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
+    }
+
+    /**
+     * Show logs
+     *
+     * @param string $level
+     * @param string $message
+     * @param array  $context
+     */
+    public static function show(string $level, string $message, array $context): void
+    {
+        //Check configure
+        if (!isset(configure::$log['show']) || 0 === (int)configure::$log['show']) {
+            return;
+        }
+
+        //Output log
+        echo self::format($level, $message, $context);
+        unset($level, $message, $context);
     }
 
     /**
@@ -153,54 +164,43 @@ class log
             return;
         }
 
-        //Add datetime & log message & empty line
-        array_unshift($context, date('Y-m-d H:i:s'), ucfirst($level) . ': ' . $message);
-        $context[] = '';
+        //Get log key & path
+        $key = $level . '-' . date('Ymd');
+        $log = self::$path . $key . '.log';
 
-        //Get log file path
-        $log = self::$path . $level . '-' . date('Ymd') . '.log';
+        static $file = [];
 
         //Open log file handle
-        static $file;
-        if (is_null($file)) {
-            $file = fopen($log, 'ab');
-        }
-
-        //Build logs
-        $logs = '';
-        foreach ($context as $item) {
-            $logs .= (is_string($item) ? $item : json_encode($item, 4034)) . PHP_EOL;
+        if (!isset($file[$key])) {
+            $file[$key] = fopen($log, 'ab');
         }
 
         //Write log
-        fwrite($file, $logs);
-
-        unset($level, $message, $context, $log, $file, $logs, $item);
+        fwrite($file[$key], self::format($level, $message, $context));
+        unset($level, $message, $context, $key, $log, $file);
     }
 
     /**
-     * Show logs
+     * Format log content
      *
      * @param string $level
      * @param string $message
      * @param array  $context
+     *
+     * @return string
      */
-    public static function show(string $level, string $message, array $context): void
+    private static function format(string $level, string $message, array $context): string
     {
-        //Check configure
-        if (!isset(configure::$log['show']) || 0 === (int)configure::$log['show']) {
-            return;
+        $log = date('Y-m-d H:i:s') . PHP_EOL;
+        $log .= ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+
+        foreach ($context as $item) {
+            $log .= (is_string($item) ? $item : json_encode($item, 4034)) . PHP_EOL;
         }
 
-        echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+        $log .= PHP_EOL . PHP_EOL;
 
-        foreach ($context as $value) {
-            echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
-        }
-
-        echo PHP_EOL . PHP_EOL;
-        unset($value);
-
-        unset($level, $message, $context);
+        unset($level, $message, $context, $item);
+        return $log;
     }
 }
