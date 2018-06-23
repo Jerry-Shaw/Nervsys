@@ -70,19 +70,24 @@ class settings extends configure
      */
     private static function set_path(array $paths): void
     {
-        foreach ($paths as &$path) {
-            $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
-            $path = rtrim($path, DIRECTORY_SEPARATOR);
+        //Format paths
+        $paths = array_map(
+            static function (string $path): string
+            {
+                $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
+                $path = rtrim($path, DIRECTORY_SEPARATOR);
 
-            //Set relative/absolute paths
-            $path = 0 !== strpos($path, '/') || false === strpos($path, ':', 1)
-                ? ROOT . $path . DIRECTORY_SEPARATOR
-                : $path . DIRECTORY_SEPARATOR;
-        }
+                //Set relative/absolute paths
+                $path = 0 !== strpos($path, '/') && false === strpos($path, ':', 1)
+                    ? ROOT . $path . DIRECTORY_SEPARATOR
+                    : $path . DIRECTORY_SEPARATOR;
+
+                return $path;
+            }, $paths
+        );
 
         //Set include path
         set_include_path(implode(PATH_SEPARATOR, $paths));
-
         unset($paths, $path);
     }
 

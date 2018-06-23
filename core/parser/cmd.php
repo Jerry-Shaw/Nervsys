@@ -41,15 +41,48 @@ class cmd extends command
         //Extract CMD
         $cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : [self::$cmd];
 
-        //Prepare CGI CMD
-        self::$cmd_cgi = self::prep_cgi($cmd);
-
         //Prepare CLI CMD
         if (!configure::$is_cgi) {
             self::$cmd_cli = self::prep_cli($cmd);
         }
 
+        //Prepare CGI CMD
+        self::$cmd_cgi = self::prep_cgi($cmd);
         unset($cmd);
+    }
+
+    /**
+     * Prepare CLI CMD
+     *
+     * @param array $cmd
+     *
+     * @return array
+     */
+    private static function prep_cli(array &$cmd): array
+    {
+        //Check PHP command
+        if (in_array('PHP', $cmd, true)) {
+            settings::$cli['PHP'] = platform::sys_path();
+        }
+
+        //Check CLI settings
+        if (empty(settings::$cli)) {
+            return [];
+        }
+
+        //Build CLI CMD
+        $order = [];
+        foreach ($cmd as $key => $item) {
+            if (isset(settings::$cli[$item]) && '' !== settings::$cli[$item]) {
+                $order[$item] = settings::$cli[$item];
+
+                //Remove from CGI CMD
+                unset($cmd[$key]);
+            }
+        }
+
+        unset($key, $item);
+        return $order;
     }
 
     /**
@@ -90,37 +123,6 @@ class cmd extends command
         $order = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
 
         unset($cmd, $name, $item, $keys, $key, $val);
-        return $order;
-    }
-
-    /**
-     * Prepare CLI CMD
-     *
-     * @param array $cmd
-     *
-     * @return array
-     */
-    private static function prep_cli(array $cmd): array
-    {
-        //Check PHP command
-        if (in_array('PHP', $cmd, true)) {
-            settings::$cli['PHP'] = platform::sys_path();
-        }
-
-        //Check CLI settings
-        if (empty(settings::$cli)) {
-            return [];
-        }
-
-        //Build CLI CMD
-        $order = [];
-        foreach ($cmd as $item) {
-            if (isset(settings::$cli[$item]) && '' !== settings::$cli[$item]) {
-                $order[$item] = settings::$cli[$item];
-            }
-        }
-
-        unset($cmd, $item);
         return $order;
     }
 }

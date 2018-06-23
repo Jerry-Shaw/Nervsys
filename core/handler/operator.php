@@ -54,13 +54,13 @@ class operator extends process
         //Prepare CMD
         cmd::prep();
 
-        //Run CGI process
-        self::run_cgi();
-
         //Run CLI process
         if (!configure::$is_cgi) {
             self::run_cli();
         }
+
+        //Run CGI process
+        self::run_cgi();
     }
 
     /**
