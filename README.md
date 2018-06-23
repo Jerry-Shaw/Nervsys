@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable Version: 6.2.0  
+Stable Version: 6.2.2  
 
 
 ## About
@@ -189,16 +189,18 @@ The words above are reserved by NervSys core. So that, they should be taken care
     
     Multiple setting:
     DescA = dirA/dirB/model-func
-    DescB[] = dirB/dirB/model-funcA
-    DescB[] = dirB/dirB/model-funcB
+    DescB = dirB/dirB/model-funcA
+    DescC = dirB/dirB/model-funcB
     
     explain: 
     "\dirA\dirB\model::func()" & "\dirB\dirB\model::funcA()" & "\dirB\dirB\model::funcB()"
     will be called on startup without any agruments. 
     
     Notice: 
-    The "Desc" key in "INIT" has no means for system, but for developers to know what they are for. 
-    No agrument accepted and no returned value will be captured.
+    The "Desc*" keys in "INIT" has no means for system, but for developers to know what they are for. 
+    Sub-array settings are NOT allowed in this section. 
+    Arguments are NOT allowed to pass to function. 
+    No returned value will be captured.  
 
     
 ### LOAD
@@ -227,10 +229,11 @@ The words above are reserved by NervSys core. So that, they should be taken care
     before calling functions under dirB.
     
     Notice: 
-    The keys in "LOAD" section point to the first level subfolders, while the setting values point to 
-    the functions which will be called when the subfolder is being accessed. 
-    Arguments are automatically accepted from API.
-    No returned value will be captured.
+    The keys in "LOAD" section point to the first level subfolders, while the setting values 
+    point to the functions which will be called when the subfolder is being accessed. 
+    Sub-array settings are allowed in this section, to call multiple functions. 
+    Arguments are automatically accepted from API. 
+    No returned value will be captured. 
 
 
 ### PATH
