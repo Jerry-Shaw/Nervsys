@@ -21,6 +21,7 @@
 namespace core\parser;
 
 use core\pool\process;
+use core\pool\configure;
 
 class output extends process
 {
@@ -43,8 +44,7 @@ class output extends process
         $data = !empty(self::$error) ? self::$error + ['data' => &$result] : $result;
         $json = json_encode($data, self::$json_opt);
 
-        echo !settings::$is_cgi ? $json . PHP_EOL : $json;
-
+        echo !configure::$is_cgi ? $json . PHP_EOL : $json;
         unset($count, $result, $data, $json);
     }
 }

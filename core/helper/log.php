@@ -156,14 +156,6 @@ class log
             return;
         }
 
-        //Check log path
-        if (false === realpath(self::$path) && !mkdir(self::$path, 0776, true) && !chmod(self::$path, 0776)) {
-            array_unshift($context, 'Log path: "' . self::$path . '" NOT exist!');
-            self::show($level, $message, $context);
-
-            return;
-        }
-
         //Get log key & path
         $key = $level . '-' . date('Ymd');
         $log = self::$path . $key . '.log';

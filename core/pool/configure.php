@@ -22,14 +22,16 @@ namespace core\pool;
 
 class configure
 {
-    //Configurations
+    //Configuration
     public static $log  = [];
     public static $cgi  = [];
     public static $cli  = [];
     public static $cors = [];
     public static $init = [];
     public static $load = [];
+    public static $path = [];
 
+    //Runtime values
     public static $is_cgi   = true;
     public static $is_https = true;
 

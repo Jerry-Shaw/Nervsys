@@ -42,13 +42,26 @@ class settings extends configure
             throw new \Exception('System setting ERROR!');
         }
 
-        //Set include path
-        if (isset($conf['PATH'])) {
-            if (!empty($conf['PATH'])) {
-                self::set_path($conf['PATH']);
-            }
+        //Parse include path
+        if (isset($conf['PATH']) && !empty($conf['PATH'])) {
+            //Format paths
+            $conf['PATH'] = array_map(
+                static function (string $path): string
+                {
+                    $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
+                    $path = rtrim($path, DIRECTORY_SEPARATOR);
 
-            unset($conf['PATH']);
+                    //Set relative/absolute paths
+                    $path = 0 !== strpos($path, '/') && false === strpos($path, ':', 1)
+                        ? ROOT . $path . DIRECTORY_SEPARATOR
+                        : $path . DIRECTORY_SEPARATOR;
+
+                    return $path;
+                }, $conf['PATH']
+            );
+
+            //Set include path
+            set_include_path(implode(PATH_SEPARATOR, $conf['PATH']));
         }
 
         //Set configuration
@@ -60,35 +73,7 @@ class settings extends configure
             }
         }
 
-        unset($conf, $path, $key, $val);
-    }
-
-    /**
-     * Set include path
-     *
-     * @param array $paths
-     */
-    private static function set_path(array $paths): void
-    {
-        //Format paths
-        $paths = array_map(
-            static function (string $path): string
-            {
-                $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
-                $path = rtrim($path, DIRECTORY_SEPARATOR);
-
-                //Set relative/absolute paths
-                $path = 0 !== strpos($path, '/') && false === strpos($path, ':', 1)
-                    ? ROOT . $path . DIRECTORY_SEPARATOR
-                    : $path . DIRECTORY_SEPARATOR;
-
-                return $path;
-            }, $paths
-        );
-
-        //Set include path
-        set_include_path(implode(PATH_SEPARATOR, $paths));
-        unset($paths, $path);
+        unset($conf, $key, $val);
     }
 
     /**

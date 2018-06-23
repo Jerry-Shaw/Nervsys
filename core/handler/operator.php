@@ -141,7 +141,7 @@ class operator extends process
         }
 
         unset($chk_list, $key, $ip_list, $ip);
-        return 'unknown';
+        return '0.0.0.0';
     }
 
     /**
@@ -168,91 +168,6 @@ class operator extends process
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             exit;
         }
-    }
-
-    /**
-     * Run CGI process
-     */
-    private static function run_cgi(): void
-    {
-        //Build order list
-        self::build_order();
-
-        //Process orders
-        foreach (self::$order as $method) {
-            //Get order class
-            $order = array_shift($method);
-            $class = self::build_class($order);
-
-            //Call LOAD commands
-            if (isset(configure::$load[$load_name = strstr($order, '/', true)])) {
-                self::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
-            }
-
-            //Check class
-            if (!class_exists($class)) {
-                continue;
-            }
-
-            //Check TrustZone
-            if (!isset($class::$tz) || !is_array($class::$tz)) {
-                continue;
-            }
-
-            //Call "init" method
-            if (method_exists($class, 'init')) {
-                self::build_caller($order, $class, 'init');
-            }
-
-            //Check TrustZone permission
-            if (empty($class::$tz)) {
-                continue;
-            }
-
-            //Get TrustZone list & function list
-            $tz_list   = array_keys($class::$tz);
-            $func_list = get_class_methods($class);
-
-            //Get target list
-            $target_list = !empty($method)
-                ? array_intersect($method, $tz_list, $func_list)
-                : array_intersect($tz_list, $func_list);
-
-            unset($tz_list, $func_list, $method);
-
-            //Handle target list
-            foreach ($target_list as $target) {
-                try {
-                    //Get TrustZone data
-                    $tz_data = trustzone::load($class::$tz[$target]);
-
-                    //Run pre functions
-                    if (!empty($tz_data['pre'])) {
-                        foreach ($tz_data['pre'] as $tz_item) {
-                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
-                        }
-                    }
-
-                    //Check TrustZone
-                    trustzone::verify(array_keys(self::$data), $tz_data['param']);
-
-                    //Build method caller
-                    self::build_caller($order, $class, $target);
-
-                    //Run post functions
-                    if (!empty($tz_data['post'])) {
-                        foreach ($tz_data['post'] as $tz_item) {
-                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
-                        }
-                    }
-                } catch (\Throwable $throwable) {
-                    error::exception_handler($throwable);
-                    unset($throwable);
-                }
-            }
-        }
-
-        unset($method, $order, $class, $load_name, $target_list, $target, $tz_data, $tz_item);
     }
 
     /**
@@ -308,15 +223,136 @@ class operator extends process
     }
 
     /**
-     * Get root class name
+     * Run CGI process
+     */
+    private static function run_cgi(): void
+    {
+        //Build order list
+        self::build_order();
+
+        //Process orders
+        foreach (self::$order as $method) {
+            //Check class file
+            if (!self::check_class($order = array_shift($method))) {
+                continue;
+            }
+
+            //Check class
+            if (!class_exists($class = self::build_class($order))) {
+                continue;
+            }
+
+            //Check TrustZone
+            if (!isset($class::$tz) || !is_array($class::$tz)) {
+                continue;
+            }
+
+            //Call LOAD commands
+            if (isset(configure::$load[$load_name = strstr($order, '/', true)])) {
+                self::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
+            }
+
+            //Call "init" method
+            if (method_exists($class, 'init')) {
+                self::build_caller($order, $class, 'init');
+            }
+
+            //Check TrustZone permission
+            if (empty($class::$tz)) {
+                continue;
+            }
+
+            //Get TrustZone list & function list
+            $tz_list   = array_keys($class::$tz);
+            $func_list = get_class_methods($class);
+
+            //Get target list
+            $target_list = !empty($method)
+                ? array_intersect($method, $tz_list, $func_list)
+                : array_intersect($tz_list, $func_list);
+
+            unset($load_name, $tz_list, $func_list, $method);
+
+            //Handle target list
+            foreach ($target_list as $target) {
+                try {
+                    //Get TrustZone data
+                    $tz_data = trustzone::load($class::$tz[$target]);
+
+                    //Run pre functions
+                    if (!empty($tz_data['pre'])) {
+                        foreach ($tz_data['pre'] as $tz_item) {
+                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
+                        }
+                    }
+
+                    //Check TrustZone
+                    trustzone::verify(array_keys(self::$data), $tz_data['param']);
+
+                    //Build method caller
+                    self::build_caller($order, $class, $target);
+
+                    //Run post functions
+                    if (!empty($tz_data['post'])) {
+                        foreach ($tz_data['post'] as $tz_item) {
+                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
+                        }
+                    }
+                } catch (\Throwable $throwable) {
+                    error::exception_handler($throwable);
+                    unset($throwable);
+                }
+            }
+        }
+
+        unset($method, $order, $class, $target_list, $target, $tz_data, $tz_item);
+    }
+
+    /**
+     * Check class file
      *
-     * @param string $lib
+     * @param string $library
+     *
+     * @return bool
+     */
+    private static function check_class(string $library): bool
+    {
+        $result  = false;
+        $library = trim(strtr($library, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
+
+        if (false !== strpos($library, DIRECTORY_SEPARATOR)) {
+            //Check namespace
+            if (is_string($file = realpath(ROOT . $library . '.php'))) {
+                $result = true;
+                require $file;
+            }
+        } elseif (!empty(configure::$path)) {
+            //Check include path
+            foreach (configure::$path as $path) {
+                if (is_string($file = realpath($path . $library . '.php'))) {
+                    $result = true;
+                    require $file;
+                    break;
+                }
+            }
+
+            unset($path);
+        }
+
+        unset($library, $file);
+        return $result;
+    }
+
+    /**
+     * Build root class name
+     *
+     * @param string $library
      *
      * @return string
      */
-    private static function build_class(string $lib): string
+    private static function build_class(string $library): string
     {
-        return '\\' . ltrim(strtr($lib, '/', '\\'), '\\');
+        return '\\' . ltrim(strtr($library, '/', '\\'), '\\');
     }
 
     /**

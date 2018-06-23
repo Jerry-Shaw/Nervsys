@@ -36,35 +36,23 @@ date_default_timezone_set('PRC');
 header('Content-Type: application/json; charset=utf-8');
 
 //Define NervSys version
-define('NS_VER', '6.2.0');
+define('NS_VER', '6.2.2');
 
 //Define absolute root path
-define('ROOT', substr(realpath(__DIR__), 0, -4));
+define('ROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), 0, -4));
 
 //Register autoload function
 spl_autoload_register(
-    static function (string $lib): void
+    static function (string $library): void
     {
-        if (false !== strpos($lib, '\\')) {
+        if (false !== strpos($library, '\\')) {
             //Load from namespace path
-            if (false !== $file = realpath(ROOT . strtr($lib, '\\', DIRECTORY_SEPARATOR) . '.php')) {
-                require $file;
-            }
-        } elseif ('' !== $path = get_include_path()) {
-            //Get include paths
-            $paths = false !== strpos($path, PATH_SEPARATOR) ? explode(PATH_SEPARATOR, $path) : [$path];
-
+            require ROOT . strtr($library, '\\', DIRECTORY_SEPARATOR) . '.php';
+        } else {
             //Load from include path
-            foreach ($paths as $path) {
-                if (false !== $file = realpath($path . $lib . '.php')) {
-                    require $file;
-                    break;
-                }
-            }
-
-            unset($paths);
+            require $library . '.php';
         }
 
-        unset($lib, $file, $path);
+        unset($library);
     }
 );

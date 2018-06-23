@@ -58,30 +58,28 @@ class cmd extends command
      *
      * @return array
      */
-    private static function prep_cli(array &$cmd): array
+    private static function prep_cli(array $cmd): array
     {
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            settings::$cli['PHP'] = platform::sys_path();
+            configure::$cli['PHP'] = platform::sys_path();
         }
 
         //Check CLI settings
-        if (empty(settings::$cli)) {
+        if (empty(configure::$cli)) {
             return [];
         }
 
-        //Build CLI CMD
         $order = [];
-        foreach ($cmd as $key => $item) {
-            if (isset(settings::$cli[$item]) && '' !== settings::$cli[$item]) {
-                $order[$item] = settings::$cli[$item];
 
-                //Remove from CGI CMD
-                unset($cmd[$key]);
+        //Build CLI CMD
+        foreach ($cmd as $key => $item) {
+            if (isset(configure::$cli[$item]) && '' !== configure::$cli[$item]) {
+                $order[$item] = configure::$cli[$item];
             }
         }
 
-        unset($key, $item);
+        unset($cmd, $key, $item);
         return $order;
     }
 
@@ -94,17 +92,18 @@ class cmd extends command
      */
     private static function prep_cgi(array $cmd): array
     {
-        if (empty(settings::$cgi)) {
+        if (empty(configure::$cgi)) {
             return $cmd;
         }
 
         //Mapping CGI config
-        foreach (settings::$cgi as $name => $item) {
+        foreach (configure::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
                 //Replace mapped CMD
                 foreach ($keys as $key) {
                     $cmd[$key] = $item;
                 }
+
                 //Add mapping params
                 self::$param_cgi[$item] = $name;
             } else {
@@ -112,6 +111,7 @@ class cmd extends command
                     if (0 === strpos($val, $name)) {
                         //Replace mapped CMD
                         $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
+
                         //Add mapping params
                         self::$param_cgi[$cmd[$key]] = $val;
                     }
