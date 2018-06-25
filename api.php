@@ -21,20 +21,28 @@
 //Declare strict types
 declare(strict_types = 1);
 
+//Check PHP version
+if (version_compare(PHP_VERSION, '7.2.0', '<')) {
+    exit('NervSys needs PHP 7.2.0 or higher!');
+}
+
 //Set error level
 error_reporting(E_ALL | E_STRICT);
 
+//Set time limit
+set_time_limit(0);
+
+//Set ignore user abort
+ignore_user_abort(true);
+
+//Set default timezone
+date_default_timezone_set('PRC');
+
 //Load initial script
-require __DIR__ . '/core/initial.php';
+require __DIR__ . '/core/system.php';
 
-//Track error
-\core\handler\error::track();
-
-//Load settings
-\core\parser\settings::load();
-
-//Start operator
-\core\handler\operator::start();
+//Start system
+\core\system::start();
 
 //Output JSON result
 \core\parser\output::json();

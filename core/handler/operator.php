@@ -32,9 +32,6 @@ use core\pool\configure;
 
 class operator extends process
 {
-    //Order list
-    private static $order = [];
-
     /**
      * Start operator
      */
@@ -72,6 +69,7 @@ class operator extends process
     public static function stop(string $msg = '', int $err = 1): void
     {
         if ('' !== $msg) {
+            //Add "err" & "msg"
             output::$error['err'] = &$err;
             output::$error['msg'] = &$msg;
         }
@@ -95,7 +93,7 @@ class operator extends process
 
             try {
                 //Call method
-                forward_static_call([self::build_class($order), $method]);
+                forward_static_call([self::get_class($order), $method]);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
                 unset($throwable);
@@ -228,13 +226,12 @@ class operator extends process
     private static function run_cgi(): void
     {
         //Build order list
-        self::build_order();
+        $order = self::build_order();
 
         //Process orders
-        foreach (self::$order as $method) {
-            //Get order & class
-            $order = array_shift($method);
-            $class = self::build_class($order);
+        foreach ($order as $method) {
+            //Get name & class
+            $class = self::get_class($name = array_shift($method));
 
             //Check & load class
             if (!class_exists($class, false) && !self::load_class($class)) {
@@ -247,13 +244,13 @@ class operator extends process
             }
 
             //Call LOAD commands
-            if (isset(configure::$load[$load_name = strstr($order, '/', true)])) {
-                self::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
+            if (isset(configure::$load[$module = strstr($name, '/', true)])) {
+                self::init_load(is_string(configure::$load[$module]) ? [configure::$load[$module]] : configure::$load[$module]);
             }
 
             //Call "init" method
             if (method_exists($class, 'init')) {
-                self::build_caller($order, $class, 'init');
+                self::build_caller($name, $class, 'init');
             }
 
             //Check TrustZone permission
@@ -268,7 +265,7 @@ class operator extends process
             //Get target list
             $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
-            unset($load_name, $tz_list, $func_list, $method);
+            unset($module, $tz_list, $func_list, $method);
 
             //Handle target list
             foreach ($target_list as $target) {
@@ -279,7 +276,7 @@ class operator extends process
                     //Run pre functions
                     if (!empty($tz_data['pre'])) {
                         foreach ($tz_data['pre'] as $tz_item) {
-                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
+                            self::build_caller($tz_item['order'], self::get_class($tz_item['order']), $tz_item['method']);
                         }
                     }
 
@@ -287,12 +284,12 @@ class operator extends process
                     trustzone::verify(array_keys(self::$data), $tz_data['param']);
 
                     //Build method caller
-                    self::build_caller($order, $class, $target);
+                    self::build_caller($name, $class, $target);
 
                     //Run post functions
                     if (!empty($tz_data['post'])) {
                         foreach ($tz_data['post'] as $tz_item) {
-                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
+                            self::build_caller($tz_item['order'], self::get_class($tz_item['order']), $tz_item['method']);
                         }
                     }
                 } catch (\Throwable $throwable) {
@@ -302,62 +299,68 @@ class operator extends process
             }
         }
 
-        unset($method, $order, $class, $target_list, $target, $tz_data, $tz_item);
+        unset($order, $method, $class, $name, $target_list, $target, $tz_data, $tz_item);
     }
 
     /**
-     * Check class file
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    private static function load_class(string $name): bool
-    {
-        $load  = false;
-        $class = trim(strtr($name, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
-        $paths = false !== strpos($class, DIRECTORY_SEPARATOR) ? [ROOT] : configure::$path;
-
-        foreach ($paths as $path) {
-            if (is_string($file = realpath($path . $class))) {
-                require $file;
-                $load = class_exists($class, false);
-                break;
-            }
-        }
-
-        unset($class, $paths, $path, $file);
-        return $load;
-    }
-
-    /**
-     * Build root class name
+     * Get class name
      *
      * @param string $class
      *
      * @return string
      */
-    private static function build_class(string $class): string
+    private static function get_class(string $class): string
     {
         return '\\' . trim(strtr($class, '/', '\\'), '\\');
     }
 
     /**
+     * Load class file
+     *
+     * @param string $class
+     *
+     * @return bool
+     */
+    private static function load_class(string $class): bool
+    {
+        $load = false;
+
+        $file = trim(strtr($class, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
+        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : configure::$path;
+
+        foreach ($list as $path) {
+            if (is_string($path = realpath($path . $file))) {
+                //Load class
+                require $path;
+                //Check class
+                $load = class_exists($class, false);
+                //Break loop
+                break;
+            }
+        }
+
+        unset($class, $file, $list, $path);
+        return $load;
+    }
+
+    /**
      * Build CGI order list
      */
-    private static function build_order(): void
+    private static function build_order(): array
     {
-        $key = 0;
+        $key  = 0;
+        $list = [];
 
         foreach (command::$cmd_cgi as $item) {
-            if (false !== strpos($item, '/') && isset(self::$order[$key])) {
+            if (false !== strpos($item, '/') && isset($list[$key])) {
                 ++$key;
             }
 
-            self::$order[$key][] = $item;
+            $list[$key][] = $item;
         }
 
         unset($key, $item);
+        return $list;
     }
 
     /**
