@@ -232,13 +232,12 @@ class operator extends process
 
         //Process orders
         foreach (self::$order as $method) {
-            //Check class file
-            if (!self::check_class($order = array_shift($method))) {
-                continue;
-            }
+            //Get order & class
+            $order = array_shift($method);
+            $class = self::build_class($order);
 
-            //Check class
-            if (!class_exists($class = self::build_class($order))) {
+            //Check & load class
+            if (!class_exists($class, false) && !self::load_class($class)) {
                 continue;
             }
 
@@ -267,9 +266,7 @@ class operator extends process
             $func_list = get_class_methods($class);
 
             //Get target list
-            $target_list = !empty($method)
-                ? array_intersect($method, $tz_list, $func_list)
-                : array_intersect($tz_list, $func_list);
+            $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
             unset($load_name, $tz_list, $func_list, $method);
 
@@ -311,48 +308,38 @@ class operator extends process
     /**
      * Check class file
      *
-     * @param string $library
+     * @param string $name
      *
      * @return bool
      */
-    private static function check_class(string $library): bool
+    private static function load_class(string $name): bool
     {
-        $result  = false;
-        $library = trim(strtr($library, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
+        $load  = false;
+        $class = trim(strtr($name, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
+        $paths = false !== strpos($class, DIRECTORY_SEPARATOR) ? [ROOT] : configure::$path;
 
-        if (false !== strpos($library, DIRECTORY_SEPARATOR)) {
-            //Check namespace
-            if (is_string($file = realpath(ROOT . $library . '.php'))) {
-                $result = true;
+        foreach ($paths as $path) {
+            if (is_string($file = realpath($path . $class))) {
                 require $file;
+                $load = class_exists($class, false);
+                break;
             }
-        } elseif (!empty(configure::$path)) {
-            //Check include path
-            foreach (configure::$path as $path) {
-                if (is_string($file = realpath($path . $library . '.php'))) {
-                    $result = true;
-                    require $file;
-                    break;
-                }
-            }
-
-            unset($path);
         }
 
-        unset($library, $file);
-        return $result;
+        unset($class, $paths, $path, $file);
+        return $load;
     }
 
     /**
      * Build root class name
      *
-     * @param string $library
+     * @param string $class
      *
      * @return string
      */
-    private static function build_class(string $library): string
+    private static function build_class(string $class): string
     {
-        return '\\' . ltrim(strtr($library, '/', '\\'), '\\');
+        return '\\' . trim(strtr($class, '/', '\\'), '\\');
     }
 
     /**
