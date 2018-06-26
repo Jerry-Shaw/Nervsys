@@ -26,7 +26,7 @@ use core\handler\platform;
 
 use core\parser\data;
 
-use core\pool\configure;
+use core\pool\setting;
 
 class redis_queue extends redis
 {
@@ -164,7 +164,7 @@ class redis_queue extends redis
      */
     public static function chk_cli(): void
     {
-        if (configure::$is_cgi) {
+        if (setting::$is_cgi) {
             operator::stop('Only support CLI!');
         }
     }
@@ -334,8 +334,8 @@ class redis_queue extends redis
         //Call LOAD commands
         $load_name = strstr($order, '/', true);
 
-        if (isset(configure::$load[$load_name])) {
-            operator::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
+        if (isset(setting::$load[$load_name])) {
+            operator::init_load(is_string(setting::$load[$load_name]) ? [setting::$load[$load_name]] : setting::$load[$load_name]);
         }
 
         try {

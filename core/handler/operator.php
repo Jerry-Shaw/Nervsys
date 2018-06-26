@@ -20,46 +20,16 @@
 
 namespace core\handler;
 
-use core\parser\cmd;
 use core\parser\data;
-use core\parser\input;
 use core\parser\output;
 use core\parser\trustzone;
 
 use core\pool\command;
 use core\pool\process;
-use core\pool\configure;
+use core\pool\setting;
 
 class operator extends process
 {
-    /**
-     * Start operator
-     */
-    public static function start(): void
-    {
-        //Check CORS
-        self::chk_cors();
-
-        //Call INIT
-        if (!empty(configure::$init)) {
-            self::init_load(configure::$init);
-        }
-
-        //Read input
-        input::read();
-
-        //Prepare CMD
-        cmd::prep();
-
-        //Run CLI process
-        if (!configure::$is_cgi) {
-            self::run_cli();
-        }
-
-        //Run CGI process
-        self::run_cgi();
-    }
-
     /**
      * Stop operator
      *
@@ -69,7 +39,6 @@ class operator extends process
     public static function stop(string $msg = '', int $err = 1): void
     {
         if ('' !== $msg) {
-            //Add "err" & "msg"
             output::$error['err'] = &$err;
             output::$error['msg'] = &$msg;
         }
@@ -88,11 +57,9 @@ class operator extends process
     public static function init_load(array $cmd): void
     {
         foreach ($cmd as $item) {
-            //Get order & method
             list($order, $method) = explode('-', $item, 2);
 
             try {
-                //Call method
                 forward_static_call([self::get_class($order), $method]);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
@@ -104,74 +71,9 @@ class operator extends process
     }
 
     /**
-     * Get IP
-     *
-     * @return string
-     */
-    public static function get_ip(): string
-    {
-        //IP check list
-        $chk_list = [
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_FORWARDED',
-            'HTTP_FORWARDED_FOR',
-            'HTTP_FORWARDED',
-            'REMOTE_ADDR'
-        ];
-
-        //Check ip values
-        foreach ($chk_list as $key) {
-            if (!isset($_SERVER[$key])) {
-                continue;
-            }
-
-            $ip_list = false !== strpos($_SERVER[$key], ',') ? explode(',', $_SERVER[$key]) : [$_SERVER[$key]];
-
-            foreach ($ip_list as $ip) {
-                $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
-
-                if (false !== $ip) {
-                    unset($chk_list, $key, $ip_list);
-                    return $ip;
-                }
-            }
-        }
-
-        unset($chk_list, $key, $ip_list, $ip);
-        return '0.0.0.0';
-    }
-
-    /**
-     * Check Cross-origin resource sharing permission
-     */
-    private static function chk_cors(): void
-    {
-        if (
-            empty(configure::$cors)
-            || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (configure::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
-        ) {
-            return;
-        }
-
-        if (!isset(configure::$cors[$_SERVER['HTTP_ORIGIN']])) {
-            self::stop('Access NOT permitted!');
-        }
-
-        //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
-        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . configure::$cors[$_SERVER['HTTP_ORIGIN']]);
-
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
-        }
-    }
-
-    /**
      * Run CLI process
      */
-    private static function run_cli(): void
+    public static function run_cli(): void
     {
         //Process orders
         foreach (command::$cmd_cli as $key => $cmd) {
@@ -223,7 +125,7 @@ class operator extends process
     /**
      * Run CGI process
      */
-    private static function run_cgi(): void
+    public static function run_cgi(): void
     {
         //Build order list
         $order = self::build_order();
@@ -244,8 +146,8 @@ class operator extends process
             }
 
             //Call LOAD commands
-            if (isset(configure::$load[$module = strstr($name, '/', true)])) {
-                self::init_load(is_string(configure::$load[$module]) ? [configure::$load[$module]] : configure::$load[$module]);
+            if (isset(setting::$load[$module = strstr($name, '/', true)])) {
+                self::init_load(is_string(setting::$load[$module]) ? [setting::$load[$module]] : setting::$load[$module]);
             }
 
             //Call "init" method
@@ -299,7 +201,7 @@ class operator extends process
             }
         }
 
-        unset($order, $method, $class, $name, $target_list, $target, $tz_data, $tz_item);
+        unset($order, $method, $name, $class, $target_list, $target, $tz_data, $tz_item);
     }
 
     /**
@@ -324,17 +226,16 @@ class operator extends process
     private static function load_class(string $class): bool
     {
         $load = false;
-
         $file = trim(strtr($class, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
-        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : configure::$path;
+        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : setting::$path;
 
         foreach ($list as $path) {
             if (is_string($path = realpath($path . $file))) {
                 //Load class
                 require $path;
-                //Check class
+                //Check load status
                 $load = class_exists($class, false);
-                //Break loop
+
                 break;
             }
         }
@@ -382,7 +283,7 @@ class operator extends process
             throw new \Exception($order . ' => ' . $method . ': NOT for public!');
         }
 
-        //Create object
+        //Get factory object
         if (!$reflect->isStatic()) {
             $class = factory::get($class);
         }
@@ -429,7 +330,6 @@ class operator extends process
         $timer  = 0;
         $result = '';
 
-        //Keep watching & reading
         while (0 === command::$param_cli['time'] || $timer <= command::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);

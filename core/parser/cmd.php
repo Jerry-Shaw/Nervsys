@@ -24,7 +24,7 @@ use core\handler\operator;
 use core\handler\platform;
 
 use core\pool\command;
-use core\pool\configure;
+use core\pool\setting;
 
 class cmd extends command
 {
@@ -42,7 +42,7 @@ class cmd extends command
         $cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : [self::$cmd];
 
         //Prepare CLI CMD
-        if (!configure::$is_cgi) {
+        if (!setting::$is_cgi) {
             self::$cmd_cli = self::prep_cli($cmd);
         }
 
@@ -62,11 +62,11 @@ class cmd extends command
     {
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            configure::$cli['PHP'] = platform::sys_path();
+            setting::$cli['PHP'] = platform::sys_path();
         }
 
-        //Check CLI settings
-        if (empty(configure::$cli)) {
+        //Check CLI setting
+        if (empty(setting::$cli)) {
             return [];
         }
 
@@ -74,8 +74,8 @@ class cmd extends command
 
         //Build CLI CMD
         foreach ($cmd as $key => $item) {
-            if (isset(configure::$cli[$item]) && '' !== configure::$cli[$item]) {
-                $order[$item] = configure::$cli[$item];
+            if (isset(setting::$cli[$item]) && '' !== setting::$cli[$item]) {
+                $order[$item] = setting::$cli[$item];
             }
         }
 
@@ -92,12 +92,12 @@ class cmd extends command
      */
     private static function prep_cgi(array $cmd): array
     {
-        if (empty(configure::$cgi)) {
+        if (empty(setting::$cgi)) {
             return $cmd;
         }
 
         //Mapping CGI config
-        foreach (configure::$cgi as $name => $item) {
+        foreach (setting::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
                 //Replace mapped CMD
                 foreach ($keys as $key) {

@@ -20,7 +20,7 @@
 
 namespace core\helper;
 
-use core\pool\configure;
+use core\pool\setting;
 
 class log
 {
@@ -132,8 +132,8 @@ class log
      */
     public static function show(string $level, string $message, array $context): void
     {
-        //Check configure
-        if (!isset(configure::$log['show']) || 0 === (int)configure::$log['show']) {
+        //Check setting
+        if (!isset(setting::$log['show']) || 0 === (int)setting::$log['show']) {
             return;
         }
 
@@ -151,8 +151,8 @@ class log
      */
     private static function save(string $level, string $message, array $context): void
     {
-        //Check configure
-        if (!isset(configure::$log[$level]) || 0 === (int)configure::$log[$level]) {
+        //Check setting
+        if (!isset(setting::$log[$level]) || 0 === (int)setting::$log[$level]) {
             return;
         }
 

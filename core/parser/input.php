@@ -22,7 +22,7 @@ namespace core\parser;
 
 use core\pool\process;
 use core\pool\command;
-use core\pool\configure;
+use core\pool\setting;
 
 class input extends process
 {
@@ -31,7 +31,7 @@ class input extends process
      */
     public static function read(): void
     {
-        if (configure::$is_cgi) {
+        if (setting::$is_cgi) {
             //Read HTTP & input
             self::read_http();
             self::read_raw();

@@ -38,10 +38,14 @@ ignore_user_abort(true);
 //Set default timezone
 date_default_timezone_set('PRC');
 
+//Set response header
+header('Content-Type: application/json; charset=utf-8');
+
 //Load initial script
 require __DIR__ . '/core/system.php';
 
 //Start system
+\core\system::load();
 \core\system::start();
 
 //Output JSON result

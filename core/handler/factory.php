@@ -31,36 +31,36 @@ class factory
     /**
      * Get cloned-instance
      *
-     * @param string $library
+     * @param string $class
      *
      * @return object
      */
-    public static function new(string $library): object
+    public static function new(string $class): object
     {
-        if (!isset(self::$orig[$library])) {
-            self::$orig[$library] = new $library;
+        if (!isset(self::$orig[$class])) {
+            self::$orig[$class] = new $class;
         }
 
-        return clone self::$orig[$library];
+        return clone self::$orig[$class];
     }
 
     /**
      * Get single-instance
      *
-     * @param string $library
+     * @param string $class
      *
      * @return object
      */
-    public static function get(string $library): object
+    public static function get(string $class): object
     {
-        if (!isset(self::$obj[$library])) {
-            if (!isset(self::$orig[$library])) {
-                self::$orig[$library] = new $library;
+        if (!isset(self::$obj[$class])) {
+            if (!isset(self::$orig[$class])) {
+                self::$orig[$class] = new $class;
             }
 
-            self::$obj[$library] = clone self::$orig[$library];
+            self::$obj[$class] = clone self::$orig[$class];
         }
 
-        return self::$obj[$library];
+        return self::$obj[$class];
     }
 }

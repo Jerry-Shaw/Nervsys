@@ -77,7 +77,13 @@ class platform implements os
      */
     private static function handler(): string
     {
-        if ('' === self::$handler && !class_exists(self::$handler = '\\core\\handler\\platform\\' . strtolower(PHP_OS))) {
+        if ('' !== self::$handler) {
+            return self::$handler;
+        }
+
+        self::$handler = '\\' . __CLASS__ . '\\' . strtolower(PHP_OS);
+
+        if (!is_string(realpath(ROOT . trim(strtr(self::$handler, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php'))) {
             throw new \Exception(PHP_OS . ': NOT support!');
         }
 

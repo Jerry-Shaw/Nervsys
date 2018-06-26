@@ -21,30 +21,25 @@
 namespace core\parser;
 
 use core\pool\process;
-use core\pool\configure;
+use core\pool\setting;
 
 class output extends process
 {
     //Output error
     public static $error = [];
 
-    //JSON encode option
-    public static $json_opt = 3906;
-
     /**
      * Output result in JSON
      */
     public static function json(): void
     {
-        //Build result
-        $count  = count(self::$result);
-        $result = 1 === $count ? current(self::$result) : self::$result;
+        $result = 1 === count(self::$result) ? current(self::$result) : self::$result;
+        $output = !empty(self::$error) ? self::$error + ['data' => &$result] : $result;
 
-        //Build output
-        $data = !empty(self::$error) ? self::$error + ['data' => &$result] : $result;
-        $json = json_encode($data, self::$json_opt);
+        $json = json_encode($output, 0 >= error_reporting() ? 3906 : 4034);
 
-        echo !configure::$is_cgi ? $json . PHP_EOL : $json;
-        unset($count, $result, $data, $json);
+        echo !setting::$is_cgi ? $json . PHP_EOL : $json;
+
+        unset($result, $output, $json);
     }
 }

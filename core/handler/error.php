@@ -22,12 +22,10 @@ namespace core\handler;
 
 use core\helper\log;
 
-use core\parser\output;
-
 class error
 {
     /*
-     * Error report level
+     * Error levels & values
      *
      * 0: Disable
      * 1: E_ERROR
@@ -47,9 +45,6 @@ class error
      * 16384: E_USER_DEPRECATED
      * 32767: E_ALL
      */
-    private static $level = 0;
-
-    //Error levels
     const LEVELS = [
         //Error level
         E_ERROR             => 'error',
@@ -78,18 +73,8 @@ class error
      */
     public static function track(): void
     {
-        //Get error level & JSON option
-        if (0 < self::$level = error_reporting()) {
-            output::$json_opt = 4034;
-        }
-
-        //Set shutdown handler
         register_shutdown_function([__CLASS__, 'shutdown_handler']);
-
-        //Set exception handler
         set_exception_handler([__CLASS__, 'exception_handler']);
-
-        //Set error handler
         set_error_handler([__CLASS__, 'error_handler']);
     }
 
@@ -129,28 +114,23 @@ class error
      */
     public static function exception_handler(\Throwable $throwable): void
     {
-        //Get errno & level
-        $errno = $throwable->getCode();
-        $level = self::LEVELS[$errno] ?? 'debug';
+        $level = self::LEVELS[$throwable->getCode()] ?? 'debug';
 
-        //Build message
-        $message = 'Exception caught in ' . $throwable->getFile() . ' on line ' . $throwable->getLine() . ': ' . $throwable->getMessage();
+        $message = 'Exception caught in '
+            . $throwable->getFile()
+            . ' on line ' . $throwable->getLine()
+            . PHP_EOL . 'Message: ' . $throwable->getMessage();
 
-        //Build context
         $context = [
             'Peak: ' . round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
             'Memory: ' . round(memory_get_usage(true) / 1048576, 4) . 'MB',
             'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
-            'Trace: ',
-            $throwable->getTraceAsString()
+            'Trace: ' . PHP_EOL . $throwable->getTraceAsString()
         ];
 
-        //Save logs
         log::$level($message, $context);
-
-        //Show logs
         log::show($level, $message, $context);
 
-        unset($throwable, $errno, $level, $message, $context);
+        unset($throwable, $level, $message, $context);
     }
 }

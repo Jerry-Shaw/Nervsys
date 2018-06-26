@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable Version: 6.2.2  
+Stable Version: 6.2.6  
 
 
 ## About
@@ -44,14 +44,13 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │     │       ├─data.php                    data parser
     │     │       ├─input.php                   input data parser
     │     │       ├─output.php                  output data parser
-    │     │       ├─setting.php                 setting config parser
     │     │       └─trustzone.php               TrustZone data parser
     │     ├─pool/
-    │     │     ├─command.php                   command pool
-    │     │     ├─configure.php                 configure pool
-    │     │     └─process.php                   process date poll
-    │     ├─initial.php                         initial script file
-    │     └─settings.ini                        setting config file
+    │     │     ├─command.php                   command data pool
+    │     │     ├─process.php                   process date poll
+    │     │     └─setting.php                   setting data pool
+    │     ├─system.ini                          system setting file
+    │     └─system.php                          system script file
     ├─ext/
     │    ├─font/
     │    ├─lib/
