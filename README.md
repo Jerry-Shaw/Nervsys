@@ -330,6 +330,14 @@ class TestA
 
 ## Keywords
 
+### error_reporting
+
+This setting in NervSys does not matter too much any more.  
+All errors and exceptions will be handled well into logs and/or showing up.  
+The only thing will be affected by "error_reporting" is the format of JSON result.  
+When "error_reporting" is set NOT equal to 0, "JSON_PRETTY_PRINT" option will be added to output.
+
+
 ### TrustZone
 
 Every class which is exposed to API should always contain a static array variable named $tz. The content in $tz controls the exact method calling actions in the owner class.  

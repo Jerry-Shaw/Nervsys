@@ -29,23 +29,31 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
 //Set error level
 error_reporting(E_ALL | E_STRICT);
 
-//Set time limit
+//Set runtime values
 set_time_limit(0);
-
-//Set ignore user abort
 ignore_user_abort(true);
-
-//Set default timezone
 date_default_timezone_set('PRC');
 
-//Set response header
+//Set response header to JSON
 header('Content-Type: application/json; charset=utf-8');
 
-//Load initial script
-require __DIR__ . '/core/system.php';
+//Define NervSys version
+define('VER', '6.2.6');
+
+//Define absolute root path
+define('ROOT', strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR);
+
+//Register autoload function
+spl_autoload_register(
+    static function (string $class): void
+    {
+        //Load from namespace path or include path
+        require (false !== strpos($class, '\\') ? ROOT . strtr($class, '\\', DIRECTORY_SEPARATOR) : $class) . '.php';
+        unset($class);
+    }
+);
 
 //Start system
-\core\system::load();
 \core\system::start();
 
 //Output JSON result

@@ -38,15 +38,15 @@ class http
     public static $payload = true;
 
     //HTTP options
-    public static $ETag         = '';       //ETag
-    public static $Cookie       = '';       //Cookie
-    public static $Header       = [];       //Header
-    public static $Method       = 'GET';    //Method
-    public static $Referer      = '';       //Referer
-    public static $Modified     = '';       //Last-Modified
-    public static $accept       = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept
-    public static $user_agent   = 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')';       //User Agent
-    public static $content_type = 'application/json; charset=utf-8';                        //Content-type
+    public static $ETag         = '';     //ETag
+    public static $Cookie       = '';     //Cookie
+    public static $Header       = [];     //Header
+    public static $Method       = 'GET';  //Method
+    public static $Referer      = '';     //Referer
+    public static $Modified     = '';     //Last-Modified
+    public static $accept       = 'text/plain,text/html,text/xml,application/json,*;q=0';  //Accept
+    public static $user_agent   = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';         //User Agent
+    public static $content_type = 'application/json; charset=utf-8';                       //Content-type
 
     //SSL certificates
     public static $ssl_key  = '';

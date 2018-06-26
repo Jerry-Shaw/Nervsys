@@ -31,34 +31,6 @@ use core\pool\setting;
 class system
 {
     /**
-     * System load
-     */
-    public static function load(): void
-    {
-        //Define NervSys version
-        define('NS_VER', '6.2.6');
-
-        //Define absolute root path
-        define('ROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), 0, -4));
-
-        //Register autoload function
-        spl_autoload_register(
-            static function (string $class): void
-            {
-                if (false !== strpos($class, '\\')) {
-                    //Load from namespace path
-                    require ROOT . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
-                } else {
-                    //Load from include path
-                    require $class . '.php';
-                }
-
-                unset($class);
-            }
-        );
-    }
-
-    /**
      * System start
      */
     public static function start(): void
@@ -66,10 +38,8 @@ class system
         //Track error
         error::track();
 
-        //Parse setting
+        //Parse & detect
         self::parse();
-
-        //Runtime detection
         self::detect();
 
         //Call INIT
@@ -196,17 +166,15 @@ class system
             return;
         }
 
-        //CORS access denied
         if (!isset(setting::$cors[$_SERVER['HTTP_ORIGIN']])) {
-            operator::stop('Access NOT permitted!');
+            operator::stop('Access NOT permitted!', 1);
         }
 
-        //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . setting::$cors[$_SERVER['HTTP_ORIGIN']]);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
+            operator::stop('Access permitted!', 0);
         }
     }
 }
