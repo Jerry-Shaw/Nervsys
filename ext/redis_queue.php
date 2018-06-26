@@ -329,13 +329,13 @@ class redis_queue extends redis
 
         //Get order & class & method
         list($order, $method) = explode('-', $input['cmd'], 2);
-        $class = '\\' . ltrim(strtr($order, '/', '\\'), '\\');
+        $class = '\\' . trim(strtr($order, '/', '\\'), '\\');
 
         //Call LOAD commands
-        $load_name = strstr($order, '/', true);
+        $module = strstr($order, '/', true);
 
-        if (isset(setting::$load[$load_name])) {
-            operator::init_load(is_string(setting::$load[$load_name]) ? [setting::$load[$load_name]] : setting::$load[$load_name]);
+        if (isset(setting::$load[$module])) {
+            operator::init_load(is_string(setting::$load[$module]) ? [setting::$load[$module]] : setting::$load[$module]);
         }
 
         try {
@@ -366,7 +366,7 @@ class redis_queue extends redis
             unset($throwable);
         }
 
-        unset($data, $input, $order, $method, $class, $load_name, $reflect, $params, $result);
+        unset($data, $input, $order, $method, $class, $module, $reflect, $params, $result);
     }
 
     /**
