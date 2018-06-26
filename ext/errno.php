@@ -51,16 +51,12 @@ class errno
     {
         $file = $dir . DIRECTORY_SEPARATOR . self::$dir . DIRECTORY_SEPARATOR . $file . '.ini';
 
-        if (false === $path = realpath(ROOT . $file)) {
-            throw new \Exception('[' . $file . '] NOT found!');
-        }
-
-        if (false === $error = parse_ini_file($path, false)) {
+        if (false === $error = parse_ini_file(ROOT . $file, false)) {
             throw new \Exception('[' . $file . '] ERROR!');
         }
 
         self::$pool += $error;
-        unset($dir, $file, $path, $error);
+        unset($dir, $file, $error);
     }
 
     /**
@@ -85,8 +81,12 @@ class errno
      */
     public static function get(int $code, int $errno = 0): array
     {
-        return isset(self::$pool[$code])
-            ? ['err' => &$errno, 'code' => &$code, 'msg' => self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code]]
-            : ['err' => &$errno, 'code' => &$code, 'msg' => 'Error message NOT found!'];
+        return [
+            'code' => &$code,
+            'err'  => &$errno,
+            'msg'  => isset(self::$pool[$code])
+                ? (self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code])
+                : 'Message NOT found!'
+        ];
     }
 }
