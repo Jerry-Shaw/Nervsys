@@ -121,25 +121,21 @@ class system
             return;
         }
 
-        //Parse include path
+        //Set include path
         if (isset($conf['PATH']) && !empty($conf['PATH'])) {
-            //Format paths
             $conf['PATH'] = array_map(
                 static function (string $path): string
                 {
-                    $path = strtr($path, '\\', DIRECTORY_SEPARATOR);
-                    $path = rtrim($path, DIRECTORY_SEPARATOR);
+                    $path = rtrim(strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
 
-                    //Set relative/absolute paths
-                    $path = 0 !== strpos($path, '/') && false === strpos($path, ':', 1)
-                        ? ROOT . $path . DIRECTORY_SEPARATOR
-                        : $path . DIRECTORY_SEPARATOR;
+                    if (0 !== strpos($path, '/') && 1 !== strpos($path, ':')) {
+                        $path = ROOT . $path;
+                    }
 
-                    return $path;
+                    return $path . DIRECTORY_SEPARATOR;
                 }, $conf['PATH']
             );
 
-            //Set include path
             set_include_path(implode(PATH_SEPARATOR, $conf['PATH']));
         }
 
