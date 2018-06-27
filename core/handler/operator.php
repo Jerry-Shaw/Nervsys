@@ -21,7 +21,6 @@
 namespace core\handler;
 
 use core\parser\data;
-use core\parser\output;
 use core\parser\trustzone;
 
 use core\pool\command;
@@ -30,25 +29,6 @@ use core\pool\setting;
 
 class operator extends process
 {
-    /**
-     * Stop operator
-     *
-     * @param string $msg
-     * @param int    $err
-     */
-    public static function stop(string $msg = '', int $err = 1): void
-    {
-        if ('' !== $msg) {
-            output::$error['err'] = &$err;
-            output::$error['msg'] = &$msg;
-        }
-
-        unset($msg, $err);
-        output::json();
-
-        exit;
-    }
-
     /**
      * Call INIT/LOAD
      *
@@ -245,6 +225,22 @@ class operator extends process
     }
 
     /**
+     * Build mapped key
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return string
+     */
+    private static function build_key(string $class, string $method): string
+    {
+        $key = command::$param_cgi[$class . '-' . $method] ?? (command::$param_cgi[$class] ?? $class) . '/' . $method;
+
+        unset($class, $method);
+        return $key;
+    }
+
+    /**
      * Build CGI order list
      */
     private static function build_order(): array
@@ -300,22 +296,6 @@ class operator extends process
         }
 
         unset($order, $class, $method, $reflect, $params, $result);
-    }
-
-    /**
-     * Build mapped key
-     *
-     * @param string $class
-     * @param string $method
-     *
-     * @return string
-     */
-    private static function build_key(string $class, string $method): string
-    {
-        $key = command::$param_cgi[$class . '-' . $method] ?? (command::$param_cgi[$class] ?? $class) . '/' . $method;
-
-        unset($class, $method);
-        return $key;
     }
 
     /**

@@ -25,6 +25,7 @@ use core\handler\operator;
 
 use core\parser\cmd;
 use core\parser\input;
+use core\parser\output;
 
 use core\pool\setting;
 
@@ -60,6 +61,15 @@ class system
 
         //Run CGI process
         operator::run_cgi();
+    }
+
+    /**
+     * System stop
+     */
+    public static function stop(): void
+    {
+        output::json();
+        exit;
     }
 
     /**
@@ -167,14 +177,14 @@ class system
         }
 
         if (!isset(setting::$cors[$_SERVER['HTTP_ORIGIN']])) {
-            operator::stop('Access NOT permitted!', 1);
+            exit;
         }
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . setting::$cors[$_SERVER['HTTP_ORIGIN']]);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            operator::stop('Access permitted!', 0);
+            exit;
         }
     }
 }

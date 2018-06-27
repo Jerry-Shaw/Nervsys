@@ -20,7 +20,8 @@
 
 namespace core\parser;
 
-use core\handler\operator;
+use core\system;
+
 use core\handler\platform;
 
 use core\pool\command;
@@ -35,7 +36,7 @@ class cmd extends command
     {
         //Check CMD
         if ('' === self::$cmd) {
-            operator::stop('CMD NOT found!');
+            system::stop();
         }
 
         //Extract CMD
@@ -65,14 +66,13 @@ class cmd extends command
             setting::$cli['PHP'] = platform::sys_path();
         }
 
-        //Check CLI setting
+        //Check setting
         if (empty(setting::$cli)) {
             return [];
         }
 
+        //Build CMD
         $order = [];
-
-        //Build CLI CMD
         foreach ($cmd as $key => $item) {
             if (isset(setting::$cli[$item]) && '' !== setting::$cli[$item]) {
                 $order[$item] = setting::$cli[$item];
@@ -99,27 +99,27 @@ class cmd extends command
         //Mapping CGI config
         foreach (setting::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
-                //Replace mapped CMD
+                //Replace CMD
                 foreach ($keys as $key) {
                     $cmd[$key] = $item;
                 }
 
-                //Add mapping params
+                //Add param
                 self::$param_cgi[$item] = $name;
             } else {
                 foreach ($cmd as $key => $val) {
                     if (0 === strpos($val, $name)) {
-                        //Replace mapped CMD
+                        //Replace CMD
                         $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
 
-                        //Add mapping params
+                        //Add param
                         self::$param_cgi[$cmd[$key]] = $val;
                     }
                 }
             }
         }
 
-        //Rebuild CGI CMD
+        //Build CMD
         $order = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
 
         unset($cmd, $name, $item, $keys, $key, $val);

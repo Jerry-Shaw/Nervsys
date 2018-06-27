@@ -165,7 +165,7 @@ class redis_queue extends redis
     public static function chk_cli(): void
     {
         if (setting::$is_cgi) {
-            operator::stop('Only support CLI!');
+            exit('Only support CLI!');
         }
     }
 
@@ -181,7 +181,7 @@ class redis_queue extends redis
 
         //Exit when root process is running
         if (self::connect()->exists($root_key)) {
-            operator::stop('Process already running!');
+            exit('Process already running!');
         }
 
         //Set lifetime
@@ -331,9 +331,10 @@ class redis_queue extends redis
         list($order, $method) = explode('-', $input['cmd'], 2);
         $class = '\\' . trim(strtr($order, '/', '\\'), '\\');
 
-        //Call LOAD commands
+        //Get LOAD module
         $module = strstr($order, '/', true);
 
+        //Call LOAD commands
         if (isset(setting::$load[$module])) {
             operator::init_load(is_string(setting::$load[$module]) ? [setting::$load[$module]] : setting::$load[$module]);
         }

@@ -82,11 +82,9 @@ class errno
     public static function get(int $code, int $errno = 0): array
     {
         return [
-            'code' => &$code,
             'err'  => &$errno,
-            'msg'  => isset(self::$pool[$code])
-                ? (self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code])
-                : 'Message NOT found!'
+            'msg'  => isset(self::$pool[$code]) ? (self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code]) : 'Message NOT found!',
+            'code' => &$code
         ];
     }
 }
