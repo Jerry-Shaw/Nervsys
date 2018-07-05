@@ -281,7 +281,9 @@ class operator extends process
 
         //Get factory object
         if (!$reflect->isStatic()) {
-            $class = factory::use($class);
+            $class = method_exists($class, '__construct')
+                ? factory::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), self::$data))
+                : factory::use($class);
         }
 
         //Build arguments
