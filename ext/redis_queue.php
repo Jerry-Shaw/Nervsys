@@ -351,7 +351,9 @@ class redis_queue extends redis
 
             //Create object
             if (!$reflect->isStatic()) {
-                $class = factory::new($class);
+                $class = method_exists($class, '__construct')
+                    ? factory::new($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
+                    : factory::new($class);
             }
 
             //Build arguments
