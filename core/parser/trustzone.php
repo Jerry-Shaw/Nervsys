@@ -54,7 +54,7 @@ class trustzone
         //Compare data with TrustZone
         if (!empty($param) && !empty($diff = array_diff($param, array_intersect($data, $param)))) {
             //Report TrustZone missing
-            throw new \Exception('TrustZone missing [' . (implode(', ', $diff)) . ']');
+            throw new \Exception('TrustZone mismatch [' . (implode(', ', $diff)) . ']');
         }
 
         unset($data, $param, $diff);

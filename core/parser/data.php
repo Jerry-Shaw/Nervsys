@@ -83,22 +83,22 @@ class data
             if (isset($input[$name])) {
                 switch ($param->getType()) {
                     case 'int':
-                        $data[] = (int)$input[$name];
+                        is_numeric($input[$name]) ? $data[] = (int)$input[$name] : $diff[] = $name;
                         break;
                     case 'bool':
-                        $data[] = (bool)$input[$name];
+                        is_bool($input[$name]) ? $data[] = (bool)$input[$name] : $diff[] = $name;
                         break;
                     case 'float':
-                        $data[] = (float)$input[$name];
+                        is_numeric($input[$name]) ? $data[] = (float)$input[$name] : $diff[] = $name;
                         break;
                     case 'array':
-                        $data[] = (array)$input[$name];
+                        is_array($input[$name]) || is_object($input[$name]) ? $data[] = (array)$input[$name] : $diff[] = $name;
                         break;
                     case 'string':
-                        $data[] = (string)$input[$name];
+                        is_string($input[$name]) || is_numeric($input[$name]) ? $data[] = (string)$input[$name] : $diff[] = $name;
                         break;
                     case 'object':
-                        $data[] = (object)$input[$name];
+                        is_object($input[$name]) || is_array($input[$name]) ? $data[] = (object)$input[$name] : $diff[] = $name;
                         break;
                     default:
                         $data[] = $input[$name];
@@ -111,7 +111,7 @@ class data
 
         //Report argument missing
         if (!empty($diff)) {
-            throw new \Exception('Argument missing [' . (implode(', ', $diff)) . ']');
+            throw new \Exception('Argument mismatch [' . (implode(', ', $diff)) . ']');
         }
 
         unset($reflect, $input, $params, $diff, $param, $name);
