@@ -281,7 +281,7 @@ class operator extends process
 
         //Get factory object
         if (!$reflect->isStatic()) {
-            $class = factory::get($class);
+            $class = factory::use($class);
         }
 
         //Build arguments

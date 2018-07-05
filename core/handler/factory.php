@@ -22,45 +22,75 @@ namespace core\handler;
 
 class factory
 {
-    //Object list
-    private static $obj = [];
-
-    //Original list
-    private static $orig = [];
-
     /**
-     * Get cloned-instance
+     * Get new cloned-instance
      *
      * @param string $class
+     * @param array  $param
      *
      * @return object
      */
-    public static function new(string $class): object
+    public static function new(string $class, array $param = []): object
     {
-        if (!isset(self::$orig[$class])) {
-            self::$orig[$class] = new $class;
+        static $list = [];
+
+        if (!isset($list[$key = self::hash_key($class, $param)])) {
+            $list[$key] = self::create($class, $param);
         }
 
-        return clone self::$orig[$class];
+        unset($class, $param);
+        return clone $list[$key];
     }
 
     /**
-     * Get single-instance
+     * Get origin single-instance
      *
      * @param string $class
+     * @param array  $param
      *
      * @return object
      */
-    public static function get(string $class): object
+    public static function use(string $class, array $param = []): object
     {
-        if (!isset(self::$obj[$class])) {
-            if (!isset(self::$orig[$class])) {
-                self::$orig[$class] = new $class;
-            }
+        static $list = [];
 
-            self::$obj[$class] = clone self::$orig[$class];
+        if (!isset($list[$key = self::hash_key($class, $param)])) {
+            $list[$key] = self::create($class, $param);
         }
 
-        return self::$obj[$class];
+        unset($class, $param);
+        return $list[$key];
+    }
+
+    /**
+     * Get HASH key
+     *
+     * @param string $class
+     * @param array  $param
+     *
+     * @return string
+     */
+    private static function hash_key(string $class, array $param): string
+    {
+        $key = hash('md5', $class . json_encode($param));
+
+        unset($class, $param);
+        return $key;
+    }
+
+    /**
+     * Create object
+     *
+     * @param string $class
+     * @param array  $param
+     *
+     * @return object
+     */
+    private static function create(string $class, array $param): object
+    {
+        $object = !empty($param) ? new $class(...$param) : new $class();
+
+        unset($class, $param);
+        return $object;
     }
 }
