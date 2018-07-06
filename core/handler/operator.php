@@ -120,8 +120,8 @@ class operator extends process
                 continue;
             }
 
-            //Check TrustZone
-            if (!isset($class::$tz) || !is_array($class::$tz)) {
+            //Check TrustZone permission
+            if (empty(trustzone::key($class))) {
                 continue;
             }
 
@@ -135,16 +135,13 @@ class operator extends process
                 self::build_caller($name, $class, 'init');
             }
 
-            //Check TrustZone permission
-            if (empty($class::$tz)) {
+            //Recheck TrustZone permission
+            if (empty($tz_list = trustzone::key($class))) {
                 continue;
             }
 
-            //Get TrustZone list & function list
-            $tz_list   = array_keys($class::$tz);
-            $func_list = get_class_methods($class);
-
-            //Get target list
+            //Get function list & target list
+            $func_list   = get_class_methods($class);
             $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
             unset($module, $tz_list, $func_list, $method);
@@ -153,7 +150,7 @@ class operator extends process
             foreach ($target_list as $target) {
                 try {
                     //Get TrustZone data
-                    $tz_data = trustzone::load($class::$tz[$target]);
+                    $tz_data = trustzone::value($class, $target);
 
                     //Run pre functions
                     if (!empty($tz_data['pre'])) {
@@ -162,8 +159,8 @@ class operator extends process
                         }
                     }
 
-                    //Check TrustZone
-                    trustzone::verify(array_keys(self::$data), $tz_data['param']);
+                    //Verify TrustZone param
+                    trustzone::verify(array_keys(self::$data), $class, $target);
 
                     //Build method caller
                     self::build_caller($name, $class, $target);
@@ -276,7 +273,7 @@ class operator extends process
 
         //Check visibility
         if (!$reflect->isPublic()) {
-            throw new \Exception($order . ' => ' . $method . ': NOT for public!');
+            throw new \Exception(ltrim($class, '\\') . ' => ' . $method . ': NOT for public!');
         }
 
         //Get factory object

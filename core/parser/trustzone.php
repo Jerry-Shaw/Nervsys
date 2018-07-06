@@ -23,41 +23,63 @@ namespace core\parser;
 class trustzone
 {
     /**
-     * Load TrustZone
+     * Get TrustZone keys
      *
-     * @param array $trustzone
+     * @param string $class
      *
      * @return array
      */
-    public static function load(array $trustzone): array
+    public static function key(string $class): array
     {
-        $data = [];
-
-        $data['pre']   = isset($trustzone['pre']) ? self::prep_cmd($trustzone['pre']) : [];
-        $data['post']  = isset($trustzone['post']) ? self::prep_cmd($trustzone['post']) : [];
-        $data['param'] = isset($trustzone['param']) ? $trustzone['param'] : (is_int(key($trustzone)) ? $trustzone : []);
-
-        unset($trustzone);
-        return $data;
+        return isset($class::$tz) && is_array($class::$tz) ? array_keys($class::$tz) : [];
     }
 
     /**
-     * Verify TrustZone data
+     * Get TrustZone values
      *
-     * @param array $data
-     * @param array $param
+     * @param string $class
+     * @param string $method
+     *
+     * @return array
+     */
+    public static function value(string $class, string $method): array
+    {
+        $value = [];
+        $data  = &($class::$tz)[$method];
+
+        $value['pre']  = isset($data['pre']) ? self::prep_cmd($data['pre']) : [];
+        $value['post'] = isset($data['post']) ? self::prep_cmd($data['post']) : [];
+
+        unset($class, $method, $data);
+        return $value;
+    }
+
+    /**
+     * Verify TrustZone param
+     *
+     * @param array  $keys
+     * @param string $class
+     * @param string $method
      *
      * @throws \Exception
      */
-    public static function verify(array $data, array $param): void
+    public static function verify(array $keys, string $class, string $method): void
     {
+        $data  = &($class::$tz)[$method];
+        $param = isset($data['param']) ? $data['param'] : (isset($data[0]) ? $data : []);
+
         //Compare data with TrustZone
-        if (!empty($param) && !empty($diff = array_diff($param, array_intersect($data, $param)))) {
+        if (!empty($param) && !empty($diff = array_diff($param, array_intersect($keys, $param)))) {
             //Report TrustZone missing
-            throw new \Exception('TrustZone mismatch [' . (implode(', ', $diff)) . ']');
+            throw new \Exception(
+                ltrim($class, '\\')
+                . ' => '
+                . $method
+                . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']'
+            );
         }
 
-        unset($data, $param, $diff);
+        unset($keys, $class, $method, $data, $param, $diff);
     }
 
     /**

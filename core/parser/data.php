@@ -111,7 +111,12 @@ class data
 
         //Report argument missing
         if (!empty($diff)) {
-            throw new \Exception('Argument mismatch [' . (implode(', ', $diff)) . ']');
+            throw new \Exception(
+                $reflect->getDeclaringClass()->getName()
+                . ' => '
+                . $reflect->getName()
+                . ': Argument mismatch [' . (implode(', ', $diff)) . ']'
+            );
         }
 
         unset($reflect, $input, $params, $diff, $param, $name);
