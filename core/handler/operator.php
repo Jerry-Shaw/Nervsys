@@ -121,7 +121,7 @@ class operator extends process
             }
 
             //Check TrustZone permission
-            if (empty(trustzone::key($class))) {
+            if (empty(trustzone::keys($class))) {
                 continue;
             }
 
@@ -136,7 +136,7 @@ class operator extends process
             }
 
             //Recheck TrustZone permission
-            if (empty($tz_list = trustzone::key($class))) {
+            if (empty($tz_list = trustzone::keys($class))) {
                 continue;
             }
 
@@ -150,7 +150,7 @@ class operator extends process
             foreach ($target_list as $target) {
                 try {
                     //Get TrustZone data
-                    $tz_data = trustzone::value($class, $target);
+                    $tz_data = trustzone::fetch($class, $target);
 
                     //Run pre functions
                     if (!empty($tz_data['pre'])) {
@@ -159,7 +159,7 @@ class operator extends process
                         }
                     }
 
-                    //Verify TrustZone param
+                    //Verify TrustZone params
                     trustzone::verify(array_keys(self::$data), $class, $target);
 
                     //Build method caller

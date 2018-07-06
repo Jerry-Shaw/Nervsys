@@ -29,33 +29,33 @@ class trustzone
      *
      * @return array
      */
-    public static function key(string $class): array
+    public static function keys(string $class): array
     {
         return isset($class::$tz) && is_array($class::$tz) ? array_keys($class::$tz) : [];
     }
 
     /**
-     * Get TrustZone values
+     * Fetch TrustZone pre & post
      *
      * @param string $class
      * @param string $method
      *
      * @return array
      */
-    public static function value(string $class, string $method): array
+    public static function fetch(string $class, string $method): array
     {
-        $value = [];
-        $data  = &($class::$tz)[$method];
+        $val  = [];
+        $data = &($class::$tz)[$method];
 
-        $value['pre']  = isset($data['pre']) ? self::prep_cmd($data['pre']) : [];
-        $value['post'] = isset($data['post']) ? self::prep_cmd($data['post']) : [];
+        $val['pre']  = isset($data['pre']) ? self::prep_cmd($data['pre']) : [];
+        $val['post'] = isset($data['post']) ? self::prep_cmd($data['post']) : [];
 
         unset($class, $method, $data);
-        return $value;
+        return $val;
     }
 
     /**
-     * Verify TrustZone param
+     * Verify TrustZone params
      *
      * @param array  $keys
      * @param string $class
@@ -65,10 +65,9 @@ class trustzone
      */
     public static function verify(array $keys, string $class, string $method): void
     {
-        $data  = &($class::$tz)[$method];
-        $param = isset($data['param']) ? $data['param'] : (isset($data[0]) ? $data : []);
+        $value = &($class::$tz)[$method];
+        $param = isset($value['param']) ? $value['param'] : (isset($value[0]) ? $value : []);
 
-        //Compare data with TrustZone
         if (!empty($param) && !empty($diff = array_diff($param, array_intersect($keys, $param)))) {
             //Report TrustZone missing
             throw new \Exception(
@@ -79,7 +78,7 @@ class trustzone
             );
         }
 
-        unset($keys, $class, $method, $data, $param, $diff);
+        unset($keys, $class, $method, $value, $param, $diff);
     }
 
     /**
