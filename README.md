@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable Version: 6.2.0  
+Stable Version: 6.2.6  
 
 
 ## About
@@ -44,14 +44,13 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │     │       ├─data.php                    data parser
     │     │       ├─input.php                   input data parser
     │     │       ├─output.php                  output data parser
-    │     │       ├─setting.php                 setting config parser
     │     │       └─trustzone.php               TrustZone data parser
     │     ├─pool/
-    │     │     ├─command.php                   command pool
-    │     │     ├─configure.php                 configure pool
-    │     │     └─process.php                   process date poll
-    │     ├─initial.php                         initial script file
-    │     └─settings.ini                        setting config file
+    │     │     ├─command.php                   command data pool
+    │     │     ├─process.php                   process date poll
+    │     │     └─setting.php                   setting data pool
+    │     ├─system.ini                          system setting file
+    │     └─system.php                          system script file
     ├─ext/
     │    ├─font/
     │    ├─lib/
@@ -189,16 +188,18 @@ The words above are reserved by NervSys core. So that, they should be taken care
     
     Multiple setting:
     DescA = dirA/dirB/model-func
-    DescB[] = dirB/dirB/model-funcA
-    DescB[] = dirB/dirB/model-funcB
+    DescB = dirB/dirB/model-funcA
+    DescC = dirB/dirB/model-funcB
     
     explain: 
     "\dirA\dirB\model::func()" & "\dirB\dirB\model::funcA()" & "\dirB\dirB\model::funcB()"
     will be called on startup without any agruments. 
     
     Notice: 
-    The "Desc" key in "INIT" has no means for system, but for developers to know what they are for. 
-    No agrument accepted and no returned value will be captured.
+    The "Desc*" keys in "INIT" has no means for system, but for developers to know what they are for. 
+    Sub-array settings are NOT allowed in this section. 
+    Arguments are NOT allowed to pass to function. 
+    No returned value will be captured.  
 
     
 ### LOAD
@@ -227,10 +228,11 @@ The words above are reserved by NervSys core. So that, they should be taken care
     before calling functions under dirB.
     
     Notice: 
-    The keys in "LOAD" section point to the first level subfolders, while the setting values point to 
-    the functions which will be called when the subfolder is being accessed. 
-    Arguments are automatically accepted from API.
-    No returned value will be captured.
+    The keys in "LOAD" section point to the first level subfolders, while the setting values 
+    point to the functions which will be called when the subfolder is being accessed. 
+    Sub-array settings are allowed in this section, to call multiple functions. 
+    Arguments are automatically accepted from API. 
+    No returned value will be captured. 
 
 
 ### PATH
@@ -327,6 +329,14 @@ class TestA
 
 
 ## Keywords
+
+### error_reporting
+
+This setting in NervSys does not matter too much any more.  
+All errors and exceptions will be handled well into logs and/or showing up.  
+The only thing will be affected by "error_reporting" is the format of JSON result.  
+When "error_reporting" is set NOT equal to 0, "JSON_PRETTY_PRINT" option will be added to output.
+
 
 ### TrustZone
 

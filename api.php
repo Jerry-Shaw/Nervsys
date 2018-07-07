@@ -21,20 +21,40 @@
 //Declare strict types
 declare(strict_types = 1);
 
+//Check PHP version
+if (version_compare(PHP_VERSION, '7.2.0', '<')) {
+    exit('NervSys needs PHP 7.2.0 or higher!');
+}
+
 //Set error level
 error_reporting(E_ALL | E_STRICT);
 
-//Load initial script
-require __DIR__ . '/core/initial.php';
+//Set runtime values
+set_time_limit(0);
+ignore_user_abort(true);
+date_default_timezone_set('PRC');
 
-//Track error
-\core\handler\error::track();
+//Set response header to JSON
+header('Content-Type: application/json; charset=utf-8');
 
-//Load settings
-\core\parser\settings::load();
+//Define NervSys version
+define('VER', '6.2.6');
 
-//Start operator
-\core\handler\operator::start();
+//Define absolute root path
+define('ROOT', strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR);
+
+//Register autoload function
+spl_autoload_register(
+    static function (string $class): void
+    {
+        //Load from namespace path or include path
+        require (false !== strpos($class, '\\') ? ROOT . strtr($class, '\\', DIRECTORY_SEPARATOR) : $class) . '.php';
+        unset($class);
+    }
+);
+
+//Start system
+\core\system::start();
 
 //Output JSON result
 \core\parser\output::json();

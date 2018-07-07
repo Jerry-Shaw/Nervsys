@@ -20,70 +20,15 @@
 
 namespace core\handler;
 
-use core\helper\log;
-
-use core\parser\cmd;
 use core\parser\data;
-use core\parser\input;
-use core\parser\output;
 use core\parser\trustzone;
 
 use core\pool\command;
 use core\pool\process;
-use core\pool\configure;
+use core\pool\setting;
 
 class operator extends process
 {
-    //Order list
-    private static $order = [];
-
-    /**
-     * Start operator
-     */
-    public static function start(): void
-    {
-        //Check CORS
-        self::chk_cors();
-
-        //Call INIT
-        if (!empty(configure::$init)) {
-            self::init_load(configure::$init);
-        }
-
-        //Read input
-        input::read();
-
-        //Prepare CMD
-        cmd::prep();
-
-        //Run CGI process
-        self::run_cgi();
-
-        //Run CLI process
-        if (!configure::$is_cgi) {
-            self::run_cli();
-        }
-    }
-
-    /**
-     * Stop operator
-     *
-     * @param string $msg
-     * @param int    $err
-     */
-    public static function stop(string $msg = '', int $err = 1): void
-    {
-        if ('' !== $msg) {
-            output::$error['err'] = &$err;
-            output::$error['msg'] = &$msg;
-        }
-
-        unset($msg, $err);
-        output::json();
-
-        exit;
-    }
-
     /**
      * Call INIT/LOAD
      *
@@ -92,12 +37,10 @@ class operator extends process
     public static function init_load(array $cmd): void
     {
         foreach ($cmd as $item) {
-            //Get order & method
             list($order, $method) = explode('-', $item, 2);
 
             try {
-                //Call method
-                forward_static_call([self::build_class($order), $method]);
+                forward_static_call([self::get_class($order), $method]);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
                 unset($throwable);
@@ -108,162 +51,9 @@ class operator extends process
     }
 
     /**
-     * Get IP
-     *
-     * @return string
-     */
-    public static function get_ip(): string
-    {
-        //IP check list
-        $chk_list = [
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_FORWARDED',
-            'HTTP_FORWARDED_FOR',
-            'HTTP_FORWARDED',
-            'REMOTE_ADDR'
-        ];
-
-        //Check ip values
-        foreach ($chk_list as $key) {
-            if (!isset($_SERVER[$key])) {
-                continue;
-            }
-
-            $ip_list = false !== strpos($_SERVER[$key], ',') ? explode(',', $_SERVER[$key]) : [$_SERVER[$key]];
-
-            foreach ($ip_list as $ip) {
-                $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
-
-                if (false !== $ip) {
-                    unset($chk_list, $key, $ip_list);
-                    return $ip;
-                }
-            }
-        }
-
-        unset($chk_list, $key, $ip_list, $ip);
-        return 'unknown';
-    }
-
-    /**
-     * Check Cross-origin resource sharing permission
-     */
-    private static function chk_cors(): void
-    {
-        if (
-            empty(configure::$cors)
-            || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (configure::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
-        ) {
-            return;
-        }
-
-        if (!isset(configure::$cors[$_SERVER['HTTP_ORIGIN']])) {
-            log::info('CORS denied for ' . $_SERVER['HTTP_ORIGIN'] . ' from ' . self::get_ip());
-            self::stop('Access denied!');
-        }
-
-        //Response Access-Control-Allow-Origin & Access-Control-Allow-Headers
-        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . configure::$cors[$_SERVER['HTTP_ORIGIN']]);
-
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
-        }
-    }
-
-    /**
-     * Run CGI process
-     */
-    private static function run_cgi(): void
-    {
-        //Build order list
-        self::build_order();
-
-        //Process orders
-        foreach (self::$order as $method) {
-            //Get order class
-            $order = array_shift($method);
-            $class = self::build_class($order);
-
-            //Call LOAD commands
-            if (isset(configure::$load[$load_name = strstr($order, '/', true)])) {
-                self::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
-            }
-
-            //Check class
-            if (!class_exists($class)) {
-                log::warning($class . ': Class NOT found!');
-                continue;
-            }
-
-            //Check TrustZone
-            if (!isset($class::$tz) || !is_array($class::$tz)) {
-                log::notice($class . ': TrustZone NOT Open!');
-                continue;
-            }
-
-            //Call "init" method
-            if (method_exists($class, 'init')) {
-                self::build_caller($order, $class, 'init');
-            }
-
-            //Check TrustZone permission
-            if (empty($class::$tz)) {
-                continue;
-            }
-
-            //Get TrustZone list & function list
-            $tz_list   = array_keys($class::$tz);
-            $func_list = get_class_methods($class);
-
-            //Get target list
-            $target_list = !empty($method)
-                ? array_intersect($method, $tz_list, $func_list)
-                : array_intersect($tz_list, $func_list);
-
-            unset($tz_list, $func_list, $method);
-
-            //Handle target list
-            foreach ($target_list as $target) {
-                try {
-                    //Get TrustZone data
-                    $tz_data = trustzone::load($class::$tz[$target]);
-
-                    //Run pre functions
-                    if (!empty($tz_data['pre'])) {
-                        foreach ($tz_data['pre'] as $tz_item) {
-                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
-                        }
-                    }
-
-                    //Check TrustZone
-                    trustzone::verify(array_keys(self::$data), $tz_data['param']);
-
-                    //Build method caller
-                    self::build_caller($order, $class, $target);
-
-                    //Run post functions
-                    if (!empty($tz_data['post'])) {
-                        foreach ($tz_data['post'] as $tz_item) {
-                            self::build_caller($tz_item['order'], self::build_class($tz_item['order']), $tz_item['method']);
-                        }
-                    }
-                } catch (\Throwable $throwable) {
-                    error::exception_handler($throwable);
-                    unset($throwable);
-                }
-            }
-        }
-
-        unset($method, $order, $class, $load_name, $target_list, $target, $tz_data, $tz_item);
-    }
-
-    /**
      * Run CLI process
      */
-    private static function run_cli(): void
+    public static function run_cli(): void
     {
         //Process orders
         foreach (command::$cmd_cli as $key => $cmd) {
@@ -313,71 +103,122 @@ class operator extends process
     }
 
     /**
-     * Get root class name
+     * Run CGI process
+     */
+    public static function run_cgi(): void
+    {
+        //Build order list
+        $order = self::build_order();
+
+        //Process orders
+        foreach ($order as $method) {
+            //Get name & class
+            $class = self::get_class($name = array_shift($method));
+
+            //Check & load class
+            if (!class_exists($class, false) && !self::load_class($class)) {
+                continue;
+            }
+
+            //Check TrustZone permission
+            if (empty(trustzone::keys($class))) {
+                continue;
+            }
+
+            //Call LOAD commands
+            if (isset(setting::$load[$module = strstr($name, '/', true)])) {
+                self::init_load(is_string(setting::$load[$module]) ? [setting::$load[$module]] : setting::$load[$module]);
+            }
+
+            //Call "init" method
+            if (method_exists($class, 'init')) {
+                self::build_caller($name, $class, 'init');
+            }
+
+            //Recheck TrustZone permission
+            if (empty($tz_list = trustzone::keys($class))) {
+                continue;
+            }
+
+            //Get function list & target list
+            $func_list   = get_class_methods($class);
+            $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+
+            unset($module, $tz_list, $func_list, $method);
+
+            //Handle target list
+            foreach ($target_list as $target) {
+                try {
+                    //Get TrustZone data
+                    $tz_data = trustzone::fetch($class, $target);
+
+                    //Run pre functions
+                    if (!empty($tz_data['pre'])) {
+                        foreach ($tz_data['pre'] as $tz_item) {
+                            self::build_caller($tz_item['order'], self::get_class($tz_item['order']), $tz_item['method']);
+                        }
+                    }
+
+                    //Verify TrustZone params
+                    trustzone::verify(array_keys(self::$data), $class, $target);
+
+                    //Build method caller
+                    self::build_caller($name, $class, $target);
+
+                    //Run post functions
+                    if (!empty($tz_data['post'])) {
+                        foreach ($tz_data['post'] as $tz_item) {
+                            self::build_caller($tz_item['order'], self::get_class($tz_item['order']), $tz_item['method']);
+                        }
+                    }
+                } catch (\Throwable $throwable) {
+                    error::exception_handler($throwable);
+                    unset($throwable);
+                }
+            }
+        }
+
+        unset($order, $method, $name, $class, $target_list, $target, $tz_data, $tz_item);
+    }
+
+    /**
+     * Get class name
      *
-     * @param string $lib
+     * @param string $class
      *
      * @return string
      */
-    private static function build_class(string $lib): string
+    private static function get_class(string $class): string
     {
-        return '\\' . ltrim(strtr($lib, '/', '\\'), '\\');
+        return '\\' . trim(strtr($class, '/', '\\'), '\\');
     }
 
     /**
-     * Build CGI order list
-     */
-    private static function build_order(): void
-    {
-        $key = 0;
-
-        foreach (command::$cmd_cgi as $item) {
-            if (false !== strpos($item, '/') && isset(self::$order[$key])) {
-                ++$key;
-            }
-
-            self::$order[$key][] = $item;
-        }
-
-        unset($key, $item);
-    }
-
-    /**
-     * Build method caller
+     * Load class file
      *
-     * @param string $order
      * @param string $class
-     * @param string $method
      *
-     * @throws \ReflectionException
+     * @return bool
      */
-    private static function build_caller(string $order, string $class, string $method): void
+    private static function load_class(string $class): bool
     {
-        //Reflection method
-        $reflect = new \ReflectionMethod($class, $method);
+        $load = false;
+        $file = trim(strtr($class, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
+        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : setting::$path;
 
-        //Check visibility
-        if (!$reflect->isPublic()) {
-            throw new \Exception($order . ' => ' . $method . ': NOT for public!');
+        foreach ($list as $path) {
+            if (is_string($path = realpath($path . $file))) {
+                //Load class
+                require $path;
+                //Check load status
+                $load = class_exists($class, false);
+
+                break;
+            }
         }
 
-        //Create object
-        if (!$reflect->isStatic()) {
-            $class = factory::get($class);
-        }
-
-        //Build arguments
-        $params = data::build_argv($reflect, self::$data);
-
-        //Call method (with params)
-        $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
-
-        //Save result (Try mapping keys)
-        if (isset($result)) {
-            self::$result[self::build_key($order, $method)] = &$result;
-        }
-
-        unset($order, $class, $method, $reflect, $params, $result);
+        unset($class, $file, $list, $path);
+        return $load;
     }
 
     /**
@@ -397,6 +238,66 @@ class operator extends process
     }
 
     /**
+     * Build CGI order list
+     */
+    private static function build_order(): array
+    {
+        $key  = 0;
+        $list = [];
+
+        foreach (command::$cmd_cgi as $item) {
+            if (false !== strpos($item, '/') && isset($list[$key])) {
+                ++$key;
+            }
+
+            $list[$key][] = $item;
+        }
+
+        unset($key, $item);
+        return $list;
+    }
+
+    /**
+     * Build method caller
+     *
+     * @param string $order
+     * @param string $class
+     * @param string $method
+     *
+     * @throws \ReflectionException
+     */
+    private static function build_caller(string $order, string $class, string $method): void
+    {
+        //Reflection method
+        $reflect = new \ReflectionMethod($class, $method);
+
+        //Check visibility
+        if (!$reflect->isPublic()) {
+            throw new \Exception(ltrim($class, '\\') . ' => ' . $method . ': NOT for public!');
+        }
+
+        //Get factory object
+        if (!$reflect->isStatic()) {
+            $class = method_exists($class, '__construct')
+                ? factory::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), self::$data))
+                : factory::use($class);
+        }
+
+        //Build arguments
+        $params = data::build_argv($reflect, self::$data);
+
+        //Call method (with params)
+        $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
+
+        //Save result (Try mapping keys)
+        if (isset($result)) {
+            self::$result[self::build_key($order, $method)] = &$result;
+        }
+
+        unset($order, $class, $method, $reflect, $params, $result);
+    }
+
+    /**
      * Get stream content
      *
      * @param array $process
@@ -408,7 +309,6 @@ class operator extends process
         $timer  = 0;
         $result = '';
 
-        //Keep watching & reading
         while (0 === command::$param_cli['time'] || $timer <= command::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);

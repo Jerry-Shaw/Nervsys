@@ -26,7 +26,7 @@ use core\helper\log;
 
 use core\parser\data;
 
-use core\pool\configure;
+use core\pool\setting;
 
 class mpc
 {
@@ -42,7 +42,7 @@ class mpc
     //Max running processes
     public static $max_runs = 10;
 
-    //PHP key name in "settings.ini"
+    //PHP key name in "system.ini"
     public static $php_key = 'php';
 
     //Basic MPC command
@@ -65,12 +65,12 @@ class mpc
         }
 
         //Check php_key
-        if (!isset(configure::$cli[self::$php_key])) {
+        if (!isset(setting::$cli[self::$php_key])) {
             throw new \Exception('[' . self::$php_key . '] NOT found!');
         }
 
         //Build command
-        self::$mpc_cmd = configure::$cli[self::$php_key] . ' "' . ROOT . 'api.php"';
+        self::$mpc_cmd = setting::$cli[self::$php_key] . ' "' . ROOT . 'api.php"';
 
         //Add wait option
         if (self::$wait) {

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Configure Pool
+ * Setting Pool
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -20,19 +20,21 @@
 
 namespace core\pool;
 
-class configure
+class setting
 {
-    //Configurations
+    //Configuration
     public static $log  = [];
     public static $cgi  = [];
     public static $cli  = [];
     public static $cors = [];
     public static $init = [];
     public static $load = [];
+    public static $path = [];
 
+    //Runtime values
     public static $is_cgi   = true;
     public static $is_https = true;
 
     //Setting file path
-    const PATH = ROOT . 'core' . DIRECTORY_SEPARATOR . 'settings.ini';
+    const PATH = ROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
 }

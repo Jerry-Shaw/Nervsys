@@ -1,8 +1,9 @@
 <?php
+
 /**
- * Crypt Extension
+ * ZIP extension
  *
- * Copyright 2016-2018 SealingP <464485940@qq.com>
+ * Copyright 2018 SealingP <464485940@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +17,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace ext;
+
 use \ext\lib\fileOperate;
+
 class zip extends fileOperate
 {
     //ZipArchive object
@@ -25,16 +29,13 @@ class zip extends fileOperate
     //zip file real path
     private static $_zipFile;
     //static init object (self)
-    private static  $_instance;
-    private function __construct()
-    {
-    }
+    private static $_instance;
 
     //object init(self)
-    public static function instance(string $file):zip
+    public static function instance(string $file): zip
     {
-        if(!self::$_instance instanceof zip){
-            self::$_zip = new \ZipArchive();
+        if (!self::$_instance instanceof zip) {
+            self::$_zip      = new \ZipArchive();
             self::$_instance = new self;
         }
         self::setZip($file);
@@ -43,44 +44,47 @@ class zip extends fileOperate
 
     /**
      * set zip path
-     * @param string $file: zip file
+     *
+     * @param string $file : zip file
+     *
      * @return void
      */
-    public static function setZip(string $file):void
+    public static function setZip(string $file): void
     {
         if ('zip' != \ext\file::get_ext($file)) return;
-        fclose(@fopen($file,'a+'));
+        fclose(@fopen($file, 'a+'));
         $file = realpath($file);
         parent::clean($file);
         self::$_zipFile = $file;
     }
 
     //check init
-    private static function check():bool
+    private static function check(): bool
     {
         return self::$_zipFile && self::$_zip;
     }
 
     //get current zip file
-    public static function getZip():string
+    public static function getZip(): string
     {
         return self::$_zipFile ? : '';
     }
 
     //close ZipArchive resource
-    public static function close():void
+    public static function close(): void
     {
-     self::check() && @self::$_zip->close();
+        self::check() && @self::$_zip->close();
     }
 
     /**
      * decompress files(deafult all) from zip (default overwrite same file name)
-     * @param string $des DIR path
-     * @param array $files file name from zip
+     *
+     * @param string $des   DIR path
+     * @param array  $files file name from zip
      */
-    public static function decompress(string $des, array $files = []):bool
+    public static function decompress(string $des, array $files = []): bool
     {
-        if (!self::check()||!is_dir(@realpath($des))) {
+        if (!self::check() || !is_dir(@realpath($des))) {
             return false;
         }
         self::$_zip->open(self::$_zipFile);
@@ -91,33 +95,35 @@ class zip extends fileOperate
 
     /**
      * dcompress file to zip(overwrite if file existed in zip)
-     * @param string $file file path + name which need compressed
+     *
+     * @param string $file   file path + name which need compressed
      * @param string $rename if rename file
+     *
      * @return  bool
      */
-    public static function compress(string $file, string $rename = ''):bool
+    public static function compress(string $file, string $rename = ''): bool
     {
-        if ( !self::check() || !($file = @realpath($file))) {
+        if (!self::check() || !($file = @realpath($file))) {
             return false;
         }
         parent::clean($file);
-        $rename = $rename ? :substr($file,strrpos($file,'/')+1,strlen($file));
+        $rename = $rename ? : substr($file, strrpos($file, '/') + 1, strlen($file));
         self::$_zip->open(self::$_zipFile);
-        $file = self::$_zip->addFile($file,$rename);
+        $file = self::$_zip->addFile($file, $rename);
         self::close();
         return $file;
     }
 
     //read all files from zip
-    public static function listFiles():array
+    public static function listFiles(): array
     {
         if (!self::check()) {
             return [];
         }
-        $res = zip_open(self::$_zipFile);
+        $res   = zip_open(self::$_zipFile);
         $files = [];
         while (true) {
-            if (false === ($read = zip_read($res)) ) {
+            if (false === ($read = zip_read($res))) {
                 break;
             }
             $files[] = zip_entry_name($read);
@@ -128,7 +134,7 @@ class zip extends fileOperate
     }
 
     //get ZipArchive object
-    public static function getArchive ():\ZipArchive
+    public static function getArchive(): \ZipArchive
     {
         return self::check() ? self::$_zip : new \ZipArchive();
     }

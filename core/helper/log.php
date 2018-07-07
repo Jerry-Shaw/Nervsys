@@ -20,7 +20,7 @@
 
 namespace core\helper;
 
-use core\pool\configure;
+use core\pool\setting;
 
 class log
 {
@@ -36,7 +36,6 @@ class log
     public static function emergency(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -49,7 +48,6 @@ class log
     public static function alert(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -62,7 +60,6 @@ class log
     public static function critical(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -75,7 +72,6 @@ class log
     public static function error(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -88,7 +84,6 @@ class log
     public static function warning(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -101,7 +96,6 @@ class log
     public static function notice(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -114,7 +108,6 @@ class log
     public static function info(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
     }
 
@@ -127,45 +120,7 @@ class log
     public static function debug(string $message, array $context = []): void
     {
         self::save(__FUNCTION__, $message, $context);
-
         unset($message, $context);
-    }
-
-    /**
-     * Save logs
-     *
-     * @param string $level
-     * @param string $message
-     * @param array  $context
-     */
-    private static function save(string $level, string $message, array $context): void
-    {
-        //Check configure
-        if (!isset(configure::$log[$level]) || 0 === (int)configure::$log[$level]) {
-            return;
-        }
-
-        //Check log path
-        if (false === realpath(self::$path) && !mkdir(self::$path, 0776, true) && !chmod(self::$path, 0776)) {
-            array_unshift($context, 'Log path: "' . self::$path . '" NOT exist!');
-            self::show($level, $message, $context);
-
-            return;
-        }
-
-        //Add datetime & log message & empty line
-        array_unshift($context, date('Y-m-d H:i:s'), ucfirst($level) . ': ' . $message);
-        $context[] = '';
-
-        //Generate log file name
-        $file = self::$path . $level . '-' . date('Ymd') . '.log';
-
-        //Write log
-        foreach ($context as $value) {
-            file_put_contents($file, (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL, FILE_APPEND);
-        }
-
-        unset($level, $message, $context, $file, $value);
     }
 
     /**
@@ -177,20 +132,67 @@ class log
      */
     public static function show(string $level, string $message, array $context): void
     {
-        //Check configure
-        if (!isset(configure::$log['show']) || 0 === (int)configure::$log['show']) {
+        //Check setting
+        if (!isset(setting::$log['show']) || 0 === (int)setting::$log['show']) {
             return;
         }
 
-        echo ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+        //Output log
+        echo self::format($level, $message, $context);
+        unset($level, $message, $context);
+    }
 
-        foreach ($context as $value) {
-            echo (is_string($value) ? $value : json_encode($value, 4034)) . PHP_EOL;
+    /**
+     * Save logs
+     *
+     * @param string $level
+     * @param string $message
+     * @param array  $context
+     */
+    private static function save(string $level, string $message, array $context): void
+    {
+        //Check setting
+        if (!isset(setting::$log[$level]) || 0 === (int)setting::$log[$level]) {
+            return;
         }
 
-        echo PHP_EOL . PHP_EOL;
-        unset($value);
+        //Get log key & path
+        $key = $level . '-' . date('Ymd');
+        $log = self::$path . $key . '.log';
 
-        unset($level, $message, $context);
+        static $file = [];
+
+        //Open log file handle
+        if (!isset($file[$key])) {
+            $file[$key] = fopen($log, 'ab');
+        }
+
+        //Write log
+        fwrite($file[$key], self::format($level, $message, $context));
+        unset($level, $message, $context, $key, $log, $file);
+    }
+
+    /**
+     * Format log content
+     *
+     * @param string $level
+     * @param string $message
+     * @param array  $context
+     *
+     * @return string
+     */
+    private static function format(string $level, string $message, array $context): string
+    {
+        $log = date('Y-m-d H:i:s') . PHP_EOL;
+        $log .= ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
+
+        foreach ($context as $item) {
+            $log .= (is_string($item) ? $item : json_encode($item, 4034)) . PHP_EOL;
+        }
+
+        $log .= PHP_EOL . PHP_EOL;
+
+        unset($level, $message, $context, $item);
+        return $log;
     }
 }

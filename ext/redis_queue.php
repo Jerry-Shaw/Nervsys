@@ -26,7 +26,7 @@ use core\handler\platform;
 
 use core\parser\data;
 
-use core\pool\configure;
+use core\pool\setting;
 
 class redis_queue extends redis
 {
@@ -164,8 +164,8 @@ class redis_queue extends redis
      */
     public static function chk_cli(): void
     {
-        if (configure::$is_cgi) {
-            operator::stop('Only support CLI!');
+        if (setting::$is_cgi) {
+            exit('Only support CLI!');
         }
     }
 
@@ -181,7 +181,7 @@ class redis_queue extends redis
 
         //Exit when root process is running
         if (self::connect()->exists($root_key)) {
-            operator::stop('Process already running!');
+            exit('Process already running!');
         }
 
         //Set lifetime
@@ -329,13 +329,14 @@ class redis_queue extends redis
 
         //Get order & class & method
         list($order, $method) = explode('-', $input['cmd'], 2);
-        $class = '\\' . ltrim(strtr($order, '/', '\\'), '\\');
+        $class = '\\' . trim(strtr($order, '/', '\\'), '\\');
+
+        //Get LOAD module
+        $module = strstr($order, '/', true);
 
         //Call LOAD commands
-        $load_name = strstr($order, '/', true);
-
-        if (isset(configure::$load[$load_name])) {
-            operator::init_load(is_string(configure::$load[$load_name]) ? [configure::$load[$load_name]] : configure::$load[$load_name]);
+        if (isset(setting::$load[$module])) {
+            operator::init_load(is_string(setting::$load[$module]) ? [setting::$load[$module]] : setting::$load[$module]);
         }
 
         try {
@@ -350,7 +351,9 @@ class redis_queue extends redis
 
             //Create object
             if (!$reflect->isStatic()) {
-                $class = factory::new($class);
+                $class = method_exists($class, '__construct')
+                    ? factory::new($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
+                    : factory::new($class);
             }
 
             //Build arguments
@@ -366,7 +369,7 @@ class redis_queue extends redis
             unset($throwable);
         }
 
-        unset($data, $input, $order, $method, $class, $load_name, $reflect, $params, $result);
+        unset($data, $input, $order, $method, $class, $module, $reflect, $params, $result);
     }
 
     /**
