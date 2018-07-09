@@ -348,14 +348,14 @@ In $tz, the keys are function names which can be called by API. The contents are
   
 In the example above, $tz for function "test_a" is written in simple mode, while, $tz for function "test_b" is written in full mode.  
   
-In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when unit data structure is not matched $tz settings.  
+In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when process data structure is not matched $tz settings.  
   
 In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.
 
 
 ### Autofill
 
-Parameters in functions will be automatically filled by API once existing in unit data with the same name. Note that, this feature only works for API exposed functions. Once the function is being called, both $tz and params will be checked for qualification to pass.
+Parameters in functions will be automatically filled by API once existing in process data with the same name. Note that, this feature only works for API exposed functions. Once the function is being called, both $tz and params will be checked for qualification to pass.
 
 
 ### function "init"
