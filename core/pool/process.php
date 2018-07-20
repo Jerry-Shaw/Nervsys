@@ -22,8 +22,14 @@ namespace core\pool;
 
 class process
 {
+    //Logs pool
+    public static $logs = '';
+
     //Data pool
     public static $data = [];
+
+    //Error pool
+    public static $error = [];
 
     //Result pool
     public static $result = [];

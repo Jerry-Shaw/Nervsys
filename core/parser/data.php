@@ -46,12 +46,10 @@ class data
      */
     public static function decode(string $value): string
     {
-        if (0 !== strpos($value, self::BASE64)) {
-            return $value;
+        if (0 === strpos($value, self::BASE64)) {
+            $value = substr($value, strlen(self::BASE64));
+            $value = base64_decode($value, true);
         }
-
-        $value = substr($value, strlen(self::BASE64));
-        $value = base64_decode($value, true);
 
         return $value;
     }
@@ -76,11 +74,8 @@ class data
 
         //Process params
         foreach ($params as $param) {
-            //Get param name
-            $name = $param->getName();
-
             //Check param data
-            if (isset($input[$name])) {
+            if (isset($input[$name = $param->getName()])) {
                 switch ($param->getType()) {
                     case 'int':
                         is_numeric($input[$name]) ? $data[] = (int)$input[$name] : $diff[] = $name;
@@ -112,9 +107,7 @@ class data
         //Report argument missing
         if (!empty($diff)) {
             throw new \Exception(
-                $reflect->getDeclaringClass()->getName()
-                . ' => '
-                . $reflect->getName()
+                $reflect->getDeclaringClass()->getName() . '::' . $reflect->getName()
                 . ': Argument mismatch [' . (implode(', ', $diff)) . ']'
             );
         }

@@ -20,12 +20,12 @@
 
 namespace core\helper;
 
-use core\pool\setting;
+use core\pool\command;
 
-class log
+class log extends command
 {
     //Log path
-    public static $path = ROOT . 'logs' . DIRECTORY_SEPARATOR;
+    const PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
 
     /**
      * Log emergency
@@ -132,13 +132,10 @@ class log
      */
     public static function show(string $level, string $message, array $context): void
     {
-        //Check setting
-        if (!isset(setting::$log['show']) || 0 === (int)setting::$log['show']) {
-            return;
+        if (isset(self::$log['show']) && 0 < (int)self::$log['show']) {
+            self::$logs .= self::format($level, $message, $context);
         }
 
-        //Output log
-        echo self::format($level, $message, $context);
         unset($level, $message, $context);
     }
 
@@ -152,24 +149,25 @@ class log
     private static function save(string $level, string $message, array $context): void
     {
         //Check setting
-        if (!isset(setting::$log[$level]) || 0 === (int)setting::$log[$level]) {
-            return;
+        if (isset(self::$log[$level]) && 0 < (int)self::$log[$level]) {
+            //Get log key & path
+            $key = $level . '-' . date('Ymd');
+            $log = self::PATH . $key . '.log';
+
+            static $file = [];
+
+            //Open log file handle
+            if (!isset($file[$key])) {
+                $file[$key] = fopen($log, 'ab');
+            }
+
+            //Write log
+            fwrite($file[$key], self::format($level, $message, $context));
+
+            unset($key, $log, $file);
         }
 
-        //Get log key & path
-        $key = $level . '-' . date('Ymd');
-        $log = self::$path . $key . '.log';
-
-        static $file = [];
-
-        //Open log file handle
-        if (!isset($file[$key])) {
-            $file[$key] = fopen($log, 'ab');
-        }
-
-        //Write log
-        fwrite($file[$key], self::format($level, $message, $context));
-        unset($level, $message, $context, $key, $log, $file);
+        unset($level, $message, $context);
     }
 
     /**

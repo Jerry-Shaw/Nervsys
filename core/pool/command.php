@@ -20,16 +20,16 @@
 
 namespace core\pool;
 
-class command
+class command extends setting
 {
     //Input CMD
     public static $cmd = '';
 
     //Parsed CMD
-    public static $cmd_cgi = [];
-    public static $cmd_cli = [];
+    protected static $cmd_cgi = [];
+    protected static $cmd_cli = [];
 
     //Parameters
-    public static $param_cgi = [];
-    public static $param_cli = ['pipe' => '', 'time' => 0, 'ret' => false];
+    protected static $param_cgi = [];
+    protected static $param_cli = ['pipe' => '', 'time' => 0, 'ret' => false];
 }

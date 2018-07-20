@@ -21,25 +21,16 @@
 
 namespace core\parser;
 
-use core\pool\process;
-use core\pool\setting;
-
-class output extends process
+class output extends input
 {
-    //Error
-    public static $error = [];
-
-    //Method
-    public static $method = 'json';
-
     //Pretty format
     private static $pretty = false;
 
     //Response header
-    private static $header = [
-        'json' => 'Content-Type: application/json; charset=utf-8',
-        'html' => 'Content-Type: text/html; charset=utf-8',
-        'xml'  => 'Content-Type: text/xml; charset=utf-8',
+    const HEADER = [
+        'json' => 'Content-Type: application/json; charset=UTF-8',
+        'nul'  => 'Content-Type: text/html; charset=UTF-8',
+        'xml'  => 'Content-Type: text/xml; charset=UTF-8'
     ];
 
     /**
@@ -47,28 +38,33 @@ class output extends process
      */
     public static function flush(): void
     {
-        if ('html' !== $method = isset(self::$header[self::$method]) ? self::$method : 'json') {
-            if (1 === count(self::$result)) {
-                self::$result = reset(self::$result);
-            }
+        if (1 === count(self::$result)) {
+            self::$result = reset(self::$result);
+        }
 
-            if (!empty(self::$error)) {
-                self::$result = self::$error + ['data' => self::$result];
-            }
+        if (!empty(self::$error)) {
+            self::$result = self::$error + ['data' => self::$result];
+        }
+
+        if ('' !== self::$logs) {
+            is_array(self::$result) ? self::$result += ['logs' => self::$logs] : self::$result .= PHP_EOL . PHP_EOL . self::$logs;
         }
 
         if (0 < error_reporting()) {
             self::$pretty = true;
         }
 
-        header(self::$header[$method]);
-        echo self::$method();
+        header(self::HEADER[$output = isset(self::HEADER[self::$output]) ? self::$output : 'json']);
 
-        if (setting::$is_cli) {
-            echo PHP_EOL;
+        if ('nul' !== $output) {
+            echo self::$output();
+
+            if (self::$is_cli) {
+                echo PHP_EOL;
+            }
         }
 
-        unset($method);
+        unset($output);
     }
 
     /**
@@ -77,16 +73,6 @@ class output extends process
     private static function json(): string
     {
         return json_encode(self::$result, self::$pretty ? 4034 : 3906);
-    }
-
-    /**
-     * Output as HTML
-     *
-     * @return string
-     */
-    private static function html(): string
-    {
-        return is_string(self::$result) ? self::$result : (string)reset(self::$result);
     }
 
     /**
@@ -102,7 +88,7 @@ class output extends process
             $xml .= PHP_EOL;
         }
 
-        $xml .= self::build_xml(self::$result);
+        $xml .= is_array(self::$result) ? self::build_xml(self::$result) : '<![CDATA[' . self::$result . ']]>';
 
         if (self::$pretty) {
             $xml .= PHP_EOL;
@@ -122,19 +108,24 @@ class output extends process
      */
     private static function build_xml(array $data): string
     {
-        $xml = '';
+        $xml  = '';
+        $list = [];
 
         foreach ($data as $key => $item) {
+            if (is_numeric($key)) {
+                $key = 'name_' . $key;
+            }
+
             $xml .= '<' . $key . '>';
             $xml .= is_array($item) ? self::build_xml($item) : (is_numeric($item) ? $item : '<![CDATA[' . $item . ']]>');
             $xml .= '</' . $key . '>';
 
-            if (self::$pretty) {
-                $xml .= PHP_EOL;
-            }
+            $list[] = $xml;
         }
 
-        unset($data, $key, $item);
+        $xml = implode(self::$pretty ? PHP_EOL : '', $list);
+
+        unset($data, $list, $key, $item);
         return $xml;
     }
 }

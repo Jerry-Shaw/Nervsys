@@ -22,7 +22,7 @@ namespace core\handler;
 
 use core\helper\log;
 
-class error
+class error extends log
 {
     /*
      * Error levels & values
@@ -128,8 +128,8 @@ class error
             'Trace: ' . PHP_EOL . $throwable->getTraceAsString()
         ];
 
-        log::$level($message, $context);
-        log::show($level, $message, $context);
+        self::$level($message, $context);
+        self::show($level, $message, $context);
 
         unset($throwable, $level, $message, $context);
     }

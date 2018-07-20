@@ -24,15 +24,12 @@ use core\system;
 
 use core\handler\platform;
 
-use core\pool\command;
-use core\pool\setting;
-
-class cmd extends command
+class cmd extends input
 {
     /**
-     * Prepare CMD
+     * Parse CMD
      */
-    public static function prep(): void
+    public static function parse(): void
     {
         //Check CMD
         if ('' === self::$cmd) {
@@ -42,13 +39,10 @@ class cmd extends command
         //Extract CMD
         $cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : [self::$cmd];
 
-        //Prepare CLI CMD
-        if (setting::$is_cli) {
-            self::$cmd_cli = self::prep_cli($cmd);
-        }
-
-        //Prepare CGI CMD
+        //Prepare CMD
+        self::$cmd_cli = self::prep_cli($cmd);
         self::$cmd_cgi = self::prep_cgi($cmd);
+
         unset($cmd);
     }
 
@@ -61,21 +55,25 @@ class cmd extends command
      */
     private static function prep_cli(array $cmd): array
     {
+        if (!self::$is_cli) {
+            return [];
+        }
+
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            setting::$cli['PHP'] = platform::sys_path();
+            self::$cli['PHP'] = platform::sys_path();
         }
 
         //Check setting
-        if (empty(setting::$cli)) {
+        if (empty(self::$cli)) {
             return [];
         }
 
         //Build CMD
         $order = [];
         foreach ($cmd as $key => $item) {
-            if (isset(setting::$cli[$item]) && '' !== setting::$cli[$item]) {
-                $order[$item] = setting::$cli[$item];
+            if (isset(self::$cli[$item]) && '' !== self::$cli[$item]) {
+                $order[$item] = self::$cli[$item];
             }
         }
 
@@ -92,12 +90,12 @@ class cmd extends command
      */
     private static function prep_cgi(array $cmd): array
     {
-        if (empty(setting::$cgi)) {
+        if (empty(self::$cgi)) {
             return $cmd;
         }
 
         //Mapping CGI config
-        foreach (setting::$cgi as $name => $item) {
+        foreach (self::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
                 //Replace CMD
                 foreach ($keys as $key) {

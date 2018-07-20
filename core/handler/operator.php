@@ -24,10 +24,8 @@ use core\parser\data;
 use core\parser\trustzone;
 
 use core\pool\command;
-use core\pool\process;
-use core\pool\setting;
 
-class operator extends process
+class operator extends command
 {
     /**
      * Call INIT/LOAD
@@ -56,14 +54,14 @@ class operator extends process
     public static function run_cli(): void
     {
         //Process orders
-        foreach (command::$cmd_cli as $key => $cmd) {
+        foreach (self::$cmd_cli as $key => $cmd) {
             try {
                 //Prepare command
                 $command = '"' . $cmd . '"';
 
                 //Append arguments
-                if (!empty(command::$param_cli['argv'])) {
-                    $command .= ' ' . implode(' ', command::$param_cli['argv']);
+                if (!empty(self::$param_cli['argv'])) {
+                    $command .= ' ' . implode(' ', self::$param_cli['argv']);
                 }
 
                 //Create process
@@ -74,12 +72,12 @@ class operator extends process
                 }
 
                 //Send data via pipe
-                if ('' !== command::$param_cli['pipe']) {
-                    fwrite($pipes[0], command::$param_cli['pipe'] . PHP_EOL);
+                if ('' !== self::$param_cli['pipe']) {
+                    fwrite($pipes[0], self::$param_cli['pipe'] . PHP_EOL);
                 }
 
                 //Collect result
-                if (command::$param_cli['ret']) {
+                if (self::$param_cli['ret']) {
                     $data = self::read_pipe([$process, $pipes[1]]);
 
                     if ('' !== $data) {
@@ -126,8 +124,8 @@ class operator extends process
             }
 
             //Call LOAD commands
-            if (isset(setting::$load[$module = strstr($name, '/', true)])) {
-                self::init_load(is_string(setting::$load[$module]) ? [setting::$load[$module]] : setting::$load[$module]);
+            if (isset(self::$load[$module = strstr($name, '/', true)])) {
+                self::init_load(is_string(self::$load[$module]) ? [self::$load[$module]] : self::$load[$module]);
             }
 
             //Call "init" method
@@ -160,7 +158,7 @@ class operator extends process
                     }
 
                     //Verify TrustZone params
-                    trustzone::verify(array_keys(self::$data), $class, $target);
+                    trustzone::verify($class, $target);
 
                     //Build method caller
                     self::build_caller($name, $class, $target);
@@ -204,15 +202,12 @@ class operator extends process
     {
         $load = false;
         $file = trim(strtr($class, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
-        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : setting::$path;
+        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : self::$path;
 
         foreach ($list as $path) {
             if (is_string($path = realpath($path . $file))) {
-                //Load class
                 require $path;
-                //Check load status
                 $load = class_exists($class, false);
-
                 break;
             }
         }
@@ -231,7 +226,7 @@ class operator extends process
      */
     private static function build_key(string $class, string $method): string
     {
-        $key = command::$param_cgi[$class . '-' . $method] ?? (command::$param_cgi[$class] ?? $class) . '/' . $method;
+        $key = self::$param_cgi[$class . '-' . $method] ?? (self::$param_cgi[$class] ?? $class) . '/' . $method;
 
         unset($class, $method);
         return $key;
@@ -245,7 +240,7 @@ class operator extends process
         $key  = 0;
         $list = [];
 
-        foreach (command::$cmd_cgi as $item) {
+        foreach (self::$cmd_cgi as $item) {
             if (false !== strpos($item, '/') && isset($list[$key])) {
                 ++$key;
             }
@@ -309,7 +304,7 @@ class operator extends process
         $timer  = 0;
         $result = '';
 
-        while (0 === command::$param_cli['time'] || $timer <= command::$param_cli['time']) {
+        while (0 === self::$param_cli['time'] || $timer <= self::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);
                 $timer += 1000;

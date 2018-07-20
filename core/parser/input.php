@@ -20,38 +20,38 @@
 
 namespace core\parser;
 
-use core\pool\process;
 use core\pool\command;
-use core\pool\setting;
 
-class input extends process
+class input extends command
 {
     /**
      * Read input
      */
     public static function read(): void
     {
-        if (setting::$is_cli) {
-            //Read option & argument
-            self::read_argv(self::read_opt());
-        } else {
-            //Read HTTP & input
-            self::read_http();
-            self::read_raw();
+        //Read data
+        if (empty(self::$data)) {
+            if (!self::$is_cli) {
+                //Read HTTP & input
+                self::read_http();
+                self::read_raw();
+            } else {
+                //Read option & argument
+                self::read_argv(self::read_opt());
+            }
         }
 
-        //Check command
-        if ('' === command::$cmd
-            && !empty($val = self::opt_val(self::$data, ['cmd', 'c']))
-            && is_string($val['data'])
-        ) {
-            //Copy command
-            command::$cmd = &$val['data'];
+
+        //Read command
+        if ('' === self::$cmd) {
+            if (!empty($val = self::opt_val(self::$data, ['cmd', 'c'])) && is_string($val['data'])) {
+                self::$cmd = &$val['data'];
+            }
         }
 
-        //Check format
-        if (!empty($val = self::opt_val(self::$data, ['format', 'f'])) && is_string($val['data'])) {
-            output::$method = &$val['data'];
+        //Read output format
+        if (!empty($val = self::opt_val(self::$data, ['output', 'o'])) && is_string($val['data'])) {
+            self::$output = &$val['data'];
         }
 
         unset($val);
@@ -129,16 +129,16 @@ class input extends process
 
         //Get pipe data value
         if (!empty($val = self::opt_val($opt, ['pipe', 'p'])) && is_string($val['data'])) {
-            command::$param_cli['pipe'] = data::decode($val['data']);
+            self::$param_cli['pipe'] = data::decode($val['data']);
         }
 
         //Get pipe timeout value
         if (!empty($val = self::opt_val($opt, ['time', 't']))) {
-            command::$param_cli['time'] = (int)$val['data'];
+            self::$param_cli['time'] = (int)$val['data'];
         }
 
         //Get return option
-        command::$param_cli['ret'] = !empty(self::opt_val($opt, ['ret', 'r']));
+        self::$param_cli['ret'] = !empty(self::opt_val($opt, ['ret', 'r']));
 
         unset($opt, $val);
         return $optind;
@@ -152,13 +152,13 @@ class input extends process
     private static function read_argv(int $optind): void
     {
         //Extract arguments
-        if (empty(command::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
+        if (empty(self::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
             return;
         }
 
         //Recheck CMD
         empty($value = self::opt_val(self::$data, ['cmd', 'c'])) || !is_string($value['data'])
-            ? self::$data['cmd'] = data::decode(array_shift(command::$param_cli['argv']))
+            ? self::$data['cmd'] = data::decode(array_shift(self::$param_cli['argv']))
             : self::$data[$value['key']] = &$value['data'];
 
         unset($optind, $value);

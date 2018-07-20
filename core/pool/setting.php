@@ -20,20 +20,23 @@
 
 namespace core\pool;
 
-class setting
+class setting extends process
 {
-    //Configuration
-    public static $log  = [];
-    public static $cgi  = [];
-    public static $cli  = [];
-    public static $cors = [];
-    public static $init = [];
-    public static $load = [];
-    public static $path = [];
+    //Output format
+    public static $output = 'json';
 
     //Runtime values
     public static $is_cli   = true;
     public static $is_https = true;
+
+    //System settings
+    protected static $log  = [];
+    protected static $cgi  = [];
+    protected static $cli  = [];
+    protected static $cors = [];
+    protected static $init = [];
+    protected static $load = [];
+    protected static $path = [];
 
     //Setting file path
     const PATH = ROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';

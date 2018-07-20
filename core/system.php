@@ -27,9 +27,9 @@ use core\parser\cmd;
 use core\parser\input;
 use core\parser\output;
 
-use core\pool\setting;
+use core\pool\command;
 
-class system
+class system extends command
 {
     /**
      * System start
@@ -44,20 +44,16 @@ class system
         self::detect();
 
         //Call INIT
-        if (!empty(setting::$init)) {
-            operator::init_load(setting::$init);
-        }
+        operator::init_load(self::$init);
 
         //Read input
         input::read();
 
-        //Prepare CMD
-        cmd::prep();
+        //Parse CMD
+        cmd::parse();
 
         //Run CLI process
-        if (setting::$is_cli) {
-            operator::run_cli();
-        }
+        operator::run_cli();
 
         //Run CGI process
         operator::run_cgi();
@@ -120,7 +116,7 @@ class system
     private static function parse(): void
     {
         //Read settings
-        if (false === $conf = parse_ini_file(setting::PATH, true)) {
+        if (false === $conf = parse_ini_file(self::PATH, true)) {
             return;
         }
 
@@ -146,8 +142,8 @@ class system
         foreach ($conf as $key => $val) {
             $key = strtolower($key);
 
-            if (isset(setting::$$key)) {
-                setting::$$key = $val;
+            if (isset(self::$$key)) {
+                self::$$key = $val;
             }
         }
 
@@ -160,27 +156,27 @@ class system
     private static function detect(): void
     {
         //Detect running mode
-        setting::$is_cli = 'cli' === PHP_SAPI;
+        self::$is_cli = 'cli' === PHP_SAPI;
 
         //Detect HTTPS protocol
-        setting::$is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+        self::$is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         //Detect Cross-origin resource sharing permission
         if (
-            empty(setting::$cors)
+            empty(self::$cors)
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (setting::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
+            || $_SERVER['HTTP_ORIGIN'] === (self::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
         ) {
             return;
         }
 
-        if (!isset(setting::$cors[$_SERVER['HTTP_ORIGIN']])) {
+        if (!isset(self::$cors[$_SERVER['HTTP_ORIGIN']])) {
             exit;
         }
 
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . setting::$cors[$_SERVER['HTTP_ORIGIN']]);
+        header('Access-Control-Allow-Headers: ' . self::$cors[$_SERVER['HTTP_ORIGIN']]);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             exit;

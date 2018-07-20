@@ -86,7 +86,7 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
 
 ## Reserved Words
   
-CGI: c/cmd  
+CGI: c/cmd, o/output  
 CLI: c/cmd, d/data, p/pipe, t/time, r/ret  
   
 The words above are reserved by NervSys core. So that, they should be taken carefully when doing API calling.
@@ -332,10 +332,10 @@ class TestA
 
 ### error_reporting
 
-This setting in NervSys does not matter too much any more.  
+"error_reporting" in NervSys does not matter too much any more.  
 All errors and exceptions will be handled well into logs and/or showing up.  
-The only thing will be affected by "error_reporting" is the format of JSON result.  
-When "error_reporting" is set NOT equal to 0, "JSON_PRETTY_PRINT" option will be added to output.
+The only thing will be affected by "error_reporting" is the format of JSON/XML result.  
+When "error_reporting" is set NOT equal to 0, line breaks will be added to JSON/XML result.
 
 
 ### TrustZone

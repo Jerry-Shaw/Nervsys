@@ -20,7 +20,7 @@
 
 namespace ext;
 
-use core\parser\output;
+use core\pool\process;
 
 class errno
 {
@@ -67,7 +67,7 @@ class errno
      */
     public static function set(int $code, int $errno = 0): void
     {
-        output::$error = self::get($code, $errno);
+        process::$error = self::get($code, $errno);
     }
 
     /**
