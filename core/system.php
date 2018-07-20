@@ -55,12 +55,15 @@ class system
         cmd::prep();
 
         //Run CLI process
-        if (!setting::$is_cgi) {
+        if (setting::$is_cli) {
             operator::run_cli();
         }
 
         //Run CGI process
         operator::run_cgi();
+
+        //Flush output content
+        output::flush();
     }
 
     /**
@@ -68,7 +71,7 @@ class system
      */
     public static function stop(): void
     {
-        output::json();
+        output::flush();
         exit;
     }
 
@@ -157,7 +160,7 @@ class system
     private static function detect(): void
     {
         //Detect running mode
-        setting::$is_cgi = 'cli' !== PHP_SAPI;
+        setting::$is_cli = 'cli' === PHP_SAPI;
 
         //Detect HTTPS protocol
         setting::$is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])

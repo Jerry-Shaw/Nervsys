@@ -32,7 +32,7 @@ class setting
     public static $path = [];
 
     //Runtime values
-    public static $is_cgi   = true;
+    public static $is_cli   = true;
     public static $is_https = true;
 
     //Setting file path

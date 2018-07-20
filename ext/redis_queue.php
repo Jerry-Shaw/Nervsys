@@ -164,7 +164,7 @@ class redis_queue extends redis
      */
     public static function chk_cli(): void
     {
-        if (setting::$is_cgi) {
+        if (!setting::$is_cli) {
             exit('Only support CLI!');
         }
     }

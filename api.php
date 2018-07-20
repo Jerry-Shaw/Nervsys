@@ -26,19 +26,14 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
     exit('NervSys needs PHP 7.2.0 or higher!');
 }
 
-//Set error level
-error_reporting(E_ALL | E_STRICT);
-
 //Set runtime values
+error_reporting(0);
 set_time_limit(0);
 ignore_user_abort(true);
 date_default_timezone_set('PRC');
 
-//Set response header to JSON
-header('Content-Type: application/json; charset=utf-8');
-
 //Define NervSys version
-define('VER', '6.2.6');
+define('VER', '6.2.12');
 
 //Define absolute root path
 define('ROOT', strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR);
@@ -55,6 +50,3 @@ spl_autoload_register(
 
 //Start system
 \core\system::start();
-
-//Output JSON result
-\core\parser\output::json();

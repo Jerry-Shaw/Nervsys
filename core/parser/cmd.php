@@ -43,7 +43,7 @@ class cmd extends command
         $cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : [self::$cmd];
 
         //Prepare CLI CMD
-        if (!setting::$is_cgi) {
+        if (setting::$is_cli) {
             self::$cmd_cli = self::prep_cli($cmd);
         }
 

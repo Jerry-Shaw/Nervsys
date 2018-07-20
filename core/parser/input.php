@@ -31,13 +31,13 @@ class input extends process
      */
     public static function read(): void
     {
-        if (setting::$is_cgi) {
+        if (setting::$is_cli) {
+            //Read option & argument
+            self::read_argv(self::read_opt());
+        } else {
             //Read HTTP & input
             self::read_http();
             self::read_raw();
-        } else {
-            //Read option & argument
-            self::read_argv(self::read_opt());
         }
 
         //Check command
@@ -47,6 +47,11 @@ class input extends process
         ) {
             //Copy command
             command::$cmd = &$val['data'];
+        }
+
+        //Check format
+        if (!empty($val = self::opt_val(self::$data, ['format', 'f'])) && is_string($val['data'])) {
+            output::$method = &$val['data'];
         }
 
         unset($val);
