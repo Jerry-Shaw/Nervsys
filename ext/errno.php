@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\pool\process;
+use core\system;
 
-class errno
+class errno extends system
 {
     /**
      * Error file directory
@@ -67,7 +67,7 @@ class errno
      */
     public static function set(int $code, int $errno = 0): void
     {
-        process::$error = self::get($code, $errno);
+        parent::$error = self::get($code, $errno);
     }
 
     /**

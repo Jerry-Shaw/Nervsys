@@ -20,15 +20,15 @@
 
 namespace ext;
 
+use core\system;
+
 use core\handler\platform;
 
 use core\helper\log;
 
 use core\parser\data;
 
-use core\pool\setting;
-
-class mpc
+class mpc extends system
 {
     //Wait for process result
     public static $wait = true;
@@ -65,12 +65,12 @@ class mpc
         }
 
         //Check php_key
-        if (!isset(setting::$cli[self::$php_key])) {
+        if (!isset(parent::$cli[self::$php_key])) {
             throw new \Exception('[' . self::$php_key . '] NOT found!');
         }
 
         //Build command
-        self::$mpc_cmd = setting::$cli[self::$php_key] . ' "' . ROOT . 'api.php"';
+        self::$mpc_cmd = parent::$cli[self::$php_key] . ' "' . ROOT . 'api.php"';
 
         //Add wait option
         if (self::$wait) {
