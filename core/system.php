@@ -114,6 +114,18 @@ class system extends command
     }
 
     /**
+     * Get class name
+     *
+     * @param string $class
+     *
+     * @return string
+     */
+    protected static function get_class(string $class): string
+    {
+        return '\\' . trim(strtr($class, '/', '\\'), '\\');
+    }
+
+    /**
      * Parse settings
      */
     private static function parse(): void

@@ -20,7 +20,9 @@
 
 namespace core\handler;
 
-class factory
+use core\system;
+
+class factory extends system
 {
     /**
      * Get new cloned-instance
@@ -33,6 +35,8 @@ class factory
     public static function new(string $class, array $param = []): object
     {
         static $list = [];
+
+        $class = parent::get_class($class);
 
         if (!isset($list[$key = self::hash_key($class, $param)])) {
             $list[$key] = self::create($class, $param);
@@ -53,6 +57,8 @@ class factory
     public static function use(string $class, array $param = []): object
     {
         static $list = [];
+
+        $class = parent::get_class($class);
 
         if (!isset($list[$key = self::hash_key($class, $param)])) {
             $list[$key] = self::create($class, $param);
