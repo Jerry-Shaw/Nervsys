@@ -20,9 +20,9 @@
 
 namespace core\helper;
 
-use core\pool\command;
+use core\system;
 
-class log extends command
+class log extends system
 {
     //Log path
     const PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
@@ -132,8 +132,8 @@ class log extends command
      */
     public static function show(string $level, string $message, array $context): void
     {
-        if (isset(self::$log['show']) && 0 < (int)self::$log['show']) {
-            self::$logs .= self::format($level, $message, $context);
+        if (isset(parent::$log['show']) && 0 < (int)parent::$log['show']) {
+            parent::$logs .= self::format($level, $message, $context);
         }
 
         unset($level, $message, $context);
@@ -149,7 +149,7 @@ class log extends command
     private static function save(string $level, string $message, array $context): void
     {
         //Check setting
-        if (isset(self::$log[$level]) && 0 < (int)self::$log[$level]) {
+        if (isset(parent::$log[$level]) && 0 < (int)parent::$log[$level]) {
             //Get log key & path
             $key = $level . '-' . date('Ymd');
             $log = self::PATH . $key . '.log';

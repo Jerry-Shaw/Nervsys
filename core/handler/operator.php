@@ -20,12 +20,12 @@
 
 namespace core\handler;
 
+use core\system;
+
 use core\parser\data;
 use core\parser\trustzone;
 
-use core\pool\command;
-
-class operator extends command
+class operator extends system
 {
     /**
      * Call INIT/LOAD
@@ -54,14 +54,14 @@ class operator extends command
     public static function run_cli(): void
     {
         //Process orders
-        foreach (self::$cmd_cli as $key => $cmd) {
+        foreach (parent::$cmd_cli as $key => $cmd) {
             try {
                 //Prepare command
                 $command = '"' . $cmd . '"';
 
                 //Append arguments
-                if (!empty(self::$param_cli['argv'])) {
-                    $command .= ' ' . implode(' ', self::$param_cli['argv']);
+                if (!empty(parent::$param_cli['argv'])) {
+                    $command .= ' ' . implode(' ', parent::$param_cli['argv']);
                 }
 
                 //Create process
@@ -72,16 +72,16 @@ class operator extends command
                 }
 
                 //Send data via pipe
-                if ('' !== self::$param_cli['pipe']) {
-                    fwrite($pipes[0], self::$param_cli['pipe'] . PHP_EOL);
+                if ('' !== parent::$param_cli['pipe']) {
+                    fwrite($pipes[0], parent::$param_cli['pipe'] . PHP_EOL);
                 }
 
                 //Collect result
-                if (self::$param_cli['ret']) {
+                if (parent::$param_cli['ret']) {
                     $data = self::read_pipe([$process, $pipes[1]]);
 
                     if ('' !== $data) {
-                        self::$result[$key] = &$data;
+                        parent::$result[$key] = &$data;
                     }
 
                     unset($data);
@@ -124,8 +124,8 @@ class operator extends command
             }
 
             //Call LOAD commands
-            if (isset(self::$load[$module = strstr($name, '/', true)])) {
-                self::init_load(is_string(self::$load[$module]) ? [self::$load[$module]] : self::$load[$module]);
+            if (isset(parent::$load[$module = strstr($name, '/', true)])) {
+                self::init_load(is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module]);
             }
 
             //Call "init" method
@@ -202,7 +202,7 @@ class operator extends command
     {
         $load = false;
         $file = trim(strtr($class, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
-        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : self::$path;
+        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : parent::$path;
 
         foreach ($list as $path) {
             if (is_string($path = realpath($path . $file))) {
@@ -226,7 +226,7 @@ class operator extends command
      */
     private static function build_key(string $class, string $method): string
     {
-        $key = self::$param_cgi[$class . '-' . $method] ?? (self::$param_cgi[$class] ?? $class) . '/' . $method;
+        $key = parent::$param_cgi[$class . '-' . $method] ?? (parent::$param_cgi[$class] ?? $class) . '/' . $method;
 
         unset($class, $method);
         return $key;
@@ -240,7 +240,7 @@ class operator extends command
         $key  = 0;
         $list = [];
 
-        foreach (self::$cmd_cgi as $item) {
+        foreach (parent::$cmd_cgi as $item) {
             if (false !== strpos($item, '/') && isset($list[$key])) {
                 ++$key;
             }
@@ -274,19 +274,19 @@ class operator extends command
         //Get factory object
         if (!$reflect->isStatic()) {
             $class = method_exists($class, '__construct')
-                ? factory::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), self::$data))
+                ? factory::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
                 : factory::use($class);
         }
 
         //Build arguments
-        $params = data::build_argv($reflect, self::$data);
+        $params = data::build_argv($reflect, parent::$data);
 
         //Call method (with params)
         $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
 
         //Save result (Try mapping keys)
         if (isset($result)) {
-            self::$result[self::build_key($order, $method)] = &$result;
+            parent::$result[self::build_key($order, $method)] = &$result;
         }
 
         unset($order, $class, $method, $reflect, $params, $result);
@@ -304,7 +304,7 @@ class operator extends command
         $timer  = 0;
         $result = '';
 
-        while (0 === self::$param_cli['time'] || $timer <= self::$param_cli['time']) {
+        while (0 === parent::$param_cli['time'] || $timer <= parent::$param_cli['time']) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);
                 $timer += 1000;

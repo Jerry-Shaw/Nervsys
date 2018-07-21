@@ -31,6 +31,9 @@ use core\pool\command;
 
 class system extends command
 {
+    //Setting file path
+    const PATH = __DIR__ . DIRECTORY_SEPARATOR . 'system.ini';
+
     /**
      * System start
      */

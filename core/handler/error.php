@@ -20,9 +20,11 @@
 
 namespace core\handler;
 
+use core\system;
+
 use core\helper\log;
 
-class error extends log
+class error extends system
 {
     /*
      * Error levels & values
@@ -104,6 +106,7 @@ class error extends log
         if (!is_null($error = error_get_last()) && 'error' === self::LEVELS[$error['type']]) {
             self::exception_handler(new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']));
             unset($error);
+            parent::stop();
         }
     }
 
@@ -116,10 +119,9 @@ class error extends log
     {
         $level = self::LEVELS[$throwable->getCode()] ?? 'debug';
 
-        $message = 'Exception caught in '
-            . $throwable->getFile()
-            . ' on line ' . $throwable->getLine()
-            . PHP_EOL . 'Message: ' . $throwable->getMessage();
+        $message = 'Exception caught in ' . $throwable->getFile()
+            . ' on line ' . $throwable->getLine() . PHP_EOL
+            . 'Message: ' . $throwable->getMessage();
 
         $context = [
             'Peak: ' . round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
@@ -128,8 +130,8 @@ class error extends log
             'Trace: ' . PHP_EOL . $throwable->getTraceAsString()
         ];
 
-        self::$level($message, $context);
-        self::show($level, $message, $context);
+        log::$level($message, $context);
+        log::show($level, $message, $context);
 
         unset($throwable, $level, $message, $context);
     }

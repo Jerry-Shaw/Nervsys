@@ -20,18 +20,26 @@
 
 namespace core\parser;
 
-use core\pool\command;
+use core\system;
 
-class input extends command
+class input extends system
 {
+    //Read options
+    const RET  = ['ret', 'r'];
+    const CMD  = ['cmd', 'c'];
+    const OUT  = ['out', 'o'];
+    const DATA = ['data', 'd'];
+    const PIPE = ['pipe', 'p'];
+    const TIME = ['time', 't'];
+
     /**
      * Read input
      */
     public static function read(): void
     {
         //Read data
-        if (empty(self::$data)) {
-            if (!self::$is_cli) {
+        if (empty(parent::$data)) {
+            if (!parent::$is_cli) {
                 //Read HTTP & input
                 self::read_http();
                 self::read_raw();
@@ -41,17 +49,22 @@ class input extends command
             }
         }
 
-
         //Read command
-        if ('' === self::$cmd) {
-            if (!empty($val = self::opt_val(self::$data, ['cmd', 'c'])) && is_string($val['data'])) {
-                self::$cmd = &$val['data'];
-            }
+        if (
+            '' === parent::$cmd
+            && !empty($val = self::opt_val(parent::$data, self::CMD))
+            && is_string($val['data'])
+        ) {
+            parent::$cmd = &$val['data'];
         }
 
         //Read output format
-        if (!empty($val = self::opt_val(self::$data, ['output', 'o'])) && is_string($val['data'])) {
-            self::$output = &$val['data'];
+        if (
+            '' === parent::$out
+            && !empty($val = self::opt_val(parent::$data, self::OUT))
+            && is_string($val['data'])
+        ) {
+            parent::$out = &$val['data'];
         }
 
         unset($val);
@@ -64,17 +77,17 @@ class input extends command
     {
         //Read FILES
         if (!empty($_FILES)) {
-            self::$data += $_FILES;
+            parent::$data += $_FILES;
         }
 
         //Read POST
         if (!empty($_POST)) {
-            self::$data += $_POST;
+            parent::$data += $_POST;
         }
 
         //Read GET
         if (!empty($_GET)) {
-            self::$data += $_GET;
+            parent::$data += $_GET;
         }
     }
 
@@ -90,7 +103,7 @@ class input extends command
 
         //Decode dara in JSON
         if (is_array($data = json_decode($input, true))) {
-            self::$data += $data;
+            parent::$data += $data;
         }
 
         unset($input, $data);
@@ -106,39 +119,45 @@ class input extends command
         /**
          * CLI options
          *
-         * c/cmd: commands (separated by "-" when multiple)
-         * d/data: CGI data content
-         * p/pipe: CLI pipe data content
-         * t/time: read timeout (in microseconds; default "0" means read till done)
-         * r/ret: process return option (Available in CLI executable mode only)
+         * r/ret: Return option (Available in CLI executable mode only)
+         * c/cmd: System commands (separated by "-" when multiple)
+         * o/out: Output format (json/xml/nul, default: json, available when "r/ret" is set)
+         * d/data: CLI Data package (Transfer to CGI progress)
+         * p/pipe: CLI pipe data package (Transfer to CLI programs)
+         * t/time: CLI read timeout (in microsecond, default: 0, wait till done)
          */
         //Get options
-        if (empty($opt = getopt('c:d:p:t:r', ['cmd:', 'data:', 'pipe', 'time:', 'ret'], $optind))) {
+        if (empty($opt = getopt('c:o:d:p:t:r', ['cmd:', 'out:', 'data:', 'pipe', 'time:', 'ret'], $optind))) {
             return $optind;
         }
 
+        //Get return option
+        parent::$param_cli['ret'] = !empty(self::opt_val($opt, self::RET));
+
         //Get CMD value
-        if (!empty($val = self::opt_val($opt, ['cmd', 'c'])) && is_string($val['data'])) {
-            self::$data += [$val['key'] => data::decode($val['data'])];
+        if (!empty($val = self::opt_val($opt, self::CMD)) && is_string($val['data'])) {
+            parent::$data += [$val['key'] => data::decode($val['data'])];
+        }
+
+        //Get output value
+        if (!empty($val = self::opt_val($opt, self::OUT)) && is_string($val['data'])) {
+            parent::$data += [$val['key'] => &$val['data']];
         }
 
         //Get CGI data value
-        if (!empty($val = self::opt_val($opt, ['data', 'd'])) && is_string($val['data'])) {
-            self::$data += self::opt_data($val['data']);
+        if (!empty($val = self::opt_val($opt, self::DATA)) && is_string($val['data'])) {
+            parent::$data += self::opt_data($val['data']);
         }
 
         //Get pipe data value
-        if (!empty($val = self::opt_val($opt, ['pipe', 'p'])) && is_string($val['data'])) {
-            self::$param_cli['pipe'] = data::decode($val['data']);
+        if (!empty($val = self::opt_val($opt, self::PIPE)) && is_string($val['data'])) {
+            parent::$param_cli['pipe'] = data::decode($val['data']);
         }
 
         //Get pipe timeout value
-        if (!empty($val = self::opt_val($opt, ['time', 't']))) {
-            self::$param_cli['time'] = (int)$val['data'];
+        if (!empty($val = self::opt_val($opt, self::TIME))) {
+            parent::$param_cli['time'] = (int)$val['data'];
         }
-
-        //Get return option
-        self::$param_cli['ret'] = !empty(self::opt_val($opt, ['ret', 'r']));
 
         unset($opt, $val);
         return $optind;
@@ -152,14 +171,14 @@ class input extends command
     private static function read_argv(int $optind): void
     {
         //Extract arguments
-        if (empty(self::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
+        if (empty(parent::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
             return;
         }
 
         //Recheck CMD
-        empty($value = self::opt_val(self::$data, ['cmd', 'c'])) || !is_string($value['data'])
-            ? self::$data['cmd'] = data::decode(array_shift(self::$param_cli['argv']))
-            : self::$data[$value['key']] = &$value['data'];
+        empty($value = self::opt_val(parent::$data, self::CMD)) || !is_string($value['data'])
+            ? parent::$data['cmd'] = data::decode(array_shift(parent::$param_cli['argv']))
+            : parent::$data[$value['key']] = &$value['data'];
 
         unset($optind, $value);
     }

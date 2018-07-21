@@ -23,7 +23,7 @@ namespace core\pool;
 class setting extends process
 {
     //Output format
-    public static $output = 'json';
+    public static $out = '';
 
     //Runtime values
     public static $is_cli   = true;
@@ -37,7 +37,4 @@ class setting extends process
     protected static $init = [];
     protected static $load = [];
     protected static $path = [];
-
-    //Setting file path
-    const PATH = ROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
 }

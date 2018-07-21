@@ -24,7 +24,7 @@ use core\system;
 
 use core\handler\platform;
 
-class cmd extends input
+class cmd extends system
 {
     /**
      * Parse CMD
@@ -32,16 +32,16 @@ class cmd extends input
     public static function parse(): void
     {
         //Check CMD
-        if ('' === self::$cmd) {
-            system::stop();
+        if ('' === parent::$cmd) {
+            parent::stop();
         }
 
         //Extract CMD
-        $cmd = false !== strpos(self::$cmd, '-') ? explode('-', self::$cmd) : [self::$cmd];
+        $cmd = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
 
         //Prepare CMD
-        self::$cmd_cli = self::prep_cli($cmd);
-        self::$cmd_cgi = self::prep_cgi($cmd);
+        parent::$cmd_cli = self::prep_cli($cmd);
+        parent::$cmd_cgi = self::prep_cgi($cmd);
 
         unset($cmd);
     }
@@ -55,25 +55,25 @@ class cmd extends input
      */
     private static function prep_cli(array $cmd): array
     {
-        if (!self::$is_cli) {
+        if (!parent::$is_cli) {
             return [];
         }
 
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            self::$cli['PHP'] = platform::sys_path();
+            parent::$cli['PHP'] = platform::sys_path();
         }
 
         //Check setting
-        if (empty(self::$cli)) {
+        if (empty(parent::$cli)) {
             return [];
         }
 
         //Build CMD
         $order = [];
         foreach ($cmd as $key => $item) {
-            if (isset(self::$cli[$item]) && '' !== self::$cli[$item]) {
-                $order[$item] = self::$cli[$item];
+            if (isset(parent::$cli[$item]) && '' !== parent::$cli[$item]) {
+                $order[$item] = parent::$cli[$item];
             }
         }
 
@@ -90,12 +90,12 @@ class cmd extends input
      */
     private static function prep_cgi(array $cmd): array
     {
-        if (empty(self::$cgi)) {
+        if (empty(parent::$cgi)) {
             return $cmd;
         }
 
         //Mapping CGI config
-        foreach (self::$cgi as $name => $item) {
+        foreach (parent::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
                 //Replace CMD
                 foreach ($keys as $key) {
@@ -103,7 +103,7 @@ class cmd extends input
                 }
 
                 //Add param
-                self::$param_cgi[$item] = $name;
+                parent::$param_cgi[$item] = $name;
             } else {
                 foreach ($cmd as $key => $val) {
                     if (0 === strpos($val, $name)) {
@@ -111,7 +111,7 @@ class cmd extends input
                         $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
 
                         //Add param
-                        self::$param_cgi[$cmd[$key]] = $val;
+                        parent::$param_cgi[$cmd[$key]] = $val;
                     }
                 }
             }

@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable Version: 6.2.6  
+Stable Version: 6.2.20  
 
 
 ## About
@@ -86,10 +86,18 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
 
 ## Reserved Words
   
-CGI: c/cmd, o/output  
-CLI: c/cmd, d/data, p/pipe, t/time, r/ret  
+CGI: c/cmd, o/out  
+CLI: c/cmd, o/out, d/data, p/pipe, t/time, r/ret  
   
-The words above are reserved by NervSys core. So that, they should be taken carefully when doing API calling.
+Explanations:  
+r/ret: Return option (No needed value)  
+c/cmd: System commands (User defined)  
+o/out: Output format (json/xml/nul, default: json)  
+d/data: CLI Data package (Transfer to CGI progress)  
+p/pipe: CLI pipe data package (Transfer to CLI programs)  
+t/time: CLI read timeout (in microsecond, default: 0, wait till done)  
+  
+The words above are reserved by NervSys core. So that, they should be taken carefully when using.
 
 
 ## Config "settings.ini"
@@ -417,11 +425,12 @@ In this mode, PHP script will be called when the command and data matches the cl
 
 ### CLI options
 
-    c/cmd: commands (separated by "-" when multiple)
-    d/data: CGI data content
-    p/pipe: CLI pipe data content
-    t/time: read timeout (in microseconds; default "0" means read till done)
-    r/ret: process return option (Available in CLI executable mode only)
+    r/ret: Return option (Available in CLI executable mode only)
+    c/cmd: System commands (separated by "-" when multiple)
+    o/out: Output format (json/xml/nul, default: json, available when "r/ret" is set)
+    d/data: CLI Data package (Transfer to CGI progress)
+    p/pipe: CLI pipe data package (Transfer to CLI programs)
+    t/time: CLI read timeout (in microsecond, default: 0, wait till done)
 
 
 ### CLI usage

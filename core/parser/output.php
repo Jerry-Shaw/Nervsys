@@ -21,16 +21,21 @@
 
 namespace core\parser;
 
-class output extends input
+use core\system;
+
+class output extends system
 {
     //Pretty format
     private static $pretty = false;
 
     //Response header
     const HEADER = [
+        //Output as JSON (default)
         'json' => 'Content-Type: application/json; charset=UTF-8',
-        'nul'  => 'Content-Type: text/html; charset=UTF-8',
-        'xml'  => 'Content-Type: text/xml; charset=UTF-8'
+        //Output as XML
+        'xml'  => 'Content-Type: text/xml; charset=UTF-8',
+        //Keep in pool for HTML
+        'nul'  => 'Content-Type: text/html; charset=UTF-8'
     ];
 
     /**
@@ -38,28 +43,28 @@ class output extends input
      */
     public static function flush(): void
     {
-        if (1 === count(self::$result)) {
-            self::$result = reset(self::$result);
-        }
-
-        if (!empty(self::$error)) {
-            self::$result = self::$error + ['data' => self::$result];
-        }
-
-        if ('' !== self::$logs) {
-            is_array(self::$result) ? self::$result += ['logs' => self::$logs] : self::$result .= PHP_EOL . PHP_EOL . self::$logs;
-        }
-
         if (0 < error_reporting()) {
             self::$pretty = true;
         }
 
-        header(self::HEADER[$output = isset(self::HEADER[self::$output]) ? self::$output : 'json']);
+        if (1 === count(parent::$result)) {
+            parent::$result = reset(parent::$result);
+        }
+
+        if (!empty(parent::$error)) {
+            parent::$result = parent::$error + ['data' => parent::$result];
+        }
+
+        if ('' !== parent::$logs) {
+            is_array(parent::$result) ? parent::$result += ['logs' => parent::$logs] : parent::$result .= PHP_EOL . PHP_EOL . parent::$logs;
+        }
+
+        header(self::HEADER[$output = isset(self::HEADER[parent::$out]) ? parent::$out : 'json']);
 
         if ('nul' !== $output) {
             echo self::$output();
 
-            if (self::$is_cli) {
+            if (parent::$is_cli) {
                 echo PHP_EOL;
             }
         }
@@ -72,7 +77,7 @@ class output extends input
      */
     private static function json(): string
     {
-        return json_encode(self::$result, self::$pretty ? 4034 : 3906);
+        return json_encode(parent::$result, self::$pretty ? 4034 : 3906);
     }
 
     /**
@@ -88,7 +93,7 @@ class output extends input
             $xml .= PHP_EOL;
         }
 
-        $xml .= is_array(self::$result) ? self::build_xml(self::$result) : '<![CDATA[' . self::$result . ']]>';
+        $xml .= is_array(parent::$result) ? self::build_xml(parent::$result) : '<![CDATA[' . parent::$result . ']]>';
 
         if (self::$pretty) {
             $xml .= PHP_EOL;

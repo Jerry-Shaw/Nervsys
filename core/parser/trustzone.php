@@ -20,9 +20,9 @@
 
 namespace core\parser;
 
-use core\pool\command;
+use core\system;
 
-class trustzone extends command
+class trustzone extends system
 {
     /**
      * Get TrustZone keys
@@ -66,11 +66,10 @@ class trustzone extends command
      */
     public static function verify(string $class, string $method): void
     {
-        $keys  = array_keys(self::$data);
         $value = &($class::$tz)[$method];
         $param = isset($value['param']) ? $value['param'] : (isset($value[0]) ? $value : []);
 
-        if (!empty($param) && !empty($diff = array_diff($param, array_intersect($keys, $param)))) {
+        if (!empty($param) && !empty($diff = array_diff($param, array_intersect(array_keys(parent::$data), $param)))) {
             //Report TrustZone missing
             throw new \Exception(
                 ltrim($class, '\\') . '::' . $method
@@ -78,7 +77,7 @@ class trustzone extends command
             );
         }
 
-        unset($class, $method, $keys, $value, $param, $diff);
+        unset($class, $method, $value, $param, $diff);
     }
 
     /**
