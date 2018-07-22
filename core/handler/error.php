@@ -115,7 +115,7 @@ class error extends system
     {
         $level = self::LEVEL[$throwable->getCode()] ?? (false !== stripos(get_class($throwable), 'error') ? 'error' : 'debug');
 
-        $message = ucfirst($level) . ' caught in ' . $throwable->getFile()
+        $message = 'Exception caught in ' . $throwable->getFile()
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
