@@ -75,6 +75,8 @@ class error extends system
         register_shutdown_function([__CLASS__, 'shutdown_handler']);
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
+
+        //Set error reporting level
         parent::$err = error_reporting();
     }
 
@@ -118,12 +120,21 @@ class error extends system
      */
     public static function exception_handler(\Throwable $throwable): void
     {
-        $level = self::LEVEL[$throwable->getCode()] ?? (false !== stripos(get_class($throwable), 'error') ? 'error' : 'debug');
+        //Get error level
+        if (isset(self::LEVEL[$throwable->getCode()])) {
+            $class = 'Exception';
+            $level = self::LEVEL[$throwable->getCode()];
+        } else {
+            $class = get_class($throwable);
+            $level = false !== stripos($class, 'Error') || false !== stripos($class, 'Exception') ? 'error' : 'debug';
+        }
 
-        $message = 'Exception caught in ' . $throwable->getFile()
+        //Build message
+        $message = $class . ' caught in ' . $throwable->getFile()
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
+        //Build context
         $context = [
             'Peak: ' . round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
             'Memory: ' . round(memory_get_usage(true) / 1048576, 4) . 'MB',
@@ -131,11 +142,13 @@ class error extends system
             'Trace: ' . PHP_EOL . $throwable->getTraceAsString()
         ];
 
+        //Keep logs
         log::$level($message, $context);
         log::show($level, $message, $context);
 
-        unset($throwable, $message, $context);
+        unset($throwable, $class, $message, $context);
 
+        //Stop on error
         if ('error' === $level) {
             parent::stop();
         }
