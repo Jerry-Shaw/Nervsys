@@ -38,7 +38,7 @@ class operator extends system
             list($order, $method) = explode('-', $item, 2);
 
             try {
-                forward_static_call([parent::get_class($order), $method]);
+                forward_static_call([parent::build_name($order), $method]);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
                 unset($throwable);
@@ -111,7 +111,7 @@ class operator extends system
         //Process orders
         foreach ($order as $method) {
             //Get name & class
-            $class = parent::get_class($name = array_shift($method));
+            $class = parent::build_name($name = array_shift($method));
 
             //Check & load class
             if (!class_exists($class, false) && !self::load_class($class)) {
@@ -153,7 +153,7 @@ class operator extends system
                     //Run pre functions
                     if (!empty($tz_data['pre'])) {
                         foreach ($tz_data['pre'] as $tz_item) {
-                            self::build_caller($tz_item['order'], parent::get_class($tz_item['order']), $tz_item['method']);
+                            self::build_caller($tz_item['order'], parent::build_name($tz_item['order']), $tz_item['method']);
                         }
                     }
 
@@ -166,7 +166,7 @@ class operator extends system
                     //Run post functions
                     if (!empty($tz_data['post'])) {
                         foreach ($tz_data['post'] as $tz_item) {
-                            self::build_caller($tz_item['order'], parent::get_class($tz_item['order']), $tz_item['method']);
+                            self::build_caller($tz_item['order'], parent::build_name($tz_item['order']), $tz_item['method']);
                         }
                     }
                 } catch (\Throwable $throwable) {

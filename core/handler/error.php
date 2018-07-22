@@ -27,9 +27,6 @@ use core\helper\log;
 class error extends system
 {
     /*
-     * Error levels & values
-     *
-     * 0: Disable
      * 1: E_ERROR
      * 2: E_WARNING
      * 4: E_PARSE
@@ -47,7 +44,7 @@ class error extends system
      * 16384: E_USER_DEPRECATED
      * 32767: E_ALL
      */
-    const LEVELS = [
+    const LEVEL = [
         //Error level
         E_ERROR             => 'error',
         E_PARSE             => 'error',
@@ -103,10 +100,9 @@ class error extends system
      */
     public static function shutdown_handler(): void
     {
-        if (!is_null($error = error_get_last()) && 'error' === self::LEVELS[$error['type']]) {
+        if (!is_null($error = error_get_last()) && 'error' === self::LEVEL[$error['type']]) {
             self::exception_handler(new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']));
             unset($error);
-            parent::stop();
         }
     }
 
@@ -117,9 +113,9 @@ class error extends system
      */
     public static function exception_handler(\Throwable $throwable): void
     {
-        $level = self::LEVELS[$throwable->getCode()] ?? 'debug';
+        $level = self::LEVEL[$throwable->getCode()] ?? (false !== stripos(get_class($throwable), 'error') ? 'error' : 'debug');
 
-        $message = 'Exception caught in ' . $throwable->getFile()
+        $message = ucfirst($level) . ' caught in ' . $throwable->getFile()
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
@@ -133,6 +129,12 @@ class error extends system
         log::$level($message, $context);
         log::show($level, $message, $context);
 
-        unset($throwable, $level, $message, $context);
+        unset($throwable, $message, $context);
+
+        if ('error' === $level) {
+            parent::stop();
+        }
+
+        unset($level);
     }
 }

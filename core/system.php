@@ -114,13 +114,13 @@ class system extends command
     }
 
     /**
-     * Get class name
+     * Build class name
      *
      * @param string $class
      *
      * @return string
      */
-    protected static function get_class(string $class): string
+    protected static function build_name(string $class): string
     {
         return '\\' . trim(strtr($class, '/', '\\'), '\\');
     }

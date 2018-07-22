@@ -36,7 +36,7 @@ class factory extends system
     {
         static $list = [];
 
-        $class = parent::get_class($class);
+        $class = parent::build_name($class);
 
         if (!isset($list[$key = self::hash_key($class, $param)])) {
             $list[$key] = self::create($class, $param);
@@ -58,7 +58,7 @@ class factory extends system
     {
         static $list = [];
 
-        $class = parent::get_class($class);
+        $class = parent::build_name($class);
 
         if (!isset($list[$key = self::hash_key($class, $param)])) {
             $list[$key] = self::create($class, $param);
