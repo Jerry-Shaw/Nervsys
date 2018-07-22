@@ -29,6 +29,9 @@ class setting extends process
     public static $is_cli   = true;
     public static $is_https = true;
 
+    //Error reporting
+    protected static $err = 0;
+
     //System settings
     protected static $log  = [];
     protected static $cgi  = [];

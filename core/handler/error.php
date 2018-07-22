@@ -75,6 +75,7 @@ class error extends system
         register_shutdown_function([__CLASS__, 'shutdown_handler']);
         set_exception_handler([__CLASS__, 'exception_handler']);
         set_error_handler([__CLASS__, 'error_handler']);
+        parent::$err = error_reporting();
     }
 
     /**
@@ -89,6 +90,10 @@ class error extends system
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): void
     {
+        if (0 < (parent::$err & $errno)) {
+            $errno = E_USER_ERROR;
+        }
+
         self::exception_handler(new \ErrorException($errstr, $errno, $errno, $errfile, $errline));
         unset($errno, $errstr, $errfile, $errline);
     }

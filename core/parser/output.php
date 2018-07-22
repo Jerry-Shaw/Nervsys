@@ -43,7 +43,7 @@ class output extends system
      */
     public static function flush(): void
     {
-        if (0 < error_reporting()) {
+        if (0 < parent::$err) {
             self::$pretty = true;
         }
 

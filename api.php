@@ -26,8 +26,10 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
     exit('NervSys needs PHP 7.2.0 or higher!');
 }
 
+//Set error_reporting level
+error_reporting(E_ALL | E_STRICT);
+
 //Set runtime values
-error_reporting(0);
 set_time_limit(0);
 ignore_user_abort(true);
 date_default_timezone_set('PRC');

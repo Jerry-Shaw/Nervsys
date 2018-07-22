@@ -342,8 +342,8 @@ class TestA
 
 "error_reporting" in NervSys does not matter too much any more.  
 All errors and exceptions will be handled well into logs and/or showing up.  
-The only thing will be affected by "error_reporting" is the format of JSON/XML result.  
-When "error_reporting" is set NOT equal to 0, line breaks will be added to JSON/XML result.
+But it holds the exit level when an error occurred and the format of JSON/XML result.  
+When "error_reporting" is set LARGER than 0, line breaks will be added to JSON/XML result.
 
 
 ### TrustZone
