@@ -25,7 +25,7 @@ use core\system;
 class factory extends system
 {
     /**
-     * Get new cloned-instance
+     * Get new instance
      *
      * @param string $class
      * @param array  $param
@@ -34,20 +34,14 @@ class factory extends system
      */
     public static function new(string $class, array $param = []): object
     {
-        static $list = [];
-
-        $class = parent::build_name($class);
-
-        if (!isset($list[$key = self::hash_key($class, $param)])) {
-            $list[$key] = self::create($class, $param);
-        }
+        $object = self::create(parent::build_name($class), $param);
 
         unset($class, $param);
-        return clone $list[$key];
+        return $object;
     }
 
     /**
-     * Get origin single-instance
+     * Get origin instance
      *
      * @param string $class
      * @param array  $param
@@ -60,28 +54,12 @@ class factory extends system
 
         $class = parent::build_name($class);
 
-        if (!isset($list[$key = self::hash_key($class, $param)])) {
+        if (!isset($list[$key = hash('md5', $class . json_encode($param))])) {
             $list[$key] = self::create($class, $param);
         }
 
         unset($class, $param);
         return $list[$key];
-    }
-
-    /**
-     * Get HASH key
-     *
-     * @param string $class
-     * @param array  $param
-     *
-     * @return string
-     */
-    private static function hash_key(string $class, array $param): string
-    {
-        $key = hash('md5', $class . json_encode($param));
-
-        unset($class, $param);
-        return $key;
     }
 
     /**
