@@ -20,7 +20,7 @@
 
 namespace ext;
 
-class pdo
+class pdo extends \PDO
 {
     //PDO settings
     public static $type    = 'mysql';
@@ -28,108 +28,63 @@ class pdo
     public static $port    = 3306;
     public static $user    = 'root';
     public static $pwd     = '';
-    public static $db_name = '';
-    public static $charset = 'utf8mb4';
+    public static $db      = '';
     public static $timeout = 10;
     public static $persist = true;
-
-    //Current connection instance
-    private static $connect = null;
-
-    //Connection options
-    private static $option = [];
-
-    //Connection pool
-    private static $pool = [];
+    public static $charset = 'utf8mb4';
 
     /**
-     * Build DSN & options
-     *
-     * @return string
-     * @throws \Exception
+     * pdo constructor.
      */
-    private static function dsn(): string
+    public function __construct()
     {
-        //Build DSN
-        $dsn = self::$type . ':';
+        $param = self::build_dsn_opt();
+        parent::__construct($param['dsn'], self::$user, self::$pwd, $param['opt']);
+        unset($param);
+    }
 
-        //Build option
-        self::$option[\PDO::ATTR_CASE]               = \PDO::CASE_NATURAL;
-        self::$option[\PDO::ATTR_ERRMODE]            = \PDO::ERRMODE_EXCEPTION;
-        self::$option[\PDO::ATTR_PERSISTENT]         = self::$persist;
-        self::$option[\PDO::ATTR_ORACLE_NULLS]       = \PDO::NULL_NATURAL;
-        self::$option[\PDO::ATTR_EMULATE_PREPARES]   = false;
-        self::$option[\PDO::ATTR_STRINGIFY_FETCHES]  = false;
-        self::$option[\PDO::ATTR_DEFAULT_FETCH_MODE] = \PDO::FETCH_ASSOC;
+    /**
+     * Build DSN & OPTION
+     *
+     * @return array
+     */
+    private static function build_dsn_opt(): array
+    {
+        $dsn_opt = [
+            'dsn' => self::$type . ':',
+            'opt' => [
+                parent::ATTR_CASE               => parent::CASE_NATURAL,
+                parent::ATTR_ERRMODE            => parent::ERRMODE_EXCEPTION,
+                parent::ATTR_PERSISTENT         => self::$persist,
+                parent::ATTR_ORACLE_NULLS       => parent::NULL_NATURAL,
+                parent::ATTR_EMULATE_PREPARES   => false,
+                parent::ATTR_STRINGIFY_FETCHES  => false,
+                parent::ATTR_DEFAULT_FETCH_MODE => parent::FETCH_ASSOC
+            ]
+        ];
 
-        //Fill up DSN & option
         switch (self::$type) {
             case 'mysql':
-                $dsn                                               .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
-                self::$option[\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . self::$charset;
-                self::$option[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
-                self::$option[\PDO::ATTR_TIMEOUT]                  = self::$timeout;
+                $dsn_opt['dsn'] .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db . ';charset=' . self::$charset;
+
+                $dsn_opt['opt'][parent::ATTR_TIMEOUT]                  = self::$timeout;
+                $dsn_opt['opt'][parent::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . self::$charset;
+                $dsn_opt['opt'][parent::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
                 break;
             case 'mssql':
-                $dsn .= 'host=' . self::$host . ',' . self::$port . ';dbname=' . self::$db_name . ';charset=' . self::$charset;
+                $dsn_opt['dsn'] .= 'host=' . self::$host . ',' . self::$port . ';dbname=' . self::$db . ';charset=' . self::$charset;
                 break;
             case 'pgsql':
-                $dsn .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db_name . ';user=' . self::$user . ';password=' . self::$pwd;
+                $dsn_opt['dsn'] .= 'host=' . self::$host . ';port=' . self::$port . ';dbname=' . self::$db . ';user=' . self::$user . ';password=' . self::$pwd;
                 break;
             case 'oci':
-                $dsn .= 'dbname=//' . self::$host . ':' . self::$port . '/' . self::$db_name . ';charset=' . self::$charset;
+                $dsn_opt['dsn'] .= 'dbname=//' . self::$host . ':' . self::$port . '/' . self::$db . ';charset=' . self::$charset;
                 break;
             default:
-                throw new \Exception('PDO: ' . self::$type . ' NOT support!');
+                //Report type NOT support
+                throw new \PDOException('PDO: ' . self::$type . ' NOT support!', E_USER_ERROR);
         }
 
-        return $dsn;
-    }
-
-    /**
-     * Create PDO instance
-     *
-     * @param string $name
-     *
-     * @return \PDO
-     * @throws \Exception
-     */
-    public static function connect(string $name = ''): \PDO
-    {
-        self::$connect = '' === $name
-            ? (self::$connect ?? new \PDO(self::dsn(), self::$user, self::$pwd, self::$option))
-            : (self::$pool[$name] ?? self::$pool[$name] = new \PDO(self::dsn(), self::$user, self::$pwd, self::$option));
-
-        unset($name);
-        return self::$connect;
-    }
-
-    /**
-     * Close PDO instance
-     *
-     * @param string $name
-     */
-    public static function close(string $name = ''): void
-    {
-        if ('' === $name) {
-            $key = array_search(self::$connect, self::$pool, true);
-
-            if (false !== $key) {
-                self::$pool[$key] = null;
-                unset(self::$pool[$key]);
-            }
-
-            self::$connect = null;
-            unset($key);
-        } elseif (isset(self::$pool[$name])) {
-            if (self::$connect === self::$pool[$name]) {
-                self::$connect = null;
-            }
-
-            self::$pool[$name] = null;
-            unset(self::$pool[$name]);
-        }
-
-        unset($name);
+        return $dsn_opt;
     }
 }

@@ -20,7 +20,7 @@
 
 namespace ext;
 
-class redis
+class redis extends \Redis
 {
     //Redis settings
     public static $host       = '127.0.0.1';
@@ -32,89 +32,44 @@ class redis
     public static $persist    = true;
     public static $persist_id = null;
 
-    //Current connection instance
-    private static $connect = null;
-
-    //Connection pool
-    private static $pool = [];
-
     /**
-     * Create new connection
+     * redis constructor.
      *
-     * @return \Redis
-     * @throws \Exception
+     * @throws \RedisException
      */
-    private static function create(): \Redis
+    public function __construct()
     {
-        $redis = new \Redis();
+        parent::__construct();
 
         self::$persist
-            ? $redis->pconnect(self::$host, self::$port, self::$timeout, self::$persist_id)
-            : $redis->connect(self::$host, self::$port, self::$timeout);
+            ? parent::pconnect(self::$host, self::$port, self::$timeout, self::$persist_id)
+            : parent::connect(self::$host, self::$port, self::$timeout);
 
-        if ('' !== self::$auth && !$redis->auth(self::$auth)) {
-            throw new \Exception('Redis: Authentication Failed!');
+        $this->set_option();
+    }
+
+    /**
+     * Set connect option
+     *
+     * @throws \RedisException
+     */
+    private function set_option(): void
+    {
+        //Set auth
+        if ('' !== self::$auth && !$this->auth(self::$auth)) {
+            throw new \RedisException('Redis: Authentication Failed!', E_USER_ERROR);
         }
 
-        if (!$redis->select(self::$db)) {
-            throw new \Exception('Redis: DB [' . self::$db . '] NOT exist!');
+        //Set DB
+        if (!$this->select(self::$db)) {
+            throw new \RedisException('Redis: DB [' . self::$db . '] NOT exist!', E_USER_ERROR);
         }
 
+        //Set prefix
         if ('' !== self::$prefix) {
-            $redis->setOption(\Redis::OPT_PREFIX, self::$prefix . ':');
+            $this->setOption(parent::OPT_PREFIX, self::$prefix . ':');
         }
 
-        $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-
-        return $redis;
-    }
-
-    /**
-     * Create Redis instance
-     *
-     * @param string $name
-     *
-     * @return \Redis
-     * @throws \Exception
-     */
-    public static function connect(string $name = ''): \Redis
-    {
-        self::$connect = '' === $name
-            ? (self::$connect ?? self::create())
-            : (self::$pool[$name] ?? self::$pool[$name] = self::create());
-
-        unset($name);
-        return self::$connect;
-    }
-
-    /**
-     * Close Redis instance
-     *
-     * @param string $name
-     */
-    public static function close(string $name = ''): void
-    {
-        if ('' === $name) {
-            $key = array_search(self::$connect, self::$pool, true);
-
-            if (false !== $key) {
-                self::$pool[$key] = null;
-                unset(self::$pool[$key]);
-            }
-
-            self::$connect->close();
-            self::$connect = null;
-            unset($key);
-        } elseif (isset(self::$pool[$name])) {
-            if (self::$connect === self::$pool[$name]) {
-                self::$connect = null;
-            }
-
-            self::$pool[$name]->close();
-            self::$pool[$name] = null;
-            unset(self::$pool[$name]);
-        }
-
-        unset($name);
+        $this->setOption(parent::OPT_SERIALIZER, parent::SERIALIZER_NONE);
     }
 }
