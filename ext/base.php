@@ -83,14 +83,16 @@ class base extends system
      */
     public function __call(string $name, array $argument)
     {
-        if (isset($this->methods[$name])) {
+        $item = strtolower($name);
+
+        if (isset($this->methods[$item])) {
             //Call from method map
             $result = empty($argument)
-                ? forward_static_call([$this->extends[$this->methods[$name]], $name])
-                : forward_static_call_array([$this->extends[$this->methods[$name]], $name], $argument);
-        } elseif (isset($this->extends[$name])) {
+                ? forward_static_call([$this->extends[$this->methods[$item]], $name])
+                : forward_static_call_array([$this->extends[$this->methods[$item]], $name], $argument);
+        } elseif (isset($this->extends[$item])) {
             //Call from extends map
-            $result = $this->extends[$name];
+            $result = $this->extends[$item];
         } else {
             //Throw ErrorException
             throw new \ErrorException(
@@ -100,7 +102,7 @@ class base extends system
             );
         }
 
-        unset($name, $argument);
+        unset($name, $argument, $item);
         return $result;
     }
 
@@ -114,7 +116,6 @@ class base extends system
      */
     public function new(string $class, array $argument = []): void
     {
-        //Build method & extends
         $this->build_method($name = $this->get_name($class));
         $this->extends[$name['alias']] = factory::new($name['class'], $argument);
         unset($class, $argument, $name);
@@ -130,7 +131,6 @@ class base extends system
      */
     public function use(string $class, array $argument = []): void
     {
-        //Build method & extends
         $this->build_method($name = $this->get_name($class));
         $this->extends[$name['alias']] = factory::use($name['class'], $argument);
         unset($class, $argument, $name);
@@ -160,6 +160,8 @@ class base extends system
             $result['class'] = $result['alias'] = &$class;
         }
 
+        $result['alias'] = strtolower($result['alias']);
+
         unset($class, $alias);
         return $result;
     }
@@ -178,7 +180,7 @@ class base extends system
 
         //Build method map to alias name
         foreach ($methods as $method) {
-            $this->methods[$method->getName()] = $name['alias'];
+            $this->methods[strtolower($method->getName())] = $name['alias'];
         }
 
         unset($name, $reflect, $methods, $method);
