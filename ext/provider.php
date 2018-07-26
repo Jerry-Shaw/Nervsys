@@ -24,7 +24,7 @@ use core\system;
 
 use core\handler\factory;
 
-class base extends system
+class provider extends system
 {
     //Class
     private $class = '';
