@@ -24,14 +24,15 @@ use core\system;
 
 class errno extends system
 {
-    //Multi-language support
-    private $lang = true;
-
     //Error message pool
     private $pool = [];
 
+    //Multi-language support
+    private $lang = true;
+
     /**
      * Error file directory
+     *
      * Related to "ROOT/$dir/"
      * Error file should be put in "ROOT/$dir/$this->dir/filename.ini"
      */
@@ -57,7 +58,8 @@ class errno extends system
 
         $this->lang = &$lang;
         $this->pool += $data;
-        unset($dir, $name, $lang, $data);
+
+        unset($dir, $name, $lang, $path, $data);
     }
 
     /**
