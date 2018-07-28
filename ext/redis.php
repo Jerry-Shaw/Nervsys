@@ -20,56 +20,73 @@
 
 namespace ext;
 
-class redis extends \Redis
+use core\handler\factory;
+
+class redis
 {
-    //Redis settings
-    public static $host       = '127.0.0.1';
-    public static $port       = 6379;
-    public static $auth       = '';
-    public static $db         = 0;
-    public static $prefix     = '';
-    public static $timeout    = 10;
-    public static $persist    = true;
-    public static $persist_id = null;
+    //Redis arguments
+    public $host       = '127.0.0.1';
+    public $port       = 6379;
+    public $auth       = '';
+    public $db         = 0;
+    public $prefix     = '';
+    public $timeout    = 10;
+    public $persist    = true;
+    public $persist_id = null;
 
     /**
-     * redis constructor.
+     * Set arguments
      *
+     * @param string $name
+     * @param array  $arguments
+     *
+     * @return object
      * @throws \RedisException
      */
-    public function __construct()
+    public function __call(string $name, array $arguments): object
     {
-        parent::__construct();
+        if (!isset($this->$name)) {
+            throw new \RedisException('Unsupported property: ' . $name, E_USER_ERROR);
+        }
 
-        self::$persist
-            ? parent::pconnect(self::$host, self::$port, self::$timeout, self::$persist_id)
-            : parent::connect(self::$host, self::$port, self::$timeout);
+        $this->$name = reset($arguments);
 
-        $this->set_option();
+        unset($name, $arguments);
+        return $this;
     }
 
     /**
-     * Set connect option
+     * Redis connector
      *
+     * @return \Redis
      * @throws \RedisException
      */
-    private function set_option(): void
+    public function connect(): \Redis
     {
+        $redis = factory::use('Redis');
+
+        //Connect
+        $this->persist
+            ? $redis->pconnect($this->host, $this->port, $this->timeout, $this->persist_id)
+            : $redis->connect($this->host, $this->port, $this->timeout);
+
         //Set auth
-        if ('' !== self::$auth && !$this->auth(self::$auth)) {
-            throw new \RedisException('Redis: Authentication Failed!', E_USER_ERROR);
+        if ('' !== $this->auth && !$redis->auth($this->auth)) {
+            throw new \RedisException('Authentication Failed!', E_USER_ERROR);
         }
 
         //Set DB
-        if (!$this->select(self::$db)) {
-            throw new \RedisException('Redis: DB [' . self::$db . '] NOT exist!', E_USER_ERROR);
+        if (!$redis->select($this->db)) {
+            throw new \RedisException('DB [' . $this->db . '] NOT found!', E_USER_ERROR);
         }
 
         //Set prefix
-        if ('' !== self::$prefix) {
-            $this->setOption(parent::OPT_PREFIX, self::$prefix . ':');
+        if ('' !== $this->prefix) {
+            $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
         }
 
-        $this->setOption(parent::OPT_SERIALIZER, parent::SERIALIZER_NONE);
+        $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+
+        return $redis;
     }
 }
