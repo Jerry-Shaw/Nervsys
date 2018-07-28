@@ -24,37 +24,37 @@ use core\system;
 
 class errno extends system
 {
+    //Multi-language support
+    private $lang = true;
+
+    //Error message pool
+    private $pool = [];
+
     /**
      * Error file directory
      * Related to "ROOT/$dir/"
      * Error file should be located in "ROOT/$dir/$this->dir/filename.ini"
-     *
-     * @var string
      */
-    public $dir = DIRECTORY_SEPARATOR . 'error' . DIRECTORY_SEPARATOR;
-
-    //Multi-language support
-    public $lang = true;
-
-    //Error message pool
-    private $pool = [];
+    const DIR = 'error';
 
     /**
      * Load error file
      *
      * @param string $dir
      * @param string $name
+     * @param bool   $lang
      *
      * @throws \ErrorException
      */
-    public function __construct(string $dir, string $name)
+    public function __construct(string $dir, string $name, bool $lang = true)
     {
-        $data = parse_ini_file(ROOT . $dir . $this->dir . $name . '.ini', false);
+        $data = parse_ini_file(ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini', false);
 
         if (false === $data) {
             throw new \ErrorException('Failed to read [' . $name . '.ini]!');
         }
 
+        $this->lang = &$lang;
         $this->pool += $data;
         unset($dir, $name, $data);
     }
@@ -82,7 +82,7 @@ class errno extends system
     public function get(int $code, int $errno = 0): array
     {
         return isset($this->pool[$code])
-            ? ['err' => &$errno, 'code' => &$code, 'msg' => $this->lang ? gettext($this->pool[$code]) : $this->pool[$code]]
-            : ['err' => &$errno, 'code' => &$code, 'msg' => 'Error message NOT found!'];
+            ? ['code' => &$code, 'err' => &$errno, 'msg' => $this->lang ? gettext($this->pool[$code]) : $this->pool[$code]]
+            : ['code' => &$code, 'err' => &$errno, 'msg' => 'Error message NOT found!'];
     }
 }
