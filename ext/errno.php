@@ -33,7 +33,7 @@ class errno extends system
     /**
      * Error file directory
      * Related to "ROOT/$dir/"
-     * Error file should be located in "ROOT/$dir/$this->dir/filename.ini"
+     * Error file should be put in "ROOT/$dir/$this->dir/filename.ini"
      */
     const DIR = 'error';
 
@@ -48,15 +48,16 @@ class errno extends system
      */
     public function __construct(string $dir, string $name, bool $lang = true)
     {
-        $data = parse_ini_file(ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini', false);
+        $path = ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
+        $data = parse_ini_file($path, false);
 
         if (false === $data) {
-            throw new \ErrorException('Failed to read [' . $name . '.ini]!');
+            throw new \ErrorException('Failed to read [' . $path . ']!');
         }
 
         $this->lang = &$lang;
         $this->pool += $data;
-        unset($dir, $name, $data);
+        unset($dir, $name, $lang, $data);
     }
 
     /**
@@ -68,6 +69,7 @@ class errno extends system
     public function set(int $code, int $errno = 0): void
     {
         parent::$error = $this->get($code, $errno);
+        unset($code, $errno);
     }
 
     /**
