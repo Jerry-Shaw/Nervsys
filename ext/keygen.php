@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
-namespace ext\lib;
+namespace ext;
+
+use ext\lib\key;
 
 class keygen implements key
 {
