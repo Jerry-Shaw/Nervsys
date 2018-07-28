@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Base extension
+ * Provider extension
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
  *
@@ -76,20 +76,20 @@ class provider extends system
      * Call method
      *
      * @param string $name
-     * @param array  $argument
+     * @param array  $arguments
      *
      * @return mixed
      * @throws \ErrorException
      */
-    public function __call(string $name, array $argument)
+    public function __call(string $name, array $arguments)
     {
         $item = strtolower($name);
 
         if (isset($this->methods[$item])) {
             //Call from method map
-            $result = empty($argument)
+            $result = empty($arguments)
                 ? forward_static_call([$this->extends[$this->methods[$item]], $name])
-                : forward_static_call_array([$this->extends[$this->methods[$item]], $name], $argument);
+                : forward_static_call_array([$this->extends[$this->methods[$item]], $name], $arguments);
         } elseif (isset($this->extends[$item])) {
             //Call from extends map
             $result = $this->extends[$item];
@@ -102,7 +102,7 @@ class provider extends system
             );
         }
 
-        unset($name, $argument, $item);
+        unset($name, $arguments, $item);
         return $result;
     }
 
@@ -110,30 +110,50 @@ class provider extends system
      * Extends new class
      *
      * @param string $class
-     * @param array  $argument
+     * @param array  $arguments
      *
      * @throws \ReflectionException
      */
-    public function new(string $class, array $argument = []): void
+    public function new(string $class, array $arguments = []): void
     {
         $this->build_method($name = $this->get_name($class));
-        $this->extends[$name['alias']] = factory::new($name['class'], $argument);
-        unset($class, $argument, $name);
+        $this->extends[$name['alias']] = factory::new($name['class'], $arguments);
+        unset($class, $arguments, $name);
     }
 
     /**
      * Extends origin class
      *
      * @param string $class
-     * @param array  $argument
+     * @param array  $arguments
      *
      * @throws \ReflectionException
      */
-    public function use(string $class, array $argument = []): void
+    public function use(string $class, array $arguments = []): void
     {
         $this->build_method($name = $this->get_name($class));
-        $this->extends[$name['alias']] = factory::use($name['class'], $argument);
-        unset($class, $argument, $name);
+        $this->extends[$name['alias']] = factory::use($name['class'], $arguments);
+        unset($class, $arguments, $name);
+    }
+
+    /**
+     * Bind object
+     *
+     * @param object $object
+     * @param string $alias
+     *
+     * @throws \ReflectionException
+     */
+    public function bind(object $object, string $alias = ''): void
+    {
+        $name = [
+            'class' => &$object,
+            'alias' => '' === $alias ? get_class($object) : $alias
+        ];
+
+        $this->build_method($name);
+        $this->extends[$name['alias']] = &$object;
+        unset($object, $alias, $name);
     }
 
     /**
@@ -175,7 +195,7 @@ class provider extends system
      */
     private function build_method(array $name): void
     {
-        $reflect = new \ReflectionClass(parent::build_name($name['class']));
+        $reflect = new \ReflectionClass(is_string($name['class']) ? parent::build_name($name['class']) : $name['class']);
         $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
 
         //Build method map to alias name
