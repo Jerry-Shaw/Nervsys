@@ -55,10 +55,6 @@ class output extends system
             parent::$result = parent::$error + ['data' => parent::$result];
         }
 
-        if ('' !== parent::$logs) {
-            is_array(parent::$result) ? parent::$result += ['logs' => parent::$logs] : parent::$result .= PHP_EOL . PHP_EOL . parent::$logs;
-        }
-
         header(self::HEADER[$output = isset(self::HEADER[parent::$out]) ? parent::$out : 'json']);
 
         if ('nul' !== $output) {
@@ -67,6 +63,10 @@ class output extends system
             if (parent::$is_cli) {
                 echo PHP_EOL;
             }
+        }
+
+        if ('' !== parent::$logs) {
+            echo PHP_EOL . PHP_EOL . parent::$logs;
         }
 
         unset($output);
