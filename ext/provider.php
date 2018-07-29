@@ -35,9 +35,6 @@ class provider extends system
     //Methods
     private $methods = [];
 
-    //Property
-    private $property = [];
-
     /**
      * Get called class
      */
@@ -49,27 +46,22 @@ class provider extends system
     }
 
     /**
-     * Set property
-     *
-     * @param string $name
-     * @param mixed  $value
-     */
-    public function __set(string $name, $value): void
-    {
-        $this->property[$name] = &$value;
-        unset($name, $value);
-    }
-
-    /**
-     * Get property
+     * Get object
      *
      * @param string $name
      *
-     * @return mixed
+     * @return object
+     * @throws \Exception
      */
-    public function __get(string $name)
+    public function __get(string $name): object
     {
-        return $this->property[$name];
+        if (isset($this->extends[$item = strtolower($name)])) {
+            //Call from extends map
+            return $this->extends[$item];
+        } else {
+            //Throw Exception
+            throw new \Exception('Call to undefined object ' . $this->class . '->' . $name, E_USER_ERROR);
+        }
     }
 
     /**
@@ -79,27 +71,18 @@ class provider extends system
      * @param array  $arguments
      *
      * @return mixed
-     * @throws \ErrorException
+     * @throws \Exception
      */
     public function __call(string $name, array $arguments)
     {
-        $item = strtolower($name);
-
-        if (isset($this->methods[$item])) {
+        if (isset($this->methods[$item = strtolower($name)])) {
             //Call from method map
             $result = empty($arguments)
                 ? forward_static_call([$this->extends[$this->methods[$item]], $name])
                 : forward_static_call_array([$this->extends[$this->methods[$item]], $name], $arguments);
-        } elseif (isset($this->extends[$item])) {
-            //Call from extends map
-            $result = $this->extends[$item];
         } else {
-            //Throw ErrorException
-            throw new \ErrorException(
-                'Call to undefined method ' . $this->class . '::' . $name . '()',
-                E_USER_ERROR, E_USER_ERROR,
-                __FILE__, __LINE__
-            );
+            //Throw Exception
+            throw new \Exception('Call to undefined method ' . $this->class . '::' . $name . '()', E_USER_ERROR);
         }
 
         unset($name, $arguments, $item);
@@ -167,17 +150,14 @@ class provider extends system
     {
         $result = [];
 
+        $class = parent::build_name($class);
+
         if (false !== $alias = strripos($class, ' as ')) {
             $result['class'] = substr($class, 0, $alias);
             $result['alias'] = substr($class, $alias + 4);
-        } elseif (false !== $alias = strrpos($class, '/')) {
-            $result['class'] = &$class;
-            $result['alias'] = substr($class, $alias + 1);
-        } elseif (false !== $alias = strrpos($class, '\\')) {
-            $result['class'] = &$class;
-            $result['alias'] = substr($class, $alias + 1);
         } else {
-            $result['class'] = $result['alias'] = &$class;
+            $result['class'] = &$class;
+            $result['alias'] = substr($class, (int)strrpos($class, '\\') + 1);
         }
 
         $result['alias'] = strtolower($result['alias']);
@@ -195,7 +175,7 @@ class provider extends system
      */
     private function build_method(array $name): void
     {
-        $reflect = new \ReflectionClass(is_string($name['class']) ? parent::build_name($name['class']) : $name['class']);
+        $reflect = new \ReflectionClass($name['class']);
         $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
 
         //Build method map to alias name

@@ -26,7 +26,7 @@ class lang
      * Language file directory
      *
      * Related to "ROOT/$dir/"
-     * Language file should be located in "ROOT/$dir/$this->dir/$lang/LC_MESSAGES/filename.mo"
+     * Language file should be located in "ROOT/$dir/self::DIR/$lang/LC_MESSAGES/filename.mo"
      */
     const DIR = 'language';
 
@@ -37,7 +37,7 @@ class lang
      * @param string $file
      * @param string $lang
      */
-    public function load(string $dir, string $file, string $lang = 'en-US'): void
+    public static function load(string $dir, string $file, string $lang = 'en-US'): void
     {
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
