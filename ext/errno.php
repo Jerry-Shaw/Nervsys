@@ -25,10 +25,10 @@ use core\system;
 class errno extends system
 {
     //Error message pool
-    private static $pool = [];
+    private $pool = [];
 
     //Multi-language support
-    private static $lang = true;
+    private $lang = true;
 
     /**
      * Error file directory
@@ -45,19 +45,19 @@ class errno extends system
      * @param string $name
      * @param bool   $lang
      *
-     * @throws \ErrorException
+     * @throws \Exception
      */
-    public static function load(string $dir, string $name, bool $lang = true)
+    public function __construct(string $dir, string $name, bool $lang = true)
     {
         $path = ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
         $data = parse_ini_file($path, false);
 
         if (false === $data) {
-            throw new \ErrorException('Failed to read [' . $path . ']!');
+            throw new \Exception('Failed to read [' . $path . ']!', E_USER_ERROR);
         }
 
-        self::$lang = &$lang;
-        self::$pool += $data;
+        $this->lang = &$lang;
+        $this->pool = &$data;
 
         unset($dir, $name, $lang, $path, $data);
     }
@@ -68,9 +68,9 @@ class errno extends system
      * @param int $code
      * @param int $errno
      */
-    public static function set(int $code, int $errno = 0): void
+    public function set_err(int $code, int $errno = 0): void
     {
-        parent::$error = self::get($code, $errno);
+        parent::$error = $this->get($code, $errno);
         unset($code, $errno);
     }
 
@@ -83,10 +83,10 @@ class errno extends system
      *
      * @return array
      */
-    public static function get(int $code, int $errno = 0): array
+    public function get_err(int $code, int $errno = 0): array
     {
-        return isset(self::$pool[$code])
-            ? ['code' => &$code, 'err' => &$errno, 'msg' => self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code]]
+        return isset($this->pool[$code])
+            ? ['code' => &$code, 'err' => &$errno, 'msg' => $this->lang ? gettext($this->pool[$code]) : $this->pool[$code]]
             : ['code' => &$code, 'err' => &$errno, 'msg' => 'Error message NOT found!'];
     }
 }
