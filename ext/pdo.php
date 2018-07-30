@@ -36,22 +36,137 @@ class pdo
     private $charset = 'utf8mb4';
 
     /**
-     * Set arguments
+     * Set type
      *
-     * @param $name
-     * @param $arguments
+     * @param string $value
      *
      * @return object
      */
-    public function __call(string $name, array $arguments): object
+    public function type(string $value): object
     {
-        if (!isset($this->$name)) {
-            throw new \PDOException('Unsupported property: ' . $name, E_USER_ERROR);
-        }
+        $this->type = &$value;
 
-        $this->$name = reset($arguments);
+        unset($value);
+        return $this;
+    }
 
-        unset($name, $arguments);
+    /**
+     * Set host
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function host(string $value): object
+    {
+        $this->host = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set port
+     *
+     * @param int $value
+     *
+     * @return object
+     */
+    public function port(int $value): object
+    {
+        $this->port = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set username
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function user(string $value): object
+    {
+        $this->user = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set password
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function pwd(string $value): object
+    {
+        $this->pwd = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set db name
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function db(string $value): object
+    {
+        $this->db = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set read timeout
+     *
+     * @param int $value
+     *
+     * @return object
+     */
+    public function timeout(int $value): object
+    {
+        $this->timeout = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set persist type
+     *
+     * @param bool $value
+     *
+     * @return object
+     */
+    public function persist(bool $value): object
+    {
+        $this->persist = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set initial charset
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function charset(string $value): object
+    {
+        $this->charset = &$value;
+
+        unset($value);
         return $this;
     }
 
@@ -62,8 +177,11 @@ class pdo
      */
     public function connect(): \PDO
     {
+        //Build DSN & OPTION
         $param = $this->build_dsn_opt();
-        $pdo   = factory::use('PDO', [$param['dsn'], $this->user, $this->pwd, $param['opt']]);
+
+        //Factory use PDO instance
+        $pdo = factory::use('PDO', [$param['dsn'], $this->user, $this->pwd, $param['opt']]);
 
         unset($param);
         return $pdo;

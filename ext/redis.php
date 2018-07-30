@@ -35,23 +35,122 @@ class redis
     private $persist_id = null;
 
     /**
-     * Set arguments
+     * Set host
      *
-     * @param string $name
-     * @param array  $arguments
+     * @param string $value
      *
      * @return object
-     * @throws \RedisException
      */
-    public function __call(string $name, array $arguments): object
+    public function host(string $value): object
     {
-        if (!isset($this->$name)) {
-            throw new \RedisException('Unsupported property: ' . $name, E_USER_ERROR);
-        }
+        $this->host = &$value;
 
-        $this->$name = reset($arguments);
+        unset($value);
+        return $this;
+    }
 
-        unset($name, $arguments);
+    /**
+     * Set port
+     *
+     * @param int $value
+     *
+     * @return object
+     */
+    public function port(int $value): object
+    {
+        $this->port = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set auth
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function auth(string $value): object
+    {
+        $this->auth = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set db name
+     *
+     * @param int $value
+     *
+     * @return object
+     */
+    public function db(int $value): object
+    {
+        $this->db = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set prefix
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function prefix(string $value): object
+    {
+        $this->prefix = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set read timeout
+     *
+     * @param int $value
+     *
+     * @return object
+     */
+    public function timeout(int $value): object
+    {
+        $this->timeout = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set persist type
+     *
+     * @param bool $value
+     *
+     * @return object
+     */
+    public function persist(bool $value): object
+    {
+        $this->persist = &$value;
+
+        unset($value);
+        return $this;
+    }
+
+    /**
+     * Set persist_id
+     *
+     * @param string $value
+     *
+     * @return object
+     */
+    public function persist_id(string $value): object
+    {
+        $this->persist_id = &$value;
+
+        unset($value);
         return $this;
     }
 
@@ -63,6 +162,7 @@ class redis
      */
     public function connect(): \Redis
     {
+        //Factory use Redis instance
         $redis = factory::use('Redis');
 
         //Connect
