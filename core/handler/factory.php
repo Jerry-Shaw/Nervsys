@@ -24,6 +24,12 @@ use core\system;
 
 class factory extends system
 {
+    //Cloned objects
+    private static $cloned_list = [];
+
+    //Origin objects
+    private static $origin_list = [];
+
     /**
      * Get cloned instance
      *
@@ -34,16 +40,15 @@ class factory extends system
      */
     public static function new(string $class, array $param = []): object
     {
-        static $list = [];
-
         $class = parent::build_name($class);
 
-        if (!isset($list[$key = hash('md5', $class . json_encode($param))])) {
-            $list[$key] = self::create($class, $param);
+        //Create and store to cloned list
+        if (!isset(self::$cloned_list[$key = hash('md5', $class . json_encode($param))])) {
+            self::$cloned_list[$key] = self::create($class, $param);
         }
 
         unset($class, $param);
-        return clone $list[$key];
+        return clone self::$cloned_list[$key];
     }
 
     /**
@@ -56,16 +61,41 @@ class factory extends system
      */
     public static function use(string $class, array $param = []): object
     {
-        static $list = [];
-
         $class = parent::build_name($class);
 
-        if (!isset($list[$key = hash('md5', $class . json_encode($param))])) {
-            $list[$key] = self::create($class, $param);
+        //Create and store to origin list
+        if (!isset(self::$origin_list[$key = hash('md5', $class . json_encode($param))])) {
+            self::$origin_list[$key] = self::create($class, $param);
         }
 
         unset($class, $param);
-        return $list[$key];
+        return self::$origin_list[$key];
+    }
+
+    /**
+     * Free factory storage
+     *
+     * @param object $object
+     */
+    public static function free(object $object): void
+    {
+        //Drop from cloned list
+        if (!empty($keys = array_keys(self::$cloned_list, $object, true))) {
+            foreach ($keys as $key) {
+                self::$cloned_list[$key] = null;
+                unset(self::$cloned_list[$key]);
+            }
+        }
+
+        //Drop from origin list
+        if (!empty($keys = array_keys(self::$origin_list, $object, true))) {
+            foreach ($keys as $key) {
+                self::$origin_list[$key] = null;
+                unset(self::$origin_list[$key]);
+            }
+        }
+
+        unset($object, $keys, $key);
     }
 
     /**
