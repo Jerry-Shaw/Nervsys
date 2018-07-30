@@ -76,7 +76,7 @@ class crypt_img extends crypt
      * @return array
      * @throws \Exception
      */
-    public function get_code(): array
+    public function get(): array
     {
         $type   = ['num', 'word', 'calc'];
         $method = in_array($this->type, $type, true) ? 'gen_' . $this->type : 'gen_' . $type[mt_rand(0, 2)];
@@ -188,7 +188,7 @@ class crypt_img extends crypt
      * @return bool
      * @throws \Exception
      */
-    public function check_code(string $code, string $input): bool
+    public function check(string $code, string $input): bool
     {
         $res = parent::verify($code);
 

@@ -68,7 +68,7 @@ class errno extends system
      * @param int $code
      * @param int $errno
      */
-    public function set_err(int $code, int $errno = 0): void
+    public function set(int $code, int $errno = 0): void
     {
         parent::$error = $this->get($code, $errno);
         unset($code, $errno);
@@ -83,7 +83,7 @@ class errno extends system
      *
      * @return array
      */
-    public function get_err(int $code, int $errno = 0): array
+    public function get(int $code, int $errno = 0): array
     {
         return isset($this->pool[$code])
             ? ['code' => &$code, 'err' => &$errno, 'msg' => $this->lang ? gettext($this->pool[$code]) : $this->pool[$code]]
