@@ -20,6 +20,8 @@
 
 namespace ext;
 
+use core\parser\data;
+
 class http
 {
     //URL key
@@ -37,9 +39,10 @@ class http
     const ACCEPT_ENCODING = 'gzip,deflate,identity,*;q=0';                            //Accept encoding
     const ACCEPT_LANGUAGE = 'en-US,en,zh-CN,zh,*;q=0';                                //Accept language
 
-    //Content types
+    //Pre-defined content types
+    const CONTENT_TYPE_XML     = 'application/xml; charset=UTF-8';
+    const CONTENT_TYPE_JSON    = 'application/json; charset=UTF-8';
     const CONTENT_TYPE_DATA    = 'multipart/form-data';
-    const CONTENT_TYPE_PAYLOAD = 'application/json; charset=utf-8';
     const CONTENT_TYPE_ENCODED = 'application/x-www-form-urlencoded';
 
     /**
@@ -155,21 +158,6 @@ class http
         $this->url[$this->key]['Cookie'] = &$cookie;
 
         unset($cookie);
-        return $this;
-    }
-
-    /**
-     * Set payload type
-     *
-     * @param bool $payload
-     *
-     * @return object
-     */
-    public function payload(bool $payload): object
-    {
-        $this->url[$this->key]['payload'] = &$payload;
-
-        unset($payload);
         return $this;
     }
 
@@ -325,6 +313,21 @@ class http
     }
 
     /**
+     * Set Content-Type
+     *
+     * @param string $content_type
+     *
+     * @return object
+     */
+    public function content_type(string $content_type): object
+    {
+        $this->url[$this->key]['content_type'] = &$content_type;
+
+        unset($content_type);
+        return $this;
+    }
+
+    /**
      * Fetch an URL
      *
      * @return string
@@ -461,17 +464,15 @@ class http
      */
     private function prep_params(array &$item): void
     {
-        //Prepare method
+        //Prepare Content-Type
+        if (!isset($item['content_type'])) {
+            $item['content_type'] = self::CONTENT_TYPE_JSON;
+        }
+
+        //Prepare request method
         if (!isset($item['method'])) {
             $item['method'] = isset($item['data']) || isset($item['file']) ? 'POST' : 'GET';
         }
-
-        //Prepare Content-Type
-        $item['content_type'] = !isset($item['payload']) || !$item['payload']
-            ? (!isset($item['file']) ? self::CONTENT_TYPE_ENCODED : self::CONTENT_TYPE_DATA)
-            : self::CONTENT_TYPE_PAYLOAD;
-
-        unset($item['payload']);
 
         //Merge data & file
         if (isset($item['file'])) {
@@ -599,13 +600,16 @@ class http
 
         if (isset($item['data'])) {
             switch ($item['content_type']) {
+                case self::CONTENT_TYPE_JSON:
+                    $opt[CURLOPT_POSTFIELDS] = json_encode($item['data']);
+                    break;
+                case self::CONTENT_TYPE_XML:
+                    $opt[CURLOPT_POSTFIELDS] = data::build_xml($item['data']);
+                    break;
                 case self::CONTENT_TYPE_ENCODED:
                     $opt[CURLOPT_POSTFIELDS] = http_build_query($item['data']);
                     break;
-                case self::CONTENT_TYPE_PAYLOAD:
-                    $opt[CURLOPT_POSTFIELDS] = json_encode($item['data']);
-                    break;
-                case self::CONTENT_TYPE_DATA:
+                default:
                     $opt[CURLOPT_POSTFIELDS] = $item['data'];
                     break;
             }
