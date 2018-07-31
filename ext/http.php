@@ -406,19 +406,19 @@ class http
         while (CURLM_OK === curl_multi_exec($curl, $running) && 0 < $running) ;
 
         //Collect response
-        foreach ($res as &$item) {
+        foreach ($res as $key => $item) {
             //Get response
-            $res['res'] = (string)curl_multi_getcontent($item['curl']);
+            $res[$key]['res'] = (string)curl_multi_getcontent($item['curl']);
             //Remove handle
             curl_multi_remove_handle($curl, $item['curl']);
             //Remove curl resource
-            unset($item['curl']);
+            unset($res[$key]['curl']);
         }
 
         //Close cURL handle
         curl_multi_close($curl);
 
-        unset($curl, $item);
+        unset($curl, $item, $key);
         return $res;
     }
 
