@@ -55,6 +55,54 @@ class data
     }
 
     /**
+     * Build XML
+     *
+     * @param array $data
+     * @param bool  $root
+     * @param bool  $pretty
+     *
+     * @return string
+     */
+    public static function build_xml(array $data, bool $root = true, bool $pretty = false): string
+    {
+        $xml = $end = '';
+
+        if ($root && 1 < count($data)) {
+            $xml .= '<xml>';
+            $end = '</xml>';
+
+            if ($pretty) {
+                $xml .= PHP_EOL;
+            }
+        }
+
+        foreach ($data as $key => $item) {
+            if (is_numeric($key)) {
+                $key = 'xml_' . $key;
+            }
+
+            $xml .= '<' . $key . '>';
+
+            $xml .= is_array($item)
+                ? self::build_xml($item, false, $pretty)
+                : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
+
+            $xml .= '</' . $key . '>';
+
+            if ($pretty) {
+                $xml .= PHP_EOL;
+            }
+        }
+
+        if ($root) {
+            $xml .= $end;
+        }
+
+        unset($data, $root, $pretty, $end, $key, $item);
+        return $xml;
+    }
+
+    /**
      * Build argument
      *
      * @param object $reflect

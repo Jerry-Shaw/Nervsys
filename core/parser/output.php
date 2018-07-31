@@ -33,7 +33,7 @@ class output extends system
         //Output as JSON (default)
         'json' => 'Content-Type: application/json; charset=UTF-8',
         //Output as XML
-        'xml'  => 'Content-Type: text/xml; charset=UTF-8',
+        'xml'  => 'Content-Type: application/xml; charset=UTF-8',
         //Keep in pool for HTML
         'nul'  => 'Content-Type: text/html; charset=UTF-8'
     ];
@@ -87,50 +87,6 @@ class output extends system
      */
     private static function xml(): string
     {
-        $xml = '<xml>';
-
-        if (self::$pretty) {
-            $xml .= PHP_EOL;
-        }
-
-        $xml .= is_array(parent::$result) ? self::build_xml(parent::$result) : '<![CDATA[' . parent::$result . ']]>';
-
-        if (self::$pretty) {
-            $xml .= PHP_EOL;
-        }
-
-        $xml .= '</xml>';
-
-        return $xml;
-    }
-
-    /**
-     * Build XML
-     *
-     * @param array $data
-     *
-     * @return string
-     */
-    private static function build_xml(array $data): string
-    {
-        $xml  = '';
-        $list = [];
-
-        foreach ($data as $key => $item) {
-            if (is_numeric($key)) {
-                $key = 'name_' . $key;
-            }
-
-            $xml .= '<' . $key . '>';
-            $xml .= is_array($item) ? self::build_xml($item) : (is_numeric($item) ? $item : '<![CDATA[' . $item . ']]>');
-            $xml .= '</' . $key . '>';
-
-            $list[] = $xml;
-        }
-
-        $xml = implode(self::$pretty ? PHP_EOL : '', $list);
-
-        unset($data, $list, $key, $item);
-        return $xml;
+        return data::build_xml(parent::$result, true, self::$pretty);
     }
 }
