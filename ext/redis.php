@@ -37,120 +37,120 @@ class redis
     /**
      * Set host
      *
-     * @param string $value
+     * @param string $host
      *
      * @return object
      */
-    public function host(string $value): object
+    public function host(string $host): object
     {
-        $this->host = &$value;
+        $this->host = &$host;
 
-        unset($value);
+        unset($host);
         return $this;
     }
 
     /**
      * Set port
      *
-     * @param int $value
+     * @param int $port
      *
      * @return object
      */
-    public function port(int $value): object
+    public function port(int $port): object
     {
-        $this->port = &$value;
+        $this->port = &$port;
 
-        unset($value);
+        unset($port);
         return $this;
     }
 
     /**
      * Set auth
      *
-     * @param string $value
+     * @param string $auth
      *
      * @return object
      */
-    public function auth(string $value): object
+    public function auth(string $auth): object
     {
-        $this->auth = &$value;
+        $this->auth = &$auth;
 
-        unset($value);
+        unset($auth);
         return $this;
     }
 
     /**
      * Set db name
      *
-     * @param int $value
+     * @param int $db
      *
      * @return object
      */
-    public function db(int $value): object
+    public function db(int $db): object
     {
-        $this->db = &$value;
+        $this->db = &$db;
 
-        unset($value);
+        unset($db);
         return $this;
     }
 
     /**
      * Set prefix
      *
-     * @param string $value
+     * @param string $prefix
      *
      * @return object
      */
-    public function prefix(string $value): object
+    public function prefix(string $prefix): object
     {
-        $this->prefix = &$value;
+        $this->prefix = &$prefix;
 
-        unset($value);
+        unset($prefix);
         return $this;
     }
 
     /**
      * Set read timeout
      *
-     * @param int $value
+     * @param int $timeout
      *
      * @return object
      */
-    public function timeout(int $value): object
+    public function timeout(int $timeout): object
     {
-        $this->timeout = &$value;
+        $this->timeout = &$timeout;
 
-        unset($value);
+        unset($timeout);
         return $this;
     }
 
     /**
      * Set persist type
      *
-     * @param bool $value
+     * @param bool $persist
      *
      * @return object
      */
-    public function persist(bool $value): object
+    public function persist(bool $persist): object
     {
-        $this->persist = &$value;
+        $this->persist = &$persist;
 
-        unset($value);
+        unset($persist);
         return $this;
     }
 
     /**
      * Set persist_id
      *
-     * @param string $value
+     * @param string $persist_id
      *
      * @return object
      */
-    public function persist_id(string $value): object
+    public function persist_id(string $persist_id): object
     {
-        $this->persist_id = &$value;
+        $this->persist_id = &$persist_id;
 
-        unset($value);
+        unset($persist_id);
         return $this;
     }
 

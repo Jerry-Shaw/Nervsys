@@ -38,135 +38,135 @@ class pdo
     /**
      * Set type
      *
-     * @param string $value
+     * @param string $type
      *
      * @return object
      */
-    public function type(string $value): object
+    public function type(string $type): object
     {
-        $this->type = &$value;
+        $this->type = &$type;
 
-        unset($value);
+        unset($type);
         return $this;
     }
 
     /**
      * Set host
      *
-     * @param string $value
+     * @param string $host
      *
      * @return object
      */
-    public function host(string $value): object
+    public function host(string $host): object
     {
-        $this->host = &$value;
+        $this->host = &$host;
 
-        unset($value);
+        unset($host);
         return $this;
     }
 
     /**
      * Set port
      *
-     * @param int $value
+     * @param int $port
      *
      * @return object
      */
-    public function port(int $value): object
+    public function port(int $port): object
     {
-        $this->port = &$value;
+        $this->port = &$port;
 
-        unset($value);
+        unset($port);
         return $this;
     }
 
     /**
      * Set username
      *
-     * @param string $value
+     * @param string $user
      *
      * @return object
      */
-    public function user(string $value): object
+    public function user(string $user): object
     {
-        $this->user = &$value;
+        $this->user = &$user;
 
-        unset($value);
+        unset($user);
         return $this;
     }
 
     /**
      * Set password
      *
-     * @param string $value
+     * @param string $pwd
      *
      * @return object
      */
-    public function pwd(string $value): object
+    public function pwd(string $pwd): object
     {
-        $this->pwd = &$value;
+        $this->pwd = &$pwd;
 
-        unset($value);
+        unset($pwd);
         return $this;
     }
 
     /**
      * Set db name
      *
-     * @param string $value
+     * @param string $db
      *
      * @return object
      */
-    public function db(string $value): object
+    public function db(string $db): object
     {
-        $this->db = &$value;
+        $this->db = &$db;
 
-        unset($value);
+        unset($db);
         return $this;
     }
 
     /**
      * Set read timeout
      *
-     * @param int $value
+     * @param int $timeout
      *
      * @return object
      */
-    public function timeout(int $value): object
+    public function timeout(int $timeout): object
     {
-        $this->timeout = &$value;
+        $this->timeout = &$timeout;
 
-        unset($value);
+        unset($timeout);
         return $this;
     }
 
     /**
      * Set persist type
      *
-     * @param bool $value
+     * @param bool $persist
      *
      * @return object
      */
-    public function persist(bool $value): object
+    public function persist(bool $persist): object
     {
-        $this->persist = &$value;
+        $this->persist = &$persist;
 
-        unset($value);
+        unset($persist);
         return $this;
     }
 
     /**
      * Set initial charset
      *
-     * @param string $value
+     * @param string $charset
      *
      * @return object
      */
-    public function charset(string $value): object
+    public function charset(string $charset): object
     {
-        $this->charset = &$value;
+        $this->charset = &$charset;
 
-        unset($value);
+        unset($charset);
         return $this;
     }
 
