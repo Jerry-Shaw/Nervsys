@@ -328,15 +328,20 @@ class http
      * Fetch an URL
      *
      * @return string
+     * @throws \Exception
      */
     public function fetch(): string
     {
+        if (empty($this->url)) {
+            throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_ERROR);
+        }
+
         $item = reset($this->url);
 
         $unit = $this->get_unit($item['url']);
 
         if (empty($unit)) {
-            return '';
+            throw new \Exception('URL [' . $item['url'] . '] error! "SCHEME" and "HOST" MUST be contained.', E_USER_WARNING);
         }
 
         $item += $unit;
@@ -361,9 +366,14 @@ class http
      * Fetch all URLs
      *
      * @return array
+     * @throws \Exception
      */
     public function fetch_all(): array
     {
+        if (empty($this->url)) {
+            throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_ERROR);
+        }
+
         //Multi CURL
         $res  = [];
         $curl = curl_multi_init();
@@ -386,6 +396,10 @@ class http
 
             $res[] = $item;
             curl_multi_add_handle($curl, $item['curl']);
+        }
+
+        if (empty($res)) {
+            throw new \Exception('No valid URL! "SCHEME" and "HOST" MUST be contained.', E_USER_WARNING);
         }
 
         //execute handles
