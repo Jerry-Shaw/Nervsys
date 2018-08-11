@@ -20,7 +20,9 @@
 
 namespace ext;
 
-class lang
+use core\system;
+
+class lang extends system
 {
     /**
      * Language file directory
@@ -37,14 +39,40 @@ class lang
      * @param string $file
      * @param string $lang
      */
-    public static function load(string $dir, string $file, string $lang = 'en-US'): void
+    public static function load(string $dir, string $file, string $lang = ''): void
     {
+        if ('' === $lang) {
+            $lang = self::detect();
+        }
+
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
 
-        bindtextdomain($file, ROOT . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR);
+        bindtextdomain($file, ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR);
         textdomain($file);
 
         unset($dir, $file, $lang);
+    }
+
+    /**
+     * Detect language
+     *
+     * @return string
+     */
+    private static function detect(): string
+    {
+        static $lang = '';
+
+        if ('' === $lang) {
+            if (isset(parent::$data['lang'])) {
+                $lang = parent::$data['lang'];
+            } elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+                $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
+            } else {
+                $lang = 'en-US';
+            }
+        }
+
+        return $lang;
     }
 }
