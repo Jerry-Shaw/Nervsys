@@ -50,7 +50,7 @@ class file
      *
      * @return string
      */
-    public static function get_path(string $path, string $root = ROOT, int $mode = 0776): string
+    public static function get_path(string $path, string $root = ROOT, int $mode = 0774): string
     {
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) {
