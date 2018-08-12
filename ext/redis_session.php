@@ -22,8 +22,8 @@ namespace ext;
 
 class redis_session extends redis
 {
-    //SESSION lifetime
-    private $lifetime = 600;
+    //SESSION life
+    private $life = 600;
 
     //SESSION key prefix
     const PREFIX = 'SESS:';
@@ -31,15 +31,15 @@ class redis_session extends redis
     /**
      * redis_session constructor.
      *
-     * @param int $lifetime
+     * @param int $life
      */
-    public function __construct(int $lifetime = 600)
+    public function __construct(int $life = 600)
     {
         if (PHP_SESSION_ACTIVE !== session_status()) {
             //Set SESSION GC configurations
             ini_set('session.gc_divisor', 100);
             ini_set('session.gc_probability', 100);
-            ini_set('session.gc_maxlifetime', $lifetime);
+            ini_set('session.gc_maxlifetime', $life);
 
             //Set SESSION handler
             session_set_save_handler(
@@ -56,11 +56,11 @@ class redis_session extends redis
             session_start();
         }
 
-        if (0 < $lifetime) {
-            $this->lifetime = &$lifetime;
+        if (0 < $life) {
+            $this->life = &$life;
         }
 
-        unset($lifetime);
+        unset($life);
     }
 
     /**
@@ -87,7 +87,7 @@ class redis_session extends redis
      * @param string $session_id
      *
      * @return string
-     * @throws \Exception
+     * @throws \RedisException
      */
     public function session_read(string $session_id): string
     {
@@ -99,11 +99,11 @@ class redis_session extends redis
      * @param string $session_data
      *
      * @return bool
-     * @throws \Exception
+     * @throws \RedisException
      */
     public function session_write(string $session_id, string $session_data): bool
     {
-        $write = parent::connect()->set(self::PREFIX . $session_id, $session_data, $this->lifetime);
+        $write = parent::connect()->set(self::PREFIX . $session_id, $session_data, $this->life);
 
         unset($session_id, $session_data);
         return (bool)$write;
@@ -113,7 +113,7 @@ class redis_session extends redis
      * @param string $session_id
      *
      * @return bool
-     * @throws \Exception
+     * @throws \RedisException
      */
     public function session_destroy(string $session_id): bool
     {
@@ -124,13 +124,13 @@ class redis_session extends redis
     }
 
     /**
-     * @param int $lifetime
+     * @param int $life
      *
      * @return bool
      */
-    public function session_gc(int $lifetime): bool
+    public function session_gc(int $life): bool
     {
-        unset($lifetime);
+        unset($life);
         return true;
     }
 }
