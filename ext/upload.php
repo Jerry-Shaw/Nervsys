@@ -128,6 +128,10 @@ class upload extends system
         //Get upload method
         $this->file['method'] = is_array(parent::$data[$name]) ? 'file' : 'base64';
 
+        //Open finfo
+        $mime  = false;
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
         //Process file stream
         switch ($this->file['method']) {
             case 'file':
@@ -146,6 +150,9 @@ class upload extends system
                 //Copy file property
                 unset(parent::$data[$name]['error']);
                 $this->file['stream'] = parent::$data[$name];
+
+                //Deep detect file type
+                $mime = finfo_file($finfo, $this->file['stream']['tmp_name'], FILEINFO_MIME_TYPE);
                 break;
             case 'base64':
                 //Check base64 file stream
@@ -161,11 +168,22 @@ class upload extends system
                     'size' => strlen($data)
                 ];
 
+                //Deep detect file type
+                $mime = finfo_buffer($finfo, $data, FILEINFO_MIME_TYPE);
+
                 unset($pos, $data);
                 break;
         }
 
-        unset($name);
+        //Close finfo
+        finfo_close($finfo);
+
+        //Correct file type
+        if (false !== $mime && $this->file['stream']['type'] !== $mime) {
+            $this->file['stream']['type'] = &$mime;
+        }
+
+        unset($name, $mime, $finfo);
         return $this;
     }
 
