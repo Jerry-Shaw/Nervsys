@@ -1,7 +1,7 @@
 # Nervsys
 
-Stable Version: 6.2.20  
-
+7.0.0 Beta is on going, with ext 2.0. Coming soon.  
+README.md will be updated till 7.0.0 is done.  
 
 ## About
 
