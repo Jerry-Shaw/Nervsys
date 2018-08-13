@@ -55,7 +55,11 @@ class output extends system
             parent::$result = parent::$error + ['data' => parent::$result];
         }
 
-        header(self::HEADER[$output = isset(self::HEADER[parent::$out]) ? parent::$out : 'json']);
+        $output = isset(self::HEADER[parent::$out]) ? parent::$out : 'json';
+
+        if (!headers_sent()) {
+            header(self::HEADER[$output]);
+        }
 
         if ('nul' !== $output) {
             echo self::$output();
