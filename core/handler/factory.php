@@ -25,34 +25,32 @@ use core\system;
 class factory extends system
 {
     //Cloned objects
-    private static $cloned_list = [];
+    private static $cloned = [];
 
     //Origin objects
-    private static $origin_list = [];
+    private static $origin = [];
 
     /**
-     * Get cloned instance
-     *
-     * @param string $class
-     * @param array  $param
+     * New cloned instance from called class
      *
      * @return object
      */
-    public static function new(string $class, array $param = []): object
+    public static function new(): object
     {
-        $class = parent::build_name($class);
+        $class = get_called_class();
+        $param = func_get_args();
 
         //Create and store to cloned list
-        if (!isset(self::$cloned_list[$key = hash('md5', $class . json_encode($param))])) {
-            self::$cloned_list[$key] = self::create($class, $param);
+        if (!isset(self::$cloned[$key = hash('md5', $class . json_encode($param))])) {
+            self::$cloned[$key] = !empty($param) ? new $class(...$param) : new $class();
         }
 
         unset($class, $param);
-        return clone self::$cloned_list[$key];
+        return clone self::$cloned[$key];
     }
 
     /**
-     * Get origin instance
+     * Use origin instance from other class
      *
      * @param string $class
      * @param array  $param
@@ -64,12 +62,12 @@ class factory extends system
         $class = parent::build_name($class);
 
         //Create and store to origin list
-        if (!isset(self::$origin_list[$key = hash('md5', $class . json_encode($param))])) {
-            self::$origin_list[$key] = self::create($class, $param);
+        if (!isset(self::$origin[$key = hash('md5', $class . json_encode($param))])) {
+            self::$origin[$key] = !empty($param) ? new $class(...$param) : new $class();
         }
 
         unset($class, $param);
-        return self::$origin_list[$key];
+        return self::$origin[$key];
     }
 
     /**
@@ -80,37 +78,21 @@ class factory extends system
     public static function free(object $object): void
     {
         //Drop from cloned list
-        if (!empty($keys = array_keys(self::$cloned_list, $object, true))) {
+        if (!empty($keys = array_keys(self::$cloned, $object, true))) {
             foreach ($keys as $key) {
-                self::$cloned_list[$key] = null;
-                unset(self::$cloned_list[$key]);
+                self::$cloned[$key] = null;
+                unset(self::$cloned[$key]);
             }
         }
 
         //Drop from origin list
-        if (!empty($keys = array_keys(self::$origin_list, $object, true))) {
+        if (!empty($keys = array_keys(self::$origin, $object, true))) {
             foreach ($keys as $key) {
-                self::$origin_list[$key] = null;
-                unset(self::$origin_list[$key]);
+                self::$origin[$key] = null;
+                unset(self::$origin[$key]);
             }
         }
 
         unset($object, $keys, $key);
-    }
-
-    /**
-     * Create object
-     *
-     * @param string $class
-     * @param array  $param
-     *
-     * @return object
-     */
-    private static function create(string $class, array $param): object
-    {
-        $object = !empty($param) ? new $class(...$param) : new $class();
-
-        unset($class, $param);
-        return $object;
     }
 }
