@@ -32,7 +32,7 @@ class linux implements os
         exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
 
         if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!');
+            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
         $env = &$output[0];
@@ -59,7 +59,7 @@ class linux implements os
             exec($query, $output, $status);
 
             if (0 !== $status) {
-                throw new \Exception(PHP_OS . ': Access denied!');
+                throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
             }
         }
 

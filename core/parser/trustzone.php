@@ -73,7 +73,8 @@ class trustzone extends system
             //Report TrustZone missing
             throw new \Exception(
                 ltrim($class, '\\') . '::' . $method
-                . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']'
+                . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']',
+                E_USER_WARNING
             );
         }
 

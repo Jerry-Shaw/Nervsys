@@ -34,7 +34,7 @@ class darwin implements os
         exec('lsof -p ' . getmypid(), $output, $status);
 
         if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!');
+            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
         $node_name = null;
@@ -45,7 +45,7 @@ class darwin implements os
         }
 
         if (is_null($node_name)) {
-            throw new \Exception(PHP_OS . ': Access failed!');
+            throw new \Exception(PHP_OS . ': Execute failed!', E_USER_ERROR);
         }
 
         $node_array = explode(' ', $node_name);
@@ -75,7 +75,7 @@ class darwin implements os
             exec($query, $output, $status);
 
             if (0 !== $status) {
-                throw new \Exception(PHP_OS . ': Access denied!');
+                throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
             }
         }
 

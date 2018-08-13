@@ -84,7 +84,7 @@ class platform implements os
         self::$handler = '\\' . __CLASS__ . '\\' . strtolower(PHP_OS);
 
         if (!is_string(realpath(ROOT . trim(strtr(self::$handler, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php'))) {
-            throw new \Exception(PHP_OS . ': NOT support!');
+            throw new \Exception(PHP_OS . ': NOT support!', E_USER_ERROR);
         }
 
         return self::$handler;

@@ -66,7 +66,7 @@ class operator extends factory
                 $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
                 if (!is_resource($process)) {
-                    throw new \Exception($key . ' => ' . $cmd . ': Access denied or command ERROR!');
+                    throw new \Exception($key . '=>' . $cmd . ': Access denied or command ERROR!', E_USER_ERROR);
                 }
 
                 //Send data via pipe
@@ -249,12 +249,12 @@ class operator extends factory
      */
     private static function build_caller(string $order, string $class, string $method): void
     {
-        //Reflection method
+        //Reflect method
         $reflect = new \ReflectionMethod($class, $method);
 
         //Check visibility
         if (!$reflect->isPublic()) {
-            throw new \Exception(ltrim($class, '\\') . ' => ' . $method . ': NOT for public!');
+            throw new \Exception(ltrim($class, '\\') . '=>' . $method . ': NOT for public!', E_USER_WARNING);
         }
 
         //Get factory object

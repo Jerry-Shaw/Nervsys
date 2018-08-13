@@ -120,9 +120,8 @@ class data
 
         $data = $diff = [];
 
-        //Process params
+        //Process param data
         foreach ($params as $param) {
-            //Check param data
             if (isset($input[$name = $param->getName()])) {
                 switch ($param->getType()) {
                     case 'int':
@@ -156,7 +155,8 @@ class data
         if (!empty($diff)) {
             throw new \Exception(
                 $reflect->getDeclaringClass()->getName() . '::' . $reflect->getName()
-                . ': Argument mismatch [' . (implode(', ', $diff)) . ']'
+                . ': Argument mismatch [' . (implode(', ', $diff)) . ']',
+                E_USER_WARNING
             );
         }
 
