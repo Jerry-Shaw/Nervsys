@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\system;
+use core\handler\factory;
 
-class errno extends system
+class errno extends factory
 {
     //Error message pool
     private static $pool = [];

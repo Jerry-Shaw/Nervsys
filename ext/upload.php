@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\system;
+use core\handler\factory;
 
-class upload extends system
+class upload extends factory
 {
     /**
      * Error code

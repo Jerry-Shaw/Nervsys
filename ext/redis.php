@@ -22,7 +22,7 @@ namespace ext;
 
 use core\handler\factory;
 
-class redis
+class redis extends factory
 {
     //Redis arguments
     private $host       = '127.0.0.1';

@@ -22,7 +22,7 @@ namespace ext;
 
 use core\handler\factory;
 
-class pdo
+class pdo extends factory
 {
     //PDO arguments
     private $type    = 'mysql';

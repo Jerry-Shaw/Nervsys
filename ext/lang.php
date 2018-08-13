@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\system;
+use core\handler\factory;
 
-class lang extends system
+class lang extends factory
 {
     /**
      * Language file directory

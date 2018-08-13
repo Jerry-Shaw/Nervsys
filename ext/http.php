@@ -22,7 +22,9 @@ namespace ext;
 
 use core\parser\data;
 
-class http
+use core\handler\factory;
+
+class http extends factory
 {
     //URL key
     private $key = 0;

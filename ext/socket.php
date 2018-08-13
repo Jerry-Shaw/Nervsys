@@ -20,7 +20,9 @@
 
 namespace ext;
 
-class socket
+use core\handler\factory;
+
+class socket extends factory
 {
     //Socket resource
     public $sock = null;

@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\system;
+use core\handler\factory;
 
-class crypt extends system
+class crypt extends factory
 {
     //OpenSSL config file path
     public static $conf = '/ssl/openssl.cnf';
