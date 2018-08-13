@@ -20,12 +20,10 @@
 
 namespace core\handler;
 
-use core\system;
-
 use core\parser\data;
 use core\parser\trustzone;
 
-class operator extends system
+class operator extends factory
 {
     /**
      * Call INIT/LOAD
@@ -262,8 +260,8 @@ class operator extends system
         //Get factory object
         if (!$reflect->isStatic()) {
             $class = method_exists($class, '__construct')
-                ? factory::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
-                : factory::use($class);
+                ? parent::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
+                : parent::use($class);
         }
 
         //Build arguments
