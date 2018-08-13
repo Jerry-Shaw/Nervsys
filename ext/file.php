@@ -20,7 +20,9 @@
 
 namespace ext;
 
-class file
+use core\handler\factory;
+
+class file extends factory
 {
     /**
      * Get file extension (in lowercase)
