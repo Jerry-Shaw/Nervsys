@@ -20,19 +20,17 @@
 
 namespace ext;
 
-use core\system;
-
 use core\handler\factory;
 
-class provider extends system
+class provider extends factory
 {
-    //Class
+    //Class name
     private $class = '';
 
-    //Extends
+    //Extend map
     private $extends = [];
 
-    //Methods
+    //Method map
     private $methods = [];
 
     /**
@@ -40,9 +38,15 @@ class provider extends system
      */
     public function __construct()
     {
-        if ('' === $this->class) {
-            $this->class = get_class($this);
-        }
+        $this->class = get_class($this);
+    }
+
+    /**
+     * Free from factory
+     */
+    public function __destruct()
+    {
+        parent::free($this);
     }
 
     /**
@@ -56,10 +60,9 @@ class provider extends system
     public function __get(string $name): object
     {
         if (isset($this->extends[$item = strtolower($name)])) {
-            //Call from extends map
+            //Call from extend map
             return $this->extends[$item];
         } else {
-            //Throw Exception
             throw new \Exception('Call to undefined object ' . $this->class . '->' . $name, E_USER_ERROR);
         }
     }
@@ -81,42 +84,11 @@ class provider extends system
                 ? forward_static_call([$this->extends[$this->methods[$item]], $name])
                 : forward_static_call_array([$this->extends[$this->methods[$item]], $name], $arguments);
         } else {
-            //Throw Exception
             throw new \Exception('Call to undefined method ' . $this->class . '::' . $name . '()', E_USER_ERROR);
         }
 
         unset($name, $arguments, $item);
         return $result;
-    }
-
-    /**
-     * Extends new class
-     *
-     * @param string $class
-     * @param array  $arguments
-     *
-     * @throws \ReflectionException
-     */
-    public function new(string $class, array $arguments = []): void
-    {
-        $this->build_method($name = $this->get_name($class));
-        $this->extends[$name['alias']] = factory::new($name['class'], $arguments);
-        unset($class, $arguments, $name);
-    }
-
-    /**
-     * Extends origin class
-     *
-     * @param string $class
-     * @param array  $arguments
-     *
-     * @throws \ReflectionException
-     */
-    public function use(string $class, array $arguments = []): void
-    {
-        $this->build_method($name = $this->get_name($class));
-        $this->extends[$name['alias']] = factory::use($name['class'], $arguments);
-        unset($class, $arguments, $name);
     }
 
     /**
@@ -129,60 +101,28 @@ class provider extends system
      */
     public function bind(object $object, string $alias = ''): void
     {
-        $name = [
-            'class' => &$object,
-            'alias' => '' === $alias ? get_class($object) : $alias
-        ];
+        //Build alias name
+        if ('' === $alias) {
+            $alias = get_class($object);
 
-        $this->build_method($name);
-        $this->extends[$name['alias']] = &$object;
-        unset($object, $alias, $name);
-    }
+            if (false !== $pos = strrpos($alias, '\\')) {
+                $alias = substr($alias, $pos + 1);
+            }
 
-    /**
-     * Get class & alias
-     *
-     * @param string $class
-     *
-     * @return array
-     */
-    private function get_name(string $class): array
-    {
-        $result = [];
-
-        $class = parent::build_name($class);
-
-        if (false !== $alias = strripos($class, ' as ')) {
-            $result['class'] = substr($class, 0, $alias);
-            $result['alias'] = substr($class, $alias + 4);
-        } else {
-            $result['class'] = &$class;
-            $result['alias'] = substr($class, (int)strrpos($class, '\\') + 1);
+            unset($pos);
         }
 
-        $result['alias'] = strtolower($result['alias']);
+        //Build extend map
+        $this->extends[$alias] = &$object;
 
-        unset($class, $alias);
-        return $result;
-    }
-
-    /**
-     * Build method
-     *
-     * @param array $name
-     *
-     * @throws \ReflectionException
-     */
-    private function build_method(array $name): void
-    {
-        $reflect = new \ReflectionClass($name['class']);
+        $reflect = new \ReflectionClass($object);
         $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
 
-        //Build method map to alias name
+        //Build method map
         foreach ($methods as $method) {
-            $this->methods[strtolower($method->getName())] = $name['alias'];
+            $this->methods[strtolower($method->getName())] = $alias;
         }
 
-        unset($name, $reflect, $methods, $method);
+        unset($object, $alias, $reflect, $methods, $method);
     }
 }
