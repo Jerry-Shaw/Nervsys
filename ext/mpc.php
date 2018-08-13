@@ -157,7 +157,7 @@ class mpc extends factory
         $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
 
         if ($this->wait) {
-            $this->php_cmd .= ' --ret --time 0';
+            $this->php_cmd .= ' --ret';
         }
 
         $result = [];
