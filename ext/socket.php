@@ -71,7 +71,7 @@ class socket extends factory
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
         if (false === $socket) {
-            throw new \Exception('Server ERROR!');
+            throw new \Exception('Server ERROR!', E_USER_ERROR);
         }
 
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
@@ -79,11 +79,11 @@ class socket extends factory
         socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => $this->timeout, 'usec' => 0]);
 
         if (!socket_bind($socket, $host, $port)) {
-            throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($socket)));
+            throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($socket)), E_USER_ERROR);
         }
 
         if ('udp' !== $proto && !socket_listen($socket)) {
-            throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($socket)));
+            throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($socket)), E_USER_ERROR);
         }
 
         $block ? socket_set_block($socket) : socket_set_nonblock($socket);
@@ -110,7 +110,7 @@ class socket extends factory
         $socket = socket_create($param['domain'], $param['type'], $param['protocol']);
 
         if (false === $socket) {
-            throw new \Exception('Client ERROR!');
+            throw new \Exception('Client ERROR!', E_USER_ERROR);
         }
 
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
@@ -122,7 +122,7 @@ class socket extends factory
         }
 
         if ('udp' !== $proto && !socket_connect($socket, $host, $port)) {
-            throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($socket)));
+            throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($socket)), E_USER_ERROR);
         }
 
         $block ? socket_set_block($socket) : socket_set_nonblock($socket);

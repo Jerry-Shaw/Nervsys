@@ -67,7 +67,7 @@ class mpc extends factory
 
         //Check php cli settings
         if (!isset(parent::$cli[$this->php_key])) {
-            throw new \Exception('[' . $this->php_key . '] NOT configured in "system.ini"');
+            throw new \Exception('[' . $this->php_key . '] NOT configured in "system.ini"', E_USER_ERROR);
         }
 
         $this->php_exe = parent::$cli[$this->php_key];

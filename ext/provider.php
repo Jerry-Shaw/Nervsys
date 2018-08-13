@@ -63,7 +63,7 @@ class provider extends factory
             //Call from extend map
             return $this->extends[$item];
         } else {
-            throw new \Exception('Call to undefined object ' . $this->class . '->' . $name, E_USER_ERROR);
+            throw new \Exception('Call to undefined object ' . $this->class . '->' . $name, E_USER_WARNING);
         }
     }
 
@@ -84,7 +84,7 @@ class provider extends factory
                 ? forward_static_call([$this->extends[$this->methods[$item]], $name])
                 : forward_static_call_array([$this->extends[$this->methods[$item]], $name], $arguments);
         } else {
-            throw new \Exception('Call to undefined method ' . $this->class . '::' . $name . '()', E_USER_ERROR);
+            throw new \Exception('Call to undefined method ' . $this->class . '::' . $name . '()', E_USER_WARNING);
         }
 
         unset($name, $arguments, $item);

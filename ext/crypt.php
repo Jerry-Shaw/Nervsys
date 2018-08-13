@@ -76,13 +76,13 @@ class crypt extends factory
         $end   = strpos($key, ' KEY-----', $start);
 
         if (false === $end) {
-            throw new \Exception('RSA Key ERROR!', E_USER_ERROR);
+            throw new \Exception('RSA Key ERROR!', E_USER_WARNING);
         }
 
         $type = strtolower(substr($key, $start, $end - $start));
 
         if (!in_array($type, ['public', 'private'], true)) {
-            throw new \Exception('RSA Key NOT support!', E_USER_ERROR);
+            throw new \Exception('RSA Key NOT support!', E_USER_WARNING);
         }
 
         unset($key, $start, $end);

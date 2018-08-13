@@ -338,7 +338,7 @@ class http extends factory
     public function fetch(): string
     {
         if (empty($this->url)) {
-            throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_ERROR);
+            throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_NOTICE);
         }
 
         $item = reset($this->url);
@@ -376,7 +376,7 @@ class http extends factory
     public function fetch_all(): array
     {
         if (empty($this->url)) {
-            throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_ERROR);
+            throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_NOTICE);
         }
 
         //Multi CURL
