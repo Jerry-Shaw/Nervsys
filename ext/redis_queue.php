@@ -179,7 +179,7 @@ class redis_queue extends redis
         $root_key = self::PREFIX_WORKER . 'root';
 
         //Exit when root process is running
-        if ($redis->exists($root_key)) {
+        if ((bool)$redis->exists($root_key)) {
             exit;
         }
 
@@ -195,7 +195,9 @@ class redis_queue extends redis
 
         //Set process life
         $wait_time = (int)(self::WAIT_SCAN / 2);
-        $redis->set($root_key, time(), self::WAIT_SCAN);
+        $root_hash = hash('md5', uniqid(mt_rand(), true));
+
+        $redis->set($root_key, $root_hash, self::WAIT_SCAN);
 
         //Add to watch list
         $redis->hSet(self::KEY_WATCH_WORKER, $root_key, time());
@@ -221,6 +223,7 @@ class redis_queue extends redis
             if (empty($list) || 1 < $runs) {
                 //Renew root process
                 $renew = $redis->expire($root_key, self::WAIT_SCAN);
+                $hash  = $redis->get($root_key);
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -232,19 +235,20 @@ class redis_queue extends redis
             if (empty($queue)) {
                 //Renew root process
                 $renew = $redis->expire($root_key, self::WAIT_SCAN);
+                $hash  = $redis->get($root_key);
                 sleep(self::WAIT_IDLE);
                 continue;
             }
 
+            //Re-add queue job
+            $redis->rPush($queue[0], $queue[1]);
             //Call child process
             $this->call_child();
 
-            //Re-add queue
-            $redis->rPush($queue[0], $queue[1]);
-
             //Renew root process
             $renew = $redis->expire($root_key, self::WAIT_SCAN);
-        } while ($renew);
+            $hash  = $redis->get($root_key);
+        } while ($renew && $hash === $root_hash);
 
         //On exit
         self::close();
@@ -302,7 +306,7 @@ class redis_queue extends redis
             }
 
             //Check status & renew process
-            $exist = $redis->exists($child_key);
+            $exist = (bool)$redis->exists($child_key);
             $renew = $redis->expire($child_key, self::WAIT_SCAN);
         } while ($exist && $renew && ++$execute < $this->exec);
 
@@ -324,7 +328,7 @@ class redis_queue extends redis
     {
         $redis = parent::connect();
 
-        if (!$redis->exists($key)) {
+        if (!(bool)$redis->exists($key)) {
             return [];
         }
 
@@ -335,7 +339,7 @@ class redis_queue extends redis
         }
 
         foreach ($keys as $k => $v) {
-            if (!$redis->exists($k)) {
+            if (!(bool)$redis->exists($k)) {
                 $redis->hDel($key, $k);
                 unset($keys[$k]);
             }
