@@ -213,6 +213,10 @@ class redis_queue extends redis
         );
 
         do {
+            //Get process status
+            $valid   = $redis->get($root_key) === $root_hash;
+            $running = $redis->expire($root_key, self::WAIT_SCAN);
+
             //Read list
             $list = $this->show_queue();
 
@@ -238,12 +242,12 @@ class redis_queue extends redis
             $redis->rPush($queue[0], $queue[1]);
             //Call child process
             $this->call_child();
-        } while ($redis->expire($root_key, self::WAIT_SCAN) && $redis->get($root_key) === $root_hash);
+        } while ($valid && $running);
 
         //On exit
         self::close();
 
-        unset($redis, $root_key, $wait_time, $list, $runs, $queue);
+        unset($redis, $root_key, $wait_time, $root_hash, $valid, $running, $list, $runs, $queue);
     }
 
     /**
