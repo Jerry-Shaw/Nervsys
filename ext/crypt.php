@@ -24,14 +24,14 @@ use core\handler\factory;
 
 class crypt extends factory
 {
-    //Keygen class
-    public $keygen = '\\ext\\keygen';
+    //OpenSSL config path
+    private $conf = '/openssl.cnf';
 
     //Crypt method
     private $method = 'AES-256-CTR';
 
-    //OpenSSL config file path
-    private $conf = '/openssl.cnf';
+    //Keygen class
+    private $keygen = '\\ext\\keygen';
 
     /**
      * Set conf path
@@ -79,6 +79,16 @@ class crypt extends factory
     }
 
     /**
+     * Get crypt key
+     *
+     * @return string
+     */
+    public function get_key(): string
+    {
+        return $this->keygen::create();
+    }
+
+    /**
      * Get AES Crypt keys
      *
      * @param string $key
@@ -91,7 +101,7 @@ class crypt extends factory
         $iv_len = openssl_cipher_iv_length($this->method);
 
         //Parse keys from key string
-        $keys = forward_static_call([$this->keygen, 'extract'], $key);
+        $keys = $this->keygen::extract($key);
 
         //Correct iv when length not match
         switch ($iv_len <=> strlen($keys['iv'])) {
@@ -308,8 +318,8 @@ class crypt extends factory
     public function sign(string $string, string $rsa_key = ''): string
     {
         //Prepare key
-        $key = forward_static_call([$this->keygen, 'create']);
-        $mix = forward_static_call([$this->keygen, 'obscure'], $key);
+        $key = $this->keygen::create();
+        $mix = $this->keygen::obscure($key);
 
         //Encrypt signature
         $mix = '' === $rsa_key ? (string)base64_encode($mix) : $this->rsa_encrypt($mix, $rsa_key);
@@ -339,7 +349,7 @@ class crypt extends factory
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? (string)base64_decode($mix, true) : $this->rsa_decrypt($mix, $rsa_key);
-        $key = forward_static_call([$this->keygen, 'rebuild'], $mix);
+        $key = $this->keygen::rebuild($mix);
 
         //Decrypt signature
         $sig = $this->decrypt($enc, $key);
