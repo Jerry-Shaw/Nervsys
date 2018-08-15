@@ -35,7 +35,7 @@ class redis_cache extends redis
      * @return bool
      * @throws \RedisException
      */
-    public static function set(string $key, array $data, int $life = 600): bool
+    public function set(string $key, array $data, int $life = 600): bool
     {
         $key   = self::PREFIX . $key;
         $cache = json_encode($data);
@@ -54,7 +54,7 @@ class redis_cache extends redis
      * @return array
      * @throws \RedisException
      */
-    public static function get(string $key): array
+    public function get(string $key): array
     {
         $cache = parent::connect()->get(self::PREFIX . $key);
 
@@ -80,7 +80,7 @@ class redis_cache extends redis
      * @return int
      * @throws \RedisException
      */
-    public static function del(string $key): int
+    public function del(string $key): int
     {
         $result = parent::connect()->del(self::PREFIX . $key);
 
