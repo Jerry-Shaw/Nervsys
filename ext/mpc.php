@@ -151,7 +151,9 @@ class mpc extends factory
 
         //Split jobs
         $job_count = count($this->jobs);
-        $job_packs = $job_count > $this->runs ? array_chunk($this->jobs, (int)ceil($job_count / $this->runs)) : [$this->jobs];
+        $job_packs = $job_count > $this->runs
+            ? array_chunk($this->jobs, (int)ceil($job_count / $this->runs), true)
+            : [$this->jobs];
 
         //Build basic command
         $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
@@ -187,38 +189,39 @@ class mpc extends factory
         $resource = [];
 
         //Start process
-        foreach ($jobs as $item) {
+        foreach ($jobs as $key => $job) {
             //Add cmd
-            $cmd = $this->php_cmd . ' --cmd "' . data::encode($item['cmd']) . '"';
+            $cmd = $this->php_cmd . ' --cmd "' . data::encode($job['cmd']) . '"';
 
             //Append data
-            if (!empty($item['data'])) {
-                $cmd .= ' --data "' . data::encode(json_encode($item['data'])) . '"';
+            if (!empty($job['data'])) {
+                $cmd .= ' --data "' . data::encode(json_encode($job['data'])) . '"';
             }
 
             //Append pipe
-            if (!empty($item['pipe'])) {
-                $cmd .= ' --pipe "' . data::encode(json_encode($item['pipe'])) . '"';
+            if (!empty($job['pipe'])) {
+                $cmd .= ' --pipe "' . data::encode(json_encode($job['pipe'])) . '"';
             }
 
             //Append argv
-            if (!empty($item['argv'])) {
-                $cmd .= ' ' . implode(' ', $item['argv']);
+            if (!empty($job['argv'])) {
+                $cmd .= ' ' . implode(' ', $job['argv']);
             }
 
             //Create process
             $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
             if (is_resource($process)) {
-                $resource[$item['cmd']]['exec'] = true;
-                $resource[$item['cmd']]['pipe'] = $pipes;
-                $resource[$item['cmd']]['proc'] = $process;
+                $resource[$key]['res']  = true;
+                $resource[$key]['cmd']  = $job['cmd'];
+                $resource[$key]['pipe'] = $pipes;
+                $resource[$key]['proc'] = $process;
             } else {
-                $resource[$item['cmd']]['exec'] = false;
+                $resource[$key]['res'] = false;
             }
         }
 
-        unset($jobs, $item, $cmd, $pipes);
+        unset($jobs, $key, $job, $cmd, $pipes);
 
         //Check wait option
         if (!$this->wait) {
@@ -246,15 +249,18 @@ class mpc extends factory
 
         while (!empty($resource)) {
             foreach ($resource as $key => $item) {
+                //Collect process
+                $result[$key]['res'] = $item['res'];
+                $result[$key]['cmd'] = $item['cmd'];
+
                 //Remove failed process
-                if (!$item['exec']) {
+                if (!$item['res']) {
                     unset($resource[$key]);
                     continue;
                 }
 
                 //Build process result
-                if (!isset($result[$key])) {
-                    $result[$key]['exec'] = $item['exec'];
+                if (!isset($result[$key]['data'])) {
                     $result[$key]['data'] = '';
                 }
 
