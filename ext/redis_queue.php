@@ -221,9 +221,6 @@ class redis_queue extends redis
 
             //Idle wait on no job or child process running
             if (empty($list) || 1 < $runs) {
-                //Renew root process
-                $renew = $redis->expire($root_key, self::WAIT_SCAN);
-                $hash  = $redis->get($root_key);
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -233,9 +230,6 @@ class redis_queue extends redis
 
             //Idle wait on no job
             if (empty($queue)) {
-                //Renew root process
-                $renew = $redis->expire($root_key, self::WAIT_SCAN);
-                $hash  = $redis->get($root_key);
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -244,16 +238,12 @@ class redis_queue extends redis
             $redis->rPush($queue[0], $queue[1]);
             //Call child process
             $this->call_child();
-
-            //Renew root process
-            $renew = $redis->expire($root_key, self::WAIT_SCAN);
-            $hash  = $redis->get($root_key);
-        } while ($renew && $hash === $root_hash);
+        } while ($redis->expire($root_key, self::WAIT_SCAN) && $redis->get($root_key) === $root_hash);
 
         //On exit
         self::close();
 
-        unset($redis, $root_key, $wait_time, $list, $runs, $renew, $queue);
+        unset($redis, $root_key, $wait_time, $list, $runs, $queue);
     }
 
     /**
@@ -304,16 +294,12 @@ class redis_queue extends redis
                 self::exec_job($queue[1]);
                 $redis->lRem($queue[0], $queue[1]);
             }
-
-            //Check status & renew process
-            $exist = (bool)$redis->exists($child_key);
-            $renew = $redis->expire($child_key, self::WAIT_SCAN);
-        } while ($exist && $renew && ++$execute < $this->exec);
+        } while ((bool)$redis->exists($child_key) && $redis->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
 
         //On exit
         self::stop($child_hash);
 
-        unset($redis, $child_hash, $child_key, $wait_time, $execute, $list, $queue, $exist, $renew);
+        unset($redis, $child_hash, $child_key, $wait_time, $execute, $list, $queue);
     }
 
     /**
