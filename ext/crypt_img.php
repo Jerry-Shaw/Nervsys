@@ -55,18 +55,32 @@ class crypt_img extends crypt
     }
 
     /**
-     * Set property
+     * Set image font
      *
-     * @param string $name
-     * @param string $value
+     * @param string $font
      *
      * @return object
      */
-    public function set(string $name = '', string $value = ''): object
+    public function font(string $font): object
     {
-        $this->$name = &$value;
+        $this->font = &$font;
 
-        unset($name, $value);
+        unset($font);
+        return $this;
+    }
+
+    /**
+     * Set code type
+     *
+     * @param string $type
+     *
+     * @return object
+     */
+    public function type(string $type): object
+    {
+        $this->type = &$type;
+
+        unset($type);
         return $this;
     }
 
@@ -308,7 +322,6 @@ class crypt_img extends crypt
         //Add suffix
         $result['char'][] = '=';
 
-        //Free memory
         unset($option, $calc);
         return $result;
     }
