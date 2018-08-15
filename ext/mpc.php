@@ -150,10 +150,7 @@ class mpc extends factory
         }
 
         //Split jobs
-        $job_count = count($this->jobs);
-        $job_packs = $job_count > $this->runs
-            ? array_chunk($this->jobs, (int)ceil($job_count / $this->runs), true)
-            : [$this->jobs];
+        $job_packs = count($this->jobs) > $this->runs ? array_chunk($this->jobs, $this->runs, true) : [$this->jobs];
 
         //Build basic command
         $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
@@ -171,7 +168,7 @@ class mpc extends factory
             }
         }
 
-        unset($job_count, $job_packs, $jobs, $data);
+        unset($job_packs, $jobs, $data);
         return $result;
     }
 
@@ -270,6 +267,7 @@ class mpc extends factory
                         fclose($pipe);
                     }
 
+                    //Close process
                     proc_close($item['proc']);
 
                     unset($resource[$key], $pipe);
