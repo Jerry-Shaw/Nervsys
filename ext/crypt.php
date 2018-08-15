@@ -24,14 +24,14 @@ use core\handler\factory;
 
 class crypt extends factory
 {
-    //OpenSSL config file path
-    private $conf = '/ssl/openssl.cnf';
+    //Keygen class
+    public $keygen = '\\ext\\keygen';
 
     //Crypt method
     private $method = 'AES-256-CTR';
 
-    //Keygen class
-    private $keygen = '\\ext\\keygen';
+    //OpenSSL config file path
+    private $conf = '/openssl.cnf';
 
     /**
      * Set conf path
