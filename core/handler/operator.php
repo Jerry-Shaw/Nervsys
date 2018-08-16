@@ -76,9 +76,7 @@ class operator extends factory
 
                 //Collect result
                 if (parent::$param_cli['ret']) {
-                    $data = self::read_pipe([$process, $pipes[1]]);
-
-                    if ('' !== $data) {
+                    if ('' !== $data = self::read_pipe([$process, $pipes[1]])) {
                         parent::$result[$key] = &$data;
                     }
 
@@ -116,11 +114,6 @@ class operator extends factory
                 continue;
             }
 
-            //Check TrustZone permission
-            if (empty(trustzone::keys($class))) {
-                continue;
-            }
-
             //Call LOAD commands
             if (isset(parent::$load[$module = strstr($name, '/', true)])) {
                 self::init_load(is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module]);
@@ -131,7 +124,7 @@ class operator extends factory
                 self::build_caller($name, $class, 'init');
             }
 
-            //Recheck TrustZone permission
+            //Check TrustZone permission
             if (empty($tz_list = trustzone::keys($class))) {
                 continue;
             }
@@ -264,11 +257,10 @@ class operator extends factory
                 : parent::use($class);
         }
 
-        //Build arguments
-        $params = data::build_argv($reflect, parent::$data);
-
         //Call method (with params)
-        $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
+        $result = !empty($params = data::build_argv($reflect, parent::$data))
+            ? forward_static_call_array([$class, $method], $params)
+            : forward_static_call([$class, $method]);
 
         //Save result (Try mapping keys)
         if (isset($result)) {
