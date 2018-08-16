@@ -379,7 +379,7 @@ Parameters in functions will be automatically filled by API once existing in pro
 As one of the basic support features, works good on web development.  
   
 Method: GET, POST  
-DataType: application/json, application/x-www-form-urlencoded, multipart/form-data  
+DataType: application/x-www-form-urlencoded, application/json, application/xml, multipart/form-data  
   
 GET examples: 
 api.php?cmd=DirA/ctr/TestA-test_a&param_a=xxx&param_b[]=yyy&param_b[]=zzz
@@ -392,7 +392,7 @@ api.php?cmd=DirA/ctr/TestA-test_c&param_a=xxx&param_c=xxx&param_b[]=yyy&param_b[
 As said, it is expected to process data like a nerve cell, Multiple-Calling & Judging-Calling MUST be supported.  
   
 Method: GET, POST  
-DataType: application/json, application/x-www-form-urlencoded, multipart/form-data  
+DataType: application/x-www-form-urlencoded, application/json, application/xml, multipart/form-data  
   
 Let's suppose that, "TestB.php" in example has the functions and $tz with allowed parameters API needs below.
 
