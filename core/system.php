@@ -178,8 +178,7 @@ class system extends command
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         //Detect Cross-origin resource sharing permission
-        if (
-            empty(self::$cors)
+        if (empty(self::$cors)
             || !isset($_SERVER['HTTP_ORIGIN'])
             || $_SERVER['HTTP_ORIGIN'] === (self::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
         ) {
@@ -190,6 +189,7 @@ class system extends command
             exit;
         }
 
+        //Response access allowed headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . self::$cors[$_SERVER['HTTP_ORIGIN']]);
 

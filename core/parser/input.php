@@ -38,20 +38,17 @@ class input extends system
     public static function read(): void
     {
         //Read data
-        if (empty(parent::$data)) {
-            if (!parent::$is_cli) {
-                //Read HTTP & input
-                self::read_http();
-                self::read_raw();
-            } else {
-                //Read option & argument
-                self::read_argv(self::read_opt());
-            }
+        if (!parent::$is_cli) {
+            //Read HTTP & input
+            self::read_http();
+            self::read_raw();
+        } else {
+            //Read option & argument
+            self::read_argv(self::read_opt());
         }
 
         //Read command
-        if (
-            '' === parent::$cmd
+        if ('' === parent::$cmd
             && !empty($val = self::opt_val(parent::$data, self::CMD))
             && is_string($val['data'])
         ) {
@@ -59,8 +56,7 @@ class input extends system
         }
 
         //Read output format
-        if (
-            '' === parent::$out
+        if ('' === parent::$out
             && !empty($val = self::opt_val(parent::$data, self::OUT))
             && is_string($val['data'])
         ) {
