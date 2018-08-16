@@ -4,7 +4,6 @@
  * Output Parser
  *
  * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
- * Copyright 2018 空城 <694623056@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

@@ -1,7 +1,7 @@
 # Nervsys
 
-7.0.0 Beta is on going, with ext 2.0. Coming soon.  
-README.md will be updated till 7.0.0 is done.  
+Stable version: 7.0.0  
+Extension version: 2.0  
 [Test Suites](https://github.com/NervSys/tests)  
 
 ## About
@@ -13,7 +13,7 @@ A very slight framework based on PHP7.2+ for universal API controlling.
 At the very beginning, as we hoped. The unit could process more like a nerve cell, and build together as a pure data-based calling system. Exact commands would be unnecessary to tell the system what to do.  
 
 * Requirements:  
-PHP7.2+ and above. Any kind of web server or running under CLI mode.  
+PHP 7.2+ and above. Any kind of web server or running under CLI mode.  
 
 * Usage examples:  
     1. Ordinary framework for Web-developing
@@ -30,7 +30,6 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │     │        ├─platform/
     │     │        │         ├─lib/
     │     │        │         │    └─os.php      OS interface
-    │     │        │         ├─darwin.php       darwin OS handler
     │     │        │         ├─linux.php        linux OS handler
     │     │        │         ├─winnt.php        winnt OS handler
     │     │        │         └─...
@@ -53,26 +52,19 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │     ├─system.ini                          system setting file
     │     └─system.php                          system script file
     ├─ext/
-    │    ├─font/
     │    ├─lib/
     │    │    └─key.php                         keygen interface
-    │    ├─upload/
-    │    │       ├─en-US/                       en-US language folder for upload
-    │    │       ├─zh-CN/                       zh-CN language folder for upload
-    │    │       └─upload.ini                   error code file for upload
     │    ├─crypt.php                            Encrypt/decrypt extension
-    │    ├─crypt_code.php                       Auth Code extension from crypt
+    │    ├─crypt_img.php                        Auth code image extension from crypt
     │    ├─errno.php                            Error code extension
     │    ├─file.php                             Filesystem related IO extension
     │    ├─http.php                             HTTP request extension
     │    ├─image.php                            Image processing extension
     │    ├─keygen.php                           keygen extension for crypt
     │    ├─lang.php                             Language pack extension
-    │    ├─memcached.php                        Memcached Extension
     │    ├─mpc.php                              Multi-Process Controller Extension
     │    ├─pdo.php                              PDO connector extension
-    │    ├─pdo_model.php                        MySQL model extension from PDO
-    │    ├─pdo_mysql.php                        MySQL extension from PDO
+    │    ├─provider.php                         Object extends provider extension
     │    ├─redis.php                            Redis connector extension
     │    ├─redis_cache.php                      Redis cache extension from Redis
     │    ├─redis_lock.php                       Redis lock extension from Redis
@@ -81,6 +73,7 @@ PHP7.2+ and above. Any kind of web server or running under CLI mode.
     │    ├─socket.php                           Socket extension
     │    ├─upload.php                           Upload extension
     │    └─...
+    ├─font/
     ├─logs/
     └─api.php                                   API entry script
 
@@ -101,9 +94,9 @@ t/time: CLI read timeout (in microsecond, default: 0, wait till done)
 The words above are reserved by NervSys core. So that, they should be taken carefully when using.
 
 
-## Config "settings.ini"
+## Config "system.ini"
 
-"settings.ini" locates right under "core" folder, which contains most of the important setting sections.
+"system.ini" locates right under the "core" folder, which contains most of the important setting sections.
 
 ### LOG
 
@@ -347,6 +340,13 @@ But it holds the exit level when an error occurred and the format of JSON/XML re
 When "error_reporting" is set LARGER than 0, line breaks will be added to JSON/XML result.
 
 
+### Factory
+
+In the latest version of NervSys, "factory" handler is ready for use to control all extended classes. Simply use "class::new(arguments, ...)", and you can get new created/cloned class object of the called class.  
+  
+Same as "class::new()" function, "factory::use(class, arguments)" can create new class object anywhere, and use it directly as the origin class object in singleton mode all depends on passed arguments.
+
+
 ### TrustZone
 
 Every class which is exposed to API should always contain a static array variable named $tz. The content in $tz controls the exact method calling actions in the owner class.  
@@ -369,7 +369,7 @@ Parameters in functions will be automatically filled by API once existing in pro
 
 ### function "init"
 
-"init" function is optional in API exposed classes. When API calling some functions in a class, it looks for "init" function first, and goes to call it when exists.
+"init" function is optional in API exposed classes. When API calling some functions in a class, it looks for "init" function first, and goes to call it when exists. Quite similar to "__construct" function, 
 
 
 ### Simple-Calling
@@ -462,12 +462,6 @@ In this mode, PHP script will be called when the command and data matches the cl
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-MyCMD" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c-MyCMD_A" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-MyCMD_A-MyCMD_B" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz" --pipe "xxxxxxxx" --pipe "xxxxxxxx" --time "1000"
-
-
-## Credits
-
-pdo_mysql Extension: [shawn](https://github.com/phpxiaowei)  
-memcached Extension: [tggtzbh](https://github.com/tggtzbh)  
 
 
 ## Licensing
