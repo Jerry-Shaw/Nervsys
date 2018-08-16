@@ -101,9 +101,17 @@ class input extends system
             return;
         }
 
-        //Decode dara in JSON
+        //Decode data in JSON/XML
         if (is_array($data = json_decode($input, true))) {
             parent::$data += $data;
+        } else {
+            libxml_use_internal_errors(true);
+
+            if (false !== $data = simplexml_load_string($input)) {
+                parent::$data += (array)$data;
+            }
+
+            libxml_clear_errors();
         }
 
         unset($input, $data);
