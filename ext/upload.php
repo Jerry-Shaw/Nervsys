@@ -305,13 +305,15 @@ class upload extends factory
                 }
 
                 //Move/Copy tmp file
-                if (
-                    !move_uploaded_file($this->file['stream']['tmp_name'], $file_path)
-                    && !copy($this->file['stream']['tmp_name'], $file_path)
-                ) {
-                    unlink($this->file['stream']['tmp_name']);
-                    return ['err' => 7];
+                if (!move_uploaded_file($this->file['stream']['tmp_name'], $file_path)) {
+                    if (copy($this->file['stream']['tmp_name'], $file_path)) {
+                        unlink($this->file['stream']['tmp_name']);
+                    } else {
+                        unlink($this->file['stream']['tmp_name']);
+                        return ['err' => 7];
+                    }
                 }
+
                 break;
             case 'base64':
                 //Write file data

@@ -110,8 +110,8 @@ class image extends factory
         //Get EXIF data
         $img_exif = exif_read_data($file);
 
-        if (
-            false === $img_exif
+        //Check property
+        if (false === $img_exif
             || !isset($img_exif['Orientation'])
             || !in_array($img_exif['MimeType'], self::MIME, true)
         ) {
