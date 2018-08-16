@@ -179,7 +179,7 @@ class redis_queue extends redis
         $root_key = self::PREFIX_WORKER . 'root';
 
         //Exit when root process is running
-        if ((bool)$redis->exists($root_key)) {
+        if (0 < $redis->exists($root_key)) {
             exit;
         }
 
@@ -298,7 +298,7 @@ class redis_queue extends redis
                 self::exec_job($queue[1]);
                 $redis->lRem($queue[0], $queue[1]);
             }
-        } while ((bool)$redis->exists($child_key) && $redis->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
+        } while (0 < $redis->exists($child_key) && $redis->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
 
         //On exit
         self::stop($child_hash);
@@ -318,7 +318,7 @@ class redis_queue extends redis
     {
         $redis = parent::connect();
 
-        if (!(bool)$redis->exists($key)) {
+        if (0 === $redis->exists($key)) {
             return [];
         }
 
@@ -329,7 +329,7 @@ class redis_queue extends redis
         }
 
         foreach ($keys as $k => $v) {
-            if (!(bool)$redis->exists($k)) {
+            if (0 === $redis->exists($k)) {
                 $redis->hDel($key, $k);
                 unset($keys[$k]);
             }
