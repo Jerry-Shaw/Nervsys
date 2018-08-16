@@ -217,23 +217,14 @@ class redis_queue extends redis
             $valid   = $redis->get($root_key) === $root_hash;
             $running = $redis->expire($root_key, self::WAIT_SCAN);
 
-            //Read list
-            $list = $this->show_queue();
-
-            //Read process
-            $runs = count($this->show_process());
-
             //Idle wait on no job or child process running
-            if (empty($list) || 1 < $runs) {
+            if (empty($list = $this->show_queue()) || 1 < count($this->show_process())) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
 
-            //Listen
-            $queue = $redis->brPop(array_keys($list), $wait_time);
-
             //Idle wait on no job
-            if (empty($queue)) {
+            if (empty($queue = $redis->brPop(array_keys($list), $wait_time))) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -247,7 +238,7 @@ class redis_queue extends redis
         //On exit
         self::close();
 
-        unset($redis, $root_key, $wait_time, $root_hash, $valid, $running, $list, $runs, $queue);
+        unset($redis, $root_key, $wait_time, $root_hash, $valid, $running, $list, $queue);
     }
 
     /**
@@ -282,19 +273,13 @@ class redis_queue extends redis
         $execute = 0;
 
         do {
-            //Get queue list
-            $list = $this->show_queue();
-
             //Exit on no job
-            if (empty($list)) {
+            if (empty($list = $this->show_queue())) {
                 break;
             }
 
-            //Listen
-            $queue = $redis->brPop(array_keys($list), $wait_time);
-
             //Execute job
-            if (!empty($queue)) {
+            if (!empty($queue = $redis->brPop(array_keys($list), $wait_time))) {
                 self::exec_job($queue[1]);
                 $redis->lRem($queue[0], $queue[1]);
             }
@@ -322,9 +307,7 @@ class redis_queue extends redis
             return [];
         }
 
-        $keys = $redis->hGetAll($key);
-
-        if (empty($keys)) {
+        if (empty($keys = $redis->hGetAll($key))) {
             return [];
         }
 
@@ -400,11 +383,10 @@ class redis_queue extends redis
                         : parent::use($class);
                 }
 
-                //Build arguments
-                $params = data::build_argv($reflect, $input);
-
                 //Call method (with params)
-                $result = empty($params) ? forward_static_call([$class, $method]) : forward_static_call_array([$class, $method], $params);
+                $result = !empty($params = data::build_argv($reflect, $input))
+                    ? forward_static_call_array([$class, $method], $params)
+                    : forward_static_call([$class, $method]);
 
                 //Check result
                 self::check_job($data, json_encode($result));
@@ -449,9 +431,8 @@ class redis_queue extends redis
     {
         //Count running processes
         $runs = count($this->show_process());
-        $left = $this->runs - $runs + 1;
 
-        if (0 >= $left) {
+        if (0 >= $left = $this->runs - $runs + 1) {
             return;
         }
 
@@ -470,9 +451,7 @@ class redis_queue extends redis
         }
 
         //Count need processes
-        $need = (int)(ceil($jobs / $this->exec) - $runs + 1);
-
-        if ($need > $left) {
+        if ($left < $need = (ceil($jobs / $this->exec) - $runs + 1)) {
             $need = &$left;
         }
 
