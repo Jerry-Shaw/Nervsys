@@ -342,9 +342,11 @@ When "error_reporting" is set LARGER than 0, line breaks will be added to JSON/X
 
 ### Factory
 
-In the latest version of NervSys, "factory" handler is ready for use to control all extended classes. Simply use "class::new(arguments, ...)", and you can get new created/cloned class object of the called class.  
+In the latest version of NervSys, "factory" handler is ready for use to control all extended classes.  
   
-Same as "class::new()" function, "factory::use(class, arguments)" can create new class object anywhere, and use it directly as the origin class object in singleton mode all depends on passed arguments.
+Usage:  
+"class::new(arguments, ...)" is to get new created/cloned class object of the called class.  
+"factory::use(class, \[arguments, ...\])" is to create new class object anywhere, and use it directly as the original instance in singleton mode. But when arguments changed, even if with the same class name, factory will return back a different instance.
 
 
 ### TrustZone
