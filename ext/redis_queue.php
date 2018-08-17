@@ -67,18 +67,19 @@ class redis_queue extends redis
         //Add command
         $data['cmd'] = &$cmd;
 
-        //Build list key
-        $list = self::PREFIX_LIST . $key;
-
         //Build connection
         $redis = parent::connect();
 
-        //Add to watch list & queue list
-        $redis->hSet(self::KEY_WATCH_LIST, $list, time());
-        $result = (int)$redis->lPush($list, json_encode($data));
+        //Build list key & queue data
+        $list  = self::PREFIX_LIST . $key;
+        $queue = json_encode($data);
 
-        unset($key, $cmd, $data, $list, $redis);
-        return $result;
+        //Add watch list & queue list
+        $redis->hSet(self::KEY_WATCH_LIST, $list, time());
+        $result = 0 < $redis->lRem($list, $queue) ? $redis->rPush($list, $queue) : $redis->lPush($list, $queue);
+
+        unset($key, $cmd, $data, $redis, $list, $queue);
+        return (int)$result;
     }
 
     /**
@@ -281,7 +282,6 @@ class redis_queue extends redis
             //Execute job
             if (!empty($queue = $redis->brPop(array_keys($list), $wait_time))) {
                 self::exec_job($queue[1]);
-                $redis->lRem($queue[0], $queue[1]);
             }
         } while (0 < $redis->exists($child_key) && $redis->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
 
