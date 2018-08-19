@@ -43,26 +43,28 @@ class redis_queue extends redis
     const WAIT_SCAN = 60;
 
     //Queue keys
-    const KEY_FAILED       = 'queue:fail';
-    const KEY_WATCH_LIST   = 'queue:watch:list';
-    const KEY_WATCH_WORKER = 'queue:watch:worker';
+    const KEY_FAILED       = 'RQ:fail';
+    const KEY_WATCH_LIST   = 'RQ:watch:list';
+    const KEY_WATCH_WORKER = 'RQ:watch:worker';
 
     //Queue key prefix
-    const PREFIX_LIST   = 'queue:list:';
-    const PREFIX_WORKER = 'queue:worker:';
+    const PREFIX_CMD    = 'RQ:cmd:';
+    const PREFIX_LIST   = 'RQ:list:';
+    const PREFIX_WORKER = 'RQ:worker:';
 
     /**
      * Add job
      * Caution: Do NOT expose "add" to TrustZone directly
      *
-     * @param string $key
      * @param string $cmd
      * @param array  $data
+     * @param string $group
+     * @param int    $duration
      *
      * @return int
      * @throws \RedisException
      */
-    public function add(string $key, string $cmd, array $data): int
+    public function add(string $cmd, array $data = [], string $group = '', int $duration = 0): int
     {
         //Add command
         $data['cmd'] = &$cmd;
@@ -70,15 +72,25 @@ class redis_queue extends redis
         //Build connection
         $redis = parent::connect();
 
-        //Build list key & queue data
-        $list  = self::PREFIX_LIST . $key;
+        //Check duration
+        if (0 < $duration) {
+            if (!$redis->setnx($cmd_key = self::PREFIX_CMD . hash('crc32b', $cmd), '')) {
+                return 0;
+            }
+
+            $redis->expire($cmd_key, $duration);
+            unset($cmd_key);
+        }
+
+        //Build group key & queue data
+        $list  = self::PREFIX_LIST . ('' === $group ? 'main' : $group);
         $queue = json_encode($data);
 
         //Add watch list & queue list
         $redis->hSet(self::KEY_WATCH_LIST, $list, time());
         $result = 0 < $redis->lRem($list, $queue) ? $redis->rPush($list, $queue) : $redis->lPush($list, $queue);
 
-        unset($key, $cmd, $data, $redis, $list, $queue);
+        unset($cmd, $data, $group, $duration, $redis, $list, $queue);
         return (int)$result;
     }
 
