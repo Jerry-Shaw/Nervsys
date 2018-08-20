@@ -2,7 +2,7 @@
 /**
  * Pdo Mysql Extension
  *
- * Copyright 2018 kristenzz <27206617@qq.com>
+ * Copyright 2018 kristenzz <kristenzz1314@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
