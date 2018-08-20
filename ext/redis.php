@@ -34,6 +34,9 @@ class redis extends factory
     private $persist    = true;
     private $persist_id = null;
 
+    //Connection pool
+    private static $pool = [];
+
     /**
      * Set host
      *
@@ -148,6 +151,7 @@ class redis extends factory
      */
     public function persist_id(string $persist_id): object
     {
+        $this->persist    = true;
         $this->persist_id = &$persist_id;
 
         unset($persist_id);
@@ -162,6 +166,11 @@ class redis extends factory
      */
     public function connect(): \Redis
     {
+        //Check connection pool
+        if (isset(self::$pool[$key = hash('crc32b', json_encode([$this->host, $this->port, $this->db, $this->persist_id]))])) {
+            return self::$pool[$key];
+        }
+
         //Factory use Redis instance
         $redis = parent::use('Redis');
 
@@ -185,8 +194,13 @@ class redis extends factory
             $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
         }
 
+        //Set serializer
         $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
 
+        //Save connection
+        self::$pool[$key] = &$redis;
+
+        unset($key);
         return $redis;
     }
 }

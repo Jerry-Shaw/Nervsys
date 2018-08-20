@@ -74,10 +74,12 @@ class redis_queue extends redis
 
         //Check duration
         if (0 < $duration) {
+            //Check job duration
             if (!$redis->setnx($cmd_key = self::PREFIX_CMD . hash('crc32b', $cmd), '')) {
                 return 0;
             }
 
+            //Set duration life
             $redis->expire($cmd_key, $duration);
             unset($cmd_key);
         }
@@ -458,6 +460,7 @@ class redis_queue extends redis
             $jobs += $redis->lLen($key);
         }
 
+        //Exit on no job
         if (0 === $jobs) {
             return;
         }
