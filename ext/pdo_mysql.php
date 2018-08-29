@@ -21,95 +21,159 @@ namespace ext;
 
 class pdo_mysql extends pdo
 {
-    protected $db;
-    protected $params = [
-        'where'   => '',
-        'between' => '',
-        'group'   => '',
-        'having'  => '',
-        'order'   => '',
-        'limit'   => '',
-    ];
-
-    public function __construct()
-    {
-        $this->db = parent::connect();
-    }
-
+    protected $param_field = '*';
+    protected $param_table = '';
+    protected $param_where = '';
+    protected $param_orWhere = '';
+    protected $param_between = '';
+    protected $param_group = '';
+    protected $param_having = '';
+    protected $param_order = '';
+    protected $param_limit = '';
+    protected $param_join = '';
+    protected $increment_decrement = '';
+    protected $sql = '';
+    protected $param_prepare = [];
     public function table(string $table)
     {
-        $this->params['table'] = $table;
+        if(strpos($table,' ')){
+            $this->param_table = '`'.implode('`',explode(' ',$table)).'`';
+        }else{
+            $this->param_table = '`'.$table.'`';
+        }
         unset($table);
         return $this;
     }
-
-    // ['age','>','21'],['age','22']
+    // ['age','>','21'],['age','22']['or','age','22']['or','age','<=','18']['in','age',[1,2,3]],['not','age',[18]]['like','language','Chinese']
     public function where(array $where)
     {
-        switch (count($where)) {
-            case 2:
-                if ($this->params['where'] != '') {
-                    $this->params['where'] .= ' AND ' . $where[0] . ' = ? ';
-                } else {
-                    $this->params['where'] = ' WHERE ' . $where[0] . ' = ? ';
+
+        switch ($where[0])
+        {
+            case 'or':
+                if(count($where) === 3)
+                {
+                    $this->param_where .= ' OR `'.$where[1].'` = ?';
+                    $this->param_prepare[] = $where[2];
+                }elseif (count($where) === 4)
+                {
+                    $this->param_where .= ' OR `'.$where[1].'` '.$where[2].' ?';
+                    $this->param_prepare[] = $where[3];
                 }
-                $this->params['prepare'][] = $where[1];
                 break;
-            case 3:
-                if ($this->params['where'] != '') {
-                    $this->params['where'] = ' AND ' . $where[0] . ' ' . $where[1] . ' ? ';
-                } else {
-                    $this->params['where'] = ' WHERE ' . $where[0] . ' ' . $where[1] . ' ? ';
+            case 'in':
+                if($this->param_where === '')
+                {
+                    if(is_string($where[2]))
+                    {
+                        $where[2] = explode(',',$where[2]);
+                    }
+                    $this->param_where = ' WHERE `'.$where[1].'` IN ("'.implode('","',$where[2]).'")';
+                }else{
+                    if(is_string($where[2]))
+                    {
+                        $where[2] = explode(',',$where[2]);
+                    }
+                    $this->param_where .= ' AND `'.$where[1].'` IN ("'.implode('","',$where[2]).'")';
                 }
-                $this->params['prepare'][] = $where[2];
+                break;
+            case 'not':
+                if($this->param_where === '')
+                {
+                    if(is_string($where[2]))
+                    {
+                        $where[2] = explode(',',$where[2]);
+                    }
+                    $this->param_where = ' WHERE `'.$where[1].'` NOT IN ("'.implode('","',$where[2]).'")';
+                }else{
+                    if(is_string($where[2]))
+                    {
+                        $where[2] = explode(',',$where[2]);
+                    }
+                    $this->param_where .= ' AND `'.$where[1].'` NOT IN ("'.implode('","',$where[2]).'")';
+                }
+
+                break;
+            case 'like':
+                if($this->param_where === '')
+                {
+                    $this->param_where = ' WHERE `'.$where[1].'` LIKE "'.$where[2].'"';
+                }else{
+                    $this->param_where .= ' AND `'.$where[1].'` LIKE "'.$where[2].'"';
+                }
                 break;
             default:
+                if(count($where) === 2)
+                {
+                    if($this->param_where != '')
+                    {
+                        $this->param_where .= ' AND `'.$where[0].'` = ? ';
+                    }else{
+                        $this->param_where = ' WHERE `'.$where[0].'` = ? ';
+                    }
+                    $this->param_prepare[] = $where[1];
+                    break;
+                }elseif (count($where) === 3)
+                {
+                    if($this->param_where != '')
+                    {
+                        $this->param_where = ' AND `'.$where[0].'` '.$where[1].' ? ';
+                    }else{
+                        $this->param_where = ' WHERE `'.$where[0].'` '.$where[1].' ? ';
+                    }
+                    $this->param_prepare[] = $where[2];
+                }
                 break;
         }
         unset($where);
         return $this;
     }
-
     //['age',20,21]
     public function between(array $where)
     {
-        if ($this->params['where'] === '') {
-            if ($this->params['between'] === '') {
-                $this->params['between'] = ' WHERE ' . $where[0] . ' BETWEEN ' . $where[1] . ' AND ' . $where[2];
-            } else {
-                $this->params['between'] .= ' AND ' . $where[0] . ' BETWEEN ' . $where[1] . ' AND ' . $where[2];
+        if ($this->param_where === ''){
+            if($this->param_between === ''){
+                $this->param_between = ' WHERE `'.$where[0].'` BETWEEN '.$where[1].' AND '.$where[2];
+            }else{
+                $this->param_between .= ' AND `'.$where[0].'` BETWEEN '.$where[1].' AND '.$where[2];
             }
-        } else {
-            $this->params['between'] = ' AND ' . $where[0] . ' BETWEEN ' . $where[1] . ' AND ' . $where[2];
+        }else{
+            $this->param_between = ' AND `'.$where[0].'` BETWEEN '.$where[1].' AND '.$where[2];
+
         }
         unset($where);
         return $this;
     }
 
-    public function group(array $group)
+    public function group(string ...$group)
     {
-        $this->params['group'] = ' GROUP BY ' . implode(',', $group);
+        $this->param_group = ' GROUP BY `'.implode(',',$group).'`';
         unset($group);
         return $this;
     }
-
     //['sum(score)','>','400'],['age','21']
     public function having(array $having)
     {
         switch (count($having)) {
             case 2:
-                if ($this->params['having'] === '') {
-                    $this->params['having'] = ' HAVING ' . $having[0] . ' = ' . $having[1];
-                } else {
-                    $this->params['having'] .= ' AND ' . $having[0] . ' = ' . $having[1];
+                if($this->param_having ==='')
+                {
+                    $this->param_having = ' HAVING `'.$having[0].'` = ?';
+                    $this->param_prepare[] = $having[1];
+                }else{
+                    $this->param_having .= ' AND `'.$having[0].'` = ?';
+
                 }
+                $this->param_prepare[] = $having[1];
                 break;
             case 3:
-                if ($this->params['having'] === '') {
-                    $this->params['having'] = ' HAVING ' . $having[0] . ' ' . $having[1] . ' ' . $having[2];
-                } else {
-                    $this->params['having'] .= ' AND ' . $having[0] . ' ' . $having[1] . ' ' . $having[2];
+                if($this->param_having === '')
+                {
+                    $this->param_having = ' HAVING `'.$having[0].'` '.$having[1].' ?';
+                }else{
+                    $this->param_having .= ' AND `'.$having[0].'` '.$having[1].' ?';
                 }
+                $this->param_prepare[] = $having[2];
                 break;
             default:
                 break;
@@ -117,106 +181,179 @@ class pdo_mysql extends pdo
         unset($having);
         return $this;
     }
-
     //['age','desc']
     public function order(array $order)
     {
-        if ($this->params['order'] != '') {
-            $this->params['order'] = ' AND ' . $order[0] . ' ' . $order[1] . ' ';
-        } else {
-            $this->params['order'] = ' ORDER BY ' . $order[0] . ' ' . $order[1] . ' ';
+        if($this->param_order != '')
+        {
+            $this->param_order = ' AND `'.$order[0].'` '.$order[1].' ';
+        }else{
+            $this->param_order = ' ORDER BY `'.$order[0].'` '.$order[1].' ';
+
         }
         unset($order);
         return $this;
     }
 
-    /**
-     * @param        $offset
-     * @param string $length
-     *
-     * @return $this
-     */
-    public function limit($offset, $length = '')
+    public function limit($offset,$length = '')
     {
         if ($length === '' && strpos(',', $offset)) {
             list($offset, $length) = explode(',', $offset);
         }
-        $this->params['limit'] = ' LIMIT ' . intval($offset) . ($length != '' ? ',' . intval($length) : '');
-        unset($offset, $length);
+        $this->param_limit = ' LIMIT '.intval($offset).( $length != ''? ','.intval($length) : '' );
+        unset($offset,$length);
         return $this;
     }
 
-    /**
-     * @param array $field
-     *
-     * @return array
-     */
-    public function select(array $field = ['*'])
+    public function increment(string $field,int $step = 1)
     {
-        $sql = "SELECT " . implode(',', $field) . " FROM " . $this->params['table']
-            . $this->params['where']
-            . $this->params['between']
-            . $this->params['group']
-            . $this->params['having']
-            . $this->params['order']
-            . $this->params['limit'];
-        $sth = $this->db->prepare($sql);
-        if (isset($this->params['prepare'])) {
-            $sth->execute($this->params['prepare']);
-        } else {
-            $sth->execute();
+        $icon = '';
+        if(strpos($this->sql,'=') || $this->increment_decrement != ''){
+            $icon = ',';
         }
-        $data = $sth->fetchAll();
-        unset($field, $sql);
-        return $data;
+        $this->increment_decrement .= $icon.'`'.$field.'` = `'.$field.'`+'.$step;
+        unset($icon,$field);
+        return $this;
     }
 
-    /**
-     * @param array $data
-     *
-     * @return int
-     */
-    public function insert(array $data)
+    public function decrement(string $field,int $step = 1)
     {
-        $sql = 'INSERT INTO ' . $this->params['table'] . '(' . implode(',', array_keys($data[0])) . ') VALUES ';
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $sql .= "('" . implode("','", array_values($value)) . "'" . ') ,';
-            } else {
-                $sql .= "('" . implode("','", array_values($data)) . "'" . ') ';
+        $icon = '';
+        if(strpos($this->sql,'=') || $this->increment_decrement != ''){
+            $icon = ',';
+        }
+        $this->increment_decrement .= $icon.'`'.$field.'` = `'.$field.'`-'.$step;
+        unset($icon,$field);
+        return $this;
+    }
+
+    //['a.id','=','b.id']
+    public function join(string $table,array $join,string $type = 'inner')
+    {
+        if(strpos($table,' ')){
+            $table = '`'.implode('`',explode(' ',$table)).'`';
+        }
+        if(is_array($join) && !empty($join))
+        {
+            $this->param_join .= ' '.$type .' JOIN '.$table.' ON ';
+            $str = '';
+            foreach ($join as $k => $v){
+                if(!is_array($v))
+                {
+                    if(strpos($v,'.'))
+                    {
+                        $this->param_join .= '`'.implode('`.`',explode('.',$v)).'`';
+                    }else{
+                        $this->param_join .= $v.' ';
+                    }
+                }else{
+                    foreach ($v as $key => $value)
+                    {
+                        if(strpos($value,'.'))
+                        {
+                            $str .= '`'.implode('`.`',explode('.',$value)).'`';
+                        }else{
+                            $str .= $value.' ';
+                        }
+                    }
+                    $str = $str.' AND ';
+                }
+            }
+            if($str != '')
+            {
+                $this->param_join .= rtrim($str,' AND');
             }
         }
-        $sql = rtrim($sql, ',');
-        unset($data, $key, $value);
-        return $this->db->exec($sql);
+        unset($table,$join,$type,$str,$k,$v,$key,$value);
+        return $this;
     }
 
-    /**
-     * @param array $data
-     *
-     * @return bool
-     */
-    public function update(array $data)
+    public function select(string ...$field)
     {
-        $sql = "UPDATE " . $this->params['table'] . " SET ";
-        foreach ($data as $k => $v) {
-            $sql .= $k . '="' . $v . '",';
+        if (!empty($field))
+            $this->param_field = implode(',',$field);
+        $this->sql = ' SELECT  '.$this->param_field.' FROM '.$this->param_table;
+        unset($table);
+        return $this;
+    }
+
+    public function insert(string $table,array $data)
+    {
+        $this->param_table = $table;
+        $this->sql = 'INSERT INTO '.$this->param_table.'('.implode(',',array_keys($data[0])).') VALUES ';
+        $prepare = [];
+        foreach ($data as $key => $value)
+        {
+            if(is_array($value))
+            {
+                $this->sql .= '('.rtrim(str_repeat('?,',count($value)),',').'),';
+                $prepare = array_merge($prepare,array_values($value));
+            }else{
+                $this->sql .= '('.rtrim(str_repeat('?,',count($data)),',').')';
+                $this->param_prepare = array_values($data);
+                break;
+            }
         }
-        $sql = rtrim($sql, ',');
-        $sql .= $this->params['where'];
-        $sth = $this->db->prepare($sql);
-        unset($sql);
-        return $sth->execute($this->params['prepare']);
+        $this->sql = rtrim($this->sql,',');
+        if(!empty($prepare))
+            $this->param_prepare = $prepare;
+        unset($data,$key,$value,$table,$prepare);
+        return $this;
     }
 
-    /**
-     * @return bool
-     */
-    public function delete()
+    public function update(string $table,array $data = [])
     {
-        $sql = 'DELETE FROM ' . $this->params['table'] . $this->params['where'];
-        $sth = $this->db->prepare($sql);
-        unset($sql);
-        return $sth->execute($this->params['prepare']);
+        $this->param_table === '' ?$this->param_table = $table:$this->param_table;
+        $this->sql .= 'UPDATE '.$this->param_table.' SET ';
+        if(!empty($data)){
+            foreach ($data as $k => $v)
+            {
+                $this->sql .= $k.'= ? ,';
+                $this->param_prepare[] = $v;
+            }
+        }
+        $this->sql = rtrim($this->sql,',');
+        unset($table,$data,$k,$v,$key,$value);
+        return $this;
     }
+
+    public function delete(string $table)
+    {
+        $this->param_table = $table;
+        $this->sql = 'DELETE FROM '.$this->param_table.$this->param_where;
+        return $this;
+    }
+    public function exec()
+    {
+        $sql = $this->sql
+            .$this->increment_decrement
+            .$this->param_where
+            .$this->param_between
+            .$this->param_group
+            .$this->param_having
+            .$this->param_order
+            .$this->param_limit;
+        $sth = parent::connect()->prepare($sql);
+        unset($sql);
+        return $sth->execute($this->param_prepare);
+    }
+
+    public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC)
+    {
+        if($this->sql == '')
+            $this->sql = 'SELECT * FROM'.$this->param_table;
+        $this->sql .= $this->param_join
+            .$this->param_where
+            .$this->param_between
+            .$this->param_group
+            .$this->param_having
+            .$this->param_order
+            .$this->param_limit;
+        echo $this->sql."\r\n";
+        $sth = parent::connect()->prepare($this->sql);
+        $sth->execute($this->param_prepare);
+        unset($field);
+        return  $sth->fetchAll($fetch_style);
+    }
+
 }
