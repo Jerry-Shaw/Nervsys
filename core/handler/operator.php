@@ -36,7 +36,7 @@ class operator extends factory
             list($order, $method) = explode('-', $item, 2);
 
             try {
-                forward_static_call([parent::build_name($order), $method]);
+                self::build_caller($order, parent::build_name($order), $method);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
                 unset($throwable);

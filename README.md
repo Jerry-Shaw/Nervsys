@@ -185,24 +185,25 @@ The words above are reserved by NervSys core. So that, they should be taken care
     SomeDesc = dirA/dirB/model-func
     
     explain: 
-    "\dirA\dirB\model::func()" will be called on startup without any agruments. 
+    "\dirA\dirB\model::func($params)" will be called on startup with required agruments. 
     
     
     Multiple setting:
-    DescA = dirA/dirB/model-func
-    DescB = dirB/dirB/model-funcA
-    DescC = dirB/dirB/model-funcB
+    DescA = dirA/dirB/model-funcA
+    DescB = dirB/dirB/model-funcB
     
     explain: 
-    "\dirA\dirB\model::func()" & "\dirB\dirB\model::funcA()" & "\dirB\dirB\model::funcB()"
-    will be called on startup without any agruments. 
+    "\dirA\dirB\model::funcA($params)" & "\dirB\dirB\model::funcB($params)"
+    will be called on startup with required agruments. 
     
     Notice: 
     The "Desc*" keys in "INIT" has no means for system, but for developers to know what they are for. 
-    Sub-array settings are NOT allowed in this section. 
-    Arguments are NOT allowed to pass to function. 
-    No returned value will be captured.  
+    Sub-array settings is NOT allowed in this section. 
+    Required arguments will be automatically passed. 
+    All returned values will be captured when exist. 
 
+    Suggest: 
+    Don't always return unless necessary. 
     
 ### LOAD
 
@@ -233,8 +234,11 @@ The words above are reserved by NervSys core. So that, they should be taken care
     The keys in "LOAD" section point to the first level subfolders, while the setting values 
     point to the functions which will be called when the subfolder is being accessed. 
     Sub-array settings are allowed in this section, to call multiple functions. 
-    Arguments are automatically accepted from API. 
-    No returned value will be captured. 
+    Required arguments will be automatically passed. 
+    All returned values will be captured when exist. 
+
+    Suggest: 
+    Don't always return unless necessary. 
 
 
 ### PATH
