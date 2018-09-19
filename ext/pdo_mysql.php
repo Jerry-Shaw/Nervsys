@@ -49,7 +49,6 @@ class pdo_mysql extends pdo
      */
     public function insert(string $table = ''): object
     {
-        $this->clean_up();
         $this->act = 'INSERT';
 
         $this->table($table);
@@ -67,7 +66,6 @@ class pdo_mysql extends pdo
      */
     public function select(string $table = ''): object
     {
-        $this->clean_up();
         $this->act = 'SELECT';
 
         $this->table($table);
@@ -81,11 +79,10 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      *
-     * @return $this
+     * @return object
      */
     public function update(string $table = ''): object
     {
-        $this->clean_up();
         $this->act = 'UPDATE';
 
         $this->table($table);
@@ -99,11 +96,10 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      *
-     * @return $this
+     * @return object
      */
     public function delete(string $table = ''): object
     {
-        $this->clean_up();
         $this->act = 'DELETE';
 
         $this->table($table);
@@ -255,7 +251,7 @@ class pdo_mysql extends pdo
      *
      * @param string ...$group
      *
-     * @return $this
+     * @return object
      */
     public function group(string ...$group): object
     {
@@ -290,9 +286,12 @@ class pdo_mysql extends pdo
      */
     public function exec(string $sql): int
     {
-        //Execute directly
-        if (false === $exec = parent::connect()->exec($sql)) {
-            $exec = -1;
+        try {
+            if (false === $exec = parent::connect()->exec($sql)) {
+                $exec = -1;
+            }
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL Dump: ' . $sql . '. Msg:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($sql);
@@ -309,11 +308,17 @@ class pdo_mysql extends pdo
     public function fetch(bool $column = false): array
     {
         $stmt = parent::connect()->prepare($this->build_sql());
-        $stmt->execute($this->bind);
+
+        try {
+            $stmt->execute($this->bind);
+            $this->clean_up();
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. Msg:' . $throwable->getMessage(), E_USER_ERROR);
+        }
 
         $data = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
-        unset($stmt);
+        unset($column, $stmt);
         return $data;
     }
 
@@ -324,8 +329,14 @@ class pdo_mysql extends pdo
      */
     public function execute(): bool
     {
-        $stmt   = parent::connect()->prepare($this->build_sql());
-        $result = $stmt->execute($this->bind);
+        $stmt = parent::connect()->prepare($this->build_sql());
+
+        try {
+            $result = $stmt->execute($this->bind);
+            $this->clean_up();
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. Msg:' . $throwable->getMessage(), E_USER_ERROR);
+        }
 
         unset($stmt);
         return $result;
@@ -347,7 +358,6 @@ class pdo_mysql extends pdo
      * Begin transaction
      *
      * @return bool
-     * @throws \Exception
      */
     public static function begin(): bool
     {
@@ -358,7 +368,6 @@ class pdo_mysql extends pdo
      * Commit transaction
      *
      * @return bool
-     * @throws \Exception
      */
     public static function commit(): bool
     {
@@ -369,7 +378,6 @@ class pdo_mysql extends pdo
      * Rollback transaction
      *
      * @return bool
-     * @throws \Exception
      */
     public static function rollback(): bool
     {
@@ -466,7 +474,7 @@ class pdo_mysql extends pdo
 
                 //Process column values
                 foreach ($list as $key => $val) {
-                    //Skip functions
+                    //Skip except columns
                     if ('col' !== $val[0]) {
                         $list[$key] = $val[1];
                         continue;
