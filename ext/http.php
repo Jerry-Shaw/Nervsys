@@ -70,7 +70,7 @@ class http extends factory
      */
     public function url(string $url): object
     {
-        if (!empty($this->url)) {
+        if (!empty($this->url) && isset($this->url[$this->key]['url'])) {
             ++$this->key;
         }
 
