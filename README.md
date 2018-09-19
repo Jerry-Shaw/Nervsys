@@ -64,6 +64,7 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │    ├─lang.php                             Language pack extension
     │    ├─mpc.php                              Multi-Process Controller Extension
     │    ├─pdo.php                              PDO connector extension
+    │    ├─pdo_mysql.php                        PDO MySQL extension (Thanks to kristenzz)
     │    ├─provider.php                         Object extends provider extension
     │    ├─redis.php                            Redis connector extension
     │    ├─redis_cache.php                      Redis cache extension from Redis
@@ -468,6 +469,11 @@ In this mode, PHP script will be called when the command and data matches the cl
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-MyCMD" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c-MyCMD_A" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-MyCMD_A-MyCMD_B" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz" --pipe "xxxxxxxx" --pipe "xxxxxxxx" --time "1000"
+
+
+## Credits
+
+[kristenzz](https://github.com/kristemZZ)  
 
 
 ## Licensing
