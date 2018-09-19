@@ -1,6 +1,6 @@
 <?php
 /**
- * Pdo Mysql Extension
+ * Pdo MySQL Extension
  *
  * Copyright 2018 kristenzz <kristenzz1314@gmail.com>
  *
@@ -25,58 +25,38 @@ class pdo_mysql extends pdo
     private $act = '';
 
     //SQL params
-    private $field = '*';
+    private $field = '';
     private $table = '';
     private $where = '';
 
+    private $join    = '';
     private $incr    = '';
     private $group   = '';
     private $having  = '';
     private $between = '';
 
-    private $order = '';
+    private $order = [];
     private $limit = '';
 
-    private $join = [];
-    private $data = [];
+    private $sql   = '';
+    private $bind  = [];
+    private $value = [];
 
     /**
-     * Escape table name and columns
-     *
-     * @param string $name
-     *
-     * @return string
-     */
-    private function escape(string $name): string
-    {
-        //Process alias
-        if (false !== strpos($name, ' ')) {
-            $name = false === stripos($name, ' as ')
-                ? str_ireplace(' ', '` `', $name)
-                : str_ireplace(' as ', '` AS `', $name);
-        }
-
-        //Process connector
-        if (false !== strpos($name, '.')) {
-            $name = str_replace('.', '`.`', $name);
-        }
-
-        return '`' . $name . '`';
-    }
-
-    /**
-     * Set table
+     * Insert into table
      *
      * @param string $table
+     *
+     * @return object
      */
-    private function table(string $table): void
+    public function insert(string $table = ''): object
     {
-        if ('' === $table) {
-            $table = strtr(get_class($this), '\\', '_');
-        }
+        $this->act = 'INSERT';
 
-        $this->table = $this->escape($table);
+        $this->table($table);
+
         unset($table);
+        return $this;
     }
 
     /**
@@ -97,6 +77,56 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Update table date
+     *
+     * @param string $table
+     *
+     * @return $this
+     */
+    public function update(string $table = ''): object
+    {
+        $this->act = 'UPDATE';
+
+        $this->table($table);
+
+        unset($table);
+        return $this;
+    }
+
+    /**
+     * Delete from table
+     *
+     * @param string $table
+     *
+     * @return $this
+     */
+    public function delete(string $table = ''): object
+    {
+        $this->act = 'DELETE';
+
+        $this->table($table);
+
+        unset($table);
+        return $this;
+    }
+
+    /**
+     * Set insert values
+     *
+     * @param array $value
+     * @param bool  $append
+     *
+     * @return object
+     */
+    public function value(array $value, bool $append = false): object
+    {
+        !$append ? $this->value = &$value : $this->value += $value;
+
+        unset($value, $append);
+        return $this;
+    }
+
+    /**
      * Set select fields
      *
      * @param string ...$fields
@@ -105,20 +135,392 @@ class pdo_mysql extends pdo
      */
     public function field(string ...$fields): object
     {
-        if (!empty($fields)) {
-            $fields = array_map(
-                static function (string $field): string
-                {
-                    return $this->escape($field);
-                }, $fields
-            );
-
-            $this->field = implode(', ', $fields);
+        if ('' !== $this->field) {
+            $this->field .= ',';
         }
+
+        $this->field .= implode(', ', $fields);
 
         unset($fields);
         return $this;
     }
+
+    /**
+     * Set join conditions
+     *
+     * @param string $table
+     * @param array  $where
+     * @param string $type
+     *
+     * @return object
+     */
+    public function join(string $table, array $where, string $type = 'INNER'): object
+    {
+        $this->join .= $this->build_join([$table, $where, $type]);
+
+        unset($table, $where, $type);
+        return $this;
+    }
+
+    /**
+     * Set where conditions
+     *
+     * @param array $where
+     *
+     * @return object
+     */
+    public function where(array $where): object
+    {
+        $this->where .= $this->build_where($where);
+
+        unset($where);
+        return $this;
+    }
+
+    /**
+     * Set having conditions
+     *
+     * @param array $having
+     *
+     * @return object
+     */
+    public function having(array $having): object
+    {
+        $this->having[] = &$having;
+
+        unset($having);
+        return $this;
+    }
+
+    /**
+     * Set order
+     *
+     * @param array $order
+     *
+     * @return $this
+     */
+    public function order(array $order): object
+    {
+        $order[1] = strtoupper($order[1]);
+
+        if (!in_array($order[1], ['ASC', 'DESC'], true)) {
+            throw new \PDOException('MySQL: Order method: ' . $order[1] . ' NOT supported!');
+        }
+
+        $this->order[] = $this->escape($order[0]) . ' ' . $order[1];
+
+        unset($order);
+        return $this;
+    }
+
+    /**
+     * Set group conditions
+     *
+     * @param string ...$group
+     *
+     * @return $this
+     */
+    public function group(string ...$group): object
+    {
+        $this->group = implode(', ', $group);
+
+        unset($group);
+        return $this;
+    }
+
+    /**
+     * Set limit
+     *
+     * @param int $offset
+     * @param int $length
+     *
+     * @return object
+     */
+    public function limit(int $offset, int $length = 0): object
+    {
+        $this->limit = 0 === $length ? '0, ' . $offset : $offset . ', ' . $length;
+
+        unset($offset, $length);
+        return $this;
+    }
+
+
+    public function exec(): int
+    {
+
+
+    }
+
+
+    public function fetch(bool $column = false): array
+    {
+
+    }
+
+
+    public function last_insert(string $column = 'id'): string
+    {
+
+    }
+
+
+    /**
+     * Set table
+     *
+     * @param string $table
+     */
+    private function table(string $table): void
+    {
+        if ('' === $table) {
+            $table = strtr(get_class($this), '\\', '_');
+        }
+
+        $this->table = $this->escape($table);
+        unset($table);
+    }
+
+    /**
+     * Escape table name and column
+     *
+     * @param string $field
+     *
+     * @return string
+     */
+    private function escape(string $field): string
+    {
+        $list = false !== strpos($field, ',') ? explode(',', $field) : [$field];
+
+        $list = array_map(
+            static function (string $item): string
+            {
+                $list = [];
+                $item = trim($item);
+
+                $offset = 0;
+                $length = strlen($item);
+                $symbol = ['+', '-', '*', '/', '(', ')'];
+
+                do {
+                    $find  = [];
+                    $match = false;
+
+                    //find function position
+                    foreach ($symbol as $mark) {
+                        if (false === $pos = strpos($item, $mark, $offset)) {
+                            continue;
+                        }
+
+                        if (empty($find) || $pos < $find[1]) {
+                            $find = [$mark, $pos];
+                        }
+
+                        $match = true;
+                    }
+
+                    //Position NOT found
+                    if (!$match) {
+                        if ($offset < $length) {
+                            $value   = substr($item, $offset);
+                            $content = trim($value);
+
+                            $list[] = [is_numeric($content) ? 'num' : ('' !== $content ? 'col' : 'sp'), $value];
+                        }
+
+                        break;
+                    }
+
+                    //Process symbols
+                    if ('(' === $find[0]) {
+                        if ($find[1] > $offset) {
+                            $list[] = ['func', substr($item, $offset, $find[1] - $offset)];
+                        }
+
+                        $list[] = ['opt', '('];
+                        ++$find[1];
+                    } elseif ($find[1] > $offset) {
+                        $value   = substr($item, $offset, $find[1] - $offset);
+                        $content = trim($value);
+
+                        $list[] = [is_numeric($content) ? 'num' : ('' !== $content ? 'col' : 'sp'), $value];
+                        $list[] = ['opt', substr($item, $find[1]++, 1)];
+                    } else {
+                        $list[] = ['opt', substr($item, $find[1]++, 1)];
+                    }
+
+                    $offset = $find[1];
+                } while ($match);
+
+                unset($offset, $length, $symbol, $find, $match, $mark, $pos, $value, $content);
+
+                //Process column values
+                foreach ($list as $key => $val) {
+                    //Skip functions
+                    if ('col' !== $val[0]) {
+                        $list[$key] = $val[1];
+                        continue;
+                    }
+
+                    //Process alias
+                    if (false !== strpos($val[1], ' ')) {
+                        $val[1] = false === stripos($item, ' as ')
+                            ? str_ireplace(' ', '` `', $val[1])
+                            : str_ireplace(' as ', '` AS `', $val[1]);
+                    }
+
+                    //Process connector
+                    if (false !== strpos($val[1], '.')) {
+                        $val[1] = str_replace('.', '`.`', $val[1]);
+                    }
+
+                    $list[$key] = !isset($list[$key - 1]) || ')' !== $list[$key - 1]
+                        ? '`' . trim($val[1], '`') . '`'
+                        : trim($val[1], '`') . '`';
+                }
+
+                $item = implode($list);
+
+                unset($list, $key, $val);
+                return $item;
+            }, $list
+        );
+
+        $field = implode(', ', $list);
+
+        unset($list);
+        return $field;
+    }
+
+    /**
+     * Build SQL caller
+     */
+    public function build_sql(): void
+    {
+        if ('' === $this->act) {
+            throw new \PDOException('MySQL: No act provided!');
+        }
+
+        $this->{'build_' . strtolower($this->act)}();
+    }
+
+    /**
+     * Build INSERT SQL
+     */
+    private function build_insert(): void
+    {
+        $this->bind = array_values($this->value);
+        $this->sql  = 'INSERT INTO ' . $this->table
+            . ' (' . $this->escape(implode(', ', array_keys($this->value))) . ') '
+            . 'VALUES (' . implode(', ', array_fill(0, count($this->bind), '?')) . ')';
+    }
+
+    /**
+     * Build SELECT SQL
+     */
+    private function build_select(): void
+    {
+        $this->sql = 'SELECT ' . ('' !== $this->field ? $this->escape($this->field) : '`*`') . ' FROM ' . $this->table;
+
+        if ('' !== $this->join) {
+            $this->sql .= ' ' . $this->join;
+        }
+
+        if ('' !== $this->where) {
+            $this->sql .= ' WHERE ' . $this->where;
+        }
+
+
+    }
+
+
+    private function build_join(string $table, array $where, string $type): string
+    {
+        $join = strtoupper($type) . ' JOIN ' . $this->escape($table) . ' ON ';
+
+        if (count($where) === count($where, 1)) {
+            $where = [$where];
+        }
+
+        foreach ($where as $value) {
+
+
+
+        }
+
+
+        return $join;
+    }
+
+
+    /**
+     * Build where conditions
+     *
+     * @param array $value
+     *
+     * @return string
+     */
+    private function build_where(array $value): string
+    {
+        $where = '';
+
+        if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
+            array_shift($value);
+            $where .= $item . ' ';
+        } elseif ('' !== $this->where) {
+            $where .= 'AND ';
+        }
+
+        $where .= $this->escape($value[0]) . ' ';
+
+        if (3 === count($value)) {
+            if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                throw new \PDOException('MySQL: Operator: ' . $value[1] . ' NOT allowed!');
+            }
+
+            $where .= $item . ' ';
+
+            if (!is_array($value[2])) {
+                $this->bind[] = &$value[2];
+
+                $where .= '? ';
+            } else {
+                $this->bind = array_merge($this->bind, $value[2]);
+
+                $where .= 'BETWEEN' !== $item ? '(' . implode(', ', array_fill(0, count($value[2]), '?')) . ') ' : '? AND ? ';
+            }
+        } elseif (!is_array($value[1])) {
+            if (!in_array($item = strtoupper($value[1]), ['IS NULL', 'IS NOT NULL'], true)) {
+                $this->bind[] = &$value[1];
+
+                $where .= '= ? ';
+            } else {
+                $where .= $item . ' ';
+            }
+        } else {
+            $this->bind = array_merge($this->bind, $value[1]);
+
+            $where .= 'IN ' . '(' . implode(', ', array_fill(0, count($value[1]), '?')) . ')' . ' ';
+        }
+
+        unset($value, $item);
+        return $where;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //==============================================
 
     /**
      * Select where condition
@@ -127,61 +529,27 @@ class pdo_mysql extends pdo
      *
      * @return object
      */
-    public function where(array $where): object
+    public function wherea(array $where): object
     {
         if ('' === $this->where) {
             $this->where = 'WHERE ';
         }
 
-        if (in_array($item = strtoupper($where[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
-            array_shift($where);
-            $this->where .= $item . ' ';
-        }
-
-        if (3 === count($where)) {
-            if (!in_array($item = strtoupper($where[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN'], true)) {
-                throw new \PDOException('MySQL: Operator NOT supported!');
-            }
-
-            $this->where .= $this->escape($where[0]) . ' ' . $item . ' ';
-
-            if (!is_array($where[2])) {
-                $this->data[] = &$where[2];
-                $item         = '?';
-            } else {
-                $this->data = array_merge($this->data, $where[2]);
-                $item       = '(' . implode(', ', array_fill(0, count($where[2]), '?')) . ')';
-            }
-
-            $this->where .= $item . ' ';
-        } else {
-            if (in_array($item = strtoupper($where[1]), ['IS NULL', 'IS NOT NULL'], true)) {
-                $this->where .= $this->escape($where[0]) . ' ' . $item . ' ';
-            } else {
-                if ('WHERE ' !== $this->where) {
-                    $this->where = 'AND ';
-                }
-
-                if (!is_array($where[1])) {
-                    $this->data[] = &$where[1];
-                    $this->where  .= $this->escape($where[0]) . ' = ? ';
-                } else {
-                    $this->data  = array_merge($this->data, $where[1]);
-                    $item        = '(' . implode(', ', array_fill(0, count($where[1]), '?')) . ')';
-                    $this->where .= $this->escape($where[0]) . ' IN ' . $item . ' ';
-                }
-            }
-        }
 
         unset($where, $item);
         return $this;
-    }
-
-    //===========================
 
 
-    public function insert(string $table, array $data)
-    {
+        $this->table === '' ? $this->table = $table : $this->table;
+        $this->act .= 'UPDATE ' . $this->table . ' SET ';
+        if (!empty($data)) {
+            foreach ($data as $k => $v) {
+                $this->act    .= $k . '= ? ,';
+                $this->bind[] = $v;
+            }
+        }
+        $this->act = rtrim($this->act, ',');
+
         $this->table = $table;
         $this->act   = 'INSERT INTO ' . $this->table . '(' . implode(',', array_keys($data[0])) . ') VALUES ';
         $prepare     = [];
@@ -191,117 +559,24 @@ class pdo_mysql extends pdo
                 $prepare   = array_merge($prepare, array_values($value));
             } else {
                 $this->act  .= '(' . rtrim(str_repeat('?,', count($data)), ',') . ')';
-                $this->data = array_values($data);
+                $this->bind = array_values($data);
                 break;
             }
         }
         $this->act = rtrim($this->act, ',');
         if (!empty($prepare))
-            $this->data = $prepare;
+            $this->bind = $prepare;
         unset($data, $key, $value, $table, $prepare);
         return $this;
     }
 
-    public function update(string $table, array $data = [])
-    {
-        $this->table === '' ? $this->table = $table : $this->table;
-        $this->act .= 'UPDATE ' . $this->table . ' SET ';
-        if (!empty($data)) {
-            foreach ($data as $k => $v) {
-                $this->act    .= $k . '= ? ,';
-                $this->data[] = $v;
-            }
-        }
-        $this->act = rtrim($this->act, ',');
-        unset($table, $data, $k, $v, $key, $value);
-        return $this;
-    }
 
-    public function delete(string $table)
-    {
-        $this->table = $table;
-        $this->act   = 'DELETE FROM ' . $this->table . $this->where;
-        return $this;
-    }
+    //===========================
 
 
     // ['age','>','21'],['age','22']['or','age','22']['or','age','<=','18']['in','age',[1,2,3]],['not','age',[18]]['like','language','Chinese']
 
     //['age',20,21]
-    public function between(array $where)
-    {
-        if ($this->where === '') {
-            if ($this->between === '') {
-                $this->between = ' WHERE `' . $where[0] . '` BETWEEN ' . $where[1] . ' AND ' . $where[2];
-            } else {
-                $this->between .= ' AND `' . $where[0] . '` BETWEEN ' . $where[1] . ' AND ' . $where[2];
-            }
-        } else {
-            $this->between = ' AND `' . $where[0] . '` BETWEEN ' . $where[1] . ' AND ' . $where[2];
-
-        }
-        unset($where);
-        return $this;
-    }
-
-    public function group(string ...$group)
-    {
-        $this->group = ' GROUP BY `' . implode(',', $group) . '`';
-        unset($group);
-        return $this;
-    }
-
-    //['sum(score)','>','400'],['age','21']
-    public function having(array $having)
-    {
-        switch (count($having)) {
-            case 2:
-                if ($this->having === '') {
-                    $this->having = ' HAVING `' . $having[0] . '` = ?';
-                    $this->data[] = $having[1];
-                } else {
-                    $this->having .= ' AND `' . $having[0] . '` = ?';
-
-                }
-                $this->data[] = $having[1];
-                break;
-            case 3:
-                if ($this->having === '') {
-                    $this->having = ' HAVING `' . $having[0] . '` ' . $having[1] . ' ?';
-                } else {
-                    $this->having .= ' AND `' . $having[0] . '` ' . $having[1] . ' ?';
-                }
-                $this->data[] = $having[2];
-                break;
-            default:
-                break;
-        }
-        unset($having);
-        return $this;
-    }
-
-    //['age','desc']
-    public function order(array $order)
-    {
-        if ($this->order != '') {
-            $this->order = ' AND `' . $order[0] . '` ' . $order[1] . ' ';
-        } else {
-            $this->order = ' ORDER BY `' . $order[0] . '` ' . $order[1] . ' ';
-
-        }
-        unset($order);
-        return $this;
-    }
-
-    public function limit($offset, $length = '')
-    {
-        if ($length === '' && strpos(',', $offset)) {
-            list($offset, $length) = explode(',', $offset);
-        }
-        $this->limit = ' LIMIT ' . intval($offset) . ($length != '' ? ',' . intval($length) : '');
-        unset($offset, $length);
-        return $this;
-    }
 
     public function incr(string $field, int $step = 1)
     {
@@ -315,7 +590,7 @@ class pdo_mysql extends pdo
     }
 
     //['a.id','=','b.id']
-    public function join(string $table, array $join, string $type = 'inner')
+    public function joina(string $table, array $join, string $type = 'inner')
     {
         if (strpos($table, ' ')) {
             $table = '`' . implode('`', explode(' ', $table)) . '`';
@@ -350,7 +625,7 @@ class pdo_mysql extends pdo
     }
 
 
-    public function exec()
+    public function execa()
     {
         $sql = $this->act
             . $this->incr
@@ -362,7 +637,7 @@ class pdo_mysql extends pdo
             . $this->limit;
         $sth = parent::connect()->prepare($sql);
         unset($sql);
-        return $sth->execute($this->data);
+        return $sth->execute($this->bind);
     }
 
     public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC)
@@ -378,7 +653,7 @@ class pdo_mysql extends pdo
             . $this->limit;
         echo $this->act . "\r\n";
         $sth = parent::connect()->prepare($this->act);
-        $sth->execute($this->data);
+        $sth->execute($this->bind);
         unset($field);
         return $sth->fetchAll($fetch_style);
     }
