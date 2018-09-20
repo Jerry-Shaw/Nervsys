@@ -119,7 +119,7 @@ class pdo_mysql extends pdo
     public function value(array $value, bool $append = false): object
     {
         if (!$append) {
-            $this->bind  = [current($value)];
+            $this->bind  = array_values($value);
             $this->value = &$value;
         } else {
             $this->bind[] = current($value);
@@ -527,11 +527,9 @@ class pdo_mysql extends pdo
      */
     private function build_insert(): string
     {
-        $this->bind = array_values($this->value);
-
         return 'INSERT INTO ' . $this->table
-            . ' (' . $this->escape(implode(', ', array_keys($this->value))) . ') '
-            . 'VALUES (' . implode(', ', array_fill(0, count($this->bind), '?')) . ')';
+            . ' (' . $this->escape(implode(', ', array_keys($this->value))) . ')'
+            . ' VALUES (' . implode(', ', array_fill(0, count($this->bind), '?')) . ')';
     }
 
     /**
