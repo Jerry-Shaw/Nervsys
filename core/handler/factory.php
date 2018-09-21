@@ -27,7 +27,7 @@ class factory extends system
     //Cloned objects
     private static $cloned = [];
 
-    //Origin objects
+    //Original objects
     private static $origin = [];
 
     /**
@@ -38,15 +38,14 @@ class factory extends system
      */
     protected static function new(): object
     {
-        $class = get_called_class();
         $param = func_get_args();
 
         //Create and store to cloned list
-        if (!isset(self::$cloned[$key = hash('md5', $class . json_encode($param))])) {
-            self::$cloned[$key] = !empty($param) ? new $class(...$param) : new $class();
+        if (!isset(self::$cloned[$key = hash('md5', get_called_class() . json_encode($param))])) {
+            self::$cloned[$key] = !empty($param) ? new static(...$param) : new static();
         }
 
-        unset($class, $param);
+        unset($param);
         return clone self::$cloned[$key];
     }
 
@@ -59,16 +58,15 @@ class factory extends system
      */
     protected static function use(): object
     {
-        $class = get_called_class();
         $param = func_get_args();
 
-        //Create and store to origin list
-        if (!isset(self::$origin[$class])) {
-            self::$origin[$class] = !empty($param) ? new $class(...$param) : new $class();
+        //Create and store to original list
+        if (!isset(self::$origin[$key = hash('md5', get_called_class())])) {
+            self::$origin[$key] = !empty($param) ? new static(...$param) : new static();
         }
 
         unset($param);
-        return self::$origin[$class];
+        return self::$origin[$key];
     }
 
     /**
@@ -84,7 +82,7 @@ class factory extends system
     {
         $class = parent::build_name($class);
 
-        //Create and store to origin list
+        //Create and store to original list
         if (!isset(self::$origin[$key = hash('md5', $class . json_encode($param))])) {
             self::$origin[$key] = !empty($param) ? new $class(...$param) : new $class();
         }
