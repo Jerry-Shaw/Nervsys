@@ -253,8 +253,8 @@ class operator extends factory
         //Get factory object
         if (!$reflect->isStatic()) {
             $class = method_exists($class, '__construct')
-                ? parent::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
-                : parent::use($class);
+                ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
+                : parent::obtain($class);
         }
 
         //Call method (with params)

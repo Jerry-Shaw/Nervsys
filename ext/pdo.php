@@ -199,7 +199,7 @@ class pdo extends factory
         $param = $this->build_dsn_opt();
 
         //Factory use PDO instance
-        $pdo = parent::use('PDO', [$param['dsn'], $this->user, $this->pwd, $param['opt']]);
+        $pdo = parent::obtain('PDO', [$param['dsn'], $this->user, $this->pwd, $param['opt']]);
 
         unset($param);
         return $pdo;

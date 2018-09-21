@@ -31,11 +31,12 @@ class factory extends system
     private static $origin = [];
 
     /**
-     * New cloned instance from called class
+     * Get new cloned object from called class
+     * Defined by both class name and arguments
      *
-     * @return object
+     * @return $this
      */
-    public static function new(): object
+    protected static function new(): object
     {
         $class = get_called_class();
         $param = func_get_args();
@@ -50,14 +51,36 @@ class factory extends system
     }
 
     /**
-     * Use origin instance from other class
+     * Get original object from called class
+     * Defined by only class name created last time
+     * Free factory storage before reuse if necessary
+     *
+     * @return $this
+     */
+    protected static function use(): object
+    {
+        $class = get_called_class();
+        $param = func_get_args();
+
+        //Create and store to origin list
+        if (!isset(self::$origin[$class])) {
+            self::$origin[$class] = !empty($param) ? new $class(...$param) : new $class();
+        }
+
+        unset($param);
+        return self::$origin[$class];
+    }
+
+    /**
+     * Obtain original object from another class
+     * Defined by both class name and arguments
      *
      * @param string $class
      * @param array  $param
      *
      * @return object
      */
-    public static function use(string $class, array $param = []): object
+    protected static function obtain(string $class, array $param = []): object
     {
         $class = parent::build_name($class);
 
@@ -75,21 +98,26 @@ class factory extends system
      *
      * @param object $object
      */
-    public static function free(object $object): void
+    protected static function free(object $object = null): void
     {
-        //Drop from cloned list
-        if (!empty($keys = array_keys(self::$cloned, $object, true))) {
-            foreach ($keys as $key) {
-                self::$cloned[$key] = null;
-                unset(self::$cloned[$key]);
+        if (is_null($object)) {
+            //Drop self from original list
+            unset(self::$origin[get_called_class()]);
+        } else {
+            //Drop object from original list
+            if (!empty($keys = array_keys(self::$origin, $object, true))) {
+                foreach ($keys as $key) {
+                    self::$origin[$key] = null;
+                    unset(self::$origin[$key]);
+                }
             }
-        }
 
-        //Drop from origin list
-        if (!empty($keys = array_keys(self::$origin, $object, true))) {
-            foreach ($keys as $key) {
-                self::$origin[$key] = null;
-                unset(self::$origin[$key]);
+            //Drop object from cloned list
+            if (!empty($keys = array_keys(self::$cloned, $object, true))) {
+                foreach ($keys as $key) {
+                    self::$cloned[$key] = null;
+                    unset(self::$cloned[$key]);
+                }
             }
         }
 

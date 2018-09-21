@@ -393,8 +393,8 @@ class redis_queue extends redis
                 //Get factory object
                 if (!$reflect->isStatic()) {
                     $class = method_exists($class, '__construct')
-                        ? parent::use($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
-                        : parent::use($class);
+                        ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
+                        : parent::obtain($class);
                 }
 
                 //Call method (with params)
