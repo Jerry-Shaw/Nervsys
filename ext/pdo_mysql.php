@@ -45,7 +45,7 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      *
-     * @return object
+     * @return $this
      */
     public function insert(string $table = ''): object
     {
@@ -62,7 +62,7 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      *
-     * @return object
+     * @return $this
      */
     public function select(string $table = ''): object
     {
@@ -79,7 +79,7 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      *
-     * @return object
+     * @return $this
      */
     public function update(string $table = ''): object
     {
@@ -96,7 +96,7 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      *
-     * @return object
+     * @return $this
      */
     public function delete(string $table = ''): object
     {
@@ -114,7 +114,7 @@ class pdo_mysql extends pdo
      * @param array $value
      * @param bool  $append
      *
-     * @return object
+     * @return $this
      */
     public function value(array $value, bool $append = false): object
     {
@@ -137,7 +137,7 @@ class pdo_mysql extends pdo
      * @param array $value
      * @param bool  $append
      *
-     * @return object
+     * @return $this
      */
     public function incr(array $value, bool $append = false): object
     {
@@ -161,7 +161,7 @@ class pdo_mysql extends pdo
      *
      * @param string ...$fields
      *
-     * @return object
+     * @return $this
      */
     public function field(string ...$fields): object
     {
@@ -182,7 +182,7 @@ class pdo_mysql extends pdo
      * @param array  $where
      * @param string $type
      *
-     * @return object
+     * @return $this
      */
     public function join(string $table, array $where, string $type = 'INNER'): object
     {
@@ -197,7 +197,7 @@ class pdo_mysql extends pdo
      *
      * @param array $where
      *
-     * @return object
+     * @return $this
      */
     public function where(array $where): object
     {
@@ -212,7 +212,7 @@ class pdo_mysql extends pdo
      *
      * @param array $having
      *
-     * @return object
+     * @return $this
      */
     public function having(array $having): object
     {
@@ -228,7 +228,7 @@ class pdo_mysql extends pdo
      * @param string $field
      * @param string $order
      *
-     * @return object
+     * @return $this
      */
     public function order(string $field, string $order = 'ASC'): object
     {
@@ -251,7 +251,7 @@ class pdo_mysql extends pdo
      *
      * @param string ...$group
      *
-     * @return object
+     * @return $this
      */
     public function group(string ...$group): object
     {
@@ -267,7 +267,7 @@ class pdo_mysql extends pdo
      * @param int $offset
      * @param int $length
      *
-     * @return object
+     * @return $this
      */
     public function limit(int $offset, int $length = 0): object
     {

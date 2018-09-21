@@ -38,7 +38,7 @@ class crypt extends factory
      *
      * @param string $path
      *
-     * @return object
+     * @return $this
      */
     public function conf(string $path): object
     {
@@ -53,7 +53,7 @@ class crypt extends factory
      *
      * @param string $method
      *
-     * @return object
+     * @return $this
      */
     public function method(string $method): object
     {
@@ -68,7 +68,7 @@ class crypt extends factory
      *
      * @param string $class
      *
-     * @return object
+     * @return $this
      */
     public function keygen(string $class): object
     {

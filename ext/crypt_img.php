@@ -59,7 +59,7 @@ class crypt_img extends crypt
      *
      * @param string $font
      *
-     * @return object
+     * @return $this
      */
     public function font(string $font): object
     {
@@ -74,7 +74,7 @@ class crypt_img extends crypt
      *
      * @param string $type
      *
-     * @return object
+     * @return $this
      */
     public function type(string $type): object
     {

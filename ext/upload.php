@@ -110,7 +110,7 @@ class upload extends factory
      *
      * @param string $name
      *
-     * @return object
+     * @return $this
      */
     public function recv(string $name): object
     {
@@ -193,7 +193,7 @@ class upload extends factory
      * @param string $path
      * @param string $root
      *
-     * @return object
+     * @return $this
      */
     public function path(string $path, string $root = ROOT): object
     {
@@ -214,7 +214,7 @@ class upload extends factory
      *
      * @param int $perm
      *
-     * @return object
+     * @return $this
      */
     public function perm(int $perm = 0664): object
     {
@@ -229,7 +229,7 @@ class upload extends factory
      *
      * @param int $allowed
      *
-     * @return object
+     * @return $this
      */
     public function size(int $allowed = 67108864): object
     {
@@ -244,7 +244,7 @@ class upload extends factory
      *
      * @param array $allowed
      *
-     * @return object
+     * @return $this
      */
     public function ext(array $allowed = []): object
     {

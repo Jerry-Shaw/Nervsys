@@ -78,7 +78,7 @@ class mpc extends factory
      *
      * @param string $cmd
      *
-     * @return object
+     * @return $this
      */
     public function add(string $cmd): object
     {
@@ -97,7 +97,7 @@ class mpc extends factory
      *
      * @param array $data
      *
-     * @return object
+     * @return $this
      */
     public function data(array $data): object
     {
@@ -112,7 +112,7 @@ class mpc extends factory
      *
      * @param array $pipe
      *
-     * @return object
+     * @return $this
      */
     public function pipe(array $pipe): object
     {
@@ -127,7 +127,7 @@ class mpc extends factory
      *
      * @param array $argv
      *
-     * @return object
+     * @return $this
      */
     public function argv(array $argv): object
     {

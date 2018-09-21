@@ -66,7 +66,7 @@ class http extends factory
      *
      * @param string $url
      *
-     * @return object
+     * @return $this
      */
     public function url(string $url): object
     {
@@ -85,7 +85,7 @@ class http extends factory
      *
      * @param array $data
      *
-     * @return object
+     * @return $this
      */
     public function data(array $data): object
     {
@@ -101,7 +101,7 @@ class http extends factory
      * @param string $key
      * @param string $file
      *
-     * @return object
+     * @return $this
      */
     public function file(string $key, string $file): object
     {
@@ -119,7 +119,7 @@ class http extends factory
      *
      * @param string $method
      *
-     * @return object
+     * @return $this
      */
     public function method(string $method): object
     {
@@ -138,7 +138,7 @@ class http extends factory
      *
      * @param array $header
      *
-     * @return object
+     * @return $this
      */
     public function header(array $header): object
     {
@@ -153,7 +153,7 @@ class http extends factory
      *
      * @param string $cookie
      *
-     * @return object
+     * @return $this
      */
     public function cookie(string $cookie): object
     {
@@ -168,7 +168,7 @@ class http extends factory
      *
      * @param string $referer
      *
-     * @return object
+     * @return $this
      */
     public function referer(string $referer): object
     {
@@ -183,7 +183,7 @@ class http extends factory
      *
      * @param string $ETag
      *
-     * @return object
+     * @return $this
      */
     public function http_ETag(string $ETag): object
     {
@@ -198,7 +198,7 @@ class http extends factory
      *
      * @param string $Modified
      *
-     * @return object
+     * @return $this
      */
     public function http_Modified(string $Modified): object
     {
@@ -213,7 +213,7 @@ class http extends factory
      *
      * @param string $key_path
      *
-     * @return object
+     * @return $this
      */
     public function ssl_key(string $key_path): object
     {
@@ -228,7 +228,7 @@ class http extends factory
      *
      * @param string $cert_path
      *
-     * @return object
+     * @return $this
      */
     public function ssl_cert(string $cert_path): object
     {
@@ -244,7 +244,7 @@ class http extends factory
      * @param string $username
      * @param string $password
      *
-     * @return object
+     * @return $this
      */
     public function user_pwd(string $username, string $password): object
     {
@@ -259,7 +259,7 @@ class http extends factory
      *
      * @param bool $with_body
      *
-     * @return object
+     * @return $this
      */
     public function with_body(bool $with_body): object
     {
@@ -274,7 +274,7 @@ class http extends factory
      *
      * @param bool $with_header
      *
-     * @return object
+     * @return $this
      */
     public function with_header(bool $with_header): object
     {
@@ -289,7 +289,7 @@ class http extends factory
      *
      * @param int $max_follow
      *
-     * @return object
+     * @return $this
      */
     public function max_follow(int $max_follow): object
     {
@@ -304,7 +304,7 @@ class http extends factory
      *
      * @param string $user_agent
      *
-     * @return object
+     * @return $this
      */
     public function user_agent(string $user_agent): object
     {
@@ -319,7 +319,7 @@ class http extends factory
      *
      * @param string $content_type
      *
-     * @return object
+     * @return $this
      */
     public function content_type(string $content_type): object
     {

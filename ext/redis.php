@@ -42,7 +42,7 @@ class redis extends factory
      *
      * @param array $config
      *
-     * @return object
+     * @return $this
      */
     public function config(array $config): object
     {
@@ -53,6 +53,7 @@ class redis extends factory
         }
 
         unset($config, $key, $value);
+        return $this;
     }
 
     /**
@@ -60,7 +61,7 @@ class redis extends factory
      *
      * @param string $host
      *
-     * @return object
+     * @return $this
      */
     public function host(string $host): object
     {
@@ -75,7 +76,7 @@ class redis extends factory
      *
      * @param int $port
      *
-     * @return object
+     * @return $this
      */
     public function port(int $port): object
     {
@@ -90,7 +91,7 @@ class redis extends factory
      *
      * @param string $auth
      *
-     * @return object
+     * @return $this
      */
     public function auth(string $auth): object
     {
@@ -105,7 +106,7 @@ class redis extends factory
      *
      * @param int $db
      *
-     * @return object
+     * @return $this
      */
     public function db(int $db): object
     {
@@ -120,7 +121,7 @@ class redis extends factory
      *
      * @param string $prefix
      *
-     * @return object
+     * @return $this
      */
     public function prefix(string $prefix): object
     {
@@ -135,7 +136,7 @@ class redis extends factory
      *
      * @param int $timeout
      *
-     * @return object
+     * @return $this
      */
     public function timeout(int $timeout): object
     {
@@ -150,7 +151,7 @@ class redis extends factory
      *
      * @param bool $persist
      *
-     * @return object
+     * @return $this
      */
     public function persist(bool $persist): object
     {
@@ -165,7 +166,7 @@ class redis extends factory
      *
      * @param string $persist_id
      *
-     * @return object
+     * @return $this
      */
     public function persist_id(string $persist_id): object
     {
