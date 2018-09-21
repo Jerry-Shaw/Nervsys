@@ -38,6 +38,24 @@ class redis extends factory
     private static $pool = [];
 
     /**
+     * Config arguments
+     *
+     * @param array $config
+     *
+     * @return object
+     */
+    public function config(array $config): object
+    {
+        foreach ($config as $key => $value) {
+            if (isset($this->$key)) {
+                $this->$key = $value;
+            }
+        }
+
+        unset($config, $key, $value);
+    }
+
+    /**
      * Set host
      *
      * @param string $host
