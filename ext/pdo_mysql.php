@@ -291,7 +291,7 @@ class pdo_mysql extends pdo
                 $exec = -1;
             }
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $sql . '. Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL Dump: ' . $sql . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($sql);
@@ -299,13 +299,36 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Query SQL and return PDOStatement
+     *
+     * @param string $sql
+     * @param bool   $fetch_col
+     * @param int    $col_no
+     *
+     * @return \PDOStatement
+     */
+    public function query(string $sql, bool $fetch_col = false, int $col_no = 0): \PDOStatement
+    {
+        try {
+            $stmt = !$fetch_col
+                ? parent::connect()->query($sql, \PDO::FETCH_ASSOC)
+                : parent::connect()->query($sql, \PDO::FETCH_COLUMN, $col_no);
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL Dump: ' . $sql . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
+        }
+
+        unset($sql, $fetch_col, $col_no);
+        return $stmt;
+    }
+
+    /**
      * Execute prepared SQL and return fetched data
      *
-     * @param bool $column
+     * @param bool $fetch_col
      *
      * @return array
      */
-    public function fetch(bool $column = false): array
+    public function fetch(bool $fetch_col = false): array
     {
         $stmt = parent::connect()->prepare($this->build_sql());
 
@@ -313,12 +336,12 @@ class pdo_mysql extends pdo
             $stmt->execute($this->bind);
             $this->clean_up();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
-        $data = $stmt->fetchAll(!$column ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
+        $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
-        unset($column, $stmt);
+        unset($fetch_col, $stmt);
         return $data;
     }
 
@@ -335,7 +358,7 @@ class pdo_mysql extends pdo
             $result = $stmt->execute($this->bind);
             $this->clean_up();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($stmt);
