@@ -100,7 +100,7 @@ class factory extends system
     {
         if (is_null($object)) {
             //Drop self from original list
-            unset(self::$origin[get_called_class()]);
+            unset(self::$origin[hash('md5', get_called_class())]);
         } else {
             //Drop object from original list
             if (!empty($keys = array_keys(self::$origin, $object, true))) {
