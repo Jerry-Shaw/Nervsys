@@ -52,7 +52,7 @@ class factory extends system
     /**
      * Get original object from called class
      * Defined by only class name created last time
-     * Free factory storage before reuse if necessary
+     * Free original storage before reuse if necessary
      *
      * @return $this
      */
@@ -92,33 +92,21 @@ class factory extends system
     }
 
     /**
-     * Free factory storage
+     * Free from original storage
      *
      * @param object $object
      */
     protected static function free(object $object = null): void
     {
-        if (is_null($object)) {
-            //Drop self from original list
-            unset(self::$origin[hash('md5', get_called_class())]);
-        } else {
-            //Drop object from original list
-            if (!empty($keys = array_keys(self::$origin, $object, true))) {
-                foreach ($keys as $key) {
-                    self::$origin[$key] = null;
-                    unset(self::$origin[$key]);
-                }
-            }
+        $key = is_null($object)
+            ? hash('md5', get_called_class())
+            : array_search($object, self::$origin, true);
 
-            //Drop object from cloned list
-            if (!empty($keys = array_keys(self::$cloned, $object, true))) {
-                foreach ($keys as $key) {
-                    self::$cloned[$key] = null;
-                    unset(self::$cloned[$key]);
-                }
-            }
+        if (false !== $key) {
+            self::$origin[$key] = null;
+            unset(self::$origin[$key]);
         }
 
-        unset($object, $keys, $key);
+        unset($object, $key);
     }
 }
