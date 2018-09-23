@@ -177,14 +177,14 @@ class system extends command
         self::$is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
-        //Detect Cross-origin resource sharing permission
+        //Detect Cross-origin resource sharing authority
         if (empty(self::$cors)
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (self::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']
-        ) {
+            || $_SERVER['HTTP_ORIGIN'] === (self::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
+        //Exit on no access authority
         if (!isset(self::$cors[$_SERVER['HTTP_ORIGIN']])) {
             exit;
         }

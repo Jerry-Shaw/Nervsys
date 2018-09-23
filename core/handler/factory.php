@@ -58,14 +58,22 @@ class factory extends system
      */
     protected static function use(): object
     {
+        $name  = get_called_class();
         $param = func_get_args();
 
+        //Check alias calling
+        if (1 === func_num_args()
+            && is_string($param[0])
+            && isset(self::$origin[$key = hash('md5', $name . '_AS_' . $param[0])])) {
+            return self::$origin[$key];
+        }
+
         //Create and store to original list
-        if (!isset(self::$origin[$key = hash('md5', get_called_class())])) {
+        if (!isset(self::$origin[$key = hash('md5', $name)])) {
             self::$origin[$key] = !empty($param) ? new static(...$param) : new static();
         }
 
-        unset($param);
+        unset($name, $param);
         return self::$origin[$key];
     }
 
@@ -92,21 +100,37 @@ class factory extends system
     }
 
     /**
-     * Free from original storage
+     * Free from original storage by name/alias
      *
-     * @param object $object
+     * @param string $name
      */
-    protected static function free(object $object = null): void
+    protected static function free(string $name = ''): void
     {
-        $key = is_null($object)
-            ? hash('md5', get_called_class())
-            : array_search($object, self::$origin, true);
+        if ('' === $name) {
+            $name = get_called_class();
+        }
 
-        if (false !== $key) {
+        if (isset(self::$origin[$key = hash('md5', $name)])) {
             self::$origin[$key] = null;
             unset(self::$origin[$key]);
         }
 
-        unset($object, $key);
+        unset($name, $key);
+    }
+
+    /**
+     * Copy object as alias and remove source
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    protected function as(string $alias): object
+    {
+        self::free($name = get_class($this));
+        self::$origin[$key = hash('md5', $name . '_AS_' . $alias)] = $this;
+
+        unset($alias, $name);
+        return self::$origin[$key];
     }
 }

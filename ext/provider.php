@@ -46,7 +46,7 @@ class provider extends factory
      */
     public function __destruct()
     {
-        parent::free($this);
+        parent::free($this->class);
     }
 
     /**
