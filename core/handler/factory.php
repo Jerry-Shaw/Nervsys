@@ -106,20 +106,22 @@ class factory extends system
      */
     protected static function free(string $name = ''): void
     {
-        if ('' === $name) {
-            $name = get_called_class();
+        $class = get_called_class();
+        $items = '' !== $name ? [$name, $class . '_AS_' . $name] : [$class];
+
+        foreach ($items as $val) {
+            if (isset(self::$origin[$key = hash('md5', $val)])) {
+                self::$origin[$key] = null;
+                unset(self::$origin[$key]);
+            }
         }
 
-        if (isset(self::$origin[$key = hash('md5', $name)])) {
-            self::$origin[$key] = null;
-            unset(self::$origin[$key]);
-        }
-
-        unset($name, $key);
+        unset($name, $class, $items, $val, $key);
     }
 
     /**
      * Copy object as alias and remove source
+     * Alias is merged with called class and alias name
      *
      * @param string $alias
      *
