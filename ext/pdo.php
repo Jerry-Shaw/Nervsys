@@ -36,160 +36,6 @@ class pdo extends factory
     private $charset = 'utf8mb4';
 
     /**
-     * Config arguments
-     *
-     * @param array $config
-     *
-     * @return $this
-     */
-    public function config(array $config): object
-    {
-        foreach ($config as $key => $value) {
-            if (isset($this->$key)) {
-                $this->$key = $value;
-            }
-        }
-
-        unset($config, $key, $value);
-        return $this;
-    }
-
-    /**
-     * Set type
-     *
-     * @param string $type
-     *
-     * @return $this
-     */
-    public function type(string $type): object
-    {
-        $this->type = &$type;
-
-        unset($type);
-        return $this;
-    }
-
-    /**
-     * Set host
-     *
-     * @param string $host
-     *
-     * @return $this
-     */
-    public function host(string $host): object
-    {
-        $this->host = &$host;
-
-        unset($host);
-        return $this;
-    }
-
-    /**
-     * Set port
-     *
-     * @param int $port
-     *
-     * @return $this
-     */
-    public function port(int $port): object
-    {
-        $this->port = &$port;
-
-        unset($port);
-        return $this;
-    }
-
-    /**
-     * Set username
-     *
-     * @param string $user
-     *
-     * @return $this
-     */
-    public function user(string $user): object
-    {
-        $this->user = &$user;
-
-        unset($user);
-        return $this;
-    }
-
-    /**
-     * Set password
-     *
-     * @param string $pwd
-     *
-     * @return $this
-     */
-    public function pwd(string $pwd): object
-    {
-        $this->pwd = &$pwd;
-
-        unset($pwd);
-        return $this;
-    }
-
-    /**
-     * Set db name
-     *
-     * @param string $db
-     *
-     * @return $this
-     */
-    public function db(string $db): object
-    {
-        $this->db = &$db;
-
-        unset($db);
-        return $this;
-    }
-
-    /**
-     * Set read timeout
-     *
-     * @param int $timeout
-     *
-     * @return $this
-     */
-    public function timeout(int $timeout): object
-    {
-        $this->timeout = &$timeout;
-
-        unset($timeout);
-        return $this;
-    }
-
-    /**
-     * Set persist type
-     *
-     * @param bool $persist
-     *
-     * @return $this
-     */
-    public function persist(bool $persist): object
-    {
-        $this->persist = &$persist;
-
-        unset($persist);
-        return $this;
-    }
-
-    /**
-     * Set initial charset
-     *
-     * @param string $charset
-     *
-     * @return $this
-     */
-    public function charset(string $charset): object
-    {
-        $this->charset = &$charset;
-
-        unset($charset);
-        return $this;
-    }
-
-    /**
      * PDO connector
      *
      * @return \PDO
@@ -199,7 +45,7 @@ class pdo extends factory
         //Build DSN & OPTION
         $param = $this->build_dsn_opt();
 
-        //Factory use PDO instance
+        //Obtain PDO instance from factory
         $pdo = parent::obtain('PDO', [$param['dsn'], $this->user, $this->pwd, $param['opt']]);
 
         unset($param);
@@ -237,12 +83,14 @@ class pdo extends factory
                 $dsn_opt['opt'][\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $this->charset;
                 $dsn_opt['opt'][\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
                 break;
+
             case 'mssql':
                 $dsn_opt['dsn'] .= 'host=' . $this->host
                     . ',' . $this->port
                     . ';dbname=' . $this->db
                     . ';charset=' . $this->charset;
                 break;
+
             case 'pgsql':
                 $dsn_opt['dsn'] .= 'host=' . $this->host
                     . ';port=' . $this->port
@@ -250,12 +98,14 @@ class pdo extends factory
                     . ';user=' . $this->user
                     . ';password=' . $this->pwd;
                 break;
+
             case 'oci':
                 $dsn_opt['dsn'] .= 'dbname=//' . $this->host
                     . ':' . $this->port
                     . '/' . $this->db
                     . ';charset=' . $this->charset;
                 break;
+
             default:
                 throw new \PDOException('Unsupported type: ' . $this->type, E_USER_ERROR);
         }

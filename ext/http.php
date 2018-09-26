@@ -26,20 +26,17 @@ use core\handler\factory;
 
 class http extends factory
 {
-    //URL key
-    private $key = 0;
-
-    //URL list
-    private $url = [];
+    //Job list
+    private $jobs = [];
 
     //Default values
-    const HTTP            = 'HTTP/2.0';                                               //HTTP Version
-    const ACCEPT          = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept types
-    const CONNECTION      = 'keep-alive';                                             //Connection type
-    const USER_AGENT      = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';          //User Agent string
-    const ACCEPT_CHARSET  = 'UTF-8,*;q=0';                                            //Accept charset
-    const ACCEPT_ENCODING = 'gzip,deflate,identity,*;q=0';                            //Accept encoding
-    const ACCEPT_LANGUAGE = 'en-US,en,zh-CN,zh,*;q=0';                                //Accept language
+    private $http            = 'HTTP/2.0';                                               //HTTP Version
+    private $accept          = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept types
+    private $connection      = 'keep-alive';                                             //Connection type
+    private $user_agent      = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';          //User Agent string
+    private $accept_charset  = 'UTF-8,*;q=0';                                            //Accept charset
+    private $accept_encoding = 'gzip,deflate,identity,*;q=0';                            //Accept encoding
+    private $accept_language = 'en-US,en,zh-CN,zh,*;q=0';                                //Accept language
 
     //Pre-defined content types
     const CONTENT_TYPE_XML     = 'application/xml; charset=UTF-8';
@@ -48,300 +45,84 @@ class http extends factory
     const CONTENT_TYPE_ENCODED = 'application/x-www-form-urlencoded';
 
     /**
-     * http constructor.
+     * Add cURL job
      *
-     * @param string $api
+     * @param array $job
+     * url:          string,       full URL address
+     * data:         array,        data to send to URL
+     * file:         array|string, full path of local files to send to URL
+     * method:       string,       HTTP request method to request URL
+     * header:       array,        custom request headers
+     * Cookie:       string,       request COOKIE content
+     * referer:      string,       referer URL
+     * ETag:         string,       URL ETag
+     * Modified:     string,       URL last Modified
+     * ssl_key:      string,       SSL KEY file path
+     * ssl_cert:     string,       SSL Certificate file path
+     * user_pwd:     string,       authority request, format is "username:password"
+     * with_body:    bool,         fetch with body or not
+     * with_header:  bool,         fetch with header or not
+     * max_follow:   int,          max follows when URL is redirected
+     * user_agent:   string,       custom request User-Agent send to URL
+     * content_type: string,       request content type, see "Pre-defined content types" above
+     *
+     * @return $this
+     * @throws \Exception
      */
-    public function __construct(string $api = '')
+    public function add(array $job = []): object
     {
-        if ('' !== $api) {
-            $this->url[$this->key]['url'] = &$api;
+        //Check URL
+        if (!isset($job['url'])) {
+            throw new \Exception('Missing "url" parameter!', E_USER_ERROR);
         }
 
-        unset($api);
-    }
+        //Process attached files
+        if (isset($job['file'])) {
+            $file = [];
 
-    /**
-     * Add URL
-     *
-     * @param string $url
-     *
-     * @return $this
-     */
-    public function url(string $url): object
-    {
-        if (!empty($this->url) && isset($this->url[$this->key]['url'])) {
-            ++$this->key;
+            //Compatible with array and string
+            if (is_string($job['file'])) {
+                $job['file'] = [$job['file']];
+            }
+
+            foreach ($job['file'] as $key => $val) {
+                if (file_exists($val)) {
+                    $file['file_' . $key] = new \CURLFile($val);
+                }
+            }
+
+            $job['file'] = &$file;
+            unset($file, $key, $val);
         }
 
-        $this->url[$this->key]['url'] = &$url;
+        //Check method
+        if (isset($job['method'])) {
+            $job['method'] = strtoupper($job['method']);
 
-        unset($url);
-        return $this;
-    }
-
-    /**
-     * Add data
-     *
-     * @param array $data
-     *
-     * @return $this
-     */
-    public function data(array $data): object
-    {
-        $this->url[$this->key]['data'] = &$data;
-
-        unset($data);
-        return $this;
-    }
-
-    /**
-     * Add file
-     *
-     * @param string $key
-     * @param string $file
-     *
-     * @return $this
-     */
-    public function file(string $key, string $file): object
-    {
-        //Create cURL files
-        if (file_exists($file)) {
-            $this->url[$this->key]['file'][$key] = new \CURLFile($file);
+            if (!in_array($job['method'], ['GET', 'POST', 'HEAD', 'PUT', 'DELETE', 'OPTIONS', 'CONNECT', 'TRACE', 'PATCH'], true)) {
+                unset($job['method']);
+            }
         }
 
-        unset($key, $file);
+        $this->jobs[] = &$job;
+
+        unset($job);
         return $this;
     }
 
     /**
-     * Set method
-     *
-     * @param string $method
-     *
-     * @return $this
-     */
-    public function method(string $method): object
-    {
-        $method = strtoupper($method);
-
-        if (in_array($method, ['GET', 'POST', 'HEAD', 'PUT', 'DELETE', 'OPTIONS', 'CONNECT', 'TRACE', 'PATCH'], true)) {
-            $this->url[$this->key]['method'] = &$method;
-        }
-
-        unset($method);
-        return $this;
-    }
-
-    /**
-     * Set header
-     *
-     * @param array $header
-     *
-     * @return $this
-     */
-    public function header(array $header): object
-    {
-        $this->url[$this->key]['header'] = &$header;
-
-        unset($header);
-        return $this;
-    }
-
-    /**
-     * Set Cookie
-     *
-     * @param string $cookie
-     *
-     * @return $this
-     */
-    public function cookie(string $cookie): object
-    {
-        $this->url[$this->key]['Cookie'] = &$cookie;
-
-        unset($cookie);
-        return $this;
-    }
-
-    /**
-     * Set referer
-     *
-     * @param string $referer
-     *
-     * @return $this
-     */
-    public function referer(string $referer): object
-    {
-        $this->url[$this->key]['referer'] = &$referer;
-
-        unset($referer);
-        return $this;
-    }
-
-    /**
-     * Set HTTP ETag
-     *
-     * @param string $ETag
-     *
-     * @return $this
-     */
-    public function http_ETag(string $ETag): object
-    {
-        $this->url[$this->key]['ETag'] = &$ETag;
-
-        unset($ETag);
-        return $this;
-    }
-
-    /**
-     * Set HTTP last modified
-     *
-     * @param string $Modified
-     *
-     * @return $this
-     */
-    public function http_Modified(string $Modified): object
-    {
-        $this->url[$this->key]['Modified'] = &$Modified;
-
-        unset($Modified);
-        return $this;
-    }
-
-    /**
-     * Set SSL key path
-     *
-     * @param string $key_path
-     *
-     * @return $this
-     */
-    public function ssl_key(string $key_path): object
-    {
-        $this->url[$this->key]['ssl_key'] = &$key_path;
-
-        unset($key_path);
-        return $this;
-    }
-
-    /**
-     * Set SSL cert path
-     *
-     * @param string $cert_path
-     *
-     * @return $this
-     */
-    public function ssl_cert(string $cert_path): object
-    {
-        $this->url[$this->key]['ssl_cert'] = &$cert_path;
-
-        unset($cert_path);
-        return $this;
-    }
-
-    /**
-     * Set username:password
-     *
-     * @param string $username
-     * @param string $password
-     *
-     * @return $this
-     */
-    public function user_pwd(string $username, string $password): object
-    {
-        $this->url[$this->key]['user_pwd'] = $username . ':' . $password;
-
-        unset($username, $password);
-        return $this;
-    }
-
-    /**
-     * Set with body option
-     *
-     * @param bool $with_body
-     *
-     * @return $this
-     */
-    public function with_body(bool $with_body): object
-    {
-        $this->url[$this->key]['with_body'] = &$with_body;
-
-        unset($with_body);
-        return $this;
-    }
-
-    /**
-     * Set with header option
-     *
-     * @param bool $with_header
-     *
-     * @return $this
-     */
-    public function with_header(bool $with_header): object
-    {
-        $this->url[$this->key]['with_header'] = &$with_header;
-
-        unset($with_header);
-        return $this;
-    }
-
-    /**
-     * Set max follow
-     *
-     * @param int $max_follow
-     *
-     * @return $this
-     */
-    public function max_follow(int $max_follow): object
-    {
-        $this->url[$this->key]['max_follow'] = &$max_follow;
-
-        unset($max_follow);
-        return $this;
-    }
-
-    /**
-     * Set User-Agent
-     *
-     * @param string $user_agent
-     *
-     * @return $this
-     */
-    public function user_agent(string $user_agent): object
-    {
-        $this->url[$this->key]['user_agent'] = &$user_agent;
-
-        unset($user_agent);
-        return $this;
-    }
-
-    /**
-     * Set Content-Type
-     *
-     * @param string $content_type
-     *
-     * @return $this
-     */
-    public function content_type(string $content_type): object
-    {
-        $this->url[$this->key]['content_type'] = &$content_type;
-
-        unset($content_type);
-        return $this;
-    }
-
-    /**
-     * Fetch an URL
+     * Fetch one URL
      *
      * @return string
      * @throws \Exception
      */
     public function fetch(): string
     {
-        if (empty($this->url)) {
+        if (empty($this->jobs)) {
             throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_NOTICE);
         }
 
-        $item = reset($this->url);
+        $item = reset($this->jobs);
 
         $unit = $this->get_unit($item['url']);
 
@@ -375,7 +156,7 @@ class http extends factory
      */
     public function fetch_all(): array
     {
-        if (empty($this->url)) {
+        if (empty($this->jobs)) {
             throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_NOTICE);
         }
 
@@ -384,7 +165,7 @@ class http extends factory
         $curl = curl_multi_init();
 
         //Add CURL
-        foreach ($this->url as $item) {
+        foreach ($this->jobs as $item) {
             $unit = $this->get_unit($item['url']);
 
             if (empty($unit)) {
@@ -514,13 +295,13 @@ class http extends factory
         }
 
         $header += [
-            'Accept'          => self::ACCEPT,
-            'Accept-Charset'  => self::ACCEPT_CHARSET,
-            'Accept-Encoding' => self::ACCEPT_ENCODING,
-            'Accept-Language' => self::ACCEPT_LANGUAGE,
+            'Accept'          => $this->accept,
+            'Accept-Charset'  => $this->accept_charset,
+            'Accept-Encoding' => $this->accept_encoding,
+            'Accept-Language' => $this->accept_language,
             'Content-Type'    => $item['content_type'],
-            'User-Agent'      => $item['user_agent'] ?? self::USER_AGENT,
-            'Connection'      => self::CONNECTION
+            'User-Agent'      => $item['user_agent'] ?? $this->user_agent,
+            'Connection'      => $this->connection
         ];
 
         //Reset values
@@ -528,7 +309,7 @@ class http extends factory
         $item['accept_encoding'] = &$header['Accept-Encoding'];
 
         //Build HTTP header
-        $item['header'] = [$item['method'] . ' ' . $item['path'] . $item['query'] . ' ' . self::HTTP];
+        $item['header'] = [$item['method'] . ' ' . $item['path'] . $item['query'] . ' ' . $this->http];
 
         foreach ($header as $key => $val) {
             $item['header'][] = $key . ': ' . $val;
@@ -605,12 +386,15 @@ class http extends factory
                 case self::CONTENT_TYPE_JSON:
                     $opt[CURLOPT_POSTFIELDS] = json_encode($item['data']);
                     break;
+
                 case self::CONTENT_TYPE_XML:
                     $opt[CURLOPT_POSTFIELDS] = data::build_xml($item['data']);
                     break;
+
                 case self::CONTENT_TYPE_ENCODED:
                     $opt[CURLOPT_POSTFIELDS] = http_build_query($item['data']);
                     break;
+
                 default:
                     $opt[CURLOPT_POSTFIELDS] = $item['data'];
                     break;

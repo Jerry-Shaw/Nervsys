@@ -299,15 +299,15 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Query SQL and return PDOStatement
+     * Query SQL and return fetched data
      *
      * @param string $sql
      * @param bool   $fetch_col
      * @param int    $col_no
      *
-     * @return \PDOStatement
+     * @return array
      */
-    public function query(string $sql, bool $fetch_col = false, int $col_no = 0): \PDOStatement
+    public function query(string $sql, bool $fetch_col = false, int $col_no = 0): array
     {
         try {
             $stmt = !$fetch_col
@@ -317,8 +317,10 @@ class pdo_mysql extends pdo
             throw new \PDOException('SQL Dump: ' . $sql . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
-        unset($sql, $fetch_col, $col_no);
-        return $stmt;
+        $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
+
+        unset($sql, $fetch_col, $col_no, $stmt);
+        return $data;
     }
 
     /**

@@ -39,52 +39,6 @@ class crypt_img extends crypt
     const LENGTH = 6;
 
     /**
-     * crypt_img constructor.
-     *
-     * @param int $width
-     * @param int $height
-     * @param int $life
-     */
-    public function __construct(int $width = 120, int $height = 40, int $life = 60)
-    {
-        $this->width  = &$width;
-        $this->height = &$height;
-        $this->life   = &$life;
-
-        unset($width, $height, $life);
-    }
-
-    /**
-     * Set image font
-     *
-     * @param string $font
-     *
-     * @return $this
-     */
-    public function font(string $font): object
-    {
-        $this->font = &$font;
-
-        unset($font);
-        return $this;
-    }
-
-    /**
-     * Set code type
-     *
-     * @param string $type
-     *
-     * @return $this
-     */
-    public function type(string $type): object
-    {
-        $this->type = &$type;
-
-        unset($type);
-        return $this;
-    }
-
-    /**
      * Get Code
      *
      * @return array

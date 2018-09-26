@@ -154,6 +154,7 @@ class upload extends factory
                 //Deep detect file type
                 $mime = finfo_file($finfo, $this->file['stream']['tmp_name'], FILEINFO_MIME_TYPE);
                 break;
+
             case 'base64':
                 //Check base64 file stream
                 if (false === $pos = strpos(parent::$data[$name], ';base64,')) {
@@ -184,73 +185,6 @@ class upload extends factory
         }
 
         unset($name, $mime, $finfo);
-        return $this;
-    }
-
-    /**
-     * Set save path
-     *
-     * @param string $path
-     * @param string $root
-     *
-     * @return $this
-     */
-    public function path(string $path, string $root = ROOT): object
-    {
-        if ('' === $path = file::get_path($path, $root)) {
-            $this->errno = 5;
-            return $this;
-        }
-
-        $this->path_url  = &$path;
-        $this->path_save = $root . $this->path_url;
-
-        unset($path, $root);
-        return $this;
-    }
-
-    /**
-     * Set permission
-     *
-     * @param int $perm
-     *
-     * @return $this
-     */
-    public function perm(int $perm = 0664): object
-    {
-        $this->perm = &$perm;
-
-        unset($perm);
-        return $this;
-    }
-
-    /**
-     * Set allowed size
-     *
-     * @param int $allowed
-     *
-     * @return $this
-     */
-    public function size(int $allowed = 67108864): object
-    {
-        $this->size = &$allowed;
-
-        unset($allowed);
-        return $this;
-    }
-
-    /**
-     * Set allowed extensions
-     *
-     * @param array $allowed
-     *
-     * @return $this
-     */
-    public function ext(array $allowed = []): object
-    {
-        $this->ext = &$allowed;
-
-        unset($allowed);
         return $this;
     }
 
@@ -315,6 +249,7 @@ class upload extends factory
                 }
 
                 break;
+
             case 'base64':
                 //Write file data
                 if (file_put_contents($file_path, $this->file['stream']['data']) !== $this->file['stream']['size']) {
@@ -322,6 +257,7 @@ class upload extends factory
                 }
 
                 break;
+
             default:
                 return ['err' => 8];
                 break;

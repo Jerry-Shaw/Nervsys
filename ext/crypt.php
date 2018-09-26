@@ -34,47 +34,21 @@ class crypt extends factory
     private $keygen = '\\ext\\keygen';
 
     /**
-     * Set conf path
+     * Config class settings
      *
-     * @param string $path
-     *
-     * @return $this
-     */
-    public function conf(string $path): object
-    {
-        $this->conf = &$path;
-
-        unset($path);
-        return $this;
-    }
-
-    /**
-     * Set crypt method
-     *
-     * @param string $method
+     * @param array $setting
      *
      * @return $this
      */
-    public function method(string $method): object
+    public function config(array $setting): object
     {
-        $this->method = &$method;
+        foreach ($setting as $key => $val) {
+            if (isset($this->$key)) {
+                $this->$key = 'keygen' === $key ? parent::build_name($val) : $val;
+            }
+        }
 
-        unset($method);
-        return $this;
-    }
-
-    /**
-     * Set keygen class
-     *
-     * @param string $class
-     *
-     * @return $this
-     */
-    public function keygen(string $class): object
-    {
-        $this->keygen = parent::build_name($class);
-
-        unset($class);
+        unset($setting, $key, $val);
         return $this;
     }
 

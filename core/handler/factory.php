@@ -109,6 +109,7 @@ class factory extends system
         $class = get_called_class();
         $items = '' !== $name ? [$name, $class . '_AS_' . $name] : [$class];
 
+        //Remove from original storage
         foreach ($items as $val) {
             if (isset(self::$origin[$key = hash('md5', $val)])) {
                 self::$origin[$key] = null;
@@ -134,5 +135,24 @@ class factory extends system
 
         unset($alias, $name);
         return self::$origin[$key];
+    }
+
+    /**
+     * Config class settings
+     *
+     * @param array $setting
+     *
+     * @return $this
+     */
+    protected function config(array $setting): object
+    {
+        foreach ($setting as $key => $val) {
+            if (isset($this->$key)) {
+                $this->$key = $val;
+            }
+        }
+
+        unset($setting, $key, $val);
+        return $this;
     }
 }

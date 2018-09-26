@@ -27,10 +27,7 @@ use core\handler\platform;
 
 class mpc extends factory
 {
-    //Job key
-    private $key = 0;
-
-    //Process jobs
+    //Job list
     private $jobs = [];
 
     //Process quantity
@@ -49,91 +46,27 @@ class mpc extends factory
     private $php_cmd = '';
 
     /**
-     * mpc constructor.
-     *
-     * @param int  $runs
-     * @param bool $wait
-     *
-     * @throws \Exception
-     */
-    public function __construct(int $runs = 10, bool $wait = true)
-    {
-        if (0 < $runs) {
-            $this->runs = &$runs;
-        }
-
-        $this->wait = &$wait;
-        unset($runs, $wait);
-
-        //Check php cli settings
-        if (!isset(parent::$cli[$this->php_key])) {
-            throw new \Exception('[' . $this->php_key . '] NOT configured in "system.ini"', E_USER_ERROR);
-        }
-
-        $this->php_exe = parent::$cli[$this->php_key];
-    }
-
-    /**
      * Add job
      *
-     * @param string $cmd
+     * @param array $job
+     * cmd:  string, command
+     * data: array,  data pack to pass
+     * pipe: array,  pipe data to pass
+     * argv: array,  argv data to pass
      *
      * @return $this
+     * @throws \Exception
      */
-    public function add(string $cmd): object
+    public function add(array $job = []): object
     {
-        if (!empty($this->jobs)) {
-            ++$this->key;
+        //Check cmd
+        if (!isset($job['cmd'])) {
+            throw new \Exception('Missing "cmd" parameter!', E_USER_ERROR);
         }
 
-        $this->jobs[$this->key]['cmd'] = &$cmd;
+        $this->jobs[] = &$job;
 
-        unset($cmd);
-        return $this;
-    }
-
-    /**
-     * Add data
-     *
-     * @param array $data
-     *
-     * @return $this
-     */
-    public function data(array $data): object
-    {
-        $this->jobs[$this->key]['data'] = &$data;
-
-        unset($data);
-        return $this;
-    }
-
-    /**
-     * Add pipe
-     *
-     * @param array $pipe
-     *
-     * @return $this
-     */
-    public function pipe(array $pipe): object
-    {
-        $this->jobs[$this->key]['pipe'] = &$pipe;
-
-        unset($pipe);
-        return $this;
-    }
-
-    /**
-     * Add argv
-     *
-     * @param array $argv
-     *
-     * @return $this
-     */
-    public function argv(array $argv): object
-    {
-        $this->jobs[$this->key]['argv'] = &$argv;
-
-        unset($argv);
+        unset($job);
         return $this;
     }
 
@@ -145,8 +78,18 @@ class mpc extends factory
      */
     public function commit(): array
     {
+        //Check jobs
         if (empty($this->jobs)) {
             return [];
+        }
+
+        //Check php cli settings
+        if ('' === $this->php_exe) {
+            if (!isset(parent::$cli[$this->php_key])) {
+                throw new \Exception('[' . $this->php_key . '] NOT configured in "system.ini"', E_USER_ERROR);
+            }
+
+            $this->php_exe = parent::$cli[$this->php_key];
         }
 
         //Split jobs
