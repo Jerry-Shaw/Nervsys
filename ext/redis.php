@@ -25,14 +25,14 @@ use core\handler\factory;
 class redis extends factory
 {
     //Redis arguments
-    private $host       = '127.0.0.1';
-    private $port       = 6379;
-    private $auth       = '';
-    private $db         = 0;
-    private $prefix     = '';
-    private $timeout    = 10;
-    private $persist    = true;
-    private $persist_id = null;
+    protected $host       = '127.0.0.1';
+    protected $port       = 6379;
+    protected $auth       = '';
+    protected $db         = 0;
+    protected $prefix     = '';
+    protected $timeout    = 10;
+    protected $persist    = true;
+    protected $persist_id = null;
 
     //Connection pool
     private static $pool = [];

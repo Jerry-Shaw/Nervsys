@@ -30,20 +30,20 @@ class mpc extends factory
     //Job list
     private $jobs = [];
 
-    //Process quantity
-    private $runs = 10;
-
-    //Process wait option
-    private $wait = true;
-
-    //PHP key name in "system.ini"
-    private $php_key = 'php';
-
-    //PHP executable path in "system.ini"
-    private $php_exe = '';
-
     //Basic command
     private $php_cmd = '';
+
+    //Process quantity
+    protected $runs = 10;
+
+    //Process wait option
+    protected $wait = true;
+
+    //PHP key name in "system.ini"
+    protected $php_key = 'php';
+
+    //PHP executable path in "system.ini"
+    protected $php_exe = '';
 
     /**
      * Add job

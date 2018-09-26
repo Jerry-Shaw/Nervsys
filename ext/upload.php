@@ -46,17 +46,17 @@ class upload extends factory
     private $file = [];
 
     //Permission
-    private $perm = 0664;
+    protected $perm = 0664;
 
     //Allowed ext
-    private $ext = [];
+    protected $ext = [];
 
     //Allowed size
-    private $size = 67108864;
+    protected $size = 67108864;
 
     //File save paths
-    private $path_url  = 'uploads' . DIRECTORY_SEPARATOR;
-    private $path_save = ROOT . 'uploads' . DIRECTORY_SEPARATOR;
+    protected $path_url  = 'uploads' . DIRECTORY_SEPARATOR;
+    protected $path_save = ROOT . 'uploads' . DIRECTORY_SEPARATOR;
 
     //Default MIME-Type
     const MIME = [

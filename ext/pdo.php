@@ -25,15 +25,15 @@ use core\handler\factory;
 class pdo extends factory
 {
     //PDO arguments
-    private $type    = 'mysql';
-    private $host    = '127.0.0.1';
-    private $port    = 3306;
-    private $user    = 'root';
-    private $pwd     = '';
-    private $db      = '';
-    private $timeout = 10;
-    private $persist = true;
-    private $charset = 'utf8mb4';
+    protected $type    = 'mysql';
+    protected $host    = '127.0.0.1';
+    protected $port    = 3306;
+    protected $user    = 'root';
+    protected $pwd     = '';
+    protected $db      = '';
+    protected $timeout = 10;
+    protected $persist = true;
+    protected $charset = 'utf8mb4';
 
     /**
      * PDO connector

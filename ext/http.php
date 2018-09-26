@@ -30,13 +30,13 @@ class http extends factory
     private $jobs = [];
 
     //Default values
-    private $http            = 'HTTP/2.0';                                               //HTTP Version
-    private $accept          = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept types
-    private $connection      = 'keep-alive';                                             //Connection type
-    private $user_agent      = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';          //User Agent string
-    private $accept_charset  = 'UTF-8,*;q=0';                                            //Accept charset
-    private $accept_encoding = 'gzip,deflate,identity,*;q=0';                            //Accept encoding
-    private $accept_language = 'en-US,en,zh-CN,zh,*;q=0';                                //Accept language
+    protected $http            = 'HTTP/2.0';                                               //HTTP Version
+    protected $accept          = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept types
+    protected $connection      = 'keep-alive';                                             //Connection type
+    protected $user_agent      = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';          //User Agent string
+    protected $accept_charset  = 'UTF-8,*;q=0';                                            //Accept charset
+    protected $accept_encoding = 'gzip,deflate,identity,*;q=0';                            //Accept encoding
+    protected $accept_language = 'en-US,en,zh-CN,zh,*;q=0';                                //Accept language
 
     //Pre-defined content types
     const CONTENT_TYPE_XML     = 'application/xml; charset=UTF-8';

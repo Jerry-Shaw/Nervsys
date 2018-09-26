@@ -23,17 +23,17 @@ namespace ext;
 class crypt_img extends crypt
 {
     //Lifetime (in seconds)
-    private $life = 60;
+    protected $life = 60;
 
     //Image size (in pixels)
-    private $width  = 120;
-    private $height = 40;
+    protected $width  = 120;
+    protected $height = 40;
 
     //Font filename (stored in "/font/")
-    private $font = 'font.ttf';
+    protected $font = 'font.ttf';
 
     //Code type ("": random type, "num", "word", "calc")
-    private $type = '';
+    protected $type = '';
 
     //Length (only works for "num" & "word")
     const LENGTH = 6;

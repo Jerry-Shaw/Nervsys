@@ -33,10 +33,12 @@ class redis_queue extends redis
         'child' => []
     ];
 
-    //Process properties
-    private $runs  = 10;
-    private $exec  = 200;
+    //Child process
     private $child = '';
+
+    //Process properties
+    protected $runs = 10;
+    protected $exec = 200;
 
     //Wait properties
     const WAIT_IDLE = 3;
