@@ -33,9 +33,13 @@ class operator extends factory
     public static function init_load(array $cmd): void
     {
         foreach ($cmd as $item) {
-            list($order, $method) = explode('-', $item, 2);
-
             try {
+                if (false === strpos($item, '-')) {
+                    throw new \Exception('System initial command "' . $item . '" ERROR!', E_USER_ERROR);
+                }
+
+                list($order, $method) = explode('-', $item, 2);
+
                 self::build_caller($order, parent::build_name($order), $method);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
