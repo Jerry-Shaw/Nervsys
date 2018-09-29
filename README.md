@@ -350,8 +350,34 @@ When "error_reporting" is set LARGER than 0, line breaks will be added to JSON/X
 In the latest version of NervSys, "factory" handler is ready for use to control all extended classes.  
   
 Usage:  
-"class::new(arguments, ...)" is to get new created/cloned class object of the called class.  
-"factory::use(class, \[arguments, ...\])" is to create new class object anywhere, and use it directly as the original instance in singleton mode. But when arguments changed, even if with the same class name, factory will return back a different instance.
+Required: All classes should be extended from "factory"  
+  
+1. Create new cloned class from called class  
+$class = class_name::new(arguments, ...);  
+  
+2. Save it under alias name  
+$class = class_name::new(arguments, ...)->as('alias_name');  
+  
+3. Save it under alias name with configurations  
+$class = class_name::new(arguments, ...)->config(array $settings)->as('alias_name');  
+  
+4. Get cloned object by its alisa name  
+$cloned_class = class_name::new('alias_name');  
+
+5. Save an object in the middle way
+$object->as('alias_name');
+  
+  
+NOTICE: Same ways to call "use" and "obtain" methods, but there are still some small differences:  
+  
+new: all returned object points to the called class, but in clone mode. Arguments can both be the params for "__construct" method and its alias name.  
+  
+use: all returned object points to the called class, but also points to the original instance, not cloned. Arguments can both be the params for "__construct" method and its alias name.  
+  
+obtain: all returned object points to the first argument using a class name, with the second argument as the params for "__construct" method. But this method also supports alias calling by passing correct class name and its alias name as the only param in the second argument array.  
+  
+  
+Caution: Make sure to use alias names conditionally and differently to avoid conflict.
 
 
 ### TrustZone
