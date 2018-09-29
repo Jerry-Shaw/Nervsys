@@ -24,57 +24,29 @@ use core\system;
 
 class factory extends system
 {
-    //Cloned objects
-    private static $cloned = [];
-
-    //Original objects
-    private static $origin = [];
+    //Factory storage
+    private static $storage = [];
 
     /**
-     * Get new cloned object from called class
+     * Get new cloned object from called class or alias name
      * Defined by both class name and arguments
      *
      * @return $this
      */
     protected static function new(): object
     {
-        $param = func_get_args();
-
-        //Create and store to cloned list
-        if (!isset(self::$cloned[$key = hash('md5', get_called_class() . json_encode($param))])) {
-            self::$cloned[$key] = !empty($param) ? new static(...$param) : new static();
-        }
-
-        unset($param);
-        return clone self::$cloned[$key];
+        return clone self::stock(__FUNCTION__, get_called_class(), func_get_args());
     }
 
     /**
-     * Get original object from called class
+     * Get original object from called class or alias name
      * Defined by only class name created last time
-     * Free original storage before reuse if necessary
      *
      * @return $this
      */
     protected static function use(): object
     {
-        $name  = get_called_class();
-        $param = func_get_args();
-
-        //Check alias calling
-        if (1 === func_num_args()
-            && is_string($param[0])
-            && isset(self::$origin[$key = hash('md5', $name . '_AS_' . $param[0])])) {
-            return self::$origin[$key];
-        }
-
-        //Create and store to original list
-        if (!isset(self::$origin[$key = hash('md5', $name)])) {
-            self::$origin[$key] = !empty($param) ? new static(...$param) : new static();
-        }
-
-        unset($name, $param);
-        return self::$origin[$key];
+        return self::stock(__FUNCTION__, get_called_class(), func_get_args());
     }
 
     /**
@@ -88,19 +60,11 @@ class factory extends system
      */
     protected static function obtain(string $class, array $param = []): object
     {
-        $class = parent::build_name($class);
-
-        //Create and store to original list
-        if (!isset(self::$origin[$key = hash('md5', $class . json_encode($param))])) {
-            self::$origin[$key] = !empty($param) ? new $class(...$param) : new $class();
-        }
-
-        unset($class, $param);
-        return self::$origin[$key];
+        return self::stock(__FUNCTION__, parent::build_name($class), $param);
     }
 
     /**
-     * Free from original storage by name/alias
+     * Free from factory storage by name/alias
      *
      * @param string $name
      */
@@ -111,9 +75,9 @@ class factory extends system
 
         //Remove from original storage
         foreach ($items as $val) {
-            if (isset(self::$origin[$key = hash('md5', $val)])) {
-                self::$origin[$key] = null;
-                unset(self::$origin[$key]);
+            if (isset(self::$storage[$key = hash('md5', $val)])) {
+                self::$storage[$key] = null;
+                unset(self::$storage[$key]);
             }
         }
 
@@ -123,6 +87,7 @@ class factory extends system
     /**
      * Copy object as alias and remove source
      * Alias is merged with called class and alias name
+     * Different names should be using conditionally to avoid conflicts
      *
      * @param string $alias
      *
@@ -131,10 +96,10 @@ class factory extends system
     protected function as(string $alias): object
     {
         self::free($name = get_class($this));
-        self::$origin[$key = hash('md5', $name . '_AS_' . $alias)] = $this;
+        self::$storage[$key = hash('md5', $name . '_AS_' . $alias)] = $this;
 
         unset($alias, $name);
-        return self::$origin[$key];
+        return self::$storage[$key];
     }
 
     /**
@@ -154,5 +119,38 @@ class factory extends system
 
         unset($setting, $key, $val);
         return $this;
+    }
+
+    /**
+     * Stock controller
+     *
+     * @param string $type
+     * @param string $class
+     * @param array  $param
+     *
+     * @return object
+     */
+    private static function stock(string $type, string $class, array $param): object
+    {
+        //Check alias calling
+        if (1 === count($param)
+            && is_string($param[0])
+            && isset(self::$storage[$key = hash('md5', $class . '_AS_' . $param[0])])) {
+            unset($type, $class, $param);
+            return self::$storage[$key];
+        }
+
+        //Generate object key
+        $key = 'use' === $type
+            ? hash('md5', $type . ':' . $class)
+            : hash('md5', $type . ':' . $class . ':' . json_encode($param));
+
+        //Create object and save to storage
+        if (!isset(self::$storage[$key])) {
+            self::$storage[$key] = !empty($param) ? new $class(...$param) : new $class();
+        }
+
+        unset($type, $class, $param);
+        return self::$storage[$key];
     }
 }
