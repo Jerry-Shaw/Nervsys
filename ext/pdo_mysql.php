@@ -562,7 +562,7 @@ class pdo_mysql extends pdo
      */
     private function build_select(): string
     {
-        $sql = 'SELECT ' . ('' !== $this->field ? $this->escape($this->field) : '`*`') . ' FROM ' . $this->table . ' ';
+        $sql = 'SELECT ' . ('' !== $this->field ? $this->escape($this->field) : '*') . ' FROM ' . $this->table . ' ';
 
         if ('' !== $this->join) {
             $sql .= $this->join;
