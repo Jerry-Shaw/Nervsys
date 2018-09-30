@@ -201,7 +201,7 @@ class pdo_mysql extends pdo
      */
     public function where(array $where): object
     {
-        $this->where .= $this->build_where($where, $this->where);
+        $this->where .= $this->build_where($where, __FUNCTION__);
 
         unset($where);
         return $this;
@@ -216,7 +216,7 @@ class pdo_mysql extends pdo
      */
     public function having(array $having): object
     {
-        $this->having .= $this->build_where($having, $this->having);
+        $this->having .= $this->build_where($having, __FUNCTION__);
 
         unset($having);
         return $this;
@@ -687,56 +687,63 @@ class pdo_mysql extends pdo
 
     /**
      * Build where conditions
+     * Complex condition compatible
      *
-     * @param array  $value
+     * @param array  $values
      * @param string $refer_to
      *
      * @return string
      */
-    private function build_where(array $value, string $refer_to): string
+    private function build_where(array $values, string $refer_to): string
     {
         $where = '';
 
-        if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
-            array_shift($value);
-            $where .= $item . ' ';
-        } elseif ('' !== $refer_to) {
-            $where .= 'AND ';
+        if (!is_array($values[0])) {
+            $values = [$values];
         }
 
-        $where .= $this->escape($value[0]) . ' ';
-
-        if (3 === count($value)) {
-            if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
-                throw new \PDOException('MySQL: Operator: "' . $value[1] . '" NOT allowed!');
-            }
-
-            $where .= $item . ' ';
-
-            if (!is_array($value[2])) {
-                $this->bind[] = &$value[2];
-
-                $where .= '? ';
-            } else {
-                $this->bind = array_merge($this->bind, $value[2]);
-
-                $where .= 'BETWEEN' !== $item ? '(' . implode(', ', array_fill(0, count($value[2]), '?')) . ') ' : '? AND ? ';
-            }
-        } elseif (!is_array($value[1])) {
-            if (!in_array($item = strtoupper($value[1]), ['IS NULL', 'IS NOT NULL'], true)) {
-                $this->bind[] = &$value[1];
-
-                $where .= '= ? ';
-            } else {
+        foreach ($values as $value) {
+            if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
+                array_shift($value);
                 $where .= $item . ' ';
+            } elseif ('' !== $this->$refer_to) {
+                $where .= 'AND ';
             }
-        } else {
-            $this->bind = array_merge($this->bind, $value[1]);
 
-            $where .= 'IN ' . '(' . implode(', ', array_fill(0, count($value[1]), '?')) . ')' . ' ';
+            $where .= $this->escape($value[0]) . ' ';
+
+            if (3 === count($value)) {
+                if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                    throw new \PDOException('MySQL: Operator: "' . $value[1] . '" NOT allowed!');
+                }
+
+                $where .= $item . ' ';
+
+                if (!is_array($value[2])) {
+                    $this->bind[] = &$value[2];
+
+                    $where .= '? ';
+                } else {
+                    $this->bind = array_merge($this->bind, $value[2]);
+
+                    $where .= 'BETWEEN' !== $item ? '(' . implode(', ', array_fill(0, count($value[2]), '?')) . ') ' : '? AND ? ';
+                }
+            } elseif (!is_array($value[1])) {
+                if (!in_array($item = strtoupper($value[1]), ['IS NULL', 'IS NOT NULL'], true)) {
+                    $this->bind[] = &$value[1];
+
+                    $where .= '= ? ';
+                } else {
+                    $where .= $item . ' ';
+                }
+            } else {
+                $this->bind = array_merge($this->bind, $value[1]);
+
+                $where .= 'IN ' . '(' . implode(', ', array_fill(0, count($value[1]), '?')) . ')' . ' ';
+            }
         }
 
-        unset($value, $item);
+        unset($values, $refer_to, $value, $item);
         return $where;
     }
 
