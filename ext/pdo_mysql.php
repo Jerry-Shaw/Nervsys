@@ -111,22 +111,24 @@ class pdo_mysql extends pdo
     /**
      * Set insert values
      *
-     * @param array $value
-     * @param bool  $append
+     * @param array $values
      *
      * @return $this
      */
-    public function value(array $value, bool $append = false): object
+    public function value(array $values): object
     {
-        if (!$append) {
-            $this->bind  = array_values($value);
-            $this->value = &$value;
-        } else {
-            $this->bind[] = current($value);
-            $this->value  += $value;
+        if (!is_array($values[0])) {
+            $values = [$values];
         }
 
-        unset($value, $append);
+        foreach ($values as $value) {
+            if (!isset($this->value[key($value)])) {
+                $this->bind[] = current($value);
+                $this->value  += $value;
+            }
+        }
+
+        unset($values, $value);
         return $this;
     }
 
