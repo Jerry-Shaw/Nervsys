@@ -192,7 +192,9 @@ class system extends command
         //Response access allowed headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . self::$cors[$_SERVER['HTTP_ORIGIN']]);
+        header('Access-Control-Allow-Credentials: true');
 
+        //Exit on OPTION request
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             exit;
         }
