@@ -378,39 +378,33 @@ class redis_queue extends redis
             operator::init_load(is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module]);
         }
 
-        //Merge methods
-        $class   = parent::build_name($order);
-        $methods = method_exists($class, 'init') ? ['init', $method] : [$method];
+        try {
+            //Reflect method
+            $reflect = new \ReflectionMethod($class = parent::build_name($order), $method);
 
-        foreach ($methods as $method) {
-            try {
-                //Reflect method
-                $reflect = new \ReflectionMethod($class, $method);
-
-                //Not public
-                if (!$reflect->isPublic()) {
-                    throw new \Exception(ltrim($class, '\\') . '=>' . $method . ': NOT for public!', E_USER_WARNING);
-                }
-
-                //Get factory object
-                if (!$reflect->isStatic()) {
-                    $class = method_exists($class, '__construct')
-                        ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
-                        : parent::obtain($class);
-                }
-
-                //Call method (with params)
-                $result = !empty($params = data::build_argv($reflect, $input))
-                    ? forward_static_call_array([$class, $method], $params)
-                    : forward_static_call([$class, $method]);
-
-                //Check result
-                self::check_job($data, json_encode($result));
-            } catch (\Throwable $throwable) {
-                $redis->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()]));
-                unset($throwable);
-                return;
+            //Not public
+            if (!$reflect->isPublic()) {
+                throw new \Exception(ltrim($class, '\\') . '=>' . $method . ': NOT for public!', E_USER_WARNING);
             }
+
+            //Get factory object
+            if (!$reflect->isStatic()) {
+                $class = method_exists($class, '__construct')
+                    ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
+                    : parent::obtain($class);
+            }
+
+            //Call method (with params)
+            $result = !empty($params = data::build_argv($reflect, $input))
+                ? forward_static_call_array([$class, $method], $params)
+                : forward_static_call([$class, $method]);
+
+            //Check result
+            self::check_job($data, json_encode($result));
+        } catch (\Throwable $throwable) {
+            $redis->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()]));
+            unset($throwable);
+            return;
         }
 
         unset($data, $redis, $input, $order, $method, $module, $class, $methods, $reflect, $params, $result);

@@ -123,11 +123,6 @@ class operator extends factory
                 self::init_load(is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module]);
             }
 
-            //Call "init" method
-            if (method_exists($class, 'init')) {
-                self::build_caller($name, $class, 'init');
-            }
-
             //Check TrustZone permission
             if (empty($tz_list = trustzone::keys($class))) {
                 continue;
