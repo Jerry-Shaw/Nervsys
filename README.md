@@ -309,14 +309,6 @@ class TestA
             ]
     ];
     
-    public static function init(): void 
-    {
-        //some code...
-        //$tz controlling...
-        //Process data controlling...
-        //etc...
-    }
-    
     public static function test_a(string $param_a, array $param_b): void
     {
         //some code...
@@ -398,11 +390,6 @@ In full mode, MUST exist parameters are listing under 'param' key, they are doin
 ### Autofill
 
 Parameters in functions will be automatically filled by API once existing in process data with the same name. Note that, this feature only works for API exposed functions. Once the function is being called, both $tz and params will be checked for qualification to pass.
-
-
-### function "init"
-
-"init" function is optional in API exposed classes. When API calling some functions in a class, it looks for "init" function first, and goes to call it when exists. Quite similar to "__construct" function, 
 
 
 ### Simple-Calling
