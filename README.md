@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.0.0  
+Stable version: 7.2.0  
 Extension version: 2.0  
 [Test Suites](https://github.com/NervSys/tests)  
 
@@ -327,6 +327,34 @@ class TestA
 ```
 
 
+### Example "TestB.php":
+
+```php
+<?php
+namespace DirA;
+
+class TestB
+{
+    public $tz = 'test_a,test_b,test_c';
+    
+    public static function test_a(string $param_a, array $param_b): void
+    {
+        //some code...
+    }
+    
+    public static function test_b(string $param_c, array $param_d): void
+    {
+        //some code...
+    }
+    
+    public function test_c(): void
+    {
+        //some code...
+    }
+}
+```
+
+
 ## Keywords
 
 ### error_reporting
@@ -374,9 +402,11 @@ Caution: Make sure to use alias names conditionally and differently to avoid con
 
 ### TrustZone
 
-Every class which is exposed to API should always contain a static array variable named $tz. The content in $tz controls the exact method calling actions in the owner class.  
+Every class which is exposed to API should always contain a variable named "$tz", static or non-static are both supported. It controls the exact method calling behaviour in the owner class.  
   
-Two types of $tz:  
+The values are recorded when API accesses the class for the first time. Never try to modify "$tz" in any of the functions in the same class. Nothing will be affected.  
+  
+_Two types of $tz in array: example of "TestA.php"_  
   
 In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.  
   
@@ -385,8 +415,12 @@ In the example above, $tz for function "test_a" is written in simple mode, while
 In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when process data structure is not matched $tz settings.  
   
 In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.
+  
+_Simple stringified $tz format: example of "TestB.php_  
 
-
+That is a simple format which means methods "test_a", "test_b", "test_c" are all exposed to API with no TrustZone limitation. But they also may or may not be strict by the argument data parser.  
+  
+  
 ### Autofill
 
 Parameters in functions will be automatically filled by API once existing in process data with the same name. Note that, this feature only works for API exposed functions. Once the function is being called, both $tz and params will be checked for qualification to pass.
@@ -481,8 +515,13 @@ In this mode, PHP script will be called when the command and data matches the cl
 
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-MyCMD" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
 * /path/php api.php --ret --cmd "DirA/ctr/TestA-test_a-test_b-test_c-DirA/TestB-test_a-test_b-test_c-MyCMD_A" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz" --pipe "xxxxxxxx"  
-* /path/php api.php --ret --cmd "DirA/ctr/TestA-MyCMD_A-MyCMD_B" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz" --pipe "xxxxxxxx" --pipe "xxxxxxxx" --time "1000"
+* /path/php api.php --ret --cmd "DirA/ctr/TestA-MyCMD_A-MyCMD_B" --data "param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz" --pipe "xxxxxxxx" --pipe "xxxxxxxx" --time "1000"  
+  
 
+## On Error
+
+Normally, when php encounters an error, or an exception, it'll stop anyway. But here, it only stops on ERROR, even if dependency functions are missing, or exception which is not set Code to E_USER_ERROR, etc... Very useful when doing multiple calling (not finally done yet)  
+  
 
 ## Credits
 
