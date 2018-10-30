@@ -120,17 +120,14 @@ class error extends system
      */
     public static function exception_handler(\Throwable $throwable): void
     {
+        //Get exception name
+        $exception = get_class($throwable);
+
         //Get error level
-        if (isset(self::LEVEL[$throwable->getCode()])) {
-            $class = 'Exception';
-            $level = self::LEVEL[$throwable->getCode()];
-        } else {
-            $class = get_class($throwable);
-            $level = false !== stripos($class, 'Error') || false !== stripos($class, 'Exception') ? 'error' : 'debug';
-        }
+        $level = isset(self::LEVEL[$throwable->getCode()]) ? self::LEVEL[$throwable->getCode()] : 'warning';
 
         //Build message
-        $message = $class . ' caught in ' . $throwable->getFile()
+        $message = $exception . ' caught in ' . $throwable->getFile()
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
@@ -146,7 +143,7 @@ class error extends system
         log::$level($message, $context);
         log::show($level, $message, $context);
 
-        unset($throwable, $class, $message, $context);
+        unset($throwable, $exception, $message, $context);
 
         //Stop on error
         if ('error' === $level) {
