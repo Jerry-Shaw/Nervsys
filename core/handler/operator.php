@@ -26,28 +26,26 @@ use core\parser\trustzone;
 class operator extends factory
 {
     /**
-     * Call INIT/LOAD
-     *
-     * @param array $cmd
+     * Initialize operator
      */
-    public static function init_load(array $cmd): void
+    public static function init(): void
     {
-        foreach ($cmd as $item) {
-            try {
-                if (false === strpos($item, '-')) {
-                    throw new \Exception('System initial command "' . $item . '" ERROR!', E_USER_ERROR);
-                }
-
-                list($order, $method) = explode('-', $item, 2);
-
-                self::build_caller($order, parent::build_name($order), $method);
-            } catch (\Throwable $throwable) {
-                error::exception_handler($throwable);
-                unset($throwable);
+        try {
+            //Build dependency
+            if (!parent::build_dep(self::$init)) {
+                throw new \Exception('Build initial commands failed!', E_USER_ERROR);
             }
+
+            //Run command
+            foreach (self::$init as $item) {
+                self::build_caller(...$item);
+            }
+        } catch (\Throwable $throwable) {
+            error::exception_handler($throwable);
+            unset($throwable);
         }
 
-        unset($cmd, $item, $order, $method);
+        unset($item, $order, $method);
     }
 
     /**
@@ -118,13 +116,31 @@ class operator extends factory
                 continue;
             }
 
-            //Call LOAD commands
+            //Process dependency
             if (isset(parent::$load[$module = strstr($name, '/', true)])) {
-                self::init_load(is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module]);
+                $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
+
+                //Build dependency
+                if (!parent::build_dep($dep_list)) {
+                    continue;
+                }
+
+                //Call dependency
+                foreach ($dep_list as $dep) {
+                    try {
+                        self::build_caller(...$dep);
+                    } catch (\Throwable $throwable) {
+                        error::exception_handler($throwable);
+                        unset($throwable);
+                        continue 2;
+                    }
+                }
+
+                unset($dep_list, $dep);
             }
 
             //Check TrustZone permission
-            if (empty($tz_list = trustzone::keys($class))) {
+            if (empty($tz_list = trustzone::init($class))) {
                 continue;
             }
 
@@ -134,17 +150,20 @@ class operator extends factory
 
             unset($module, $tz_list, $func_list, $method);
 
-            //Handle target list
+            //Process target list
             foreach ($target_list as $target) {
                 try {
                     //Get TrustZone data
                     $tz_data = trustzone::fetch($class, $target);
 
-                    //Run pre functions
-                    if (!empty($tz_data['pre'])) {
-                        foreach ($tz_data['pre'] as $tz_item) {
-                            self::build_caller($tz_item['order'], parent::build_name($tz_item['order']), $tz_item['method']);
-                        }
+                    //Build pre/post dependency
+                    if (!parent::build_dep($tz_data['pre']) || !parent::build_dep($tz_data['post'])) {
+                        continue;
+                    }
+
+                    //Call pre dependency
+                    foreach ($tz_data['pre'] as $tz_item) {
+                        self::build_caller(...$tz_item);
                     }
 
                     //Verify TrustZone params
@@ -153,11 +172,9 @@ class operator extends factory
                     //Build method caller
                     self::build_caller($name, $class, $target);
 
-                    //Run post functions
-                    if (!empty($tz_data['post'])) {
-                        foreach ($tz_data['post'] as $tz_item) {
-                            self::build_caller($tz_item['order'], parent::build_name($tz_item['order']), $tz_item['method']);
-                        }
+                    //Call post dependency
+                    foreach ($tz_data['post'] as $tz_item) {
+                        self::build_caller(...$tz_item);
                     }
                 } catch (\Throwable $throwable) {
                     error::exception_handler($throwable);
@@ -166,7 +183,7 @@ class operator extends factory
             }
         }
 
-        unset($order, $method, $name, $class, $target_list, $target, $tz_data, $tz_item);
+        unset($order, $method, $class, $name, $target_list, $target, $tz_data, $tz_item);
     }
 
     /**

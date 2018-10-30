@@ -46,8 +46,8 @@ class system extends command
         self::parse();
         self::detect();
 
-        //Call INIT
-        operator::init_load(self::$init);
+        //Initialize
+        operator::init();
 
         //Read input
         input::read();
@@ -111,6 +111,39 @@ class system extends command
 
         unset($chk_list, $key, $ip_list, $ip);
         return '0.0.0.0';
+    }
+
+    /**
+     * Build dependency list
+     *
+     * @param array $dep_list
+     *
+     * @return bool
+     */
+    protected static function build_dep(array &$dep_list): bool
+    {
+        foreach ($dep_list as $key => $dep) {
+            //Check format
+            if (false === strpos($dep, '-')) {
+                error::exception_handler(new \Exception('Dependency "' . $dep . '" ERROR!', E_USER_WARNING));
+                return false;
+            }
+
+            //Parse dependency
+            list($order, $method) = explode('-', $dep, 2);
+
+            //Check existence
+            if (!method_exists($class = self::build_name($order), $method)) {
+                error::exception_handler(new \Exception('Dependency "' . $class . '::' . $method . '" MISSING!', E_USER_WARNING));
+                return false;
+            }
+
+            //Rebuild list
+            $dep_list[$key] = [$order, $class, $method];
+        }
+
+        unset($key, $dep, $order, $method, $class);
+        return true;
     }
 
     /**
