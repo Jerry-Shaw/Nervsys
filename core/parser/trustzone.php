@@ -20,20 +20,65 @@
 
 namespace core\parser;
 
-use core\system;
+use core\handler\factory;
 
-class trustzone extends system
+class trustzone extends factory
 {
+    //TrustZone record
+    private static $record = [];
+
     /**
-     * Get TrustZone keys
+     * Initialize TrustZone keys
      *
      * @param string $class
      *
      * @return array
      */
-    public static function keys(string $class): array
+    public static function init(string $class): array
     {
-        return isset($class::$tz) && is_array($class::$tz) ? array_keys($class::$tz) : [];
+        //Reset record
+        self::$record = [];
+
+        //Fetch TrustZone
+        if (isset($class::$tz)) {
+            self::$record = $class::$tz;
+        } elseif (!method_exists($class, '__construct')) {
+            self::$record = parent::obtain($class)->tz ?? [];
+        } else {
+            try {
+                //Reflect method
+                $reflect = new \ReflectionMethod($class, '__construct');
+
+                //Check visibility
+                if (!$reflect->isPublic()) {
+                    throw new \Exception('Failed to get TrustZone from "' . $class . '"!', E_USER_WARNING);
+                }
+
+                self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
+                unset($reflect);
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable);
+                unset($throwable);
+                return [];
+            }
+        }
+
+        //Parse stringified TrustZone
+        if (is_string(self::$record)) {
+            $items = false !== strpos(self::$record, ',') ? array_filter(explode(',', self::$record)) : [self::$record];
+
+            self::$record = array_map(
+                static function (string $name): array
+                {
+                    return [trim($name) => []];
+                }, $items
+            );
+
+            unset($items);
+        }
+
+        unset($class);
+        return array_keys(self::$record);
     }
 
     /**
@@ -47,7 +92,7 @@ class trustzone extends system
     public static function fetch(string $class, string $method): array
     {
         $val  = [];
-        $data = &($class::$tz)[$method];
+        $data = self::$record[$method] ?? [];
 
         $val['pre']  = isset($data['pre']) ? self::prep_cmd($data['pre']) : [];
         $val['post'] = isset($data['post']) ? self::prep_cmd($data['post']) : [];
@@ -66,7 +111,7 @@ class trustzone extends system
      */
     public static function verify(string $class, string $method): void
     {
-        $value = &($class::$tz)[$method];
+        $value = self::$record[$method] ?? [];
         $param = isset($value['param']) ? $value['param'] : (isset($value[0]) ? $value : []);
 
         if (!empty($param) && !empty($diff = array_diff($param, array_intersect(array_keys(parent::$data), $param)))) {
