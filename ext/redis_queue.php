@@ -22,7 +22,6 @@ namespace ext;
 
 use core\parser\data;
 
-use core\handler\operator;
 use core\handler\platform;
 
 class redis_queue extends redis
@@ -370,37 +369,56 @@ class redis_queue extends redis
             return;
         }
 
-        //Get order & class & method
-        list($order, $method) = explode('-', $input['cmd'], 2);
-
-        //Call LOAD commands
-        if (isset(parent::$load[$module = strstr($order, '/', true)])) {
-            operator::init_load(is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module]);
-        }
-
         try {
-            //Reflect method
-            $reflect = new \ReflectionMethod($class = parent::build_name($order), $method);
+            //Job list
+            $job_list = [];
 
-            //Not public
-            if (!$reflect->isPublic()) {
-                throw new \Exception(ltrim($class, '\\') . '=>' . $method . ': NOT for public!', E_USER_WARNING);
+            //Get order & method
+            list($order, $method) = explode('-', $input['cmd'], 2);
+
+            //Build dependency list
+            if (isset(parent::$load[$module = strstr($order, '/', true)])) {
+                $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
+
+                //Build dependency
+                if (!parent::build_dep($dep_list)) {
+                    throw new \Exception('Dependency build failed!', E_USER_WARNING);
+                }
+
+                //Save job list
+                foreach ($dep_list as $dep) {
+                    $job_list[] = [$dep[1], $dep[2]];
+                }
             }
 
-            //Get factory object
-            if (!$reflect->isStatic()) {
-                $class = method_exists($class, '__construct')
-                    ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), $input))
-                    : parent::obtain($class);
+            //Save class & method
+            $job_list[] = [parent::build_name($order), $method];
+
+            //Execute jobs
+            foreach ($job_list as $job) {
+                //Reflect method
+                $reflect = new \ReflectionMethod($job[0], $job[1]);
+
+                //Not public
+                if (!$reflect->isPublic()) {
+                    throw new \Exception($job[0] . '::' . $job[1] . ': NOT for public!', E_USER_WARNING);
+                }
+
+                //Get factory object
+                if (!$reflect->isStatic()) {
+                    $job[0] = method_exists($job[0], '__construct')
+                        ? parent::obtain($job[0], data::build_argv(new \ReflectionMethod($job[0], '__construct'), $input))
+                        : parent::obtain($job[0]);
+                }
+
+                //Call method (with params)
+                $result = !empty($params = data::build_argv($reflect, $input))
+                    ? forward_static_call_array([$job[0], $job[1]], $params)
+                    : forward_static_call([$job[0], $job[1]]);
+
+                //Check result
+                self::check_job($data, json_encode($result));
             }
-
-            //Call method (with params)
-            $result = !empty($params = data::build_argv($reflect, $input))
-                ? forward_static_call_array([$class, $method], $params)
-                : forward_static_call([$class, $method]);
-
-            //Check result
-            self::check_job($data, json_encode($result));
         } catch (\Throwable $throwable) {
             $redis->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()]));
             unset($throwable);
