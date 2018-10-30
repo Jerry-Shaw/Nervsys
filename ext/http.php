@@ -73,7 +73,7 @@ class http extends factory
     {
         //Check URL
         if (!isset($job['url'])) {
-            throw new \Exception('Missing "url" parameter!', E_USER_ERROR);
+            throw new \Exception('Missing "url" parameter!', E_USER_WARNING);
         }
 
         //Process attached files

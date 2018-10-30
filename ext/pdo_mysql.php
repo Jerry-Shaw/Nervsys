@@ -147,7 +147,7 @@ class pdo_mysql extends pdo
         $val = current($value);
 
         if (!is_numeric($val)) {
-            throw new \PDOException('MySQL: Increase value: "' . $val . '" for column "' . $col . '" ERROR!');
+            throw new \PDOException('MySQL: Increase value: "' . $val . '" for column "' . $col . '" ERROR!', E_USER_ERROR);
         }
 
         $val = false === strpos($val, '.') ? (int)$val : (float)$val;
@@ -235,7 +235,7 @@ class pdo_mysql extends pdo
     public function order(string $field, string $order = 'ASC'): object
     {
         if (!in_array($item = strtoupper($order), ['ASC', 'DESC'], true)) {
-            throw new \PDOException('MySQL: Order method: "' . $order . '" NOT supported!');
+            throw new \PDOException('MySQL: Order method: "' . $order . '" NOT supported!', E_USER_ERROR);
         }
 
         if ('' !== $this->order) {
