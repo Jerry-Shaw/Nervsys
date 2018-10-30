@@ -36,8 +36,9 @@ class pdo_mysql extends pdo
     private $order = '';
     private $limit = '';
 
-    private $incr       = [];
-    private $value      = [];
+    private $incr  = [];
+    private $value = [];
+
     private $bind_value = [];
     private $bind_where = [];
 
@@ -338,7 +339,7 @@ class pdo_mysql extends pdo
         $stmt = parent::connect()->prepare($this->build_sql());
 
         try {
-            $stmt->execute(array_merge($this->bind_value, $this->bind_where));
+            $stmt->execute($this->bind_value);
             $this->clean_up();
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
@@ -360,7 +361,7 @@ class pdo_mysql extends pdo
         $stmt = parent::connect()->prepare($this->build_sql());
 
         try {
-            $result = $stmt->execute(array_merge($this->bind_value, $this->bind_where));
+            $result = $stmt->execute($this->bind_value);
             $this->clean_up();
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
@@ -591,6 +592,9 @@ class pdo_mysql extends pdo
             $sql .= 'LIMIT ' . $this->limit;
         }
 
+        //Rebuild bind values
+        $this->bind_value = $this->bind_where;
+
         return $sql;
     }
 
@@ -627,6 +631,9 @@ class pdo_mysql extends pdo
             $sql .= 'LIMIT ' . $this->limit;
         }
 
+        //Rebuild bind values
+        $this->bind_value = array_merge($this->bind_value, $this->bind_where);
+
         return $sql;
     }
 
@@ -644,6 +651,9 @@ class pdo_mysql extends pdo
         if ('' !== $this->limit) {
             $sql .= 'LIMIT ' . $this->limit;
         }
+
+        //Rebuild bind values
+        $this->bind_value = $this->bind_where;
 
         return $sql;
     }
@@ -766,8 +776,9 @@ class pdo_mysql extends pdo
         $this->order = '';
         $this->limit = '';
 
-        $this->incr       = [];
-        $this->value      = [];
+        $this->incr  = [];
+        $this->value = [];
+
         $this->bind_value = [];
         $this->bind_where = [];
     }
