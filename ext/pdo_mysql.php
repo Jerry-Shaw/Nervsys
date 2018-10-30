@@ -36,9 +36,10 @@ class pdo_mysql extends pdo
     private $order = '';
     private $limit = '';
 
-    private $bind  = [];
-    private $incr  = [];
-    private $value = [];
+    private $incr       = [];
+    private $value      = [];
+    private $bind_value = [];
+    private $bind_where = [];
 
     /**
      * Insert into table
@@ -123,8 +124,8 @@ class pdo_mysql extends pdo
 
         foreach ($values as $value) {
             if (!isset($this->value[key($value)])) {
-                $this->bind[] = current($value);
-                $this->value  += $value;
+                $this->bind_value[] = current($value);
+                $this->value        += $value;
             }
         }
 
@@ -337,7 +338,7 @@ class pdo_mysql extends pdo
         $stmt = parent::connect()->prepare($this->build_sql());
 
         try {
-            $stmt->execute($this->bind);
+            $stmt->execute(array_merge($this->bind_value, $this->bind_where));
             $this->clean_up();
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
@@ -359,7 +360,7 @@ class pdo_mysql extends pdo
         $stmt = parent::connect()->prepare($this->build_sql());
 
         try {
-            $result = $stmt->execute($this->bind);
+            $result = $stmt->execute(array_merge($this->bind_value, $this->bind_where));
             $this->clean_up();
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
@@ -556,7 +557,7 @@ class pdo_mysql extends pdo
     {
         return 'INSERT INTO ' . $this->table
             . ' (' . $this->escape(implode(', ', array_keys($this->value))) . ')'
-            . ' VALUES (' . implode(', ', array_fill(0, count($this->bind), '?')) . ')';
+            . ' VALUES (' . implode(', ', array_fill(0, count($this->bind_value), '?')) . ')';
     }
 
     /**
@@ -722,24 +723,24 @@ class pdo_mysql extends pdo
                 $where .= $item . ' ';
 
                 if (!is_array($value[2])) {
-                    $this->bind[] = &$value[2];
+                    $this->bind_where[] = &$value[2];
 
                     $where .= '? ';
                 } else {
-                    $this->bind = array_merge($this->bind, $value[2]);
+                    $this->bind_where = array_merge($this->bind_where, $value[2]);
 
                     $where .= 'BETWEEN' !== $item ? '(' . implode(', ', array_fill(0, count($value[2]), '?')) . ') ' : '? AND ? ';
                 }
             } elseif (!is_array($value[1])) {
                 if (!in_array($item = strtoupper($value[1]), ['IS NULL', 'IS NOT NULL'], true)) {
-                    $this->bind[] = &$value[1];
+                    $this->bind_where[] = &$value[1];
 
                     $where .= '= ? ';
                 } else {
                     $where .= $item . ' ';
                 }
             } else {
-                $this->bind = array_merge($this->bind, $value[1]);
+                $this->bind_where = array_merge($this->bind_where, $value[1]);
 
                 $where .= 'IN ' . '(' . implode(', ', array_fill(0, count($value[1]), '?')) . ')' . ' ';
             }
@@ -765,8 +766,9 @@ class pdo_mysql extends pdo
         $this->order = '';
         $this->limit = '';
 
-        $this->bind  = [];
-        $this->incr  = [];
-        $this->value = [];
+        $this->incr       = [];
+        $this->value      = [];
+        $this->bind_value = [];
+        $this->bind_where = [];
     }
 }
