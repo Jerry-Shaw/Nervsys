@@ -119,17 +119,11 @@ class pdo_mysql extends pdo
      */
     public function value(array $values): object
     {
-        if (!is_array($values[0])) {
-            $values = [$values];
+        foreach ($values as $key=>$value)
+        {
+            $this->bind_value[] = $value;
+            $this->value       += [$key=>$value];
         }
-
-        foreach ($values as $value) {
-            if (!isset($this->value[key($value)])) {
-                $this->bind_value[] = current($value);
-                $this->value        += $value;
-            }
-        }
-
         unset($values, $value);
         return $this;
     }
@@ -547,7 +541,6 @@ class pdo_mysql extends pdo
         if ('' === $this->act) {
             throw new \PDOException('MySQL: No action provided!');
         }
-
         return trim($this->{'build_' . strtolower($this->act)}());
     }
 
@@ -608,9 +601,7 @@ class pdo_mysql extends pdo
         }
 
         $sql = 'UPDATE ' . $this->table . ' SET ';
-
         $data = [];
-
         foreach ($this->value as $col => $val) {
             $data[] = $this->escape($col) . ' = ?';
         }
