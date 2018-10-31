@@ -36,7 +36,7 @@ class trustzone extends factory
      */
     public static function init(string $class): array
     {
-        //Reset record
+        //Reset TrustZone
         self::$record = [];
 
         //Fetch TrustZone
@@ -65,16 +65,18 @@ class trustzone extends factory
 
         //Parse stringified TrustZone
         if (is_string(self::$record)) {
+            //Parse TrustZone
             $items = false !== strpos(self::$record, ',') ? array_filter(explode(',', self::$record)) : [self::$record];
 
-            self::$record = array_map(
-                static function (string $name): array
-                {
-                    return [trim($name) => []];
-                }, $items
-            );
+            //Refill TrustZone
+            self::$record = [];
+            foreach ($items as $item) {
+                if ('' !== $item = trim($item)) {
+                    self::$record[$item] = [];
+                }
+            }
 
-            unset($items);
+            unset($items, $item);
         }
 
         unset($class);
