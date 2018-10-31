@@ -119,11 +119,13 @@ class pdo_mysql extends pdo
      */
     public function value(array $values): object
     {
-        foreach ($values as $key=>$value)
-        {
-            $this->bind_value[] = $value;
-            $this->value       += [$key=>$value];
+        foreach ($values as $key => $value) {
+            if (!isset($this->value[$key])) {
+                $this->value[$key]  = $value;
+                $this->bind_value[] = $value;
+            }
         }
+
         unset($values, $value);
         return $this;
     }
@@ -601,7 +603,9 @@ class pdo_mysql extends pdo
         }
 
         $sql = 'UPDATE ' . $this->table . ' SET ';
+
         $data = [];
+
         foreach ($this->value as $col => $val) {
             $data[] = $this->escape($col) . ' = ?';
         }
