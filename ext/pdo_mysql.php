@@ -134,25 +134,17 @@ class pdo_mysql extends pdo
      * Set update increase values
      * Using negative number for decrement
      *
-     * @param array $value
-     * @param bool  $append
+     * @param array $values
      *
      * @return $this
      */
-    public function incr(array $value, bool $append = false): object
+    public function incr(array $values): object
     {
-        $col = key($value);
-        $val = current($value);
-
-        if (!is_numeric($val)) {
-            throw new \PDOException('MySQL: Increase value: "' . $val . '" for column "' . $col . '" ERROR!', E_USER_ERROR);
+        foreach ($values as $key => $value) {
+            $this->incr[$key] = false === strpos($value, '.') ? (int)$value : (float)$value;
         }
 
-        $val = false === strpos($val, '.') ? (int)$val : (float)$val;
-
-        !$append ? $this->incr = [$col => &$val] : $this->incr[$col] = &$val;
-
-        unset($value, $append, $col, $val);
+        unset($values, $key, $value);
         return $this;
     }
 
