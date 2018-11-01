@@ -20,6 +20,7 @@
 
 namespace core\parser;
 
+use core\handler\error;
 use core\handler\factory;
 
 class trustzone extends factory
@@ -54,6 +55,7 @@ class trustzone extends factory
                     throw new \Exception('Failed to get TrustZone from "' . $class . '"!', E_USER_WARNING);
                 }
 
+                //Fetch TrustZone
                 self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
                 unset($reflect);
             } catch (\Throwable $throwable) {
