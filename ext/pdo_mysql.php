@@ -714,7 +714,7 @@ class pdo_mysql extends pdo
             if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
                 array_shift($value);
                 $where .= $item . ' ';
-            } elseif ('' !== $this->$refer_to) {
+            } elseif ('' !== $where || '' !== $this->$refer_to) {
                 $where .= 'AND ';
             }
 
