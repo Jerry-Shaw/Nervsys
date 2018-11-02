@@ -41,6 +41,7 @@ class operator extends factory
 
             unset($item);
         } catch (\Throwable $throwable) {
+            //Level up Exception code to ERROR
             error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
             unset($throwable);
         }
@@ -132,6 +133,7 @@ class operator extends factory
 
                 //Check TrustZone permission
                 if (empty($tz_list = trustzone::init($class))) {
+                    //Do not throw out exceptions
                     continue;
                 }
 
@@ -191,8 +193,11 @@ class operator extends factory
         foreach ($list as $path) {
             if (is_string($path = realpath($path . $file))) {
                 require $path;
-                $load = class_exists($class, false);
-                break;
+
+                //Check class status
+                if ($load = class_exists($class, false)) {
+                    break;
+                }
             }
         }
 
