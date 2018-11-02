@@ -381,9 +381,7 @@ class redis_queue extends redis
                 $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
 
                 //Build dependency
-                if (!parent::build_dep($dep_list)) {
-                    throw new \Exception('Dependency build failed!', E_USER_WARNING);
-                }
+                parent::build_dep($dep_list);
 
                 //Save job list
                 foreach ($dep_list as $dep) {
