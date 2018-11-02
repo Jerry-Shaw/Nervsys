@@ -118,15 +118,14 @@ class system extends command
      *
      * @param array $dep_list
      *
-     * @return bool
+     * @throws \Exception
      */
-    protected static function build_dep(array &$dep_list): bool
+    protected static function build_dep(array &$dep_list): void
     {
         foreach ($dep_list as $key => $dep) {
             //Check format
             if (false === strpos($dep, '-')) {
-                error::exception_handler(new \Exception('Dependency "' . $dep . '" ERROR!', E_USER_WARNING));
-                return false;
+                throw new \Exception('Dependency "' . $dep . '" ERROR!', E_USER_WARNING);
             }
 
             //Parse dependency
@@ -134,8 +133,7 @@ class system extends command
 
             //Check existence
             if (!method_exists($class = self::build_name($order), $method)) {
-                error::exception_handler(new \Exception('Dependency "' . $class . '::' . $method . '" MISSING!', E_USER_WARNING));
-                return false;
+                throw new \Exception('Dependency "' . $class . '::' . $method . '" NOT found!', E_USER_WARNING);
             }
 
             //Rebuild list
@@ -143,7 +141,6 @@ class system extends command
         }
 
         unset($key, $dep, $order, $method, $class);
-        return true;
     }
 
     /**

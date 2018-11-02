@@ -20,7 +20,6 @@
 
 namespace core\parser;
 
-use core\handler\error;
 use core\handler\factory;
 
 class trustzone extends factory
@@ -29,11 +28,12 @@ class trustzone extends factory
     private static $record = [];
 
     /**
-     * Initialize TrustZone keys
+     * Initialize TrustZone records
      *
      * @param string $class
      *
      * @return array
+     * @throws \ReflectionException
      */
     public static function init(string $class): array
     {
@@ -46,23 +46,17 @@ class trustzone extends factory
         } elseif (!method_exists($class, '__construct')) {
             self::$record = parent::obtain($class)->tz ?? [];
         } else {
-            try {
-                //Reflect method
-                $reflect = new \ReflectionMethod($class, '__construct');
+            //Reflect method
+            $reflect = new \ReflectionMethod($class, '__construct');
 
-                //Check visibility
-                if (!$reflect->isPublic()) {
-                    throw new \Exception('Failed to get TrustZone from "' . $class . '"!', E_USER_WARNING);
-                }
-
-                //Fetch TrustZone
-                self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
-                unset($reflect);
-            } catch (\Throwable $throwable) {
-                error::exception_handler($throwable);
-                unset($throwable);
-                return [];
+            //Check visibility
+            if (!$reflect->isPublic()) {
+                throw new \ReflectionException('TrustZone ERROR: Initialize "' . $class . '" failed!', E_USER_WARNING);
             }
+
+            //Fetch TrustZone
+            self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
+            unset($reflect);
         }
 
         //Parse stringified TrustZone
@@ -121,7 +115,7 @@ class trustzone extends factory
         if (!empty($param) && !empty($diff = array_diff($param, array_intersect(array_keys(parent::$data), $param)))) {
             //Report TrustZone missing
             throw new \Exception(
-                ltrim($class, '\\') . '::' . $method
+                $class . '::' . $method
                 . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']',
                 E_USER_WARNING
             );

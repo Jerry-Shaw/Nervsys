@@ -31,21 +31,19 @@ class operator extends factory
     public static function init(): void
     {
         try {
-            //Build dependency
-            if (!parent::build_dep(self::$init)) {
-                throw new \Exception('Build initial commands failed!', E_USER_ERROR);
-            }
+            //Build initial dependency
+            parent::build_dep(self::$init);
 
-            //Run command
+            //Run dependency
             foreach (self::$init as $item) {
                 self::build_caller(...$item);
             }
+
+            unset($item);
         } catch (\Throwable $throwable) {
-            error::exception_handler($throwable);
+            error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
             unset($throwable);
         }
-
-        unset($item, $order, $method);
     }
 
     /**
@@ -116,50 +114,41 @@ class operator extends factory
                 continue;
             }
 
-            //Process dependency
-            if (isset(parent::$load[$module = strstr($name, '/', true)])) {
-                $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
+            try {
+                //Process dependency
+                if (isset(parent::$load[$module = strstr($name, '/', true)])) {
+                    $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
 
-                //Build dependency
-                if (!parent::build_dep($dep_list)) {
+                    //Build dependency
+                    parent::build_dep($dep_list);
+
+                    //Call dependency
+                    foreach ($dep_list as $dep) {
+                        self::build_caller(...$dep);
+                    }
+
+                    unset($dep_list, $dep);
+                }
+
+                //Check TrustZone permission
+                if (empty($tz_list = trustzone::init($class))) {
                     continue;
                 }
 
-                //Call dependency
-                foreach ($dep_list as $dep) {
-                    try {
-                        self::build_caller(...$dep);
-                    } catch (\Throwable $throwable) {
-                        error::exception_handler($throwable);
-                        unset($throwable);
-                        continue 2;
-                    }
-                }
+                //Get function list & target list
+                $func_list   = get_class_methods($class);
+                $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
-                unset($dep_list, $dep);
-            }
+                unset($module, $tz_list, $func_list, $method);
 
-            //Check TrustZone permission
-            if (empty($tz_list = trustzone::init($class))) {
-                continue;
-            }
-
-            //Get function list & target list
-            $func_list   = get_class_methods($class);
-            $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
-
-            unset($module, $tz_list, $func_list, $method);
-
-            //Process target list
-            foreach ($target_list as $target) {
-                try {
+                //Process target list
+                foreach ($target_list as $target) {
                     //Get TrustZone data
                     $tz_data = trustzone::fetch($class, $target);
 
                     //Build pre/post dependency
-                    if (!parent::build_dep($tz_data['pre']) || !parent::build_dep($tz_data['post'])) {
-                        continue;
-                    }
+                    parent::build_dep($tz_data['pre']);
+                    parent::build_dep($tz_data['post']);
 
                     //Call pre dependency
                     foreach ($tz_data['pre'] as $tz_item) {
@@ -169,17 +158,17 @@ class operator extends factory
                     //Verify TrustZone params
                     trustzone::verify($class, $target);
 
-                    //Build method caller
+                    //Build target caller
                     self::build_caller($name, $class, $target);
 
                     //Call post dependency
                     foreach ($tz_data['post'] as $tz_item) {
                         self::build_caller(...$tz_item);
                     }
-                } catch (\Throwable $throwable) {
-                    error::exception_handler($throwable);
-                    unset($throwable);
                 }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable);
+                unset($throwable);
             }
         }
 
@@ -263,7 +252,7 @@ class operator extends factory
 
         //Check visibility
         if (!$reflect->isPublic()) {
-            throw new \Exception(ltrim($class, '\\') . '=>' . $method . ': NOT for public!', E_USER_WARNING);
+            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
         }
 
         //Get factory object
