@@ -40,21 +40,22 @@ class trustzone extends factory
         //Reset TrustZone
         self::$record = [];
 
-        //Fetch TrustZone
         if (isset($class::$tz)) {
+            //Fetch via static calling
             self::$record = $class::$tz;
         } elseif (!method_exists($class, '__construct')) {
+            //Fetch via object property
             self::$record = parent::obtain($class)->tz ?? [];
         } else {
-            //Reflect method
+            //Reflect constructor
             $reflect = new \ReflectionMethod($class, '__construct');
 
-            //Check visibility
+            //Check constructor visibility
             if (!$reflect->isPublic()) {
                 throw new \ReflectionException('TrustZone ERROR: Initialize "' . $class . '" failed!', E_USER_WARNING);
             }
 
-            //Fetch TrustZone
+            //Fetch via constructor property
             self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
             unset($reflect);
         }
@@ -82,21 +83,16 @@ class trustzone extends factory
     /**
      * Fetch TrustZone pre & post
      *
-     * @param string $class
      * @param string $method
      *
      * @return array
      */
-    public static function fetch(string $class, string $method): array
+    public static function fetch(string $method): array
     {
-        $val  = [];
-        $data = self::$record[$method] ?? [];
-
-        $val['pre']  = isset($data['pre']) ? self::prep_cmd($data['pre']) : [];
-        $val['post'] = isset($data['post']) ? self::prep_cmd($data['post']) : [];
-
-        unset($class, $method, $data);
-        return $val;
+        return [
+            'pre'  => self::$record[$method]['pre'] ?? [],
+            'post' => self::$record[$method]['post'] ?? []
+        ];
     }
 
     /**
@@ -122,27 +118,5 @@ class trustzone extends factory
         }
 
         unset($class, $method, $value, $param, $diff);
-    }
-
-    /**
-     * Prepare TrustZone CMD
-     *
-     * @param array $cmd
-     *
-     * @return array
-     */
-    private static function prep_cmd(array $cmd): array
-    {
-        $data = [];
-
-        foreach ($cmd as $item) {
-            if (false !== strpos($item, '-')) {
-                list($order, $method) = explode('-', $item, 2);
-                $data[] = ['order' => &$order, 'method' => &$method];
-            }
-        }
-
-        unset($cmd, $item, $order, $method);
-        return $data;
     }
 }
