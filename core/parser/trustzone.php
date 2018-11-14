@@ -92,7 +92,7 @@ class trustzone extends factory
      */
     public static function verify(string $class, string $method): void
     {
-        //Get param values
+        //Get param value
         $value = is_string(self::$record[$method])
             ? self::$record[$method]
             : (self::$record[$method]['param'] ?? '');
@@ -102,8 +102,11 @@ class trustzone extends factory
             return;
         }
 
+        //Fill param values
         $param = self::fill_val($value);
-        $diff  = array_diff($param, array_intersect(array_keys(parent::$data), $param));
+
+        //Check params with input data
+        $diff = array_diff($param, array_intersect(array_keys(parent::$data), $param));
 
         if (!empty($param) && !empty($diff)) {
             //Report TrustZone missing
@@ -116,7 +119,6 @@ class trustzone extends factory
 
         unset($class, $method, $value, $param, $diff);
     }
-
 
     /**
      * Fill TrustZone using keys
