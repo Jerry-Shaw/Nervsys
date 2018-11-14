@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.2.0  
+Stable version: 7.2.2  
 Extension version: 2.0  
 [Test Suites](https://github.com/NervSys/tests)  
 
@@ -296,16 +296,20 @@ namespace DirA\ctr;
 class TestA
 {
     public static $tz = [
-        'test_a' => ['param_a', 'param_b'],
+        'test_a' => 'param_a,param_b',
         
         'test_b' => [
-                'pre' => ['DirA/classA-funcA', 'DirB/classA-funcA'],
-                'post' => ['DirA/classB-funcA', 'DirB/classB-funcA'],
-                'param' => ['param_c', 'param_d']
+                'pre' => 'DirA/classA-funcA,DirB/classA-funcA',
+                'post' => 'DirA/classB-funcA,DirB/classB-funcA',
+                'param' => 'param_c,param_d'
             ],
         
         'test_c' => [
-                'param' => ['param_a', 'param_b', 'param_c']
+                'param' => 'param_a,param_b,param_c'
+            ],
+            
+        'test_d' => [
+                'post' => 'DirA/classB-funcA'
             ]
     ];
     
@@ -319,7 +323,12 @@ class TestA
         //some code...
     }
     
-    public function test_c(string $param_a, array $param_b, string $param_c): void
+    public function test_c(string $param_a, array $param_b, string $param_c): string
+    {
+        //some code...
+    }
+    
+    public function test_d(string $param_a, array $param_b, string $param_c): array
     {
         //some code...
     }
@@ -337,17 +346,17 @@ class TestB
 {
     public $tz = 'test_a,test_b,test_c';
     
-    public static function test_a(string $param_a, array $param_b): void
+    public static function test_a(string $param_a, array $param_b): int
     {
         //some code...
     }
     
-    public static function test_b(string $param_c, array $param_d): void
+    public static function test_b(string $param_c, array $param_d): object
     {
         //some code...
     }
     
-    public function test_c(): void
+    public function test_c(): bool 
     {
         //some code...
     }
@@ -406,19 +415,21 @@ Every class which is exposed to API should always contain a variable named "$tz"
   
 The values are recorded when API accesses the class for the first time. Never try to modify "$tz" in any of the functions in the same class. Nothing will be affected.  
   
-_Two types of $tz in array: example of "TestA.php"_  
-  
 In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.  
+  
+Once anything failed during TrustZone verification, such as, "pre"/"post" dependency method missing, "param" setting not match with input data, or even argument missing, etc. API will skip the process cycle and throw out a warning exception. Other process cycles will continue running.  
+  
+_Two types of $tz in array format: example of "TestA.php"_  
   
 In the example above, $tz for function "test_a" is written in simple mode, while, $tz for function "test_b" is written in full mode.  
   
-In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when process data structure is not matched $tz settings.  
+In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when input data structure is not matched with $tz settings.  
   
-In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.
+In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.  
   
-_Simple stringified $tz format: example of "TestB.php_  
+_Simple $tz in string format: example of "TestB.php_  
 
-That is a simple format which means methods "test_a", "test_b", "test_c" are all exposed to API with no TrustZone limitation. But they also may or may not be strict by the argument data parser.  
+That is a simple format which means methods "test_a", "test_b", "test_c" are all exposed to API with no TrustZone limitation. But they will be still checked by the argument data parser.  
   
   
 ### Autofill
