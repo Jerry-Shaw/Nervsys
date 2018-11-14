@@ -146,14 +146,14 @@ class operator extends factory
                 //Process target list
                 foreach ($target_list as $target) {
                     //Get TrustZone data
-                    $tz_data = trustzone::fetch($class, $target);
+                    $tz_dep = trustzone::get_dep($target);
 
                     //Build pre/post dependency
-                    parent::build_dep($tz_data['pre']);
-                    parent::build_dep($tz_data['post']);
+                    parent::build_dep($tz_dep['pre']);
+                    parent::build_dep($tz_dep['post']);
 
                     //Call pre dependency
-                    foreach ($tz_data['pre'] as $tz_item) {
+                    foreach ($tz_dep['pre'] as $tz_item) {
                         self::build_caller(...$tz_item);
                     }
 
@@ -164,7 +164,7 @@ class operator extends factory
                     self::build_caller($name, $class, $target);
 
                     //Call post dependency
-                    foreach ($tz_data['post'] as $tz_item) {
+                    foreach ($tz_dep['post'] as $tz_item) {
                         self::build_caller(...$tz_item);
                     }
                 }
@@ -174,7 +174,7 @@ class operator extends factory
             }
         }
 
-        unset($order, $method, $class, $name, $target_list, $target, $tz_data, $tz_item);
+        unset($order, $method, $class, $name, $target_list, $target, $tz_dep, $tz_item);
     }
 
     /**

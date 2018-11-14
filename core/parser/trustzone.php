@@ -42,10 +42,10 @@ class trustzone extends factory
 
         if (isset($class::$tz)) {
             //Fetch via static calling
-            self::$record = $class::$tz;
+            $record = $class::$tz;
         } elseif (!method_exists($class, '__construct')) {
             //Fetch via object property
-            self::$record = parent::obtain($class)->tz ?? [];
+            $record = parent::obtain($class)->tz ?? [];
         } else {
             //Reflect constructor
             $reflect = new \ReflectionMethod($class, '__construct');
@@ -56,42 +56,29 @@ class trustzone extends factory
             }
 
             //Fetch via constructor property
-            self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
+            $record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
             unset($reflect);
         }
 
-        //Parse stringified TrustZone
-        if (is_string(self::$record)) {
-            //Parse TrustZone
-            $items = false !== strpos(self::$record, ',') ? array_filter(explode(',', self::$record)) : [self::$record];
+        //Copy TrustZone
+        self::$record = is_string($record) ? self::fill_key($record) : $record;
 
-            //Refill TrustZone
-            self::$record = [];
-            foreach ($items as $item) {
-                if ('' !== $item = trim($item)) {
-                    self::$record[$item] = [];
-                }
-            }
-
-            unset($items, $item);
-        }
-
-        unset($class);
+        unset($class, $record);
         return array_keys(self::$record);
     }
 
     /**
-     * Fetch TrustZone pre & post
+     * Get method dependency
      *
      * @param string $method
      *
      * @return array
      */
-    public static function fetch(string $method): array
+    public static function get_dep(string $method): array
     {
         return [
-            'pre'  => self::$record[$method]['pre'] ?? [],
-            'post' => self::$record[$method]['post'] ?? []
+            'pre'  => isset(self::$record[$method]['pre']) ? self::fill_val(self::$record[$method]['pre']) : [],
+            'post' => isset(self::$record[$method]['post']) ? self::fill_val(self::$record[$method]['post']) : []
         ];
     }
 
@@ -105,10 +92,20 @@ class trustzone extends factory
      */
     public static function verify(string $class, string $method): void
     {
-        $value = self::$record[$method] ?? [];
-        $param = isset($value['param']) ? $value['param'] : (isset($value[0]) ? $value : []);
+        //Get param values
+        $value = is_string(self::$record[$method])
+            ? self::$record[$method]
+            : (self::$record[$method]['param'] ?? '');
 
-        if (!empty($param) && !empty($diff = array_diff($param, array_intersect(array_keys(parent::$data), $param)))) {
+        //Skip param check
+        if ('' === $value) {
+            return;
+        }
+
+        $param = self::fill_val($value);
+        $diff  = array_diff($param, array_intersect(array_keys(parent::$data), $param));
+
+        if (!empty($param) && !empty($diff)) {
             //Report TrustZone missing
             throw new \Exception(
                 $class . '::' . $method
@@ -118,5 +115,50 @@ class trustzone extends factory
         }
 
         unset($class, $method, $value, $param, $diff);
+    }
+
+
+    /**
+     * Fill TrustZone using keys
+     *
+     * @param string $value
+     *
+     * @return array
+     */
+    private static function fill_key(string $value): array
+    {
+        $data  = [];
+        $items = false !== strpos($value, ',') ? array_filter(explode(',', $value)) : [$value];
+
+        foreach ($items as $item) {
+            if ('' !== $item = trim($item)) {
+                $data[$item] = '';
+            }
+        }
+
+        unset($value, $items, $item);
+        return $data;
+    }
+
+    /**
+     * Fill TrustZone using values
+     *
+     * @param string $value
+     *
+     * @return array
+     */
+    private static function fill_val(string $value): array
+    {
+        $data  = [];
+        $items = false !== strpos($value, ',') ? array_filter(explode(',', $value)) : [$value];
+
+        foreach ($items as $item) {
+            if ('' !== $item = trim($item)) {
+                $data[] = $item;
+            }
+        }
+
+        unset($value, $items, $item);
+        return $data;
     }
 }
