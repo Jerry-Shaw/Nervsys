@@ -48,66 +48,54 @@ class operator extends factory
     }
 
     /**
-     * Add CLI jobs
-     *
-     * @param string $cmd
-     *
-     * @throws \Exception
-     */
-    public static function add_cli(string $cmd): void
-    {
-        if (!isset(parent::$cli[$cmd])) {
-            throw new \Exception('Command "' . $cmd . '" NOT permitted!', E_USER_WARNING);
-        }
-
-        parent::$cmd_cli[$cmd] = parent::$cli[$cmd];
-        unset($cmd);
-    }
-
-    /**
      * Run CLI process
      */
     public static function run_cli(): void
     {
         //Process orders
-        foreach (parent::$cmd_cli as $key => $cmd) {
-            try {
-                //Prepare command
-                $command = '"' . $cmd . '"';
+        while (!empty(parent::$cmd_cli)) {
+            foreach (parent::$cmd_cli as $key => $cmd) {
+                //Remove from CLI CMD list
+                unset(parent::$cmd_cli[$key]);
 
-                //Append arguments
-                if (!empty(parent::$param_cli['argv'])) {
-                    $command .= ' ' . implode(' ', parent::$param_cli['argv']);
-                }
+                try {
+                    //Prepare command
+                    $command = '"' . $cmd . '"';
 
-                //Create process
-                $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
-
-                if (!is_resource($process)) {
-                    throw new \Exception($key . '=>' . $cmd . ': Access denied or command ERROR!', E_USER_ERROR);
-                }
-
-                //Send data via pipe
-                if ('' !== parent::$param_cli['pipe']) {
-                    fwrite($pipes[0], parent::$param_cli['pipe'] . PHP_EOL);
-                }
-
-                //Collect result
-                if (parent::$param_cli['ret']) {
-                    if ('' !== $data = self::read_pipe([$process, $pipes[1]])) {
-                        parent::$result[$key] = &$data;
+                    //Append arguments
+                    if (!empty(parent::$param_cli['argv'])) {
+                        $command .= ' ' . implode(' ', parent::$param_cli['argv']);
                     }
 
-                    unset($data);
-                }
+                    //Create process
+                    $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 
-                //Close pipes (ignore process)
-                foreach ($pipes as $pipe) {
-                    fclose($pipe);
+                    if (!is_resource($process)) {
+                        throw new \Exception($key . '=>' . $cmd . ': Access denied or command ERROR!', E_USER_ERROR);
+                    }
+
+                    //Send data via pipe
+                    if ('' !== parent::$param_cli['pipe']) {
+                        fwrite($pipes[0], parent::$param_cli['pipe'] . PHP_EOL);
+                    }
+
+                    //Collect result
+                    if (parent::$param_cli['ret']) {
+                        if ('' !== $data = self::read_pipe([$process, $pipes[1]])) {
+                            parent::$result[$key] = &$data;
+                        }
+
+                        unset($data);
+                    }
+
+                    //Close pipes (ignore process)
+                    foreach ($pipes as $pipe) {
+                        fclose($pipe);
+                    }
+                } catch (\Throwable $throwable) {
+                    error::exception_handler($throwable);
+                    unset($throwable);
                 }
-            } catch (\Throwable $throwable) {
-                error::exception_handler($throwable);
-                unset($throwable);
             }
         }
 
@@ -115,25 +103,10 @@ class operator extends factory
     }
 
     /**
-     * Add CGI jobs
-     *
-     * @param string $class
-     * @param string ...$method
-     */
-    public static function add_cgi(string $class, string ...$method): void
-    {
-        parent::$cmd_cgi[] = func_get_args();
-        unset($class, $method);
-    }
-
-    /**
      * Run CGI process
      */
     public static function run_cgi(): void
     {
-        //Build order list
-        self::build_order();
-
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
             //Get name & class
@@ -252,26 +225,6 @@ class operator extends factory
 
         unset($class, $method);
         return $key;
-    }
-
-    /**
-     * Build CGI order list
-     */
-    private static function build_order(): void
-    {
-        $key  = -1;
-        $list = [];
-
-        foreach (parent::$cmd_cgi as $item) {
-            if (false !== strpos($item, '/') || false !== strpos($item, '\\')) {
-                ++$key;
-            }
-
-            $list[$key][] = $item;
-        }
-
-        parent::$cmd_cgi = &$list;
-        unset($key, $list, $item);
     }
 
     /**

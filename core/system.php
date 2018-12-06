@@ -114,6 +114,35 @@ class system extends command
     }
 
     /**
+     * Add CLI jobs
+     *
+     * @param string $cmd
+     *
+     * @throws \Exception
+     */
+    public static function add_cli(string $cmd): void
+    {
+        if (!isset(parent::$cli[$cmd])) {
+            throw new \Exception('Command "' . $cmd . '" NOT permitted!', E_USER_WARNING);
+        }
+
+        parent::$cmd_cli[$cmd] = parent::$cli[$cmd];
+        unset($cmd);
+    }
+
+    /**
+     * Add CGI jobs
+     *
+     * @param string $class
+     * @param string ...$method
+     */
+    public static function add_cgi(string $class, string ...$method): void
+    {
+        parent::$cmd_cgi[] = func_get_args();
+        unset($class, $method);
+    }
+
+    /**
      * Build dependency list
      *
      * @param array $dep_list

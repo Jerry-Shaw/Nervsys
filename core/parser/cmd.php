@@ -41,7 +41,7 @@ class cmd extends system
 
         //Prepare CMD
         parent::$cmd_cli = self::prep_cli($cmd);
-        parent::$cmd_cgi = self::prep_cgi($cmd);
+        parent::$cmd_cgi = self::pack_cgi(self::prep_cgi($cmd));
 
         unset($cmd);
     }
@@ -106,21 +106,47 @@ class cmd extends system
                 parent::$param_cgi[$item] = $name;
             } else {
                 foreach ($cmd as $key => $val) {
-                    if (0 === strpos($val, $name)) {
-                        //Replace CMD
-                        $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
-
-                        //Add param
-                        parent::$param_cgi[$cmd[$key]] = $val;
+                    if (0 !== strpos($val, $name)) {
+                        continue;
                     }
+
+                    //Replace CMD
+                    $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
+
+                    //Add param
+                    parent::$param_cgi[$cmd[$key]] = $val;
                 }
             }
         }
 
         //Build CMD
-        $order = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
+        $cmd = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
 
-        unset($cmd, $name, $item, $keys, $key, $val);
-        return $order;
+        unset($name, $item, $keys, $key, $val);
+        return $cmd;
+    }
+
+    /**
+     * Pack CGI CMD
+     *
+     * @param array $cmd
+     *
+     * @return array
+     */
+    private static function pack_cgi(array $cmd): array
+    {
+        $key  = -1;
+        $list = [];
+
+        foreach ($cmd as $item) {
+            if (false !== strpos($item, '/') || false !== strpos($item, '\\')) {
+                ++$key;
+            }
+
+            $list[$key][] = $item;
+        }
+
+        unset($cmd, $key, $item);
+        return $list;
     }
 }
