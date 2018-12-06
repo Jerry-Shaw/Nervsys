@@ -31,5 +31,5 @@ class command extends setting
 
     //Parameters
     protected static $param_cgi = [];
-    protected static $param_cli = ['pipe' => '', 'time' => 0, 'ret' => false];
+    protected static $param_cli = ['argv' => [], 'pipe' => '', 'time' => 0, 'ret' => false];
 }

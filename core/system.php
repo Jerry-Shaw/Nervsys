@@ -22,6 +22,7 @@ namespace core;
 
 use core\handler\error;
 use core\handler\operator;
+use core\handler\platform;
 
 use core\parser\cmd;
 use core\parser\input;
@@ -55,11 +56,11 @@ class system extends command
         //Parse CMD
         cmd::parse();
 
-        //Run CLI process
-        operator::run_cli();
-
         //Run CGI process
         operator::run_cgi();
+
+        //Run CLI process
+        operator::run_cli();
 
         //Flush output content
         output::flush();
@@ -114,24 +115,7 @@ class system extends command
     }
 
     /**
-     * Add CLI jobs
-     *
-     * @param string $cmd
-     *
-     * @throws \Exception
-     */
-    public static function add_cli(string $cmd): void
-    {
-        if (!isset(parent::$cli[$cmd])) {
-            throw new \Exception('Command "' . $cmd . '" NOT permitted!', E_USER_WARNING);
-        }
-
-        parent::$cmd_cli[$cmd] = parent::$cli[$cmd];
-        unset($cmd);
-    }
-
-    /**
-     * Add CGI jobs
+     * Add CGI job
      *
      * @param string $class
      * @param string ...$method
@@ -140,6 +124,50 @@ class system extends command
     {
         parent::$cmd_cgi[] = func_get_args();
         unset($class, $method);
+    }
+
+    /**
+     * Add CLI job
+     *
+     * @param string $cmd
+     * @param string $argv
+     * @param string $pipe
+     * @param int    $time
+     * @param bool   $ret
+     *
+     * @throws \Exception
+     */
+    public static function add_cli(string $cmd, string $argv = '', string $pipe = '', int $time = 0, bool $ret = false): void
+    {
+        if (!parent::$is_cli) {
+            throw new \Exception('Operation NOT permitted!', E_USER_WARNING);
+        }
+
+        if ('PHP' === $cmd) {
+            parent::$cli['PHP'] = platform::sys_path();
+        }
+
+        if (!isset(parent::$cli[$cmd])) {
+            throw new \Exception('"' . $cmd . '" NOT defined!', E_USER_WARNING);
+        }
+
+        $cmd_cli = [
+            'key'  => &$cmd,
+            'cmd'  => parent::$cli[$cmd],
+            'ret'  => &$ret,
+            'time' => &$time
+        ];
+
+        if ('' !== $pipe) {
+            $cmd_cli['pipe'] = $pipe . PHP_EOL;
+        }
+
+        if ('' !== $argv) {
+            $cmd_cli['argv'] = ' ' . $argv;
+        }
+
+        parent::$cmd_cli[] = &$cmd_cli;
+        unset($cmd, $argv, $pipe, $time, $ret, $cmd_cli);
     }
 
     /**
@@ -152,7 +180,6 @@ class system extends command
     protected static function build_dep(array &$dep_list): void
     {
         foreach ($dep_list as $key => $dep) {
-            //Check format
             if (false === strpos($dep, '-')) {
                 throw new \Exception('Dependency "' . $dep . '" ERROR!', E_USER_WARNING);
             }

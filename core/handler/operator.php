@@ -48,61 +48,6 @@ class operator extends factory
     }
 
     /**
-     * Run CLI process
-     */
-    public static function run_cli(): void
-    {
-        //Process orders
-        while (!empty(parent::$cmd_cli)) {
-            foreach (parent::$cmd_cli as $key => $cmd) {
-                //Remove from CLI CMD list
-                unset(parent::$cmd_cli[$key]);
-
-                try {
-                    //Prepare command
-                    $command = '"' . $cmd . '"';
-
-                    //Append arguments
-                    if (!empty(parent::$param_cli['argv'])) {
-                        $command .= ' ' . implode(' ', parent::$param_cli['argv']);
-                    }
-
-                    //Create process
-                    $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
-
-                    if (!is_resource($process)) {
-                        throw new \Exception($key . '=>' . $cmd . ': Access denied or command ERROR!', E_USER_ERROR);
-                    }
-
-                    //Send data via pipe
-                    if ('' !== parent::$param_cli['pipe']) {
-                        fwrite($pipes[0], parent::$param_cli['pipe'] . PHP_EOL);
-                    }
-
-                    //Collect result
-                    if (parent::$param_cli['ret']) {
-                        if ('' !== $data = self::read_pipe([$process, $pipes[1]])) {
-                            parent::$result[$key] = &$data;
-                        }
-
-                        unset($data);
-                    }
-
-                    //Close pipes (ignore process)
-                    foreach ($pipes as $pipe) {
-                        fclose($pipe);
-                    }
-                } catch (\Throwable $throwable) {
-                    error::exception_handler($throwable);
-                    unset($throwable);
-                }
-            }
-        }
-
-        unset($key, $cmd, $command, $process, $pipes, $pipe);
-    }
-
-    /**
      * Run CGI process
      */
     public static function run_cgi(): void
@@ -184,6 +129,53 @@ class operator extends factory
     }
 
     /**
+     * Run CLI process
+     */
+    public static function run_cli(): void
+    {
+        //Process orders
+        while (!is_null($item_list = array_shift(parent::$cmd_cli))) {
+            try {
+                //Prepare command
+                $command = '"' . $item_list['cmd'] . '"';
+
+                //Append arguments
+                if (isset($item_list['argv'])) {
+                    $command .= $item_list['argv'];
+                }
+
+                //Create process
+                $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+
+                if (!is_resource($process)) {
+                    throw new \Exception($item_list['key'] . '=>' . $item_list['cmd'] . ': Access denied or command ERROR!', E_USER_WARNING);
+                }
+
+                //Send data via pipe
+                if (isset($item_list['pipe'])) {
+                    fwrite($pipes[0], $item_list['pipe']);
+                }
+
+                //Collect result
+                if ($item_list['ret'] && '' !== $data = self::read_pipe([$process, $pipes[1]], $item_list['time'])) {
+                    parent::$result[$item_list['key']] = &$data;
+                    unset($data);
+                }
+
+                //Close pipes (ignore process)
+                foreach ($pipes as $pipe) {
+                    fclose($pipe);
+                }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable);
+                unset($throwable);
+            }
+        }
+
+        unset($item_list, $command, $process, $pipes, $pipe);
+    }
+
+    /**
      * Load class file
      *
      * @param string $class
@@ -198,6 +190,7 @@ class operator extends factory
 
         foreach ($list as $path) {
             if (is_string($path = realpath($path . $file))) {
+                //Require script file
                 require $path;
 
                 //Check class status
@@ -270,15 +263,16 @@ class operator extends factory
      * Get stream content
      *
      * @param array $process
+     * @param int   $timeout
      *
      * @return string
      */
-    private static function read_pipe(array $process): string
+    private static function read_pipe(array $process, int $timeout): string
     {
         $timer  = 0;
         $result = '';
 
-        while (0 === parent::$param_cli['time'] || $timer <= parent::$param_cli['time']) {
+        while (0 === $timeout || $timer <= $timeout) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);
                 $timer += 1000;
@@ -288,7 +282,7 @@ class operator extends factory
             }
         }
 
-        unset($process, $timer);
+        unset($process, $timeout, $timer);
         return $result;
     }
 }
