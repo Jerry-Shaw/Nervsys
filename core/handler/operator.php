@@ -48,6 +48,23 @@ class operator extends factory
     }
 
     /**
+     * Add CLI jobs
+     *
+     * @param string $cmd
+     *
+     * @throws \Exception
+     */
+    public static function add_cli(string $cmd): void
+    {
+        if (!isset(parent::$cli[$cmd])) {
+            throw new \Exception('Command "' . $cmd . '" NOT permitted!', E_USER_WARNING);
+        }
+
+        parent::$cmd_cli[$cmd] = parent::$cli[$cmd];
+        unset($cmd);
+    }
+
+    /**
      * Run CLI process
      */
     public static function run_cli(): void
@@ -95,6 +112,18 @@ class operator extends factory
         }
 
         unset($key, $cmd, $command, $process, $pipes, $pipe);
+    }
+
+    /**
+     * Add CGI jobs
+     *
+     * @param string $class
+     * @param string ...$method
+     */
+    public static function add_cgi(string $class, string ...$method): void
+    {
+        parent::$cmd_cgi[] = func_get_args();
+        unset($class, $method);
     }
 
     /**
