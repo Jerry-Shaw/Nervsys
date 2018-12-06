@@ -71,13 +71,13 @@ class cmd extends system
 
         //Build CMD
         $order = [];
-        foreach ($cmd as $key => $item) {
+        foreach ($cmd as $item) {
             if (isset(parent::$cli[$item]) && '' !== parent::$cli[$item]) {
                 $order[$item] = parent::$cli[$item];
             }
         }
 
-        unset($cmd, $key, $item);
+        unset($cmd, $item);
         return $order;
     }
 
