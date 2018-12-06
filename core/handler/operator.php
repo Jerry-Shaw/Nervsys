@@ -103,12 +103,12 @@ class operator extends factory
     public static function run_cgi(): void
     {
         //Build order list
-        $order = self::build_order();
+        self::build_order();
 
         //Process orders
-        foreach ($order as $method) {
+        while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
             //Get name & class
-            $class = parent::build_name($name = array_shift($method));
+            $class = parent::build_name($name = array_shift($item_list));
 
             //Check & load class
             if (!class_exists($class, false) && !self::load_class($class)) {
@@ -117,7 +117,11 @@ class operator extends factory
 
             try {
                 //Process dependency
-                if (isset(parent::$load[$module = strstr($name, '/', true)])) {
+                if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
+                    $module = strstr($module, '/', true);
+                }
+
+                if (isset(parent::$load[$module])) {
                     $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
 
                     //Build dependency
@@ -139,9 +143,9 @@ class operator extends factory
 
                 //Get function list & target list
                 $func_list   = get_class_methods($class);
-                $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+                $target_list = !empty($item_list) ? array_intersect($item_list, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
 
-                unset($module, $tz_list, $func_list, $method);
+                unset($module, $tz_list, $func_list, $item_list);
 
                 //Process target list
                 foreach ($target_list as $target) {
@@ -174,7 +178,7 @@ class operator extends factory
             }
         }
 
-        unset($order, $method, $class, $name, $target_list, $target, $tz_dep, $tz_item);
+        unset($item_list, $class, $name, $target_list, $target, $tz_dep, $tz_item);
     }
 
     /**
@@ -224,21 +228,21 @@ class operator extends factory
     /**
      * Build CGI order list
      */
-    private static function build_order(): array
+    private static function build_order(): void
     {
-        $key  = 0;
+        $key  = -1;
         $list = [];
 
         foreach (parent::$cmd_cgi as $item) {
-            if (false !== strpos($item, '/') && isset($list[$key])) {
+            if (false !== strpos($item, '/') || false !== strpos($item, '\\')) {
                 ++$key;
             }
 
             $list[$key][] = $item;
         }
 
-        unset($key, $item);
-        return $list;
+        parent::$cmd_cgi = &$list;
+        unset($key, $list, $item);
     }
 
     /**
