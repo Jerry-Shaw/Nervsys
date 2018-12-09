@@ -35,7 +35,7 @@ ignore_user_abort(true);
 date_default_timezone_set('PRC');
 
 //Define NervSys version
-define('VER', '7.2.2');
+define('VER', '7.2.6');
 
 //Define absolute root path
 define('ROOT', strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR);
