@@ -39,8 +39,9 @@ class pdo_mysql extends pdo
     private $incr  = [];
     private $value = [];
 
-    private $bind_value = [];
-    private $bind_where = [];
+    private $bind_value  = [];
+    private $bind_where  = [];
+    private $bind_having = [];
 
     /**
      * Insert into table
@@ -192,6 +193,10 @@ class pdo_mysql extends pdo
      */
     public function where(array $where): object
     {
+        if ('' === $this->where) {
+            $this->bind_where = [];
+        }
+
         $this->where .= $this->build_where($where, __FUNCTION__);
 
         unset($where);
@@ -207,6 +212,10 @@ class pdo_mysql extends pdo
      */
     public function having(array $having): object
     {
+        if ('' === $this->having) {
+            $this->bind_having = [];
+        }
+
         $this->having .= $this->build_where($having, __FUNCTION__);
 
         unset($having);
@@ -581,7 +590,7 @@ class pdo_mysql extends pdo
         }
 
         //Rebuild bind values
-        $this->bind_value = $this->bind_where;
+        $this->bind_value = array_merge($this->bind_where, $this->bind_having);
 
         return $sql;
     }
@@ -620,7 +629,7 @@ class pdo_mysql extends pdo
         }
 
         //Rebuild bind values
-        $this->bind_value = array_merge(array_values($this->value), $this->bind_where);
+        $this->bind_value = array_merge(array_values($this->value), $this->bind_where, $this->bind_having);
 
         return $sql;
     }
@@ -641,7 +650,7 @@ class pdo_mysql extends pdo
         }
 
         //Rebuild bind values
-        $this->bind_value = $this->bind_where;
+        $this->bind_value = array_merge($this->bind_where, $this->bind_having);
 
         return $sql;
     }
@@ -697,7 +706,8 @@ class pdo_mysql extends pdo
      */
     private function build_where(array $values, string $refer_to): string
     {
-        $where = '';
+        $condition = '';
+        $param_key = 'bind_' . $refer_to;
 
         if (!is_array($values[0])) {
             $values = [$values];
@@ -706,46 +716,46 @@ class pdo_mysql extends pdo
         foreach ($values as $value) {
             if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
                 array_shift($value);
-                $where .= $item . ' ';
-            } elseif ('' !== $where || '' !== $this->$refer_to) {
-                $where .= 'AND ';
+                $condition .= $item . ' ';
+            } elseif ('' !== $condition || '' !== $this->$refer_to) {
+                $condition .= 'AND ';
             }
 
-            $where .= $this->escape($value[0]) . ' ';
+            $condition .= $this->escape($value[0]) . ' ';
 
             if (3 === count($value)) {
                 if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
                     throw new \PDOException('MySQL: Operator: "' . $value[1] . '" NOT allowed!');
                 }
 
-                $where .= $item . ' ';
+                $condition .= $item . ' ';
 
                 if (!is_array($value[2])) {
-                    $this->bind_where[] = &$value[2];
+                    $this->$param_key[] = &$value[2];
 
-                    $where .= '? ';
+                    $condition .= '? ';
                 } else {
-                    $this->bind_where = array_merge($this->bind_where, $value[2]);
+                    $this->$param_key = array_merge($this->$param_key, $value[2]);
 
-                    $where .= 'BETWEEN' !== $item ? '(' . implode(', ', array_fill(0, count($value[2]), '?')) . ') ' : '? AND ? ';
+                    $condition .= 'BETWEEN' !== $item ? '(' . implode(', ', array_fill(0, count($value[2]), '?')) . ') ' : '? AND ? ';
                 }
             } elseif (!is_array($value[1])) {
                 if (!in_array($item = strtoupper($value[1]), ['IS NULL', 'IS NOT NULL'], true)) {
-                    $this->bind_where[] = &$value[1];
+                    $this->$param_key[] = &$value[1];
 
-                    $where .= '= ? ';
+                    $condition .= '= ? ';
                 } else {
-                    $where .= $item . ' ';
+                    $condition .= $item . ' ';
                 }
             } else {
-                $this->bind_where = array_merge($this->bind_where, $value[1]);
+                $this->$param_key = array_merge($this->$param_key, $value[1]);
 
-                $where .= 'IN ' . '(' . implode(', ', array_fill(0, count($value[1]), '?')) . ')' . ' ';
+                $condition .= 'IN ' . '(' . implode(', ', array_fill(0, count($value[1]), '?')) . ')' . ' ';
             }
         }
 
-        unset($values, $refer_to, $value, $item);
-        return $where;
+        unset($values, $refer_to, $param_key, $value, $item);
+        return $condition;
     }
 
     /**
@@ -766,7 +776,5 @@ class pdo_mysql extends pdo
 
         $this->incr  = [];
         $this->value = [];
-
-        $this->bind_where = [];
     }
 }
