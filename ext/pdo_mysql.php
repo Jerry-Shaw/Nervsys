@@ -121,12 +121,11 @@ class pdo_mysql extends pdo
     {
         foreach ($values as $key => $value) {
             if (!isset($this->value[$key])) {
-                $this->value[$key]  = $value;
-                $this->bind_value[] = $value;
+                $this->value[$key] = $value;
             }
         }
 
-        unset($values, $value);
+        unset($values, $key, $value);
         return $this;
     }
 
@@ -543,9 +542,11 @@ class pdo_mysql extends pdo
      */
     private function build_insert(): string
     {
+        $this->bind_value = array_values($this->value);
+
         return 'INSERT INTO ' . $this->table
             . ' (' . $this->escape(implode(', ', array_keys($this->value))) . ')'
-            . ' VALUES (' . implode(', ', array_fill(0, count($this->bind_value), '?')) . ')';
+            . ' VALUES (' . implode(', ', array_fill(0, count($this->value), '?')) . ')';
     }
 
     /**
@@ -619,7 +620,7 @@ class pdo_mysql extends pdo
         }
 
         //Rebuild bind values
-        $this->bind_value = array_merge($this->bind_value, $this->bind_where);
+        $this->bind_value = array_merge(array_values($this->value), $this->bind_where);
 
         return $sql;
     }
@@ -766,7 +767,6 @@ class pdo_mysql extends pdo
         $this->incr  = [];
         $this->value = [];
 
-        $this->bind_value = [];
         $this->bind_where = [];
     }
 }
