@@ -39,6 +39,7 @@ class pdo_mysql extends pdo
     private $incr  = [];
     private $value = [];
 
+    //Runtime params
     private $bind_value  = [];
     private $bind_where  = [];
     private $bind_having = [];
@@ -54,7 +55,7 @@ class pdo_mysql extends pdo
     {
         $this->act = 'INSERT';
 
-        $this->table($table);
+        $this->set_table($table);
 
         unset($table);
         return $this;
@@ -71,7 +72,7 @@ class pdo_mysql extends pdo
     {
         $this->act = 'SELECT';
 
-        $this->table($table);
+        $this->set_table($table);
 
         unset($table);
         return $this;
@@ -88,7 +89,7 @@ class pdo_mysql extends pdo
     {
         $this->act = 'UPDATE';
 
-        $this->table($table);
+        $this->set_table($table);
 
         unset($table);
         return $this;
@@ -105,7 +106,7 @@ class pdo_mysql extends pdo
     {
         $this->act = 'DELETE';
 
-        $this->table($table);
+        $this->set_table($table);
 
         unset($table);
         return $this;
@@ -225,24 +226,27 @@ class pdo_mysql extends pdo
     /**
      * Set order
      *
-     * @param string $field
-     * @param string $order
+     * @param array $order
      *
-     * @return $this
+     * @return object
      */
-    public function order(string $field, string $order = 'ASC'): object
+    public function order(array $order): object
     {
-        if (!in_array($item = strtoupper($order), ['ASC', 'DESC'], true)) {
-            throw new \PDOException('MySQL: Order method: "' . $order . '" NOT supported!', E_USER_ERROR);
+        $list = [];
+
+        foreach ($order as $col => $val) {
+            if (!in_array($item = strtoupper($val), ['ASC', 'DESC'], true)) {
+                throw new \PDOException('Order operation: "' . $val . '" ERROR!', E_USER_ERROR);
+            }
+
+            $list[] = $this->escape($col) . ' ' . $item;
         }
 
-        if ('' !== $this->order) {
-            $this->order .= ', ';
+        if (!empty($list)) {
+            $this->order = implode(', ', $list);
         }
 
-        $this->order .= $this->escape($field) . ' ' . $item;
-
-        unset($field, $order, $item);
+        unset($order, $list, $col, $val, $item);
         return $this;
     }
 
@@ -414,7 +418,7 @@ class pdo_mysql extends pdo
      *
      * @param string $table
      */
-    private function table(string $table): void
+    private function set_table(string $table): void
     {
         if ('' === $table) {
             $table = strtr(get_class($this), '\\', '_');
@@ -543,6 +547,7 @@ class pdo_mysql extends pdo
         if ('' === $this->act) {
             throw new \PDOException('MySQL: No action provided!');
         }
+
         return trim($this->{'build_' . strtolower($this->act)}());
     }
 
@@ -551,6 +556,7 @@ class pdo_mysql extends pdo
      */
     private function build_insert(): string
     {
+        //Rebuild bind values
         $this->bind_value = array_values($this->value);
 
         return 'INSERT INTO ' . $this->table
@@ -620,7 +626,7 @@ class pdo_mysql extends pdo
 
         $sql .= implode(', ', $data);
 
-        unset($data, $opt);
+        unset($data, $col, $val, $opt);
 
         $sql .= ' WHERE ' . $this->where;
 
