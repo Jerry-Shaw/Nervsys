@@ -54,7 +54,6 @@ class pdo_mysql extends pdo
     public function insert(string $table = ''): object
     {
         $this->act = 'INSERT';
-
         $this->set_table($table);
 
         unset($table);
@@ -71,7 +70,6 @@ class pdo_mysql extends pdo
     public function select(string $table = ''): object
     {
         $this->act = 'SELECT';
-
         $this->set_table($table);
 
         unset($table);
@@ -88,7 +86,6 @@ class pdo_mysql extends pdo
     public function update(string $table = ''): object
     {
         $this->act = 'UPDATE';
-
         $this->set_table($table);
 
         unset($table);
@@ -105,7 +102,6 @@ class pdo_mysql extends pdo
     public function delete(string $table = ''): object
     {
         $this->act = 'DELETE';
-
         $this->set_table($table);
 
         unset($table);
@@ -113,7 +109,7 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Set insert values
+     * Set insert/update value pairs
      *
      * @param array $values
      *
@@ -121,9 +117,14 @@ class pdo_mysql extends pdo
      */
     public function value(array $values): object
     {
+        if (empty($this->value)) {
+            $this->bind_value = [];
+        }
+
         foreach ($values as $key => $value) {
             if (!isset($this->value[$key])) {
-                $this->value[$key] = $value;
+                $this->value[$key]  = $value;
+                $this->bind_value[] = $value;
             }
         }
 
@@ -226,15 +227,15 @@ class pdo_mysql extends pdo
     /**
      * Set order
      *
-     * @param array $order
+     * @param array $orders
      *
      * @return object
      */
-    public function order(array $order): object
+    public function order(array $orders): object
     {
         $list = [];
 
-        foreach ($order as $col => $val) {
+        foreach ($orders as $col => $val) {
             if (!in_array($item = strtoupper($val), ['ASC', 'DESC'], true)) {
                 throw new \PDOException('Order operation: "' . $val . '" ERROR!', E_USER_ERROR);
             }
@@ -246,7 +247,7 @@ class pdo_mysql extends pdo
             $this->order = implode(', ', $list);
         }
 
-        unset($order, $list, $col, $val, $item);
+        unset($orders, $list, $col, $val, $item);
         return $this;
     }
 
@@ -295,7 +296,7 @@ class pdo_mysql extends pdo
                 $exec = -1;
             }
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $sql . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($sql);
@@ -318,7 +319,7 @@ class pdo_mysql extends pdo
                 ? parent::connect()->query($sql, \PDO::FETCH_ASSOC)
                 : parent::connect()->query($sql, \PDO::FETCH_COLUMN, $col_no);
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $sql . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
@@ -336,18 +337,19 @@ class pdo_mysql extends pdo
      */
     public function fetch(bool $fetch_col = false): array
     {
-        $stmt = parent::connect()->prepare($this->build_sql());
+        $sql = $this->build_sql();
 
         try {
+            $stmt = parent::connect()->prepare($sql);
             $stmt->execute($this->bind_value);
             $this->clean_up();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
-        unset($fetch_col, $stmt);
+        unset($fetch_col, $sql, $stmt);
         return $data;
     }
 
@@ -358,16 +360,17 @@ class pdo_mysql extends pdo
      */
     public function execute(): bool
     {
-        $stmt = parent::connect()->prepare($this->build_sql());
+        $sql = $this->build_sql();
 
         try {
+            $stmt   = parent::connect()->prepare($sql);
             $result = $stmt->execute($this->bind_value);
             $this->clean_up();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL Dump: ' . $stmt->queryString . '. ' . PHP_EOL . 'Error Msg:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
-        unset($stmt);
+        unset($sql, $stmt);
         return $result;
     }
 
@@ -545,7 +548,7 @@ class pdo_mysql extends pdo
     private function build_sql(): string
     {
         if ('' === $this->act) {
-            throw new \PDOException('MySQL: No action provided!');
+            throw new \PDOException('Missing operation!', E_USER_ERROR);
         }
 
         return trim($this->{'build_' . strtolower($this->act)}());
@@ -556,12 +559,9 @@ class pdo_mysql extends pdo
      */
     private function build_insert(): string
     {
-        //Rebuild bind values
-        $this->bind_value = array_values($this->value);
-
         return 'INSERT INTO ' . $this->table
             . ' (' . $this->escape(implode(', ', array_keys($this->value))) . ')'
-            . ' VALUES (' . implode(', ', array_fill(0, count($this->value), '?')) . ')';
+            . ' VALUES (' . implode(', ', array_fill(0, count($this->bind_value), '?')) . ')';
     }
 
     /**
@@ -607,7 +607,7 @@ class pdo_mysql extends pdo
     private function build_update(): string
     {
         if ('' === $this->where) {
-            throw new \PDOException('MySQL: "UPDATE" action NOT allowed without "WHERE" condition!');
+            throw new \PDOException('"UPDATE" NOT allowed without "WHERE" condition!', E_USER_ERROR);
         }
 
         $sql = 'UPDATE ' . $this->table . ' SET ';
@@ -635,7 +635,7 @@ class pdo_mysql extends pdo
         }
 
         //Rebuild bind values
-        $this->bind_value = array_merge(array_values($this->value), $this->bind_where, $this->bind_having);
+        $this->bind_value = array_merge($this->bind_value, $this->bind_where);
 
         return $sql;
     }
@@ -646,7 +646,7 @@ class pdo_mysql extends pdo
     private function build_delete(): string
     {
         if ('' === $this->where) {
-            throw new \PDOException('MySQL: "DELETE" action NOT allowed without "WHERE" condition!');
+            throw new \PDOException('"DELETE" NOT allowed without "WHERE" condition!', E_USER_ERROR);
         }
 
         $sql = 'DELETE FROM ' . $this->table . ' WHERE ' . $this->where;
@@ -656,7 +656,7 @@ class pdo_mysql extends pdo
         }
 
         //Rebuild bind values
-        $this->bind_value = array_merge($this->bind_where, $this->bind_having);
+        $this->bind_value = $this->bind_where;
 
         return $sql;
     }
@@ -673,7 +673,7 @@ class pdo_mysql extends pdo
     private function build_join(string $table, array $where, string $type): string
     {
         if (!in_array($item = strtoupper($type), ['LEFT', 'RIGHT', 'INNER'], true)) {
-            throw new \PDOException('MySQL: Join operator: "' . $type . '" NOT allowed!');
+            throw new \PDOException('Incorrect "JOIN" operator: "' . $type . '"!', E_USER_ERROR);
         }
 
         $join = $item . ' JOIN ' . $this->escape($table) . ' ON ';
@@ -731,7 +731,7 @@ class pdo_mysql extends pdo
 
             if (3 === count($value)) {
                 if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
-                    throw new \PDOException('MySQL: Operator: "' . $value[1] . '" NOT allowed!');
+                    throw new \PDOException('Incorrect operator: "' . $value[1] . '"!', E_USER_ERROR);
                 }
 
                 $condition .= $item . ' ';
@@ -765,7 +765,7 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Clean up stored data
+     * Clean up stored SQL params
      */
     private function clean_up(): void
     {
