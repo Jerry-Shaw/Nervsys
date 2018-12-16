@@ -172,6 +172,9 @@ The words above are reserved by NervSys core. So that, they should be taken care
 
     explain:
     All requests via ajax from the domains above in the section are allowed, with the request headers accepted.
+
+    NOTICE:
+    If "*" is set in the keys, that means CORS will be opened to all incoming domains with defined headers accepted.
     
     
 ### INIT

@@ -271,7 +271,7 @@ class system extends command
         }
 
         //Exit on no access authority
-        if (!isset(self::$cors[$_SERVER['HTTP_ORIGIN']])) {
+        if (!isset(self::$cors[$_SERVER['HTTP_ORIGIN']]) && !isset(self::$cors['*'])) {
             exit;
         }
 
