@@ -271,13 +271,13 @@ class system extends command
         }
 
         //Exit on no access authority
-        if (!isset(self::$cors[$_SERVER['HTTP_ORIGIN']]) && !isset(self::$cors['*'])) {
+        if (is_null($allow_headers = self::$cors[$_SERVER['HTTP_ORIGIN']] ?? self::$cors['*'] ?? null)) {
             exit;
         }
 
         //Response access allowed headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . self::$cors[$_SERVER['HTTP_ORIGIN']]);
+        header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
 
         //Exit on OPTION request
