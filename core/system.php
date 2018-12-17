@@ -280,6 +280,8 @@ class system extends command
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
 
+        unset($allow_headers);
+
         //Exit on OPTION request
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             exit;
