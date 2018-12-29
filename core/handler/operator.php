@@ -272,7 +272,7 @@ class operator extends factory
      * @return \ReflectionMethod
      * @throws \ReflectionException
      */
-    private function reflect_method(string $class, string $method): \ReflectionMethod
+    private static function reflect_method(string $class, string $method): \ReflectionMethod
     {
         //Reflection list
         static $list = [];
