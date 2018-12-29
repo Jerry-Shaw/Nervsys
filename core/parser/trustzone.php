@@ -60,8 +60,18 @@ class trustzone extends factory
             unset($reflect);
         }
 
-        //Copy TrustZone
-        self::$record = is_string($record) ? self::fill_key($record) : $record;
+        if (is_array($record)) {
+            //Copy TrustZone
+            self::$record = &$record;
+        } else {
+            //All methods exposed
+            if ('*' === $record) {
+                $record = implode(',', get_class_methods($class));
+            }
+
+            //Fill TrustZone
+            self::$record = self::fill_key($record);
+        }
 
         unset($class, $record);
         return array_keys(self::$record);

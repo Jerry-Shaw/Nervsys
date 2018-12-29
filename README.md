@@ -436,6 +436,8 @@ _Simple $tz in string format: example of "TestB.php_
 
 That is a simple format which means methods "test_a", "test_b", "test_c" are all exposed to API with no TrustZone limitation. But they will be still checked by the argument data parser.  
   
+NOTICE: We can set the value of TrustZone to "*" to simply expose all public methods to API.  
+  
   
 ### Autofill
 
