@@ -174,29 +174,23 @@ class system extends command
      * Build dependency list
      *
      * @param array $dep_list
-     *
-     * @throws \Exception
      */
     protected static function build_dep(array &$dep_list): void
     {
         foreach ($dep_list as $key => $dep) {
-            if (false === strpos($dep, '-')) {
-                throw new \Exception('Dependency "' . $dep . '" ERROR!', E_USER_WARNING);
-            }
-
             //Parse dependency
-            list($order, $method) = explode('-', $dep, 2);
-
-            //Check existence
-            if (!method_exists($class = self::build_name($order), $method)) {
-                throw new \Exception('Dependency "' . $class . '::' . $method . '" NOT found!', E_USER_WARNING);
+            if (false === strpos($dep, '-')) {
+                $order  = $dep;
+                $method = '__construct';
+            } else {
+                list($order, $method) = explode('-', $dep, 2);
             }
 
             //Rebuild list
-            $dep_list[$key] = [$order, $class, $method];
+            $dep_list[$key] = [$order, self::build_name($order), $method];
         }
 
-        unset($key, $dep, $order, $method, $class);
+        unset($key, $dep, $order, $method);
     }
 
     /**

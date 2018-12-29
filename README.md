@@ -195,10 +195,12 @@ The words above are reserved by NervSys core. So that, they should be taken care
     Multiple setting:
     DescA = dirA/dirB/model-funcA
     DescB = dirB/dirB/model-funcB
+    DescC = dirC/dirC/model
     
     explain: 
     "\dirA\dirB\model::funcA($params)" & "\dirB\dirB\model::funcB($params)"
     will be called on startup with required agruments. 
+    While, "\dirC\dirC\model::__construct($params)" will be called instead because of no function is set.
     
     Notice: 
     The "Desc*" keys in "INIT" has no means for system, but for developers to know what they are for. 
@@ -228,11 +230,14 @@ The words above are reserved by NervSys core. So that, they should be taken care
     dirA = dirX/model-func
     dirB[] = dirX/model-funcA
     dirB[] = dirX/model-funcB
+    dirC = dirY/model
     
     explain: 
     "\dirX\model::func($params)" will be called only once right before calling functions under dirA.
     "\dirX\model::funcA($params)" & "\dirX\model::funcB($params)" both will be called only once right 
     before calling functions under dirB.
+    While, "\dirY\model::__construct($params)" will be called instead, because of no function is set, 
+    only once right before calling functions under dirC.
     
     Notice: 
     The keys in "LOAD" section point to the first level subfolders, while the setting values 

@@ -231,18 +231,21 @@ class operator extends factory
      */
     private static function build_caller(string $order, string $class, string $method): void
     {
-        //Reflect method
-        $reflect = new \ReflectionMethod($class, $method);
+        //Get reflection
+        $reflect = self::reflect_method($class, $method);
 
-        //Check visibility
-        if (!$reflect->isPublic()) {
-            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
+        //Call constructor
+        if ('__construct' === $method) {
+            parent::obtain($class, data::build_argv($reflect, parent::$data));
+
+            unset($order, $class, $method, $reflect);
+            return;
         }
 
-        //Get factory object
+        //Using class object
         if (!$reflect->isStatic()) {
             $class = method_exists($class, '__construct')
-                ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
+                ? parent::obtain($class, data::build_argv(self::reflect_method($class, '__construct'), parent::$data))
                 : parent::obtain($class);
         }
 
@@ -257,6 +260,43 @@ class operator extends factory
         }
 
         unset($order, $class, $method, $reflect, $params, $result);
+    }
+
+    /**
+     * Reflect method
+     * Store constructor
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return \ReflectionMethod
+     * @throws \ReflectionException
+     */
+    private function reflect_method(string $class, string $method): \ReflectionMethod
+    {
+        //Reflection list
+        static $list = [];
+
+        //Return when exist
+        if (isset($list[$class])) {
+            return $list[$class];
+        }
+
+        //Method reflection
+        $reflect = new \ReflectionMethod($class, $method);
+
+        //Check visibility
+        if (!$reflect->isPublic()) {
+            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
+        }
+
+        //Save constructor reflection
+        if ('__construct' === $method) {
+            $list[$class] = &$reflect;
+        }
+
+        unset($class, $method);
+        return $reflect;
     }
 
     /**
