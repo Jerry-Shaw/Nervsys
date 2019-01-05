@@ -27,13 +27,12 @@ use core\handler\platform;
 class redis_queue extends redis
 {
     //Expose "root" & "child"
-    public static $tz = [
-        'root'  => [],
-        'child' => []
-    ];
+    public static $tz = 'root,child';
 
-    //Child process
-    private $child = '';
+    //Child resources
+    private $redis   = null;
+    private $child   = '';
+    private $reflect = [];
 
     //Process properties
     protected $runs = 10;
@@ -270,18 +269,18 @@ class redis_queue extends redis
         }
 
         //Build connection
-        $redis = parent::connect();
+        $this->redis = parent::connect();
 
         //Build Hash & Key
-        $child_hash = hash('md5', uniqid(mt_rand(), true));
+        $child_hash = hash('crc32b', uniqid(mt_rand(), true));
         $child_key  = self::PREFIX_WORKER . $child_hash;
 
         //Set process life
         $wait_time = (int)(self::WAIT_SCAN / 2);
-        $redis->set($child_key, '', self::WAIT_SCAN);
+        $this->redis->set($child_key, '', self::WAIT_SCAN);
 
         //Add to watch list
-        $redis->hSet(self::KEY_WATCH_WORKER, $child_key, time());
+        $this->redis->hSet(self::KEY_WATCH_WORKER, $child_key, time());
 
         //Close on exit
         register_shutdown_function([$this, 'close'], $child_hash);
@@ -295,15 +294,15 @@ class redis_queue extends redis
             }
 
             //Execute job
-            if (!empty($queue = $redis->brPop(array_keys($list), $wait_time))) {
+            if (!empty($queue = $this->redis->brPop(array_keys($list), $wait_time))) {
                 self::exec_job($queue[1]);
             }
-        } while (0 < $redis->exists($child_key) && $redis->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
+        } while (0 < $this->redis->exists($child_key) && $this->redis->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
 
         //On exit
         self::stop($child_hash);
 
-        unset($redis, $child_hash, $child_key, $wait_time, $execute, $list, $queue);
+        unset($child_hash, $child_key, $wait_time, $execute, $list, $queue);
     }
 
     /**
@@ -341,52 +340,43 @@ class redis_queue extends redis
      * Execute job
      *
      * @param string $data
-     *
-     * @throws \RedisException
      */
     private function exec_job(string $data): void
     {
-        //Build connection
-        $redis = parent::connect();
-
-        //Decode data in JSON
-        if (!is_array($input = json_decode($data, true))) {
-            $redis->lPush(
-                self::KEY_FAILED,
-                json_encode(['data' => &$data, 'return' => 'Data ERROR!'])
-            );
-
-            return;
-        }
-
-        //Check command
-        if (false === strpos($input['cmd'], '-')) {
-            $redis->lPush(
-                self::KEY_FAILED,
-                json_encode(['data' => &$data, 'return' => 'Command [' . $input['cmd'] . '] ERROR!'])
-            );
-
-            return;
-        }
-
         try {
+            //Decode data in JSON
+            if (!is_array($input = json_decode($data, true))) {
+                throw new \Exception('Data ERROR!', E_USER_WARNING);
+            }
+
+            //Check command
+            if (false === strpos($input['cmd'], '-')) {
+                throw new \Exception('Command [' . $input['cmd'] . '] ERROR!', E_USER_WARNING);
+            }
+
             //Job list
             $job_list = [];
 
             //Get order & method
             list($order, $method) = explode('-', $input['cmd'], 2);
 
-            //Build dependency list
-            if (isset(parent::$load[$module = strstr($order, '/', true)])) {
+            //Process dependency
+            if (false !== strpos($module = strtr($order, '\\', '/'), '/')) {
+                $module = strstr($module, '/', true);
+            }
+
+            if (isset(parent::$load[$module])) {
                 $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
 
                 //Build dependency
                 parent::build_dep($dep_list);
 
-                //Save job list
+                //Save to job list
                 foreach ($dep_list as $dep) {
                     $job_list[] = [$dep[1], $dep[2]];
                 }
+
+                unset($dep_list, $dep);
             }
 
             //Save class & method
@@ -394,18 +384,19 @@ class redis_queue extends redis
 
             //Execute jobs
             foreach ($job_list as $job) {
-                //Reflect method
-                $reflect = new \ReflectionMethod($job[0], $job[1]);
+                //Get reflection
+                $reflect = $this->reflect_method($job[0], $job[1]);
 
-                //Not public
-                if (!$reflect->isPublic()) {
-                    throw new \Exception($job[0] . '::' . $job[1] . ': NOT for public!', E_USER_WARNING);
+                //Call constructor
+                if ('__construct' === $job[1]) {
+                    parent::obtain($job[0], data::build_argv($reflect, $input));
+                    continue;
                 }
 
-                //Get factory object
+                //Using class object
                 if (!$reflect->isStatic()) {
                     $job[0] = method_exists($job[0], '__construct')
-                        ? parent::obtain($job[0], data::build_argv(new \ReflectionMethod($job[0], '__construct'), $input))
+                        ? parent::obtain($job[0], data::build_argv($this->reflect_method($job[0], '__construct'), $input))
                         : parent::obtain($job[0]);
                 }
 
@@ -418,12 +409,47 @@ class redis_queue extends redis
                 self::check_job($data, json_encode($result));
             }
         } catch (\Throwable $throwable) {
-            $redis->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()]));
+            $this->redis->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()]));
             unset($throwable);
             return;
         }
 
-        unset($data, $redis, $input, $order, $method, $module, $class, $methods, $reflect, $params, $result);
+        unset($data, $input, $job_list, $order, $method, $module, $job, $reflect, $params, $result);
+    }
+
+    /**
+     * Reflect method
+     * Store for process
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return \ReflectionMethod
+     * @throws \ReflectionException
+     */
+    private function reflect_method(string $class, string $method): \ReflectionMethod
+    {
+        //Generate hash key
+        $hash_key = hash('crc32b', $command = $class . '::' . $method);
+
+        //Return when exist
+        if (isset($this->reflect[$hash_key])) {
+            return $this->reflect[$hash_key];
+        }
+
+        //Get method reflection
+        $reflect = new \ReflectionMethod($class, $method);
+
+        //Check method visibility
+        if (!$reflect->isPublic()) {
+            throw new \ReflectionException($command . ': NOT for public!', E_USER_WARNING);
+        }
+
+        //Store for process
+        $this->reflect[$hash_key] = &$reflect;
+
+        unset($class, $method, $command, $hash_key);
+        return $reflect;
     }
 
     /**
