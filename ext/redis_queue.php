@@ -210,7 +210,7 @@ class redis_queue extends redis
 
         //Set process life
         $wait_time = (int)(self::WAIT_SCAN / 2);
-        $root_hash = hash('md5', uniqid(mt_rand(), true));
+        $root_hash = hash('crc32b', uniqid(mt_rand(), true));
 
         $redis->set($root_key, $root_hash, self::WAIT_SCAN);
 
