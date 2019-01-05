@@ -282,10 +282,10 @@ class operator extends factory
             return $list[$class];
         }
 
-        //Method reflection
+        //Get method reflection
         $reflect = new \ReflectionMethod($class, $method);
 
-        //Check visibility
+        //Check method visibility
         if (!$reflect->isPublic()) {
             throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
         }
