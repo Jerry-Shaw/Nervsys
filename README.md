@@ -209,7 +209,7 @@ The words above are reserved by NervSys core. So that, they should be taken care
     Notice: 
     The keys in "INIT" section have no means for system, but for developers to know what they are for. 
     "__construct" will be called if no function has been specified in the values.
-    Sub-array settings are NOT allowed in this section. 
+    Setting in array is NOT allowed in this section. 
     Required arguments will be automatically passed. 
     All returned values will be captured when exist. 
 
@@ -248,7 +248,7 @@ The words above are reserved by NervSys core. So that, they should be taken care
     The keys in "LOAD" section point to the first level subfolders, while the setting values 
     point to the functions which will be called when the subfolder is being accessed. 
     "__construct" will be called if no function has been specified in the values.
-    Sub-array settings are allowed in this section, to call multiple functions. 
+    Setting in array is allowed to call multiple functions. 
     Required arguments will be automatically passed. 
     All returned values will be captured when exist. 
 
