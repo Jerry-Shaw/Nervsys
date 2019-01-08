@@ -51,6 +51,9 @@ class operator extends factory
      */
     public static function run_cgi(): void
     {
+        //Load list
+        $load_list = [];
+
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
             //Get name & class
@@ -62,7 +65,7 @@ class operator extends factory
                     $module = strstr($module, '/', true);
                 }
 
-                if (isset(parent::$load[$module])) {
+                if (isset(parent::$load[$module]) && !in_array($module, $load_list, true)) {
                     $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
 
                     //Build dependency
@@ -73,16 +76,19 @@ class operator extends factory
                         self::build_caller(...$dep);
                     }
 
+                    $load_list[] = $module;
                     unset($dep_list, $dep);
                 }
 
                 //Check & load class
                 if (!class_exists($class, false) && !self::load_class($class)) {
+                    //Class NOT exist
                     continue;
                 }
 
                 //Check TrustZone permission
                 if (empty($tz_list = trustzone::init($class))) {
+                    //TrustZone NOT open
                     continue;
                 }
 
@@ -123,7 +129,7 @@ class operator extends factory
             }
         }
 
-        unset($item_list, $class, $name, $target_list, $target, $tz_dep, $tz_item);
+        unset($load_list, $item_list, $class, $name, $target_list, $target, $tz_dep, $tz_item);
     }
 
     /**
