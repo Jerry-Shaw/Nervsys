@@ -41,7 +41,6 @@ class operator extends factory
 
             unset($item);
         } catch (\Throwable $throwable) {
-            //Level up Exception code to ERROR
             error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
             unset($throwable);
         }
@@ -56,11 +55,6 @@ class operator extends factory
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
             //Get name & class
             $class = parent::build_name($name = array_shift($item_list));
-
-            //Check & load class
-            if (!class_exists($class, false) && !self::load_class($class)) {
-                continue;
-            }
 
             try {
                 //Process dependency
@@ -82,9 +76,13 @@ class operator extends factory
                     unset($dep_list, $dep);
                 }
 
+                //Check & load class
+                if (!class_exists($class, false) && !self::load_class($class)) {
+                    continue;
+                }
+
                 //Check TrustZone permission
                 if (empty($tz_list = trustzone::init($class))) {
-                    //Do not throw out exceptions
                     continue;
                 }
 
