@@ -88,16 +88,14 @@ class operator extends factory
                     continue;
                 }
 
-                //Get function list & target list
-                $func_list   = get_class_methods($class);
-                $target_list = !empty($item_list) ? array_intersect($item_list, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
+                //Get method list
+                $method_list = empty($item_list) ? $tz_list : array_intersect($item_list, $tz_list);
+                unset($module, $tz_list, $item_list);
 
-                unset($module, $tz_list, $func_list, $item_list);
-
-                //Process target list
-                foreach ($target_list as $target) {
+                //Process target method
+                foreach ($method_list as $method) {
                     //Get TrustZone data
-                    $tz_dep = trustzone::get_dep($target);
+                    $tz_dep = trustzone::get_dep($method);
 
                     //Build pre/post dependency
                     parent::build_dep($tz_dep['pre']);
@@ -109,10 +107,10 @@ class operator extends factory
                     }
 
                     //Verify TrustZone params
-                    trustzone::verify($class, $target);
+                    trustzone::verify($class, $method);
 
                     //Build target caller
-                    self::build_caller($name, $class, $target);
+                    self::build_caller($name, $class, $method);
 
                     //Call post dependency
                     foreach ($tz_dep['post'] as $tz_item) {
@@ -125,7 +123,7 @@ class operator extends factory
             }
         }
 
-        unset($item_list, $class, $name, $target_list, $target, $tz_dep, $tz_item);
+        unset($item_list, $class, $name, $method_list, $method, $tz_dep, $tz_item);
     }
 
     /**
@@ -232,12 +230,11 @@ class operator extends factory
     private static function build_caller(string $order, string $class, string $method): void
     {
         //Get reflection
-        $reflect = self::reflect_method($class, $method);
+        $reflect = parent::reflect($class, $method);
 
         //Call constructor
         if ('__construct' === $method) {
             parent::obtain($class, data::build_argv($reflect, parent::$data));
-
             unset($order, $class, $method, $reflect);
             return;
         }
@@ -245,7 +242,7 @@ class operator extends factory
         //Using class object
         if (!$reflect->isStatic()) {
             $class = method_exists($class, '__construct')
-                ? parent::obtain($class, data::build_argv(self::reflect_method($class, '__construct'), parent::$data))
+                ? parent::obtain($class, data::build_argv(parent::reflect($class, '__construct'), parent::$data))
                 : parent::obtain($class);
         }
 
@@ -260,43 +257,6 @@ class operator extends factory
         }
 
         unset($order, $class, $method, $reflect, $params, $result);
-    }
-
-    /**
-     * Reflect method
-     * Store constructor
-     *
-     * @param string $class
-     * @param string $method
-     *
-     * @return \ReflectionMethod
-     * @throws \ReflectionException
-     */
-    private static function reflect_method(string $class, string $method): \ReflectionMethod
-    {
-        //Reflection list
-        static $list = [];
-
-        //Return when exist
-        if (isset($list[$class])) {
-            return $list[$class];
-        }
-
-        //Get method reflection
-        $reflect = new \ReflectionMethod($class, $method);
-
-        //Check method visibility
-        if (!$reflect->isPublic()) {
-            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
-        }
-
-        //Save constructor reflection
-        if ('__construct' === $method) {
-            $list[$class] = &$reflect;
-        }
-
-        unset($class, $method);
-        return $reflect;
     }
 
     /**

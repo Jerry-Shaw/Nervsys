@@ -47,17 +47,8 @@ class trustzone extends factory
             //Fetch via object property
             $record = parent::obtain($class)->tz ?? [];
         } else {
-            //Reflect constructor
-            $reflect = new \ReflectionMethod($class, '__construct');
-
-            //Check constructor visibility
-            if (!$reflect->isPublic()) {
-                throw new \ReflectionException('TrustZone ERROR: Initialize "' . $class . '" failed!', E_USER_WARNING);
-            }
-
             //Fetch via constructor property
-            $record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
-            unset($reflect);
+            $record = parent::obtain($class, data::build_argv(parent::reflect($class, '__construct'), parent::$data))->tz ?? [];
         }
 
         if (is_array($record)) {
@@ -66,7 +57,16 @@ class trustzone extends factory
         } else {
             //All methods exposed
             if ('*' === $record) {
-                $record = implode(',', get_class_methods($class));
+                //Get class methods
+                $method_list = get_class_methods($class);
+
+                //Get parent methods
+                if (false !== $parent = get_parent_class($class)) {
+                    $method_list = array_diff($method_list, get_class_methods($parent));
+                }
+
+                $record = implode(',', $method_list);
+                unset($method_list, $parent);
             }
 
             //Fill TrustZone

@@ -122,6 +122,42 @@ class factory extends system
     }
 
     /**
+     * Reflect method
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return \ReflectionMethod
+     * @throws \ReflectionException
+     */
+    protected static function reflect(string $class, string $method): \ReflectionMethod
+    {
+        //Reflection list
+        static $list = [];
+
+        //Return when exist
+        if (isset($list[$class])) {
+            return $list[$class];
+        }
+
+        //Get method reflection
+        $reflect = new \ReflectionMethod($class, $method);
+
+        //Check method visibility
+        if (!$reflect->isPublic()) {
+            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
+        }
+
+        //Save constructor reflection
+        if ('__construct' === $method) {
+            $list[$class] = &$reflect;
+        }
+
+        unset($class, $method);
+        return $reflect;
+    }
+
+    /**
      * Stock controller
      *
      * @param string $type
