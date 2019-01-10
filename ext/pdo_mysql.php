@@ -85,6 +85,22 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Set lock mode
+     * UPDATE/SHARE, NOWAIT/SKIP LOCKED
+     *
+     * @param string ...$modes
+     *
+     * @return object
+     */
+    public function lock(string ...$modes): object
+    {
+        $this->params['lock'] = implode(' ', $modes);
+
+        unset($modes);
+        return $this;
+    }
+
+    /**
      * Set insert/update value pairs
      *
      * @param array $values
@@ -683,7 +699,11 @@ class pdo_mysql extends pdo
         }
 
         if (isset($this->params['limit'])) {
-            $sql .= 'LIMIT ' . $this->params['limit'];
+            $sql .= 'LIMIT ' . $this->params['limit'] . ' ';
+        }
+
+        if (isset($this->params['lock'])) {
+            $sql .= 'FOR ' . $this->params['lock'];
         }
 
         return $sql;
