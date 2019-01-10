@@ -379,7 +379,7 @@ class pdo_mysql extends pdo
      *
      * @return bool
      */
-    public static function begin(): bool
+    public function begin(): bool
     {
         return parent::connect()->beginTransaction();
     }
@@ -389,7 +389,7 @@ class pdo_mysql extends pdo
      *
      * @return bool
      */
-    public static function commit(): bool
+    public function commit(): bool
     {
         return parent::connect()->commit();
     }
@@ -399,7 +399,7 @@ class pdo_mysql extends pdo
      *
      * @return bool
      */
-    public static function rollback(): bool
+    public function rollback(): bool
     {
         return parent::connect()->rollBack();
     }
