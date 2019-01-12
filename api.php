@@ -21,11 +21,6 @@
 //Declare strict types
 declare(strict_types = 1);
 
-//Check PHP version
-if (version_compare(PHP_VERSION, '7.2.0', '<')) {
-    exit('NervSys needs PHP 7.2.0 or higher!');
-}
-
 //Set error_reporting level
 error_reporting(E_ALL | E_STRICT);
 
@@ -34,21 +29,8 @@ set_time_limit(0);
 ignore_user_abort(true);
 date_default_timezone_set('PRC');
 
-//Define NervSys version
-define('VER', '7.2.10');
+require __DIR__ . '/core/env.php';
 
-//Define absolute root path
-define('ROOT', strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR);
-
-//Register autoload function
-spl_autoload_register(
-    static function (string $class): void
-    {
-        //Load from namespace path or include path
-        require (false !== strpos($class, '\\') ? ROOT . strtr($class, '\\', DIRECTORY_SEPARATOR) : $class) . '.php';
-        unset($class);
-    }
-);
-
-//Start system
-\core\system::start();
+//Boot ENV & system
+\core\env::boot();
+\core\system::boot();

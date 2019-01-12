@@ -36,9 +36,9 @@ class system extends command
     const PATH = __DIR__ . DIRECTORY_SEPARATOR . 'system.ini';
 
     /**
-     * System start
+     * Boot system
      */
-    public static function start(): void
+    public static function boot(): void
     {
         //Track error
         error::track();
@@ -67,7 +67,7 @@ class system extends command
     }
 
     /**
-     * System stop
+     * Stop system
      */
     public static function stop(): void
     {
