@@ -90,7 +90,7 @@ class pdo_mysql extends pdo
      *
      * @param string ...$modes
      *
-     * @return object
+     * @return $this
      */
     public function lock(string ...$modes): object
     {
@@ -239,7 +239,7 @@ class pdo_mysql extends pdo
      *
      * @param array $orders
      *
-     * @return object
+     * @return $this
      */
     public function order(array $orders): object
     {
