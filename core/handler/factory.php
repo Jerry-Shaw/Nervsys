@@ -111,10 +111,10 @@ class factory extends system
      */
     public function config(array $setting): object
     {
+        $setting = array_intersect_key($setting, get_object_vars($this));
+
         foreach ($setting as $key => $val) {
-            if (isset($this->$key)) {
-                $this->$key = $val;
-            }
+            $this->$key = $val;
         }
 
         unset($setting, $key, $val);
