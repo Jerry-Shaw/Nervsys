@@ -24,8 +24,8 @@ use core\handler\factory;
 
 class socket extends factory
 {
-    //Socket resource
-    public $socket = null;
+    //Socket source
+    public $source = null;
 
     //Network config
     private $proto = 'tcp';
@@ -110,22 +110,22 @@ class socket extends factory
         $protocol = getprotobyname($this->proto);
 
         //Create socket
-        $this->socket = socket_create($domain, $type, $protocol);
+        $this->source = socket_create($domain, $type, $protocol);
 
-        if (false === $this->socket) {
+        if (false === $this->source) {
             throw new \Exception(ucfirst($this->run_as) . ' create ERROR!', E_USER_ERROR);
         }
 
         //Set options
-        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
-        socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, $this->timeout);
-        socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, $this->timeout);
+        socket_set_option($this->source, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_set_option($this->source, SOL_SOCKET, SO_SNDTIMEO, $this->timeout);
+        socket_set_option($this->source, SOL_SOCKET, SO_RCVTIMEO, $this->timeout);
 
         //Process run_as
         $this->{'process_' . $this->run_as}();
 
         //Set block
-        $block ? socket_set_block($this->socket) : socket_set_nonblock($this->socket);
+        $block ? socket_set_block($this->source) : socket_set_nonblock($this->source);
 
         unset($block, $domain, $type, $protocol);
         return $this;
@@ -141,7 +141,7 @@ class socket extends factory
     public function listen(array $clients = []): array
     {
         $write     = $except = [];
-        $clients[] = $this->socket;
+        $clients[] = $this->source;
 
         $select = socket_select($clients, $write, $except, $this->timeout['sec'], $this->timeout['usec']);
 
@@ -160,11 +160,11 @@ class socket extends factory
      */
     public function accept(array &$clients): void
     {
-        if (false === $key = array_search($this->socket, $clients, true)) {
+        if (false === $key = array_search($this->source, $clients, true)) {
             return;
         }
 
-        $clients[$key] = socket_accept($this->socket);
+        $clients[$key] = socket_accept($this->source);
         unset($key);
     }
 
@@ -232,13 +232,13 @@ class socket extends factory
     private function process_server(): void
     {
         //Bind address
-        if (!socket_bind($this->socket, $this->host, $this->port)) {
-            throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($this->socket)), E_USER_ERROR);
+        if (!socket_bind($this->source, $this->host, $this->port)) {
+            throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($this->source)), E_USER_ERROR);
         }
 
         //Listen TCP
-        if ('udp' !== $this->proto && !socket_listen($this->socket)) {
-            throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($this->socket)), E_USER_ERROR);
+        if ('udp' !== $this->proto && !socket_listen($this->source)) {
+            throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($this->source)), E_USER_ERROR);
         }
     }
 
@@ -251,12 +251,12 @@ class socket extends factory
     {
         //Broadcasting
         if ('bcst' === $this->type) {
-            socket_set_option($this->socket, SOL_SOCKET, SO_BROADCAST, 1);
+            socket_set_option($this->source, SOL_SOCKET, SO_BROADCAST, 1);
         }
 
         //Connect server
-        if ('udp' !== $this->proto && !socket_connect($this->socket, $this->host, $this->port)) {
-            throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($this->socket)), E_USER_ERROR);
+        if ('udp' !== $this->proto && !socket_connect($this->source, $this->host, $this->port)) {
+            throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($this->source)), E_USER_ERROR);
         }
     }
 }
