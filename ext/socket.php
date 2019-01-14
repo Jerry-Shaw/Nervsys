@@ -132,7 +132,7 @@ class socket extends factory
     }
 
     /**
-     * Listen Connections
+     * Listen connections
      *
      * @param array $clients
      *
@@ -154,18 +154,24 @@ class socket extends factory
     }
 
     /**
-     * Accept Client
+     * Accept new client
      *
      * @param array $clients
+     *
+     * @return array
      */
-    public function accept(array &$clients): void
+    public function accept(array &$clients): array
     {
+        $list = $clients;
+
         if (false === $key = array_search($this->source, $clients, true)) {
-            return;
+            return $list;
         }
 
-        $clients[$key] = socket_accept($this->source);
-        unset($key);
+        $list[$key] = socket_accept($this->source);
+
+        unset($clients[$key], $key);
+        return $list;
     }
 
     /**
@@ -196,7 +202,7 @@ class socket extends factory
     }
 
     /**
-     * Send data
+     * Send message
      *
      * @param        $socket
      * @param string $msg
