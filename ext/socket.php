@@ -172,44 +172,50 @@ class socket extends factory
      * Read message
      *
      * @param        $socket
+     * @param string $msg
      * @param int    $size
      * @param string $from
      * @param int    $port
      * @param int    $flags
      *
-     * @return string
+     * @return int
      */
-    public function read($socket, int $size = 65535, string $from = '', int $port = 0, int $flags = 0): string
+    public function read($socket, string &$msg, int $size = 65535, string $from = '', int $port = 0, int $flags = 0): int
     {
-        'udp' === $this->proto
+        $result = 'udp' === $this->proto
             ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port)
             : socket_recv($socket, $msg, $size, $flags);
 
+        if (false === $result) {
+            $msg    = '';
+            $result = -1;
+        }
+
         unset($socket, $size, $flags);
-        return trim((string)$msg);
+        return $result;
     }
 
     /**
      * Send data
      *
      * @param        $socket
-     * @param string $data
+     * @param string $msg
      * @param string $host
      * @param int    $port
      * @param int    $flags
      *
      * @return bool
      */
-    public function send($socket, string $data, string $host = '', int $port = 0, int $flags = 0): bool
+    public function send($socket, string $msg, string $host = '', int $port = 0, int $flags = 0): bool
     {
-        $size = strlen($data);
+        $size = strlen($msg);
         $send = 'udp' === $this->proto
-            ? socket_sendto($socket, $data, $size, $flags, $host, $port)
-            : socket_send($socket, $data, $size, $flags);
+            ? socket_sendto($socket, $msg, $size, $flags, $host, $port)
+            : socket_send($socket, $msg, $size, $flags);
 
         $result = $size === $send;
 
-        unset($socket, $data, $host, $port, $flags, $size, $send);
+        unset($socket, $msg, $host, $port, $flags, $size, $send);
         return $result;
     }
 
