@@ -28,9 +28,9 @@ class socket extends factory
     public $source = null;
 
     //Network config
-    private $proto = 'tcp';
-    private $host  = '0.0.0.0';
-    private $port  = 65535;
+    public $proto = 'tcp';
+    public $host  = '0.0.0.0';
+    public $port  = 65535;
 
     //Run as role
     private $run_as = 'server';
