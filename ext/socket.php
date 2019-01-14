@@ -27,18 +27,8 @@ class socket extends factory
     //Socket resource
     public $socket = null;
 
-    /**
-     * Network config
-     *
-     * ws://0.0.0.0:8080
-     * tcp://127.0.0.1:6000
-     * udp://0.0.0.0:6000
-     * http://127.0.0.1:80
-     * bcst://0.0.0.0:8000
-     *
-     * @var string
-     */
-    private $proto = 'tcp';//ws/tcp/udp/http/bcst
+    //Network config
+    private $proto = 'tcp';
     private $host  = '0.0.0.0';
     private $port  = 65535;
 
@@ -54,6 +44,12 @@ class socket extends factory
      *
      * @param string $run_as
      * @param string $address
+     *
+     * server, ws://0.0.0.0:8080
+     * client, tcp://127.0.0.1:6000
+     * client, udp://0.0.0.0:6000
+     * server, http://127.0.0.1:80
+     * server, bcst://0.0.0.0:8000
      */
     public function __construct(string $run_as, string $address)
     {
@@ -136,6 +132,99 @@ class socket extends factory
     }
 
     /**
+     * Listen Connections
+     *
+     * @param array $clients
+     *
+     * @return array
+     */
+    public function listen(array $clients = []): array
+    {
+        $write     = $except = [];
+        $clients[] = $this->socket;
+
+        $select = socket_select($clients, $write, $except, $this->timeout['sec'], $this->timeout['usec']);
+
+        if (false === $select) {
+            $clients = $write = $except = [];
+        }
+
+        unset($write, $except, $select);
+        return $clients;
+    }
+
+    /**
+     * Accept Client
+     *
+     * @param array $clients
+     */
+    public function accept(array &$clients): void
+    {
+        if (false === $key = array_search($this->socket, $clients, true)) {
+            return;
+        }
+
+        $clients[$key] = socket_accept($this->socket);
+        unset($key);
+    }
+
+    /**
+     * Read message
+     *
+     * @param        $socket
+     * @param int    $size
+     * @param string $from
+     * @param int    $port
+     * @param int    $flags
+     *
+     * @return string
+     */
+    public function read($socket, int $size = 65535, string $from = '', int $port = 0, int $flags = 0): string
+    {
+        'udp' === $this->proto
+            ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port)
+            : socket_recv($socket, $msg, $size, $flags);
+
+        unset($socket, $size, $flags);
+        return trim((string)$msg);
+    }
+
+    /**
+     * Send data
+     *
+     * @param        $socket
+     * @param string $data
+     * @param string $host
+     * @param int    $port
+     * @param int    $flags
+     *
+     * @return bool
+     */
+    public function send($socket, string $data, string $host = '', int $port = 0, int $flags = 0): bool
+    {
+        $size = strlen($data);
+        $send = 'udp' === $this->proto
+            ? socket_sendto($socket, $data, $size, $flags, $host, $port)
+            : socket_send($socket, $data, $size, $flags);
+
+        $result = $size === $send;
+
+        unset($socket, $data, $host, $port, $flags, $size, $send);
+        return $result;
+    }
+
+    /**
+     * Close socket
+     *
+     * @param $socket
+     */
+    public function close($socket): void
+    {
+        socket_close($socket);
+        unset($socket);
+    }
+
+    /**
      * Process server
      *
      * @throws \Exception
@@ -169,98 +258,5 @@ class socket extends factory
         if ('udp' !== $this->proto && !socket_connect($this->socket, $this->host, $this->port)) {
             throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($this->socket)), E_USER_ERROR);
         }
-    }
-
-    /**
-     * Watch Connection
-     *
-     * @param array $read
-     *
-     * @return array
-     */
-    public function watch(array $read = []): array
-    {
-        $write  = $except = [];
-        $read[] = $this->socket;
-
-        $select = socket_select($read, $write, $except, $this->timeout['sec'], $this->timeout['usec']);
-
-        if (false === $select) {
-            $read = $write = $except = [];
-        }
-
-        unset($write, $except, $select);
-        return $read;
-    }
-
-    /**
-     * Accept Client
-     *
-     * @param array $read
-     */
-    public function accept(array &$read): void
-    {
-        if (false === $key = array_search($this->socket, $read, true)) {
-            return;
-        }
-
-        $read[$key] = socket_accept($this->socket);
-        unset($key);
-    }
-
-    /**
-     * Read message
-     *
-     * @param     $socket
-     * @param int $size
-     * @param int $flags
-     *
-     * @return string
-     */
-    public function read($socket, int $size = 65536, int $flags = 0): string
-    {
-        'udp' === $this->proto
-            ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port)
-            : socket_recv($socket, $msg, $size, $flags);
-
-        unset($socket, $size, $flags);
-        return trim((string)$msg);
-    }
-
-    /**
-     * Send data
-     *
-     * @param        $socket
-     * @param string $data
-     * @param string $host
-     * @param int    $port
-     * @param int    $flags
-     *
-     * @return bool
-     */
-    public function send($socket, string $data, string $host = '', int $port = 0, int $flags = 0): bool
-    {
-        $data .= PHP_EOL;
-        $size = strlen($data);
-
-        $send = $size === (
-            'udp' === $this->proto
-                ? socket_sendto($socket, $data, $size, $flags, $host, $port)
-                : socket_send($socket, $data, $size, $flags)
-            );
-
-        unset($socket, $data, $host, $port, $flags, $size);
-        return $send;
-    }
-
-    /**
-     * Close socket
-     *
-     * @param $socket
-     */
-    public function close($socket): void
-    {
-        socket_close($socket);
-        unset($socket);
     }
 }
