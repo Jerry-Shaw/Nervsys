@@ -381,6 +381,14 @@ class http extends factory
             $opt[CURLOPT_MAXREDIRS]      = &$item['max_follow'];
         }
 
+        if (isset($item['proxy'])) {
+            $opt[CURLOPT_PROXY] = &$item['proxy'];
+
+            if (isset($item['proxy_user_pwd'])) {
+                $opt[CURLOPT_PROXYUSERPWD] = &$item['proxy_user_pwd'];
+            }
+        }
+
         if (isset($item['data'])) {
             switch ($item['content_type']) {
                 case self::CONTENT_TYPE_JSON:
