@@ -105,7 +105,7 @@ class socket extends factory
     public function create(bool $block = false): object
     {
         //Build domain & protocol
-        $domain   = false !== filter_var($this->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? AF_INET : AF_INET6;
+        $domain   = false !== filter_var($this->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? AF_INET6 : AF_INET;
         $type     = 'udp' === $this->proto ? SOCK_DGRAM : SOCK_STREAM;
         $protocol = getprotobyname($this->proto);
 
