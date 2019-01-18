@@ -143,7 +143,15 @@ class operator extends factory
                 }
 
                 //Create process
-                $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+                $process = proc_open(
+                    platform::cmd_proc($command),
+                    [
+                        ['pipe', 'r'],
+                        ['pipe', 'w'],
+                        ['file', ROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_cli_' . date('Y-m-d') . '.log', 'a']
+                    ],
+                    $pipes
+                );
 
                 if (!is_resource($process)) {
                     throw new \Exception($item_list['key'] . '=>' . $item_list['cmd'] . ': Access denied or command ERROR!', E_USER_WARNING);

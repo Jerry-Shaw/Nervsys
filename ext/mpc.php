@@ -93,7 +93,9 @@ class mpc extends factory
         }
 
         //Split jobs
-        $job_packs = count($this->jobs) > $this->runs ? array_chunk($this->jobs, $this->runs, true) : [$this->jobs];
+        $job_packs = count($this->jobs) > $this->runs
+            ? array_chunk($this->jobs, $this->runs, true)
+            : [$this->jobs];
 
         //Build basic command
         $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
@@ -149,7 +151,15 @@ class mpc extends factory
             }
 
             //Create process
-            $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+            $process = proc_open(
+                platform::cmd_proc($cmd),
+                [
+                    ['pipe', 'r'],
+                    ['pipe', 'w'],
+                    ['file', ROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_mpc_' . date('Y-m-d') . '.log', 'a']
+                ],
+                $pipes
+            );
 
             if (is_resource($process)) {
                 $resource[$key]['res']  = true;
