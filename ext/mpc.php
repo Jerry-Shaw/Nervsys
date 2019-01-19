@@ -55,7 +55,7 @@ class mpc extends factory
     {
         //Check cmd
         if (!isset($job['cmd'])) {
-            throw new \Exception('Missing "cmd" parameter!', E_USER_ERROR);
+            throw new \Exception('Missing "cmd"!', E_USER_ERROR);
         }
 
         //Add job
