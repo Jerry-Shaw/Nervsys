@@ -96,6 +96,9 @@ class mpc extends factory
             ? array_chunk($this->jobs, $runs, true)
             : [$this->jobs];
 
+        //Free jobs
+        $this->jobs = [];
+
         //Build basic command
         $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
 
@@ -105,7 +108,6 @@ class mpc extends factory
         }
 
         $result = [];
-
         foreach ($job_packs as $jobs) {
             //Execute jobs and merge result
             if (!empty($data = $this->execute($jobs, $wait))) {
