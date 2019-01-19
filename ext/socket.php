@@ -237,6 +237,100 @@ class socket extends factory
     }
 
     /**
+     * Generate handshake response for WebSocket
+     *
+     * @param string $header
+     *
+     * @return string
+     */
+    public function ws_handshake(string $header): string
+    {
+        //WebSocket key name
+        $key_name = 'Sec-WebSocket-Key';
+
+        //Support Sec-WebSocket-Version: 13
+        $key_hash = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+
+        //Get key position
+        if (false === $key_pos = strpos($header, $key_name)) {
+            return '';
+        }
+
+        //Move key position
+        $key_pos += strlen($key_name) + 2;
+
+        //Get WebSocket key & rehash
+        $key = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
+        $key = hash('sha1', $key . $key_hash, true);
+
+        //Generate response
+        $response = 'HTTP/1.1 101 Switching Protocol' . "\r\n"
+            . 'Upgrade: websocket' . "\r\n"
+            . 'Connection: Upgrade' . "\r\n"
+            . 'Sec-WebSocket-Accept: ' . base64_encode($key) . "\r\n\r\n";
+
+        unset($header, $key_name, $key_hash, $key_pos, $key);
+        return $response;
+    }
+
+    /**
+     * Decode WebSocket message
+     *
+     * @param string $buffer
+     *
+     * @return string
+     */
+    function ws_decode(string $buffer): string
+    {
+        switch (ord($buffer[1]) & 127) {
+            case 126:
+                $masks = substr($buffer, 4, 4);
+                $data  = substr($buffer, 8);
+                break;
+
+            case 127:
+                $masks = substr($buffer, 10, 4);
+                $data  = substr($buffer, 14);
+                break;
+
+            default:
+                $masks = substr($buffer, 2, 4);
+                $data  = substr($buffer, 6);
+                break;
+        }
+
+        $msg = '';
+        $len = strlen($data);
+
+        for ($i = 0; $i < $len; ++$i) {
+            $msg .= $data[$i] ^ $masks[$i % 4];
+        }
+
+        unset($buffer, $masks, $data, $len, $i);
+        return $msg;
+    }
+
+    /**
+     * Encode WebSocket message
+     *
+     * @param string $msg
+     *
+     * @return string
+     */
+    function ws_encode(string $msg): string
+    {
+        $buffer = '';
+        $seg    = str_split($msg, 125);
+
+        foreach ($seg as $val) {
+            $buffer .= "\x81" . chr(strlen($val)) . $val;
+        }
+
+        unset($msg, $seg, $val);
+        return $buffer;
+    }
+
+    /**
      * Process server
      *
      * @throws \Exception
