@@ -264,7 +264,7 @@ class socket extends factory
         $key = hash('sha1', $key . $key_hash, true);
 
         //Generate response
-        $response = 'HTTP/1.1 101 Switching Protocol' . "\r\n"
+        $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
             . 'Sec-WebSocket-Accept: ' . base64_encode($key) . "\r\n\r\n";
