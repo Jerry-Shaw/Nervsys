@@ -140,8 +140,9 @@ class socket extends factory
      */
     public function listen(array $clients = []): array
     {
-        $write     = $except = [];
-        $clients[] = $this->source;
+        $write = $except = [];
+
+        $clients[hash('sha1', uniqid(mt_rand(), true))] = $this->source;
 
         $select = socket_select($clients, $write, $except, $this->timeout['sec'], $this->timeout['usec']);
 
@@ -156,22 +157,17 @@ class socket extends factory
     /**
      * Accept new client
      *
+     * @param array $read
      * @param array $clients
-     *
-     * @return array
      */
-    public function accept(array &$clients): array
+    public function accept(array &$read, array &$clients): void
     {
-        $list = $clients;
-
-        if (false === $key = array_search($this->source, $clients, true)) {
-            return $list;
+        if (false !== $key = array_search($this->source, $read, true)) {
+            $clients[$key] = socket_accept($this->source);
+            unset($read[$key]);
         }
 
-        $list[$key] = socket_accept($this->source);
-
-        unset($clients[$key], $key);
-        return $list;
+        unset($key);
     }
 
     /**
@@ -265,11 +261,9 @@ class socket extends factory
      */
     public function ws_handshake(string $header): string
     {
-        //WebSocket key name
+        //WebSocket key name & key mask
         $key_name = 'Sec-WebSocket-Key';
-
-        //Support Sec-WebSocket-Version: 13
-        $key_hash = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+        $key_mask = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
         //Get key position
         if (false === $key_pos = strpos($header, $key_name)) {
@@ -281,7 +275,7 @@ class socket extends factory
 
         //Get WebSocket key & rehash
         $key = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
-        $key = hash('sha1', $key . $key_hash, true);
+        $key = hash('sha1', $key . $key_mask, true);
 
         //Generate response
         $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
@@ -289,7 +283,7 @@ class socket extends factory
             . 'Connection: Upgrade' . "\r\n"
             . 'Sec-WebSocket-Accept: ' . base64_encode($key) . "\r\n\r\n";
 
-        unset($header, $key_name, $key_hash, $key_pos, $key);
+        unset($header, $key_name, $key_mask, $key_pos, $key);
         return $response;
     }
 
