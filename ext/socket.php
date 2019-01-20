@@ -243,7 +243,7 @@ class socket extends factory
      *
      * @return array
      */
-    public function ws_header(string $buff): array
+    public function ws_get_codes(string $buff): array
     {
         $data = [];
         $char = $buff[0];
