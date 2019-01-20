@@ -237,6 +237,26 @@ class socket extends factory
     }
 
     /**
+     * Get basic WebSocket header
+     *
+     * @param string $buff
+     *
+     * @return array
+     */
+    public function ws_header(string $buff): array
+    {
+        $data = [];
+        $char = $buff[0];
+
+        //Get FIN & OpCode
+        $data['final']  = ord($char) & 0x80;
+        $data['opcode'] = ord($char) & 0x0F;
+
+        unset($buff, $char);
+        return $data;
+    }
+
+    /**
      * Generate handshake response for WebSocket
      *
      * @param string $header
@@ -276,26 +296,26 @@ class socket extends factory
     /**
      * Decode WebSocket message
      *
-     * @param string $buffer
+     * @param string $buff
      *
      * @return string
      */
-    function ws_decode(string $buffer): string
+    function ws_decode(string $buff): string
     {
-        switch (ord($buffer[1]) & 127) {
+        switch (ord($buff[1]) & 0x7F) {
             case 126:
-                $masks = substr($buffer, 4, 4);
-                $data  = substr($buffer, 8);
+                $mask = substr($buff, 4, 4);
+                $data = substr($buff, 8);
                 break;
 
             case 127:
-                $masks = substr($buffer, 10, 4);
-                $data  = substr($buffer, 14);
+                $mask = substr($buff, 10, 4);
+                $data = substr($buff, 14);
                 break;
 
             default:
-                $masks = substr($buffer, 2, 4);
-                $data  = substr($buffer, 6);
+                $mask = substr($buff, 2, 4);
+                $data = substr($buff, 6);
                 break;
         }
 
@@ -303,10 +323,10 @@ class socket extends factory
         $len = strlen($data);
 
         for ($i = 0; $i < $len; ++$i) {
-            $msg .= $data[$i] ^ $masks[$i % 4];
+            $msg .= $data[$i] ^ $mask[$i % 4];
         }
 
-        unset($buffer, $masks, $data, $len, $i);
+        unset($buff, $mask, $data, $len, $i);
         return $msg;
     }
 
@@ -319,15 +339,15 @@ class socket extends factory
      */
     function ws_encode(string $msg): string
     {
-        $buffer = '';
-        $seg    = str_split($msg, 125);
+        $buff = '';
+        $seg  = str_split($msg, 125);
 
         foreach ($seg as $val) {
-            $buffer .= "\x81" . chr(strlen($val)) . $val;
+            $buff .= chr(0x81) . chr(strlen($val)) . $val;
         }
 
         unset($msg, $seg, $val);
-        return $buffer;
+        return $buff;
     }
 
     /**
