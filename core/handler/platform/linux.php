@@ -81,7 +81,7 @@ class linux implements os
      */
     public static function cmd_bg(string $cmd): string
     {
-        return '"' . $cmd . '" > /dev/null 2>/dev/null &';
+        return 'nohup "' . $cmd . '" >/dev/null 2>&1 &';
     }
 
     /**
