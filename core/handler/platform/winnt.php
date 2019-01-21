@@ -88,7 +88,7 @@ class winnt implements os
      */
     public static function cmd_bg(string $cmd): string
     {
-        return 'start "" /B ' . $cmd;
+        return 'start "" /B ' . $cmd . ' >nul 2>&1';
     }
 
     /**
