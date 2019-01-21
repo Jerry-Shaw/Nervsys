@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.2.12  
+Stable version: 7.2.14  
 Extension version: 2.0  
 [Unit Test Suites](https://github.com/NervSys/tests)  
   
