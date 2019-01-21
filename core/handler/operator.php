@@ -142,6 +142,11 @@ class operator extends factory
                     $command .= $item_list['argv'];
                 }
 
+                //Add no return option
+                if (!$item_list['ret']) {
+                    $command = platform::cmd_bg($command);
+                }
+
                 //Create process
                 $process = proc_open(
                     platform::cmd_proc($command),
@@ -280,6 +285,7 @@ class operator extends factory
         $timer  = 0;
         $result = '';
 
+        //Keep reading STDOUT from process
         while (0 === $timeout || $timer <= $timeout) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);

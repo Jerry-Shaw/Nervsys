@@ -153,6 +153,11 @@ class mpc extends factory
                 $cmd .= ' ' . implode(' ', $job['argv']);
             }
 
+            //Add no wait option
+            if (!$wait) {
+                $cmd = platform::cmd_bg($cmd);
+            }
+
             //Create process
             $process = proc_open(
                 platform::cmd_proc($cmd),
@@ -164,6 +169,7 @@ class mpc extends factory
                 $pipes
             );
 
+            //Merge process resources
             if (is_resource($process)) {
                 $resource[$key]['res']  = true;
                 $resource[$key]['cmd']  = $job['cmd'];
