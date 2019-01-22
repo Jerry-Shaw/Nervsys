@@ -27,131 +27,125 @@ class socket extends factory
     //Socket source
     public $source = null;
 
-    //Network config
-    public $proto = 'tcp';
-    public $host  = '0.0.0.0';
-    public $port  = 65535;
+    //Start Options
+    private $run_as  = 'server';
+    private $address = 'tcp://0.0.0.0:65535';
 
-    //Run as role
-    private $run_as = 'server';
-
-    //Runtime values
-    private $type    = 'tcp';
-    private $timeout = ['sec' => 60, 'usec' => 0];
+    //Runtime Options
+    private $msg     = '';
+    private $block   = 0;
+    private $timeout = 60;
+    private $options = [];
 
     /**
      * socket constructor.
      *
-     * @param string $run_as
-     * @param string $address
-     *
-     * server, ws://0.0.0.0:8080
-     * client, tcp://127.0.0.1:6000
-     * client, udp://0.0.0.0:6000
-     * server, http://127.0.0.1:80
-     * server, bcst://0.0.0.0:8000
+     * @param string $run_as server/client/broadcast
      */
-    public function __construct(string $run_as, string $address)
+    public function __construct(string $run_as)
     {
-        //Check ENV
-        if (!parent::$is_cli) {
-            exit('Socket only runs under CLI!');
-        }
-
-        //Parse address
-        $parts = parse_url($address);
-
-        $this->type = &$parts['scheme'];
-        $this->host = &$parts['host'];
-        $this->port = &$parts['port'];
-
-        $this->run_as = 'bcst' === $parts['scheme'] ? 'client' : $run_as;
-
-        if (in_array($parts['scheme'], ['ws', 'http'], true)) {
-            $this->proto = 'tcp';
-        } elseif ('bcst' === $parts['scheme']) {
-            $this->proto = 'udp';
-        } else {
-            $this->proto = &$parts['scheme'];
-        }
-
-        unset($run_as, $address, $parts);
+        $this->run_as = &$run_as;
+        unset($run_as);
     }
 
     /**
-     * Set timeout
+     * Set timeout/timewait
      *
-     * @param int $sec
-     * @param int $usec
+     * @param int $second timeout for server/client; timewait for broadcast
      *
      * @return $this
      */
-    public function timeout(int $sec, int $usec = 0): object
+    public function timeout(int $second): object
     {
-        $this->timeout = ['sec' => &$sec, 'usec' => &$usec];
+        $this->timeout = &$second;
 
-        unset($sec, $usec);
+        unset($second);
         return $this;
     }
 
     /**
-     * Create socket
+     * Bind to address
+     *
+     * @param string $address
+     *
+     * @return $this
+     */
+    public function bind(string $address): object
+    {
+        $this->address = &$address;
+
+        unset($address);
+        return $this;
+    }
+
+    /**
+     * Set message for broadcast
+     *
+     * @param string $msg
+     *
+     * @return $this
+     */
+    public function msg(string $msg): object
+    {
+        $this->msg = &$msg;
+
+        unset($msg);
+        return $this;
+    }
+
+    /**
+     * Set context options for server/client
+     *
+     * @param string $wrapper
+     * @param array  $options
+     *
+     * @return $this
+     */
+    public function set(string $wrapper, array $options): object
+    {
+        $this->options[$wrapper] = &$options;
+
+        unset($wrapper, $options);
+        return $this;
+    }
+
+    /**
+     * Create stream socket
      *
      * @param bool $block
      *
      * @return $this
-     * @throws \Exception
      */
     public function create(bool $block = false): object
     {
-        //Build domain & protocol
-        $domain   = false !== filter_var($this->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? AF_INET6 : AF_INET;
-        $type     = 'udp' === $this->proto ? SOCK_DGRAM : SOCK_STREAM;
-        $protocol = getprotobyname($this->proto);
+        //Create server/client/broadcast
+        $this->{'start_' . $this->run_as}($block);
 
-        //Create socket
-        $this->source = socket_create($domain, $type, $protocol);
-
-        if (false === $this->source) {
-            throw new \Exception(ucfirst($this->run_as) . ' create ERROR!', E_USER_ERROR);
-        }
-
-        //Set options
-        socket_set_option($this->source, SOL_SOCKET, SO_REUSEADDR, 1);
-        socket_set_option($this->source, SOL_SOCKET, SO_SNDTIMEO, $this->timeout);
-        socket_set_option($this->source, SOL_SOCKET, SO_RCVTIMEO, $this->timeout);
-
-        //Process run_as
-        $this->{'process_' . $this->run_as}();
-
-        //Set block
-        $block ? socket_set_block($this->source) : socket_set_nonblock($this->source);
-
-        unset($block, $domain, $type, $protocol);
+        unset($block);
         return $this;
     }
 
     /**
      * Listen connections
      *
-     * @param array $clients
+     * @param array $client
      *
      * @return array
      */
-    public function listen(array $clients = []): array
+    public function listen(array $client = []): array
     {
         $write = $except = [];
 
-        $clients[hash('sha1', uniqid(mt_rand(), true))] = $this->source;
+        $client[hash('sha1', uniqid(mt_rand(), true))] = $this->source;
 
-        $select = socket_select($clients, $write, $except, $this->timeout['sec'], $this->timeout['usec']);
+        $select = stream_select($client, $write, $except, $this->timeout);
 
         if (false === $select) {
-            $clients = $write = $except = [];
+            $client = $write = $except = [];
         }
 
         unset($write, $except, $select);
-        return $clients;
+        return $client;
     }
 
     /**
@@ -163,7 +157,8 @@ class socket extends factory
     public function accept(array &$read, array &$clients): void
     {
         if (false !== $key = array_search($this->source, $read, true)) {
-            $clients[$key] = socket_accept($this->source);
+            $clients[$key] = stream_socket_accept($this->source);
+            stream_set_blocking($clients[$key], $this->block);
             unset($read[$key]);
         }
 
@@ -173,63 +168,48 @@ class socket extends factory
     /**
      * Read message
      *
-     * @param        $socket
-     * @param string $msg
+     * @param        $stream
      * @param int    $size
-     * @param string $from
-     * @param int    $port
      * @param int    $flags
+     * @param string $address
      *
-     * @return int
+     * @return string
      */
-    public function read($socket, string &$msg, int $size = 65535, string $from = '', int $port = 0, int $flags = 0): int
+    public function read($stream, int $size = 65535, int $flags = 0, string &$address = ''): string
     {
-        $result = 'udp' === $this->proto
-            ? socket_recvfrom($socket, $msg, $size, $flags, $from, $port)
-            : socket_recv($socket, $msg, $size, $flags);
+        $data = stream_socket_recvfrom($stream, $size, $flags, $address);
 
-        if (false === $result) {
-            $msg    = '';
-            $result = -1;
-        }
-
-        unset($socket, $size, $flags);
-        return $result;
+        unset($stream, $size, $flags);
+        return $data;
     }
 
     /**
      * Send message
      *
-     * @param        $socket
-     * @param string $msg
-     * @param string $host
-     * @param int    $port
+     * @param        $stream
+     * @param string $data
      * @param int    $flags
+     * @param string $address
      *
-     * @return bool
+     * @return int
      */
-    public function send($socket, string $msg, string $host = '', int $port = 0, int $flags = 0): bool
+    public function send($stream, string $data, int $flags = 0, string $address = ''): int
     {
-        $size = strlen($msg);
-        $send = 'udp' === $this->proto
-            ? socket_sendto($socket, $msg, $size, $flags, $host, $port)
-            : socket_send($socket, $msg, $size, $flags);
+        $send = stream_socket_sendto($stream, $data, $flags, $address);
 
-        $result = $size === $send;
-
-        unset($socket, $msg, $host, $port, $flags, $size, $send);
-        return $result;
+        unset($stream, $data, $flags, $address);
+        return $send;
     }
 
     /**
      * Close socket
      *
-     * @param $socket
+     * @param $stream
      */
-    public function close($socket): void
+    public function close($stream): void
     {
-        socket_close($socket);
-        unset($socket);
+        stream_socket_shutdown($stream, STREAM_SHUT_RDWR);;
+        unset($stream);
     }
 
     /**
@@ -294,7 +274,7 @@ class socket extends factory
      *
      * @return string
      */
-    function ws_decode(string $buff): string
+    public function ws_decode(string $buff): string
     {
         switch (ord($buff[1]) & 0x7F) {
             case 126:
@@ -331,7 +311,7 @@ class socket extends factory
      *
      * @return string
      */
-    function ws_encode(string $msg): string
+    public function ws_encode(string $msg): string
     {
         $buff = '';
         $seg  = str_split($msg, 125);
@@ -345,38 +325,106 @@ class socket extends factory
     }
 
     /**
-     * Process server
+     * Start server
+     *
+     * @param bool $block
      *
      * @throws \Exception
      */
-    private function process_server(): void
+    private function start_server(bool $block): void
     {
-        //Bind address
-        if (!socket_bind($this->source, $this->host, $this->port)) {
-            throw new \Exception('Bind failed: ' . socket_strerror(socket_last_error($this->source)), E_USER_ERROR);
+        //Create context
+        $context = stream_context_create($this->options);
+
+        //Get flags
+        $flags = false === strpos($this->address, 'udp://')
+            ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN
+            : STREAM_SERVER_BIND;
+
+        //Create server
+        $this->source = stream_socket_server($this->address, $errno, $errstr, $flags, $context);
+
+        //Check error
+        if (0 < $errno) {
+            throw new \Exception($errstr, E_USER_ERROR);
         }
 
-        //Listen TCP
-        if ('udp' !== $this->proto && !socket_listen($this->source)) {
-            throw new \Exception('Listen failed: ' . socket_strerror(socket_last_error($this->source)), E_USER_ERROR);
-        }
+        //Set block mode
+        $this->block = !$block ? 0 : 1;
+        stream_set_blocking($this->source, $this->block);
+
+        unset($block, $context, $flags, $errno, $errstr);
     }
 
     /**
-     * Process server
+     * Start Client
+     *
+     * @param bool $block
      *
      * @throws \Exception
      */
-    private function process_client(): void
+    private function start_client(bool $block): void
     {
-        //Broadcasting
-        if ('bcst' === $this->type) {
-            socket_set_option($this->source, SOL_SOCKET, SO_BROADCAST, 1);
+        //Create context
+        $context = stream_context_create($this->options);
+
+        //Get flags
+        $flags = false === strpos($this->address, 'udp://')
+            ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT
+            : STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT;
+
+        //Create client
+        $this->source = stream_socket_client($this->address, $errno, $errstr, $this->timeout, $flags, $context);
+
+        //Check error
+        if (0 < $errno) {
+            throw new \Exception($errstr, E_USER_ERROR);
         }
 
-        //Connect server
-        if ('udp' !== $this->proto && !socket_connect($this->source, $this->host, $this->port)) {
-            throw new \Exception('Connect failed: ' . socket_strerror(socket_last_error($this->source)), E_USER_ERROR);
+        //Set block mode
+        $this->block = !$block ? 0 : 1;
+        stream_set_blocking($this->source, $this->block);
+
+        unset($block, $context, $flags, $errno, $errstr);
+    }
+
+    /**
+     * Start broadcast
+     *
+     * @param bool $block
+     *
+     * @throws \Exception
+     */
+    private function start_broadcast(bool $block): void
+    {
+        //Parse address
+        $unit = parse_url($this->address);
+
+        //Check host & port
+        if (!isset($unit['host']) || !isset($unit['port'])) {
+            throw new \Exception('Broadcast address ERROR!', E_USER_ERROR);
         }
+
+        //Create socket
+        if (false === $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP)) {
+            throw new \Exception('Broadcast ERROR!', E_USER_ERROR);
+        }
+
+        //Set options
+        socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1);
+        socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
+
+        //Set block mode
+        $block ? socket_set_block($socket) : socket_set_nonblock($socket);
+
+        //Broadcast message
+        while (true) {
+            socket_sendto($socket, $this->msg, strlen($this->msg), 0, $unit['host'], $unit['port']);
+            sleep($this->timeout > 0 ? $this->timeout : 5);
+        }
+
+        socket_close($socket);
+
+        unset($block, $unit, $socket);
     }
 }
