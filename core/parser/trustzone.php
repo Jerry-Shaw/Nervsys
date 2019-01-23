@@ -3,7 +3,7 @@
 /**
  * TrustZone Parser
  *
- * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,63 +40,56 @@ class trustzone extends factory
         //Reset TrustZone
         self::$record = [];
 
-        //Fetch TrustZone
         if (isset($class::$tz)) {
-            self::$record = $class::$tz;
+            //Fetch via static calling
+            $record = $class::$tz;
         } elseif (!method_exists($class, '__construct')) {
-            self::$record = parent::obtain($class)->tz ?? [];
+            //Fetch via object property
+            $record = parent::obtain($class)->tz ?? [];
         } else {
-            //Reflect method
-            $reflect = new \ReflectionMethod($class, '__construct');
-
-            //Check visibility
-            if (!$reflect->isPublic()) {
-                throw new \ReflectionException('TrustZone ERROR: Initialize "' . $class . '" failed!', E_USER_WARNING);
-            }
-
-            //Fetch TrustZone
-            self::$record = parent::obtain($class, data::build_argv($reflect, parent::$data))->tz ?? [];
-            unset($reflect);
+            //Fetch via constructor property
+            $record = parent::obtain($class, data::build_argv(parent::reflect($class, '__construct'), parent::$data))->tz ?? [];
         }
 
-        //Parse stringified TrustZone
-        if (is_string(self::$record)) {
-            //Parse TrustZone
-            $items = false !== strpos(self::$record, ',') ? array_filter(explode(',', self::$record)) : [self::$record];
+        if (is_array($record)) {
+            //Copy TrustZone
+            self::$record = &$record;
+        } else {
+            //All methods exposed
+            if ('*' === $record) {
+                //Get class methods
+                $method_list = get_class_methods($class);
 
-            //Refill TrustZone
-            self::$record = [];
-            foreach ($items as $item) {
-                if ('' !== $item = trim($item)) {
-                    self::$record[$item] = [];
+                //Get parent methods
+                if (false !== $parent = get_parent_class($class)) {
+                    $method_list = array_diff($method_list, get_class_methods($parent));
                 }
+
+                $record = implode(',', $method_list);
+                unset($method_list, $parent);
             }
 
-            unset($items, $item);
+            //Fill TrustZone
+            self::$record = self::fill_key($record);
         }
 
-        unset($class);
+        unset($class, $record);
         return array_keys(self::$record);
     }
 
     /**
-     * Fetch TrustZone pre & post
+     * Get method dependency
      *
-     * @param string $class
      * @param string $method
      *
      * @return array
      */
-    public static function fetch(string $class, string $method): array
+    public static function get_dep(string $method): array
     {
-        $val  = [];
-        $data = self::$record[$method] ?? [];
-
-        $val['pre']  = isset($data['pre']) ? self::prep_cmd($data['pre']) : [];
-        $val['post'] = isset($data['post']) ? self::prep_cmd($data['post']) : [];
-
-        unset($class, $method, $data);
-        return $val;
+        return [
+            'pre'  => isset(self::$record[$method]['pre']) ? self::fill_val(self::$record[$method]['pre']) : [],
+            'post' => isset(self::$record[$method]['post']) ? self::fill_val(self::$record[$method]['post']) : []
+        ];
     }
 
     /**
@@ -109,10 +102,23 @@ class trustzone extends factory
      */
     public static function verify(string $class, string $method): void
     {
-        $value = self::$record[$method] ?? [];
-        $param = isset($value['param']) ? $value['param'] : (isset($value[0]) ? $value : []);
+        //Get param value
+        $value = is_string(self::$record[$method])
+            ? self::$record[$method]
+            : (self::$record[$method]['param'] ?? '');
 
-        if (!empty($param) && !empty($diff = array_diff($param, array_intersect(array_keys(parent::$data), $param)))) {
+        //Skip param check
+        if ('' === $value) {
+            return;
+        }
+
+        //Fill param values
+        $param = self::fill_val($value);
+
+        //Check params with input data
+        $diff = array_diff($param, array_intersect(array_keys(parent::$data), $param));
+
+        if (!empty($param) && !empty($diff)) {
             //Report TrustZone missing
             throw new \Exception(
                 $class . '::' . $method
@@ -125,24 +131,46 @@ class trustzone extends factory
     }
 
     /**
-     * Prepare TrustZone CMD
+     * Fill TrustZone using keys
      *
-     * @param array $cmd
+     * @param string $value
      *
      * @return array
      */
-    private static function prep_cmd(array $cmd): array
+    private static function fill_key(string $value): array
     {
-        $data = [];
+        $data  = [];
+        $items = false !== strpos($value, ',') ? array_filter(explode(',', $value)) : [$value];
 
-        foreach ($cmd as $item) {
-            if (false !== strpos($item, '-')) {
-                list($order, $method) = explode('-', $item, 2);
-                $data[] = ['order' => &$order, 'method' => &$method];
+        foreach ($items as $item) {
+            if ('' !== $item = trim($item)) {
+                $data[$item] = '';
             }
         }
 
-        unset($cmd, $item, $order, $method);
+        unset($value, $items, $item);
+        return $data;
+    }
+
+    /**
+     * Fill TrustZone using values
+     *
+     * @param string $value
+     *
+     * @return array
+     */
+    private static function fill_val(string $value): array
+    {
+        $data  = [];
+        $items = false !== strpos($value, ',') ? array_filter(explode(',', $value)) : [$value];
+
+        foreach ($items as $item) {
+            if ('' !== $item = trim($item)) {
+                $data[] = $item;
+            }
+        }
+
+        unset($value, $items, $item);
         return $data;
     }
 }

@@ -3,7 +3,7 @@
 /**
  * HTTP Request Extension
  *
- * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -379,6 +379,14 @@ class http extends factory
         if (isset($item['max_follow']) && 0 < $item['max_follow']) {
             $opt[CURLOPT_FOLLOWLOCATION] = true;
             $opt[CURLOPT_MAXREDIRS]      = &$item['max_follow'];
+        }
+
+        if (isset($item['proxy'])) {
+            $opt[CURLOPT_PROXY] = &$item['proxy'];
+
+            if (isset($item['proxy_user_pwd'])) {
+                $opt[CURLOPT_PROXYUSERPWD] = &$item['proxy_user_pwd'];
+            }
         }
 
         if (isset($item['data'])) {

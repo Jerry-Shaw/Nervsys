@@ -3,7 +3,7 @@
 /**
  * Factory Handler
  *
- * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class factory extends system
      *
      * @return $this
      */
-    protected static function new(): object
+    public static function new(): object
     {
         return clone self::stock(__FUNCTION__, get_called_class(), func_get_args());
     }
@@ -44,7 +44,7 @@ class factory extends system
      *
      * @return $this
      */
-    protected static function use(): object
+    public static function use(): object
     {
         return self::stock(__FUNCTION__, get_called_class(), func_get_args());
     }
@@ -58,7 +58,7 @@ class factory extends system
      *
      * @return object
      */
-    protected static function obtain(string $class, array $param = []): object
+    public static function obtain(string $class, array $param = []): object
     {
         return self::stock(__FUNCTION__, parent::build_name($class), $param);
     }
@@ -68,7 +68,7 @@ class factory extends system
      *
      * @param string $name
      */
-    protected static function free(string $name = ''): void
+    public static function free(string $name = ''): void
     {
         $class = get_called_class();
         $items = '' !== $name ? [$name, $class . '_AS_' . $name] : [$class];
@@ -93,7 +93,7 @@ class factory extends system
      *
      * @return $this
      */
-    protected function as(string $alias): object
+    public function as(string $alias): object
     {
         self::free($name = get_class($this));
         self::$storage[$key = hash('md5', $name . '_AS_' . $alias)] = $this;
@@ -109,16 +109,52 @@ class factory extends system
      *
      * @return $this
      */
-    protected function config(array $setting): object
+    public function config(array $setting): object
     {
+        $setting = array_intersect_key($setting, get_object_vars($this));
+
         foreach ($setting as $key => $val) {
-            if (isset($this->$key)) {
-                $this->$key = $val;
-            }
+            $this->$key = $val;
         }
 
         unset($setting, $key, $val);
         return $this;
+    }
+
+    /**
+     * Reflect method
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return \ReflectionMethod
+     * @throws \ReflectionException
+     */
+    protected static function reflect(string $class, string $method): \ReflectionMethod
+    {
+        //Reflection list
+        static $list = [];
+
+        //Return when exist
+        if (isset($list[$class])) {
+            return $list[$class];
+        }
+
+        //Get method reflection
+        $reflect = new \ReflectionMethod($class, $method);
+
+        //Check method visibility
+        if (!$reflect->isPublic()) {
+            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
+        }
+
+        //Save constructor reflection
+        if ('__construct' === $method) {
+            $list[$class] = &$reflect;
+        }
+
+        unset($class, $method);
+        return $reflect;
     }
 
     /**

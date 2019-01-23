@@ -3,7 +3,7 @@
 /**
  * Multi-Process Controller Extension
  *
- * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,16 +33,10 @@ class mpc extends factory
     //Basic command
     private $php_cmd = '';
 
-    //Process quantity
-    protected $runs = 10;
-
-    //Process wait option
-    protected $wait = true;
-
     //PHP key name in "system.ini"
     protected $php_key = 'php';
 
-    //PHP executable path in "system.ini"
+    //PHP executable path (in "system.ini" or configured)
     protected $php_exe = '';
 
     /**
@@ -61,9 +55,10 @@ class mpc extends factory
     {
         //Check cmd
         if (!isset($job['cmd'])) {
-            throw new \Exception('Missing "cmd" parameter!', E_USER_ERROR);
+            throw new \Exception('Missing "cmd"!', E_USER_ERROR);
         }
 
+        //Add job
         $this->jobs[] = &$job;
 
         unset($job);
@@ -73,10 +68,13 @@ class mpc extends factory
     /**
      * Commit jobs
      *
+     * @param int  $runs
+     * @param bool $wait
+     *
      * @return array
      * @throws \Exception
      */
-    public function commit(): array
+    public function commit(int $runs = 10, bool $wait = true): array
     {
         //Check jobs
         if (empty($this->jobs)) {
@@ -89,29 +87,35 @@ class mpc extends factory
                 throw new \Exception('[' . $this->php_key . '] NOT configured in "system.ini"', E_USER_ERROR);
             }
 
+            //Get PHP executable path from "system.ini"
             $this->php_exe = parent::$cli[$this->php_key];
         }
 
         //Split jobs
-        $job_packs = count($this->jobs) > $this->runs ? array_chunk($this->jobs, $this->runs, true) : [$this->jobs];
+        $job_packs = count($this->jobs) > $runs
+            ? array_chunk($this->jobs, $runs, true)
+            : [$this->jobs];
+
+        //Free jobs
+        $this->jobs = [];
 
         //Build basic command
         $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
 
-        if ($this->wait) {
+        //Add wait option
+        if ($wait) {
             $this->php_cmd .= ' --ret';
         }
 
         $result = [];
-
         foreach ($job_packs as $jobs) {
             //Execute jobs and merge result
-            if (!empty($data = $this->execute($jobs))) {
+            if (!empty($data = $this->execute($jobs, $wait))) {
                 $result += $data;
             }
         }
 
-        unset($job_packs, $jobs, $data);
+        unset($runs, $wait, $job_packs, $jobs, $data);
         return $result;
     }
 
@@ -119,11 +123,12 @@ class mpc extends factory
      * Execute jobs
      *
      * @param array $jobs
+     * @param bool  $wait
      *
      * @return array
      * @throws \Exception
      */
-    private function execute(array $jobs): array
+    private function execute(array $jobs, bool $wait): array
     {
         //Resource list
         $resource = [];
@@ -148,9 +153,23 @@ class mpc extends factory
                 $cmd .= ' ' . implode(' ', $job['argv']);
             }
 
-            //Create process
-            $process = proc_open(platform::cmd_proc($cmd), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+            //Add no wait option
+            if (!$wait) {
+                $cmd = platform::cmd_bg($cmd);
+            }
 
+            //Create process
+            $process = proc_open(
+                platform::cmd_proc($cmd),
+                [
+                    ['pipe', 'r'],
+                    ['pipe', 'w'],
+                    ['file', ROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_mpc_' . date('Y-m-d') . '.log', 'a']
+                ],
+                $pipes
+            );
+
+            //Merge process resources
             if (is_resource($process)) {
                 $resource[$key]['res']  = true;
                 $resource[$key]['cmd']  = $job['cmd'];
@@ -164,17 +183,16 @@ class mpc extends factory
         unset($jobs, $key, $job, $cmd, $pipes);
 
         //Check wait option
-        if (!$this->wait) {
+        if (!$wait) {
             return [];
         }
 
         //Collect result
         $result = $this->collect($resource);
 
-        unset($resource, $process);
+        unset($wait, $resource, $process);
         return $result;
     }
-
 
     /**
      * Collect result
@@ -206,6 +224,7 @@ class mpc extends factory
 
                 //Remove finished process
                 if (feof($item['pipe'][1])) {
+                    //Close pipes
                     foreach ($item['pipe'] as $pipe) {
                         fclose($pipe);
                     }

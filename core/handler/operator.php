@@ -3,7 +3,7 @@
 /**
  * Operator Handler
  *
- * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,89 @@ class operator extends factory
 
             unset($item);
         } catch (\Throwable $throwable) {
-            //Level up Exception code to ERROR
             error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
             unset($throwable);
         }
+    }
+
+    /**
+     * Run CGI process
+     */
+    public static function run_cgi(): void
+    {
+        //Process orders
+        while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
+            //Get name & class
+            $class = parent::build_name($name = array_shift($item_list));
+
+            try {
+                //Process dependency
+                if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
+                    $module = strstr($module, '/', true);
+                }
+
+                if (isset(parent::$load[$module])) {
+                    $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
+
+                    //Build dependency
+                    parent::build_dep($dep_list);
+
+                    //Call dependency
+                    foreach ($dep_list as $dep) {
+                        self::build_caller(...$dep);
+                    }
+
+                    unset(parent::$load[$module], $dep_list, $dep);
+                }
+
+                //Check & load class
+                if (!class_exists($class, false) && !self::load_class($class)) {
+                    //Class NOT exist
+                    continue;
+                }
+
+                //Check TrustZone permission
+                if (empty($tz_list = trustzone::init($class))) {
+                    //TrustZone NOT open
+                    continue;
+                }
+
+                //Get method list
+                $method_list = empty($item_list) ? $tz_list : array_intersect($item_list, $tz_list);
+                unset($module, $tz_list, $item_list);
+
+                //Process target method
+                foreach ($method_list as $method) {
+                    //Get TrustZone data
+                    $tz_dep = trustzone::get_dep($method);
+
+                    //Build pre/post dependency
+                    parent::build_dep($tz_dep['pre']);
+                    parent::build_dep($tz_dep['post']);
+
+                    //Call pre dependency
+                    foreach ($tz_dep['pre'] as $tz_item) {
+                        self::build_caller(...$tz_item);
+                    }
+
+                    //Verify TrustZone params
+                    trustzone::verify($class, $method);
+
+                    //Build target caller
+                    self::build_caller($name, $class, $method);
+
+                    //Call post dependency
+                    foreach ($tz_dep['post'] as $tz_item) {
+                        self::build_caller(...$tz_item);
+                    }
+                }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable);
+                unset($throwable);
+            }
+        }
+
+        unset($item_list, $class, $name, $method_list, $method, $tz_dep, $tz_item);
     }
 
     /**
@@ -53,34 +132,44 @@ class operator extends factory
     public static function run_cli(): void
     {
         //Process orders
-        foreach (parent::$cmd_cli as $key => $cmd) {
+        while (!is_null($item_list = array_shift(parent::$cmd_cli))) {
             try {
                 //Prepare command
-                $command = '"' . $cmd . '"';
+                $command = '"' . $item_list['cmd'] . '"';
 
                 //Append arguments
-                if (!empty(parent::$param_cli['argv'])) {
-                    $command .= ' ' . implode(' ', parent::$param_cli['argv']);
+                if (isset($item_list['argv'])) {
+                    $command .= $item_list['argv'];
+                }
+
+                //Add no return option
+                if (!$item_list['ret']) {
+                    $command = platform::cmd_bg($command);
                 }
 
                 //Create process
-                $process = proc_open(platform::cmd_proc($command), [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+                $process = proc_open(
+                    platform::cmd_proc($command),
+                    [
+                        ['pipe', 'r'],
+                        ['pipe', 'w'],
+                        ['file', ROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_cli_' . date('Y-m-d') . '.log', 'a']
+                    ],
+                    $pipes
+                );
 
                 if (!is_resource($process)) {
-                    throw new \Exception($key . '=>' . $cmd . ': Access denied or command ERROR!', E_USER_ERROR);
+                    throw new \Exception($item_list['key'] . '=>' . $item_list['cmd'] . ': Access denied or command ERROR!', E_USER_WARNING);
                 }
 
                 //Send data via pipe
-                if ('' !== parent::$param_cli['pipe']) {
-                    fwrite($pipes[0], parent::$param_cli['pipe'] . PHP_EOL);
+                if (isset($item_list['pipe'])) {
+                    fwrite($pipes[0], $item_list['pipe']);
                 }
 
                 //Collect result
-                if (parent::$param_cli['ret']) {
-                    if ('' !== $data = self::read_pipe([$process, $pipes[1]])) {
-                        parent::$result[$key] = &$data;
-                    }
-
+                if ($item_list['ret'] && '' !== $data = self::read_pipe([$process, $pipes[1]], $item_list['time'])) {
+                    parent::$result[$item_list['key']] = &$data;
                     unset($data);
                 }
 
@@ -94,87 +183,7 @@ class operator extends factory
             }
         }
 
-        unset($key, $cmd, $command, $process, $pipes, $pipe);
-    }
-
-    /**
-     * Run CGI process
-     */
-    public static function run_cgi(): void
-    {
-        //Build order list
-        $order = self::build_order();
-
-        //Process orders
-        foreach ($order as $method) {
-            //Get name & class
-            $class = parent::build_name($name = array_shift($method));
-
-            //Check & load class
-            if (!class_exists($class, false) && !self::load_class($class)) {
-                continue;
-            }
-
-            try {
-                //Process dependency
-                if (isset(parent::$load[$module = strstr($name, '/', true)])) {
-                    $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
-
-                    //Build dependency
-                    parent::build_dep($dep_list);
-
-                    //Call dependency
-                    foreach ($dep_list as $dep) {
-                        self::build_caller(...$dep);
-                    }
-
-                    unset($dep_list, $dep);
-                }
-
-                //Check TrustZone permission
-                if (empty($tz_list = trustzone::init($class))) {
-                    //Do not throw out exceptions
-                    continue;
-                }
-
-                //Get function list & target list
-                $func_list   = get_class_methods($class);
-                $target_list = !empty($method) ? array_intersect($method, $tz_list, $func_list) : array_intersect($tz_list, $func_list);
-
-                unset($module, $tz_list, $func_list, $method);
-
-                //Process target list
-                foreach ($target_list as $target) {
-                    //Get TrustZone data
-                    $tz_data = trustzone::fetch($class, $target);
-
-                    //Build pre/post dependency
-                    parent::build_dep($tz_data['pre']);
-                    parent::build_dep($tz_data['post']);
-
-                    //Call pre dependency
-                    foreach ($tz_data['pre'] as $tz_item) {
-                        self::build_caller(...$tz_item);
-                    }
-
-                    //Verify TrustZone params
-                    trustzone::verify($class, $target);
-
-                    //Build target caller
-                    self::build_caller($name, $class, $target);
-
-                    //Call post dependency
-                    foreach ($tz_data['post'] as $tz_item) {
-                        self::build_caller(...$tz_item);
-                    }
-                }
-            } catch (\Throwable $throwable) {
-                error::exception_handler($throwable);
-                unset($throwable);
-            }
-        }
-
-        unset($order, $method, $class, $name, $target_list, $target, $tz_data, $tz_item);
+        unset($item_list, $command, $process, $pipes, $pipe);
     }
 
     /**
@@ -192,6 +201,7 @@ class operator extends factory
 
         foreach ($list as $path) {
             if (is_string($path = realpath($path . $file))) {
+                //Require script file
                 require $path;
 
                 //Check class status
@@ -222,26 +232,6 @@ class operator extends factory
     }
 
     /**
-     * Build CGI order list
-     */
-    private static function build_order(): array
-    {
-        $key  = 0;
-        $list = [];
-
-        foreach (parent::$cmd_cgi as $item) {
-            if (false !== strpos($item, '/') && isset($list[$key])) {
-                ++$key;
-            }
-
-            $list[$key][] = $item;
-        }
-
-        unset($key, $item);
-        return $list;
-    }
-
-    /**
      * Build method caller
      *
      * @param string $order
@@ -252,18 +242,20 @@ class operator extends factory
      */
     private static function build_caller(string $order, string $class, string $method): void
     {
-        //Reflect method
-        $reflect = new \ReflectionMethod($class, $method);
+        //Get reflection
+        $reflect = parent::reflect($class, $method);
 
-        //Check visibility
-        if (!$reflect->isPublic()) {
-            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
+        //Call constructor
+        if ('__construct' === $method) {
+            parent::obtain($class, data::build_argv($reflect, parent::$data));
+            unset($order, $class, $method, $reflect);
+            return;
         }
 
-        //Get factory object
+        //Using class object
         if (!$reflect->isStatic()) {
             $class = method_exists($class, '__construct')
-                ? parent::obtain($class, data::build_argv(new \ReflectionMethod($class, '__construct'), parent::$data))
+                ? parent::obtain($class, data::build_argv(parent::reflect($class, '__construct'), parent::$data))
                 : parent::obtain($class);
         }
 
@@ -284,15 +276,17 @@ class operator extends factory
      * Get stream content
      *
      * @param array $process
+     * @param int   $timeout
      *
      * @return string
      */
-    private static function read_pipe(array $process): string
+    private static function read_pipe(array $process, int $timeout): string
     {
         $timer  = 0;
         $result = '';
 
-        while (0 === parent::$param_cli['time'] || $timer <= parent::$param_cli['time']) {
+        //Keep reading STDOUT from process
+        while (0 === $timeout || $timer <= $timeout) {
             if (proc_get_status($process[0])['running']) {
                 usleep(1000);
                 $timer += 1000;
@@ -302,7 +296,7 @@ class operator extends factory
             }
         }
 
-        unset($process, $timer);
+        unset($process, $timeout, $timer);
         return $result;
     }
 }

@@ -1,8 +1,12 @@
 # Nervsys
 
-Stable version: 7.2.0  
+Stable version: 7.2.14  
 Extension version: 2.0  
-[Test Suites](https://github.com/NervSys/tests)  
+[Unit Test Suites](https://github.com/NervSys/tests)  
+  
+Report to us if you encounter an issue.  
+Pull request when you have better ideas.  
+Thanks for your support.  
 
 ## About
 
@@ -62,6 +66,7 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │    ├─image.php                            Image processing extension
     │    ├─keygen.php                           keygen extension for crypt
     │    ├─lang.php                             Language pack extension
+    │    ├─memcached.php                        Memcached extension (Thanks to tggtzbh)
     │    ├─mpc.php                              Multi-Process Controller Extension
     │    ├─pdo.php                              PDO connector extension
     │    ├─pdo_mysql.php                        PDO MySQL extension (Thanks to kristenzz)
@@ -172,6 +177,9 @@ The words above are reserved by NervSys core. So that, they should be taken care
 
     explain:
     All requests via ajax from the domains above in the section are allowed, with the request headers accepted.
+
+    NOTICE:
+    If "*" is set in the keys, that means CORS will be opened to all incoming domains with defined headers accepted.
     
     
 ### INIT
@@ -192,14 +200,17 @@ The words above are reserved by NervSys core. So that, they should be taken care
     Multiple setting:
     DescA = dirA/dirB/model-funcA
     DescB = dirB/dirB/model-funcB
+    DescC = dirC/dirC/model
     
     explain: 
     "\dirA\dirB\model::funcA($params)" & "\dirB\dirB\model::funcB($params)"
     will be called on startup with required agruments. 
+    While, "\dirC\dirC\model::__construct($params)" will be called instead because of no function is set.
     
     Notice: 
-    The "Desc*" keys in "INIT" has no means for system, but for developers to know what they are for. 
-    Sub-array settings is NOT allowed in this section. 
+    The keys in "INIT" section have no means for system, but for developers to know what they are for. 
+    "__construct" will be called if no function has been specified in the values.
+    Setting in array is NOT allowed in this section. 
     Required arguments will be automatically passed. 
     All returned values will be captured when exist. 
 
@@ -225,16 +236,20 @@ The words above are reserved by NervSys core. So that, they should be taken care
     dirA = dirX/model-func
     dirB[] = dirX/model-funcA
     dirB[] = dirX/model-funcB
+    dirC = dirY/model
     
     explain: 
     "\dirX\model::func($params)" will be called only once right before calling functions under dirA.
     "\dirX\model::funcA($params)" & "\dirX\model::funcB($params)" both will be called only once right 
     before calling functions under dirB.
+    While, "\dirY\model::__construct($params)" will be called instead, because of no function is set, 
+    only once right before calling functions under dirC.
     
     Notice: 
     The keys in "LOAD" section point to the first level subfolders, while the setting values 
     point to the functions which will be called when the subfolder is being accessed. 
-    Sub-array settings are allowed in this section, to call multiple functions. 
+    "__construct" will be called if no function has been specified in the values.
+    Setting in array is allowed to call multiple functions. 
     Required arguments will be automatically passed. 
     All returned values will be captured when exist. 
 
@@ -296,16 +311,20 @@ namespace DirA\ctr;
 class TestA
 {
     public static $tz = [
-        'test_a' => ['param_a', 'param_b'],
+        'test_a' => 'param_a,param_b',
         
         'test_b' => [
-                'pre' => ['DirA/classA-funcA', 'DirB/classA-funcA'],
-                'post' => ['DirA/classB-funcA', 'DirB/classB-funcA'],
-                'param' => ['param_c', 'param_d']
+                'pre' => 'DirA/classA-funcA,DirB/classA-funcA',
+                'post' => 'DirA/classB-funcA,DirB/classB-funcA',
+                'param' => 'param_c,param_d'
             ],
         
         'test_c' => [
-                'param' => ['param_a', 'param_b', 'param_c']
+                'param' => 'param_a,param_b,param_c'
+            ],
+            
+        'test_d' => [
+                'post' => 'DirA/classB-funcA'
             ]
     ];
     
@@ -319,7 +338,12 @@ class TestA
         //some code...
     }
     
-    public function test_c(string $param_a, array $param_b, string $param_c): void
+    public function test_c(string $param_a, array $param_b, string $param_c): string
+    {
+        //some code...
+    }
+    
+    public function test_d(string $param_a, array $param_b, string $param_c): array
     {
         //some code...
     }
@@ -337,17 +361,17 @@ class TestB
 {
     public $tz = 'test_a,test_b,test_c';
     
-    public static function test_a(string $param_a, array $param_b): void
+    public static function test_a(string $param_a, array $param_b): int
     {
         //some code...
     }
     
-    public static function test_b(string $param_c, array $param_d): void
+    public static function test_b(string $param_c, array $param_d): object
     {
         //some code...
     }
     
-    public function test_c(): void
+    public function test_c(): bool 
     {
         //some code...
     }
@@ -397,28 +421,34 @@ NOTICE: Same ways to call "use" and "obtain" methods, but there are still some s
 **obtain**: all returned object points to the first argument using a class name, with the second argument as the params for "__construct" method. But this method also supports alias calling by passing correct class name and its alias name as the only param in the second argument array.  
   
   
-Caution: Make sure to use alias names conditionally and differently to avoid conflict.
-
-
+**Caution**:  
+1. Make sure to use alias names conditionally and differently to avoid conflict.  
+2. Make sure the calling sequence is as expected, especially, check the sub-calling entries in all "__construct" methods when using factory to new/use classes. Incorrect object will be generated by factory even if a "new" is calling apparently before an "use", while the "use" is calling inside "__construct" of a class being called before the "new".  
+  
+  
 ### TrustZone
 
 Every class which is exposed to API should always contain a variable named "$tz", static or non-static are both supported. It controls the exact method calling behaviour in the owner class.  
   
 The values are recorded when API accesses the class for the first time. Never try to modify "$tz" in any of the functions in the same class. Nothing will be affected.  
   
-_Two types of $tz in array: example of "TestA.php"_  
-  
 In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.  
+  
+Once anything failed during TrustZone verification, such as, "pre"/"post" dependency method missing, "param" setting not match with input data, or even argument missing, etc. API will skip the process cycle and throw out a warning exception. Other process cycles will continue running.  
+  
+_Two types of $tz in array format: example of "TestA.php"_  
   
 In the example above, $tz for function "test_a" is written in simple mode, while, $tz for function "test_b" is written in full mode.  
   
-In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when process data structure is not matched $tz settings.  
+In simple mode, the contents are the MUST exist parameters for the function. API will ignore those functions when input data structure is not matched with $tz settings.  
   
-In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.
+In full mode, MUST exist parameters are listing under 'param' key, they are doing the same thing. 'pre' key controls the pre-run methods, while 'post' key controls the post-run method. The two settings are executed before/after the function's calling.  
   
-_Simple stringified $tz format: example of "TestB.php_  
+_Simple $tz in string format: example of "TestB.php_  
 
-That is a simple format which means methods "test_a", "test_b", "test_c" are all exposed to API with no TrustZone limitation. But they also may or may not be strict by the argument data parser.  
+That is a simple format which means methods "test_a", "test_b", "test_c" are all exposed to API with no TrustZone limitation. But they will be still checked by the argument data parser.  
+  
+NOTICE: We can set the value of TrustZone to "*" to simply expose all public methods to API.  
   
   
 ### Autofill
@@ -526,6 +556,7 @@ Normally, when php encounters an error, or an exception, it'll stop anyway. But 
 ## Credits
 
 [kristenzz](https://github.com/kristemZZ)  
+[tggtzbh](https://github.com/tggtzbh)  
 
 
 ## Licensing

@@ -3,7 +3,7 @@
 /**
  * CMD Parser
  *
- * Copyright 2016-2018 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,45 +40,34 @@ class cmd extends system
         $cmd = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
 
         //Prepare CMD
+        parent::$cmd_cgi = self::pack_cgi(self::prep_cgi($cmd));
         parent::$cmd_cli = self::prep_cli($cmd);
-        parent::$cmd_cgi = self::prep_cgi($cmd);
 
         unset($cmd);
     }
 
     /**
-     * Prepare CLI CMD
+     * Pack CGI CMD
      *
      * @param array $cmd
      *
      * @return array
      */
-    private static function prep_cli(array $cmd): array
+    private static function pack_cgi(array $cmd): array
     {
-        if (!parent::$is_cli) {
-            return [];
-        }
+        $key  = -1;
+        $list = [];
 
-        //Check PHP command
-        if (in_array('PHP', $cmd, true)) {
-            parent::$cli['PHP'] = platform::sys_path();
-        }
-
-        //Check setting
-        if (empty(parent::$cli)) {
-            return [];
-        }
-
-        //Build CMD
-        $order = [];
-        foreach ($cmd as $key => $item) {
-            if (isset(parent::$cli[$item]) && '' !== parent::$cli[$item]) {
-                $order[$item] = parent::$cli[$item];
+        foreach ($cmd as $item) {
+            if (false !== strpos($item, '/') || false !== strpos($item, '\\')) {
+                ++$key;
             }
+
+            $list[$key][] = $item;
         }
 
         unset($cmd, $key, $item);
-        return $order;
+        return $list;
     }
 
     /**
@@ -106,21 +95,74 @@ class cmd extends system
                 parent::$param_cgi[$item] = $name;
             } else {
                 foreach ($cmd as $key => $val) {
-                    if (0 === strpos($val, $name)) {
-                        //Replace CMD
-                        $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
-
-                        //Add param
-                        parent::$param_cgi[$cmd[$key]] = $val;
+                    if (0 !== strpos($val, $name)) {
+                        continue;
                     }
+
+                    //Replace CMD
+                    $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
+
+                    //Add param
+                    parent::$param_cgi[$cmd[$key]] = $val;
                 }
             }
         }
 
         //Build CMD
-        $order = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
+        $cmd = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
 
-        unset($cmd, $name, $item, $keys, $key, $val);
+        unset($name, $item, $keys, $key, $val);
+        return $cmd;
+    }
+
+    /**
+     * Prepare CLI CMD
+     *
+     * @param array $cmd
+     *
+     * @return array
+     */
+    private static function prep_cli(array $cmd): array
+    {
+        if (!parent::$is_cli) {
+            return [];
+        }
+
+        //Check PHP command
+        if (in_array('PHP', $cmd, true)) {
+            parent::$cli['PHP'] = platform::sys_path();
+        }
+
+        //Check setting
+        if (empty(parent::$cli)) {
+            return [];
+        }
+
+        //Build CMD
+        $key   = -1;
+        $order = [];
+
+        foreach ($cmd as $item) {
+            if (!isset(parent::$cli[$item]) || '' === parent::$cli[$item]) {
+                continue;
+            }
+
+            $order[$key]['key'] = $item;
+            $order[$key]['cmd'] = parent::$cli[$item];
+
+            $order[$key]['ret']  = parent::$param_cli['ret'];
+            $order[$key]['time'] = parent::$param_cli['time'];
+
+            if ('' !== parent::$param_cli['pipe']) {
+                $order[$key]['pipe'] = parent::$param_cli['pipe'] . PHP_EOL;
+            }
+
+            if (!empty(parent::$param_cli['argv'])) {
+                $order[$key]['argv'] = ' ' . implode(' ', parent::$param_cli['argv']);
+            }
+        }
+
+        unset($cmd, $key, $item);
         return $order;
     }
 }
