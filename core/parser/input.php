@@ -55,7 +55,7 @@ class input extends system
             parent::$cmd = &$val['data'];
         }
 
-        //Read output format
+        //Read MIME type
         if ('' === parent::$mime
             && !empty($val = self::opt_val(parent::$data, self::MIME))
             && is_string($val['data'])
@@ -131,7 +131,7 @@ class input extends system
          * t/time: CLI read timeout (in microsecond, default: 0, wait till done)
          */
         //Get options
-        if (empty($opt = getopt('c:o:d:p:t:r', ['cmd:', 'out:', 'data:', 'pipe', 'time:', 'ret'], $optind))) {
+        if (empty($opt = getopt('c:m:d:p:t:r', ['cmd:', 'mime:', 'data:', 'pipe:', 'time:', 'ret'], $optind))) {
             return $optind;
         }
 
@@ -143,7 +143,7 @@ class input extends system
             parent::$data += [$val['key'] => data::decode($val['data'])];
         }
 
-        //Get output value
+        //Get MIME type
         if (!empty($val = self::opt_val($opt, self::MIME)) && is_string($val['data'])) {
             parent::$data += [$val['key'] => &$val['data']];
         }
