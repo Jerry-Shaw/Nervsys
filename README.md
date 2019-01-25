@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.2.14  
+Stable version: 7.2.16  
 Extension version: 2.0  
 [Unit Test Suites](https://github.com/NervSys/tests)  
   
@@ -86,13 +86,13 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
 
 ## Reserved Words
   
-CGI: c/cmd, o/out  
-CLI: c/cmd, o/out, d/data, p/pipe, t/time, r/ret  
+CGI: c/cmd, m/mime  
+CLI: c/cmd, m/mime, d/data, p/pipe, t/time, r/ret  
   
 Explanations:  
 r/ret: Return option (No needed value)  
 c/cmd: System commands (User defined)  
-o/out: Output format (json/xml/nul, default: json)  
+m/mime: Output MIME type (json/xml/html, UTF-8, default: json)  
 d/data: CLI Data package (Transfer to CGI progress)  
 p/pipe: CLI pipe data package (Transfer to CLI programs)  
 t/time: CLI read timeout (in microsecond, default: 0, wait till done)  
@@ -512,7 +512,7 @@ In this mode, PHP script will be called when the command and data matches the cl
 
     r/ret: Return option (Available in CLI executable mode only)
     c/cmd: System commands (separated by "-" when multiple)
-    o/out: Output format (json/xml/nul, default: json, available when "r/ret" is set)
+    m/mime: Output MIME type (json/xml/html, default: json, available when "r/ret" is set)
     d/data: CLI Data package (Transfer to CGI progress)
     p/pipe: CLI pipe data package (Transfer to CLI programs)
     t/time: CLI read timeout (in microsecond, default: 0, wait till done)
