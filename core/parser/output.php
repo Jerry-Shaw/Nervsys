@@ -27,14 +27,11 @@ class output extends system
     //Pretty format
     private static $pretty = false;
 
-    //Response header
-    const HEADER = [
-        //Output as JSON (default)
-        'json' => 'Content-Type: application/json; charset=UTF-8',
-        //Output as XML
-        'xml'  => 'Content-Type: application/xml; charset=UTF-8',
-        //Keep in pool for HTML
-        'nul'  => 'Content-Type: text/html; charset=UTF-8'
+    //Response MIME type (UTF-8, default: json)
+    const MIME = [
+        'json' => 'application/json',
+        'xml'  => 'application/xml',
+        'html' => 'text/html'
     ];
 
     /**
@@ -54,14 +51,14 @@ class output extends system
             parent::$result = parent::$error + ['data' => parent::$result];
         }
 
-        $output = isset(self::HEADER[parent::$out]) ? parent::$out : 'json';
+        $type = isset(self::MIME[parent::$mime]) ? parent::$mime : 'json';
 
         if (!headers_sent()) {
-            header(self::HEADER[$output]);
+            header('Content-Type: ' . self::MIME[$type] . '; charset=UTF-8');
         }
 
-        if ('nul' !== $output) {
-            echo self::$output();
+        if (method_exists(__CLASS__, $type)) {
+            echo self::$type();
 
             if (parent::$is_cli) {
                 echo PHP_EOL;
@@ -72,11 +69,11 @@ class output extends system
             echo PHP_EOL . PHP_EOL . parent::$logs;
         }
 
-        unset($output);
+        unset($type);
     }
 
     /**
-     * Output as JSON
+     * Format JSON
      */
     private static function json(): string
     {
@@ -84,7 +81,7 @@ class output extends system
     }
 
     /**
-     * Output as XML
+     * Format XML
      *
      * @return string
      */

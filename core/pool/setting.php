@@ -22,8 +22,8 @@ namespace core\pool;
 
 class setting extends process
 {
-    //Output format
-    public static $out = '';
+    //Mime type
+    public static $mime = '';
 
     //Runtime values
     public static $is_cli   = true;

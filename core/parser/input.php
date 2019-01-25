@@ -27,7 +27,7 @@ class input extends system
     //Read options
     const RET  = ['ret', 'r'];
     const CMD  = ['cmd', 'c'];
-    const OUT  = ['out', 'o'];
+    const MIME = ['mime', 'm'];
     const DATA = ['data', 'd'];
     const PIPE = ['pipe', 'p'];
     const TIME = ['time', 't'];
@@ -56,11 +56,11 @@ class input extends system
         }
 
         //Read output format
-        if ('' === parent::$out
-            && !empty($val = self::opt_val(parent::$data, self::OUT))
+        if ('' === parent::$mime
+            && !empty($val = self::opt_val(parent::$data, self::MIME))
             && is_string($val['data'])
         ) {
-            parent::$out = &$val['data'];
+            parent::$mime = &$val['data'];
         }
 
         unset($val);
@@ -125,7 +125,7 @@ class input extends system
          *
          * r/ret: Return option (Available in CLI executable mode only)
          * c/cmd: System commands (separated by "-" when multiple)
-         * o/out: Output format (json/xml/nul, default: json, available when "r/ret" is set)
+         * m/mime: Output MIME type (json/xml/html, default: json, available when "r/ret" is set)
          * d/data: CLI Data package (Transfer to CGI progress)
          * p/pipe: CLI pipe data package (Transfer to CLI programs)
          * t/time: CLI read timeout (in microsecond, default: 0, wait till done)
@@ -144,7 +144,7 @@ class input extends system
         }
 
         //Get output value
-        if (!empty($val = self::opt_val($opt, self::OUT)) && is_string($val['data'])) {
+        if (!empty($val = self::opt_val($opt, self::MIME)) && is_string($val['data'])) {
             parent::$data += [$val['key'] => &$val['data']];
         }
 
