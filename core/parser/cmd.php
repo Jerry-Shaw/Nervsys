@@ -33,7 +33,7 @@ class cmd extends system
     {
         //Check CMD
         if ('' === parent::$cmd) {
-            parent::stop();
+            return;
         }
 
         //Extract CMD
