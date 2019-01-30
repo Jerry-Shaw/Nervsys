@@ -32,8 +32,8 @@ use core\pool\command;
 
 class system extends command
 {
-    //Setting file path
-    const PATH = __DIR__ . DIRECTORY_SEPARATOR . 'system.ini';
+    //Config file path
+    const CFG_FILE = __DIR__ . DIRECTORY_SEPARATOR . 'system.ini';
 
     /**
      * Boot system
@@ -213,7 +213,7 @@ class system extends command
     private static function parse(): void
     {
         //Read settings
-        if (false === $conf = parse_ini_file(self::PATH, true)) {
+        if (false === $conf = parse_ini_file(self::CFG_FILE, true)) {
             return;
         }
 

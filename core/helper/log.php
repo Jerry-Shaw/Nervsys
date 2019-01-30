@@ -25,7 +25,7 @@ use core\system;
 class log extends system
 {
     //Log path
-    const PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
+    const LOG_PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
 
     /**
      * Log emergency
@@ -152,7 +152,7 @@ class log extends system
         if (isset(parent::$log[$level]) && 0 < (int)parent::$log[$level]) {
             //Get log key & path
             $key = $level . '-' . date('Ymd');
-            $log = self::PATH . $key . '.log';
+            $log = self::LOG_PATH . $key . '.log';
 
             static $file = [];
 
