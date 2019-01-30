@@ -48,7 +48,9 @@ class system extends command
         self::detect();
 
         //Initialize
-        operator::init();
+        if (!empty(parent::$init)) {
+            operator::run_dep(parent::$init, E_USER_ERROR);
+        }
 
         //Read input
         input::read();
