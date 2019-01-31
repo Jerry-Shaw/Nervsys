@@ -104,6 +104,12 @@ The words above are reserved by NervSys core. So that, they should be taken care
 
 "system.ini" locates right under the "core" folder, which contains most of the important setting sections.
 
+### SYS
+
+    [SYS]
+    Holds system settings
+    timezone = PRC
+
 ### LOG
 
     [LOG]

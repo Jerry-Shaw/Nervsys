@@ -26,13 +26,11 @@ class setting extends process
     public static $mime = '';
 
     //Runtime values
-    public static $is_cli   = true;
-    public static $is_https = true;
-
-    //Error reporting
-    protected static $err = 0;
+    public static $is_CLI = true;
+    public static $is_TLS = true;
 
     //System settings
+    protected static $sys  = [];
     protected static $log  = [];
     protected static $cgi  = [];
     protected static $cli  = [];
@@ -40,4 +38,7 @@ class setting extends process
     protected static $init = [];
     protected static $load = [];
     protected static $path = [];
+
+    //Error reporting level
+    protected static $err_lv = E_ALL | E_STRICT;
 }

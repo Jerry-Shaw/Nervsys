@@ -102,9 +102,7 @@ class operator extends factory
                     $tz_dep = trustzone::get_dep($method);
 
                     //Run pre dependency
-                    if (!empty($tz_dep['pre'])) {
-                        self::run_dep($tz_dep['pre'], E_USER_WARNING);
-                    }
+                    !empty($tz_dep['pre']) && self::run_dep($tz_dep['pre'], E_USER_WARNING);
 
                     //Verify TrustZone params
                     trustzone::verify($class, $method);
@@ -113,9 +111,7 @@ class operator extends factory
                     self::build_caller($name, $class, $method);
 
                     //Run post dependency
-                    if (!empty($tz_dep['post'])) {
-                        self::run_dep($tz_dep['post'], E_USER_WARNING);
-                    }
+                    !empty($tz_dep['post']) && self::run_dep($tz_dep['post'], E_USER_WARNING);
                 }
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
@@ -163,9 +159,7 @@ class operator extends factory
                 }
 
                 //Send data via pipe
-                if (isset($item_list['pipe'])) {
-                    fwrite($pipes[0], $item_list['pipe']);
-                }
+                isset($item_list['pipe']) && fwrite($pipes[0], $item_list['pipe']);
 
                 //Collect result
                 if ($item_list['ret'] && '' !== $data = self::read_pipe([$process, $pipes[1]], $item_list['time'])) {

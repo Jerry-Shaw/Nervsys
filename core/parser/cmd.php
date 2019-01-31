@@ -124,7 +124,7 @@ class cmd extends system
      */
     private static function prep_cli(array $cmd): array
     {
-        if (!parent::$is_cli) {
+        if (!parent::$is_CLI) {
             return [];
         }
 

@@ -38,7 +38,7 @@ class input extends system
     public static function read(): void
     {
         //Read data
-        if (!parent::$is_cli) {
+        if (!parent::$is_CLI) {
             //Read HTTP & input
             self::read_http();
             self::read_raw();

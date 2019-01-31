@@ -20,7 +20,6 @@
 
 namespace core;
 
-use core\handler\error;
 use core\handler\operator;
 use core\handler\platform;
 
@@ -40,31 +39,21 @@ class system extends command
      */
     public static function boot(): void
     {
-        //Track error
-        error::track();
+        //Load state (S1)
+        self::load_cfg();
+        self::load_env();
+        self::load_cors();
 
-        //Parse & detect
-        self::parse();
-        self::detect();
+        //Initial state (S2)
+        !empty(self::$init) && operator::run_dep(self::$init, E_USER_ERROR);
 
-        //Initialize
-        if (!empty(parent::$init)) {
-            operator::run_dep(parent::$init, E_USER_ERROR);
-        }
-
-        //Read input
+        //Process state (S3)
         input::read();
-
-        //Parse CMD
         cmd::parse();
-
-        //Run CGI process
         operator::run_cgi();
-
-        //Run CLI process
         operator::run_cli();
 
-        //Flush output content
+        //Flush state (S4)
         output::flush();
     }
 
@@ -124,7 +113,7 @@ class system extends command
      */
     public static function add_cgi(string $class, string ...$method): void
     {
-        parent::$cmd_cgi[] = func_get_args();
+        self::$cmd_cgi[] = func_get_args();
         unset($class, $method);
     }
 
@@ -141,21 +130,21 @@ class system extends command
      */
     public static function add_cli(string $cmd, string $argv = '', string $pipe = '', int $time = 0, bool $ret = false): void
     {
-        if (!parent::$is_cli) {
+        if (!self::$is_CLI) {
             throw new \Exception('Operation NOT permitted!', E_USER_WARNING);
         }
 
         if ('PHP' === $cmd) {
-            parent::$cli['PHP'] = platform::sys_path();
+            self::$cli['PHP'] = platform::sys_path();
         }
 
-        if (!isset(parent::$cli[$cmd])) {
+        if (!isset(self::$cli[$cmd])) {
             throw new \Exception('"' . $cmd . '" NOT defined!', E_USER_WARNING);
         }
 
         $cmd_cli = [
             'key'  => &$cmd,
-            'cmd'  => parent::$cli[$cmd],
+            'cmd'  => self::$cli[$cmd],
             'ret'  => &$ret,
             'time' => &$time
         ];
@@ -168,7 +157,7 @@ class system extends command
             $cmd_cli['argv'] = ' ' . $argv;
         }
 
-        parent::$cmd_cli[] = &$cmd_cli;
+        self::$cmd_cli[] = &$cmd_cli;
         unset($cmd, $argv, $pipe, $time, $ret, $cmd_cli);
     }
 
@@ -208,14 +197,12 @@ class system extends command
     }
 
     /**
-     * Parse settings
+     * Load configuration settings
      */
-    private static function parse(): void
+    private static function load_cfg(): void
     {
-        //Read settings
-        if (false === $conf = parse_ini_file(self::CFG_FILE, true)) {
-            return;
-        }
+        //Load configuration file
+        $conf = parse_ini_file(self::CFG_FILE, true);
 
         //Set include path
         if (isset($conf['PATH']) && !empty($conf['PATH'])) {
@@ -248,21 +235,33 @@ class system extends command
     }
 
     /**
-     * Runtime value detections
+     * Load environment values
      */
-    private static function detect(): void
+    private static function load_env(): void
     {
+        //Set runtime values
+        set_time_limit(0);
+        ignore_user_abort(true);
+        error_reporting(self::$err_lv);
+        date_default_timezone_set(self::$sys['timezone']);
+
         //Detect running mode
-        self::$is_cli = 'cli' === PHP_SAPI;
+        self::$is_CLI = 'cli' === PHP_SAPI;
 
-        //Detect HTTPS protocol
-        self::$is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+        //Detect TLS protocol
+        self::$is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
 
-        //Detect Cross-origin resource sharing authority
+    /**
+     * Load CORS permissions
+     */
+    private static function load_cors(): void
+    {
+        //Check CORS settings
         if (empty(self::$cors)
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (self::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+            || $_SERVER['HTTP_ORIGIN'] === (self::$is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
@@ -279,8 +278,6 @@ class system extends command
         unset($allow_headers);
 
         //Exit on OPTION request
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
-        }
+        'OPTIONS' !== $_SERVER['REQUEST_METHOD'] || exit;
     }
 }

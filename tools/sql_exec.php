@@ -42,7 +42,7 @@ class sql_exec extends factory
     public static function import(): void
     {
         //Check CLI
-        if (!parent::$is_cli) {
+        if (!parent::$is_CLI) {
             throw new \Exception('Please run under CLI mode!', E_USER_ERROR);
         }
 

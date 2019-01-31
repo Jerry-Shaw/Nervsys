@@ -39,7 +39,7 @@ class output extends system
      */
     public static function flush(): void
     {
-        if (0 < parent::$err) {
+        if (0 < parent::$err_lv) {
             self::$pretty = true;
         }
 
@@ -60,7 +60,7 @@ class output extends system
         if (method_exists(__CLASS__, $type)) {
             echo self::$type();
 
-            if (parent::$is_cli) {
+            if (parent::$is_CLI) {
                 echo PHP_EOL;
             }
         }
