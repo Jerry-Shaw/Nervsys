@@ -36,24 +36,50 @@ class system extends command
 
     /**
      * Boot system
+     *
+     * @param int $state
+     *
+     * @throws \Exception
      */
-    public static function boot(): void
+    public static function boot(int $state = 0): void
     {
         //Load state (S1)
         self::load_cfg();
-        self::load_env();
-        self::load_cors();
+        self::config_env();
+
+        //S1 exit control
+        if (1 === $state) {
+            return;
+        }
 
         //Initial state (S2)
+        self::check_cors();
         !empty(self::$init) && operator::run_dep(self::$init, E_USER_ERROR);
 
-        //Process state (S3)
+        //S2 exit control
+        if (2 === $state) {
+            return;
+        }
+
+        //Read state (S3)
         input::read();
-        cmd::parse();
+
+        //S3 exit control
+        if (3 === $state) {
+            return;
+        }
+
+        //Process state (S4)
+        '' !== parent::$cmd && cmd::prepare();
         operator::run_cgi();
         operator::run_cli();
 
-        //Flush state (S4)
+        //S4 exit control
+        if (4 === $state) {
+            return;
+        }
+
+        //Flush state (S5)
         output::flush();
     }
 
@@ -62,8 +88,7 @@ class system extends command
      */
     public static function stop(): void
     {
-        output::flush();
-        exit;
+        output::flush() && exit;
     }
 
     /**
@@ -92,9 +117,7 @@ class system extends command
             $ip_list = false !== strpos($_SERVER[$key], ',') ? explode(',', $_SERVER[$key]) : [$_SERVER[$key]];
 
             foreach ($ip_list as $ip) {
-                $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
-
-                if (false !== $ip) {
+                if (false !== $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
                     unset($chk_list, $key, $ip_list);
                     return $ip;
                 }
@@ -158,6 +181,7 @@ class system extends command
         }
 
         self::$cmd_cli[] = &$cmd_cli;
+
         unset($cmd, $argv, $pipe, $time, $ret, $cmd_cli);
     }
 
@@ -237,7 +261,7 @@ class system extends command
     /**
      * Load environment values
      */
-    private static function load_env(): void
+    private static function config_env(): void
     {
         //Set runtime values
         set_time_limit(0);
@@ -256,7 +280,7 @@ class system extends command
     /**
      * Load CORS permissions
      */
-    private static function load_cors(): void
+    private static function check_cors(): void
     {
         //Check CORS settings
         if (empty(self::$cors)
@@ -266,18 +290,16 @@ class system extends command
         }
 
         //Exit on no access authority
-        if (is_null($allow_headers = self::$cors[$_SERVER['HTTP_ORIGIN']] ?? self::$cors['*'] ?? null)) {
-            exit;
-        }
+        is_null($allow_headers = self::$cors[$_SERVER['HTTP_ORIGIN']] ?? self::$cors['*'] ?? null) && exit;
 
         //Response access allowed headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
 
-        unset($allow_headers);
-
         //Exit on OPTION request
-        'OPTIONS' !== $_SERVER['REQUEST_METHOD'] || exit;
+        'OPTIONS' === $_SERVER['REQUEST_METHOD'] && exit;
+
+        unset($allow_headers);
     }
 }

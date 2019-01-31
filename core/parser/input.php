@@ -220,9 +220,7 @@ class input extends system
     private static function opt_data(string $value): array
     {
         //Decode data in JSON/QUERY
-        if (!is_array($data = json_decode(data::decode($value), true))) {
-            parse_str($value, $data);
-        }
+        is_array($data = json_decode(data::decode($value), true)) || parse_str($value, $data);
 
         unset($value);
         return $data;

@@ -130,13 +130,9 @@ class error extends system
         log::$level($message, $context);
         log::show($level, $message, $context);
 
-        unset($throwable, $exception, $message, $context);
-
         //Stop on error
-        if ('error' === $level) {
-            parent::stop();
-        }
+        'error' === $level && parent::stop();
 
-        unset($level);
+        unset($throwable, $exception, $level, $message, $context);
     }
 }

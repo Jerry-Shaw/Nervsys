@@ -53,9 +53,7 @@ class output extends system
 
         $type = isset(self::MIME[parent::$mime]) ? parent::$mime : 'json';
 
-        if (!headers_sent()) {
-            header('Content-Type: ' . self::MIME[$type] . '; charset=UTF-8');
-        }
+        !headers_sent() && header('Content-Type: ' . self::MIME[$type] . '; charset=UTF-8');
 
         if (method_exists(__CLASS__, $type)) {
             echo self::$type();

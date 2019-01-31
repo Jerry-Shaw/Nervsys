@@ -27,21 +27,16 @@ use core\handler\platform;
 class cmd extends system
 {
     /**
-     * Parse CMD
+     * Prepare CMD
      */
-    public static function parse(): void
+    public static function prepare(): void
     {
-        //Check CMD
-        if ('' === parent::$cmd) {
-            return;
-        }
-
         //Extract CMD
         $cmd = false !== strpos(parent::$cmd, '-') ? explode('-', parent::$cmd) : [parent::$cmd];
 
         //Prepare CMD
-        parent::$cmd_cgi = self::pack_cgi(self::prep_cgi($cmd));
-        parent::$cmd_cli = self::prep_cli($cmd);
+        parent::$cmd_cgi = self::pack_cgi(!empty(parent::$cgi) ? self::prep_cgi($cmd) : $cmd);
+        parent::$cmd_cli = parent::$is_CLI ? self::prep_cli($cmd) : [];
 
         unset($cmd);
     }
@@ -79,10 +74,6 @@ class cmd extends system
      */
     private static function prep_cgi(array $cmd): array
     {
-        if (empty(parent::$cgi)) {
-            return $cmd;
-        }
-
         //Mapping CGI config
         foreach (parent::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
@@ -124,10 +115,6 @@ class cmd extends system
      */
     private static function prep_cli(array $cmd): array
     {
-        if (!parent::$is_CLI) {
-            return [];
-        }
-
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
             parent::$cli['PHP'] = platform::sys_path();
@@ -142,6 +129,7 @@ class cmd extends system
         $key   = -1;
         $order = [];
 
+        //Mapping CLI config
         foreach ($cmd as $item) {
             if (!isset(parent::$cli[$item]) || '' === parent::$cli[$item]) {
                 continue;
