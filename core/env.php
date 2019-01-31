@@ -33,7 +33,7 @@ class env
         }
 
         //Define NervSys version
-        define('VER', '7.2.16');
+        define('VER', '7.2.18');
 
         //Define absolute root path
         define('ROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
