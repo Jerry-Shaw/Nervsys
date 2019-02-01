@@ -43,43 +43,62 @@ class system extends command
      */
     public static function boot(int $state = 0): void
     {
-        //Load state (S1)
+        /**
+         * Prepare state (S1)
+         * Initialize system
+         *
+         * Steps:
+         * 1. Load "system.ini" and parse settings.
+         * 2. Set runtime values, detect CGI/CLI and TLS.
+         * 3. Check Cross-Origin Resource Sharing (CORS) permissions.
+         * 4. Process all configured settings in "init" section of "system.ini".
+         * 5. Read and parse input data. Save to process pool in non-overwrite mode.
+         */
+
         self::load_cfg();
         self::config_env();
+        self::check_cors();
+
+        !empty(self::$init) && operator::run_dep(self::$init, E_USER_ERROR);
+
+        input::read();
 
         //S1 exit control
         if (1 === $state) {
             return;
         }
 
-        //Initial state (S2)
-        self::check_cors();
-        !empty(self::$init) && operator::run_dep(self::$init, E_USER_ERROR);
+        /**
+         * Process state (S2)
+         * Execute commands and gather results
+         *
+         * Steps:
+         * 1. Prepare commands. Skip when already set.
+         * 2. Call script functions order by commands via CGI mode.
+         * 3. Call script functions and external commands via CLI mode (available under CLI).
+         * 4. Gathering results on calling every function or external command. Save to process result pool.
+         */
+
+        '' !== parent::$cmd && cmd::prepare();
+
+        operator::run_cgi();
+        operator::run_cli();
 
         //S2 exit control
         if (2 === $state) {
             return;
         }
 
-        //Read state (S3)
-        input::read();
+        /**
+         * Flush state (S3)
+         * Output results in preset format
+         *
+         * Steps:
+         * 1. Output MIME-Type header.
+         * 2. Reduce array result on single command.
+         * 3. Output result content according to preset format.
+         */
 
-        //S3 exit control
-        if (3 === $state) {
-            return;
-        }
-
-        //Process state (S4)
-        '' !== parent::$cmd && cmd::prepare();
-        operator::run_cgi();
-        operator::run_cli();
-
-        //S4 exit control
-        if (4 === $state) {
-            return;
-        }
-
-        //Flush state (S5)
         output::flush();
     }
 
@@ -278,18 +297,18 @@ class system extends command
     }
 
     /**
-     * Load CORS permissions
+     * Check CORS permissions
      */
     private static function check_cors(): void
     {
-        //Check CORS settings
+        //Check settings and ENV
         if (empty(self::$cors)
             || !isset($_SERVER['HTTP_ORIGIN'])
             || $_SERVER['HTTP_ORIGIN'] === (self::$is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
-        //Exit on no access authority
+        //Exit on access NOT permitted
         is_null($allow_headers = self::$cors[$_SERVER['HTTP_ORIGIN']] ?? self::$cors['*'] ?? null) && exit;
 
         //Response access allowed headers
