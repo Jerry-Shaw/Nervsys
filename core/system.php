@@ -51,7 +51,7 @@ class system extends command
          * 1. Load "system.ini" and parse settings.
          * 2. Set runtime values, detect CGI/CLI and TLS.
          * 3. Check Cross-Origin Resource Sharing (CORS) permissions.
-         * 4. Process all configured settings in "init" section of "system.ini".
+         * 4. Execute all configured settings in "init" section of "system.ini".
          * 5. Read and parse input data. Save to process pool in non-overwrite mode.
          */
 
