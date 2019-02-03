@@ -338,9 +338,11 @@ class system extends command
             //Execute "init" settings
             operator::exec_dep($list);
         } catch (\Throwable $throwable) {
-            //Redirect exception level to error
+            //Redirect exception code to error
             error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
             unset($throwable);
         }
+
+        unset($list, $item);
     }
 }
