@@ -26,39 +26,29 @@ use core\parser\trustzone;
 class operator extends factory
 {
     /**
-     * Run dependency
+     * Execute dependency
      *
      * @param array $list
-     * @param int   $errno
      *
-     * @throws \Exception
+     * @throws \ReflectionException
      */
-    public static function run_dep(array $list, int $errno = E_USER_ERROR): void
+    public static function exec_dep(array $list): void
     {
-        try {
-            //Build dependency
-            parent::build_dep($list);
+        //Build list
+        parent::build_dep($list);
 
-            //Call dependency
-            foreach ($list as $dep) {
-                self::build_caller(...$dep);
-            }
-
-            unset($list, $errno, $dep);
-        } catch (\Throwable $throwable) {
-            if (0 < (E_USER_ERROR & $errno)) {
-                error::exception_handler(new \Exception($throwable->getMessage(), $errno));
-            }
-
-            throw new \Exception($throwable->getMessage(), $throwable->getCode(), $throwable->getPrevious());
-            unset($list, $errno, $throwable);
+        //Call dependency
+        foreach ($list as $dep) {
+            self::build_caller(...$dep);
         }
+
+        unset($list, $dep);
     }
 
     /**
-     * Run CGI process
+     * Execute CGI process
      */
-    public static function run_cgi(): void
+    public static function exec_cgi(): void
     {
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
@@ -77,7 +67,7 @@ class operator extends factory
                         parent::$load[$module] = [parent::$load[$module]];
                     }
 
-                    self::run_dep(parent::$load[$module], E_USER_WARNING);
+                    self::exec_dep(parent::$load[$module]);
                 }
 
                 //Check & load class
@@ -102,7 +92,7 @@ class operator extends factory
                     $tz_dep = trustzone::get_dep($method);
 
                     //Run pre dependency
-                    !empty($tz_dep['pre']) && self::run_dep($tz_dep['pre'], E_USER_WARNING);
+                    !empty($tz_dep['pre']) && self::exec_dep($tz_dep['pre']);
 
                     //Verify TrustZone params
                     trustzone::verify($class, $method);
@@ -111,7 +101,7 @@ class operator extends factory
                     self::build_caller($name, $class, $method);
 
                     //Run post dependency
-                    !empty($tz_dep['post']) && self::run_dep($tz_dep['post'], E_USER_WARNING);
+                    !empty($tz_dep['post']) && self::exec_dep($tz_dep['post']);
                 }
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
@@ -123,9 +113,9 @@ class operator extends factory
     }
 
     /**
-     * Run CLI process
+     * Execute CLI process
      */
-    public static function run_cli(): void
+    public static function exec_cli(): void
     {
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cli))) {

@@ -41,4 +41,10 @@ class setting extends process
 
     //Error reporting level
     protected static $err_lv = E_ALL | E_STRICT;
+
+    //Log path
+    const LOG_PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
+
+    //Config file path
+    const CFG_FILE = ROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
 }

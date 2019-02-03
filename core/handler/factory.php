@@ -136,7 +136,7 @@ class factory extends system
         static $list = [];
 
         //Return constructor
-        if (isset($list[$class]) && '__construct' === $method) {
+        if ('__construct' === $method && isset($list[$class])) {
             return $list[$class];
         }
 

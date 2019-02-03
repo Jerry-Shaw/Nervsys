@@ -20,6 +20,7 @@
 
 namespace core;
 
+use core\handler\error;
 use core\handler\operator;
 use core\handler\platform;
 
@@ -31,15 +32,10 @@ use core\pool\command;
 
 class system extends command
 {
-    //Config file path
-    const CFG_FILE = __DIR__ . DIRECTORY_SEPARATOR . 'system.ini';
-
     /**
      * Boot system
      *
      * @param int $state
-     *
-     * @throws \Exception
      */
     public static function boot(int $state = 0): void
     {
@@ -58,8 +54,7 @@ class system extends command
         self::load_cfg();
         self::config_env();
         self::check_cors();
-
-        !empty(self::$init) && operator::run_dep(self::$init, E_USER_ERROR);
+        self::initial_sys();
 
         input::read();
 
@@ -74,15 +69,15 @@ class system extends command
          *
          * Steps:
          * 1. Prepare commands. Skip when already set.
-         * 2. Call script functions order by commands via CGI mode.
-         * 3. Call script functions and external commands via CLI mode (available under CLI).
+         * 2. Execute script functions order by commands via CGI mode.
+         * 3. Execute script functions and external commands via CLI mode (available under CLI).
          * 4. Gathering results on calling every function or external command. Save to process result pool.
          */
 
         '' !== parent::$cmd && cmd::prepare();
 
-        operator::run_cgi();
-        operator::run_cli();
+        operator::exec_cgi();
+        operator::exec_cli();
 
         //S2 exit control
         if (2 === $state) {
@@ -100,6 +95,8 @@ class system extends command
          */
 
         output::flush();
+
+        unset($state);
     }
 
     /**
@@ -156,6 +153,7 @@ class system extends command
     public static function add_cgi(string $class, string ...$method): void
     {
         self::$cmd_cgi[] = func_get_args();
+
         unset($class, $method);
     }
 
@@ -245,7 +243,7 @@ class system extends command
     private static function load_cfg(): void
     {
         //Load configuration file
-        $conf = parse_ini_file(self::CFG_FILE, true);
+        $conf = parse_ini_file(parent::CFG_FILE, true);
 
         //Set include path
         if (isset($conf['PATH']) && !empty($conf['PATH'])) {
@@ -320,5 +318,29 @@ class system extends command
         'OPTIONS' === $_SERVER['REQUEST_METHOD'] && exit;
 
         unset($allow_headers);
+    }
+
+    /**
+     * Initialize system
+     */
+    private static function initial_sys(): void
+    {
+        if (empty(self::$init)) {
+            return;
+        }
+
+        $list = [];
+        foreach (self::$init as $item) {
+            is_array($item) ? array_push($list, ...$item) : $list[] = $item;
+        }
+
+        try {
+            //Execute "init" settings
+            operator::exec_dep($list);
+        } catch (\Throwable $throwable) {
+            //Redirect exception level to error
+            error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
+            unset($throwable);
+        }
     }
 }

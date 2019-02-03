@@ -30,8 +30,7 @@ class output extends system
     //Response MIME type (UTF-8, default: json)
     const MIME = [
         'json' => 'application/json',
-        'xml'  => 'application/xml',
-        'html' => 'text/html'
+        'xml'  => 'application/xml'
     ];
 
     /**
@@ -39,28 +38,32 @@ class output extends system
      */
     public static function flush(): void
     {
+        //Set pretty mode
         if (0 < parent::$err_lv) {
             self::$pretty = true;
         }
 
+        //Reduce array result
         if (1 === count(parent::$result)) {
             parent::$result = reset(parent::$result);
         }
 
+        //Merge error data
         if (!empty(parent::$error)) {
             parent::$result = parent::$error + ['data' => parent::$result];
         }
 
+        //Check MIME-Type
         $type = isset(self::MIME[parent::$mime]) ? parent::$mime : 'json';
 
+        //Header Content-Type
         !headers_sent() && header('Content-Type: ' . self::MIME[$type] . '; charset=UTF-8');
 
-        if (method_exists(__CLASS__, $type)) {
-            echo self::$type();
+        //Output results
+        echo self::{'format_' . $type}();
 
-            if (parent::$is_CLI) {
-                echo PHP_EOL;
-            }
+        if (parent::$is_CLI) {
+            echo PHP_EOL;
         }
 
         if ('' !== parent::$logs) {
@@ -72,8 +75,10 @@ class output extends system
 
     /**
      * Format JSON
+     *
+     * @return string
      */
-    private static function json(): string
+    private static function format_json(): string
     {
         return json_encode(parent::$result, self::$pretty ? 4034 : 3906);
     }
@@ -83,7 +88,7 @@ class output extends system
      *
      * @return string
      */
-    private static function xml(): string
+    private static function format_xml(): string
     {
         return data::build_xml(parent::$result, true, self::$pretty);
     }

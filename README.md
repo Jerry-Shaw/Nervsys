@@ -204,9 +204,11 @@ The words above are reserved by NervSys core. So that, they should be taken care
     
     
     Multiple setting:
-    DescA = dirA/dirB/model-funcA
-    DescB = dirB/dirB/model-funcB
-    DescC = dirC/dirC/model
+    DescA = dirA/dirA/model
+    DescB = dirA/dirB/model-funcA
+    DescC = dirA/dirB/model-funcB
+    DescD[] = dirC/dirC/model-funcA
+    DescD[] = dirC/dirC/model-funcB
     
     explain: 
     "\dirA\dirB\model::funcA($params)" & "\dirB\dirB\model::funcB($params)"
@@ -214,9 +216,10 @@ The words above are reserved by NervSys core. So that, they should be taken care
     While, "\dirC\dirC\model::__construct($params)" will be called instead because of no function is set.
     
     Notice: 
+    Calling in prepare state (S1), before input reading. 
     The keys in "INIT" section have no means for system, but for developers to know what they are for. 
     "__construct" will be called if no function has been specified in the values.
-    Setting in array is NOT allowed in this section. 
+    Array setting is allowed in this section. 
     Required arguments will be automatically passed. 
     All returned values will be captured when exist. 
 
@@ -252,10 +255,11 @@ The words above are reserved by NervSys core. So that, they should be taken care
     only once right before calling functions under dirC.
     
     Notice: 
-    The keys in "LOAD" section point to the first level subfolders, while the setting values 
-    point to the functions which will be called when the subfolder is being accessed. 
+    Calling in process state (S2), on accessing first level sub-folders. 
+    The keys in "LOAD" section point to the first level sub-folders, while the setting values 
+    point to the functions which will be called when the sub-folder is being accessed. 
     "__construct" will be called if no function has been specified in the values.
-    Setting in array is allowed to call multiple functions. 
+    Array setting is accepted to call multiple functions. 
     Required arguments will be automatically passed. 
     All returned values will be captured when exist. 
 
