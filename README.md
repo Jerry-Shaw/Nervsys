@@ -442,9 +442,14 @@ Every class which is exposed to API should always contain a variable named "$tz"
   
 The values are recorded when API accesses the class for the first time. Never try to modify "$tz" in any of the functions in the same class. Nothing will be affected.  
   
-In $tz, the keys are function names which can be called by API. The contents are leading the actions. Functions that are not listed in $tz won't be called by API directly.  
+Keys in "$tz": Functions that are exposed to API.  
+Values in "$tz": Control API action to call target function.  
   
-Once anything failed during TrustZone verification, such as, "pre"/"post" dependency method missing, "param" setting not match with input data, or even argument missing, etc. API will skip the process cycle and throw out a warning exception. Other process cycles will continue running.  
+Functions that are not listed in "$tz" won't be called by API directly.  
+  
+When input data mismatched preset values, API will skip calling the target function and its "post" dependency and throw out a warning exception.  
+  
+Once anything failed during TrustZone process cycle, such as, "pre"/"post" dependency method missing, function argument missing, etc. API will skip the rest of the process cycle and throw out a warning exception. Other process cycles will continue running.  
   
 _Two types of $tz in array format: example of "TestA.php"_  
   
