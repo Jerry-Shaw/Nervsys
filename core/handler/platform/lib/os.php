@@ -23,14 +23,18 @@ namespace core\handler\platform\lib;
 interface os
 {
     /**
-     * Get PHP system path
+     * Get hardware hash
+     *
+     * @return string
      */
-    public static function sys_path(): string;
+    public static function hw_hash(): string;
 
     /**
-     * Get system hash
+     * Get PHP executable path
+     *
+     * @return string
      */
-    public static function sys_hash(): string;
+    public static function php_path(): string;
 
     /**
      * Build background command

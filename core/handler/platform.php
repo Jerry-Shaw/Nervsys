@@ -24,23 +24,44 @@ use core\handler\platform\lib\os;
 
 class platform implements os
 {
-    //Platform handler
-    private static $handler = '';
-
     /**
-     * Get PHP system path
+     * Get OS class
+     *
+     * @return string
+     * @throws \Exception
      */
-    public static function sys_path(): string
+    private static function OS(): string
     {
-        return forward_static_call([self::handler(), __FUNCTION__]);
+        static $OS = '';
+
+        //Check and load OS class
+        if ('' === $OS && !class_exists($OS = __CLASS__ . '\\' . strtolower(PHP_OS))) {
+            throw new \Exception(PHP_OS . ': NOT support!', E_USER_ERROR);
+        }
+
+        return $OS;
     }
 
     /**
-     * Get system hash
+     * Get hardware hash
+     *
+     * @return string
+     * @throws \Exception
      */
-    public static function sys_hash(): string
+    public static function hw_hash(): string
     {
-        return forward_static_call([self::handler(), __FUNCTION__]);
+        return self::OS()::{__FUNCTION__}();
+    }
+
+    /**
+     * Get PHP executable path
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function php_path(): string
+    {
+        return self::OS()::{__FUNCTION__}();
     }
 
     /**
@@ -53,7 +74,7 @@ class platform implements os
      */
     public static function cmd_bg(string $cmd): string
     {
-        return forward_static_call([self::handler(), __FUNCTION__], $cmd);
+        return self::OS()::{__FUNCTION__}($cmd);
     }
 
     /**
@@ -66,27 +87,6 @@ class platform implements os
      */
     public static function cmd_proc(string $cmd): string
     {
-        return forward_static_call([self::handler(), __FUNCTION__], $cmd);
-    }
-
-    /**
-     * Get platform handler
-     *
-     * @return string
-     * @throws \Exception
-     */
-    private static function handler(): string
-    {
-        if ('' !== self::$handler) {
-            return self::$handler;
-        }
-
-        self::$handler = '\\' . __CLASS__ . '\\' . strtolower(PHP_OS);
-
-        if (!is_string(realpath(ROOT . trim(strtr(self::$handler, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php'))) {
-            throw new \Exception(PHP_OS . ': NOT support!', E_USER_ERROR);
-        }
-
-        return self::$handler;
+        return self::OS()::{__FUNCTION__}($cmd);
     }
 }

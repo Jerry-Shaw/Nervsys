@@ -175,7 +175,7 @@ class system extends command
         }
 
         if ('PHP' === $cmd) {
-            self::$cli['PHP'] = platform::sys_path();
+            self::$cli['PHP'] = platform::php_path();
         }
 
         if (!isset(self::$cli[$cmd])) {

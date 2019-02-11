@@ -117,7 +117,7 @@ class cmd extends system
     {
         //Check PHP command
         if (in_array('PHP', $cmd, true)) {
-            parent::$cli['PHP'] = platform::sys_path();
+            parent::$cli['PHP'] = platform::php_path();
         }
 
         //Check setting
