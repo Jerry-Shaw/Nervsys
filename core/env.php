@@ -23,9 +23,9 @@ namespace core;
 class env
 {
     /**
-     * Boot ENV
+     * Initialize ENV
      */
-    public static function boot(): void
+    public static function init(): void
     {
         //Require PHP version >= 7.2.0
         if (version_compare(PHP_VERSION, '7.2.0', '<')) {
@@ -33,7 +33,7 @@ class env
         }
 
         //Define NervSys version
-        define('VER', '7.2.14');
+        define('VER', '7.2.18');
 
         //Define absolute root path
         define('ROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
@@ -46,5 +46,10 @@ class env
                 unset($class);
             }
         );
+
+        //Register error handler
+        register_shutdown_function(['core\\handler\\error', 'shutdown_handler']);
+        set_exception_handler(['core\\handler\\error', 'exception_handler']);
+        set_error_handler(['core\\handler\\error', 'error_handler']);
     }
 }

@@ -183,7 +183,7 @@ class redis_queue extends redis
     public function root(int $runs = 10, int $exec = 200): void
     {
         //Detect running mode
-        if (!parent::$is_cli) {
+        if (!parent::$is_CLI) {
             throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
         }
 
@@ -222,7 +222,7 @@ class redis_queue extends redis
 
         //Build child command
         $this->child = platform::cmd_bg(
-            '"' . platform::sys_path() . '" '
+            '"' . platform::php_path() . '" '
             . '"' . ROOT . 'api.php" --ret '
             . '--cmd="' . strtr(__CLASS__, '\\', '/') . '-child"'
         );
@@ -264,7 +264,7 @@ class redis_queue extends redis
     public function child(): void
     {
         //Detect running mode
-        if (!parent::$is_cli) {
+        if (!parent::$is_CLI) {
             throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
         }
 

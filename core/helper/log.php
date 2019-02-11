@@ -24,9 +24,6 @@ use core\system;
 
 class log extends system
 {
-    //Log path
-    const PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
-
     /**
      * Log emergency
      *
@@ -152,11 +149,10 @@ class log extends system
         if (isset(parent::$log[$level]) && 0 < (int)parent::$log[$level]) {
             //Get log key & path
             $key = $level . '-' . date('Ymd');
-            $log = self::PATH . $key . '.log';
+            $log = parent::LOG_PATH . $key . '.log';
 
+            //Open log file
             static $file = [];
-
-            //Open log file handle
             if (!isset($file[$key])) {
                 $file[$key] = fopen($log, 'ab');
             }

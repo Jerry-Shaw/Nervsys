@@ -25,32 +25,12 @@ use core\handler\platform\lib\os;
 class winnt implements os
 {
     /**
-     * Get PHP system path
+     * Get hardware hash
+     *
+     * @return string
+     * @throws \Exception
      */
-    public static function sys_path(): string
-    {
-        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
-
-        if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
-        }
-
-        $output = parse_ini_string(implode($output));
-
-        if (false === $output) {
-            throw new \Exception(PHP_OS . ': Execute failed!', E_USER_ERROR);
-        }
-
-        $env = &$output['ExecutablePath'];
-
-        unset($output, $status);
-        return $env;
-    }
-
-    /**
-     * Get system hash
-     */
-    public static function sys_hash(): string
+    public static function hw_hash(): string
     {
         $queries = [
             'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
@@ -77,6 +57,33 @@ class winnt implements os
 
         unset($queries, $output, $query, $status);
         return $hash;
+    }
+
+    /**
+     * Get PHP executable path
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public static function php_path(): string
+    {
+        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
+
+        if (0 !== $status) {
+            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+        }
+
+        //Parse output as ini string
+        $output = parse_ini_string(implode($output));
+
+        if (false === $output) {
+            throw new \Exception(PHP_OS . ': Execute failed!', E_USER_ERROR);
+        }
+
+        $env = &$output['ExecutablePath'];
+
+        unset($output, $status);
+        return $env;
     }
 
     /**

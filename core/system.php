@@ -32,38 +32,71 @@ use core\pool\command;
 
 class system extends command
 {
-    //Setting file path
-    const PATH = __DIR__ . DIRECTORY_SEPARATOR . 'system.ini';
-
     /**
      * Boot system
+     *
+     * @param int $state
      */
-    public static function boot(): void
+    public static function boot(int $state = 0): void
     {
-        //Track error
-        error::track();
+        /**
+         * Prepare state (S1)
+         * Initialize system
+         *
+         * Steps:
+         * 1. Load "system.ini" and parse settings.
+         * 2. Set runtime values, detect CGI/CLI and TLS.
+         * 3. Check Cross-Origin Resource Sharing (CORS) permissions.
+         * 4. Execute all configured settings in "init" section of "system.ini".
+         * 5. Read and parse input data. Save to process pool in non-overwrite mode.
+         */
 
-        //Parse & detect
-        self::parse();
-        self::detect();
+        self::load_cfg();
+        self::config_env();
+        self::check_cors();
+        self::initial_sys();
 
-        //Initialize
-        operator::init();
-
-        //Read input
         input::read();
 
-        //Parse CMD
-        cmd::parse();
+        //S1 exit control
+        if (1 === $state) {
+            return;
+        }
 
-        //Run CGI process
-        operator::run_cgi();
+        /**
+         * Process state (S2)
+         * Execute commands and gather results
+         *
+         * Steps:
+         * 1. Prepare commands. Skip when already set.
+         * 2. Execute script functions order by commands via CGI mode.
+         * 3. Execute script functions and external commands via CLI mode (available under CLI).
+         * 4. Gathering results on calling every function or external command. Save to process result pool.
+         */
 
-        //Run CLI process
-        operator::run_cli();
+        '' !== parent::$cmd && cmd::prepare();
 
-        //Flush output content
+        operator::exec_cgi();
+        operator::exec_cli();
+
+        //S2 exit control
+        if (2 === $state) {
+            return;
+        }
+
+        /**
+         * Flush state (S3)
+         * Output results in preset format
+         *
+         * Steps:
+         * 1. Output MIME-Type header.
+         * 2. Reduce array result on single command.
+         * 3. Output result content according to preset format.
+         */
+
         output::flush();
+
+        unset($state);
     }
 
     /**
@@ -71,8 +104,7 @@ class system extends command
      */
     public static function stop(): void
     {
-        output::flush();
-        exit;
+        output::flush() && exit;
     }
 
     /**
@@ -101,9 +133,7 @@ class system extends command
             $ip_list = false !== strpos($_SERVER[$key], ',') ? explode(',', $_SERVER[$key]) : [$_SERVER[$key]];
 
             foreach ($ip_list as $ip) {
-                $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
-
-                if (false !== $ip) {
+                if (false !== $ip = filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
                     unset($chk_list, $key, $ip_list);
                     return $ip;
                 }
@@ -122,7 +152,8 @@ class system extends command
      */
     public static function add_cgi(string $class, string ...$method): void
     {
-        parent::$cmd_cgi[] = func_get_args();
+        self::$cmd_cgi[] = func_get_args();
+
         unset($class, $method);
     }
 
@@ -139,21 +170,21 @@ class system extends command
      */
     public static function add_cli(string $cmd, string $argv = '', string $pipe = '', int $time = 0, bool $ret = false): void
     {
-        if (!parent::$is_cli) {
+        if (!self::$is_CLI) {
             throw new \Exception('Operation NOT permitted!', E_USER_WARNING);
         }
 
         if ('PHP' === $cmd) {
-            parent::$cli['PHP'] = platform::sys_path();
+            self::$cli['PHP'] = platform::php_path();
         }
 
-        if (!isset(parent::$cli[$cmd])) {
+        if (!isset(self::$cli[$cmd])) {
             throw new \Exception('"' . $cmd . '" NOT defined!', E_USER_WARNING);
         }
 
         $cmd_cli = [
             'key'  => &$cmd,
-            'cmd'  => parent::$cli[$cmd],
+            'cmd'  => self::$cli[$cmd],
             'ret'  => &$ret,
             'time' => &$time
         ];
@@ -166,7 +197,8 @@ class system extends command
             $cmd_cli['argv'] = ' ' . $argv;
         }
 
-        parent::$cmd_cli[] = &$cmd_cli;
+        self::$cmd_cli[] = &$cmd_cli;
+
         unset($cmd, $argv, $pipe, $time, $ret, $cmd_cli);
     }
 
@@ -206,14 +238,12 @@ class system extends command
     }
 
     /**
-     * Parse settings
+     * Load configuration settings
      */
-    private static function parse(): void
+    private static function load_cfg(): void
     {
-        //Read settings
-        if (false === $conf = parse_ini_file(self::PATH, true)) {
-            return;
-        }
+        //Load configuration file
+        $conf = parse_ini_file(parent::CFG_FILE, true);
 
         //Set include path
         if (isset($conf['PATH']) && !empty($conf['PATH'])) {
@@ -246,39 +276,73 @@ class system extends command
     }
 
     /**
-     * Runtime value detections
+     * Load environment values
      */
-    private static function detect(): void
+    private static function config_env(): void
     {
+        //Set runtime values
+        set_time_limit(0);
+        ignore_user_abort(true);
+        error_reporting(self::$err_lv);
+        date_default_timezone_set(self::$sys['timezone']);
+
         //Detect running mode
-        self::$is_cli = 'cli' === PHP_SAPI;
+        self::$is_CLI = 'cli' === PHP_SAPI;
 
-        //Detect HTTPS protocol
-        self::$is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+        //Detect TLS protocol
+        self::$is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
 
-        //Detect Cross-origin resource sharing authority
+    /**
+     * Check CORS permissions
+     */
+    private static function check_cors(): void
+    {
+        //Check settings and ENV
         if (empty(self::$cors)
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (self::$is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+            || $_SERVER['HTTP_ORIGIN'] === (self::$is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
-        //Exit on no access authority
-        if (is_null($allow_headers = self::$cors[$_SERVER['HTTP_ORIGIN']] ?? self::$cors['*'] ?? null)) {
-            exit;
-        }
+        //Exit on access NOT permitted
+        is_null($allow_headers = self::$cors[$_SERVER['HTTP_ORIGIN']] ?? self::$cors['*'] ?? null) && exit;
 
         //Response access allowed headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
 
-        unset($allow_headers);
-
         //Exit on OPTION request
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            exit;
+        'OPTIONS' === $_SERVER['REQUEST_METHOD'] && exit;
+
+        unset($allow_headers);
+    }
+
+    /**
+     * Initialize system
+     */
+    private static function initial_sys(): void
+    {
+        if (empty(self::$init)) {
+            return;
         }
+
+        $list = [];
+        foreach (self::$init as $item) {
+            is_array($item) ? array_push($list, ...$item) : $list[] = $item;
+        }
+
+        try {
+            //Execute "init" settings
+            operator::exec_dep($list);
+        } catch (\Throwable $throwable) {
+            //Redirect exception code to error
+            error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
+            unset($throwable);
+        }
+
+        unset($list, $item);
     }
 }

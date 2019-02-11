@@ -68,19 +68,6 @@ class error extends system
     ];
 
     /**
-     * Track error & exception
-     */
-    public static function track(): void
-    {
-        register_shutdown_function([__CLASS__, 'shutdown_handler']);
-        set_exception_handler([__CLASS__, 'exception_handler']);
-        set_error_handler([__CLASS__, 'error_handler']);
-
-        //Set error reporting level
-        parent::$err = error_reporting();
-    }
-
-    /**
      * Error handler
      *
      * @param int    $errno
@@ -92,7 +79,7 @@ class error extends system
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): void
     {
-        if (0 < (parent::$err & $errno)) {
+        if (0 < (parent::$err_lv & $errno)) {
             $errno = E_USER_ERROR;
         }
 
@@ -143,13 +130,9 @@ class error extends system
         log::$level($message, $context);
         log::show($level, $message, $context);
 
-        unset($throwable, $exception, $message, $context);
-
         //Stop on error
-        if ('error' === $level) {
-            parent::stop();
-        }
+        'error' === $level && parent::stop();
 
-        unset($level);
+        unset($throwable, $exception, $level, $message, $context);
     }
 }

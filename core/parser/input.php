@@ -27,7 +27,7 @@ class input extends system
     //Read options
     const RET  = ['ret', 'r'];
     const CMD  = ['cmd', 'c'];
-    const OUT  = ['out', 'o'];
+    const MIME = ['mime', 'm'];
     const DATA = ['data', 'd'];
     const PIPE = ['pipe', 'p'];
     const TIME = ['time', 't'];
@@ -38,7 +38,7 @@ class input extends system
     public static function read(): void
     {
         //Read data
-        if (!parent::$is_cli) {
+        if (!parent::$is_CLI) {
             //Read HTTP & input
             self::read_http();
             self::read_raw();
@@ -55,12 +55,12 @@ class input extends system
             parent::$cmd = &$val['data'];
         }
 
-        //Read output format
-        if ('' === parent::$out
-            && !empty($val = self::opt_val(parent::$data, self::OUT))
+        //Read MIME type
+        if ('' === parent::$mime
+            && !empty($val = self::opt_val(parent::$data, self::MIME))
             && is_string($val['data'])
         ) {
-            parent::$out = &$val['data'];
+            parent::$mime = &$val['data'];
         }
 
         unset($val);
@@ -125,13 +125,13 @@ class input extends system
          *
          * r/ret: Return option (Available in CLI executable mode only)
          * c/cmd: System commands (separated by "-" when multiple)
-         * o/out: Output format (json/xml/nul, default: json, available when "r/ret" is set)
+         * m/mime: Output MIME type (json/xml/html, default: json, available when "r/ret" is set)
          * d/data: CLI Data package (Transfer to CGI progress)
          * p/pipe: CLI pipe data package (Transfer to CLI programs)
          * t/time: CLI read timeout (in microsecond, default: 0, wait till done)
          */
         //Get options
-        if (empty($opt = getopt('c:o:d:p:t:r', ['cmd:', 'out:', 'data:', 'pipe', 'time:', 'ret'], $optind))) {
+        if (empty($opt = getopt('c:m:d:p:t:r', ['cmd:', 'mime:', 'data:', 'pipe:', 'time:', 'ret'], $optind))) {
             return $optind;
         }
 
@@ -143,8 +143,8 @@ class input extends system
             parent::$data += [$val['key'] => data::decode($val['data'])];
         }
 
-        //Get output value
-        if (!empty($val = self::opt_val($opt, self::OUT)) && is_string($val['data'])) {
+        //Get MIME type
+        if (!empty($val = self::opt_val($opt, self::MIME)) && is_string($val['data'])) {
             parent::$data += [$val['key'] => &$val['data']];
         }
 
@@ -220,9 +220,7 @@ class input extends system
     private static function opt_data(string $value): array
     {
         //Decode data in JSON/QUERY
-        if (!is_array($data = json_decode(data::decode($value), true))) {
-            parse_str($value, $data);
-        }
+        is_array($data = json_decode(data::decode($value), true)) || parse_str($value, $data);
 
         unset($value);
         return $data;

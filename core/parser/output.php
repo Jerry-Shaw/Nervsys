@@ -27,14 +27,10 @@ class output extends system
     //Pretty format
     private static $pretty = false;
 
-    //Response header
-    const HEADER = [
-        //Output as JSON (default)
-        'json' => 'Content-Type: application/json; charset=UTF-8',
-        //Output as XML
-        'xml'  => 'Content-Type: application/xml; charset=UTF-8',
-        //Keep in pool for HTML
-        'nul'  => 'Content-Type: text/html; charset=UTF-8'
+    //Response MIME type (UTF-8, default: json)
+    const MIME = [
+        'json' => 'application/json',
+        'xml'  => 'application/xml'
     ];
 
     /**
@@ -42,53 +38,57 @@ class output extends system
      */
     public static function flush(): void
     {
-        if (0 < parent::$err) {
+        //Set pretty mode
+        if (0 < parent::$err_lv) {
             self::$pretty = true;
         }
 
+        //Reduce array result
         if (1 === count(parent::$result)) {
             parent::$result = reset(parent::$result);
         }
 
+        //Merge error data
         if (!empty(parent::$error)) {
             parent::$result = parent::$error + ['data' => parent::$result];
         }
 
-        $output = isset(self::HEADER[parent::$out]) ? parent::$out : 'json';
+        //Check MIME-Type
+        $type = isset(self::MIME[parent::$mime]) ? parent::$mime : 'json';
 
-        if (!headers_sent()) {
-            header(self::HEADER[$output]);
-        }
+        //Header Content-Type
+        !headers_sent() && header('Content-Type: ' . self::MIME[$type] . '; charset=UTF-8');
 
-        if ('nul' !== $output) {
-            echo self::$output();
+        //Output results
+        echo self::{'format_' . $type}();
 
-            if (parent::$is_cli) {
-                echo PHP_EOL;
-            }
+        if (parent::$is_CLI) {
+            echo PHP_EOL;
         }
 
         if ('' !== parent::$logs) {
             echo PHP_EOL . PHP_EOL . parent::$logs;
         }
 
-        unset($output);
+        unset($type);
     }
 
     /**
-     * Output as JSON
+     * Format JSON
+     *
+     * @return string
      */
-    private static function json(): string
+    private static function format_json(): string
     {
         return json_encode(parent::$result, self::$pretty ? 4034 : 3906);
     }
 
     /**
-     * Output as XML
+     * Format XML
      *
      * @return string
      */
-    private static function xml(): string
+    private static function format_xml(): string
     {
         return data::build_xml(parent::$result, true, self::$pretty);
     }

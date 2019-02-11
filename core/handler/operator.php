@@ -26,30 +26,29 @@ use core\parser\trustzone;
 class operator extends factory
 {
     /**
-     * Initialize operator
+     * Execute dependency
+     *
+     * @param array $list
+     *
+     * @throws \ReflectionException
      */
-    public static function init(): void
+    public static function exec_dep(array $list): void
     {
-        try {
-            //Build initial dependency
-            parent::build_dep(self::$init);
+        //Build list
+        parent::build_dep($list);
 
-            //Run dependency
-            foreach (self::$init as $item) {
-                self::build_caller(...$item);
-            }
-
-            unset($item);
-        } catch (\Throwable $throwable) {
-            error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
-            unset($throwable);
+        //Call dependency
+        foreach ($list as $dep) {
+            self::build_caller(...$dep);
         }
+
+        unset($list, $dep);
     }
 
     /**
-     * Run CGI process
+     * Execute CGI process
      */
-    public static function run_cgi(): void
+    public static function exec_cgi(): void
     {
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
@@ -62,18 +61,13 @@ class operator extends factory
                     $module = strstr($module, '/', true);
                 }
 
+                //Run load dependency
                 if (isset(parent::$load[$module])) {
-                    $dep_list = is_string(parent::$load[$module]) ? [parent::$load[$module]] : parent::$load[$module];
-
-                    //Build dependency
-                    parent::build_dep($dep_list);
-
-                    //Call dependency
-                    foreach ($dep_list as $dep) {
-                        self::build_caller(...$dep);
+                    if (is_string(parent::$load[$module])) {
+                        parent::$load[$module] = [parent::$load[$module]];
                     }
 
-                    unset(parent::$load[$module], $dep_list, $dep);
+                    self::exec_dep(parent::$load[$module]);
                 }
 
                 //Check & load class
@@ -97,14 +91,8 @@ class operator extends factory
                     //Get TrustZone data
                     $tz_dep = trustzone::get_dep($method);
 
-                    //Build pre/post dependency
-                    parent::build_dep($tz_dep['pre']);
-                    parent::build_dep($tz_dep['post']);
-
-                    //Call pre dependency
-                    foreach ($tz_dep['pre'] as $tz_item) {
-                        self::build_caller(...$tz_item);
-                    }
+                    //Run pre dependency
+                    !empty($tz_dep['pre']) && self::exec_dep($tz_dep['pre']);
 
                     //Verify TrustZone params
                     trustzone::verify($class, $method);
@@ -112,10 +100,8 @@ class operator extends factory
                     //Build target caller
                     self::build_caller($name, $class, $method);
 
-                    //Call post dependency
-                    foreach ($tz_dep['post'] as $tz_item) {
-                        self::build_caller(...$tz_item);
-                    }
+                    //Run post dependency
+                    !empty($tz_dep['post']) && self::exec_dep($tz_dep['post']);
                 }
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
@@ -123,13 +109,13 @@ class operator extends factory
             }
         }
 
-        unset($item_list, $class, $name, $method_list, $method, $tz_dep, $tz_item);
+        unset($item_list, $class, $name, $method_list, $method, $tz_dep);
     }
 
     /**
-     * Run CLI process
+     * Execute CLI process
      */
-    public static function run_cli(): void
+    public static function exec_cli(): void
     {
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cli))) {
@@ -163,9 +149,7 @@ class operator extends factory
                 }
 
                 //Send data via pipe
-                if (isset($item_list['pipe'])) {
-                    fwrite($pipes[0], $item_list['pipe']);
-                }
+                isset($item_list['pipe']) && fwrite($pipes[0], $item_list['pipe']);
 
                 //Collect result
                 if ($item_list['ret'] && '' !== $data = self::read_pipe([$process, $pipes[1]], $item_list['time'])) {

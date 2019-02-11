@@ -21,16 +21,10 @@
 //Declare strict types
 declare(strict_types = 1);
 
-//Set error_reporting level
-error_reporting(E_ALL | E_STRICT);
-
-//Set runtime values
-set_time_limit(0);
-ignore_user_abort(true);
-date_default_timezone_set('PRC');
-
 require __DIR__ . '/core/env.php';
 
-//Boot ENV & system
-\core\env::boot();
+//Init ENV
+\core\env::init();
+
+//Boot system
 \core\system::boot();
