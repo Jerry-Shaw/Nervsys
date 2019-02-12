@@ -52,28 +52,28 @@ class operator extends factory
     {
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
-            //Get name & class
+            //Get class & name
             $class = parent::build_name($name = array_shift($item_list));
 
+            //Get module name
+            if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
+                $module = strstr($module, '/', true);
+            }
+
             try {
-                //Process dependency
-                if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
-                    $module = strstr($module, '/', true);
+                //Check & load class
+                if (!class_exists($class, false) && !self::load_class($class)) {
+                    //Class NOT exist
+                    continue;
                 }
 
-                //Run load dependency
+                //Execute load dependency
                 if (isset(parent::$load[$module])) {
                     if (is_string(parent::$load[$module])) {
                         parent::$load[$module] = [parent::$load[$module]];
                     }
 
                     self::exec_dep(parent::$load[$module]);
-                }
-
-                //Check & load class
-                if (!class_exists($class, false) && !self::load_class($class)) {
-                    //Class NOT exist
-                    continue;
                 }
 
                 //Check TrustZone permission
@@ -83,25 +83,34 @@ class operator extends factory
                 }
 
                 //Get method list
-                $method_list = empty($item_list) ? $tz_list : array_intersect($item_list, $tz_list);
+                if (empty($method_list = empty($item_list) ? $tz_list : array_intersect($item_list, $tz_list))) {
+                    //TrustZone NOT match
+                    continue;
+                }
+
                 unset($module, $tz_list, $item_list);
 
                 //Process target method
                 foreach ($method_list as $method) {
-                    //Get TrustZone data
-                    $tz_dep = trustzone::get_dep($method);
+                    try {
+                        //Get TrustZone dependency
+                        $tz_dep = trustzone::get_dep($method);
 
-                    //Run pre dependency
-                    !empty($tz_dep['pre']) && self::exec_dep($tz_dep['pre']);
+                        //Execute pre dependency
+                        !empty($tz_dep['pre']) && self::exec_dep($tz_dep['pre']);
 
-                    //Verify TrustZone params
-                    trustzone::verify($class, $method);
+                        //Verify TrustZone params
+                        trustzone::verify($class, $method);
 
-                    //Build target caller
-                    self::build_caller($name, $class, $method);
+                        //Build target caller
+                        self::build_caller($name, $class, $method);
 
-                    //Run post dependency
-                    !empty($tz_dep['post']) && self::exec_dep($tz_dep['post']);
+                        //Execute post dependency
+                        !empty($tz_dep['post']) && self::exec_dep($tz_dep['post']);
+                    } catch (\Throwable $throwable) {
+                        error::exception_handler($throwable);
+                        unset($throwable);
+                    }
                 }
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
@@ -109,7 +118,7 @@ class operator extends factory
             }
         }
 
-        unset($item_list, $class, $name, $method_list, $method, $tz_dep);
+        unset($item_list, $name, $class, $method_list, $method, $tz_dep);
     }
 
     /**
