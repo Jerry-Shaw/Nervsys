@@ -38,17 +38,17 @@ class misc
 
         $start  = 0;
         $codes  = [];
-        $steps  = [8, 4, 4, 4, 12];
+        $length = [8, 4, 4, 4, 12];
         $string = hash('md5', $string);
 
-        foreach ($steps as $step) {
-            $codes[] = substr($string, $start, $step);
-            $start   += $step;
+        foreach ($length as $len) {
+            $codes[] = substr($string, $start, $len);
+            $start   += $len;
         }
 
         $uuid = implode('-', $codes);
 
-        unset($string, $start, $codes, $steps, $step);
+        unset($string, $start, $codes, $length, $len);
         return $uuid;
     }
 }
