@@ -445,6 +445,12 @@ The values are recorded when API accesses the class for the first time. Never tr
 Keys in "$tz": Functions that are exposed to API.  
 Values in "$tz": Control API action to call target function.  
   
+In values, if keys of "pre", "post" and "param" exist, actions will be proceeded as follows:  
+1. Execute all preset functions in values of "pre".  
+2. Execute target method according to "param" settings.  
+3. Execute all preset functions in values of "post".  
+The three can be combined if needed.  
+  
 Functions that are not listed in "$tz" won't be called by API directly.  
   
 When input data mismatched preset values, API will skip calling the target function and its "post" dependency and throw out a warning exception.  
