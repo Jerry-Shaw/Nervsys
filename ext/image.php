@@ -20,9 +20,7 @@
 
 namespace ext;
 
-use core\handler\factory;
-
-class image extends factory
+class image
 {
     //Support MIME-Type
     const MIME = ['image/gif', 'image/jpeg', 'image/png', 'image/bmp'];

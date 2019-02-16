@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\handler\factory;
+use core\system;
 
-class errno extends factory
+class errno
 {
     //Error message pool
     private static $pool = [];
@@ -65,7 +65,7 @@ class errno extends factory
      */
     public static function set(int $code, int $errno = 0): void
     {
-        parent::$error = self::get($code, $errno);
+        system::$error = self::get($code, $errno);
         unset($code, $errno);
     }
 

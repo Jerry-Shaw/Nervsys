@@ -22,9 +22,7 @@ namespace ext;
 
 use ext\lib\key;
 
-use core\handler\factory;
-
-class keygen extends factory implements key
+class keygen implements key
 {
     /**
      * Create Crypt Key

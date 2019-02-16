@@ -20,9 +20,9 @@
 
 namespace ext;
 
-use core\handler\factory;
+use core\system;
 
-class lang extends factory
+class lang
 {
     /**
      * Language file directory
@@ -64,8 +64,8 @@ class lang extends factory
         static $lang = '';
 
         if ('' === $lang) {
-            if (isset(parent::$data['lang'])) {
-                $lang = parent::$data['lang'];
+            if (isset(system::$data['lang'])) {
+                $lang = system::$data['lang'];
             } elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
                 $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
             } else {

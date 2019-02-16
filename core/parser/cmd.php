@@ -112,10 +112,11 @@ class cmd extends system
      * @param array $cmd
      *
      * @return array
+     * @throws \Exception
      */
     private static function prep_cli(array $cmd): array
     {
-        //Check PHP command
+        //Add PHP command
         if (in_array('PHP', $cmd, true)) {
             parent::$cli['PHP'] = platform::php_path();
         }
@@ -129,7 +130,6 @@ class cmd extends system
         $key   = -1;
         $order = [];
 
-        //Mapping CLI config
         foreach ($cmd as $item) {
             if (!isset(parent::$cli[$item]) || '' === parent::$cli[$item]) {
                 continue;
