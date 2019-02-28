@@ -24,6 +24,20 @@ class pdo_mysql extends pdo
     //Runtime params
     private $params = [];
 
+    //PDO connection
+    private $connect = null;
+
+    /**
+     * Connect to MySQL
+     *
+     * @return $this
+     */
+    public function connect(): object
+    {
+        $this->connect = parent::connect();
+        return $this;
+    }
+
     /**
      * Insert into table
      *
@@ -296,7 +310,7 @@ class pdo_mysql extends pdo
     public function exec(string $sql): int
     {
         try {
-            if (false === $exec = parent::connect()->exec($sql)) {
+            if (false === $exec = $this->connect->exec($sql)) {
                 $exec = -1;
             }
         } catch (\Throwable $throwable) {
@@ -320,8 +334,8 @@ class pdo_mysql extends pdo
     {
         try {
             $stmt = !$fetch_col
-                ? parent::connect()->query($sql, \PDO::FETCH_ASSOC)
-                : parent::connect()->query($sql, \PDO::FETCH_COLUMN, $col_no);
+                ? $this->connect->query($sql, \PDO::FETCH_ASSOC)
+                : $this->connect->query($sql, \PDO::FETCH_COLUMN, $col_no);
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
@@ -344,7 +358,7 @@ class pdo_mysql extends pdo
         $sql = $this->build_sql();
 
         try {
-            $stmt = parent::connect()->prepare($sql);
+            $stmt = $this->connect->prepare($sql);
             $stmt->execute($this->params['bind_value']);
             $this->params = [];
         } catch (\Throwable $throwable) {
@@ -367,7 +381,7 @@ class pdo_mysql extends pdo
         $sql = $this->build_sql();
 
         try {
-            $stmt         = parent::connect()->prepare($sql);
+            $stmt         = $this->connect->prepare($sql);
             $result       = $stmt->execute($this->params['bind_value']);
             $this->params = [];
         } catch (\Throwable $throwable) {
@@ -387,7 +401,7 @@ class pdo_mysql extends pdo
      */
     public function last_insert(string $name = ''): int
     {
-        return (int)parent::connect()->lastInsertId('' === $name ? null : $name);
+        return (int)$this->connect->lastInsertId('' === $name ? null : $name);
     }
 
     /**
@@ -397,7 +411,7 @@ class pdo_mysql extends pdo
      */
     public function begin(): bool
     {
-        return parent::connect()->beginTransaction();
+        return $this->connect->beginTransaction();
     }
 
     /**
@@ -407,7 +421,7 @@ class pdo_mysql extends pdo
      */
     public function commit(): bool
     {
-        return parent::connect()->commit();
+        return $this->connect->commit();
     }
 
     /**
@@ -417,7 +431,7 @@ class pdo_mysql extends pdo
      */
     public function rollback(): bool
     {
-        return parent::connect()->rollBack();
+        return $this->connect->rollBack();
     }
 
     /**

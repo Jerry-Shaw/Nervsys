@@ -40,7 +40,7 @@ class pdo extends factory
      *
      * @return \PDO
      */
-    public function connect(): \PDO
+    public function connect(): object
     {
         //Build DSN & OPTION
         $param = $this->build_dsn_opt();
