@@ -22,8 +22,23 @@ namespace ext;
 
 class redis_cache extends redis
 {
+    /** @var \Redis $connect */
+    private $connect = null;
+
     //Cache key prefix
     const PREFIX = 'CAS:';
+
+    /**
+     * Connect to Redis
+     *
+     * @return $this
+     * @throws \RedisException
+     */
+    public function connect(): object
+    {
+        $this->connect = parent::connect();
+        return $this;
+    }
 
     /**
      * Set cache
@@ -33,14 +48,13 @@ class redis_cache extends redis
      * @param int    $life
      *
      * @return bool
-     * @throws \RedisException
      */
     public function set(string $key, array $data, int $life = 600): bool
     {
         $key   = self::PREFIX . $key;
         $cache = json_encode($data);
 
-        $result = 0 < $life ? parent::connect()->set($key, $cache, $life) : parent::connect()->set($key, $cache);
+        $result = 0 < $life ? $this->connect->set($key, $cache, $life) : $this->connect->set($key, $cache);
 
         unset($key, $data, $life, $cache);
         return $result;
@@ -52,11 +66,10 @@ class redis_cache extends redis
      * @param string $key
      *
      * @return array
-     * @throws \RedisException
      */
     public function get(string $key): array
     {
-        $cache = parent::connect()->get(self::PREFIX . $key);
+        $cache = $this->connect->get(self::PREFIX . $key);
 
         if (false === $cache) {
             return [];
@@ -78,11 +91,10 @@ class redis_cache extends redis
      * @param string $key
      *
      * @return int
-     * @throws \RedisException
      */
     public function del(string $key): int
     {
-        $result = parent::connect()->del(self::PREFIX . $key);
+        $result = $this->connect->del(self::PREFIX . $key);
 
         unset($key);
         return $result;

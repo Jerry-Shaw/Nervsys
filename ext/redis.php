@@ -43,7 +43,7 @@ class redis extends factory
      * @return \Redis
      * @throws \RedisException
      */
-    public function connect(): \Redis
+    public function connect(): object
     {
         //Check connection pool
         if (isset(self::$pool[$key = hash('crc32b', json_encode([$this->host, $this->port, $this->db, $this->persist_id]))])) {

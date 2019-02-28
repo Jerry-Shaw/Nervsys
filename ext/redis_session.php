@@ -25,6 +25,9 @@ class redis_session extends redis
     //SESSION life
     private $life = 600;
 
+    /** @var \Redis $connect */
+    private $connect = null;
+
     //SESSION key prefix
     const PREFIX = 'SESS:';
 
@@ -32,9 +35,14 @@ class redis_session extends redis
      * redis_session constructor.
      *
      * @param int $life
+     *
+     * @throws \RedisException
      */
     public function __construct(int $life = 600)
     {
+        //Build connection
+        $this->connect = parent::connect();
+
         if (PHP_SESSION_ACTIVE !== session_status()) {
             //Set SESSION GC configurations
             ini_set('session.gc_divisor', 100);
@@ -56,6 +64,7 @@ class redis_session extends redis
             session_start();
         }
 
+        //Set life
         if (0 < $life) {
             $this->life = &$life;
         }
@@ -64,6 +73,8 @@ class redis_session extends redis
     }
 
     /**
+     * session_open
+     *
      * @param string $save_path
      * @param string $session_name
      *
@@ -76,6 +87,8 @@ class redis_session extends redis
     }
 
     /**
+     * session_close
+     *
      * @return bool
      */
     public function session_close(): bool
@@ -84,46 +97,51 @@ class redis_session extends redis
     }
 
     /**
+     * session_read
+     *
      * @param string $session_id
      *
      * @return string
-     * @throws \RedisException
      */
     public function session_read(string $session_id): string
     {
-        return (string)parent::connect()->get(self::PREFIX . $session_id);
+        return (string)$this->connect->get(self::PREFIX . $session_id);
     }
 
     /**
+     * session_write
+     *
      * @param string $session_id
      * @param string $session_data
      *
      * @return bool
-     * @throws \RedisException
      */
     public function session_write(string $session_id, string $session_data): bool
     {
-        $write = parent::connect()->set(self::PREFIX . $session_id, $session_data, $this->life);
+        $write = $this->connect->set(self::PREFIX . $session_id, $session_data, $this->life);
 
         unset($session_id, $session_data);
         return (bool)$write;
     }
 
     /**
+     * session_destroy
+     *
      * @param string $session_id
      *
      * @return bool
-     * @throws \RedisException
      */
     public function session_destroy(string $session_id): bool
     {
-        parent::connect()->del(self::PREFIX . $session_id);
+        $this->connect->del(self::PREFIX . $session_id);
 
         unset($session_id);
         return true;
     }
 
     /**
+     * session_gc
+     *
      * @param int $life
      *
      * @return bool
