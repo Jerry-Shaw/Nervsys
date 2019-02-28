@@ -24,7 +24,7 @@ class pdo_mysql extends pdo
     //Runtime params
     private $params = [];
 
-    //PDO connection
+    /** @var \PDO $connect */
     private $connect = null;
 
     /**
