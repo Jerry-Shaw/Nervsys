@@ -610,7 +610,7 @@ class pdo_mysql extends pdo
                     $bind_key  = $this->rand_key($value[0]);
                     $condition .= $bind_key . ' ';
 
-                    $this->params[$param_key][$bind_key] = &$value[2];
+                    $this->params[$param_key][$bind_key] = $value[2];
                 } elseif ('BETWEEN' !== $item) {
                     $bind_keys = [];
 
@@ -637,7 +637,7 @@ class pdo_mysql extends pdo
                     $bind_key  = $this->rand_key($value[0]);
                     $condition .= '= ' . $bind_key . ' ';
 
-                    $this->params[$param_key][$bind_key] = &$value[1];
+                    $this->params[$param_key][$bind_key] = $value[1];
                 } else {
                     $condition .= $item . ' ';
                 }

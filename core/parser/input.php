@@ -52,7 +52,7 @@ class input extends system
             && !empty($val = self::opt_val(parent::$data, self::CMD))
             && is_string($val['data'])
         ) {
-            parent::$cmd = &$val['data'];
+            parent::$cmd = $val['data'];
         }
 
         //Read MIME type
@@ -60,7 +60,7 @@ class input extends system
             && !empty($val = self::opt_val(parent::$data, self::MIME))
             && is_string($val['data'])
         ) {
-            parent::$mime = &$val['data'];
+            parent::$mime = $val['data'];
         }
 
         unset($val);
@@ -145,7 +145,7 @@ class input extends system
 
         //Get MIME type
         if (!empty($val = self::opt_val($opt, self::MIME)) && is_string($val['data'])) {
-            parent::$data += [$val['key'] => &$val['data']];
+            parent::$data += [$val['key'] => $val['data']];
         }
 
         //Get CGI data value
