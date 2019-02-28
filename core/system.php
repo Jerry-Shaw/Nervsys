@@ -74,7 +74,7 @@ class system extends command
          * 4. Gathering results on calling every function or external command. Save to process result pool.
          */
 
-        '' !== parent::$cmd && cmd::prepare();
+        '' !== self::$cmd && cmd::prepare();
 
         operator::exec_cgi();
         operator::exec_cli();
