@@ -359,7 +359,7 @@ class pdo_mysql extends pdo
 
         try {
             $stmt = $this->connect->prepare($sql);
-            $stmt->execute($this->params['bind_value']);
+            $stmt->execute($this->params['bind_value'] ?? null);
             $this->params = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
@@ -382,7 +382,7 @@ class pdo_mysql extends pdo
 
         try {
             $stmt         = $this->connect->prepare($sql);
-            $result       = $stmt->execute($this->params['bind_value']);
+            $result       = $stmt->execute($this->params['bind_value'] ?? null);
             $this->params = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
