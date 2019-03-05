@@ -49,7 +49,8 @@ class system extends command
      * Read & parse input data
      *
      * Steps:
-     * 1. Read and parse input data. Save to process pool in non-overwrite mode.
+     * 1. Read and parse input data (REQUEST + JSON + XML).
+     * 2. Save parsed data to process pool in non-overwrite mode.
      */
     const STATE_READ = 2;
 
