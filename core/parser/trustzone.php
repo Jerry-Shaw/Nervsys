@@ -123,7 +123,7 @@ class trustzone extends factory
             throw new \Exception(
                 $class . '::' . $method
                 . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']',
-                E_USER_WARNING
+                E_USER_NOTICE
             );
         }
 

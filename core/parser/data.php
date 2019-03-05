@@ -156,7 +156,7 @@ class data
             throw new \Exception(
                 $reflect->getDeclaringClass()->getName() . '::' . $reflect->getName()
                 . ': Argument mismatch [' . (implode(', ', $diff)) . ']',
-                E_USER_WARNING
+                E_USER_NOTICE
             );
         }
 
