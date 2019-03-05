@@ -111,7 +111,7 @@ class error extends system
         $exception = get_class($throwable);
 
         //Get error level
-        $level = isset(self::LEVEL[$throwable->getCode()]) ? self::LEVEL[$throwable->getCode()] : 'warning';
+        $level = self::LEVEL[$throwable->getCode()] ?? 'info';
 
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
