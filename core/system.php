@@ -33,22 +33,57 @@ use core\pool\command;
 class system extends command
 {
     /**
+     * INIT state (S1)
+     * Initialize system
+     *
+     * Steps:
+     * 1. Load "system.ini" and parse settings.
+     * 2. Set runtime values, detect CGI/CLI and TLS.
+     * 3. Check Cross-Origin Resource Sharing (CORS) permissions.
+     * 4. Execute all configured settings in "init" section of "system.ini".
+     */
+    const STATE_INIT = 1;
+
+    /**
+     * READ state (S2)
+     * Read & parse input data
+     *
+     * Steps:
+     * 1. Read and parse input data. Save to process pool in non-overwrite mode.
+     */
+    const STATE_READ = 2;
+
+    /**
+     * EXEC state (S3)
+     * Execute input commands
+     *
+     * Steps:
+     * 1. Prepare commands. Skip when already set.
+     * 2. Execute script functions order by commands via CGI mode.
+     * 3. Execute script functions and external commands via CLI mode (available under CLI).
+     * 4. Gathering results on calling every function or external command. Save to process result pool.
+     */
+    const STATE_EXEC = 3;
+
+    /**
+     * FLUSH state (S4, default)
+     * Output results in preset format
+     *
+     * Steps:
+     * 1. Output MIME-Type header.
+     * 2. Output formatted result content.
+     */
+    const STATE_FLUSH = 4;
+
+    /**
      * Boot system
      *
      * @param int $state
      */
-    public static function boot(int $state = 0): void
+    public static function boot(int $state = self::STATE_FLUSH): void
     {
         /**
-         * Prepare state (S1)
-         * Initialize system
-         *
-         * Steps:
-         * 1. Load "system.ini" and parse settings.
-         * 2. Set runtime values, detect CGI/CLI and TLS.
-         * 3. Check Cross-Origin Resource Sharing (CORS) permissions.
-         * 4. Execute all configured settings in "init" section of "system.ini".
-         * 5. Read and parse input data. Save to process pool in non-overwrite mode.
+         * INIT state (S1)
          */
 
         self::load_cfg();
@@ -56,22 +91,24 @@ class system extends command
         self::check_cors();
         self::initial_sys();
 
-        input::read();
-
-        //S1 exit control
-        if (1 === $state) {
+        //S1 state abort
+        if ($state === self::STATE_INIT) {
             return;
         }
 
         /**
-         * Process state (S2)
-         * Execute commands and gather results
-         *
-         * Steps:
-         * 1. Prepare commands. Skip when already set.
-         * 2. Execute script functions order by commands via CGI mode.
-         * 3. Execute script functions and external commands via CLI mode (available under CLI).
-         * 4. Gathering results on calling every function or external command. Save to process result pool.
+         * READ state (S2)
+         */
+
+        input::read();
+
+        //S2 state abort
+        if ($state === self::STATE_READ) {
+            return;
+        }
+
+        /**
+         * EXEC state (S3)
          */
 
         '' !== self::$cmd && cmd::prepare();
@@ -79,23 +116,16 @@ class system extends command
         operator::exec_cgi();
         operator::exec_cli();
 
-        //S2 exit control
-        if (2 === $state) {
+        //S3 state abort
+        if ($state === self::STATE_EXEC) {
             return;
         }
 
         /**
-         * Flush state (S3)
-         * Output results in preset format
-         *
-         * Steps:
-         * 1. Output MIME-Type header.
-         * 2. Reduce array result on single command.
-         * 3. Output result content according to preset format.
+         * FLUSH state (S4, default)
          */
 
         output::flush();
-
         unset($state);
     }
 
@@ -153,7 +183,6 @@ class system extends command
     public static function add_cgi(string $class, string ...$method): void
     {
         self::$cmd_cgi[] = func_get_args();
-
         unset($class, $method);
     }
 
@@ -198,7 +227,6 @@ class system extends command
         }
 
         self::$cmd_cli[] = &$cmd_cli;
-
         unset($cmd, $argv, $pipe, $time, $ret, $cmd_cli);
     }
 
@@ -316,7 +344,6 @@ class system extends command
 
         //Exit on OPTION request
         'OPTIONS' === $_SERVER['REQUEST_METHOD'] && exit;
-
         unset($allow_headers);
     }
 
