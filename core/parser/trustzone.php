@@ -122,8 +122,7 @@ class trustzone extends factory
             //Report TrustZone missing
             throw new \Exception(
                 $class . '::' . $method
-                . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']',
-                E_USER_NOTICE
+                . ': TrustZone mismatch [' . (implode(', ', $diff)) . ']'
             );
         }
 

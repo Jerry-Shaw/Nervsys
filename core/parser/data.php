@@ -155,8 +155,7 @@ class data
         if (!empty($diff)) {
             throw new \Exception(
                 $reflect->getDeclaringClass()->getName() . '::' . $reflect->getName()
-                . ': Argument mismatch [' . (implode(', ', $diff)) . ']',
-                E_USER_NOTICE
+                . ': Argument mismatch [' . (implode(', ', $diff)) . ']'
             );
         }
 
