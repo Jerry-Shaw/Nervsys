@@ -24,39 +24,20 @@ use core\handler\factory;
 
 class upload extends factory
 {
-    /**
-     * Error code
-     * 0: UPLOAD_ERR_OK
-     * 1: UPLOAD_ERR_INI_SIZE
-     * 2: UPLOAD_ERR_FORM_SIZE
-     * 3: UPLOAD_ERR_PARTIAL
-     * 4: UPLOAD_ERR_NO_FILE
-     * 5: UPLOAD_ERR_NO_SAVE_DIR
-     * 6: UPLOAD_ERR_NO_TMP_DIR
-     * 7: UPLOAD_ERR_CANT_WRITE
-     * 8: UPLOAD_ERR_EXTENSION
-     * 9: UPLOAD_ERR_DISALLOWED_FILE_SIZE
-     * 10: UPLOAD_ERR_DISALLOWED_EXTENSIONS
-     *
-     * @var int
-     */
-    private $errno = 0;
+    //Allowed ext
+    protected $ext = [];
 
-    //File
-    private $file = [];
+    //Root path
+    protected $root = ROOT;
 
     //Permission
     protected $perm = 0664;
 
-    //Allowed ext
-    protected $ext = [];
+    //Max size
+    protected $size = 20971520;
 
-    //Allowed size
-    protected $size = 67108864;
-
-    //File save paths
-    protected $path_url  = 'uploads' . DIRECTORY_SEPARATOR;
-    protected $path_save = ROOT . 'uploads' . DIRECTORY_SEPARATOR;
+    //File
+    private $file = [];
 
     //Default MIME-Type
     const MIME = [
@@ -105,78 +86,124 @@ class upload extends factory
         'apk'  => 'application/vnd.android.package-archive'
     ];
 
+    //Error message
+    const ERRNO = [
+        UPLOAD_ERR_OK         => 'Upload succeed.',
+        UPLOAD_ERR_INI_SIZE   => 'File too large (ini).',
+        UPLOAD_ERR_FORM_SIZE  => 'File too large (code).',
+        UPLOAD_ERR_PARTIAL    => 'Partially uploaded.',
+        UPLOAD_ERR_NO_FILE    => 'No file uploaded.',
+        UPLOAD_ERR_NO_TMP_DIR => 'Path NOT exist.',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write.',
+        UPLOAD_ERR_EXTENSION  => 'Extension blocked.',
+    ];
+
     /**
-     * Receive file
+     * Fetch upload file/base64
      *
      * @param string $name
+     * @param string $as
      *
      * @return $this
      */
-    public function recv(string $name): object
+    public function fetch(string $name, string $as = ''): object
     {
-        //Check errno
-        if (0 < $this->errno) {
-            return $this;
-        }
-
-        //Check data
+        //Check file
         if (!isset(parent::$data[$name])) {
-            $this->errno = 4;
+            $this->file['error'] = UPLOAD_ERR_NO_FILE;
             return $this;
         }
 
-        //Get upload method
-        $this->file['method'] = is_array(parent::$data[$name]) ? 'file' : 'base64';
+        //Reset file
+        $this->file = [];
 
-        //Open finfo
-        $mime  = false;
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        //Receive file/base64
+        is_array(parent::$data[$name]) ? $this->recv_file(parent::$data[$name]) : $this->recv_base64(parent::$data[$name]);
 
-        //Process file stream
-        switch ($this->file['method']) {
-            case 'file':
-                //Invalid file upload
-                if (!isset(parent::$data[$name]['error'])) {
-                    $this->errno = 4;
-                    return $this;
-                }
+        //Save file as
+        $this->file['save_as'] = '' === $as ? misc::uuid() : $as;
 
-                //Server side error
-                if (0 < parent::$data[$name]['error']) {
-                    $this->errno = parent::$data[$name]['error'];
-                    return $this;
-                }
+        unset($name, $as);
+        return $this;
+    }
 
-                //Copy file property
-                unset(parent::$data[$name]['error']);
-                $this->file['stream'] = parent::$data[$name];
-
-                //Deep detect file type
-                $mime = finfo_file($finfo, $this->file['stream']['tmp_name'], FILEINFO_MIME_TYPE);
-                break;
-
-            case 'base64':
-                //Check base64 file stream
-                if (false === $pos = strpos(parent::$data[$name], ';base64,')) {
-                    $this->errno = 4;
-                    return $this;
-                }
-
-                //Process base64 stream
-                $this->file['stream'] = [
-                    'type' => (string)substr(parent::$data[$name], 5, $pos - 5),
-                    'data' => $data = base64_decode(substr(parent::$data[$name], $pos + 8), true),
-                    'size' => strlen($data)
-                ];
-
-                //Deep detect file type
-                $mime = finfo_buffer($finfo, $data, FILEINFO_MIME_TYPE);
-
-                unset($pos, $data);
-                break;
+    /**
+     * Save file/base64
+     *
+     * @param string $to
+     *
+     * @return array
+     */
+    public function save(string $to = 'upload'): array
+    {
+        //Check file size
+        if (0 < $this->size && $this->file['stream']['size'] > $this->size) {
+            return $this->get_error(UPLOAD_ERR_FORM_SIZE);
         }
 
-        //Close finfo
+        //Check file extension
+        $ext = array_search($this->file['stream']['type'], self::MIME, true);
+
+        if (false === $ext && 'file' === $this->file['method']) {
+            $ext = file::get_ext($this->file['stream']['name']);
+        }
+
+        if ((empty($this->ext) && !isset(self::MIME[(string)$ext]))
+            || (!empty($this->ext && !in_array($ext, $this->ext, true)))
+        ) {
+            return $this->get_error(UPLOAD_ERR_EXTENSION);
+        }
+
+        //Create save path
+        if ('' === $save_path = file::get_path($to, $this->root)) {
+            return $this->get_error(UPLOAD_ERR_NO_TMP_DIR);
+        }
+
+        //Build save properties
+        $file_name = $this->file['save_as'] . '.' . $ext;
+        $url_path  = ltrim($save_path, " \t\n\r\0\x0B\\/") . $file_name;
+        $file_path = rtrim($this->root, " \t\n\r\0\x0B\\/") . DIRECTORY_SEPARATOR . $url_path;
+
+        //Delete existing file
+        is_file($file_path) && unlink($file_path);
+
+        //Save file/base64
+        if (!$this->{'save_' . $this->file['method']}($file_path)) {
+            return $this->get_error(UPLOAD_ERR_CANT_WRITE);
+        }
+
+        //Set permissions
+        chmod($file_path, $this->perm);
+
+        unset($to, $ext, $save_path, $file_path);
+        return [
+                'url'  => &$url_path,
+                'name' => &$file_name,
+                'size' => $this->file['stream']['size']
+            ] + $this->get_error(UPLOAD_ERR_OK);
+    }
+
+    /**
+     * Receive file from stream
+     *
+     * @param array $file
+     */
+    private function recv_file(array $file): void
+    {
+        //Server side error
+        if (!isset($file['error']) || UPLOAD_ERR_OK !== $file['error']) {
+            $this->file['error'] = isset($file['error']) ? $file['error'] : UPLOAD_ERR_NO_FILE;
+            return;
+        }
+
+        //Copy file property
+        unset($file['error']);
+        $this->file['method'] = 'file';
+        $this->file['stream'] = &$file;
+
+        //Deep detect file type
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $this->file['stream']['tmp_name'], FILEINFO_MIME_TYPE);
         finfo_close($finfo);
 
         //Correct file type
@@ -184,93 +211,90 @@ class upload extends factory
             $this->file['stream']['type'] = &$mime;
         }
 
-        unset($name, $mime, $finfo);
-        return $this;
+        unset($file, $finfo, $mime);
+    }
+
+    /**
+     * Receive file from base64
+     *
+     * @param string $base64
+     */
+    private function recv_base64(string $base64): void
+    {
+        //Invalid base64 upload
+        if (false === $pos = strpos($base64, ';base64,')) {
+            $this->file['error'] = UPLOAD_ERR_NO_FILE;
+            return;
+        }
+
+        //Process base64 stream
+        $this->file['method'] = 'base64';
+        $this->file['stream'] = [
+            'type' => substr($base64, 5, $pos - 5),
+            'data' => $data = base64_decode(substr($base64, $pos + 8), true),
+            'size' => strlen($data)
+        ];
+
+        //Deep detect base64 type
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_buffer($finfo, $data, FILEINFO_MIME_TYPE);
+        finfo_close($finfo);
+
+        //Correct file type
+        if (false !== $mime && $this->file['stream']['type'] !== $mime) {
+            $this->file['stream']['type'] = &$mime;
+        }
+
+        unset($base64, $pos, $data, $finfo, $mime);
     }
 
     /**
      * Save file
      *
-     * @param string $as
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    private function save_file(string $file_path): bool
+    {
+        //Move/Copy tmp file
+        $save = move_uploaded_file($this->file['stream']['tmp_name'], $file_path) || copy($this->file['stream']['tmp_name'], $file_path);
+        is_file($this->file['stream']['tmp_name']) && unlink($this->file['stream']['tmp_name']);
+
+        unset($file_path);
+        return $save;
+    }
+
+    /**
+     * Save base64
+     *
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    private function save_base64(string $file_path): bool
+    {
+        //Write file data
+        if (!$save = file_put_contents($file_path, $this->file['stream']['data']) === $this->file['stream']['size']) {
+            is_file($file_path) && unlink($file_path);
+        }
+
+        unset($file_path);
+        return $save;
+    }
+
+    /**
+     * Get error message
+     *
+     * @param int $errno
      *
      * @return array
      */
-    public function save(string $as = ''): array
+    private function get_error(int $errno): array
     {
-        //Check errno
-        if (0 < $this->errno) {
-            return ['err' => $this->errno];
-        }
-
-        //Generate filename
-        if ('' === $as) {
-            $as = substr(hash('md5', uniqid(mt_rand(), true)), 16);
-        }
-
-        //Check file size
-        if (0 < $this->size && $this->size < $this->file['stream']['size']) {
-            return ['err' => 9];
-        }
-
-        //Check file extension
-        $ext = (string)array_search($this->file['stream']['type'], self::MIME, true);
-
-        if ('' === $ext && 'file' === $this->file['method']) {
-            $ext = file::get_ext($this->file['stream']['name']);
-        }
-
-        if ((empty($this->ext) && !isset(self::MIME[$ext])) || (!empty($this->ext && !in_array($ext, $this->ext, true)))) {
-            return ['err' => 10];
-        }
-
-        //Build save properties
-        $file      = $as . '.' . $ext;
-        $url_path  = $this->path_url . $file;
-        $file_path = $this->path_save . $file;
-
-        unset($as, $ext, $file);
-
-        //Save file stream
-        switch ($this->file['method']) {
-            case 'file':
-                //Delete existing file
-                if (is_file($file_path)) {
-                    unlink($file_path);
-                }
-
-                //Move/Copy tmp file
-                if (!move_uploaded_file($this->file['stream']['tmp_name'], $file_path)) {
-                    if (copy($this->file['stream']['tmp_name'], $file_path)) {
-                        unlink($this->file['stream']['tmp_name']);
-                    } else {
-                        unlink($this->file['stream']['tmp_name']);
-                        return ['err' => 7];
-                    }
-                }
-
-                break;
-
-            case 'base64':
-                //Write file data
-                if (file_put_contents($file_path, $this->file['stream']['data']) !== $this->file['stream']['size']) {
-                    return ['err' => 7];
-                }
-
-                break;
-
-            default:
-                return ['err' => 8];
-                break;
-        }
-
-        //Set permissions
-        chmod($file_path, $this->perm);
-        unset($file_path);
-
         return [
-            'err'  => 0,
-            'url'  => $url_path,
-            'size' => $this->file['stream']['size']
+            'errno'   => $errno,
+            'message' => self::ERRNO[$errno]
         ];
     }
 }
