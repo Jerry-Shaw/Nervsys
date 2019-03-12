@@ -180,13 +180,15 @@ class upload extends factory
         //Set permissions
         chmod($file_path, $this->perm);
 
-        unset($to, $ext, $save_path, $file_path);
+        //Build upload result
+        $result = $this->get_error(UPLOAD_ERR_OK);
 
-        return [
-                'url'  => &$url_path,
-                'name' => &$file_name,
-                'size' => $this->file['stream']['size']
-            ] + $this->get_error(UPLOAD_ERR_OK);
+        $result['url']  = strtr($url_path, '\\', '/');
+        $result['name'] = &$file_name;
+        $result['size'] = $this->file['stream']['size'];
+
+        unset($to, $ext, $save_path, $file_name, $url_path, $file_path);
+        return $result;
     }
 
     /**
