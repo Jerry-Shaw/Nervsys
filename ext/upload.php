@@ -136,6 +136,11 @@ class upload extends factory
      */
     public function save(string $to = 'upload'): array
     {
+        //Check upload error
+        if (isset($this->file['error'])) {
+            return $this->get_error($this->file['error']);
+        }
+
         //Check file size
         if (0 < $this->size && $this->file['stream']['size'] > $this->size) {
             return $this->get_error(UPLOAD_ERR_FORM_SIZE);
@@ -176,6 +181,7 @@ class upload extends factory
         chmod($file_path, $this->perm);
 
         unset($to, $ext, $save_path, $file_path);
+
         return [
                 'url'  => &$url_path,
                 'name' => &$file_name,
@@ -192,7 +198,7 @@ class upload extends factory
     {
         //Server side error
         if (!isset($file['error']) || UPLOAD_ERR_OK !== $file['error']) {
-            $this->file['error'] = isset($file['error']) ? $file['error'] : UPLOAD_ERR_NO_FILE;
+            $this->file['error'] = $file['error'] ?? UPLOAD_ERR_NO_FILE;
             return;
         }
 
