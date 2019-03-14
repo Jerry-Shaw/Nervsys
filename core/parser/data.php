@@ -123,7 +123,7 @@ class data
         //Process param data
         foreach ($params as $param) {
             if (isset($input[$name = $param->getName()])) {
-                switch ($param->getType()) {
+                switch ($param->getType()->getName()) {
                     case 'int':
                         is_numeric($input[$name]) ? $data[] = (int)$input[$name] : $diff[] = $name;
                         break;
