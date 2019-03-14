@@ -164,7 +164,7 @@ class doc extends system
                         $val = [];
 
                         $val['name']    = $param->getName();
-                        $val['type']    = $param->getType()->getName();
+                        $val['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
                         $val['require'] = !$param->isDefaultValueAvailable();
 
                         if (!$val['require']) {
@@ -188,7 +188,7 @@ class doc extends system
             }
         }
 
-        unset($class, $name, $reflect, $trustzone, $key, $item, $public_method, $api_method, $method, $value, $params, $param, $val);
+        unset($class, $name, $reflect, $trustzone, $key, $item, $public_method, $api_method, $method, $value, $params, $param, $val, $type);
         return $list;
     }
 }
