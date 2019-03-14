@@ -60,6 +60,7 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │    │    └─key.php                         keygen interface
     │    ├─crypt.php                            Encrypt/decrypt extension
     │    ├─crypt_img.php                        Auth code image extension from crypt
+    │    ├─doc.php                              API Doc extension
     │    ├─errno.php                            Error code extension
     │    ├─file.php                             Filesystem related IO extension
     │    ├─http.php                             HTTP request extension
@@ -67,6 +68,7 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │    ├─keygen.php                           keygen extension for crypt
     │    ├─lang.php                             Language pack extension
     │    ├─memcached.php                        Memcached extension (Thanks to tggtzbh)
+    │    ├─misc.php                             Misc functions
     │    ├─mpc.php                              Multi-Process Controller Extension
     │    ├─pdo.php                              PDO connector extension
     │    ├─pdo_mysql.php                        PDO MySQL extension (Thanks to kristenzz)
