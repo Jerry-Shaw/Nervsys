@@ -25,8 +25,8 @@ use core\handler\factory;
 class doc extends factory
 {
     //Define excludes
-    protected $exclude_func = [];
-    protected $exclude_path = ['core', 'ext'];
+    public $exclude_func = [];
+    public $exclude_path = ['core', 'ext'];
 
     /**
      * doc constructor.
