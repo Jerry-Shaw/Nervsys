@@ -20,175 +20,259 @@
 
 namespace ext;
 
-use core\system;
+use core\handler\factory;
 
-class doc extends system
+class doc extends factory
 {
-    //Exclude method
-    private static $exclude_method = [];
-
-    //Exclude path or file
-    const EXCLUDE_PATH = ['core', 'ext', 'api.php'];
+    //Define excludes
+    protected $exclude_func = [];
+    protected $exclude_path = ['core', 'ext'];
 
     /**
-     * Show API info
-     *
-     * @param string $path
-     *
-     * @return array
+     * doc constructor.
      */
-    public static function show_api(string $path): array
+    public function __construct()
     {
-        //Get factory method
-        self::$exclude_method = get_class_methods('core\\handler\\factory');
-
-        //Fetch valid class
-        $class = self::fetch_class(ROOT . trim($path, " \t\n\r\0\x0B\\/"));
-
-        //Build reflections
-        $reflect = self::build_info($class);
-
-        unset($path, $class);
-        return $reflect;
+        //Read all functions from parent class
+        $this->exclude_func = get_class_methods(get_parent_class($this));
     }
 
     /**
-     * Fetch valid class
+     * Show API CMD
      *
      * @param string $path
      *
      * @return array
      */
-    public static function fetch_class(string $path): array
+    public function show_api(string $path): array
     {
-        $class = [];
+        //API
+        $api = [];
+
+        //Redirect path related to ROOT
+        $path = ROOT . trim($path, " \t\n\r\0\x0B\\/");
 
         //Get all php scripts
         $files = file::get_list($path, '*.php', true);
 
         //Collect valid classes
         foreach ($files as $item) {
-            $value = substr($item, strlen(ROOT));
+            //Remove ROOT path
+            $name = substr($item, strlen(ROOT));
 
-            $match = false !== strpos($value, DIRECTORY_SEPARATOR)
-                ? strstr($value, DIRECTORY_SEPARATOR, true)
-                : $value;
-
-            //Skip files in exclude
-            if (in_array($match, self::EXCLUDE_PATH, true)) {
+            //Skip ROOT path
+            if (false === strpos($name, DIRECTORY_SEPARATOR)) {
                 continue;
             }
 
-            $script = file_get_contents($item);
+            //Get dirname
+            $dir = strstr($name, DIRECTORY_SEPARATOR, true);
+
+            //Skip paths or files in exclude path and ROOT path
+            if (in_array($dir, $this->exclude_path, true)) {
+                continue;
+            }
 
             //Skip files NOT valid
+            $script = file_get_contents($item);
             if (false === strpos($script, 'class') || false === strpos($script, '$tz')) {
                 continue;
             }
 
-            //Get class name
-            $class[] = parent::build_name(substr($value, 0, -4));
-        }
-
-        unset($path, $files, $item, $value, $match, $script);
-        return $class;
-    }
-
-    /**
-     * Build class info
-     *
-     * @param array $class
-     *
-     * @return array
-     */
-    public static function build_info(array $class): array
-    {
-        $list = [];
-
-        foreach ($class as $name) {
-            try {
-                //Build reflect
-                $reflect = new \ReflectionClass($name);
-
-                //Get TrustZone
-                $property  = $reflect->getDefaultProperties();
-                $trustzone = $property['tz'] ?? [];
-                unset($property);
-
-                if (empty($trustzone)) {
-                    continue;
-                }
-
-                if (is_string($trustzone)) {
-                    $trustzone = false !== strpos($trustzone, ',') ? explode(',', $trustzone) : [$trustzone];
-
-                    $tmp = [];
-                    foreach ($trustzone as $item) {
-                        $tmp[$item] = [];
-                    }
-
-                    $trustzone = $tmp;
-                    unset($tmp);
-                }
-
-
-                foreach ($trustzone as $key => $item) {
-                    if (isset($item['param'])) {
-                        $trustzone[$key] = $item['param'];
-                    }
-                }
-
-                //Get public method
-                $public_method = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
-
-                //Get method
-                $api_method = [];
-                foreach ($public_method as $item) {
-                    //Get method name
-                    $method = $item->name;
-
-                    //Skip exclude method
-                    if (in_array($method, self::$exclude_method, true)) {
-                        continue;
-                    }
-
-                    //Skip NOT in TrustZone
-                    if (!isset($trustzone['*']) && !isset($trustzone[$method])) {
-                        continue;
-                    }
-
-                    //Parse params
-                    $value  = [];
-                    $params = $item->getParameters();
-                    foreach ($params as $param) {
-                        $val = [];
-
-                        $val['name']    = $param->getName();
-                        $val['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
-                        $val['require'] = !$param->isDefaultValueAvailable();
-
-                        if (!$val['require']) {
-                            $val['default'] = $param->getDefaultValue();
-                        }
-
-                        $value[] = $val;
-                    }
-
-                    //Collect API info
-                    $api_method[$method] = [
-                        'tz'    => $trustzone[$method] ?? '',
-                        'note'  => $item->getDocComment(),
-                        'param' => $value
-                    ];
-                }
-
-                $list[strtr($reflect->getName(), '\\', '/')] = $api_method;
-            } catch (\Throwable $throwable) {
-                continue;
+            //Get opened API name
+            if (!empty($method = $this->get_opened_api($class = parent::build_name(substr($name, 0, -4))))) {
+                $api[$dir][strtr(ltrim($class, '\\'), DIRECTORY_SEPARATOR, '/')] = $method;
             }
         }
 
-        unset($class, $name, $reflect, $trustzone, $key, $item, $public_method, $api_method, $method, $value, $params, $param, $val, $type);
-        return $list;
+        //Build CMD for API
+        $api = $this->build_api_cmd($api);
+
+        unset($path, $files, $item, $name, $dir, $script, $method, $class);
+        return $api;
+    }
+
+    /**
+     * Build DOC
+     *
+     * @param string $cmd
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function show_doc(string $cmd): array
+    {
+        //DOC
+        $doc = $val = [];
+
+        //Fill CMD
+        if (false === strpos($cmd, '-')) {
+            $cmd .= '__construct';
+        }
+
+        //Get class & method
+        list($class, $method) = explode('-', $cmd);
+
+        //Build class name
+        $class = parent::build_name($class);
+
+        //Build class reflection
+        $reflect_class = new \ReflectionClass($class);
+
+        //Get method reflection
+        $reflect_method = new \ReflectionMethod($class, $method);
+
+        //Get TrustZone
+        $trustzone = $this->get_trustzone($reflect_class);
+
+        //Get parameters
+        $params = $reflect_method->getParameters();
+
+        //Build param info
+        foreach ($params as $param) {
+            $val['name']    = $param->getName();
+            $val['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
+            $val['require'] = !$param->isDefaultValueAvailable();
+
+            if (!$val['require']) {
+                $val['default'] = $param->getDefaultValue();
+            }
+        }
+
+        //Build DOC
+        $doc['tz']    = $trustzone[$method] ?? '';
+        $doc['note']  = (string)$reflect_method->getDocComment();
+        $doc['param'] = &$val;
+
+        unset($cmd, $val, $class, $method, $reflect_class, $reflect_method, $trustzone, $params, $param);
+        return $doc;
+    }
+
+    /**
+     * Get opened methods
+     *
+     * @param string $class
+     *
+     * @return array
+     */
+    private function get_opened_api(string $class): array
+    {
+        //API
+        $api = [];
+
+        try {
+            //Build reflection
+            $reflect = new \ReflectionClass($class);
+
+            //Get TrustZone
+            $trustzone = $this->get_trustzone($reflect);
+
+            //Get public method
+            $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+            //Get API method
+            foreach ($methods as $item) {
+                //Get method name
+                $method = $item->name;
+
+                //Skip exclude method
+                if (in_array($method, $this->exclude_func, true)) {
+                    continue;
+                }
+
+                //Skip NOT in TrustZone
+                if (!isset($trustzone['*']) && !isset($trustzone[$method]) && '__construct' !== $method) {
+                    continue;
+                }
+
+                //Save method
+                $api[] = $method;
+            }
+        } catch (\Throwable $throwable) {
+            $api[] = [$throwable->getMessage()];
+        }
+
+        unset($class, $reflect, $trustzone, $item, $methods, $method);
+        return $api;
+    }
+
+    /**
+     * Build CMD list
+     *
+     * @param array $api
+     *
+     * @return array
+     */
+    private function build_api_cmd(array $api): array
+    {
+        $key = 0;
+        $cmd = [];
+
+        foreach ($api as $dir => $item) {
+            $cmd[$key]['module'] = $dir;
+
+            //Build CMD
+            foreach ($item as $class => $method) {
+                $cmd[$key]['cmd'][] = array_map(
+                    static function (string $item) use ($class): string
+                    {
+                        return $class . '-' . $item;
+                    }, $method
+                );
+            }
+
+            ++$key;
+        }
+
+        unset($api, $key, $dir, $item, $class, $method);
+        return $cmd;
+    }
+
+    /**
+     * Get TrustZone
+     *
+     * @param \ReflectionClass $class
+     *
+     * @return array
+     */
+    private function get_trustzone(\ReflectionClass $class): array
+    {
+        //Get TrustZone
+        $property = $class->getDefaultProperties();
+
+        //TrustZone not open
+        if (!isset($property['tz']) || empty($property['tz'])) {
+            return [];
+        }
+
+        $trustzone = &$property['tz'];
+        unset($property);
+
+        //Rebuild TrustZone
+        if (is_string($trustzone)) {
+            $trustzone = false !== strpos($trustzone, ',') ? explode(',', $trustzone) : [$trustzone];
+
+            $tmp = [];
+            foreach ($trustzone as $item) {
+                $tmp[$item] = '';
+            }
+
+            $trustzone = $tmp;
+            unset($tmp);
+        }
+
+        //Fetch param
+        foreach ($trustzone as $key => $item) {
+            if (isset($item['param'])) {
+                $item = $item['param'];
+            }
+
+            if (is_array($item)) {
+                $trustzone[$key] = implode(',', $item);
+            }
+        }
+
+        unset($class, $key, $item);
+        return $trustzone;
     }
 }
