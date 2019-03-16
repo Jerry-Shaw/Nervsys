@@ -95,23 +95,23 @@ class doc extends factory
     /**
      * Build DOC
      *
-     * @param string $cmd
+     * @param string $command
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function show_doc(string $cmd): array
+    public function show_doc(string $command): array
     {
         //DOC
-        $doc = $val = [];
+        $doc = $data = [];
 
         //Fill CMD
-        if (false === strpos($cmd, '-')) {
-            $cmd .= '__construct';
+        if (false === strpos($command, '-')) {
+            $command .= '__construct';
         }
 
         //Get class & method
-        list($class, $method) = explode('-', $cmd);
+        list($class, $method) = explode('-', $command);
 
         //Build class name
         $class = parent::build_name($class);
@@ -130,21 +130,21 @@ class doc extends factory
 
         //Build param info
         foreach ($params as $param) {
-            $val['name']    = $param->getName();
-            $val['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
-            $val['require'] = !$param->isDefaultValueAvailable();
+            $data['name']    = $param->getName();
+            $data['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
+            $data['require'] = !$param->isDefaultValueAvailable();
 
-            if (!$val['require']) {
-                $val['default'] = $param->getDefaultValue();
+            if (!$data['require']) {
+                $data['default'] = $param->getDefaultValue();
             }
         }
 
         //Build DOC
         $doc['tz']    = $trustzone[$method] ?? '';
         $doc['note']  = (string)$reflect_method->getDocComment();
-        $doc['param'] = &$val;
+        $doc['param'] = &$data;
 
-        unset($cmd, $val, $class, $method, $reflect_class, $reflect_method, $trustzone, $params, $param);
+        unset($command, $data, $class, $method, $reflect_class, $reflect_method, $trustzone, $params, $param);
         return $doc;
     }
 
