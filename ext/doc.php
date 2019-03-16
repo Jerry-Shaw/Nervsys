@@ -34,7 +34,7 @@ class doc extends factory
     public function __construct()
     {
         //Read all functions from parent class
-        $this->exclude_func = get_class_methods(get_parent_class($this));
+        $this->exclude_func = get_class_methods(get_parent_class(__CLASS__));
     }
 
     /**
