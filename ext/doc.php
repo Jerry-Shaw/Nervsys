@@ -128,6 +128,10 @@ class doc extends factory
         //Get parameters
         $params = $reflect_method->getParameters();
 
+        //Build DOC
+        $doc['tz']   = $trustzone[$method] ?? '';
+        $doc['note'] = (string)$reflect_method->getDocComment();
+
         //Build param info
         foreach ($params as $param) {
             $data['name']    = $param->getName();
@@ -137,12 +141,10 @@ class doc extends factory
             if (!$data['require']) {
                 $data['default'] = $param->getDefaultValue();
             }
-        }
 
-        //Build DOC
-        $doc['tz']    = $trustzone[$method] ?? '';
-        $doc['note']  = (string)$reflect_method->getDocComment();
-        $doc['param'] = &$data;
+            //Add param info
+            $doc['param'][] = $data;
+        }
 
         unset($command, $data, $class, $method, $reflect_class, $reflect_method, $trustzone, $params, $param);
         return $doc;
