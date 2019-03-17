@@ -297,7 +297,7 @@ class crypt extends factory
 
         //Encrypt signature
         $mix = '' === $rsa_key ? (string)base64_encode($mix) : $this->rsa_encrypt($mix, $rsa_key);
-        $sig = '' !== $mix ? $mix . '-' . $this->encrypt($string, $key) : '';
+        $sig = '' !== $mix ? $mix . '.' . $this->encrypt($string, $key) : '';
 
         unset($string, $rsa_key, $key, $mix);
         return $sig;
@@ -315,11 +315,11 @@ class crypt extends factory
     public function verify(string $string, string $rsa_key = ''): string
     {
         //Check signature
-        if (false === strpos($string, '-')) {
+        if (false === strpos($string, '.')) {
             return '';
         }
 
-        list($mix, $enc) = explode('-', $string, 2);
+        list($mix, $enc) = explode('.', $string, 2);
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? (string)base64_decode($mix, true) : $this->rsa_decrypt($mix, $rsa_key);
