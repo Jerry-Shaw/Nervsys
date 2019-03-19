@@ -32,19 +32,24 @@ class router extends factory
      */
     public function __construct()
     {
-        if (false === $start = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
+        //Check PATH INFO
+        if (!isset($_SERVER['PATH_INFO'])) {
             return;
         }
 
-        $uri = explode('/', substr($_SERVER['REQUEST_URI'], $start + 1));
-        $cnt = count($uri);
+        //Cut off first slash
+        $path_info = substr($_SERVER['PATH_INFO'], 1);
 
+        //Get URI units
+        $unit = false !== strpos($path_info, '/') ? array_filter(explode('/', $path_info)) : [$path_info];
+
+        //Get CMD
+        parent::$cmd = strtr(array_shift($unit), self::SYMBOL);
+
+        //Map param
+        $cnt = count($unit);
         for ($i = 0; $i < $cnt; ++$i) {
-            if (0 === $i) {
-                parent::$cmd = strtr($uri[$i], self::SYMBOL);
-            } else {
-                parent::$data[$uri[$i]] = $uri[++$i] ?? null;
-            }
+            parent::$data[$unit[$i]] = $unit[++$i] ?? null;
         }
     }
 }
