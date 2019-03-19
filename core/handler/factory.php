@@ -28,6 +28,25 @@ class factory extends system
     private static $storage = [];
 
     /**
+     * Get original object from called class using alias name
+     * Defined by only class name created last time
+     *
+     * @param string $alias
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    public static function use(string $alias): object
+    {
+        if (!isset(self::$storage[$key = self::build_alias(get_called_class(), $alias)])) {
+            throw new \Exception('Object "' . get_called_class() . ':' . $alias . '" NOT found!', E_USER_ERROR);
+        }
+
+        unset($alias);
+        return self::$storage[$key];
+    }
+
+    /**
      * Get new cloned object from called class or alias name
      * Defined by both class name and arguments
      *
@@ -36,17 +55,6 @@ class factory extends system
     public static function new(): object
     {
         return clone self::stock(__FUNCTION__, get_called_class(), func_get_args());
-    }
-
-    /**
-     * Get original object from called class or alias name
-     * Defined by only class name created last time
-     *
-     * @return $this
-     */
-    public static function use(): object
-    {
-        return self::stock(__FUNCTION__, get_called_class(), func_get_args());
     }
 
     /**
@@ -61,64 +69,6 @@ class factory extends system
     public static function obtain(string $class, array $param = []): object
     {
         return self::stock(__FUNCTION__, parent::build_name($class), $param);
-    }
-
-    /**
-     * Free from factory storage by name/alias
-     *
-     * @param string $name
-     */
-    public static function free(string $name = ''): void
-    {
-        $class = get_called_class();
-        $items = '' !== $name ? [$name, $class . '_AS_' . $name] : [$class];
-
-        //Remove from original storage
-        foreach ($items as $val) {
-            if (isset(self::$storage[$key = hash('md5', $val)])) {
-                self::$storage[$key] = null;
-                unset(self::$storage[$key]);
-            }
-        }
-
-        unset($name, $class, $items, $val, $key);
-    }
-
-    /**
-     * Copy object as alias and remove source
-     * Alias is merged with called class and alias name
-     * Different names should be using conditionally to avoid conflicts
-     *
-     * @param string $alias
-     *
-     * @return $this
-     */
-    public function as(string $alias): object
-    {
-        self::free($name = get_class($this));
-        self::$storage[$key = hash('md5', $name . '_AS_' . $alias)] = $this;
-
-        unset($alias, $name);
-        return self::$storage[$key];
-    }
-
-    /**
-     * Config class settings
-     *
-     * @param array $setting
-     *
-     * @return $this
-     */
-    public function config(array $setting): object
-    {
-        $setting = array_intersect_key($setting, get_object_vars($this));
-
-        foreach ($setting as $key => $val) {
-            $this->$key = $val;
-        }
-
-        unset($setting, $key, $val);
-        return $this;
     }
 
     /**
@@ -168,18 +118,8 @@ class factory extends system
      */
     private static function stock(string $type, string $class, array $param): object
     {
-        //Check alias calling
-        if (1 === count($param)
-            && is_string($param[0])
-            && isset(self::$storage[$key = hash('md5', $class . '_AS_' . $param[0])])) {
-            unset($type, $class, $param);
-            return self::$storage[$key];
-        }
-
         //Generate object key
-        $key = 'use' === $type
-            ? hash('md5', $type . ':' . $class)
-            : hash('md5', $type . ':' . $class . ':' . json_encode($param));
+        $key = hash('md5', $type . ':' . $class . ':' . json_encode($param));
 
         //Create object and save to storage
         if (!isset(self::$storage[$key])) {
@@ -188,5 +128,72 @@ class factory extends system
 
         unset($type, $class, $param);
         return self::$storage[$key];
+    }
+
+    /**
+     * Build alias name for a class
+     *
+     * @param string $class
+     * @param string $alias
+     *
+     * @return string
+     */
+    private static function build_alias(string $class, string $alias): string
+    {
+        $hash = hash('md5', $class . ':' . $alias);
+
+        unset($class, $alias);
+        return $hash;
+    }
+
+    /**
+     * Config class settings
+     *
+     * @param array $setting
+     *
+     * @return $this
+     */
+    public function config(array $setting): object
+    {
+        $setting = array_intersect_key($setting, get_object_vars($this));
+
+        foreach ($setting as $key => $val) {
+            $this->$key = $val;
+        }
+
+        unset($setting, $key, $val);
+        return $this;
+    }
+
+    /**
+     * Copy object as alias and remove source
+     * Alias is merged with called class and alias name
+     * Different names should be using conditionally to avoid conflicts
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function as(string $alias): object
+    {
+        self::$storage[$key = self::build_alias(get_class($this), $alias)] = &$this;
+
+        unset($alias);
+        return self::$storage[$key];
+    }
+
+    /**
+     * Free from factory storage
+     */
+    public function free(): void
+    {
+        if (!empty($list = array_keys(self::$storage, $this, true))) {
+            foreach ($list as $key) {
+                self::$storage[$key] = null;
+                unset(self::$storage[$key]);
+            }
+        }
+
+        unset($list, $key);
     }
 }
