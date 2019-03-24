@@ -28,8 +28,8 @@ class factory extends system
     private static $storage = [];
 
     /**
-     * Get original object from called class using alias name
-     * Defined by only class name created last time
+     * Get original object from called class with alias
+     * Defined by class created from "as"
      *
      * @param string $alias
      *
@@ -47,8 +47,8 @@ class factory extends system
     }
 
     /**
-     * Get new cloned object from called class or alias name
-     * Defined by both class name and arguments
+     * Get new cloned object from called class
+     * Defined by class and arguments
      *
      * @return $this
      */
@@ -59,7 +59,7 @@ class factory extends system
 
     /**
      * Obtain original object from another class
-     * Defined by both class name and arguments
+     * Defined by class and arguments
      *
      * @param string $class
      * @param array  $param
@@ -118,11 +118,8 @@ class factory extends system
      */
     private static function stock(string $type, string $class, array $param): object
     {
-        //Generate object key
-        $key = hash('md5', $type . ':' . $class . ':' . json_encode($param));
-
         //Create object and save to storage
-        if (!isset(self::$storage[$key])) {
+        if (!isset(self::$storage[$key = hash('md5', $type . ':' . $class . ':' . json_encode($param))])) {
             self::$storage[$key] = !empty($param) ? new $class(...$param) : new $class();
         }
 
@@ -131,7 +128,7 @@ class factory extends system
     }
 
     /**
-     * Build alias name for a class
+     * Build alias key for a class
      *
      * @param string $class
      * @param string $alias
@@ -140,10 +137,10 @@ class factory extends system
      */
     private static function build_alias(string $class, string $alias): string
     {
-        $hash = hash('md5', $class . ':' . $alias);
+        $key = hash('md5', $class . ':' . $alias);
 
         unset($class, $alias);
-        return $hash;
+        return $key;
     }
 
     /**
@@ -166,34 +163,36 @@ class factory extends system
     }
 
     /**
-     * Copy object as alias and remove source
-     * Alias is merged with called class and alias name
-     * Different names should be using conditionally to avoid conflicts
-     *
-     * @param string $alias
-     *
-     * @return $this
-     */
-    public function as(string $alias): object
-    {
-        self::$storage[$key = self::build_alias(get_class($this), $alias)] = &$this;
-
-        unset($alias);
-        return self::$storage[$key];
-    }
-
-    /**
      * Free from factory storage
      */
     public function free(): void
     {
-        if (!empty($list = array_keys(self::$storage, $this, true))) {
-            foreach ($list as $key) {
-                self::$storage[$key] = null;
-                unset(self::$storage[$key]);
-            }
+        if (empty($list = array_keys(self::$storage, $this, true))) {
+            return;
+        }
+
+        foreach ($list as $key) {
+            self::$storage[$key] = null;
+            unset(self::$storage[$key]);
         }
 
         unset($list, $key);
+    }
+
+    /**
+     * Copy object as alias (overwrite)
+     *
+     * @param string $alias
+     */
+    public function as(string $alias): void
+    {
+        //Remove existed object
+        if (isset(self::$storage[$key = self::build_alias(get_class($this), $alias)])) {
+            unset(self::$storage[$key]);
+        }
+
+        //Copy object
+        self::$storage[$key] = &$this;
+        unset($alias, $key);
     }
 }
