@@ -144,7 +144,7 @@ class factory extends system
     }
 
     /**
-     * Config class settings
+     * Configure class properties
      *
      * @param array $setting
      *
@@ -163,36 +163,43 @@ class factory extends system
     }
 
     /**
-     * Free from factory storage
-     */
-    public function free(): void
-    {
-        if (empty($list = array_keys(self::$storage, $this, true))) {
-            return;
-        }
-
-        foreach ($list as $key) {
-            self::$storage[$key] = null;
-            unset(self::$storage[$key]);
-        }
-
-        unset($list, $key);
-    }
-
-    /**
      * Copy object as alias (overwrite)
      *
      * @param string $alias
+     *
+     * @return $this
      */
-    public function as(string $alias): void
+    public function as(string $alias): object
     {
         //Remove existed object
         if (isset(self::$storage[$key = self::build_alias(get_class($this), $alias)])) {
+            self::$storage[$key] = null;
             unset(self::$storage[$key]);
         }
 
         //Copy object
         self::$storage[$key] = &$this;
+
         unset($alias, $key);
+        return $this;
+    }
+
+    /**
+     * Free from alias storage
+     *
+     * @param string $alias
+     */
+    public function free(string $alias = ''): void
+    {
+        //Find target keys
+        $list = '' === $alias ? array_keys(self::$storage, $this, true) : [self::build_alias(get_class($this), $alias)];
+
+        //Remove from storage
+        foreach ($list as $key) {
+            self::$storage[$key] = null;
+            unset(self::$storage[$key]);
+        }
+
+        unset($alias, $list, $key);
     }
 }
