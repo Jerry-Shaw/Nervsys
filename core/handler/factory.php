@@ -34,12 +34,11 @@ class factory extends system
      * @param string $alias
      *
      * @return $this
-     * @throws \Exception
      */
     public static function use(string $alias): object
     {
         if (!isset(self::$storage[$key = self::build_alias(get_called_class(), $alias)])) {
-            throw new \Exception('Object "' . get_called_class() . ':' . $alias . '" NOT found!', E_USER_ERROR);
+            error::exception_handler(new \Exception('Object "' . get_called_class() . ':' . $alias . '" NOT found!', E_USER_ERROR));
         }
 
         unset($alias);
