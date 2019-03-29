@@ -443,7 +443,7 @@ class pdo_mysql extends pdo
      */
     private function rand_key(string $key): string
     {
-        return ':' . $key . '_' . substr(hash('md5', uniqid(mt_rand(), true)), 0, 4);
+        return ':' . strtr($key, '.', '_') . '_' . substr(hash('md5', uniqid(mt_rand(), true)), 0, 4);
     }
 
     /**
