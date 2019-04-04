@@ -122,7 +122,7 @@ class http extends factory
             throw new \Exception('No URL found! At least one URL is required to process cURL.', E_USER_NOTICE);
         }
 
-        $item = reset($this->jobs);
+        $item = current($this->jobs);
 
         $unit = $this->get_unit($item['url']);
 
