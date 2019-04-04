@@ -135,7 +135,9 @@ class system extends command
      */
     public static function stop(): void
     {
-        output::flush() && exit;
+        //Flush result & exit
+        output::flush();
+        exit;
     }
 
     /**
