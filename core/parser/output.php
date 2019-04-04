@@ -45,12 +45,12 @@ class output extends system
 
         //Reduce array result
         if (1 === count(parent::$result)) {
-            parent::$result = reset(parent::$result);
+            parent::$result = current(parent::$result);
         }
 
         //Merge error data
         if (!empty(parent::$error)) {
-            parent::$result = parent::$error + ['data' => parent::$result];
+            parent::$result = empty(parent::$result) ? parent::$error : parent::$error + ['data' => parent::$result];
         }
 
         //Check MIME-Type
