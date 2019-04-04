@@ -174,9 +174,7 @@ class system extends command
         }
 
         //Validate IP address (IPV4 & IPV6)
-        $remote_ip = filter_var($remote_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
-
-        return (string)$remote_ip;
+        return (string)filter_var($remote_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
     }
 
     /**
