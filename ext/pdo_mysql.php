@@ -455,7 +455,13 @@ class pdo_mysql extends pdo
     private function set_action(string $action, string $table): void
     {
         if ('' === $table) {
-            $table = strtr(get_class($this), '\\', '_');
+            $table = get_class($this);
+
+            if (false !== $pos = strrpos($table, '\\')) {
+                $table = substr($table, $pos + 1);
+            }
+
+            unset($pos);
         }
 
         $this->params['action'] = &$action;
