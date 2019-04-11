@@ -1,5 +1,5 @@
 {
-    "name": "jerry/ns",
+    "name": "ns/ns",
     "description": "A very slight framework for universal API controlling.",
     "type": "project",
     "license": "Apache-2.0",
