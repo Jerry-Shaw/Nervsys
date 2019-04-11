@@ -1,5 +1,5 @@
 {
-    "name": "Jerry/NS",
+    "name": "jerry/ns",
     "description": "A very slight framework for universal API controlling.",
     "type": "project",
     "license": "Apache-2.0",
@@ -8,6 +8,12 @@
             "name": "Jerry",
             "email": "27206617@qq.com"
         }
+    ],
+    "keywords": [
+        "ns",
+        "api",
+        "nervsys",
+        "framework"
     ],
     "require": {}
 }
