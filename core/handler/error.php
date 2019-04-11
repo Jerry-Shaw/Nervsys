@@ -122,8 +122,10 @@ class error extends system
         $context = [
             'Peak: ' . round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
             'Memory: ' . round(memory_get_usage(true) / 1048576, 4) . 'MB',
-            'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
-            'Trace: ' . PHP_EOL . $throwable->getTraceAsString()
+            'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms' . PHP_EOL,
+            //Append trace & params
+            'Trace: ' . PHP_EOL . $throwable->getTraceAsString() . PHP_EOL,
+            'Param: ' . PHP_EOL . json_encode(['cmd' => parent::$cmd] + parent::$data, 4034)
         ];
 
         //Keep logs
