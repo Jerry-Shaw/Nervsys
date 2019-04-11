@@ -1,5 +1,5 @@
 {
-    "name": "ns/ns",
+    "name": "nervsys/ns",
     "description": "A very slight framework for universal API controlling.",
     "type": "project",
     "license": "Apache-2.0",
