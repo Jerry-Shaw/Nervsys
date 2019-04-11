@@ -34,7 +34,11 @@ class pdo_mysql extends pdo
      */
     public function connect(): object
     {
-        $this->connect = parent::connect();
+        //Connect if NOT connected
+        if (is_null($this->connect)) {
+            $this->connect = parent::connect();
+        }
+
         return $this;
     }
 
