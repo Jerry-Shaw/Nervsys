@@ -57,7 +57,7 @@ class crypt_img extends crypt
         $codes['code'] = parent::sign(json_encode(['code' => $codes['code'], 'life' => time() + (0 < $this->life ? $this->life : 60)]));
 
         //Image properties
-        $font_file = __DIR__ . DIRECTORY_SEPARATOR . $this->font;
+        $font_file = __DIR__ . DIRECTORY_SEPARATOR . 'font' . DIRECTORY_SEPARATOR . $this->font;
 
         $font_height = (int)($this->height / 1.6);
         $font_width  = (int)($this->width / count($codes['char']));

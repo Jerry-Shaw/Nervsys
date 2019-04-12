@@ -16,8 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace ext;
+
 use core\handler\factory;
+
 class memcached extends factory
 {
     //Arguments
@@ -28,6 +31,7 @@ class memcached extends factory
     protected $timeout  = 10;
     //Connection pool
     private static $pool = [];
+
     /**
      * Memcached connector
      *
@@ -50,6 +54,7 @@ class memcached extends factory
         unset($key);
         return $memcached;
     }
+
     /**
      * Get cache
      *
@@ -66,21 +71,23 @@ class memcached extends factory
         }
         return $cache;
     }
+
     /**
      * Set cache
      *
      * @param string $key
-     * @param $value
-     * @param int $expiration
+     * @param        $value
+     * @param int    $expiration
      *
      * @return bool
      */
-    public function set(string $key,$value,int $expiration = 0): bool
+    public function set(string $key, $value, int $expiration = 0): bool
     {
-        $result = $this->connect()->set($this->prefix . $key, $value,$expiration);
+        $result = $this->connect()->set($this->prefix . $key, $value, $expiration);
         unset($key, $value);
         return $result;
     }
+
     /**
      * Append data to an existing string item
      *
@@ -91,9 +98,10 @@ class memcached extends factory
      */
     public function append(string $key, string $value): bool
     {
-        $result = $this->connect()->append($this->prefix . $key,$value);
+        $result = $this->connect()->append($this->prefix . $key, $value);
         return $result;
     }
+
     /**
      * Prepend data to an existing string item
      *
@@ -104,9 +112,10 @@ class memcached extends factory
      */
     public function prepend(string $key, string $value): bool
     {
-        $result = $this->connect()->prepend($this->prefix . $key,$value);
+        $result = $this->connect()->prepend($this->prefix . $key, $value);
         return $result;
     }
+
     /**
      * Delete cache
      *
@@ -119,33 +128,35 @@ class memcached extends factory
         $result = $this->connect()->delete($this->prefix . $key);
         return $result;
     }
+
     /**
      * decrement
      * Notice:  The element must be numeric
      *          If the operation would decrease the value below 0, the new value will be 0.
      *
      * @param string $key
-     * @param int $offset
+     * @param int    $offset
      *
      * @return int
      */
-    public function decrement(string $key,int $offset = 1): int
+    public function decrement(string $key, int $offset = 1): int
     {
-        $result = $this->connect()->decrement($this->prefix . $key,$offset);
+        $result = $this->connect()->decrement($this->prefix . $key, $offset);
         return $result;
     }
+
     /**
      * increment
      * Notice:  The element must be numeric
      *
      * @param string $key
-     * @param int $offset
+     * @param int    $offset
      *
      * @return int
      */
-    public function increment(string $key,int $offset = 1): int
+    public function increment(string $key, int $offset = 1): int
     {
-        $result = $this->connect()->increment($this->prefix . $key,$offset);
+        $result = $this->connect()->increment($this->prefix . $key, $offset);
         return $result;
     }
 }
