@@ -123,10 +123,45 @@ class error extends system
             'Peak: ' . round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
             'Memory: ' . round(memory_get_usage(true) / 1048576, 4) . 'MB',
             'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms' . PHP_EOL,
-            //Append trace & params
-            'Trace: ' . PHP_EOL . $throwable->getTraceAsString() . PHP_EOL,
-            'Param: ' . PHP_EOL . json_encode(['cmd' => parent::$cmd] + parent::$data, 4034)
+            //Append param & trace
+            'Param: ' . PHP_EOL . json_encode(['cmd' => parent::$cmd] + parent::$data, 4034) . PHP_EOL,
+            'Trace: ' . PHP_EOL . $throwable->getTraceAsString() . PHP_EOL
         ];
+
+        //Parse backtrace
+        $backtrace = debug_backtrace();
+        $backtrace = array_reverse($backtrace);
+
+        //Check last trace
+        $last_node = end($backtrace);
+
+        //Remove error handler
+        if ($last_node['class'] === __CLASS__) {
+            array_pop($backtrace);
+        }
+
+        unset($last_node);
+
+        //Simplify backtrace records
+        $trace_list = [];
+        foreach ($backtrace as $item) {
+            $msg = '"' . ($item['class'] ?? '') . ($item['type'] ?? '') . $item['function'] . '" called';
+
+            if (isset($item['file'])) {
+                $msg .= ' in "' . $item['file'] . '"';
+            }
+
+            if (isset($item['line'])) {
+                $msg .= ' on line ' . $item['line'];
+            }
+
+            $trace_list[] = $msg;
+        }
+
+        unset($backtrace, $item, $msg);
+
+        //Append backtrace records
+        $context[] = 'Backtrace: ' . PHP_EOL . implode(PHP_EOL, $trace_list);
 
         //Keep logs
         log::$level($message, $context);
@@ -135,6 +170,6 @@ class error extends system
         //Stop on error
         'error' === $level && parent::stop();
 
-        unset($throwable, $exception, $level, $message, $context);
+        unset($throwable, $exception, $level, $message, $context, $trace_list);
     }
 }
