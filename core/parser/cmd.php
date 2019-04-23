@@ -77,32 +77,44 @@ class cmd extends system
         //Mapping CGI config
         foreach (parent::$cgi as $name => $item) {
             if (!empty($keys = array_keys($cmd, $name, true))) {
-                //Replace CMD
+                //Full match replace
                 foreach ($keys as $key) {
                     $cmd[$key] = $item;
                 }
 
                 //Add param
                 parent::$param_cgi[$item] = $name;
+
+                unset($keys);
             } else {
+                //Partial match replace
                 foreach ($cmd as $key => $val) {
-                    if (0 !== strpos($val, $name)) {
+                    //Alias name length
+                    $len = strlen($name);
+
+                    //Find match position
+                    $pos = strpos($val, $name);
+
+                    //Skip middle part replace
+                    if (0 !== $pos && strlen($val) !== $pos + $len) {
                         continue;
                     }
 
                     //Replace CMD
-                    $cmd[$key] = substr_replace($val, $item, 0, strlen($name));
+                    $cmd[$key] = substr_replace($val, $item, $pos, $len);
 
                     //Add param
                     parent::$param_cgi[$cmd[$key]] = $val;
                 }
+
+                unset($len, $pos);
             }
         }
 
         //Build CMD
         $cmd = false !== strpos($val = implode('-', $cmd), '-') ? explode('-', $val) : [$val];
 
-        unset($name, $item, $keys, $key, $val);
+        unset($name, $item, $key, $val);
         return $cmd;
     }
 
