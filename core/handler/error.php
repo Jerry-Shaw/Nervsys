@@ -165,7 +165,7 @@ class error extends system
 
         //Keep logs
         log::$level($message, $context);
-        log::show($level, $message, $context);
+        log::display($level, $message, $context);
 
         //Stop on error
         'error' === $level && parent::stop();

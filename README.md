@@ -126,7 +126,8 @@ The words above are reserved by NervSys core. So that, they should be taken care
     notice = on
     info = on
     debug = on
-    show = on ; Output logs on screen
+    
+    display = on ; Display logs on screen
     
     Don't delete these levels, just change the value to "off" or "0", if there is no need to log them.
 

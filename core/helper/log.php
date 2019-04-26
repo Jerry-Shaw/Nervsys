@@ -121,15 +121,15 @@ class log extends system
     }
 
     /**
-     * Show logs
+     * Display logs
      *
      * @param string $level
      * @param string $message
      * @param array  $context
      */
-    public static function show(string $level, string $message, array $context): void
+    public static function display(string $level, string $message, array $context): void
     {
-        if (isset(parent::$log['show']) && 0 < (int)parent::$log['show']) {
+        if (isset(parent::$log['display']) && 0 < (int)parent::$log['display']) {
             parent::$logs .= self::format($level, $message, $context);
         }
 
