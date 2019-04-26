@@ -418,7 +418,7 @@ $class = class_name::new(arguments, ...)->as('alias_name');
 * Save it under alias name with configurations:  
 $class = class_name::new(arguments, ...)->config(array $settings)->as('alias_name');  
   
-* Get cloned object by its alisa name:  
+* Get cloned object by its alias name:  
 $cloned_class = class_name::new('alias_name');  
   
 * Save an object in the middle way:  
