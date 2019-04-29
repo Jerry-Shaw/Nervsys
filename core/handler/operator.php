@@ -220,6 +220,11 @@ class operator extends factory
     {
         $key = parent::$param_cgi[$class . '-' . $method] ?? (parent::$param_cgi[$class] ?? $class) . '/' . $method;
 
+        //Remove defined "app_path"
+        if ('' !== parent::$sys['app_path'] && 0 === strpos($key, parent::$sys['app_path'])) {
+            $key = substr($key, strlen(parent::$sys['app_path']));
+        }
+
         unset($class, $method);
         return $key;
     }
