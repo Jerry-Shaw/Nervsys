@@ -137,7 +137,7 @@ class data
                         is_array($input[$name]) || is_object($input[$name]) ? $data[] = (array)$input[$name] : $diff[] = $name;
                         break;
                     case 'string':
-                        is_string($input[$name]) || is_numeric($input[$name]) ? $data[] = (string)$input[$name] : $diff[] = $name;
+                        is_string($input[$name]) || is_numeric($input[$name]) ? $data[] = trim((string)$input[$name]) : $diff[] = $name;
                         break;
                     case 'object':
                         is_object($input[$name]) || is_array($input[$name]) ? $data[] = (object)$input[$name] : $diff[] = $name;
