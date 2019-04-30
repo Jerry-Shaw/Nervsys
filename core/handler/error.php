@@ -168,7 +168,10 @@ class error extends system
         log::display($level, $message, $context);
 
         //Stop on error
-        'error' === $level && parent::stop();
+        if ('error' === $level) {
+            http_response_code(500);
+            parent::stop();
+        }
 
         unset($throwable, $exception, $level, $message, $context, $trace_list);
     }
