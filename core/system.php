@@ -33,29 +33,37 @@ use core\pool\command;
 class system extends command
 {
     /**
-     * INIT state (S1)
-     * Initialize system
+     * ENV stage (S1)
+     * Set environment
      *
      * Steps:
      * 1. Load "system.ini" and parse settings.
      * 2. Set runtime values, detect CGI/CLI and TLS.
-     * 3. Check Cross-Origin Resource Sharing (CORS) permissions.
-     * 4. Execute all configured settings in "init" section of "system.ini".
      */
-    const STATE_INIT = 1;
+    const STAGE_ENV = 1;
 
     /**
-     * READ state (S2)
+     * INIT stage (S2)
+     * Initialize system
+     *
+     * Steps:
+     * 1. Check Cross-Origin Resource Sharing (CORS) permissions.
+     * 2. Execute all configured settings in "init" section of "system.ini".
+     */
+    const STAGE_INIT = 2;
+
+    /**
+     * READ stage (S3)
      * Read & parse input data
      *
      * Steps:
      * 1. Read and parse input data (REQUEST + JSON + XML).
      * 2. Save parsed data to process pool in non-overwrite mode.
      */
-    const STATE_READ = 2;
+    const STAGE_READ = 3;
 
     /**
-     * EXEC state (S3)
+     * EXEC stage (S4)
      * Execute input commands
      *
      * Steps:
@@ -64,52 +72,62 @@ class system extends command
      * 3. Execute script functions and external commands via CLI mode (available under CLI).
      * 4. Gathering results on calling every function or external command. Save to process result pool.
      */
-    const STATE_EXEC = 3;
+    const STAGE_EXEC = 4;
 
     /**
-     * FLUSH state (S4, default)
+     * FLUSH stage (S5, default)
      * Output results in preset format
      *
      * Steps:
      * 1. Output MIME-Type header.
      * 2. Output formatted result content.
      */
-    const STATE_FLUSH = 4;
+    const STAGE_FLUSH = 5;
 
     /**
      * Boot system
      *
-     * @param int $state
+     * @param int $stage
      */
-    public static function boot(int $state = self::STATE_FLUSH): void
+    public static function boot(int $stage = self::STAGE_FLUSH): void
     {
         /**
-         * INIT state (S1)
+         * ENV stage (S1)
          */
 
         self::load_cfg();
         self::config_env();
-        self::check_cors();
-        self::initial_sys();
 
-        //S1 state abort
-        if ($state === self::STATE_INIT) {
+        //S1 stage abort
+        if ($stage === self::STAGE_ENV) {
             return;
         }
 
         /**
-         * READ state (S2)
+         * INIT stage (S2)
+         */
+
+        self::validate_cors();
+        self::initialize_sys();
+
+        //S2 stage abort
+        if ($stage === self::STAGE_INIT) {
+            return;
+        }
+
+        /**
+         * READ stage (S3)
          */
 
         input::read();
 
-        //S2 state abort
-        if ($state === self::STATE_READ) {
+        //S3 stage abort
+        if ($stage === self::STAGE_READ) {
             return;
         }
 
         /**
-         * EXEC state (S3)
+         * EXEC stage (S4)
          */
 
         '' !== self::$cmd && cmd::prepare();
@@ -117,17 +135,17 @@ class system extends command
         operator::exec_cgi();
         operator::exec_cli();
 
-        //S3 state abort
-        if ($state === self::STATE_EXEC) {
+        //S4 stage abort
+        if ($stage === self::STAGE_EXEC) {
             return;
         }
 
         /**
-         * FLUSH state (S4, default)
+         * FLUSH stage (S5, default)
          */
 
         output::flush();
-        unset($state);
+        unset($stage);
     }
 
     /**
@@ -336,9 +354,9 @@ class system extends command
     }
 
     /**
-     * Check CORS permissions
+     * Validate CORS permissions
      */
-    private static function check_cors(): void
+    private static function validate_cors(): void
     {
         //Check settings and ENV
         if (empty(self::$cors)
@@ -363,7 +381,7 @@ class system extends command
     /**
      * Initialize system
      */
-    private static function initial_sys(): void
+    private static function initialize_sys(): void
     {
         if (empty(self::$init)) {
             return;
