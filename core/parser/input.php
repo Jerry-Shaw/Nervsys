@@ -79,7 +79,7 @@ class input extends system
         }
 
         if (isset($_SERVER['PATH_INFO'])) {
-            parent::$data['cmd'] = $_SERVER['PATH_INFO'];
+            parent::$data['cmd'] = substr($_SERVER['PATH_INFO'], 1);
             return;
         }
 
@@ -91,8 +91,7 @@ class input extends system
             $to = strlen($_SERVER['REQUEST_URI']);
         }
 
-        parent::$data['cmd'] = substr($_SERVER['REQUEST_URI'], $from, $to - $from);
-
+        parent::$data['cmd'] = substr($_SERVER['REQUEST_URI'], $from + 1, $to - $from);
         unset($from, $to);
     }
 
@@ -203,7 +202,6 @@ class input extends system
          * p/pipe: CLI pipe data package (Transfer to CLI programs)
          * t/time: CLI read timeout (in microsecond, default: 0, wait till done)
          */
-        //Get options
         if (empty($opt = getopt('c:m:d:p:t:r', ['cmd:', 'mime:', 'data:', 'pipe:', 'time:', 'ret'], $optind))) {
             return $optind;
         }
