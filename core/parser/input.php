@@ -74,25 +74,31 @@ class input extends system
      */
     private static function read_url_cmd(): void
     {
+        //Check setting
         if (true !== parent::$sys['cmd_in_url']) {
             return;
         }
 
-        if (isset($_SERVER['PATH_INFO']) && false !== strpos($_SERVER['PATH_INFO'], '/', 1)) {
+        //Read from PATH_INFO
+        if (isset($_SERVER['PATH_INFO']) && 1 < strlen($_SERVER['PATH_INFO'])) {
             parent::$data['cmd'] = substr($_SERVER['PATH_INFO'], 1);
             return;
         }
 
+        //Read from REQUEST_URI
         if (false === $from = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
             return;
         }
 
-        if (false === $to = strpos($_SERVER['REQUEST_URI'], '?', $from)) {
-            $to = strlen($_SERVER['REQUEST_URI']);
+        if (false === $stop = strpos($_SERVER['REQUEST_URI'], '?')) {
+            $stop = strlen($_SERVER['REQUEST_URI']);
         }
 
-        parent::$data['cmd'] = substr($_SERVER['REQUEST_URI'], $from + 1, $to - $from);
-        unset($from, $to);
+        if (1 < $len = $stop - $from) {
+            parent::$data['cmd'] = substr($_SERVER['REQUEST_URI'], $from + 1, $len);
+        }
+
+        unset($from, $stop, $len);
     }
 
     /**
