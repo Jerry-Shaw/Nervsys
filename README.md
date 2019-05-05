@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.2.18  
+Stable version: 7.2.20  
 Extension version: 2.0  
 [Unit Test Suites](https://github.com/NervSys/tests)  
   
@@ -49,13 +49,10 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │     │       ├─input.php                   input data parser
     │     │       ├─output.php                  output data parser
     │     │       └─trustzone.php               TrustZone data parser
-    │     ├─pool/
-    │     │     ├─command.php                   command data pool
-    │     │     ├─process.php                   process date poll
-    │     │     └─setting.php                   setting data pool
     │     ├─system.ini                          system setting file
     │     └─system.php                          system script file
     ├─ext/
+    │    ├─font/
     │    ├─lib/
     │    │    └─key.php                         keygen interface
     │    ├─crypt.php                            Encrypt/decrypt extension
@@ -81,7 +78,6 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │    ├─socket.php                           Socket extension
     │    ├─upload.php                           Upload extension
     │    └─...
-    ├─font/
     ├─logs/
     └─api.php                                   API entry script
 
@@ -104,13 +100,21 @@ The words above are reserved by NervSys core. So that, they should be taken care
 
 ## Config "system.ini"
 
-"system.ini" locates right under the "core" folder, which contains most of the important setting sections.
+"system.ini" locates right under the "core" folder, which contains most of the important setting sections.  
+Always remember, do NOT delete any entry or section from "system.ini".  
 
 ### SYS
 
     [SYS]
-    Holds system settings
+    ; TimeZone
     timezone = PRC
+    
+    ; Application directory name
+    ; Set to empty if all app folders laying right under root directory
+    app_path = app
+    
+    ; Enable reading "cmd" content from URL
+    cmd_in_url = on
 
 ### LOG
 
