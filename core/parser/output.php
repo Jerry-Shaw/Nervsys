@@ -25,13 +25,13 @@ use core\system;
 class output extends system
 {
     //Pretty format
-    private static $pretty = false;
-
-    //Response MIME type (UTF-8, default: json)
     const MIME = [
         'json' => 'application/json',
         'xml'  => 'application/xml'
     ];
+
+    //Response MIME type (UTF-8, default: json)
+    private static $pretty = false;
 
     /**
      * Flush output content

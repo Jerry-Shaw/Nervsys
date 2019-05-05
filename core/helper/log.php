@@ -129,10 +129,11 @@ class log extends system
      */
     public static function display(string $level, string $message, array $context): void
     {
-        if (isset(parent::$log['display']) && 0 < (int)parent::$log['display']) {
-            parent::$logs .= self::format($level, $message, $context);
+        if (true !== parent::$log['display']) {
+            return;
         }
 
+        parent::$logs .= self::format($level, $message, $context);
         unset($level, $message, $context);
     }
 
@@ -145,25 +146,20 @@ class log extends system
      */
     private static function save(string $level, string $message, array $context): void
     {
-        //Check setting
-        if (isset(parent::$log[$level]) && 0 < (int)parent::$log[$level]) {
-            //Get log key & path
-            $key = $level . '-' . date('Ymd');
-            $log = parent::LOG_PATH . $key . '.log';
-
-            //Open log file
-            static $file = [];
-            if (!isset($file[$key])) {
-                $file[$key] = fopen($log, 'ab');
-            }
-
-            //Write log
-            fwrite($file[$key], self::format($level, $message, $context));
-
-            unset($key, $log, $file);
+        if (true !== parent::$log[$level]) {
+            return;
         }
 
-        unset($level, $message, $context);
+        $key = $level . '-' . date('Ymd');
+        $log = parent::LOG_PATH . $key . '.log';
+
+        static $file = [];
+        if (!isset($file[$key])) {
+            $file[$key] = fopen($log, 'ab');
+        }
+
+        fwrite($file[$key], self::format($level, $message, $context));
+        unset($level, $message, $context, $key, $log, $file);
     }
 
     /**

@@ -27,6 +27,9 @@ class factory extends system
     //Factory storage
     private static $storage = [];
 
+    //Reflection pool
+    private static $reflection = [];
+
     /**
      * Get original object from called class with alias
      * Defined by class created from "as"
@@ -37,7 +40,7 @@ class factory extends system
      */
     public static function use(string $alias): object
     {
-        if (!isset(self::$storage[$key = self::build_alias(get_called_class(), $alias)])) {
+        if (!isset(self::$storage[$key = self::get_alias(get_called_class(), $alias)])) {
             error::exception_handler(new \Exception('Object "' . get_called_class() . ':' . $alias . '" NOT found!', E_USER_ERROR));
         }
 
@@ -53,7 +56,7 @@ class factory extends system
      */
     public static function new(): object
     {
-        return clone self::stock(__FUNCTION__, get_called_class(), func_get_args());
+        return clone self::get_stock(__FUNCTION__, get_called_class(), func_get_args());
     }
 
     /**
@@ -67,11 +70,28 @@ class factory extends system
      */
     public static function obtain(string $class, array $param = []): object
     {
-        return self::stock(__FUNCTION__, parent::build_name($class), $param);
+        return self::get_stock(__FUNCTION__, self::build_name($class), $param);
     }
 
     /**
-     * Reflect method
+     * Get class reflection
+     *
+     * @param string $class
+     *
+     * @return \ReflectionClass
+     * @throws \ReflectionException
+     */
+    public static function reflect_class(string $class): \ReflectionClass
+    {
+        if (!isset(self::$reflection[$class])) {
+            self::$reflection[$class] = new \ReflectionClass($class);
+        }
+
+        return self::$reflection[$class];
+    }
+
+    /**
+     * Get method reflection
      *
      * @param string $class
      * @param string $method
@@ -79,67 +99,47 @@ class factory extends system
      * @return \ReflectionMethod
      * @throws \ReflectionException
      */
-    protected static function reflect(string $class, string $method): \ReflectionMethod
+    public static function reflect_method(string $class, string $method): \ReflectionMethod
     {
-        //Reflection list
-        static $list = [];
-
-        //Return constructor
-        if ('__construct' === $method && isset($list[$class])) {
-            return $list[$class];
-        }
-
-        //Get method reflection
-        $reflect = new \ReflectionMethod($class, $method);
-
-        //Check method visibility
-        if (!$reflect->isPublic()) {
-            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
-        }
-
-        //Save constructor reflection
-        if ('__construct' === $method) {
-            $list[$class] = &$reflect;
+        if (!isset(self::$reflection[$key = $class . '::' . $method])) {
+            self::$reflection[$key] = new \ReflectionMethod($class, $method);
         }
 
         unset($class, $method);
-        return $reflect;
+        return self::$reflection[$key];
     }
 
     /**
-     * Stock controller
-     *
-     * @param string $type
-     * @param string $class
-     * @param array  $param
-     *
-     * @return object
-     */
-    private static function stock(string $type, string $class, array $param): object
-    {
-        //Create object and save to storage
-        if (!isset(self::$storage[$key = hash('md5', $type . ':' . $class . ':' . json_encode($param))])) {
-            self::$storage[$key] = !empty($param) ? new $class(...$param) : new $class();
-        }
-
-        unset($type, $class, $param);
-        return self::$storage[$key];
-    }
-
-    /**
-     * Build alias key for a class
+     * Build class name
      *
      * @param string $class
-     * @param string $alias
      *
      * @return string
      */
-    private static function build_alias(string $class, string $alias): string
+    public static function build_name(string $class): string
     {
-        $key = hash('md5', $class . ':' . $alias);
+        return '\\' . trim(strtr($class, '/', '\\'), '\\');
+    }
 
-        unset($class, $alias);
-        return $key;
+    /**
+     * Build dependency list
+     *
+     * @param array $dep_list
+     */
+    public static function build_dep(array &$dep_list): void
+    {
+        foreach ($dep_list as $key => $dep) {
+            if (false === strpos($dep, '-')) {
+                $order  = $dep;
+                $method = '__construct';
+            } else {
+                list($order, $method) = explode('-', $dep, 2);
+            }
+
+            $dep_list[$key] = [$order, self::build_name($order), $method];
+        }
+
+        unset($key, $dep, $order, $method);
     }
 
     /**
@@ -170,13 +170,11 @@ class factory extends system
      */
     public function as(string $alias): object
     {
-        //Remove existed object
-        if (isset(self::$storage[$key = self::build_alias(get_class($this), $alias)])) {
+        if (isset(self::$storage[$key = self::get_alias(get_class($this), $alias)])) {
             self::$storage[$key] = null;
             unset(self::$storage[$key]);
         }
 
-        //Copy object
         self::$storage[$key] = &$this;
 
         unset($alias, $key);
@@ -190,15 +188,48 @@ class factory extends system
      */
     public function free(string $alias = ''): void
     {
-        //Find target keys
-        $list = '' === $alias ? array_keys(self::$storage, $this, true) : [self::build_alias(get_class($this), $alias)];
+        $list = '' === $alias ? array_keys(self::$storage, $this, true) : [self::get_alias(get_class($this), $alias)];
 
-        //Remove from storage
         foreach ($list as $key) {
             self::$storage[$key] = null;
             unset(self::$storage[$key]);
         }
 
         unset($alias, $list, $key);
+    }
+
+    /**
+     * Stock controller
+     *
+     * @param string $type
+     * @param string $class
+     * @param array  $param
+     *
+     * @return object
+     */
+    private static function get_stock(string $type, string $class, array $param): object
+    {
+        if (!isset(self::$storage[$key = hash('md5', $type . ':' . $class . ':' . json_encode($param))])) {
+            self::$storage[$key] = !empty($param) ? new $class(...$param) : new $class();
+        }
+
+        unset($type, $class, $param);
+        return self::$storage[$key];
+    }
+
+    /**
+     * Get alias key for a class
+     *
+     * @param string $class
+     * @param string $alias
+     *
+     * @return string
+     */
+    private static function get_alias(string $class, string $alias): string
+    {
+        $key = hash('md5', $class . ':' . $alias);
+
+        unset($class, $alias);
+        return $key;
     }
 }

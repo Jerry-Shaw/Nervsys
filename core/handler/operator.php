@@ -21,6 +21,7 @@
 namespace core\handler;
 
 use core\parser\data;
+
 use core\parser\trustzone;
 
 class operator extends factory
@@ -209,6 +210,52 @@ class operator extends factory
     }
 
     /**
+     * Build method caller
+     *
+     * @param string $order
+     * @param string $class
+     * @param string $method
+     *
+     * @throws \ReflectionException
+     */
+    private static function build_caller(string $order, string $class, string $method): void
+    {
+        //Get reflection
+        $reflect = parent::reflect_method($class, $method);
+
+        //Check method visibility
+        if (!$reflect->isPublic()) {
+            throw new \ReflectionException($class . '::' . $method . ': NOT for public!', E_USER_WARNING);
+        }
+
+        //Call constructor
+        if ('__construct' === $method) {
+            parent::obtain($class, data::build_argv($reflect, parent::$data));
+            unset($order, $class, $method, $reflect);
+            return;
+        }
+
+        //Using class object
+        if (!$reflect->isStatic()) {
+            $class = method_exists($class, '__construct')
+                ? parent::obtain($class, data::build_argv(parent::reflect_method($class, '__construct'), parent::$data))
+                : parent::obtain($class);
+        }
+
+        //Call method (with params)
+        $result = !empty($params = data::build_argv($reflect, parent::$data))
+            ? forward_static_call_array([$class, $method], $params)
+            : forward_static_call([$class, $method]);
+
+        //Save result (Try mapping keys)
+        if (isset($result)) {
+            parent::$result[self::build_key($order, $method)] = &$result;
+        }
+
+        unset($order, $class, $method, $reflect, $params, $result);
+    }
+
+    /**
      * Build mapped key
      *
      * @param string $class
@@ -227,47 +274,6 @@ class operator extends factory
 
         unset($class, $method);
         return $key;
-    }
-
-    /**
-     * Build method caller
-     *
-     * @param string $order
-     * @param string $class
-     * @param string $method
-     *
-     * @throws \ReflectionException
-     */
-    private static function build_caller(string $order, string $class, string $method): void
-    {
-        //Get reflection
-        $reflect = parent::reflect($class, $method);
-
-        //Call constructor
-        if ('__construct' === $method) {
-            parent::obtain($class, data::build_argv($reflect, parent::$data));
-            unset($order, $class, $method, $reflect);
-            return;
-        }
-
-        //Using class object
-        if (!$reflect->isStatic()) {
-            $class = method_exists($class, '__construct')
-                ? parent::obtain($class, data::build_argv(parent::reflect($class, '__construct'), parent::$data))
-                : parent::obtain($class);
-        }
-
-        //Call method (with params)
-        $result = !empty($params = data::build_argv($reflect, parent::$data))
-            ? forward_static_call_array([$class, $method], $params)
-            : forward_static_call([$class, $method]);
-
-        //Save result (Try mapping keys)
-        if (isset($result)) {
-            parent::$result[self::build_key($order, $method)] = &$result;
-        }
-
-        unset($order, $class, $method, $reflect, $params, $result);
     }
 
     /**

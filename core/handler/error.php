@@ -68,6 +68,23 @@ class error extends system
     ];
 
     /**
+     * Shutdown handler
+     *
+     * @throws \Exception
+     */
+    public static function shutdown_handler(): void
+    {
+        $error = error_get_last();
+
+        if (is_null($error) || 'error' !== self::LEVEL[$error['type']]) {
+            return;
+        }
+
+        self::exception_handler(new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']));
+        unset($error);
+    }
+
+    /**
      * Error handler
      *
      * @param int    $errno
@@ -85,19 +102,6 @@ class error extends system
 
         self::exception_handler(new \ErrorException($errstr, $errno, $errno, $errfile, $errline));
         unset($errno, $errstr, $errfile, $errline);
-    }
-
-    /**
-     * Shutdown handler
-     *
-     * @throws \Exception
-     */
-    public static function shutdown_handler(): void
-    {
-        if (!is_null($error = error_get_last()) && 'error' === self::LEVEL[$error['type']]) {
-            self::exception_handler(new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']));
-            unset($error);
-        }
     }
 
     /**
@@ -140,8 +144,6 @@ class error extends system
             array_pop($backtrace);
         }
 
-        unset($last_node);
-
         //Simplify backtrace records
         $trace_list = [];
         foreach ($backtrace as $item) {
@@ -158,21 +160,19 @@ class error extends system
             $trace_list[] = $msg;
         }
 
-        unset($backtrace, $item, $msg);
-
         //Append backtrace records
         $context[] = 'Backtrace: ' . PHP_EOL . implode(PHP_EOL, $trace_list);
+        unset($throwable, $exception, $backtrace, $last_node, $trace_list, $item, $msg);
 
         //Keep logs
         log::$level($message, $context);
         log::display($level, $message, $context);
 
-        //Set response code to "500"
+        //Set HTTP response code
         http_response_code(500);
 
         //Stop on error
         'error' === $level && parent::stop();
-
-        unset($throwable, $exception, $level, $message, $context, $trace_list);
+        unset($level, $message, $context);
     }
 }

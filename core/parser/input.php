@@ -39,6 +39,9 @@ class input extends system
     {
         //Read data
         if (!parent::$is_CLI) {
+            //Read CMD from URL
+            self::read_url_cmd();
+
             //Read HTTP & input
             self::read_http();
             self::read_raw();
@@ -64,6 +67,33 @@ class input extends system
         }
 
         unset($val);
+    }
+
+    /**
+     * Read CMD from URL
+     */
+    private static function read_url_cmd(): void
+    {
+        if (true !== parent::$sys['cmd_in_url']) {
+            return;
+        }
+
+        if (isset($_SERVER['PATH_INFO'])) {
+            parent::$data['cmd'] = $_SERVER['PATH_INFO'];
+            return;
+        }
+
+        if (false === $from = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
+            return;
+        }
+
+        if (false === $to = strpos($_SERVER['REQUEST_URI'], '?', $from)) {
+            $to = strlen($_SERVER['REQUEST_URI']);
+        }
+
+        parent::$data['cmd'] = substr($_SERVER['REQUEST_URI'], $from, $to - $from);
+
+        unset($from, $to);
     }
 
     /**
@@ -111,6 +141,49 @@ class input extends system
         }
 
         unset($input, $data);
+    }
+
+    /**
+     * Read argument data
+     *
+     * @param int $optind
+     */
+    private static function read_argv(int $optind): void
+    {
+        //Extract arguments
+        if (empty(parent::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
+            return;
+        }
+
+        //Recheck CMD
+        empty($value = self::opt_val(parent::$data, self::CMD)) || !is_string($value['data'])
+            ? parent::$data['cmd'] = data::decode(array_shift(parent::$param_cli['argv']))
+            : parent::$data[$value['key']] = &$value['data'];
+
+        unset($optind, $value);
+    }
+
+    /**
+     * Extract values from options
+     *
+     * @param array $opt
+     * @param array $keys
+     *
+     * @return array
+     */
+    private static function opt_val(array &$opt, array $keys): array
+    {
+        foreach ($keys as $key) {
+            if (isset($opt[$key])) {
+                $data = ['key' => &$key, 'data' => &$opt[$key]];
+
+                unset($opt[$key], $keys, $key);
+                return $data;
+            }
+        }
+
+        unset($keys, $key);
+        return [];
     }
 
     /**
@@ -165,49 +238,6 @@ class input extends system
 
         unset($opt, $val);
         return $optind;
-    }
-
-    /**
-     * Read argument data
-     *
-     * @param int $optind
-     */
-    private static function read_argv(int $optind): void
-    {
-        //Extract arguments
-        if (empty(parent::$param_cli['argv'] = array_slice($_SERVER['argv'], $optind))) {
-            return;
-        }
-
-        //Recheck CMD
-        empty($value = self::opt_val(parent::$data, self::CMD)) || !is_string($value['data'])
-            ? parent::$data['cmd'] = data::decode(array_shift(parent::$param_cli['argv']))
-            : parent::$data[$value['key']] = &$value['data'];
-
-        unset($optind, $value);
-    }
-
-    /**
-     * Extract values from options
-     *
-     * @param array $opt
-     * @param array $keys
-     *
-     * @return array
-     */
-    private static function opt_val(array &$opt, array $keys): array
-    {
-        foreach ($keys as $key) {
-            if (isset($opt[$key])) {
-                $data = ['key' => &$key, 'data' => &$opt[$key]];
-
-                unset($opt[$key], $keys, $key);
-                return $data;
-            }
-        }
-
-        unset($keys, $key);
-        return [];
     }
 
     /**

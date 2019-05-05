@@ -25,24 +25,6 @@ use core\handler\platform\lib\os;
 class platform implements os
 {
     /**
-     * Get OS class
-     *
-     * @return string
-     * @throws \Exception
-     */
-    private static function OS(): string
-    {
-        static $OS = '';
-
-        //Check and load OS class
-        if ('' === $OS && !class_exists($OS = __CLASS__ . '\\' . strtolower(PHP_OS))) {
-            throw new \Exception(PHP_OS . ': NOT support!', E_USER_ERROR);
-        }
-
-        return $OS;
-    }
-
-    /**
      * Get hardware hash
      *
      * @return string
@@ -88,5 +70,23 @@ class platform implements os
     public static function cmd_proc(string $cmd): string
     {
         return self::OS()::{__FUNCTION__}($cmd);
+    }
+
+    /**
+     * Get OS class
+     *
+     * @return string
+     * @throws \Exception
+     */
+    private static function OS(): string
+    {
+        static $OS = '';
+
+        //Check and load OS class
+        if ('' === $OS && !class_exists($OS = __CLASS__ . '\\' . strtolower(PHP_OS))) {
+            throw new \Exception(PHP_OS . ': NOT support!', E_USER_ERROR);
+        }
+
+        return $OS;
     }
 }

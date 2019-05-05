@@ -21,10 +21,8 @@
 //Declare strict types
 declare(strict_types = 1);
 
-require __DIR__ . '/core/env.php';
-
-//Init ENV
-\core\env::init();
+//Load system script
+require __DIR__ . '/core/system.php';
 
 //Boot system
 \core\system::boot();

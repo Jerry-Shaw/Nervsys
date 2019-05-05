@@ -20,6 +20,26 @@
 
 namespace core;
 
+//Require PHP version >= 7.2.0
+if (version_compare(PHP_VERSION, '7.2.0', '<')) {
+    exit('NervSys needs PHP 7.2.0 or higher!');
+}
+
+//Define NervSys version
+define('VER', '7.2.20');
+
+//Define absolute root path
+define('ROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
+
+//Register autoload function
+spl_autoload_register(
+    static function (string $class): void
+    {
+        require (false !== strpos($class, '\\') ? ROOT . strtr($class, '\\', DIRECTORY_SEPARATOR) : $class) . '.php';
+        unset($class);
+    }
+);
+
 use core\handler\error;
 use core\handler\operator;
 use core\handler\platform;
@@ -28,61 +48,126 @@ use core\parser\cmd;
 use core\parser\input;
 use core\parser\output;
 
-use core\pool\command;
+//Register error handler
+register_shutdown_function([error::class, 'shutdown_handler']);
+set_exception_handler([error::class, 'exception_handler']);
+set_error_handler([error::class, 'error_handler']);
 
-class system extends command
+//Config environment
+system::load_cfg();
+system::init_env();
+
+/**
+ * Class system
+ *
+ * @package core
+ */
+class system
 {
-    /**
-     * ENV stage (S1)
-     * Set environment
-     *
-     * Steps:
-     * 1. Load "system.ini" and parse settings.
-     * 2. Set runtime values, detect CGI/CLI and TLS.
-     */
-    const STAGE_ENV = 1;
+    //Log path
+    const LOG_PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
+
+    //Configuration file
+    const CFG_FILE = ROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
+
+    //Running stage codes
+    const STAGE_INIT  = 1;
+    const STAGE_READ  = 2;
+    const STAGE_EXEC  = 3;
+    const STAGE_FLUSH = 4;
+
+    //Process pool
+    public static $logs   = '';
+    public static $data   = [];
+    public static $error  = [];
+    public static $result = [];
+
+    //Runtime values
+    public static $cmd    = '';
+    public static $mime   = '';
+    public static $is_CLI = true;
+    public static $is_TLS = true;
+
+    //System settings
+    protected static $sys  = [];
+    protected static $log  = [];
+    protected static $cgi  = [];
+    protected static $cli  = [];
+    protected static $cors = [];
+    protected static $init = [];
+    protected static $load = [];
+    protected static $path = [];
+
+    //Parsed cmd & params
+    protected static $cmd_cgi   = [];
+    protected static $cmd_cli   = [];
+    protected static $param_cgi = [];
+    protected static $param_cli = ['argv' => [], 'pipe' => '', 'time' => 0, 'ret' => false];
+
+    //Error reporting level
+    protected static $err_lv = E_ALL | E_STRICT;
 
     /**
-     * INIT stage (S2)
-     * Initialize system
-     *
-     * Steps:
-     * 1. Check Cross-Origin Resource Sharing (CORS) permissions.
-     * 2. Execute all configured settings in "init" section of "system.ini".
+     * Load configurations
      */
-    const STAGE_INIT = 2;
+    public static function load_cfg(): void
+    {
+        //Parse configuration file
+        $conf = parse_ini_file(self::CFG_FILE, true, INI_SCANNER_TYPED);
+
+        //Set include path
+        if (!empty($conf['PATH'])) {
+            $conf['PATH'] = array_map(
+                static function (string $path): string
+                {
+                    $path = rtrim(strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
+
+                    if (0 !== strpos($path, '/') && 1 !== strpos($path, ':')) {
+                        $path = ROOT . $path;
+                    }
+
+                    return $path . DIRECTORY_SEPARATOR;
+                }, $conf['PATH']
+            );
+
+            set_include_path(implode(PATH_SEPARATOR, $conf['PATH']));
+        }
+
+        //Set setting values
+        foreach ($conf as $key => $val) {
+            $key = strtolower($key);
+
+            if (isset(self::$$key)) {
+                self::$$key = $val;
+            }
+        }
+
+        //Validate app_path
+        if ('' !== self::$sys['app_path']) {
+            self::$sys['app_path'] = trim(self::$sys['app_path'], " /\\\t\n\r\0\x0B") . '/';
+        }
+
+        unset($conf, $key, $val);
+    }
 
     /**
-     * READ stage (S3)
-     * Read & parse input data
-     *
-     * Steps:
-     * 1. Read and parse input data (REQUEST + JSON + XML).
-     * 2. Save parsed data to process pool in non-overwrite mode.
+     * Initialize environment values
      */
-    const STAGE_READ = 3;
+    public static function init_env(): void
+    {
+        //Set runtime values
+        set_time_limit(0);
+        ignore_user_abort(true);
+        error_reporting(self::$err_lv);
+        date_default_timezone_set('' !== self::$sys['timezone'] ? self::$sys['timezone'] : 'UTC');
 
-    /**
-     * EXEC stage (S4)
-     * Execute input commands
-     *
-     * Steps:
-     * 1. Prepare commands. Skip when already set.
-     * 2. Execute script functions order by commands via CGI mode.
-     * 3. Execute script functions and external commands via CLI mode (available under CLI).
-     * 4. Gathering results on calling every function or external command. Save to process result pool.
-     */
-    const STAGE_EXEC = 4;
+        //Set running mode
+        self::$is_CLI = 'cli' === PHP_SAPI;
 
-    /**
-     * FLUSH stage (S5, default)
-     * Output results in preset format
-     *
-     * Steps:
-     * 1. Output MIME-Type header.
-     * 2. Output formatted result content.
-     */
-    const STAGE_FLUSH = 5;
+        //Set TLS protocol
+        self::$is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+    }
 
     /**
      * Boot system
@@ -92,58 +177,64 @@ class system extends command
     public static function boot(int $stage = self::STAGE_FLUSH): void
     {
         /**
-         * ENV stage (S1)
+         * INIT stage (S1)
+         * Initialize system
+         *
+         * Steps:
+         * 1. Check Cross-Origin Resource Sharing (CORS) permissions.
+         * 2. Execute all configured settings in "init" section of "system.ini".
          */
-
-        self::load_cfg();
-        self::config_env();
-
-        //S1 stage abort
-        if ($stage === self::STAGE_ENV) {
-            return;
-        }
-
-        /**
-         * INIT stage (S2)
-         */
-
         self::validate_cors();
         self::initialize_sys();
 
-        //S2 stage abort
+        //S1 stage abort
         if ($stage === self::STAGE_INIT) {
             return;
         }
 
         /**
-         * READ stage (S3)
+         * READ stage (S2)
+         * Read & parse input data
+         *
+         * Steps:
+         * 1. Read and parse input data (REQUEST + JSON + XML).
+         * 2. Save parsed data to process pool in non-overwrite mode.
          */
-
         input::read();
 
-        //S3 stage abort
+        //S2 stage abort
         if ($stage === self::STAGE_READ) {
             return;
         }
 
         /**
-         * EXEC stage (S4)
+         * EXEC stage (S3)
+         * Execute input commands
+         *
+         * Steps:
+         * 1. Prepare commands. Skip when already set.
+         * 2. Execute script functions order by commands via CGI mode.
+         * 3. Execute script functions and external commands via CLI mode (available under CLI).
+         * 4. Gathering results on calling every function or external command. Save to process result pool.
          */
-
         '' !== self::$cmd && cmd::prepare();
 
         operator::exec_cgi();
         operator::exec_cli();
 
-        //S4 stage abort
+        //S3 stage abort
         if ($stage === self::STAGE_EXEC) {
             return;
         }
 
         /**
-         * FLUSH stage (S5, default)
+         * FLUSH stage (S4, default)
+         * Output results in preset format
+         *
+         * Steps:
+         * 1. Output MIME-Type header.
+         * 2. Output formatted result content.
          */
-
         output::flush();
         unset($stage);
     }
@@ -153,7 +244,6 @@ class system extends command
      */
     public static function stop(): void
     {
-        //Flush result & exit
         output::flush();
         exit;
     }
@@ -161,9 +251,11 @@ class system extends command
     /**
      * Get IP
      *
+     * @param bool $allow_proxy
+     *
      * @return string
      */
-    public static function get_ip(): string
+    public static function get_ip(bool $allow_proxy = false): string
     {
         //Get remote IP
         $remote_ip = $_SERVER['REMOTE_ADDR'];
@@ -183,7 +275,7 @@ class system extends command
             //Check remote IP with last proxy IP
             if ($remote_ip !== array_pop($forward_ip) || empty($forward_ip)) {
                 //High anonymity proxy detected
-                return '';
+                return $allow_proxy ? $remote_ip : '';
             }
 
             //Copy remote IP
@@ -252,108 +344,6 @@ class system extends command
     }
 
     /**
-     * Build dependency list
-     *
-     * @param array $dep_list
-     */
-    protected static function build_dep(array &$dep_list): void
-    {
-        foreach ($dep_list as $key => $dep) {
-            //Parse dependency
-            if (false === strpos($dep, '-')) {
-                $order  = $dep;
-                $method = '__construct';
-            } else {
-                list($order, $method) = explode('-', $dep, 2);
-            }
-
-            //Rebuild list
-            $dep_list[$key] = [$order, self::build_name($order), $method];
-        }
-
-        unset($key, $dep, $order, $method);
-    }
-
-    /**
-     * Build class name
-     *
-     * @param string $class
-     *
-     * @return string
-     */
-    protected static function build_name(string $class): string
-    {
-        return '\\' . trim(strtr($class, '/', '\\'), '\\');
-    }
-
-    /**
-     * Load configuration settings
-     */
-    private static function load_cfg(): void
-    {
-        //Load configuration file
-        $conf = parse_ini_file(parent::CFG_FILE, true);
-
-        //Set include path
-        if (isset($conf['PATH']) && !empty($conf['PATH'])) {
-            $conf['PATH'] = array_map(
-                static function (string $path): string
-                {
-                    $path = rtrim(strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
-
-                    if (0 !== strpos($path, '/') && 1 !== strpos($path, ':')) {
-                        $path = ROOT . $path;
-                    }
-
-                    return $path . DIRECTORY_SEPARATOR;
-                }, $conf['PATH']
-            );
-
-            set_include_path(implode(PATH_SEPARATOR, $conf['PATH']));
-        }
-
-        //Set setting values
-        foreach ($conf as $key => $val) {
-            $key = strtolower($key);
-
-            if (isset(self::$$key)) {
-                self::$$key = $val;
-            }
-        }
-
-        //Validate app_path
-        self::$sys['app_path'] = isset(self::$sys['app_path']) && '' !== self::$sys['app_path']
-            ? trim(self::$sys['app_path'], " /\\\t\n\r\0\x0B")
-            : '';
-
-        //Refill app_path
-        if ('' !== self::$sys['app_path']) {
-            self::$sys['app_path'] .= '/';
-        }
-
-        unset($conf, $key, $val);
-    }
-
-    /**
-     * Load environment values
-     */
-    private static function config_env(): void
-    {
-        //Set runtime values
-        set_time_limit(0);
-        ignore_user_abort(true);
-        error_reporting(self::$err_lv);
-        date_default_timezone_set(self::$sys['timezone']);
-
-        //Detect running mode
-        self::$is_CLI = 'cli' === PHP_SAPI;
-
-        //Detect TLS protocol
-        self::$is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
-    }
-
-    /**
      * Validate CORS permissions
      */
     private static function validate_cors(): void
@@ -393,10 +383,8 @@ class system extends command
         }
 
         try {
-            //Execute "init" settings
             operator::exec_dep($list);
         } catch (\Throwable $throwable) {
-            //Redirect exception code to error
             error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
             unset($throwable);
         }
