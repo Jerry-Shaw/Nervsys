@@ -170,13 +170,7 @@ class doc extends factory
                 $cmd[$key]['cmd'][] = array_map(
                     static function (string $item) use ($class): string
                     {
-                        $cmd = $class . '-' . $item;
-
-                        if ('' !== parent::$sys['app_path'] && 0 === strpos($cmd, parent::$sys['app_path'])) {
-                            $cmd = substr($cmd, strlen(parent::$sys['app_path']));
-                        }
-
-                        return $cmd;
+                        return parent::get_app_cmd($class . '-' . $item);
                     }, $method
                 );
             }

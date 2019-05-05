@@ -238,6 +238,7 @@ Always remember, do NOT delete any entry or section from "system.ini".
     [LOAD]
     This section works for all.
     This section holds "/subfolder/" startup initial functions.
+    When "app_path" entry was set, sub-folders are related to the "app_path" instead
     
     Example & explain:
     

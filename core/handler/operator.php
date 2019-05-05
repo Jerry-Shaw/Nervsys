@@ -58,7 +58,7 @@ class operator extends factory
 
             //Get module name
             if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
-                $module = strstr($module, '/', true);
+                $module = strstr(parent::get_app_cmd($module), '/', true);
             }
 
             try {
@@ -266,11 +266,7 @@ class operator extends factory
     private static function build_key(string $class, string $method): string
     {
         $key = parent::$param_cgi[$class . '-' . $method] ?? (parent::$param_cgi[$class] ?? $class) . '/' . $method;
-
-        //Remove defined "app_path"
-        if ('' !== parent::$sys['app_path'] && 0 === strpos($key, parent::$sys['app_path'])) {
-            $key = substr($key, strlen(parent::$sys['app_path']));
-        }
+        $key = parent::get_app_cmd($key);
 
         unset($class, $method);
         return $key;
