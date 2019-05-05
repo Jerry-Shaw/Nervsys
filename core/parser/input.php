@@ -78,7 +78,7 @@ class input extends system
             return;
         }
 
-        if (isset($_SERVER['PATH_INFO'])) {
+        if (isset($_SERVER['PATH_INFO']) && false !== strpos($_SERVER['PATH_INFO'], '/', 1)) {
             parent::$data['cmd'] = substr($_SERVER['PATH_INFO'], 1);
             return;
         }
