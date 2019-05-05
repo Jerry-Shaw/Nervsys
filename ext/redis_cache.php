@@ -22,11 +22,11 @@ namespace ext;
 
 class redis_cache extends redis
 {
-    /** @var \Redis $connect */
-    private $connect = null;
-
     //Cache key prefix
     const PREFIX = 'CAS:';
+
+    /** @var \Redis $connect */
+    private $connect = null;
 
     /**
      * Connect to Redis

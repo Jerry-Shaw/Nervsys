@@ -22,14 +22,14 @@ namespace ext;
 
 class redis_session extends redis
 {
+    //SESSION key prefix
+    const PREFIX = 'SESS:';
+
     //SESSION life
     private $life = 600;
 
     /** @var \Redis $connect */
     private $connect = null;
-
-    //SESSION key prefix
-    const PREFIX = 'SESS:';
 
     /**
      * redis_session constructor.

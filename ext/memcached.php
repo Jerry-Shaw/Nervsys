@@ -29,6 +29,7 @@ class memcached extends factory
     protected $prefix   = '';
     protected $compress = false;
     protected $timeout  = 10;
+
     //Connection pool
     private static $pool = [];
 
@@ -43,14 +44,18 @@ class memcached extends factory
         if (isset(self::$pool[$key = hash('crc32b', json_encode([$this->host, $this->port, $this->prefix, $this->compress]))])) {
             return self::$pool[$key];
         }
+
         $memcached = parent::obtain('Memcached');
         $memcached->addServer($this->host, $this->port);
         $memcached->setOption(\Memcached::OPT_COMPRESSION, $this->compress);
         $memcached->setOption(\Memcached::OPT_CONNECT_TIMEOUT, $this->timeout * 1000);
+
         if ($memcached->getStats() === false) {
             throw new \MemcachedException('Memcached: Host or Port ERROR!', E_USER_ERROR);
         }
+
         self::$pool[$key] = &$memcached;
+
         unset($key);
         return $memcached;
     }
@@ -60,15 +65,17 @@ class memcached extends factory
      *
      * @param string $key
      *
-     * @return
+     * @return mixed|null
      */
     public function get(string $key)
     {
         $memcached = $this->connect();
         $cache     = $memcached->get($this->prefix . $key);
+
         if ($memcached->getResultCode() === \Memcached::RES_NOTFOUND) {
             $cache = null;
         }
+
         return $cache;
     }
 
@@ -83,9 +90,7 @@ class memcached extends factory
      */
     public function set(string $key, $value, int $expiration = 0): bool
     {
-        $result = $this->connect()->set($this->prefix . $key, $value, $expiration);
-        unset($key, $value);
-        return $result;
+        return $this->connect()->set($this->prefix . $key, $value, $expiration);
     }
 
     /**
@@ -98,8 +103,7 @@ class memcached extends factory
      */
     public function append(string $key, string $value): bool
     {
-        $result = $this->connect()->append($this->prefix . $key, $value);
-        return $result;
+        return $this->connect()->append($this->prefix . $key, $value);
     }
 
     /**
@@ -112,8 +116,7 @@ class memcached extends factory
      */
     public function prepend(string $key, string $value): bool
     {
-        $result = $this->connect()->prepend($this->prefix . $key, $value);
-        return $result;
+        return $this->connect()->prepend($this->prefix . $key, $value);
     }
 
     /**
@@ -125,8 +128,7 @@ class memcached extends factory
      */
     public function delete(string $key): bool
     {
-        $result = $this->connect()->delete($this->prefix . $key);
-        return $result;
+        return $this->connect()->delete($this->prefix . $key);
     }
 
     /**
@@ -141,8 +143,7 @@ class memcached extends factory
      */
     public function decrement(string $key, int $offset = 1): int
     {
-        $result = $this->connect()->decrement($this->prefix . $key, $offset);
-        return $result;
+        return $this->connect()->decrement($this->prefix . $key, $offset);
     }
 
     /**
@@ -156,7 +157,6 @@ class memcached extends factory
      */
     public function increment(string $key, int $offset = 1): int
     {
-        $result = $this->connect()->increment($this->prefix . $key, $offset);
-        return $result;
+        return $this->connect()->increment($this->prefix . $key, $offset);
     }
 }

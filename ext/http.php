@@ -26,23 +26,23 @@ use core\handler\factory;
 
 class http extends factory
 {
-    //Job list
-    private $jobs = [];
-
-    //Default values
-    protected $http            = 'HTTP/2.0';                                               //HTTP Version
-    protected $accept          = 'text/plain,text/html,text/xml,application/json,*;q=0';   //Accept types
-    protected $connection      = 'keep-alive';                                             //Connection type
-    protected $user_agent      = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';          //User Agent string
-    protected $accept_charset  = 'UTF-8,*;q=0';                                            //Accept charset
-    protected $accept_encoding = 'gzip,deflate,identity,*;q=0';                            //Accept encoding
-    protected $accept_language = 'en-US,en,zh-CN,zh,*;q=0';                                //Accept language
-
     //Pre-defined content types
     const CONTENT_TYPE_XML     = 'application/xml; charset=UTF-8';
     const CONTENT_TYPE_JSON    = 'application/json; charset=UTF-8';
     const CONTENT_TYPE_DATA    = 'multipart/form-data';
     const CONTENT_TYPE_ENCODED = 'application/x-www-form-urlencoded';
+
+    protected $http       = 'HTTP/2.0';                                             //HTTP Version
+    protected $accept     = 'text/plain,text/html,text/xml,application/json,*;q=0'; //Accept types
+    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';        //User Agent string
+    protected $connection = 'keep-alive';                                           //Connection type
+
+    protected $accept_charset  = 'UTF-8,*;q=0';                 //Accept charset
+    protected $accept_encoding = 'gzip,deflate,identity,*;q=0'; //Accept encoding
+    protected $accept_language = 'en-US,en,zh-CN,zh,*;q=0';     //Accept language
+
+    //Job list
+    private $jobs = [];
 
     /**
      * Add cURL job
@@ -134,7 +134,7 @@ class http extends factory
 
         unset($unit);
 
-        $this->prep_params($item);
+        $this->prep_param($item);
         $this->prep_header($item);
         $this->prep_curl($item);
 
@@ -176,7 +176,7 @@ class http extends factory
 
             unset($unit);
 
-            $this->prep_params($item);
+            $this->prep_param($item);
             $this->prep_header($item);
             $this->prep_curl($item);
 
@@ -245,7 +245,7 @@ class http extends factory
      *
      * @param array $item
      */
-    private function prep_params(array &$item): void
+    private function prep_param(array &$item): void
     {
         //Prepare Content-Type
         if (!isset($item['content_type'])) {

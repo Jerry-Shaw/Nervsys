@@ -86,7 +86,7 @@ class doc extends factory
         }
 
         //Build CMD for API
-        $api = $this->build_api_cmd($api);
+        $api = $this->get_api_cmd($api);
 
         unset($path, $files, $item, $name, $dir, $script, $method, $class);
         return $api;
@@ -117,10 +117,10 @@ class doc extends factory
         $class = parent::build_name($class);
 
         //Build class reflection
-        $reflect_class = new \ReflectionClass($class);
+        $reflect_class = parent::reflect_class($class);
 
         //Get method reflection
-        $reflect_method = new \ReflectionMethod($class, $method);
+        $reflect_method = parent::reflect_method($class, $method);
 
         //Get TrustZone
         $trustzone = $this->get_trustzone($reflect_class);
@@ -151,61 +151,13 @@ class doc extends factory
     }
 
     /**
-     * Get opened methods
-     *
-     * @param string $class
-     *
-     * @return array
-     */
-    private function get_opened_api(string $class): array
-    {
-        //API
-        $api = [];
-
-        try {
-            //Build reflection
-            $reflect = new \ReflectionClass($class);
-
-            //Get TrustZone
-            $trustzone = $this->get_trustzone($reflect);
-
-            //Get public method
-            $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
-
-            //Get API method
-            foreach ($methods as $item) {
-                //Get method name
-                $method = $item->name;
-
-                //Skip exclude method
-                if (in_array($method, $this->exclude_func, true)) {
-                    continue;
-                }
-
-                //Skip NOT in TrustZone
-                if (!isset($trustzone['*']) && !isset($trustzone[$method]) && '__construct' !== $method) {
-                    continue;
-                }
-
-                //Save method
-                $api[] = $method;
-            }
-        } catch (\Throwable $throwable) {
-            $api[] = [$throwable->getMessage()];
-        }
-
-        unset($class, $reflect, $trustzone, $item, $methods, $method);
-        return $api;
-    }
-
-    /**
-     * Build CMD list
+     * Get CMD list
      *
      * @param array $api
      *
      * @return array
      */
-    private function build_api_cmd(array $api): array
+    private function get_api_cmd(array $api): array
     {
         $key = 0;
         $cmd = [];
@@ -218,7 +170,13 @@ class doc extends factory
                 $cmd[$key]['cmd'][] = array_map(
                     static function (string $item) use ($class): string
                     {
-                        return $class . '-' . $item;
+                        $cmd = $class . '-' . $item;
+
+                        if ('' !== parent::$sys['app_path'] && 0 === strpos($cmd, parent::$sys['app_path'])) {
+                            $cmd = substr($cmd, strlen(parent::$sys['app_path']));
+                        }
+
+                        return $cmd;
                     }, $method
                 );
             }
@@ -276,5 +234,53 @@ class doc extends factory
 
         unset($class, $key, $item);
         return $trustzone;
+    }
+
+    /**
+     * Get opened methods
+     *
+     * @param string $class
+     *
+     * @return array
+     */
+    private function get_opened_api(string $class): array
+    {
+        //API
+        $api = [];
+
+        try {
+            //Build reflection
+            $reflect = parent::reflect_class($class);
+
+            //Get TrustZone
+            $trustzone = $this->get_trustzone($reflect);
+
+            //Get public method
+            $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+            //Get API method
+            foreach ($methods as $item) {
+                //Get method name
+                $method = $item->name;
+
+                //Skip exclude method
+                if (in_array($method, $this->exclude_func, true)) {
+                    continue;
+                }
+
+                //Skip NOT in TrustZone
+                if (!isset($trustzone['*']) && !isset($trustzone[$method]) && '__construct' !== $method) {
+                    continue;
+                }
+
+                //Save method
+                $api[] = $method;
+            }
+        } catch (\Throwable $throwable) {
+            $api[] = [$throwable->getMessage()];
+        }
+
+        unset($class, $reflect, $trustzone, $item, $methods, $method);
+        return $api;
     }
 }

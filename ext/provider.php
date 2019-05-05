@@ -115,7 +115,7 @@ class provider extends factory
         //Build extend map
         $this->extends[$alias] = &$object;
 
-        $reflect = new \ReflectionClass($object);
+        $reflect = parent::reflect_class($object);
         $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
 
         //Build method map

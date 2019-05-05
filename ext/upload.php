@@ -24,21 +24,6 @@ use core\handler\factory;
 
 class upload extends factory
 {
-    //Allowed ext
-    protected $ext = [];
-
-    //Root path
-    protected $root = ROOT;
-
-    //Permission
-    protected $perm = 0664;
-
-    //Max size
-    protected $size = 20971520;
-
-    //File
-    private $file = [];
-
     //Default MIME-Type
     const MIME = [
         //docs
@@ -97,6 +82,21 @@ class upload extends factory
         UPLOAD_ERR_CANT_WRITE => 'Failed to write.',
         UPLOAD_ERR_EXTENSION  => 'Extension blocked.',
     ];
+
+    //Allowed ext
+    protected $ext = [];
+
+    //Root path
+    protected $root = ROOT;
+
+    //Permission
+    protected $perm = 0664;
+
+    //Max size
+    protected $size = 20971520;
+
+    //File
+    private $file = [];
 
     /**
      * Fetch upload file/base64

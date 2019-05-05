@@ -26,20 +26,6 @@ use core\handler\platform;
 
 class redis_queue extends redis
 {
-    //Expose "root" & "child"
-    public static $tz = 'root,child';
-
-    /** @var \Redis $connect */
-    private $connect = null;
-
-    //Child resources
-    private $child   = '';
-    private $reflect = [];
-
-    //Process properties
-    protected $runs = 10;
-    protected $exec = 200;
-
     //Wait properties
     const WAIT_IDLE = 3;
     const WAIT_SCAN = 60;
@@ -53,6 +39,19 @@ class redis_queue extends redis
     const PREFIX_CMD    = 'RQ:cmd:';
     const PREFIX_LIST   = 'RQ:list:';
     const PREFIX_WORKER = 'RQ:worker:';
+
+    //Expose "root" & "child"
+    public static $tz = 'root,child';
+
+    //Process properties
+    protected $runs = 10;
+    protected $exec = 200;
+
+    /** @var \Redis $connect */
+    private $connect = null;
+
+    //Child resources
+    private $child = '';
 
     /**
      * Connect to Redis
@@ -157,13 +156,15 @@ class redis_queue extends redis
     }
 
     /**
-     * Show process list
+     * Show queue length
      *
-     * @return array
+     * @param string $queue_key
+     *
+     * @return int
      */
-    public function show_process(): array
+    public function show_length(string $queue_key): int
     {
-        return $this->get_keys(self::KEY_WATCH_WORKER);
+        return (int)$this->connect->lLen($queue_key);
     }
 
     /**
@@ -177,15 +178,13 @@ class redis_queue extends redis
     }
 
     /**
-     * Show queue length
+     * Show process list
      *
-     * @param string $queue_key
-     *
-     * @return int
+     * @return array
      */
-    public function show_length(string $queue_key): int
+    public function show_process(): array
     {
-        return (int)$this->connect->lLen($queue_key);
+        return $this->get_keys(self::KEY_WATCH_WORKER);
     }
 
     /**
@@ -350,6 +349,45 @@ class redis_queue extends redis
     }
 
     /**
+     * Call child process
+     */
+    private function call_child(): void
+    {
+        //Count running processes
+        $runs = count($this->show_process());
+
+        if (0 >= $left = $this->runs - $runs + 1) {
+            return;
+        }
+
+        //Read queue list
+        $queue = $this->show_queue();
+
+        //Count jobs
+        $jobs = 0;
+        foreach ($queue as $key => $item) {
+            $jobs += $this->connect->lLen($key);
+        }
+
+        //Exit on no job
+        if (0 === $jobs) {
+            return;
+        }
+
+        //Count need processes
+        if ($left < $need = (ceil($jobs / $this->exec) - $runs + 1)) {
+            $need = &$left;
+        }
+
+        //Call child processes
+        for ($i = 0; $i < $need; ++$i) {
+            pclose(popen($this->child, 'r'));
+        }
+
+        unset($runs, $left, $queue, $jobs, $key, $item, $need, $i);
+    }
+
+    /**
      * Execute job
      *
      * @param string $data
@@ -398,7 +436,12 @@ class redis_queue extends redis
             //Execute jobs
             foreach ($job_list as $job) {
                 //Get reflection
-                $reflect = $this->reflect_method($job[0], $job[1]);
+                $reflect = parent::reflect_method($job[0], $job[1]);
+
+                //Check method visibility
+                if (!$reflect->isPublic()) {
+                    throw new \ReflectionException($job[0] . '::' . $job[1] . ': NOT for public!', E_USER_WARNING);
+                }
 
                 //Call constructor
                 if ('__construct' === $job[1]) {
@@ -409,7 +452,7 @@ class redis_queue extends redis
                 //Using class object
                 if (!$reflect->isStatic()) {
                     $job[0] = method_exists($job[0], '__construct')
-                        ? parent::obtain($job[0], data::build_argv($this->reflect_method($job[0], '__construct'), $input))
+                        ? parent::obtain($job[0], data::build_argv(parent::reflect_method($job[0], '__construct'), $input))
                         : parent::obtain($job[0]);
                 }
 
@@ -431,41 +474,6 @@ class redis_queue extends redis
     }
 
     /**
-     * Reflect method
-     * Store for process
-     *
-     * @param string $class
-     * @param string $method
-     *
-     * @return \ReflectionMethod
-     * @throws \ReflectionException
-     */
-    private function reflect_method(string $class, string $method): \ReflectionMethod
-    {
-        //Generate hash key
-        $hash_key = hash('crc32b', $command = $class . '::' . $method);
-
-        //Return when exist
-        if (isset($this->reflect[$hash_key])) {
-            return $this->reflect[$hash_key];
-        }
-
-        //Get method reflection
-        $reflect = new \ReflectionMethod($class, $method);
-
-        //Check method visibility
-        if (!$reflect->isPublic()) {
-            throw new \ReflectionException($command . ': NOT for public!', E_USER_WARNING);
-        }
-
-        //Store for process
-        $this->reflect[$hash_key] = &$reflect;
-
-        unset($class, $method, $command, $hash_key);
-        return $reflect;
-    }
-
-    /**
      * Check job
      * Only accept null & true
      *
@@ -483,44 +491,5 @@ class redis_queue extends redis
         }
 
         unset($data, $result, $json);
-    }
-
-    /**
-     * Call child process
-     */
-    private function call_child(): void
-    {
-        //Count running processes
-        $runs = count($this->show_process());
-
-        if (0 >= $left = $this->runs - $runs + 1) {
-            return;
-        }
-
-        //Read queue list
-        $queue = $this->show_queue();
-
-        //Count jobs
-        $jobs = 0;
-        foreach ($queue as $key => $item) {
-            $jobs += $this->connect->lLen($key);
-        }
-
-        //Exit on no job
-        if (0 === $jobs) {
-            return;
-        }
-
-        //Count need processes
-        if ($left < $need = (ceil($jobs / $this->exec) - $runs + 1)) {
-            $need = &$left;
-        }
-
-        //Call child processes
-        for ($i = 0; $i < $need; ++$i) {
-            pclose(popen($this->child, 'r'));
-        }
-
-        unset($runs, $left, $queue, $jobs, $key, $item, $need, $i);
     }
 }

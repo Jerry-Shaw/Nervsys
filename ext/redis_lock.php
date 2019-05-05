@@ -22,18 +22,20 @@ namespace ext;
 
 class redis_lock extends redis
 {
-    //Lock sets
+    //Key prefix
+    const PREFIX = 'LOCK:';
+
+    //Wait time
+    const WAIT = 1000;
+
+    //Retry limit
+    const RETRY = 10;
+
+    //Lock pool
     private $locks = [];
 
     /** @var \Redis $connect */
     private $connect = null;
-
-    //Lock key prefix
-    const PREFIX = 'LOCK:';
-
-    //Retry properties
-    const WAIT  = 1000;
-    const RETRY = 10;
 
     /**
      * Connect to Redis

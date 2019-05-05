@@ -68,7 +68,7 @@ class keygen implements key
         foreach ($unit as $k => $v) {
             $unit_key = substr($v, 0, 1);
 
-            if (self::valid_kv($k, $unit_key)) {
+            if (self::validate_kv($k, $unit_key)) {
                 $v = strrev($v);
             }
 
@@ -96,7 +96,7 @@ class keygen implements key
             $unit_key  = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
 
-            $unit[$k] = self::valid_kv($k, $unit_key) ? strrev($unit_item) : $unit_item;
+            $unit[$k] = self::validate_kv($k, $unit_key) ? strrev($unit_item) : $unit_item;
         }
 
         $key = implode($unit);
@@ -106,14 +106,14 @@ class keygen implements key
     }
 
     /**
-     * Valid k & v
+     * Validate k & v
      *
      * @param int    $k
      * @param string $v
      *
      * @return bool
      */
-    private static function valid_kv(int $k, string $v): bool
+    private static function validate_kv(int $k, string $v): bool
     {
         return 0 === ($k & ord($v));
     }

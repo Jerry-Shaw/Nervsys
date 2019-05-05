@@ -27,17 +27,17 @@ use core\handler\platform;
 
 class mpc extends factory
 {
-    //Job list
-    private $jobs = [];
-
-    //Basic command
-    private $php_cmd = '';
-
     //PHP key name in "system.ini"
     protected $php_key = 'php';
 
     //PHP executable path (in "system.ini" or configured)
     protected $php_exe = '';
+
+    //Basic command
+    private $php_cmd = '';
+
+    //Job list
+    private $jobs = [];
 
     /**
      * Add job

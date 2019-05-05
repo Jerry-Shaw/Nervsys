@@ -63,62 +63,6 @@ class crypt extends factory
     }
 
     /**
-     * Get AES Crypt keys
-     *
-     * @param string $key
-     *
-     * @return array
-     */
-    private function aes_keys(string $key): array
-    {
-        //Get iv length
-        $iv_len = openssl_cipher_iv_length($this->method);
-
-        //Parse keys from key string
-        $keys = $this->keygen::extract($key);
-
-        //Correct iv when length not match
-        switch ($iv_len <=> strlen($keys['iv'])) {
-            case -1:
-                $keys['iv'] = substr($keys['iv'], 0, $iv_len);
-                break;
-            case 1:
-                $keys['iv'] = str_pad($keys['iv'], $iv_len, $keys['iv']);
-                break;
-        }
-
-        unset($key, $iv_len);
-        return $keys;
-    }
-
-    /**
-     * Get RSA Key type
-     *
-     * @param string $key
-     *
-     * @return string
-     * @throws \Exception
-     */
-    private function rsa_type(string $key): string
-    {
-        $start = strlen('-----BEGIN ');
-        $end   = strpos($key, ' KEY-----', $start);
-
-        if (false === $end) {
-            throw new \Exception('RSA Key ERROR!', E_USER_ERROR);
-        }
-
-        $type = strtolower(substr($key, $start, $end - $start));
-
-        if (!in_array($type, ['public', 'private'], true)) {
-            throw new \Exception('RSA Key NOT support!', E_USER_ERROR);
-        }
-
-        unset($key, $start, $end);
-        return $type;
-    }
-
-    /**
      * Get RSA Key-Pairs (Public Key & Private Key)
      *
      * @return array
@@ -238,6 +182,23 @@ class crypt extends factory
     }
 
     /**
+     * Check Password
+     *
+     * @param string $input
+     * @param string $key
+     * @param string $hash
+     *
+     * @return bool
+     */
+    public function check_pwd(string $input, string $key, string $hash): bool
+    {
+        $result = $this->hash_pwd($input, $key) === $hash;
+
+        unset($input, $key, $hash);
+        return $result;
+    }
+
+    /**
      * Hash Password
      *
      * @param string $string
@@ -261,23 +222,6 @@ class crypt extends factory
 
         unset($key, $noises);
         return $string;
-    }
-
-    /**
-     * Check Password
-     *
-     * @param string $input
-     * @param string $key
-     * @param string $hash
-     *
-     * @return bool
-     */
-    public function check_pwd(string $input, string $key, string $hash): bool
-    {
-        $result = $this->hash_pwd($input, $key) === $hash;
-
-        unset($input, $key, $hash);
-        return $result;
     }
 
     /**
@@ -330,5 +274,61 @@ class crypt extends factory
 
         unset($string, $rsa_key, $mix, $enc, $key);
         return $sig;
+    }
+
+    /**
+     * Get AES Crypt keys
+     *
+     * @param string $key
+     *
+     * @return array
+     */
+    private function aes_keys(string $key): array
+    {
+        //Get iv length
+        $iv_len = openssl_cipher_iv_length($this->method);
+
+        //Parse keys from key string
+        $keys = $this->keygen::extract($key);
+
+        //Correct iv when length not match
+        switch ($iv_len <=> strlen($keys['iv'])) {
+            case -1:
+                $keys['iv'] = substr($keys['iv'], 0, $iv_len);
+                break;
+            case 1:
+                $keys['iv'] = str_pad($keys['iv'], $iv_len, $keys['iv']);
+                break;
+        }
+
+        unset($key, $iv_len);
+        return $keys;
+    }
+
+    /**
+     * Get RSA Key type
+     *
+     * @param string $key
+     *
+     * @return string
+     * @throws \Exception
+     */
+    private function rsa_type(string $key): string
+    {
+        $start = strlen('-----BEGIN ');
+        $end   = strpos($key, ' KEY-----', $start);
+
+        if (false === $end) {
+            throw new \Exception('RSA Key ERROR!', E_USER_ERROR);
+        }
+
+        $type = strtolower(substr($key, $start, $end - $start));
+
+        if (!in_array($type, ['public', 'private'], true)) {
+            throw new \Exception('RSA Key NOT support!', E_USER_ERROR);
+        }
+
+        unset($key, $start, $end);
+        return $type;
     }
 }
