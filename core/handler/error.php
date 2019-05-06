@@ -164,12 +164,9 @@ class error extends system
         $context[] = 'Backtrace: ' . PHP_EOL . implode(PHP_EOL, $trace_list);
         unset($throwable, $exception, $backtrace, $last_node, $trace_list, $item, $msg);
 
-        //Keep logs
+        //Process logs
         log::$level($message, $context);
         log::display($level, $message, $context);
-
-        //Set HTTP response code
-        http_response_code(500);
 
         //Stop on error
         'error' === $level && parent::stop();

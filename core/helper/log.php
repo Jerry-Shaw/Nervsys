@@ -129,11 +129,11 @@ class log extends system
      */
     public static function display(string $level, string $message, array $context): void
     {
-        if (true !== parent::$log['display']) {
-            return;
+        if (true === parent::$log['display']) {
+            http_response_code(500);
+            parent::$logs .= self::format($level, $message, $context);
         }
 
-        parent::$logs .= self::format($level, $message, $context);
         unset($level, $message, $context);
     }
 
