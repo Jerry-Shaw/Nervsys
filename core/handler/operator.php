@@ -62,12 +62,6 @@ class operator extends factory
             }
 
             try {
-                //Check & load class
-                if (!class_exists($class, false) && !self::load_class($class)) {
-                    //Class NOT exist
-                    continue;
-                }
-
                 //Execute load dependency
                 if (isset(parent::$load[$module])) {
                     if (is_string(parent::$load[$module])) {
@@ -75,6 +69,12 @@ class operator extends factory
                     }
 
                     self::exec_dep(parent::$load[$module]);
+                }
+
+                //Check & load class
+                if (!class_exists($class, false) && !self::load_class($class)) {
+                    //Class NOT exist
+                    continue;
                 }
 
                 //Check TrustZone permission
