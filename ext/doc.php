@@ -188,7 +188,7 @@ class doc extends factory
 
         //Get class name (remove "app_path")
         $class = '' !== parent::$sys['app_path'] ? substr($class, strlen(parent::$sys['app_path']) + 1) : ltrim($class, '\\');
-        $class = strtr($class, DIRECTORY_SEPARATOR, '/');
+        $class = strtr($class, '\\', '/');
 
         //Get API method
         foreach ($methods as $item) {
