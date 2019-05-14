@@ -133,7 +133,7 @@ class doc extends factory
         $comment_string = (string)$reflect_method->getDocComment();
 
         //Convert comment from string to array
-        $comment_array = '' !== $comment_string ? explode(PHP_EOL, $comment_string) : [];
+        $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
 
         //Find API name
         $doc['name'] = $this->find_named_comment($comment_array, '@api');
@@ -202,7 +202,7 @@ class doc extends factory
             $comment_string = (string)$item->getDocComment();
 
             //Convert comment from string to array
-            $comment_array = '' !== $comment_string ? explode(PHP_EOL, $comment_string) : [];
+            $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
 
             //Save method
             $api[] = [
