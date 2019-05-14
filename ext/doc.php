@@ -137,8 +137,9 @@ class doc extends factory
         //Convert comment from string to array
         $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
 
-        //Find API name
-        $doc['name'] = $this->find_named_comment($comment_array, '@api');
+        //Get API CMD & DESC
+        $doc['cmd']  = parent::get_app_cmd($name);
+        $doc['desc'] = $this->find_named_comment($comment_array, '@api');
 
         //Get parameters
         $params = $reflect_method->getParameters();
