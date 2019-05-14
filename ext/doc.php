@@ -88,13 +88,15 @@ class doc extends factory
             $module = strstr(substr($name, strlen(parent::$sys['app_path'])), DIRECTORY_SEPARATOR, true);
 
             //Save method list
-            $api[$module][] = $this->get_api_list($class, $methods, $trustzone);
+            if (!empty($list = $this->get_api_list($class, $methods, $trustzone))) {
+                $api[$module][substr(basename($name), 0, -4)] = $list;
+            }
         }
 
         //Build API CMD
         $api = $this->get_api_cmd($api);
 
-        unset($path, $files, $item, $name, $dir, $script, $trustzone, $class, $methods, $module);
+        unset($path, $files, $item, $name, $dir, $script, $trustzone, $class, $methods, $module, $list);
         return $api;
     }
 
@@ -228,8 +230,8 @@ class doc extends factory
         $cmd = [];
 
         foreach ($api as $dir => $item) {
-            $cmd[$key]['module'] = $dir;
-            $cmd[$key]['cmd']    = $item;
+            $cmd[$key]['module']   = $dir;
+            $cmd[$key]['api_list'] = $item;
 
             ++$key;
         }
