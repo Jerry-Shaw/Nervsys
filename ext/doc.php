@@ -88,7 +88,7 @@ class doc extends factory
             $module = strstr(substr($name, strlen(parent::$sys['app_path'])), DIRECTORY_SEPARATOR, true);
 
             //Save method list
-            $api[$module] = $this->get_api_list($class, $methods, $trustzone);
+            $api[$module][] = $this->get_api_list($class, $methods, $trustzone);
         }
 
         //Build API CMD
