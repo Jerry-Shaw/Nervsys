@@ -62,12 +62,11 @@ class doc extends factory
                 continue;
             }
 
-            //Get dirname
-            $dir = strstr($name, DIRECTORY_SEPARATOR, true);
-
-            //Skip paths or files in exclude path and ROOT path
-            if (in_array($dir, $this->exclude_path, true)) {
-                continue;
+            //Skip paths or files in exclude path settings
+            foreach ($this->exclude_path as $exclude) {
+                if (0 === strpos($name, $exclude)) {
+                    continue 2;
+                }
             }
 
             //Skip files NOT valid
@@ -96,7 +95,7 @@ class doc extends factory
         //Build API CMD
         $api = $this->get_api_cmd($api);
 
-        unset($path, $files, $item, $name, $dir, $script, $trustzone, $class, $methods, $module, $list);
+        unset($path, $files, $item, $name, $exclude, $script, $trustzone, $class, $methods, $module, $list);
         return $api;
     }
 
