@@ -30,14 +30,14 @@ class doc extends factory
     public $exclude_path = ['core', 'ext'];
 
     /**
-     * List API CMD
+     * Shaw API CMD
      *
      * @param string $path
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function list_api(string $path = '/'): array
+    public function show_api(string $path = '/'): array
     {
         $api = [];
 
@@ -198,14 +198,20 @@ class doc extends factory
                 continue;
             }
 
+            //Get comment string
+            $comment_string = (string)$item->getDocComment();
+
+            //Convert comment from string to array
+            $comment_array = '' !== $comment_string ? explode(PHP_EOL, $comment_string) : [];
+
             //Save method
             $api[] = [
-                'name'  => $this->find_named_comment([(string)$item->getDocComment()], '@api'),
+                'name'  => $this->find_named_comment($comment_array, '@api'),
                 'value' => $class . '-' . $name
             ];
         }
 
-        unset($class, $methods, $trustzone, $item, $name);
+        unset($class, $methods, $trustzone, $item, $name, $comment_string, $comment_array);
         return $api;
     }
 
