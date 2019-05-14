@@ -22,32 +22,29 @@ namespace ext;
 
 use core\handler\factory;
 
+use core\parser\trustzone;
+
 class doc extends factory
 {
-    //Define excludes
-    public $exclude_func = [];
+    //Define exclude paths
     public $exclude_path = ['core', 'ext'];
 
     /**
-     * doc constructor.
-     */
-    public function __construct()
-    {
-        //Read all functions from parent class
-        $this->exclude_func = get_class_methods(get_parent_class(__CLASS__));
-    }
-
-    /**
-     * Show API CMD
+     * List API CMD
      *
      * @param string $path
      *
      * @return array
+     * @throws \ReflectionException
      */
-    public function show_api(string $path): array
+    public function list_api(string $path = '/'): array
     {
-        //API
         $api = [];
+
+        //Refill path with app_path
+        if ('' !== parent::$sys['app_path']) {
+            $path = parent::$sys['app_path'] . DIRECTORY_SEPARATOR . $path;
+        }
 
         //Redirect path related to ROOT
         $path = ROOT . trim($path, " \t\n\r\0\x0B\\/");
@@ -79,61 +76,75 @@ class doc extends factory
                 continue;
             }
 
-            //Get opened API name
-            if (!empty($method = $this->get_opened_api($class = parent::build_name(substr($name, 0, -4))))) {
-                $api[$dir][strtr(ltrim($class, '\\'), DIRECTORY_SEPARATOR, '/')] = $method;
+            //Get TrustZone
+            if (empty($trustzone = trustzone::init($class = parent::build_name(substr($name, 0, -4))))) {
+                continue;
             }
+
+            //Get public method
+            $methods = parent::reflect_class($class)->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+            //Get base module name
+            $module = strstr(substr($name, strlen(parent::$sys['app_path'])), DIRECTORY_SEPARATOR, true);
+
+            //Save method list
+            $api[$module] = $this->get_api_list($class, $methods, $trustzone);
         }
 
-        //Build CMD for API
+        //Build API CMD
         $api = $this->get_api_cmd($api);
 
-        unset($path, $files, $item, $name, $dir, $script, $method, $class);
+        unset($path, $files, $item, $name, $dir, $script, $trustzone, $class, $methods, $module);
         return $api;
     }
 
     /**
      * Build DOC
      *
-     * @param string $command
+     * @param string $name
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function show_doc(string $command): array
+    public function show_doc(string $name): array
     {
-        //DOC
-        $doc = $data = [];
+        $doc = [];
 
-        //Fill CMD
-        if (false === strpos($command, '-')) {
-            $command .= '__construct';
+        //Refill path with app_path
+        if ('' !== parent::$sys['app_path']) {
+            $name = parent::$sys['app_path'] . $name;
+        }
+
+        //Refill CMD using "__construct"
+        if (false === strpos($name, '-')) {
+            $name .= '__construct';
         }
 
         //Get class & method
-        list($class, $method) = explode('-', $command);
+        list($class, $method) = explode('-', $name);
 
         //Build class name
         $class = parent::build_name($class);
 
-        //Build class reflection
-        $reflect_class = parent::reflect_class($class);
-
         //Get method reflection
         $reflect_method = parent::reflect_method($class, $method);
 
-        //Get TrustZone
-        $trustzone = $this->get_trustzone($reflect_class);
+        //Get comment string
+        $comment_string = (string)$reflect_method->getDocComment();
+
+        //Convert comment from string to array
+        $comment_array = '' !== $comment_string ? explode(PHP_EOL, $comment_string) : [];
+
+        //Find API name
+        $doc['name'] = $this->find_named_comment($comment_array, '@api');
 
         //Get parameters
         $params = $reflect_method->getParameters();
 
-        //Build DOC
-        $doc['tz']   = $trustzone[$method] ?? '';
-        $doc['note'] = (string)$reflect_method->getDocComment();
-
         //Build param info
         foreach ($params as $param) {
+            $data = [];
+
             $data['name']    = $param->getName();
             $data['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
             $data['require'] = !$param->isDefaultValueAvailable();
@@ -142,12 +153,60 @@ class doc extends factory
                 $data['default'] = $param->getDefaultValue();
             }
 
+            //Find param comment
+            $data['comment'] = $this->find_param_comment($comment_array, $data['name']);
+
             //Add param info
             $doc['param'][] = $data;
         }
 
-        unset($command, $data, $class, $method, $reflect_class, $reflect_method, $trustzone, $params, $param);
+        //Get TrustZone
+        $trustzone = $this->get_trustzone(parent::reflect_class($class));
+
+        //Add TrustZone and return comment
+        $doc['tz']   = $trustzone[$method] ?? '*';
+        $doc['note'] = $this->find_named_comment($comment_array, '@return');
+
+        unset($name, $class, $method, $reflect_method, $comment_string, $comment_array, $params, $param, $data, $type, $trustzone);
         return $doc;
+    }
+
+    /**
+     * Get API CMD list
+     *
+     * @param string $class
+     * @param array  $methods
+     * @param array  $trustzone
+     *
+     * @return array
+     */
+    private function get_api_list(string $class, array $methods, array $trustzone): array
+    {
+        $api = [];
+
+        //Get class name (remove "app_path")
+        $class = '' !== parent::$sys['app_path'] ? substr($class, strlen(parent::$sys['app_path']) + 1) : ltrim($class, '\\');
+        $class = strtr($class, DIRECTORY_SEPARATOR, '/');
+
+        //Get API method
+        foreach ($methods as $item) {
+            //Get method name
+            $name = $item->name;
+
+            //Skip exclude method
+            if (!in_array($name, $trustzone, true)) {
+                continue;
+            }
+
+            //Save method
+            $api[] = [
+                'name'  => $this->find_named_comment([(string)$item->getDocComment()], '@api'),
+                'value' => $class . '-' . $name
+            ];
+        }
+
+        unset($class, $methods, $trustzone, $item, $name);
+        return $api;
     }
 
     /**
@@ -164,21 +223,12 @@ class doc extends factory
 
         foreach ($api as $dir => $item) {
             $cmd[$key]['module'] = $dir;
-
-            //Build CMD
-            foreach ($item as $class => $method) {
-                $cmd[$key]['cmd'][] = array_map(
-                    static function (string $item) use ($class): string
-                    {
-                        return parent::get_app_cmd($class . '-' . $item);
-                    }, $method
-                );
-            }
+            $cmd[$key]['cmd']    = $item;
 
             ++$key;
         }
 
-        unset($api, $key, $dir, $item, $class, $method);
+        unset($api, $key, $dir, $item);
         return $cmd;
     }
 
@@ -211,7 +261,7 @@ class doc extends factory
                 $tmp[$item] = '';
             }
 
-            $trustzone = $tmp;
+            $trustzone = &$tmp;
             unset($tmp);
         }
 
@@ -231,50 +281,56 @@ class doc extends factory
     }
 
     /**
-     * Get opened methods
+     * Find param comment
      *
-     * @param string $class
+     * @param array  $comments
+     * @param string $param
      *
-     * @return array
+     * @return string
      */
-    private function get_opened_api(string $class): array
+    private function find_param_comment(array $comments, string $param): string
     {
-        //API
-        $api = [];
+        $comment = '';
 
-        try {
-            //Build reflection
-            $reflect = parent::reflect_class($class);
-
-            //Get TrustZone
-            $trustzone = $this->get_trustzone($reflect);
-
-            //Get public method
-            $methods = $reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
-
-            //Get API method
-            foreach ($methods as $item) {
-                //Get method name
-                $method = $item->name;
-
-                //Skip exclude method
-                if (in_array($method, $this->exclude_func, true)) {
-                    continue;
-                }
-
-                //Skip NOT in TrustZone
-                if (!isset($trustzone['*']) && !isset($trustzone[$method]) && '__construct' !== $method) {
-                    continue;
-                }
-
-                //Save method
-                $api[] = $method;
+        foreach ($comments as $item) {
+            if (false === strpos($item, '@param')) {
+                continue;
             }
-        } catch (\Throwable $throwable) {
-            $api[] = [$throwable->getMessage()];
+
+            if (false === $pos = strpos($item, '$' . $param)) {
+                continue;
+            }
+
+            $comment = trim(substr($item, $pos + strlen($param) + 1));
+            break;
         }
 
-        unset($class, $reflect, $trustzone, $item, $methods, $method);
-        return $api;
+        unset($comments, $param, $item, $pos);
+        return $comment;
+    }
+
+    /**
+     * Find named comment
+     *
+     * @param array  $comments
+     * @param string $name
+     *
+     * @return string
+     */
+    private function find_named_comment(array $comments, string $name): string
+    {
+        $comment = '';
+
+        foreach ($comments as $item) {
+            if (false === $pos = strpos($item, $name)) {
+                continue;
+            }
+
+            $comment = trim(substr($item, $pos + strlen($name)));
+            break;
+        }
+
+        unset($comments, $name, $item, $pos);
+        return $comment;
     }
 }
