@@ -56,18 +56,24 @@ class operator extends factory
             //Get class & name
             $class = parent::build_name($name = array_shift($item_list));
 
+            //Check auto call mode
+            if (empty($item_list) && !parent::$sys['auto_call_mode']) {
+                continue;
+            }
+
             //Get module name
             if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
                 $module = strstr(parent::get_app_cmd($module), '/', true);
             }
 
             try {
-                //Execute load dependency
+                //Process LOAD dependency
                 if (isset(parent::$load[$module])) {
                     if (is_string(parent::$load[$module])) {
                         parent::$load[$module] = [parent::$load[$module]];
                     }
 
+                    //Execute LOAD dependency
                     self::exec_dep(parent::$load[$module]);
                 }
 
