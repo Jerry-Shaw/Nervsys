@@ -116,6 +116,9 @@ Always remember, do NOT delete any entry or section from "system.ini".
     ; Enable reading "cmd" content from URL
     cmd_in_url = on
 
+    ; Enable/disable calling functions automatically when no specific function name was given
+    auto_call_mode = on
+
 ### LOG
 
     [LOG]
@@ -528,7 +531,10 @@ Calling in MULTIPLE class:
 api.php?cmd=DirA/ctr/TestA-DirA/TestB&param_a=xxx&param_b[]=yyy&param_b[]=zzz&param_c=xxx&param_d[]=yyy&param_d[]=zzz  
   
 Result:  
-All functions IN $tz will be looked over. Those ones which qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix. 
+All functions IN $tz will be looked over. Those ones which qualified both $tz & param checking will be called. All result data package will be put right under corresponding function name keys with class names as prefix.  
+
+Notice:  
+This calling method is controlled by "auto_call_mode" setting in "system.ini" for some secure issues.  
 
 
 ## Command Line
