@@ -22,32 +22,44 @@ namespace ext;
 
 use core\handler\factory;
 
-use core\parser\trustzone;
-
 class doc extends factory
 {
     //Define exclude paths
-    public $exclude_path = ['core', 'ext'];
+    protected $exclude_path = ['core', 'ext'];
 
     /**
-     * Shaw API CMD
+     * Add exclude path
      *
      * @param string $path
+     */
+    public function add_exclude(string $path): void
+    {
+        if ('' !== parent::$sys['app_path']) {
+            $path = trim(parent::$sys['app_path'], " \t\n\r\0\x0B\\/") . DIRECTORY_SEPARATOR . $path;
+        }
+
+        if (!is_dir(ROOT . $path)) {
+            return;
+        }
+
+        $this->exclude_path[] = strtr($path, '/', DIRECTORY_SEPARATOR);
+    }
+
+    /**
+     * Get structure list
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function show_api(string $path = '/'): array
+    public function get_struct(): array
     {
-        $api = [];
+        $path = ROOT;
+        $list = $struct = [];
 
         //Refill path with app_path
         if ('' !== parent::$sys['app_path']) {
-            $path = parent::$sys['app_path'] . DIRECTORY_SEPARATOR . $path;
+            $path .= trim(parent::$sys['app_path'], " \t\n\r\0\x0B\\/");
         }
-
-        //Redirect path related to ROOT
-        $path = ROOT . trim($path, " \t\n\r\0\x0B\\/");
 
         //Get all php scripts
         $files = file::get_list($path, '*.php', true);
@@ -75,28 +87,89 @@ class doc extends factory
                 continue;
             }
 
-            //Get TrustZone
-            if (empty($trustzone = trustzone::init($class = parent::build_name(substr($name, 0, -4))))) {
+            //Get class name
+            $class = substr($name, 0, -4);
+
+            //Reflect class
+            $class_reflect = parent::reflect_class(parent::build_name($class));
+
+            //Check TrustZone
+            if (empty($this->get_trustzone($class_reflect))) {
                 continue;
             }
 
-            //Get public method
-            $methods = parent::reflect_class($class)->getMethods(\ReflectionMethod::IS_PUBLIC);
+            //Process path
+            $path_unit = explode(DIRECTORY_SEPARATOR, $class);
 
-            //Get base module name
-            $module = strstr(substr($name, strlen(parent::$sys['app_path'])), DIRECTORY_SEPARATOR, true);
-
-            //Save method list
-            if (!empty($list = $this->get_api_list($class, $methods, $trustzone))) {
-                $api[$module][substr(basename($name), 0, -4)] = $list;
+            //Remove app_path
+            if ('' !== parent::$sys['app_path']) {
+                array_shift($path_unit);
             }
+
+            //Get file name
+            $file_name = array_pop($path_unit);
+
+            //Build path name
+            $path_name = implode('/', $path_unit);
+
+            //Get class comment
+            $comment_string = (string)$class_reflect->getDocComment();
+
+            //Convert comment from string to array
+            $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
+
+            //Save to struct
+            $struct[$path_name][] = [
+                'name'  => $this->find_named_comment($comment_array, '@api'),
+                'value' => $file_name
+            ];
         }
 
-        //Build API CMD
-        $api = $this->get_api_cmd($api);
+        //Format
+        foreach ($struct as $module => $item) {
+            $list[] = [
+                'module' => $module,
+                'class'  => $item
+            ];
+        }
 
-        unset($path, $files, $item, $name, $exclude, $script, $trustzone, $class, $methods, $module, $list);
-        return $api;
+        unset($path, $struct, $files, $item, $name, $exclude, $script, $class, $class_reflect, $path_unit, $file_name, $path_name, $comment_string, $comment_array, $module);
+        return $list;
+    }
+
+    /**
+     * Get API list from a class
+     *
+     * @param string $module
+     * @param string $class
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function get_api(string $module, string $class): array
+    {
+        //Build full module name
+        $module_name = '' !== parent::$sys['app_path']
+            ? trim(parent::$sys['app_path'], " \t\n\r\0\x0B\\/") . '\\' . $module
+            : $module;
+
+        //Build class name
+        $class_name = parent::build_name($module_name . '\\' . $class);
+
+        //Reflect class
+        $class_reflect = parent::reflect_class($class_name);
+
+        //Fetch TrustZone
+        $trustzone = array_keys($this->get_trustzone($class_reflect));
+
+        //Get public method
+        $method_list = $class_reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+        //Get API list
+        $list = $this->get_api_list($module . '/' . $class, $method_list, $trustzone);
+
+        unset($module, $class, $module_name, $class_name, $class_reflect, $trustzone, $method_list);
+        return $list;
     }
 
     /**
@@ -107,7 +180,7 @@ class doc extends factory
      * @return array
      * @throws \ReflectionException
      */
-    public function show_doc(string $name): array
+    public function get_doc(string $name): array
     {
         $doc = [];
 
@@ -186,10 +259,6 @@ class doc extends factory
     {
         $api = [];
 
-        //Get class name (remove "app_path")
-        $class = '' !== parent::$sys['app_path'] ? substr($class, strlen(parent::$sys['app_path']) + 1) : ltrim($class, '\\');
-        $class = strtr($class, '\\', '/');
-
         //Get API method
         foreach ($methods as $item) {
             //Get method name
@@ -215,29 +284,6 @@ class doc extends factory
 
         unset($class, $methods, $trustzone, $item, $name, $comment_string, $comment_array);
         return $api;
-    }
-
-    /**
-     * Get CMD list
-     *
-     * @param array $api
-     *
-     * @return array
-     */
-    private function get_api_cmd(array $api): array
-    {
-        $key = 0;
-        $cmd = [];
-
-        foreach ($api as $dir => $item) {
-            $cmd[$key]['module']   = $dir;
-            $cmd[$key]['api_list'] = $item;
-
-            ++$key;
-        }
-
-        unset($api, $key, $dir, $item);
-        return $cmd;
     }
 
     /**
