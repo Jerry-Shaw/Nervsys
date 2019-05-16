@@ -61,7 +61,11 @@ class redis_queue extends redis
      */
     public function connect(): object
     {
-        $this->connect = parent::connect();
+        //Connect if NOT connected
+        if (is_null($this->connect)) {
+            $this->connect = parent::connect();
+        }
+
         return $this;
     }
 

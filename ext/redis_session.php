@@ -26,50 +26,46 @@ class redis_session extends redis
     const PREFIX = 'SESS:';
 
     //SESSION life
-    private $life = 600;
+    public $life = 600;
 
     /** @var \Redis $connect */
     private $connect = null;
 
     /**
-     * redis_session constructor.
-     *
-     * @param int $life
+     * Start Redis SESSION
      *
      * @throws \RedisException
      */
-    public function __construct(int $life = 600)
+    public function start()
     {
-        //Build connection
-        $this->connect = parent::connect();
-
-        if (PHP_SESSION_ACTIVE !== session_status()) {
-            //Set SESSION GC configurations
-            ini_set('session.gc_divisor', 100);
-            ini_set('session.gc_probability', 100);
-            ini_set('session.gc_maxlifetime', $life);
-
-            //Set SESSION handler
-            session_set_save_handler(
-                [$this, 'session_open'],
-                [$this, 'session_close'],
-                [$this, 'session_read'],
-                [$this, 'session_write'],
-                [$this, 'session_destroy'],
-                [$this, 'session_gc']
-            );
-
-            //Start SESSION
-            register_shutdown_function('session_write_close');
-            session_start();
+        //Check SESSION status
+        if (PHP_SESSION_ACTIVE === session_status()) {
+            return;
         }
 
-        //Set life
-        if (0 < $life) {
-            $this->life = &$life;
+        //Connect if NOT connected
+        if (is_null($this->connect)) {
+            $this->connect = parent::connect();
         }
 
-        unset($life);
+        //Set SESSION GC configurations
+        ini_set('session.gc_divisor', 100);
+        ini_set('session.gc_probability', 100);
+        ini_set('session.gc_maxlifetime', $this->life);
+
+        //Set SESSION handler
+        session_set_save_handler(
+            [$this, 'session_open'],
+            [$this, 'session_close'],
+            [$this, 'session_read'],
+            [$this, 'session_write'],
+            [$this, 'session_destroy'],
+            [$this, 'session_gc']
+        );
+
+        //Start SESSION
+        register_shutdown_function('session_write_close');
+        session_start();
     }
 
     /**
