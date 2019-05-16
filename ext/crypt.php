@@ -34,25 +34,6 @@ class crypt extends factory
     protected $keygen = '\\ext\\keygen';
 
     /**
-     * Config class settings
-     *
-     * @param array $setting
-     *
-     * @return $this
-     */
-    public function config(array $setting): object
-    {
-        foreach ($setting as $key => $val) {
-            if (isset($this->$key)) {
-                $this->$key = 'keygen' === $key ? parent::build_name($val) : $val;
-            }
-        }
-
-        unset($setting, $key, $val);
-        return $this;
-    }
-
-    /**
      * Get crypt key
      *
      * @return string
