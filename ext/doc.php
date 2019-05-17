@@ -175,27 +175,27 @@ class doc extends factory
     /**
      * Build DOC
      *
-     * @param string $name
+     * @param string $api
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function get_doc(string $name): array
+    public function get_doc(string $api): array
     {
         $doc = [];
 
         //Refill path with app_path
         if ('' !== parent::$sys['app_path']) {
-            $name = parent::$sys['app_path'] . $name;
+            $api = parent::$sys['app_path'] . $api;
         }
 
         //Refill CMD using "__construct"
-        if (false === strpos($name, '-')) {
-            $name .= '__construct';
+        if (false === strpos($api, '-')) {
+            $api .= '__construct';
         }
 
         //Get class & method
-        list($class, $method) = explode('-', $name);
+        list($class, $method) = explode('-', $api);
 
         //Build class name
         $class = parent::build_name($class);
@@ -210,7 +210,7 @@ class doc extends factory
         $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
 
         //Get API CMD & DESC
-        $doc['cmd']  = parent::get_app_cmd($name);
+        $doc['cmd']  = parent::get_app_cmd($api);
         $doc['desc'] = $this->find_named_comment($comment_array, '@api');
 
         //Get parameters
@@ -242,7 +242,7 @@ class doc extends factory
         $doc['tz']   = $trustzone[$method] ?? '*';
         $doc['note'] = $this->find_named_comment($comment_array, '@return');
 
-        unset($name, $class, $method, $reflect_method, $comment_string, $comment_array, $params, $param, $data, $type, $trustzone);
+        unset($api, $class, $method, $reflect_method, $comment_string, $comment_array, $params, $param, $data, $type, $trustzone);
         return $doc;
     }
 
