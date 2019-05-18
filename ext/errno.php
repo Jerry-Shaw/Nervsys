@@ -65,8 +65,16 @@ class errno
      */
     public static function set(int $code, int $errno = 0): void
     {
-        system::$error = self::get($code, $errno);
-        unset($code, $errno);
+        //Get error data
+        $error = self::get($code, $errno);
+        $keys  = array_keys($error);
+
+        //Overwrite system error pool
+        foreach ($keys as $key) {
+            system::$error[$key] = $error[$key];
+        }
+
+        unset($code, $errno, $error, $keys, $key);
     }
 
     /**
