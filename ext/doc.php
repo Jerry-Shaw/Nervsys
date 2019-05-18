@@ -53,8 +53,8 @@ class doc extends factory
      */
     public function get_struct(): array
     {
-        $path = ROOT;
-        $list = $struct = [];
+        $struct = [];
+        $path   = ROOT;
 
         //Refill path with app_path
         if ('' !== parent::$sys['app_path']) {
@@ -125,16 +125,8 @@ class doc extends factory
             ];
         }
 
-        //Format
-        foreach ($struct as $module => $item) {
-            $list[] = [
-                'module' => $module,
-                'class'  => $item
-            ];
-        }
-
-        unset($path, $struct, $files, $item, $name, $exclude, $script, $class, $class_reflect, $path_unit, $file_name, $path_name, $comment_string, $comment_array, $module);
-        return $list;
+        unset($path, $files, $item, $name, $exclude, $script, $class, $class_reflect, $path_unit, $file_name, $path_name, $comment_string, $comment_array, $module);
+        return $struct;
     }
 
     /**
