@@ -21,6 +21,12 @@ namespace ext;
 
 class pdo_mysql extends pdo
 {
+    //Last SQL
+    private $sql = '';
+
+    //Affected rows
+    private $rows = 0;
+
     //Runtime params
     private $params = [];
 
@@ -314,15 +320,17 @@ class pdo_mysql extends pdo
     public function exec(string $sql): int
     {
         try {
-            if (false === $exec = $this->connect->exec($sql)) {
-                $exec = -1;
+            $this->sql = &$sql;
+
+            if (false === $this->rows = $this->connect->exec($sql)) {
+                $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($sql);
-        return $exec;
+        return $this->rows;
     }
 
     /**
@@ -337,9 +345,13 @@ class pdo_mysql extends pdo
     public function query(string $sql, bool $fetch_col = false, int $col_no = 0): array
     {
         try {
+            $this->sql = &$sql;
+
             $stmt = !$fetch_col
                 ? $this->connect->query($sql, \PDO::FETCH_ASSOC)
                 : $this->connect->query($sql, \PDO::FETCH_COLUMN, $col_no);
+
+            $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
@@ -359,19 +371,21 @@ class pdo_mysql extends pdo
      */
     public function fetch(bool $fetch_col = false): array
     {
-        $sql = $this->build_sql();
-
         try {
-            $stmt = $this->connect->prepare($sql);
+            $this->fill_sql();
+
+            $stmt = $this->connect->prepare($this->sql);
             $stmt->execute($this->params['bind_value'] ?? null);
+
+            $this->rows   = $stmt->rowCount();
             $this->params = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
 
-        unset($fetch_col, $sql, $stmt);
+        unset($fetch_col, $stmt);
         return $data;
     }
 
@@ -382,18 +396,40 @@ class pdo_mysql extends pdo
      */
     public function execute(): bool
     {
-        $sql = $this->build_sql();
-
         try {
-            $stmt         = $this->connect->prepare($sql);
-            $result       = $stmt->execute($this->params['bind_value'] ?? null);
+            $this->fill_sql();
+
+            $stmt   = $this->connect->prepare($this->sql);
+            $result = $stmt->execute($this->params['bind_value'] ?? null);
+
+            $this->rows   = $stmt->rowCount();
             $this->params = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
-        unset($sql, $stmt);
+        unset($stmt);
         return $result;
+    }
+
+    /**
+     * Get last executed SQL
+     *
+     * @return string
+     */
+    public function last_sql(): string
+    {
+        return $this->sql;
+    }
+
+    /**
+     * Get last affected rows
+     *
+     * @return string
+     */
+    public function last_affect(): string
+    {
+        return $this->rows;
     }
 
     /**
@@ -447,7 +483,7 @@ class pdo_mysql extends pdo
      */
     private function rand_key(string $key): string
     {
-        return ':' . strtr($key, '.', '_') . '_' . substr(hash('md5', uniqid(mt_rand(), true)), 0, 4);
+        return ':' . strtr($key, '.', '_') . '_' . substr(hash('crc32b', uniqid(mt_rand(), true)), 0, 4);
     }
 
     /**
@@ -586,11 +622,11 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Build SQL caller
+     * Fill SQL
      */
-    private function build_sql(): string
+    private function fill_sql(): void
     {
-        return trim($this->{'build_' . strtolower($this->params['action'])}());
+        $this->sql = trim($this->{'build_' . strtolower($this->params['action'])}());
     }
 
     /**
