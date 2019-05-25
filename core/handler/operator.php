@@ -54,7 +54,7 @@ class operator extends factory
         //Process orders
         while (!is_null($item_list = array_shift(parent::$cmd_cgi))) {
             //Get class & name
-            $class = parent::build_name($name = array_shift($item_list));
+            $class = parent::get_app_class($name = array_shift($item_list));
 
             //Check auto call mode
             if (empty($item_list) && !parent::$sys['auto_call_mode']) {

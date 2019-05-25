@@ -431,7 +431,7 @@ class redis_queue extends redis
             }
 
             //Save class & method
-            $job_list[] = [parent::build_name($order), $method];
+            $job_list[] = [parent::get_app_class($order), $method];
 
             //Execute jobs
             foreach ($job_list as $job) {

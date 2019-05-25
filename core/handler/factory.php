@@ -110,15 +110,32 @@ class factory extends system
     }
 
     /**
-     * Build class name
+     * Get class name based on app_path
      *
      * @param string $class
      *
      * @return string
      */
-    public static function build_name(string $class): string
+    public static function get_app_class(string $class): string
     {
         return '\\' . trim(strtr(parent::$sys['app_path'] . $class, '/', '\\'), '\\');
+    }
+
+    /**
+     * Get relative cmd based on app_path
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public static function get_app_cmd(string $cmd): string
+    {
+        //Remove defined "app_path"
+        if ('' !== self::$sys['app_path'] && 0 === strpos($cmd, self::$sys['app_path'])) {
+            $cmd = substr($cmd, strlen(self::$sys['app_path']));
+        }
+
+        return $cmd;
     }
 
     /**
@@ -136,7 +153,7 @@ class factory extends system
                 list($order, $method) = explode('-', $dep, 2);
             }
 
-            $dep_list[$key] = [$order, self::build_name($order), $method];
+            $dep_list[$key] = [$order, self::get_app_class($order), $method];
         }
 
         unset($key, $dep, $order, $method);

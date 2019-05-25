@@ -344,23 +344,6 @@ class system
     }
 
     /**
-     * Get relative cmd based on app_path
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    public static function get_app_cmd(string $cmd): string
-    {
-        //Remove defined "app_path"
-        if ('' !== self::$sys['app_path'] && 0 === strpos($cmd, self::$sys['app_path'])) {
-            $cmd = substr($cmd, strlen(self::$sys['app_path']));
-        }
-
-        return $cmd;
-    }
-
-    /**
      * Validate CORS permissions
      */
     private static function validate_cors(): void
