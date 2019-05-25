@@ -412,9 +412,9 @@ class redis_queue extends redis
             //Get order & method
             list($order, $method) = explode('-', $input['cmd'], 2);
 
-            //Process dependency
+            //Process LOAD dependency
             if (false !== strpos($module = strtr($order, '\\', '/'), '/')) {
-                $module = strstr($module, '/', true);
+                $module = strstr(parent::get_app_cmd($module), '/', true);
             }
 
             if (isset(parent::$load[$module])) {
