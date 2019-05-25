@@ -70,7 +70,7 @@ class factory extends system
      */
     public static function obtain(string $class, array $param = []): object
     {
-        return self::get_stock(__FUNCTION__, self::build_name($class), $param);
+        return self::get_stock(__FUNCTION__, $class, $param);
     }
 
     /**
@@ -118,7 +118,7 @@ class factory extends system
      */
     public static function build_name(string $class): string
     {
-        return '\\' . trim(strtr($class, '/', '\\'), '\\');
+        return '\\' . trim(strtr(parent::$sys['app_path'] . $class, '/', '\\'), '\\');
     }
 
     /**

@@ -55,9 +55,6 @@ class cmd extends system
 
         foreach ($cmd as $item) {
             if (false !== strpos($item, '/') || false !== strpos($item, '\\')) {
-                //Merge defined app_path
-                $item = parent::$sys['app_path'] . $item;
-
                 //Move group index key
                 ++$key;
             }
@@ -88,7 +85,6 @@ class cmd extends system
 
                 //Add param
                 parent::$param_cgi[$item] = $name;
-
                 unset($keys);
             } else {
                 //Partial match replace
