@@ -40,9 +40,6 @@ class redis_queue extends redis
     const PREFIX_LIST   = 'RQ:list:';
     const PREFIX_WORKER = 'RQ:worker:';
 
-    //Expose "root" & "child"
-    public static $tz = 'root,child';
-
     //Process properties
     protected $runs = 10;
     protected $exec = 200;
@@ -243,7 +240,7 @@ class redis_queue extends redis
         $this->child = platform::cmd_bg(
             '"' . platform::php_path() . '" '
             . '"' . ROOT . 'api.php" --ret '
-            . '--cmd="' . strtr(__CLASS__, '\\', '/') . '-child"'
+            . '--cmd="' . strtr(get_class($this), '\\', '/') . '-child"'
         );
 
         do {
