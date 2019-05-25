@@ -96,7 +96,7 @@ class redis_queue extends redis
 
         //Build group key & queue data
         $list  = self::PREFIX_LIST . ('' === $group ? 'main' : $group);
-        $queue = json_encode($data);
+        $queue = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         //Add watch list & queue list
         $this->connect->hSet(self::KEY_WATCH_LIST, $list, time());
@@ -211,7 +211,7 @@ class redis_queue extends redis
 
         //Exit when root process is running
         if (0 < $this->connect->exists($root_key)) {
-            exit;
+            exit('Already running!');
         }
 
         if (0 < $runs) {
@@ -240,7 +240,7 @@ class redis_queue extends redis
         $this->child = platform::cmd_bg(
             '"' . platform::php_path() . '" '
             . '"' . ROOT . 'api.php" --ret '
-            . '--cmd="' . strtr(get_class($this), '\\', '/') . '-child"'
+            . '--cmd="' . parent::get_app_cmd(strtr(get_class($this), '\\', '/')) . '-child"'
         );
 
         do {
@@ -262,13 +262,13 @@ class redis_queue extends redis
 
             //Re-add queue job
             $this->connect->rPush($queue[0], $queue[1]);
+
             //Call child process
             $this->call_child();
         } while ($valid && $running);
 
         //On exit
         self::close();
-
         unset($root_key, $wait_time, $root_hash, $valid, $running, $list, $queue);
     }
 
@@ -317,7 +317,6 @@ class redis_queue extends redis
 
         //On exit
         self::stop($child_hash);
-
         unset($child_hash, $child_key, $wait_time, $execute, $list, $queue);
     }
 
@@ -466,7 +465,7 @@ class redis_queue extends redis
                 self::check_job($data, json_encode($result));
             }
         } catch (\Throwable $throwable) {
-            $this->connect->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()]));
+            $this->connect->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             unset($throwable);
             return;
         }
@@ -488,7 +487,7 @@ class redis_queue extends redis
 
         //Save to fail list
         if (!is_null($json) && true !== $json) {
-            $this->connect->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => &$result]));
+            $this->connect->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => &$result], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
 
         unset($data, $result, $json);
