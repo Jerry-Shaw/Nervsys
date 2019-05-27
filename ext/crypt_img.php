@@ -26,10 +26,11 @@ class crypt_img extends crypt
     const TYPE_MIX  = 'mix';
     const TYPE_NUM  = 'num';
     const TYPE_WORD = 'word';
+    const TYPE_PLUS = 'plus';
     const TYPE_CALC = 'calc';
 
     //Support types
-    const TYPES = ['mix', 'num', 'word', 'calc'];
+    const TYPES = ['mix', 'num', 'word', 'plus', 'calc'];
 
     //Code output types
     protected $type = [];
@@ -106,7 +107,7 @@ class crypt_img extends crypt
                 $text
             );
 
-            $left_padding += $font_size;
+            $left_padding += $font_size * strlen($text);
         }
 
         unset($codes['char'], $text);
@@ -243,6 +244,33 @@ class crypt_img extends crypt
         $result['code'] = implode($result['char']);
 
         unset($list, $i);
+        return $result;
+    }
+
+    /**
+     * Build Math plus codes
+     *
+     * @return array
+     */
+    private function build_plus(): array
+    {
+        $result = [];
+
+        //Generate numbers
+        $number = [mt_rand(0, 9), mt_rand(10, 99)];
+
+        //Plus tow numbers
+        $result['code'] = $number[0] + $number[1];
+
+        //Add number chars
+        $result['char'][] = (string)$number[$i = mt_rand(0, 1)];
+        $result['char'][] = '+';
+        $result['char'][] = (string)$number[0 === $i ? 1 : 0];
+
+        //Add suffix
+        $result['char'][] = '=';
+
+        unset($num_1, $num_2);
         return $result;
     }
 
