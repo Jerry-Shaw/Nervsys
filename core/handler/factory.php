@@ -118,7 +118,19 @@ class factory extends system
      */
     public static function get_app_class(string $class): string
     {
-        return '\\' . trim(strtr(parent::$sys['app_path'] . $class, '/', '\\'), '\\');
+        //Get first char
+        $char = substr($class, 0, 1);
+
+        //Refill app_path
+        if (!in_array($char, ['/', '\\'], true)) {
+            $class = parent::$sys['app_path'] . $class;
+        }
+
+        //Build class
+        $class = '\\' . trim(strtr($class, '/', '\\'), '\\');
+
+        unset($char);
+        return $class;
     }
 
     /**
