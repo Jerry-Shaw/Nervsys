@@ -91,7 +91,7 @@ class doc extends factory
             $class = substr($name, 0, -4);
 
             //Reflect class
-            $class_reflect = parent::reflect_class(parent::get_app_class($class));
+            $class_reflect = parent::reflect_class(parent::get_app_class(DIRECTORY_SEPARATOR . $class));
 
             //Check TrustZone
             if (empty($this->get_trustzone($class_reflect))) {
@@ -146,7 +146,7 @@ class doc extends factory
             : $module;
 
         //Build class name
-        $class_name = parent::get_app_class($module_name . '\\' . $class);
+        $class_name = parent::get_app_class('\\' . $module_name . '\\' . $class);
 
         //Reflect class
         $class_reflect = parent::reflect_class($class_name);
@@ -190,7 +190,7 @@ class doc extends factory
         list($class, $method) = explode('-', $api);
 
         //Build class name
-        $class = parent::get_app_class($class);
+        $class = parent::get_app_class('/' . $class);
 
         //Get method reflection
         $reflect_method = parent::reflect_method($class, $method);
