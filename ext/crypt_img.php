@@ -260,7 +260,7 @@ class crypt_img extends crypt
         $number = [mt_rand(0, 9), mt_rand(10, 99)];
 
         //Plus tow numbers
-        $result['code'] = $number[0] + $number[1];
+        $result['code'] = (string)($number[0] + $number[1]);
 
         //Add number chars
         $result['char'][] = (string)$number[$i = mt_rand(0, 1)];
