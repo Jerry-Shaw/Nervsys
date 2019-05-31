@@ -2,6 +2,7 @@
 
 Stable version: 7.2.20  
 Extension version: 2.0  
+[Chinese Documents](https://github.com/NervSys/NervSys/blob/master/README_zh.md)  
 [Unit Test Suites](https://github.com/NervSys/tests)  
   
 Report to us if you encounter an issue.  
@@ -594,6 +595,7 @@ Normally, when php encounters an error, or an exception, it'll stop anyway. But 
 
 [kristenzz](https://github.com/kristemZZ)  
 [tggtzbh](https://github.com/tggtzbh)  
+[xushuhui](https://github.com/xushuhui)  
 
 
 ## Licensing

@@ -1,7 +1,8 @@
 # Nervsys
 
-稳定版本: 7.2.18  
+稳定版本: 7.2.20  
 扩展版本: 2.0  
+[英文文档](https://github.com/NervSys/NervSys/blob/master/README.md)  
 [单元测试用例](https://github.com/NervSys/tests)  
   
 如果遇到问题，请告诉我们.  
@@ -575,6 +576,7 @@ Result:
 
 [kristenzz](https://github.com/kristemZZ)  
 [tggtzbh](https://github.com/tggtzbh)  
+[xushuhui](https://github.com/xushuhui)  
 
 
 ## Licensing
