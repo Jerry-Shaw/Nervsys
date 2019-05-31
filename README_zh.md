@@ -411,24 +411,27 @@ $class = class_name::new(arguments, ...)->as('alias_name');
 $class = class_name::new(arguments, ...)->config(array $settings)->as('alias_name');  
   
 * 通过对象的别名获取克隆对象:  
-$cloned_class = class_name::new('alias_name');  
+$cloned_class = class_name::use('alias_name');  
   
 * 以中间的方式保存对象:  
-$object->as('alias_name');  
+$object->as('alias_name'); or $object->config(array $settings)->as('alias_name'); 
+  
+* 从工厂中释放(销毁):  
+$object->free(); or $object->free('alias_name');  
   
   
 注意: 调用 "use" 和 "obtain" 方法的方法是相同的，但是仍然有一些小的区别:  
   
-**new**: 所有返回的对象都指向被调用的类，但处于克隆模式中，参数既可以是 "__construct" 方法的参数，也可以是它的别名.  
+**new**: 返回的对象为调用此方法的类，但处于克隆模式，所传参数是 "__construct" 方法的参数.  
   
-**use**: 所有返回的对象指向被调用的类，但也指向未克隆的原始实例。参数既可以是 "__construct" 方法的参数，也可以是它的别名.  
+**use**: 返回的对象为调用此方法的类，直接指向由 "as" 方法存储的原始实例，非克隆实例。只接受唯一参数，存储时的别名.  
   
-**obtain**: 所有返回的对象都使用类名指向第一个参数，第二个参数作为 "__construct" 方法的参数。但此方法还支持别名调用，方法是将正确的类名及其别名作为第二个参数数组中的惟一参数传递 
+**obtain**: 返回的对象为第一个参数传入的类名，第二个参数为该类中 "__construct" 方法的参数.  
   
   
 **Caution**:  
 1. 确保按条件和不同方式使用别名，以避免冲突.  
-2. 确保调用顺序与预期一致，特别是在使用factory到new/use类时，检查所有"__construct"方法中的子调用入口。工厂将生成不正确的对象，即使"new"显然是在"use"之前调用的，而"use"是在 "new" 之前调用的类的"__construct"内部调用的。  
+2. 确保调用顺序与预期一致，特别是在使用factory到new/use类时，检查所有"__construct"方法中的子调用入口。工厂将生成不正确的对象，即使 "new" 显然是在 "use" 之前调用的，而 "use" 是在 "new" 之前调用的类的"__construct"内部调用的。  
   
   
 ### TrustZone

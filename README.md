@@ -427,19 +427,22 @@ $class = class_name::new(arguments, ...)->as('alias_name');
 $class = class_name::new(arguments, ...)->config(array $settings)->as('alias_name');  
   
 * Get cloned object by its alias name:  
-$cloned_class = class_name::new('alias_name');  
+$cloned_class = class_name::use('alias_name');  
   
 * Save an object in the middle way:  
-$object->as('alias_name');  
+$object->as('alias_name'); or $object->config(array $settings)->as('alias_name'); 
+  
+* Free from factory:  
+$object->free(); or $object->free('alias_name');  
   
   
 NOTICE: Same ways to call "use" and "obtain" methods, but there are still some small differences:  
   
-**new**: all returned object points to the called class, but in clone mode. Arguments can both be the params for "__construct" method and its alias name.  
+**new**: returned object points to the called class, but in clone mode. Arguments are the params for "__construct" method.  
   
-**use**: all returned object points to the called class, but also points to the original instance, not cloned. Arguments can both be the params for "__construct" method and its alias name.  
+**use**: returned object points to the called class, directly to the original instance saved by "as" method, not cloned. One argument is expected, its alias name.  
   
-**obtain**: all returned object points to the first argument using a class name, with the second argument as the params for "__construct" method. But this method also supports alias calling by passing correct class name and its alias name as the only param in the second argument array.  
+**obtain**: returned object points to a class passed by the first argument as a class name, with the second argument as the params for "__construct" method.  
   
   
 **Caution**:  
