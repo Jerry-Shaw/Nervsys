@@ -28,7 +28,7 @@ class errno
      * Error file directory
      *
      * Related to "ROOT/$dir/"
-     * Error file should be put in "ROOT/$dir/self::DIR/filename.ini"
+     * Put as "ROOT/$dir/self::DIR/filename.ini"
      */
     const DIR = 'error';
 
@@ -45,7 +45,7 @@ class errno
      * @param string $name
      * @param bool   $lang
      */
-    public static function load(string $dir, string $name, bool $lang = true)
+    public static function load(string $dir, string $name, bool $lang = true): void
     {
         $file = ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
 

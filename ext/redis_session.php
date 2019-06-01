@@ -36,7 +36,7 @@ class redis_session extends redis
      *
      * @throws \RedisException
      */
-    public function start()
+    public function start(): void
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {
