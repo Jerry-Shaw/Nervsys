@@ -59,6 +59,7 @@ PHP 7.2+ 及以上,任何类型的Web服务器或CLI模式
     ├─ext/
     │    ├─lib/
     │    │    └─key.php                         keygen interface
+    │    ├─conf.php                             Config file extension
     │    ├─crypt.php                            Encrypt/decrypt extension
     │    ├─crypt_img.php                        Auth code image extension from crypt
     │    ├─doc.php                              API Doc extension
