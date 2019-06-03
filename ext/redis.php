@@ -51,7 +51,7 @@ class redis extends factory
         }
 
         //Obtain Redis instance from factory
-        $redis = parent::obtain('Redis');
+        $redis = parent::obtain(\Redis::class);
 
         //Connect
         $this->persist

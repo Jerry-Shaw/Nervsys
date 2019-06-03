@@ -45,7 +45,7 @@ class memcached extends factory
             return self::$pool[$key];
         }
 
-        $memcached = parent::obtain('Memcached');
+        $memcached = parent::obtain(\Memcached::class);
         $memcached->addServer($this->host, $this->port);
         $memcached->setOption(\Memcached::OPT_COMPRESSION, $this->compress);
         $memcached->setOption(\Memcached::OPT_CONNECT_TIMEOUT, $this->timeout * 1000);
