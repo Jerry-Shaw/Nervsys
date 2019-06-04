@@ -159,7 +159,7 @@ class log extends system
             $file[$key] = fopen($log, 'ab');
 
             //Set permissions
-            chmod($log, '0777');
+            chmod($log, 0666);
         }
 
         fwrite($file[$key], self::format($level, $message, $context));

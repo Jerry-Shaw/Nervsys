@@ -90,7 +90,7 @@ class upload extends factory
     protected $root = ROOT;
 
     //Permission
-    protected $perm = 0664;
+    protected $perm = 0666;
 
     //Max size
     protected $size = 20971520;
