@@ -155,7 +155,11 @@ class log extends system
 
         static $file = [];
         if (!isset($file[$key])) {
+            //Open file handler
             $file[$key] = fopen($log, 'ab');
+
+            //Set permissions
+            chmod($log, '0777');
         }
 
         fwrite($file[$key], self::format($level, $message, $context));
