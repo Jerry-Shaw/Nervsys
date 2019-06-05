@@ -30,24 +30,6 @@ class pdo_mysql extends pdo
     //Runtime params
     private $params = [];
 
-    /** @var \PDO $connect */
-    private $connect = null;
-
-    /**
-     * Connect to MySQL
-     *
-     * @return $this
-     */
-    public function connect(): object
-    {
-        //Connect if NOT connected
-        if (is_null($this->connect)) {
-            $this->connect = parent::connect();
-        }
-
-        return $this;
-    }
-
     /**
      * Insert into table
      *
@@ -322,7 +304,7 @@ class pdo_mysql extends pdo
         try {
             $this->sql = &$sql;
 
-            if (false === $this->rows = $this->connect->exec($sql)) {
+            if (false === $this->rows = $this->instance->exec($sql)) {
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
@@ -348,8 +330,8 @@ class pdo_mysql extends pdo
             $this->sql = &$sql;
 
             $stmt = !$fetch_col
-                ? $this->connect->query($sql, \PDO::FETCH_ASSOC)
-                : $this->connect->query($sql, \PDO::FETCH_COLUMN, $col_no);
+                ? $this->instance->query($sql, \PDO::FETCH_ASSOC)
+                : $this->instance->query($sql, \PDO::FETCH_COLUMN, $col_no);
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
@@ -374,7 +356,7 @@ class pdo_mysql extends pdo
         try {
             $this->fill_sql();
 
-            $stmt = $this->connect->prepare($this->sql);
+            $stmt = $this->instance->prepare($this->sql);
             $stmt->execute($this->params['bind_value'] ?? null);
 
             $this->rows   = $stmt->rowCount();
@@ -399,7 +381,7 @@ class pdo_mysql extends pdo
         try {
             $this->fill_sql();
 
-            $stmt   = $this->connect->prepare($this->sql);
+            $stmt   = $this->instance->prepare($this->sql);
             $result = $stmt->execute($this->params['bind_value'] ?? null);
 
             $this->rows   = $stmt->rowCount();
@@ -441,7 +423,7 @@ class pdo_mysql extends pdo
      */
     public function last_insert(string $name = ''): int
     {
-        return (int)$this->connect->lastInsertId('' === $name ? null : $name);
+        return (int)$this->instance->lastInsertId('' === $name ? null : $name);
     }
 
     /**
@@ -451,7 +433,7 @@ class pdo_mysql extends pdo
      */
     public function begin(): bool
     {
-        return $this->connect->beginTransaction();
+        return $this->instance->beginTransaction();
     }
 
     /**
@@ -461,7 +443,7 @@ class pdo_mysql extends pdo
      */
     public function commit(): bool
     {
-        return $this->connect->commit();
+        return $this->instance->commit();
     }
 
     /**
@@ -471,7 +453,7 @@ class pdo_mysql extends pdo
      */
     public function rollback(): bool
     {
-        return $this->connect->rollBack();
+        return $this->instance->rollBack();
     }
 
     /**
