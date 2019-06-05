@@ -34,52 +34,83 @@ class redis extends factory
     protected $persist    = true;
     protected $persist_id = null;
 
-    //Connection pool
+    /** @var \Redis $instance */
+    protected $instance = null;
+
+    //Instance pool
     private static $pool = [];
 
     /**
      * Redis connector
      *
-     * @return \Redis
+     * @return $this
      * @throws \RedisException
      */
     public function connect(): object
     {
-        //Check connection pool
-        if (isset(self::$pool[$key = hash('crc32b', json_encode([$this->host, $this->port, $this->db, $this->persist_id]))])) {
-            return self::$pool[$key];
+        $key = $this->build_key();
+
+        if (!isset(self::$pool[$key])) {
+            //Obtain Redis instance from factory
+            $redis = parent::obtain(\Redis::class);
+
+            //Connect
+            $this->persist
+                ? $redis->pconnect($this->host, $this->port, $this->timeout, $this->persist_id)
+                : $redis->connect($this->host, $this->port, $this->timeout);
+
+            //Set auth
+            if ('' !== $this->auth && !$redis->auth($this->auth)) {
+                throw new \RedisException('Authentication Failed!', E_USER_ERROR);
+            }
+
+            //Set DB
+            if (!$redis->select($this->db)) {
+                throw new \RedisException('DB [' . $this->db . '] NOT found!', E_USER_ERROR);
+            }
+
+            //Set prefix
+            if ('' !== $this->prefix) {
+                $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
+            }
+
+            //Set serializer
+            $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+
+            //Save connection
+            self::$pool[$key] = &$redis;
+            unset($redis);
         }
 
-        //Obtain Redis instance from factory
-        $redis = parent::obtain(\Redis::class);
-
-        //Connect
-        $this->persist
-            ? $redis->pconnect($this->host, $this->port, $this->timeout, $this->persist_id)
-            : $redis->connect($this->host, $this->port, $this->timeout);
-
-        //Set auth
-        if ('' !== $this->auth && !$redis->auth($this->auth)) {
-            throw new \RedisException('Authentication Failed!', E_USER_ERROR);
-        }
-
-        //Set DB
-        if (!$redis->select($this->db)) {
-            throw new \RedisException('DB [' . $this->db . '] NOT found!', E_USER_ERROR);
-        }
-
-        //Set prefix
-        if ('' !== $this->prefix) {
-            $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
-        }
-
-        //Set serializer
-        $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-
-        //Save connection
-        self::$pool[$key] = &$redis;
+        //Copy instance
+        $this->instance = self::$pool[$key];
 
         unset($key);
-        return $redis;
+        return $this;
+    }
+
+    /**
+     * Get \Redis instance
+     *
+     * @return \Redis
+     * @throws \RedisException
+     */
+    public function get_redis(): \Redis
+    {
+        if (!is_object($this->instance)) {
+            $this->connect();
+        }
+
+        return $this->instance;
+    }
+
+    /**
+     * Build connection key
+     *
+     * @return string
+     */
+    private function build_key(): string
+    {
+        return hash('crc32b', json_encode([$this->host, $this->port, $this->db, $this->persist_id]));
     }
 }

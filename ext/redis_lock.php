@@ -34,25 +34,6 @@ class redis_lock extends redis
     //Lock pool
     private $locks = [];
 
-    /** @var \Redis $connect */
-    private $connect = null;
-
-    /**
-     * Connect to Redis
-     *
-     * @return $this
-     * @throws \RedisException
-     */
-    public function connect(): object
-    {
-        //Connect if NOT connected
-        if (is_null($this->connect)) {
-            $this->connect = parent::connect();
-        }
-
-        return $this;
-    }
-
     /**
      * Lock on
      *
@@ -89,7 +70,7 @@ class redis_lock extends redis
     public function off(string $key): void
     {
         $key = self::PREFIX . $key;
-        $this->connect->del($key);
+        $this->instance->del($key);
 
         if (false !== $key = array_search($key, $this->locks, true)) {
             unset($this->locks[$key]);
@@ -104,7 +85,7 @@ class redis_lock extends redis
     public function clear(): void
     {
         if (!empty($this->locks)) {
-            call_user_func_array([$this->connect, 'del'], $this->locks);
+            call_user_func_array([$this->instance, 'del'], $this->locks);
             $this->locks = [];
         }
     }
@@ -119,11 +100,12 @@ class redis_lock extends redis
      */
     private function lock(string $key, int $life): bool
     {
-        if (!$this->connect->setnx($key, time())) {
+        if (!$this->instance->setnx($key, time())) {
             return false;
         }
 
-        $this->connect->expire($key, 0 < $life ? $life : 3);
+        //Set lock life
+        $this->instance->expire($key, 0 < $life ? $life : 3);
         $this->locks[] = &$key;
 
         unset($key, $life);

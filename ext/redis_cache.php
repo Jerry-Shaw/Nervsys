@@ -25,25 +25,6 @@ class redis_cache extends redis
     //Cache key prefix
     const PREFIX = 'CAS:';
 
-    /** @var \Redis $connect */
-    private $connect = null;
-
-    /**
-     * Connect to Redis
-     *
-     * @return $this
-     * @throws \RedisException
-     */
-    public function connect(): object
-    {
-        //Connect if NOT connected
-        if (is_null($this->connect)) {
-            $this->connect = parent::connect();
-        }
-
-        return $this;
-    }
-
     /**
      * Set cache
      *
@@ -58,7 +39,7 @@ class redis_cache extends redis
         $key   = self::PREFIX . $key;
         $cache = json_encode($data);
 
-        $result = 0 < $life ? $this->connect->set($key, $cache, $life) : $this->connect->set($key, $cache);
+        $result = 0 < $life ? $this->instance->set($key, $cache, $life) : $this->instance->set($key, $cache);
 
         unset($key, $data, $life, $cache);
         return $result;
@@ -73,9 +54,7 @@ class redis_cache extends redis
      */
     public function get(string $key): array
     {
-        $cache = $this->connect->get(self::PREFIX . $key);
-
-        if (false === $cache) {
+        if (false === $cache = $this->instance->get(self::PREFIX . $key)) {
             return [];
         }
 
@@ -98,7 +77,7 @@ class redis_cache extends redis
      */
     public function del(string $key): int
     {
-        $result = $this->connect->del(self::PREFIX . $key);
+        $result = $this->instance->del(self::PREFIX . $key);
 
         unset($key);
         return $result;

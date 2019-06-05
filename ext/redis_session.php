@@ -28,24 +28,14 @@ class redis_session extends redis
     //SESSION life
     public $life = 600;
 
-    /** @var \Redis $connect */
-    private $connect = null;
-
     /**
      * Start Redis SESSION
-     *
-     * @throws \RedisException
      */
     public function start(): void
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {
             return;
-        }
-
-        //Connect if NOT connected
-        if (is_null($this->connect)) {
-            $this->connect = parent::connect();
         }
 
         //Set SESSION GC configurations
@@ -101,7 +91,7 @@ class redis_session extends redis
      */
     public function session_read(string $session_id): string
     {
-        return (string)$this->connect->get(self::PREFIX . $session_id);
+        return (string)$this->instance->get(self::PREFIX . $session_id);
     }
 
     /**
@@ -114,7 +104,7 @@ class redis_session extends redis
      */
     public function session_write(string $session_id, string $session_data): bool
     {
-        $write = $this->connect->set(self::PREFIX . $session_id, $session_data, $this->life);
+        $write = $this->instance->set(self::PREFIX . $session_id, $session_data, $this->life);
 
         unset($session_id, $session_data);
         return (bool)$write;
@@ -129,7 +119,7 @@ class redis_session extends redis
      */
     public function session_destroy(string $session_id): bool
     {
-        $this->connect->del(self::PREFIX . $session_id);
+        $this->instance->del(self::PREFIX . $session_id);
 
         unset($session_id);
         return true;
