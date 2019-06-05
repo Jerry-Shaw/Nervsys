@@ -465,7 +465,7 @@ class pdo_mysql extends pdo
      */
     private function rand_key(string $key): string
     {
-        return ':' . strtr($key, '.', '_') . '_' . substr(hash('crc32b', uniqid(mt_rand(), true)), 0, 4);
+        return ':' . strtr($key, '.', '_') . '_' . hash('crc32b', uniqid(mt_rand(), true));
     }
 
     /**
