@@ -405,11 +405,11 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Get last affected rows
+     * Get the number of rows affected by the last DELETE, INSERT, or UPDATE statement
      *
-     * @return string
+     * @return int
      */
-    public function last_affect(): string
+    public function last_affect(): int
     {
         return $this->rows;
     }
