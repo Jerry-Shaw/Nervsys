@@ -599,6 +599,11 @@ Normally, when php encounters an error, or an exception, it'll stop anyway. But 
 [xushuhui](https://github.com/xushuhui)  
 
 
+## Supporters
+
+Thanks to [JetBrains](https://www.jetbrains.com/) for supporting the project, within the Open Source Support Program.  
+
+
 ## Licensing
 
 This software is licensed under the terms of the Apache 2.0 License.  
