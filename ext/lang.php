@@ -30,7 +30,7 @@ class lang
      * Related to "ROOT/$dir/"
      * Language file should be located in "ROOT/$dir/self::DIR/$lang/LC_MESSAGES/filename.mo"
      */
-    const DIR = 'language';
+    const DIR = 'locales';
 
     /**
      * Load language file
@@ -48,7 +48,9 @@ class lang
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
 
-        bindtextdomain($file, ROOT . $dir . DIRECTORY_SEPARATOR . self::DIR . DIRECTORY_SEPARATOR);
+        $dir = '/' !== $dir ? trim($dir, " /\\\t\n\r\0\x0B") . DIRECTORY_SEPARATOR : '';
+
+        bindtextdomain($file, ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR);
         textdomain($file);
 
         unset($dir, $file, $lang);
