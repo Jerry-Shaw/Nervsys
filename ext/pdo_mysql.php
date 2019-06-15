@@ -22,13 +22,13 @@ namespace ext;
 class pdo_mysql extends pdo
 {
     //Last SQL
-    private $sql = '';
+    protected $sql = '';
 
     //Affected rows
-    private $rows = 0;
+    protected $rows = 0;
 
     //Runtime params
-    private $params = [];
+    protected $params = [];
 
     /**
      * Insert into table
