@@ -81,7 +81,13 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
     │    ├─upload.php                           Upload extension
     │    └─...
     ├─logs/
-    └─api.php                                   API entry script
+    └─api.php                                   API entry script (can be placed into /app or anywhere)
+
+
+## About api.php
+
+"api.php" is the default entry script of Nervsys. But it is only an entry of a site, and can be placed anywhere as needed.  
+We strongly suggest that, create a new entry file under the main app path by modifying the require path, then set the site root to main app path also, to fully avoid exposing project structure to outside.  
 
 
 ## Reserved Words
