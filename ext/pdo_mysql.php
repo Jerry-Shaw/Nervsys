@@ -27,8 +27,11 @@ class pdo_mysql extends pdo
     //Affected rows
     protected $rows = 0;
 
-    //Runtime params
-    protected $params = [];
+    //Table prefix
+    protected $prefix = '';
+
+    //Runtime data
+    private $runtime = [];
 
     /**
      * Insert into table
@@ -100,7 +103,7 @@ class pdo_mysql extends pdo
      */
     public function lock(string ...$modes): object
     {
-        $this->params['lock'] = implode(' ', $modes);
+        $this->runtime['lock'] = implode(' ', $modes);
 
         unset($modes);
         return $this;
@@ -116,9 +119,9 @@ class pdo_mysql extends pdo
     public function value(array $values): object
     {
         foreach ($values as $key => $value) {
-            $this->params['value'][$key] = $bind_key = $this->rand_key($key);
+            $this->runtime['value'][$key] = $bind_key = $this->rand_key($key);
 
-            $this->params['bind_value'][$bind_key] = $value;
+            $this->runtime['bind_value'][$bind_key] = $value;
         }
 
         unset($values, $key, $value, $bind_key);
@@ -140,7 +143,7 @@ class pdo_mysql extends pdo
                 $value = false === strpos($value, '.') ? (int)$value : (float)$value;
             }
 
-            $this->params['incr'][$key] = $value;
+            $this->runtime['incr'][$key] = $value;
         }
 
         unset($values, $key, $value);
@@ -156,9 +159,9 @@ class pdo_mysql extends pdo
      */
     public function field(string ...$fields): object
     {
-        !isset($this->params['field'])
-            ? $this->params['field'] = implode(', ', $fields)
-            : $this->params['field'] .= ', ' . implode(', ', $fields);
+        !isset($this->runtime['field'])
+            ? $this->runtime['field'] = implode(', ', $fields)
+            : $this->runtime['field'] .= ', ' . implode(', ', $fields);
 
         unset($fields);
         return $this;
@@ -175,9 +178,9 @@ class pdo_mysql extends pdo
      */
     public function join(string $table, array $where, string $type = 'INNER'): object
     {
-        !isset($this->params['join'])
-            ? $this->params['join'] = strtoupper($type) . ' JOIN ' . $this->escape($table) . ' ON '
-            : $this->params['join'] .= strtoupper($type) . ' JOIN ' . $this->escape($table) . ' ON ';
+        !isset($this->runtime['join'])
+            ? $this->runtime['join'] = strtoupper($type) . ' JOIN ' . $this->escape($this->get_table($table)) . ' ON '
+            : $this->runtime['join'] .= strtoupper($type) . ' JOIN ' . $this->escape($this->get_table($table)) . ' ON ';
 
         if (count($where) === count($where, 1)) {
             $where = [$where];
@@ -196,7 +199,7 @@ class pdo_mysql extends pdo
             $condition .= $this->escape($value[0]) . ' = ' . $this->escape($value[1]) . ' ';
         }
 
-        $this->params['join'] .= $condition;
+        $this->runtime['join'] .= $condition;
 
         unset($table, $where, $type, $condition, $value, $item);
         return $this;
@@ -215,9 +218,9 @@ class pdo_mysql extends pdo
             $where = [$where];
         }
 
-        !isset($this->params['where'])
-            ? $this->params['where'] = $this->build_condition($where, 'where')
-            : $this->params['where'] .= $this->build_condition($where, 'where');
+        !isset($this->runtime['where'])
+            ? $this->runtime['where'] = $this->build_condition($where, 'where')
+            : $this->runtime['where'] .= $this->build_condition($where, 'where');
 
         unset($where);
         return $this;
@@ -232,9 +235,9 @@ class pdo_mysql extends pdo
      */
     public function having(array $having): object
     {
-        !isset($this->params['having'])
-            ? $this->params['having'] = $this->build_condition($having, 'having')
-            : $this->params['having'] .= $this->build_condition($having, 'having');
+        !isset($this->runtime['having'])
+            ? $this->runtime['having'] = $this->build_condition($having, 'having')
+            : $this->runtime['having'] .= $this->build_condition($having, 'having');
 
         unset($having);
         return $this;
@@ -255,7 +258,7 @@ class pdo_mysql extends pdo
             $list[] = $this->escape($col) . ' ' . strtoupper($val);
         }
 
-        $this->params['order'] = implode(', ', $list);
+        $this->runtime['order'] = implode(', ', $list);
 
         unset($orders, $list, $col, $val);
         return $this;
@@ -270,7 +273,7 @@ class pdo_mysql extends pdo
      */
     public function group(string ...$group): object
     {
-        $this->params['group'] = implode(', ', $group);
+        $this->runtime['group'] = implode(', ', $group);
 
         unset($group);
         return $this;
@@ -286,7 +289,7 @@ class pdo_mysql extends pdo
      */
     public function limit(int $offset, int $length = 0): object
     {
-        $this->params['limit'] = 0 === $length ? '0, ' . $offset : $offset . ', ' . $length;
+        $this->runtime['limit'] = 0 === $length ? '0, ' . $offset : $offset . ', ' . $length;
 
         unset($offset, $length);
         return $this;
@@ -357,10 +360,10 @@ class pdo_mysql extends pdo
             $this->fill_sql();
 
             $stmt = $this->instance->prepare($this->sql);
-            $stmt->execute($this->params['bind_value'] ?? null);
+            $stmt->execute($this->runtime['bind_value'] ?? null);
 
-            $this->rows   = $stmt->rowCount();
-            $this->params = [];
+            $this->rows    = $stmt->rowCount();
+            $this->runtime = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
@@ -382,10 +385,10 @@ class pdo_mysql extends pdo
             $this->fill_sql();
 
             $stmt   = $this->instance->prepare($this->sql);
-            $result = $stmt->execute($this->params['bind_value'] ?? null);
+            $result = $stmt->execute($this->runtime['bind_value'] ?? null);
 
-            $this->rows   = $stmt->rowCount();
-            $this->params = [];
+            $this->rows    = $stmt->rowCount();
+            $this->runtime = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
@@ -457,6 +460,18 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Get table name using prefix
+     *
+     * @param string $table
+     *
+     * @return string
+     */
+    private function get_table(string $table): string
+    {
+        return $this->prefix . $table;
+    }
+
+    /**
      * Build random bind key
      *
      * @param string $key
@@ -486,8 +501,9 @@ class pdo_mysql extends pdo
             unset($pos);
         }
 
-        $this->params['action'] = &$action;
-        $this->params['table']  = &$table;
+        //Set action & table
+        $this->runtime['action'] = &$action;
+        $this->runtime['table']  = $this->get_table($table);
 
         unset($action, $table);
     }
@@ -608,7 +624,7 @@ class pdo_mysql extends pdo
      */
     private function fill_sql(): void
     {
-        $this->sql = trim($this->{'build_' . strtolower($this->params['action'])}());
+        $this->sql = trim($this->{'build_' . strtolower($this->runtime['action'])}());
     }
 
     /**
@@ -616,9 +632,9 @@ class pdo_mysql extends pdo
      */
     private function build_insert(): string
     {
-        return 'INSERT INTO ' . $this->escape($this->params['table'])
-            . ' (' . $this->escape(implode(', ', array_keys($this->params['value']))) . ')'
-            . ' VALUES (' . implode(', ', $this->params['value']) . ')';
+        return 'INSERT INTO ' . $this->escape($this->runtime['table'])
+            . ' (' . $this->escape(implode(', ', array_keys($this->runtime['value']))) . ')'
+            . ' VALUES (' . implode(', ', $this->runtime['value']) . ')';
     }
 
     /**
@@ -626,43 +642,43 @@ class pdo_mysql extends pdo
      */
     private function build_select(): string
     {
-        $sql = 'SELECT ' . (isset($this->params['field']) ? $this->escape($this->params['field']) : '*')
-            . ' FROM ' . $this->escape($this->params['table']) . ' ';
+        $sql = 'SELECT ' . (isset($this->runtime['field']) ? $this->escape($this->runtime['field']) : '*')
+            . ' FROM ' . $this->escape($this->runtime['table']) . ' ';
 
-        if (isset($this->params['join'])) {
-            $sql .= $this->params['join'];
+        if (isset($this->runtime['join'])) {
+            $sql .= $this->runtime['join'];
         }
 
-        if (isset($this->params['where'])) {
-            $sql .= 'WHERE ' . $this->params['where'];
+        if (isset($this->runtime['where'])) {
+            $sql .= 'WHERE ' . $this->runtime['where'];
 
-            $this->params['bind_value'] = isset($this->params['bind_value'])
-                ? $this->params['bind_value'] + $this->params['bind_where']
-                : $this->params['bind_where'];
+            $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
+                ? $this->runtime['bind_value'] + $this->runtime['bind_where']
+                : $this->runtime['bind_where'];
         }
 
-        if (isset($this->params['group'])) {
-            $sql .= 'GROUP BY ' . $this->escape($this->params['group']) . ' ';
+        if (isset($this->runtime['group'])) {
+            $sql .= 'GROUP BY ' . $this->escape($this->runtime['group']) . ' ';
         }
 
-        if (isset($this->params['having'])) {
-            $sql .= 'HAVING ' . $this->params['having'];
+        if (isset($this->runtime['having'])) {
+            $sql .= 'HAVING ' . $this->runtime['having'];
 
-            $this->params['bind_value'] = isset($this->params['bind_value'])
-                ? $this->params['bind_value'] + $this->params['bind_having']
-                : $this->params['bind_having'];
+            $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
+                ? $this->runtime['bind_value'] + $this->runtime['bind_having']
+                : $this->runtime['bind_having'];
         }
 
-        if (isset($this->params['order'])) {
-            $sql .= 'ORDER BY ' . $this->params['order'] . ' ';
+        if (isset($this->runtime['order'])) {
+            $sql .= 'ORDER BY ' . $this->runtime['order'] . ' ';
         }
 
-        if (isset($this->params['limit'])) {
-            $sql .= 'LIMIT ' . $this->params['limit'] . ' ';
+        if (isset($this->runtime['limit'])) {
+            $sql .= 'LIMIT ' . $this->runtime['limit'] . ' ';
         }
 
-        if (isset($this->params['lock'])) {
-            $sql .= 'FOR ' . $this->params['lock'];
+        if (isset($this->runtime['lock'])) {
+            $sql .= 'FOR ' . $this->runtime['lock'];
         }
 
         return $sql;
@@ -673,18 +689,18 @@ class pdo_mysql extends pdo
      */
     private function build_update(): string
     {
-        $sql = 'UPDATE ' . $this->escape($this->params['table']) . ' SET ';
+        $sql = 'UPDATE ' . $this->escape($this->runtime['table']) . ' SET ';
 
         $data = [];
 
-        if (isset($this->params['value'])) {
-            foreach ($this->params['value'] as $col => $val) {
+        if (isset($this->runtime['value'])) {
+            foreach ($this->runtime['value'] as $col => $val) {
                 $data[] = $this->escape($col) . ' = ' . $val;
             }
         }
 
-        if (isset($this->params['incr'])) {
-            foreach ($this->params['incr'] as $col => $val) {
+        if (isset($this->runtime['incr'])) {
+            foreach ($this->runtime['incr'] as $col => $val) {
                 $opt = 0 <= $val ? '+' : '-';
                 $col = $this->escape($col);
 
@@ -696,16 +712,16 @@ class pdo_mysql extends pdo
 
         unset($data, $col, $val, $opt);
 
-        if (isset($this->params['where'])) {
-            $sql .= 'WHERE ' . $this->params['where'];
+        if (isset($this->runtime['where'])) {
+            $sql .= 'WHERE ' . $this->runtime['where'];
 
-            $this->params['bind_value'] = isset($this->params['bind_value'])
-                ? $this->params['bind_value'] + $this->params['bind_where']
-                : $this->params['bind_where'];
+            $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
+                ? $this->runtime['bind_value'] + $this->runtime['bind_where']
+                : $this->runtime['bind_where'];
         }
 
-        if (isset($this->params['limit'])) {
-            $sql .= 'LIMIT ' . $this->params['limit'];
+        if (isset($this->runtime['limit'])) {
+            $sql .= 'LIMIT ' . $this->runtime['limit'];
         }
 
         return $sql;
@@ -716,18 +732,18 @@ class pdo_mysql extends pdo
      */
     private function build_delete(): string
     {
-        $sql = 'DELETE FROM ' . $this->escape($this->params['table']) . ' ';
+        $sql = 'DELETE FROM ' . $this->escape($this->runtime['table']) . ' ';
 
-        if (isset($this->params['where'])) {
-            $sql .= 'WHERE ' . $this->params['where'];
+        if (isset($this->runtime['where'])) {
+            $sql .= 'WHERE ' . $this->runtime['where'];
 
-            $this->params['bind_value'] = isset($this->params['bind_value'])
-                ? $this->params['bind_value'] + $this->params['bind_where']
-                : $this->params['bind_where'];
+            $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
+                ? $this->runtime['bind_value'] + $this->runtime['bind_where']
+                : $this->runtime['bind_where'];
         }
 
-        if (isset($this->params['limit'])) {
-            $sql .= 'LIMIT ' . $this->params['limit'];
+        if (isset($this->runtime['limit'])) {
+            $sql .= 'LIMIT ' . $this->runtime['limit'];
         }
 
         return $sql;
@@ -751,7 +767,7 @@ class pdo_mysql extends pdo
             if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
                 array_shift($value);
                 $condition .= $item . ' ';
-            } elseif ('' !== $condition || isset($this->params[$refer_key])) {
+            } elseif ('' !== $condition || isset($this->runtime[$refer_key])) {
                 $condition .= 'AND ';
             }
 
@@ -768,14 +784,14 @@ class pdo_mysql extends pdo
                     $bind_key  = $this->rand_key($value[0]);
                     $condition .= $bind_key . ' ';
 
-                    $this->params[$param_key][$bind_key] = $value[2];
+                    $this->runtime[$param_key][$bind_key] = $value[2];
                 } elseif ('BETWEEN' !== $item) {
                     $bind_keys = [];
 
                     foreach ($value[2] as $val) {
                         $bind_keys[] = $bind_key = $this->rand_key($value[0]);
 
-                        $this->params[$param_key][$bind_key] = $val;
+                        $this->runtime[$param_key][$bind_key] = $val;
                     }
 
                     $condition .= '(' . implode(', ', $bind_keys) . ') ';
@@ -785,7 +801,7 @@ class pdo_mysql extends pdo
                     foreach ($value[2] as $val) {
                         $bind_keys[] = $bind_key = $this->rand_key($value[0]);
 
-                        $this->params[$param_key][$bind_key] = $val;
+                        $this->runtime[$param_key][$bind_key] = $val;
                     }
 
                     $condition .= implode(' AND ', $bind_keys) . ' ';
@@ -795,7 +811,7 @@ class pdo_mysql extends pdo
                     $bind_key  = $this->rand_key($value[0]);
                     $condition .= '= ' . $bind_key . ' ';
 
-                    $this->params[$param_key][$bind_key] = $value[1];
+                    $this->runtime[$param_key][$bind_key] = $value[1];
                 } else {
                     $condition .= $item . ' ';
                 }
@@ -805,7 +821,7 @@ class pdo_mysql extends pdo
                 foreach ($value[1] as $val) {
                     $bind_keys[] = $bind_key = $this->rand_key($value[0]);
 
-                    $this->params[$param_key][$bind_key] = $val;
+                    $this->runtime[$param_key][$bind_key] = $val;
                 }
 
                 $condition .= 'IN (' . implode(', ', $bind_keys) . ') ';
