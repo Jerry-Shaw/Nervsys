@@ -80,7 +80,12 @@ class output extends system
      */
     private static function format_json(): string
     {
-        return json_encode(parent::$result, self::$pretty ? 4034 : 3906);
+        return json_encode(
+            parent::$result,
+            self::$pretty
+                ? JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS | JSON_PRESERVE_ZERO_FRACTION | JSON_PRETTY_PRINT
+                : JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS | JSON_PRESERVE_ZERO_FRACTION
+        );
     }
 
     /**
