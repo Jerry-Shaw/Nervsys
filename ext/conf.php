@@ -75,7 +75,7 @@ class conf
     {
         self::$pool[$section] = isset(self::$pool[$section])
             ? array_replace(self::$pool[$section], $config)
-            : self::$pool[$section];
+            : $config;
 
         unset($section, $config);
     }
