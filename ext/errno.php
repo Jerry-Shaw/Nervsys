@@ -53,7 +53,7 @@ class errno
 
         if (is_array($data = parse_ini_file($file, false, INI_SCANNER_TYPED))) {
             self::$lang = &$lang;
-            self::$pool = &$data;
+            self::$pool = array_replace(self::$pool, $data);
         }
 
         unset($dir, $name, $lang, $file, $data);

@@ -47,7 +47,7 @@ class conf
         $file = ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
 
         if (is_array($data = parse_ini_file($file, true, INI_SCANNER_TYPED))) {
-            self::$pool = &$data;
+            self::$pool = array_replace(self::$pool, $data);
         }
 
         unset($dir, $name, $file, $data);
