@@ -107,9 +107,10 @@ class error extends system
     /**
      * Exception handler
      *
-     * @param $throwable
+     * @param \Throwable $throwable
+     * @param bool       $error_exit
      */
-    public static function exception_handler(\Throwable $throwable): void
+    public static function exception_handler(\Throwable $throwable, bool $error_exit = true): void
     {
         //Get exception name
         $exception = get_class($throwable);
@@ -169,7 +170,7 @@ class error extends system
         log::display($level, $message, $context);
 
         //Stop on error
-        'error' === $level && parent::stop();
-        unset($level, $message, $context);
+        $error_exit && 'error' === $level && parent::stop();
+        unset($error_exit, $level, $message, $context);
     }
 }
