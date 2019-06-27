@@ -183,6 +183,7 @@ class upload extends factory
         //Build upload result
         $result = $this->get_error(UPLOAD_ERR_OK);
 
+        //Collect upload data
         $result['url']  = strtr($url_path, '\\', '/');
         $result['name'] = &$file_name;
         $result['size'] = $this->file['stream']['size'];
@@ -257,7 +258,7 @@ class upload extends factory
     }
 
     /**
-     * Save file
+     * Save uploaded file
      *
      * @param string $file_path
      *
@@ -265,16 +266,16 @@ class upload extends factory
      */
     private function save_file(string $file_path): bool
     {
-        //Move/Copy tmp file
-        $save = move_uploaded_file($this->file['stream']['tmp_name'], $file_path) || copy($this->file['stream']['tmp_name'], $file_path);
-        is_file($this->file['stream']['tmp_name']) && unlink($this->file['stream']['tmp_name']);
+        $save = move_uploaded_file($this->file['stream']['tmp_name'], $file_path)
+            || rename($this->file['stream']['tmp_name'], $file_path)
+            || copy($this->file['stream']['tmp_name'], $file_path);
 
         unset($file_path);
         return $save;
     }
 
     /**
-     * Save base64
+     * Save base64 to file
      *
      * @param string $file_path
      *
@@ -282,7 +283,6 @@ class upload extends factory
      */
     private function save_base64(string $file_path): bool
     {
-        //Write file data
         if (!$save = file_put_contents($file_path, $this->file['stream']['data']) === $this->file['stream']['size']) {
             is_file($file_path) && unlink($file_path);
         }
