@@ -21,7 +21,6 @@
 namespace core\handler;
 
 use core\parser\data;
-
 use core\parser\trustzone;
 
 class operator extends factory
@@ -63,7 +62,8 @@ class operator extends factory
 
             //Get module name
             if (false !== strpos($module = strtr($name, '\\', '/'), '/')) {
-                $module = strstr(parent::get_app_cmd($module), '/', true);
+                $module = parent::get_app_cmd($module);
+                $module = substr($module, 0, strpos($module, '/', 1));
             }
 
             try {
