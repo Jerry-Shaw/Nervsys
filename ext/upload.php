@@ -240,7 +240,7 @@ class upload extends factory
         $this->file['method'] = 'base64';
         $this->file['stream'] = [
             'type' => substr($base64, 5, $pos - 5),
-            'data' => $data = base64_decode(substr($base64, $pos + 8), true),
+            'data' => $data = base64_decode(substr($base64, $pos + 8)),
             'size' => strlen($data)
         ];
 

@@ -48,7 +48,7 @@ class data
     {
         if (0 === strpos($value, self::BASE64)) {
             $value = substr($value, strlen(self::BASE64));
-            $value = base64_decode($value, true);
+            $value = base64_decode($value);
         }
 
         return $value;
