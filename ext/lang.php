@@ -61,7 +61,7 @@ class lang
      *
      * @return string
      */
-    private static function detect(): string
+    public static function detect(): string
     {
         static $lang = '';
 

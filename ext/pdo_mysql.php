@@ -466,7 +466,7 @@ class pdo_mysql extends pdo
      *
      * @return string
      */
-    private function get_table(string $table): string
+    protected function get_table(string $table): string
     {
         return $this->prefix . $table;
     }
