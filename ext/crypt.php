@@ -88,7 +88,7 @@ class crypt extends factory
     {
         $keys = $this->aes_keys($key);
 
-        $string = (string)openssl_encrypt($string, $this->method, $keys['key'], OPENSSL_ZERO_PADDING, $keys['iv']);
+        $string = $this->base64_url_encode((string)openssl_encrypt($string, $this->method, $keys['key'], OPENSSL_RAW_DATA, $keys['iv']));
 
         unset($key, $keys);
         return $string;
@@ -106,7 +106,7 @@ class crypt extends factory
     {
         $keys = $this->aes_keys($key);
 
-        $string = (string)openssl_decrypt($string, $this->method, $keys['key'], OPENSSL_ZERO_PADDING, $keys['iv']);
+        $string = (string)openssl_decrypt($this->base64_url_decode($string), $this->method, $keys['key'], OPENSSL_RAW_DATA, $keys['iv']);
 
         unset($key, $keys);
         return $string;
@@ -131,10 +131,8 @@ class crypt extends factory
             return '';
         }
 
-        $string = (string)base64_encode($string);
-
         unset($key, $encrypt);
-        return $string;
+        return $this->base64_url_encode($string);
     }
 
     /**
@@ -148,7 +146,7 @@ class crypt extends factory
      */
     public function rsa_decrypt(string $string, string $key): string
     {
-        $string = (string)base64_decode($string, true);
+        $string = $this->base64_url_decode($string);
 
         $decrypt = 'private' === $this->rsa_type($key)
             ? openssl_private_decrypt($string, $string, $key)
@@ -221,7 +219,7 @@ class crypt extends factory
         $mix = $this->keygen::obscure($key);
 
         //Encrypt signature
-        $mix = '' === $rsa_key ? (string)base64_encode($mix) : $this->rsa_encrypt($mix, $rsa_key);
+        $mix = '' === $rsa_key ? $this->base64_url_encode($mix) : $this->rsa_encrypt($mix, $rsa_key);
         $sig = '' !== $mix ? $mix . '.' . $this->encrypt($string, $key) : '';
 
         unset($string, $rsa_key, $key, $mix);
@@ -247,7 +245,7 @@ class crypt extends factory
         list($mix, $enc) = explode('.', $string, 2);
 
         //Rebuild crypt keys
-        $mix = '' === $rsa_key ? (string)base64_decode($mix, true) : $this->rsa_decrypt($mix, $rsa_key);
+        $mix = '' === $rsa_key ? $this->base64_url_decode($mix) : $this->rsa_decrypt($mix, $rsa_key);
         $key = $this->keygen::rebuild($mix);
 
         //Decrypt signature
@@ -311,5 +309,37 @@ class crypt extends factory
 
         unset($key, $start, $end);
         return $type;
+    }
+
+    /**
+     * Encode data into base64 (url safe)
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    private function base64_url_encode(string $string): string
+    {
+        return strtr(rtrim(base64_encode($string), '='), '+/', '-_');
+    }
+
+    /**
+     * Decode data from base64 (url safe)
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    private function base64_url_decode(string $string): string
+    {
+        $string   = strtr($string, '-_', '+/');
+        $data_len = strlen($string);
+
+        if (0 < $pad_len = $data_len % 4) {
+            $string = str_pad($string, $data_len + $pad_len, '=', STR_PAD_RIGHT);
+        }
+
+        unset($data_len, $pad_len);
+        return (string)base64_decode($string);
     }
 }
