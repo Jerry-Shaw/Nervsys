@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.2.20  
+Stable version: 7.3.0  
 Extension version: 2.0  
 [Chinese Documents](https://github.com/NervSys/NervSys/blob/master/README_zh.md)  
 [Unit Test Suites](https://github.com/NervSys/tests)  
@@ -87,7 +87,12 @@ PHP 7.2+ and above. Any kind of web server or running under CLI mode.
 ## About api.php
 
 "api.php" is the default entry script of Nervsys. But it is only an entry of a site, and can be placed anywhere as needed.  
-We strongly suggest that, create a new entry file under the main app path by modifying the require path, then set the site root to main app path also, to fully avoid exposing project structure to outside.  
+We strongly suggest that, create a new entry file under the main app path by modifying the system require path, then set the site root to main app path also, to fully avoid exposing project structure to outside.  
+
+
+## About core files
+
+From version 7.3.0, core files and structure can be placed under any folder as needed. The only thing needs to change, is to modify "api.php" or other entry to include "system.php", and set "ROOT" to the path where "api.php" or other entry located.
 
 
 ## Reserved Words

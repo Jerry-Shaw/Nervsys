@@ -77,9 +77,9 @@ class operator extends factory
                     self::exec_dep(parent::$load[$module]);
                 }
 
-                //Check & load class
-                if (!class_exists($class, false) && !self::load_class($class)) {
-                    //Class NOT exist
+                //Check loaded class
+                if (!class_exists($class)) {
+                    //Class NOT exists
                     continue;
                 }
 
@@ -155,7 +155,7 @@ class operator extends factory
                     [
                         ['pipe', 'r'],
                         ['pipe', 'w'],
-                        ['file', ROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_cli_' . date('Y-m-d') . '.log', 'a']
+                        ['file', SYSROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_cli_' . date('Y-m-d') . '.log', 'a']
                     ],
                     $pipes
                 );
@@ -184,35 +184,6 @@ class operator extends factory
         }
 
         unset($item_list, $command, $process, $pipes, $pipe);
-    }
-
-    /**
-     * Load class file
-     *
-     * @param string $class
-     *
-     * @return bool
-     */
-    private static function load_class(string $class): bool
-    {
-        $load = false;
-        $file = trim(strtr($class, '\\', DIRECTORY_SEPARATOR), DIRECTORY_SEPARATOR) . '.php';
-        $list = false !== strpos($file, DIRECTORY_SEPARATOR) ? [ROOT] : parent::$path;
-
-        foreach ($list as $path) {
-            if (is_string($path = realpath($path . $file))) {
-                //Require script file
-                require $path;
-
-                //Check class status
-                if ($load = class_exists($class, false)) {
-                    break;
-                }
-            }
-        }
-
-        unset($class, $file, $list, $path);
-        return $load;
     }
 
     /**
@@ -271,6 +242,7 @@ class operator extends factory
      */
     private static function build_key(string $class, string $method): string
     {
+        //Get CMD key from CGI mapping settings
         $key = parent::$param_cgi[$class . '-' . $method] ?? (parent::$param_cgi[$class] ?? $class) . '/' . $method;
         $key = parent::get_app_cmd($key);
 

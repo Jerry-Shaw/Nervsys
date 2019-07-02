@@ -26,17 +26,38 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
 }
 
 //Define NervSys version
-define('VER', '7.2.20');
+define('VER', '7.3.0');
 
-//Define absolute root path
-define('ROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
+//Define system root path
+define('SYSROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
+
+//Define ROOT path to SYSROOT if NOT defined
+if (!defined('ROOT')) {
+    define('ROOT', SYSROOT);
+}
 
 //Register autoload function
 spl_autoload_register(
     static function (string $class): void
     {
-        require (false !== strpos($class, '\\') ? ROOT . strtr($class, '\\', DIRECTORY_SEPARATOR) : $class) . '.php';
-        unset($class);
+        //Load class file without namespace directly from include path
+        if (false === strpos($class, '\\')) {
+            require $class . '.php';
+            return;
+        }
+
+        //Get relative path of target class file
+        $file = strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+
+        //Load class file from SYSROOT or ROOT
+        foreach ([SYSROOT, ROOT] as $path) {
+            if (is_file($class_file = $path . $file)) {
+                require $class_file;
+                break;
+            }
+        }
+
+        unset($class, $file, $path, $class_file);
     }
 );
 
@@ -65,10 +86,10 @@ system::init_env();
 class system
 {
     //Log path
-    const LOG_PATH = ROOT . 'logs' . DIRECTORY_SEPARATOR;
+    const LOG_PATH = SYSROOT . 'logs' . DIRECTORY_SEPARATOR;
 
     //Configuration file
-    const CFG_FILE = ROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
+    const CFG_FILE = SYSROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
 
     //Running stage codes
     const STAGE_INIT  = 1;
