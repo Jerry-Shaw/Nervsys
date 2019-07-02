@@ -164,7 +164,7 @@ class mpc extends factory
                 [
                     ['pipe', 'r'],
                     ['pipe', 'w'],
-                    ['file', ROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_mpc_' . date('Y-m-d') . '.log', 'a']
+                    ['file', SYSROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_mpc_' . date('Y-m-d') . '.log', 'a']
                 ],
                 $pipes
             );
