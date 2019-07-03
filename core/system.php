@@ -20,9 +20,9 @@
 
 namespace core;
 
-//"ROOT" and "ENTRY" MUST be defined in entry script
-if (!defined('ROOT') || !defined('ENTRY')) {
-    exit('Constant "ROOT" and "ENTRY" MUST be defined in entry script!');
+//"ROOT" and "ENTRY_SCRIPT" MUST be defined in entry script
+if (!defined('ROOT') || !defined('ENTRY_SCRIPT')) {
+    exit('Constant "ROOT" and "ENTRY_SCRIPT" MUST be defined in entry script!');
 }
 
 //Require PHP version >= 7.2.0

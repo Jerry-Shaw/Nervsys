@@ -25,7 +25,7 @@ declare(strict_types = 1);
 define('ROOT', __DIR__ . DIRECTORY_SEPARATOR);
 
 //Define entry path
-define('ENTRY', __FILE__);
+define('ENTRY_SCRIPT', __FILE__);
 
 //Load system script
 require __DIR__ . '/core/system.php';
