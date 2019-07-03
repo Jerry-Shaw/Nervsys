@@ -20,6 +20,11 @@
 
 namespace core;
 
+//"ROOT" and "ENTRY" MUST be defined in entry script
+if (!defined('ROOT') || !defined('ENTRY')) {
+    exit('Constant "ROOT" and "ENTRY" MUST be defined in entry script!');
+}
+
 //Require PHP version >= 7.2.0
 if (version_compare(PHP_VERSION, '7.2.0', '<')) {
     exit('NervSys needs PHP 7.2.0 or higher!');
@@ -30,11 +35,6 @@ define('SYSVER', '7.3.0');
 
 //Define system root path
 define('SYSROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
-
-//Define ROOT path to SYSROOT if NOT defined
-if (!defined('ROOT')) {
-    define('ROOT', SYSROOT);
-}
 
 //Register autoload function
 spl_autoload_register(
