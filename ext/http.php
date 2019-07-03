@@ -34,7 +34,7 @@ class http extends factory
 
     protected $http       = 'HTTP/2.0';                                             //HTTP Version
     protected $accept     = 'text/plain,text/html,text/xml,application/json,*;q=0'; //Accept types
-    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . VER . ')';        //User Agent string
+    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . SYSVER . ')';        //User Agent string
     protected $connection = 'keep-alive';                                           //Connection type
 
     protected $accept_charset  = 'UTF-8,*;q=0';                 //Accept charset
