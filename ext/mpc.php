@@ -100,7 +100,7 @@ class mpc extends factory
         $this->jobs = [];
 
         //Build basic command
-        $this->php_cmd = $this->php_exe . ' "' . ROOT . 'api.php"';
+        $this->php_cmd = $this->php_exe . ' "' . ENTRY_SCRIPT . '"';
 
         //Add wait option
         if ($wait) {

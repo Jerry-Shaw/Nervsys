@@ -215,7 +215,7 @@ class redis_queue extends redis
         //Build child command
         $this->child = platform::cmd_bg(
             '"' . platform::php_path() . '" '
-            . '"' . ROOT . 'api.php" --ret '
+            . '"' . ENTRY_SCRIPT . '" --ret '
             . '--cmd="' . parent::get_app_cmd(strtr(get_class($this), '\\', '/')) . '-child"'
         );
 
