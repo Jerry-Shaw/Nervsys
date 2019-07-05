@@ -322,39 +322,43 @@ class pdo_mysql extends pdo
      * Query SQL and return fetched data
      *
      * @param string $sql
-     * @param bool   $fetch_col
+     * @param int    $fetch_style
      * @param int    $col_no
      *
      * @return array
      */
-    public function query(string $sql, bool $fetch_col = false, int $col_no = 0): array
+    public function query(string $sql, int $fetch_style = \PDO::FETCH_ASSOC, int $col_no = 0): array
     {
         try {
             $this->sql = &$sql;
+            $sql_param = [$sql, $fetch_style];
 
-            $stmt = !$fetch_col
-                ? $this->instance->query($sql, \PDO::FETCH_ASSOC)
-                : $this->instance->query($sql, \PDO::FETCH_COLUMN, $col_no);
+            if ($fetch_style === \PDO::FETCH_COLUMN) {
+                $sql_param[] = &$col_no;
+            }
+
+            $stmt = $this->instance->query(...$sql_param);
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
-        $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
+        array_shift($sql_param);
+        $data = $stmt->fetchAll(...$sql_param);
 
-        unset($sql, $fetch_col, $col_no, $stmt);
+        unset($sql, $fetch_style, $col_no, $sql_param, $stmt);
         return $data;
     }
 
     /**
      * Execute prepared SQL and return fetched data
      *
-     * @param bool $fetch_col
+     * @param int $fetch_style
      *
      * @return array
      */
-    public function fetch(bool $fetch_col = false): array
+    public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
         try {
             $this->fill_sql();
@@ -368,9 +372,9 @@ class pdo_mysql extends pdo
             throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
-        $data = $stmt->fetchAll(!$fetch_col ? \PDO::FETCH_ASSOC : \PDO::FETCH_COLUMN);
+        $data = $stmt->fetchAll($fetch_style);
 
-        unset($fetch_col, $stmt);
+        unset($fetch_style, $stmt);
         return $data;
     }
 
