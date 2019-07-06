@@ -270,42 +270,34 @@ class system
     }
 
     /**
-     * Get IP
-     *
-     * @param bool $allow_proxy
+     * Get client IP
      *
      * @return string
      */
-    public static function get_ip(bool $allow_proxy = false): string
+    public static function get_ip(): string
     {
-        //Get remote IP
-        $remote_ip = $_SERVER['REMOTE_ADDR'];
-
-        //Check forwarded IP
-        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            //Get forwarded IP list
-            $forward_ip = array_map(
-                static function (string $ip): string
-                {
-                    return trim($ip);
-                }, false !== strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',')
-                ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])
-                : [$_SERVER['HTTP_X_FORWARDED_FOR']]
-            );
-
-            //Check remote IP with last proxy IP
-            if ($remote_ip !== array_pop($forward_ip) || empty($forward_ip)) {
-                //High anonymity proxy detected
-                return $allow_proxy ? $remote_ip : '';
-            }
-
-            //Copy remote IP
-            $remote_ip = array_shift($forward_ip);
-            unset($forward_ip);
+        //Direct request
+        if (!isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            return $_SERVER['REMOTE_ADDR'];
         }
 
-        //Validate IP address (IPV4 & IPV6)
-        return (string)filter_var($remote_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6);
+        //Forwarded request
+        $remote_list = false !== strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ', ')
+            ? explode(', ', $_SERVER['HTTP_X_FORWARDED_FOR'])
+            : [$_SERVER['HTTP_X_FORWARDED_FOR']];
+
+        //Get valid client IP
+        foreach ($remote_list as $ip) {
+            if (false === $remote_ip = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+                continue;
+            }
+
+            unset($remote_list, $ip);
+            return $remote_ip;
+        }
+
+        //IP NOT valid
+        return '';
     }
 
     /**
