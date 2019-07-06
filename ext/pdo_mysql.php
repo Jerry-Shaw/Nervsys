@@ -31,7 +31,7 @@ class pdo_mysql extends pdo
     protected $prefix = '';
 
     //Runtime data
-    private $runtime = [];
+    protected $runtime = [];
 
     /**
      * Insert into table
@@ -482,7 +482,7 @@ class pdo_mysql extends pdo
      *
      * @return string
      */
-    private function rand_key(string $key): string
+    protected function rand_key(string $key): string
     {
         return ':' . strtr($key, '.', '_') . '_' . hash('crc32b', uniqid(mt_rand(), true));
     }
@@ -493,7 +493,7 @@ class pdo_mysql extends pdo
      * @param string $action
      * @param string $table
      */
-    private function set_action(string $action, string $table): void
+    protected function set_action(string $action, string $table): void
     {
         if ('' === $table) {
             $table = get_class($this);
@@ -519,7 +519,7 @@ class pdo_mysql extends pdo
      *
      * @return string
      */
-    private function escape(string $field): string
+    protected function escape(string $field): string
     {
         $list = false !== strpos($field, ',') ? explode(',', $field) : [$field];
 
@@ -626,7 +626,7 @@ class pdo_mysql extends pdo
     /**
      * Fill SQL
      */
-    private function fill_sql(): void
+    protected function fill_sql(): void
     {
         $this->sql = trim($this->{'build_' . strtolower($this->runtime['action'])}());
     }
