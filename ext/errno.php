@@ -62,13 +62,14 @@ class errno
     /**
      * Set standard output error
      *
-     * @param int $code
-     * @param int $errno
+     * @param int    $code
+     * @param int    $errno
+     * @param string $message
      */
-    public static function set(int $code, int $errno = 0): void
+    public static function set(int $code, int $errno = 0, string $message = ''): void
     {
         //Get error data
-        $error = self::get($code, $errno);
+        $error = self::get($code, $errno, $message);
         $keys  = array_keys($error);
 
         //Overwrite system error pool
@@ -76,25 +77,30 @@ class errno
             system::$error[$key] = $error[$key];
         }
 
-        unset($code, $errno, $error, $keys, $key);
+        unset($code, $errno, $message, $error, $keys, $key);
     }
 
     /**
      * Get standard error data
      *
-     * @param int $code
-     * @param int $errno
+     * @param int    $code
+     * @param int    $errno
+     * @param string $message
      *
      * @return array
      */
-    public static function get(int $code, int $errno = 0): array
+    public static function get(int $code, int $errno = 0, string $message = ''): array
     {
+        if ('' === $message) {
+            $message = isset(self::$pool[$code])
+                ? (self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code])
+                : 'Error message NOT found!';
+        }
+
         return [
             'code'    => &$code,
             'errno'   => &$errno,
-            'message' => isset(self::$pool[$code])
-                ? (self::$lang ? gettext(self::$pool[$code]) : self::$pool[$code])
-                : 'Error message NOT found!'
+            'message' => &$message
         ];
     }
 }
