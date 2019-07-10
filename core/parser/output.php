@@ -43,14 +43,26 @@ class output extends system
             self::$pretty = true;
         }
 
-        //Reduce array result
-        if (1 === count(parent::$result)) {
-            parent::$result = current(parent::$result);
-        }
+        //Count results
+        $count = count(parent::$result);
 
-        //Merge error data
+        //Build output result
         if (!empty(parent::$error)) {
-            parent::$result = empty(parent::$result) ? parent::$error : parent::$error + ['data' => parent::$result];
+            //Merge error data
+            switch ($count) {
+                case 0:
+                    parent::$result = parent::$error;
+                    break;
+                case 1:
+                    parent::$result = parent::$error + ['data' => current(parent::$result)];
+                    break;
+                default:
+                    parent::$result = parent::$error + ['data' => parent::$result];
+                    break;
+            }
+        } elseif (1 === $count) {
+            //Reduce result data
+            parent::$result = current(parent::$result);
         }
 
         //Check MIME-Type
@@ -70,7 +82,7 @@ class output extends system
             echo PHP_EOL . PHP_EOL . parent::$logs;
         }
 
-        unset($type);
+        unset($count, $type);
     }
 
     /**
