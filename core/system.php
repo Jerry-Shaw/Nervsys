@@ -122,6 +122,8 @@ class system
     //Parsed cmd & params
     protected static $cmd_cgi   = [];
     protected static $cmd_cli   = [];
+    protected static $cgi_list  = [];
+    protected static $cli_list  = [];
     protected static $param_cgi = [];
     protected static $param_cli = ['argv' => [], 'pipe' => '', 'time' => 0, 'ret' => false];
 

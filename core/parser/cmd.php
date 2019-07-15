@@ -50,19 +50,25 @@ class cmd extends system
      */
     private static function pack_cgi(array $cmd): array
     {
-        $key  = -1;
-        $list = [];
+        $key   = -1;
+        $list  = [];
+        $class = '';
 
         foreach ($cmd as $item) {
             if (false !== strpos($item, '/') || false !== strpos($item, '\\')) {
+                //Get CMD prefix
+                $class = $item . '-';
                 //Move group index key
                 ++$key;
+            } else {
+                //Save to CGI list
+                parent::$cgi_list[] = $class . $item;
             }
 
             $list[$key][] = $item;
         }
 
-        unset($cmd, $key, $item);
+        unset($cmd, $key, $class, $item);
         return $list;
     }
 
@@ -146,6 +152,9 @@ class cmd extends system
             if (!isset(parent::$cli[$item]) || '' === parent::$cli[$item]) {
                 continue;
             }
+
+            //Save to CLI list
+            parent::$cli_list[] = $item;
 
             $order[$key]['key'] = $item;
             $order[$key]['cmd'] = parent::$cli[$item];
