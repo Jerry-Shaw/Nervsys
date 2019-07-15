@@ -139,7 +139,7 @@ class cmd extends system
         }
 
         //Build CMD
-        $key   = -1;
+        $key   = 0;
         $order = [];
 
         foreach ($cmd as $item) {
@@ -160,6 +160,9 @@ class cmd extends system
             if (!empty(parent::$param_cli['argv'])) {
                 $order[$key]['argv'] = ' ' . implode(' ', parent::$param_cli['argv']);
             }
+
+            //Move group index key
+            ++$key;
         }
 
         unset($cmd, $key, $item);
