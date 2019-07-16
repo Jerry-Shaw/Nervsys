@@ -167,7 +167,7 @@ class system
 
         //Refill app_path
         if ('' !== self::$sys['app_path']) {
-            self::$sys['app_path'] = trim(self::$sys['app_path'], " /\\\t\n\r\0\x0B") . '/';
+            self::$sys['app_path'] = trim(self::$sys['app_path'], '\\/') . '/';
         }
 
         unset($conf, $key, $val);

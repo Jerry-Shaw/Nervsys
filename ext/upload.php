@@ -166,8 +166,8 @@ class upload extends factory
 
         //Build save properties
         $file_name = $this->file['save_as'] . '.' . $ext;
-        $url_path  = ltrim($save_path, " \t\n\r\0\x0B\\/") . $file_name;
-        $file_path = rtrim($this->root, " \t\n\r\0\x0B\\/") . DIRECTORY_SEPARATOR . $url_path;
+        $url_path  = ltrim($save_path, '\\/') . $file_name;
+        $file_path = rtrim($this->root, '\\/') . DIRECTORY_SEPARATOR . $url_path;
 
         //Delete existing file
         is_file($file_path) && unlink($file_path);

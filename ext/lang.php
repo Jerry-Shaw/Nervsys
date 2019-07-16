@@ -48,7 +48,7 @@ class lang
         putenv('LANG=' . $lang);
         setlocale(LC_ALL, $lang);
 
-        $dir = '/' !== $dir ? trim($dir, " /\\\t\n\r\0\x0B") . DIRECTORY_SEPARATOR : '';
+        $dir = '/' !== $dir ? trim($dir, '\\/') . DIRECTORY_SEPARATOR : '';
 
         bindtextdomain($file, ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR);
         textdomain($file);

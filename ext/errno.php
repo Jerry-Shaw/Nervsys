@@ -47,7 +47,7 @@ class errno
      */
     public static function load(string $dir, string $name, bool $lang = true): void
     {
-        $dir = '/' !== $dir ? trim($dir, " /\\\t\n\r\0\x0B") . DIRECTORY_SEPARATOR : '';
+        $dir = '/' !== $dir ? trim($dir, '\\/') . DIRECTORY_SEPARATOR : '';
 
         $file = ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
 

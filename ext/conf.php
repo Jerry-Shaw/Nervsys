@@ -39,18 +39,20 @@ class conf
      *
      * @param string $dir
      * @param string $name
+     *
+     * @return array
      */
-    public static function load(string $dir, string $name): void
+    public static function load(string $dir, string $name): array
     {
-        $dir = '/' !== $dir ? trim($dir, " /\\\t\n\r\0\x0B") . DIRECTORY_SEPARATOR : '';
-
+        $dir  = '/' !== $dir ? trim($dir, "/\\") . DIRECTORY_SEPARATOR : '';
         $file = ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
 
-        if (is_array($data = parse_ini_file($file, true, INI_SCANNER_TYPED))) {
-            self::$pool = array_replace(self::$pool, $data);
-        }
+        is_array($data = parse_ini_file($file, true, INI_SCANNER_TYPED))
+            ? self::$pool = array_replace(self::$pool, $data)
+            : $data = [];
 
-        unset($dir, $name, $file, $data);
+        unset($dir, $name, $file);
+        return $data;
     }
 
     /**

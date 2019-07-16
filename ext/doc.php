@@ -35,7 +35,7 @@ class doc extends factory
     public function add_exclude(string $path): void
     {
         if ('' !== parent::$sys['app_path']) {
-            $path = trim(parent::$sys['app_path'], " \t\n\r\0\x0B\\/") . DIRECTORY_SEPARATOR . $path;
+            $path = trim(parent::$sys['app_path'], '\\/') . DIRECTORY_SEPARATOR . $path;
         }
 
         if (!is_dir(ROOT . $path)) {
@@ -58,7 +58,7 @@ class doc extends factory
 
         //Refill path with app_path
         if ('' !== parent::$sys['app_path']) {
-            $path .= trim(parent::$sys['app_path'], " \t\n\r\0\x0B\\/");
+            $path .= trim(parent::$sys['app_path'], '\\/');
         }
 
         //Get all php scripts
@@ -142,7 +142,7 @@ class doc extends factory
     {
         //Build full module name
         $module_name = '' !== parent::$sys['app_path']
-            ? trim(parent::$sys['app_path'], " \t\n\r\0\x0B\\/") . '\\' . $module
+            ? trim(parent::$sys['app_path'], '\\/') . '\\' . $module
             : $module;
 
         //Build class name
