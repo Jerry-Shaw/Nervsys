@@ -87,18 +87,15 @@ class trustzone extends factory
      */
     public static function verify(string $class, string $method): void
     {
-        //Get param value
-        $value = is_string(self::$record[$method])
-            ? self::$record[$method]
-            : (self::$record[$method]['param'] ?? '');
-
-        //Skip param check
-        if ('' === $value) {
-            return;
+        //Get param value (verified before, always exist)
+        if (is_string($param = self::$record[$method]['param'] ?? self::$record[$method])) {
+            $param = self::fill_val($param);
         }
 
-        //Fill param values
-        $param = self::fill_val($value);
+        //Skip param check
+        if (empty($param)) {
+            return;
+        }
 
         //Check params with input data
         $diff = array_diff($param, array_intersect(array_keys(parent::$data), $param));
@@ -111,7 +108,7 @@ class trustzone extends factory
             );
         }
 
-        unset($class, $method, $value, $param, $diff);
+        unset($class, $method, $param, $diff);
     }
 
     /**
@@ -123,10 +120,16 @@ class trustzone extends factory
      */
     public static function get_dep(string $method): array
     {
-        return [
-            'pre'  => isset(self::$record[$method]['pre']) ? self::fill_val(self::$record[$method]['pre']) : [],
-            'post' => isset(self::$record[$method]['post']) ? self::fill_val(self::$record[$method]['post']) : []
-        ];
+        $dep = [];
+
+        //Fill dependency values
+        foreach (['pre', 'post'] as $key) {
+            $value     = self::$record[$method][$key] ?? [];
+            $dep[$key] = is_string($value) ? self::fill_val($value) : $value;
+        }
+
+        unset($method, $key, $value);
+        return $dep;
     }
 
     /**
