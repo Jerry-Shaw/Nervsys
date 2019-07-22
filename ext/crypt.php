@@ -31,7 +31,18 @@ class crypt extends factory
     protected $method = 'AES-256-CTR';
 
     //Keygen class
-    protected $keygen = '\\ext\\keygen';
+    protected $keygen = keygen::class;
+
+    /**
+     * crypt constructor.
+     *
+     * @param string $keygen
+     */
+    public function __construct(string $keygen = keygen::class)
+    {
+        //Copy keygen class
+        $this->keygen = &$keygen;
+    }
 
     /**
      * Get crypt key
