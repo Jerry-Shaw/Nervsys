@@ -1,78 +1,34 @@
 <?php
 
 /**
- * API Script
+ * API Entry
  *
- * Author Jerry Shaw <jerry-shaw@live.com>
- * Author 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
- * Copyright 2015-2017 Jerry Shaw
- * Copyright 2016-2017 秋水之冰
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This file is part of NervSys.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * NervSys is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * NervSys is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with NervSys. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-/**
- * This script is an universal API script for NervSys.
- * Authentication is recommended for security before running "data_pool::start()".
- */
+//Declare strict types
+declare(strict_types = 1);
 
-declare(strict_types=1);
+//Define root path
+define('ROOT', __DIR__ . DIRECTORY_SEPARATOR);
 
-//Load CFG file (basic function script is loaded in the cfg file as also).
-require __DIR__ . '/core/_include/cfg.php';
+//Define entry path
+define('ENTRY_SCRIPT', __FILE__);
 
-//Detect PHP SAPI
-if ('cli' !== PHP_SAPI) {
-    //Code Block for CGI Mode
-    //Load data_key as an overall module and start it.
-    load_lib('core', 'data_key');
-    //Start data_key process
-    \data_key::start();
-    //Load data_pool as an overall module and start it.
-    load_lib('core', 'data_pool');
-    //Start data_pool process
-    \data_pool::start();
-    //Valid values for "data_pool::$format" are "json" and "raw", which should be changed via GET or POST
-    //All returned data will be output in JSON by default, or, kept in data pool for further use by setting to "raw"
-    if ('json' === \data_pool::$format) {
-        //Force output content to UTF-8 formatted plain text
-        header('Content-Type: text/plain; charset=UTF-8');
-        //Output JSON formatted result
-        echo json_encode(\data_pool::$pool);
-        exit;
-    }
-} else {
-    //Code Block for CLI Mode
-    //Force output content to UTF-8 formatted plain text
-    header('Content-Type: text/plain; charset=UTF-8');
-    //Load CLI Controlling Module
-    load_lib('core', 'ctrl_cli');
-    //Pass options
-    \ctrl_cli::$opt = getopt(CLI_RUN_OPTIONS, CLI_LONG_OPTIONS, $optind);
-    //Pass variables
-    \ctrl_cli::$var = array_slice($argv, $optind);
-    //Start CLI
-    $result = \ctrl_cli::start();
-    //Output Result
-    if (!empty($result)) {
-        //Output JSON formatted result via STDOUT
-        fwrite(STDOUT, json_encode($result));
-        //Close STDOUT stream
-        fclose(STDOUT);
-        exit;
-    }
-}
+//Load system script
+require __DIR__ . '/core/system.php';
+
+//Boot system
+\core\system::boot();
