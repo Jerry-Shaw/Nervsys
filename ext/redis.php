@@ -48,6 +48,7 @@ class redis extends factory
      */
     public function connect(): object
     {
+        //Build instance key
         $key = $this->build_key();
 
         if (!isset(self::$pool[$key])) {
@@ -74,7 +75,10 @@ class redis extends factory
                 $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
             }
 
-            //Set serializer
+            //Set read timeout
+            $redis->setOption(\Redis::OPT_READ_TIMEOUT, -1);
+
+            //Set serializer mode
             $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
 
             //Save connection
