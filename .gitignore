@@ -1,3 +1,4 @@
 .idea/
-font/
-logs/
+exp/
+*.log
+*.ttf
