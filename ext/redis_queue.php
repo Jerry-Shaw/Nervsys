@@ -41,8 +41,8 @@ class redis_queue extends redis
     const PREFIX_WORKER = 'RQ:worker:';
 
     //Process properties
-    protected $runs = 10;
-    protected $exec = 200;
+    protected $max_fork = 10;
+    protected $max_exec = 200;
 
     //Child resources
     private $child = '';
@@ -169,45 +169,45 @@ class redis_queue extends redis
     }
 
     /**
-     * Start root process
+     * Start master process
      *
-     * @param int $runs
-     * @param int $exec
+     * @param int $max_fork
+     * @param int $max_exec
      *
      * @throws \Exception
      */
-    public function root(int $runs = 10, int $exec = 200): void
+    public function start(int $max_fork = 10, int $max_exec = 200): void
     {
         //Detect running mode
         if (!parent::$is_CLI) {
             throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
         }
 
-        //Build root process key
-        $root_key = self::PREFIX_WORKER . 'root';
+        //Build master process key
+        $master_key = self::PREFIX_WORKER . 'master';
 
-        //Exit when root process is running
-        if (0 < $this->instance->exists($root_key)) {
+        //Exit when master process is running
+        if (0 < $this->instance->exists($master_key)) {
             exit('Already running!');
         }
 
-        if (0 < $runs) {
-            $this->runs = &$runs;
+        if (0 < $max_fork) {
+            $this->max_fork = &$max_fork;
         }
 
-        if (0 < $exec) {
-            $this->exec = &$exec;
+        if (0 < $max_exec) {
+            $this->max_exec = &$max_exec;
         }
 
-        unset($runs, $exec);
+        unset($max_fork, $max_exec);
 
         //Set process life
-        $wait_time = (int)(self::WAIT_SCAN / 2);
-        $root_hash = hash('crc32b', uniqid(mt_rand(), true));
+        $wait_time   = (int)(self::WAIT_SCAN / 2);
+        $master_hash = hash('crc32b', uniqid(mt_rand(), true));
 
         //Add to watch list
-        $this->instance->set($root_key, $root_hash, self::WAIT_SCAN);
-        $this->instance->hSet(self::KEY_WATCH_WORKER, $root_key, time());
+        $this->instance->set($master_key, $master_hash, self::WAIT_SCAN);
+        $this->instance->hSet(self::KEY_WATCH_WORKER, $master_key, time());
 
         //Close on shutdown
         register_shutdown_function([$this, 'close']);
@@ -221,8 +221,8 @@ class redis_queue extends redis
 
         do {
             //Get process status
-            $valid   = $this->instance->get($root_key) === $root_hash;
-            $running = $this->instance->expire($root_key, self::WAIT_SCAN);
+            $valid   = $this->instance->get($master_key) === $master_hash;
+            $running = $this->instance->expire($master_key, self::WAIT_SCAN);
 
             //Idle wait on no job or child process running
             if (empty($list = $this->show_queue()) || 1 < count($this->show_process())) {
@@ -245,7 +245,7 @@ class redis_queue extends redis
 
         //On exit
         self::close();
-        unset($root_key, $wait_time, $root_hash, $valid, $running, $list, $queue);
+        unset($master_key, $wait_time, $master_hash, $valid, $running, $list, $queue);
     }
 
     /**
@@ -286,7 +286,7 @@ class redis_queue extends redis
             if (!empty($queue = $this->instance->brPop(array_keys($list), $wait_time))) {
                 self::exec_job($queue[1]);
             }
-        } while (0 < $this->instance->exists($child_key) && $this->instance->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->exec);
+        } while (0 < $this->instance->exists($child_key) && $this->instance->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->max_exec);
 
         //On exit
         self::stop($child_hash);
@@ -327,9 +327,9 @@ class redis_queue extends redis
     private function call_child(): void
     {
         //Count running processes
-        $runs = count($this->show_process());
+        $running = count($this->show_process());
 
-        if (0 >= $left = $this->runs - $runs + 1) {
+        if (0 >= $left = $this->max_fork - $running + 1) {
             return;
         }
 
@@ -348,7 +348,7 @@ class redis_queue extends redis
         }
 
         //Count need processes
-        if ($left < $need = (ceil($jobs / $this->exec) - $runs + 1)) {
+        if ($left < $need = (ceil($jobs / $this->max_exec) - $running + 1)) {
             $need = &$left;
         }
 
@@ -357,7 +357,7 @@ class redis_queue extends redis
             pclose(popen($this->child, 'r'));
         }
 
-        unset($runs, $left, $queue, $jobs, $key, $item, $need, $i);
+        unset($running, $left, $queue, $jobs, $key, $item, $need, $i);
     }
 
     /**

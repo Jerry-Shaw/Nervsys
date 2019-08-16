@@ -68,13 +68,13 @@ class mpc extends factory
     /**
      * Commit jobs
      *
-     * @param int  $runs
-     * @param bool $wait
+     * @param bool $wait_ret
+     * @param int  $max_fork
      *
      * @return array
      * @throws \Exception
      */
-    public function commit(int $runs = 10, bool $wait = true): array
+    public function go(bool $wait_ret = true, int $max_fork = 10): array
     {
         //Check jobs
         if (empty($this->jobs)) {
@@ -92,8 +92,8 @@ class mpc extends factory
         }
 
         //Split jobs
-        $job_packs = count($this->jobs) > $runs
-            ? array_chunk($this->jobs, $runs, true)
+        $job_packs = count($this->jobs) > $max_fork
+            ? array_chunk($this->jobs, $max_fork, true)
             : [$this->jobs];
 
         //Free jobs
@@ -103,19 +103,19 @@ class mpc extends factory
         $this->php_cmd = $this->php_exe . ' "' . ENTRY_SCRIPT . '"';
 
         //Add wait option
-        if ($wait) {
+        if ($wait_ret) {
             $this->php_cmd .= ' --ret';
         }
 
         $result = [];
         foreach ($job_packs as $jobs) {
             //Execute jobs and merge result
-            if (!empty($data = $this->execute($jobs, $wait))) {
+            if (!empty($data = $this->execute($jobs, $wait_ret))) {
                 $result += $data;
             }
         }
 
-        unset($runs, $wait, $job_packs, $jobs, $data);
+        unset($max_fork, $wait_ret, $job_packs, $jobs, $data);
         return $result;
     }
 
