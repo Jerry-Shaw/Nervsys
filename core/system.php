@@ -148,6 +148,7 @@ class system
                 self::$$key = $val;
             }
         }
+
         unset($conf, $app, $key, $val);
     }
 
@@ -349,7 +350,7 @@ class system
         $conf = parse_ini_file($conf_file, true, INI_SCANNER_TYPED);
 
         //Set include path
-        if (!empty($conf['PATH'])) {
+        if (isset($conf['PATH']) && !empty($conf['PATH'])) {
             $conf['PATH'] = array_map(
                 static function (string $path): string
                 {
@@ -367,7 +368,7 @@ class system
         }
 
         //Refill app_path
-        if ('' !== $conf['SYS']['app_path']) {
+        if (isset($conf['SYS']['app_path']) && '' !== $conf['SYS']['app_path']) {
             $conf['SYS']['app_path'] = trim($conf['SYS']['app_path'], '\\/') . '/';
         }
 
