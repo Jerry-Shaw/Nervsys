@@ -136,7 +136,7 @@ class system
         $conf = self::parse_conf(__DIR__ . '/system.ini');
 
         //Load app setting
-        if (is_file($app = ROOT . $conf['app_path'] . 'app.ini')) {
+        if (is_file($app = ROOT . $conf['SYS']['app_path'] . 'app.ini')) {
             $conf = array_replace($conf, self::parse_conf($app));
         }
 
@@ -148,7 +148,6 @@ class system
                 self::$$key = $val;
             }
         }
-
         unset($conf, $app, $key, $val);
     }
 
@@ -368,8 +367,8 @@ class system
         }
 
         //Refill app_path
-        if ('' !== $conf['app_path']) {
-            $conf['app_path'] = trim($conf['app_path'], '\\/') . '/';
+        if ('' !== $conf['SYS']['app_path']) {
+            $conf['SYS']['app_path'] = trim($conf['SYS']['app_path'], '\\/') . '/';
         }
 
         unset($conf_file);
