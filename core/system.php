@@ -31,7 +31,7 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
 }
 
 //Define NervSys version
-define('SYSVER', '7.3.0');
+define('SYSVER', '7.3.2');
 
 //Define system root path
 define('SYSROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
@@ -88,9 +88,6 @@ class system
     //Log path
     const LOG_PATH = SYSROOT . 'logs' . DIRECTORY_SEPARATOR;
 
-    //Configuration file
-    const CFG_FILE = SYSROOT . 'core' . DIRECTORY_SEPARATOR . 'system.ini';
-
     //Running stage codes
     const STAGE_INIT  = 1;
     const STAGE_READ  = 2;
@@ -135,25 +132,12 @@ class system
      */
     public static function load_cfg(): void
     {
-        //Parse configuration file
-        $conf = parse_ini_file(self::CFG_FILE, true, INI_SCANNER_TYPED);
+        //Load system default
+        $conf = self::parse_conf(__DIR__ . '/system.ini');
 
-        //Set include path
-        if (!empty($conf['PATH'])) {
-            $conf['PATH'] = array_map(
-                static function (string $path): string
-                {
-                    $path = rtrim(strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
-
-                    if (0 !== strpos($path, '/') && 1 !== strpos($path, ':')) {
-                        $path = ROOT . $path;
-                    }
-
-                    return $path . DIRECTORY_SEPARATOR;
-                }, $conf['PATH']
-            );
-
-            set_include_path(implode(PATH_SEPARATOR, $conf['PATH']));
+        //Load app setting
+        if (is_file($app = ROOT . $conf['app_path'] . 'app.ini')) {
+            $conf = array_replace($conf, self::parse_conf($app));
         }
 
         //Set setting values
@@ -165,12 +149,7 @@ class system
             }
         }
 
-        //Refill app_path
-        if ('' !== self::$sys['app_path']) {
-            self::$sys['app_path'] = trim(self::$sys['app_path'], '\\/') . '/';
-        }
-
-        unset($conf, $key, $val);
+        unset($conf, $app, $key, $val);
     }
 
     /**
@@ -356,6 +335,45 @@ class system
 
         self::$cmd_cli[] = &$cmd_cli;
         unset($cmd, $argv, $pipe, $time, $ret, $cmd_cli);
+    }
+
+    /**
+     * Parse conf file (.ini)
+     *
+     * @param string $conf_file
+     *
+     * @return array
+     */
+    private static function parse_conf(string $conf_file): array
+    {
+        //Parse configuration file
+        $conf = parse_ini_file($conf_file, true, INI_SCANNER_TYPED);
+
+        //Set include path
+        if (!empty($conf['PATH'])) {
+            $conf['PATH'] = array_map(
+                static function (string $path): string
+                {
+                    $path = rtrim(strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]), DIRECTORY_SEPARATOR);
+
+                    if (0 !== strpos($path, '/') && 1 !== strpos($path, ':')) {
+                        $path = ROOT . $path;
+                    }
+
+                    return $path . DIRECTORY_SEPARATOR;
+                }, $conf['PATH']
+            );
+
+            set_include_path(implode(PATH_SEPARATOR, $conf['PATH']));
+        }
+
+        //Refill app_path
+        if ('' !== $conf['app_path']) {
+            $conf['app_path'] = trim($conf['app_path'], '\\/') . '/';
+        }
+
+        unset($conf_file);
+        return $conf;
     }
 
     /**

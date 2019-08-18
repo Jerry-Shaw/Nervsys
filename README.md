@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.3.0  
+Stable version: 7.3.2  
 Extension version: 2.0  
 [Chinese Documents](https://github.com/NervSys/NervSys/blob/master/README_zh.md)  
 [Unit Test Suites](https://github.com/NervSys/tests)  
@@ -116,7 +116,11 @@ The words above are reserved by NervSys core. So that, they should be taken care
 ## Config "system.ini"
 
 "system.ini" locates right under the "core" folder, which contains most of the important setting sections.  
-Always remember, do NOT delete any entry or section from "system.ini".  
+Always remember, do NOT delete any entry or section from "system.ini". Core system will load it as default.  
+
+Setting rewrite:  
+Rewrite file location: "ROOT/app_path/app.ini"  
+System will use it as custom settings to override system default for actual calling. Just copy needed settings from "system.ini", and modify them to make them working as expected.  
 
 ### SYS
 
