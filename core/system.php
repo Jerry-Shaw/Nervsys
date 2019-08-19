@@ -137,7 +137,7 @@ class system
 
         //Load app setting
         if (is_file($app = ROOT . $conf['SYS']['app_path'] . 'app.ini')) {
-            $conf = array_replace($conf, self::parse_conf($app));
+            $conf = array_replace_recursive($conf, self::parse_conf($app));
         }
 
         //Set setting values
