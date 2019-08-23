@@ -300,15 +300,29 @@ class doc extends factory
 
         //Rebuild TrustZone
         if (is_string($trustzone)) {
-            $trustzone = false !== strpos($trustzone, ',') ? explode(',', $trustzone) : [$trustzone];
+            if ('*' === $trustzone) {
+                //Get self methods
+                $methods = $this->get_methods($class);
 
+                //Check parent methods
+                if (is_object($parent_class = $class->getParentClass())) {
+                    $methods = array_diff($methods, $this->get_methods($parent_class));
+                }
+
+                unset($parent_class);
+            } else {
+                //Get defined TrustZone
+                $methods = false !== strpos($trustzone, ',') ? explode(',', $trustzone) : [$trustzone];
+            }
+
+            //Rebuild TrustZone
             $tmp = [];
-            foreach ($trustzone as $item) {
+            foreach ($methods as $item) {
                 $tmp[$item] = '';
             }
 
             $trustzone = &$tmp;
-            unset($tmp);
+            unset($methods, $tmp);
         }
 
         //Fetch param
@@ -324,6 +338,26 @@ class doc extends factory
 
         unset($class, $key, $item);
         return $trustzone;
+    }
+
+    /**
+     * Get all public methods
+     *
+     * @param \ReflectionClass $class
+     *
+     * @return array
+     */
+    private function get_methods(\ReflectionClass $class): array
+    {
+        $list    = [];
+        $methods = $class->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+        foreach ($methods as $method) {
+            $list[] = $method->getName();
+        }
+
+        unset($class, $methods, $method);
+        return $list;
     }
 
     /**
