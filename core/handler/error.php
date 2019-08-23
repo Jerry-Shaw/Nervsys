@@ -108,15 +108,16 @@ class error extends system
      * Exception handler
      *
      * @param \Throwable $throwable
+     * @param int        $error_code
      * @param bool       $error_exit
      */
-    public static function exception_handler(\Throwable $throwable, bool $error_exit = true): void
+    public static function exception_handler(\Throwable $throwable, int $error_code = 0, bool $error_exit = true): void
     {
         //Get exception name
         $exception = get_class($throwable);
 
         //Get error level
-        $level = self::LEVEL[$throwable->getCode()] ?? 'info';
+        $level = self::LEVEL[$throwable->getCode()] ?? self::LEVEL[$error_code] ?? 'notice';
 
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
@@ -145,8 +146,9 @@ class error extends system
             array_pop($backtrace);
         }
 
-        //Simplify backtrace records
         $trace_list = [];
+
+        //Simplify backtrace records
         foreach ($backtrace as $item) {
             $msg = '"' . ($item['class'] ?? '') . ($item['type'] ?? '') . $item['function'] . '" called';
 
@@ -171,6 +173,6 @@ class error extends system
 
         //Stop on error
         $error_exit && 'error' === $level && parent::stop();
-        unset($error_exit, $level, $message, $context);
+        unset($error_code, $error_exit, $level, $message, $context);
     }
 }
