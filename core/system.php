@@ -419,7 +419,7 @@ class system
             //Execute dependency
             operator::exec_dep($list);
         } catch (\Throwable $throwable) {
-            error::exception_handler(new \Exception($throwable->getMessage(), E_USER_ERROR));
+            error::exception_handler($throwable, E_USER_ERROR);
             unset($throwable);
         }
 
