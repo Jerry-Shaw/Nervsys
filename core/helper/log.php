@@ -181,7 +181,7 @@ class log extends system
         $log .= ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
 
         foreach ($context as $item) {
-            $log .= (is_string($item) ? $item : json_encode($item, 4034)) . PHP_EOL;
+            $log .= (is_string($item) ? $item : json_encode($item, JSON_PRETTY)) . PHP_EOL;
         }
 
         $log .= PHP_EOL . PHP_EOL;

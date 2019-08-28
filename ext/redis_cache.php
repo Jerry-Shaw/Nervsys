@@ -37,7 +37,7 @@ class redis_cache extends redis
     public function set(string $key, array $data, int $life = 600): bool
     {
         $key   = self::PREFIX . $key;
-        $cache = json_encode($data);
+        $cache = json_encode($data, JSON_FORMAT);
 
         $result = 0 < $life ? $this->instance->set($key, $cache, $life) : $this->instance->set($key, $cache);
 

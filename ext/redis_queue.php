@@ -77,7 +77,7 @@ class redis_queue extends redis
 
         //Build group key & queue data
         $list  = self::PREFIX_LIST . ('' === $group ? 'main' : $group);
-        $queue = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $queue = json_encode($data, JSON_FORMAT);
 
         //Add watch list & queue list
         $this->instance->hSet(self::KEY_WATCH_LIST, $list, time());
@@ -438,7 +438,7 @@ class redis_queue extends redis
                 self::check_job($data, json_encode($result));
             }
         } catch (\Throwable $throwable) {
-            $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
             return;
         }
@@ -460,7 +460,7 @@ class redis_queue extends redis
 
         //Save to fail list
         if (!is_null($json) && true !== $json) {
-            $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => &$result], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => &$result], JSON_FORMAT));
         }
 
         unset($data, $result, $json);

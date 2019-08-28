@@ -130,7 +130,7 @@ class error extends system
             'Memory: ' . round(memory_get_usage(true) / 1048576, 4) . 'MB',
             'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms' . PHP_EOL,
             //Append param & trace
-            'Param: ' . PHP_EOL . json_encode(['cmd' => parent::$cmd] + parent::$data, 4034) . PHP_EOL,
+            'Param: ' . PHP_EOL . json_encode(['cmd' => parent::$cmd] + parent::$data, JSON_PRETTY) . PHP_EOL,
             'Trace: ' . PHP_EOL . $throwable->getTraceAsString() . PHP_EOL
         ];
 

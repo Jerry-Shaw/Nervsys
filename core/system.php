@@ -36,6 +36,10 @@ define('SYSVER', '7.3.2');
 //Define system root path
 define('SYSROOT', substr(strtr(__DIR__, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]) . DIRECTORY_SEPARATOR, 0, -5));
 
+//Define JSON formats
+define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
+define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
+
 //Register autoload function
 spl_autoload_register(
     static function (string $class): void

@@ -78,6 +78,7 @@ class output extends system
             echo PHP_EOL;
         }
 
+        //Output logs
         if ('' !== parent::$logs) {
             echo PHP_EOL . PHP_EOL . parent::$logs;
         }
@@ -92,12 +93,7 @@ class output extends system
      */
     private static function format_json(): string
     {
-        return json_encode(
-            parent::$result,
-            self::$pretty
-                ? JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS | JSON_PRETTY_PRINT
-                : JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS
-        );
+        return json_encode(parent::$result, self::$pretty ? JSON_PRETTY : JSON_FORMAT);
     }
 
     /**
