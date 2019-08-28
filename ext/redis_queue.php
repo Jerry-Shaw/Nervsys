@@ -31,13 +31,13 @@ class redis_queue extends redis
     const WAIT_SCAN = 60;
 
     //Queue keys
-    const KEY_FAILED       = 'RQ:fail';
-    const KEY_WATCH_LIST   = 'RQ:watch:list';
-    const KEY_WATCH_WORKER = 'RQ:watch:worker';
+    const KEY_LISTEN = 'RQ:listen';
+    const KEY_FAILED = 'RQ:failed';
 
     //Queue key prefix
     const PREFIX_CMD    = 'RQ:cmd:';
     const PREFIX_LIST   = 'RQ:list:';
+    const PREFIX_WATCH  = 'RQ:watch:';
     const PREFIX_WORKER = 'RQ:worker:';
 
     //Process properties
@@ -80,7 +80,7 @@ class redis_queue extends redis
         $queue = json_encode($data, JSON_FORMAT);
 
         //Add watch list & queue list
-        $this->instance->hSet(self::KEY_WATCH_LIST, $list, time());
+        $this->instance->hSet(self::KEY_LISTEN, $list, time());
 
         //Add job & count length
         $result = (int)$this->instance->lPush($list, $queue);
@@ -110,7 +110,7 @@ class redis_queue extends redis
         $result = call_user_func_array([$this->instance, 'del'], $process);
 
         //Remove worker keys
-        array_unshift($process, self::KEY_WATCH_WORKER);
+        array_unshift($process, $this->get_watch_key());
         call_user_func_array([$this->instance, 'hDel'], $process);
 
         unset($key, $process);
@@ -155,7 +155,7 @@ class redis_queue extends redis
      */
     public function show_queue(): array
     {
-        return $this->get_keys(self::KEY_WATCH_LIST);
+        return $this->get_keys(self::KEY_LISTEN);
     }
 
     /**
@@ -165,7 +165,7 @@ class redis_queue extends redis
      */
     public function show_process(): array
     {
-        return $this->get_keys(self::KEY_WATCH_WORKER);
+        return $this->get_keys($this->get_watch_key());
     }
 
     /**
@@ -183,31 +183,33 @@ class redis_queue extends redis
             throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
         }
 
-        //Build master process key
-        $master_key = self::PREFIX_WORKER . ($_SERVER['HOSTNAME'] ?? 'master');
-
-        //Exit when master process is running
-        if (0 < $this->instance->exists($master_key)) {
-            exit('Already running!');
-        }
-
+        //Set max forks
         if (0 < $max_fork) {
             $this->max_fork = &$max_fork;
         }
 
+        //Set max executes
         if (0 < $max_exec) {
             $this->max_exec = &$max_exec;
         }
 
         unset($max_fork, $max_exec);
 
-        //Set process life
-        $wait_time   = (int)(self::WAIT_SCAN / 2);
-        $master_hash = hash('crc32b', uniqid(mt_rand(), true));
+        //Get idle time
+        $wait_time = $this->get_idle_time();
 
-        //Add to watch list
-        $this->instance->set($master_key, $master_hash, self::WAIT_SCAN);
-        $this->instance->hSet(self::KEY_WATCH_WORKER, $master_key, time());
+        //Build master hash and key
+        $master_hash = hash('crc32b', uniqid(mt_rand(), true));
+        $master_key  = self::PREFIX_WORKER . ($_SERVER['HOSTNAME'] ?? 'master');
+
+        //Exit when master process exists
+        if (!$this->instance->setnx($master_key, $master_hash)) {
+            exit('Already running!');
+        }
+
+        //Set process life and add to watch list
+        $this->instance->expire($master_key, self::WAIT_SCAN);
+        $this->instance->hSet($this->get_watch_key(), $master_key, time());
 
         //Close on shutdown
         register_shutdown_function([$this, 'close']);
@@ -245,7 +247,7 @@ class redis_queue extends redis
 
         //On exit
         self::close();
-        unset($master_key, $wait_time, $master_hash, $valid, $running, $list, $queue);
+        unset($wait_time, $master_hash, $master_key, $valid, $running, $list, $queue);
     }
 
     /**
@@ -260,16 +262,16 @@ class redis_queue extends redis
             throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
         }
 
-        //Build Hash & Key
+        //Get idle time
+        $wait_time = $this->get_idle_time();
+
+        //Build child hash and key
         $child_hash = hash('crc32b', uniqid(mt_rand(), true));
         $child_key  = self::PREFIX_WORKER . $child_hash;
 
-        //Set process life
-        $wait_time = (int)(self::WAIT_SCAN / 2);
-
         //Add to watch list
         $this->instance->set($child_key, '', self::WAIT_SCAN);
-        $this->instance->hSet(self::KEY_WATCH_WORKER, $child_key, time());
+        $this->instance->hSet($this->get_watch_key(), $child_key, time());
 
         //Close on exit
         register_shutdown_function([$this, 'close'], $child_hash);
@@ -290,7 +292,7 @@ class redis_queue extends redis
 
         //On exit
         self::stop($child_hash);
-        unset($child_hash, $child_key, $wait_time, $execute, $list, $queue);
+        unset($wait_time, $child_hash, $child_key, $execute, $list, $queue);
     }
 
     /**
@@ -319,6 +321,26 @@ class redis_queue extends redis
 
         unset($key, $k, $v);
         return $keys;
+    }
+
+    /**
+     * Get watch key
+     *
+     * @return string
+     */
+    private function get_watch_key(): string
+    {
+        return self::PREFIX_WATCH . ($_SERVER['HOSTNAME'] ?? 'worker');
+    }
+
+    /**
+     * Get idle time
+     *
+     * @return int
+     */
+    private function get_idle_time(): int
+    {
+        return (int)(self::WAIT_SCAN / 2);
     }
 
     /**
