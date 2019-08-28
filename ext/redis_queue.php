@@ -184,7 +184,7 @@ class redis_queue extends redis
         }
 
         //Build master process key
-        $master_key = self::PREFIX_WORKER . 'master';
+        $master_key = self::PREFIX_WORKER . ($_SERVER['HOSTNAME'] ?? 'master');
 
         //Exit when master process is running
         if (0 < $this->instance->exists($master_key)) {
