@@ -464,18 +464,6 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Get table name using prefix
-     *
-     * @param string $table
-     *
-     * @return string
-     */
-    protected function get_table(string $table): string
-    {
-        return $this->prefix . $table;
-    }
-
-    /**
      * Build random bind key
      *
      * @param string $key
@@ -488,6 +476,28 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Get table name using prefix
+     *
+     * @param string $table
+     *
+     * @return string
+     */
+    protected function get_table(string $table): string
+    {
+        return $this->prefix . $table;
+    }
+
+    /**
+     * Set table name using prefix
+     *
+     * @param string $table
+     */
+    protected function set_table(string $table): void
+    {
+        $this->runtime['table'] = $this->get_table($table);
+    }
+
+    /**
      * Set action & table
      *
      * @param string $action
@@ -495,19 +505,21 @@ class pdo_mysql extends pdo
      */
     protected function set_action(string $action, string $table): void
     {
-        if ('' === $table) {
+        //Set action
+        $this->runtime['action'] = &$action;
+
+        //Set table
+        if (!isset($this->runtime['table']) && '' === $table) {
             $table = get_class($this);
 
+            //Get class name as table name
             if (false !== $pos = strrpos($table, '\\')) {
                 $table = substr($table, $pos + 1);
             }
 
+            $this->runtime['table'] = $this->get_table($table);
             unset($pos);
         }
-
-        //Set action & table
-        $this->runtime['action'] = &$action;
-        $this->runtime['table']  = $this->get_table($table);
 
         unset($action, $table);
     }
