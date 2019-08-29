@@ -509,16 +509,18 @@ class pdo_mysql extends pdo
         $this->runtime['action'] = &$action;
 
         //Set table
-        if (!isset($this->runtime['table']) && '' === $table) {
-            $table = get_class($this);
+        if (!isset($this->runtime['table'])) {
+            if ('' === $table) {
+                $table = get_class($this);
 
-            //Get class name as table name
-            if (false !== $pos = strrpos($table, '\\')) {
-                $table = substr($table, $pos + 1);
+                if (false !== $pos = strrpos($table, '\\')) {
+                    $table = substr($table, $pos + 1);
+                }
+
+                unset($pos);
             }
 
             $this->runtime['table'] = $this->get_table($table);
-            unset($pos);
         }
 
         unset($action, $table);
