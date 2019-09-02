@@ -26,6 +26,11 @@ use core\handler\platform;
 
 class redis_queue extends redis
 {
+    //Queue type
+    const TYPE_REALTIME = 'realtime';
+    const TYPE_UNIQUE   = 'unique';
+    const TYPE_DELAY    = 'delay';
+
     //Wait properties
     const WAIT_IDLE = 3;
     const WAIT_SCAN = 60;
@@ -34,9 +39,13 @@ class redis_queue extends redis
     const KEY_LISTEN = 'RQ:listen';
     const KEY_FAILED = 'RQ:failed';
 
+    //Delay keys
+    const KEY_DELAY_TIME = 'RQ:delay:time';
+    const KEY_DELAY_JOBS = 'RQ:delay:jobs';
+
     //Queue key prefix
     const PREFIX_CMD    = 'RQ:cmd:';
-    const PREFIX_LIST   = 'RQ:list:';
+    const PREFIX_JOBS   = 'RQ:jobs:';
     const PREFIX_WATCH  = 'RQ:watch:';
     const PREFIX_WORKER = 'RQ:worker:';
 
@@ -54,38 +63,48 @@ class redis_queue extends redis
      * @param string $cmd
      * @param array  $data
      * @param string $group
-     * @param int    $duration
+     * @param string $type default realtime
+     * @param int    $time in seconds
      *
-     * @return int -1: in duration failed; 0: add job failed; other: succeeded with length
+     * @return int -1: add unique job failed; 0: add job failed; other: succeeded with job length
      */
-    public function add(string $cmd, array $data = [], string $group = '', int $duration = 0): int
+    public function add(string $cmd, array $data = [], string $group = 'main', string $type = self::TYPE_REALTIME, int $time = 0): int
     {
         //Add command
         $data['cmd'] = &$cmd;
 
-        //Check duration
-        if (0 < $duration) {
-            //Check job duration
-            if (!$this->instance->setnx($cmd_key = self::PREFIX_CMD . hash('crc32b', $cmd), '')) {
-                return -1;
-            }
+        //Sort data by key
+        ksort($data);
 
-            //Set duration life
-            $this->instance->expire($cmd_key, $duration);
-            unset($cmd_key);
-        }
-
-        //Build group key & queue data
-        $list  = self::PREFIX_LIST . ('' === $group ? 'main' : $group);
+        //Build queue data
         $queue = json_encode($data, JSON_FORMAT);
 
-        //Add watch list & queue list
-        $this->instance->hSet(self::KEY_LISTEN, $list, time());
+        //Check group key
+        if ('' === $group) {
+            $group = 'main';
+        }
 
-        //Add job & count length
-        $result = (int)$this->instance->lPush($list, $queue);
+        //Redirect to REALTIME
+        if (0 === $time) {
+            $type = self::TYPE_REALTIME;
+        }
 
-        unset($cmd, $data, $group, $duration, $list, $queue);
+        //Add job
+        switch ($type) {
+            case self::TYPE_UNIQUE:
+                $result = $this->add_unique($group, $queue, $time);
+                break;
+
+            case self::TYPE_DELAY:
+                $result = $this->add_delay($group, $queue, $time);
+                break;
+
+            default:
+                $result = $this->add_realtime($group, $queue);
+                break;
+        }
+
+        unset($cmd, $data, $group, $type, $time, $queue);
         return $result;
     }
 
@@ -196,7 +215,7 @@ class redis_queue extends redis
         unset($max_fork, $max_exec);
 
         //Get idle time
-        $wait_time = $this->get_idle_time();
+        $idle_time = $this->get_idle_time();
 
         //Build master hash and key
         $master_hash = hash('crc32b', uniqid(mt_rand(), true));
@@ -222,6 +241,9 @@ class redis_queue extends redis
         );
 
         do {
+            //Add delay jobs
+            $this->add_delay_jobs(time(), $idle_time);
+
             //Get process status
             $valid   = $this->instance->get($master_key) === $master_hash;
             $running = $this->instance->expire($master_key, self::WAIT_SCAN);
@@ -233,7 +255,7 @@ class redis_queue extends redis
             }
 
             //Idle wait on no job
-            if (empty($queue = $this->instance->brPop(array_keys($list), $wait_time))) {
+            if (empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -247,7 +269,7 @@ class redis_queue extends redis
 
         //On exit
         self::close();
-        unset($wait_time, $master_hash, $master_key, $valid, $running, $list, $queue);
+        unset($idle_time, $master_hash, $master_key, $valid, $running, $list, $queue);
     }
 
     /**
@@ -263,7 +285,7 @@ class redis_queue extends redis
         }
 
         //Get idle time
-        $wait_time = $this->get_idle_time();
+        $idle_time = $this->get_idle_time();
 
         //Build child hash and key
         $child_hash = hash('crc32b', uniqid(mt_rand(), true));
@@ -285,14 +307,130 @@ class redis_queue extends redis
             }
 
             //Execute job
-            if (!empty($queue = $this->instance->brPop(array_keys($list), $wait_time))) {
+            if (!empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
                 self::exec_job($queue[1]);
             }
         } while (0 < $this->instance->exists($child_key) && $this->instance->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->max_exec);
 
         //On exit
         self::stop($child_hash);
-        unset($wait_time, $child_hash, $child_key, $execute, $list, $queue);
+        unset($idle_time, $child_hash, $child_key, $execute, $list, $queue);
+    }
+
+    /**
+     * Add realtime job
+     *
+     * @param string $group
+     * @param string $data
+     *
+     * @return int
+     */
+    private function add_realtime(string $group, string $data): int
+    {
+        //Add watch list
+        $this->instance->hSet(self::KEY_LISTEN, $key = self::PREFIX_JOBS . $group, time());
+
+        //Add job
+        $result = (int)$this->instance->lPush($key, $data);
+
+        unset($group, $data, $key);
+        return $result;
+    }
+
+    /**
+     * Add unique job
+     *
+     * @param string $group
+     * @param string $data
+     * @param int    $time
+     *
+     * @return int
+     */
+    private function add_unique(string $group, string $data, int $time): int
+    {
+        //Check job duration
+        if (!$this->instance->setnx($key = self::PREFIX_CMD . hash('crc32b', $data), time())) {
+            return -1;
+        }
+
+        //Set duration life
+        $this->instance->expire($key, $time);
+
+        //Add realtime job
+        $result = $this->add_realtime($group, $data);
+
+        unset($group, $data, $time, $key);
+        return $result;
+    }
+
+    /**
+     * Add delay job
+     *
+     * @param string $group
+     * @param string $data
+     * @param int    $time
+     *
+     * @return int
+     */
+    private function add_delay(string $group, string $data, int $time): int
+    {
+        //Set delay time
+        $this->instance->setnx(self::KEY_DELAY_TIME, $delay = time() + $time);
+
+        //Add delay job record
+        $result = $this->instance->zAdd(self::KEY_DELAY_JOBS, json_encode(['group' => &$group, 'job' => &$data], JSON_FORMAT), $delay);
+
+        unset($group, $data, $time, $delay);
+        return $result;
+    }
+
+    /**
+     * Add delay jobs
+     *
+     * @param int $time
+     * @param int $idle_time
+     */
+    private function add_delay_jobs(int $time, int $idle_time): void
+    {
+        //Get read from & read till
+        $read_till = $this->instance->incrBy(self::KEY_DELAY_TIME, $idle_time - 1);
+        $read_from = $read_till - $idle_time + 1;
+
+        //Read time NOT arrive
+        if ($read_from > $time) {
+            $this->instance->decrBy(self::KEY_DELAY_TIME, $idle_time - 1);
+            return;
+        }
+
+        //Read time over now
+        if ($read_till > $time) {
+            $read_till = $this->instance->decrBy(self::KEY_DELAY_TIME, $read_till - $time + 1);
+        }
+
+        //Read jobs from range
+        $delay_jobs = $this->instance->zRangeByScore(self::KEY_DELAY_JOBS, $read_from, $read_till);
+
+        //No delay job found
+        if (empty($delay_jobs)) {
+            return;
+        }
+
+        //Parse & add job
+        foreach ($delay_jobs as $item) {
+            $data = json_decode($item, true);
+
+            //Delay job error
+            if (!is_array($data) || !isset($data['group']) || !isset($data['job'])) {
+                $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$item, 'return' => 'Delay Job ERROR!'], JSON_FORMAT));
+                continue;
+            }
+
+            $this->add_realtime($data['group'], $data['job']);
+        }
+
+        //Remove added jobs
+        $this->instance->zRemRangeByScore(self::KEY_DELAY_JOBS, $read_from, $read_till);
+        unset($time, $idle_time, $read_till, $read_from, $delay_jobs, $item, $data);
     }
 
     /**
