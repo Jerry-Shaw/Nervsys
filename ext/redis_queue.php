@@ -375,12 +375,12 @@ class redis_queue extends redis
     private function add_delay(string $group, string $data, int $time): int
     {
         //Set delay time
-        $this->instance->setnx(self::KEY_DELAY_TIME, $delay = time() + $time);
+        $this->instance->setnx(self::KEY_DELAY_TIME, $now = time());
 
         //Add delay job record
-        $result = $this->instance->zAdd(self::KEY_DELAY_JOBS, json_encode(['group' => &$group, 'job' => &$data], JSON_FORMAT), $delay);
+        $result = $this->instance->zAdd(self::KEY_DELAY_JOBS, $now + $time, json_encode(['group' => &$group, 'job' => &$data], JSON_FORMAT));
 
-        unset($group, $data, $time, $delay);
+        unset($group, $data, $time, $now);
         return $result;
     }
 
