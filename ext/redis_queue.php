@@ -197,7 +197,7 @@ class redis_queue extends redis
      */
     public function start(int $max_fork = 10, int $max_exec = 200): void
     {
-        //Detect running mode
+        //Detect env
         if (!parent::$is_CLI) {
             throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
         }
@@ -241,7 +241,7 @@ class redis_queue extends redis
         );
 
         do {
-            //Call realtime unit
+            //Call delay unit
             $this->call_unit_delay();
 
             //Get process status
@@ -281,17 +281,22 @@ class redis_queue extends redis
      */
     public function unit(string $type): void
     {
+        //Detect env
+        if (!parent::$is_CLI) {
+            throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
+        }
+
+        $execute = 0;
+
         switch ($type) {
             case 'delay':
                 //Delay unit on going
                 if (!$this->instance->setnx(self::KEY_DELAY_LOCK, time())) {
-                    return;
+                    break;
                 }
 
                 do {
-                    $delay_job = $this->instance->rPop(self::KEY_DELAY_JOBS);
-
-                    if (empty($delay_job)) {
+                    if (false === $delay_job = $this->instance->rPop(self::KEY_DELAY_JOBS)) {
                         $this->instance->del(self::KEY_DELAY_LOCK);
                         break;
                     }
@@ -304,17 +309,16 @@ class redis_queue extends redis
                         break;
                     }
 
+                    //Add realtime job
                     $this->add_realtime($job_data['group'], $job_data['job']);
-                } while (true);
+                } while ($this->unit_is_alive(self::KEY_DELAY_LOCK, $execute));
 
+                $this->instance->del(self::KEY_DELAY_LOCK);
+
+                unset($delay_job, $job_data);
                 break;
 
             default:
-                //Detect running mode
-                if (!parent::$is_CLI) {
-                    throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
-                }
-
                 //Get idle time
                 $idle_time = $this->get_idle_time();
 
@@ -329,8 +333,6 @@ class redis_queue extends redis
                 //Close on exit
                 register_shutdown_function([$this, 'close'], $unit_hash);
 
-                $execute = 0;
-
                 do {
                     //Exit on no job
                     if (empty($list = $this->show_queue())) {
@@ -341,13 +343,29 @@ class redis_queue extends redis
                     if (!empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
                         self::exec_job($queue[1]);
                     }
-                } while (0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$execute < $this->max_exec);
+                } while ($this->unit_is_alive($unit_key, $execute));
 
                 //On exit
                 self::stop($unit_hash);
-                unset($idle_time, $unit_hash, $unit_key, $execute, $list, $queue);
+
+                unset($idle_time, $unit_hash, $unit_key, $list, $queue);
                 break;
         }
+
+        unset($type, $execute);
+    }
+
+    /**
+     * Get unit alive status
+     *
+     * @param string $unit_key
+     * @param int    $unit_exec
+     *
+     * @return bool
+     */
+    private function unit_is_alive(string $unit_key, int &$unit_exec): bool
+    {
+        return 0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$unit_exec < $this->max_exec;
     }
 
     /**
@@ -418,55 +436,6 @@ class redis_queue extends redis
     }
 
     /**
-     * Add delay jobs
-     *
-     * @param int $time
-     * @param int $idle_time
-     */
-    private function add_delay_jobs(int $time, int $idle_time): void
-    {
-        //Get read from & read till
-        $read_till = $this->instance->incrBy(self::KEY_DELAY_LOCK, $idle_time - 1);
-        $read_from = $read_till - $idle_time + 1;
-
-        //Read time NOT arrive
-        if ($read_from > $time) {
-            $this->instance->decrBy(self::KEY_DELAY_LOCK, $idle_time - 1);
-            return;
-        }
-
-        //Read time over now
-        if ($read_till > $time) {
-            $read_till = $this->instance->decrBy(self::KEY_DELAY_LOCK, $read_till - $time + 1);
-        }
-
-        //Read jobs from range
-        $delay_jobs = $this->instance->zRangeByScore(self::KEY_DELAY_JOBS, $read_from, $read_till);
-
-        //No delay job found
-        if (empty($delay_jobs)) {
-            return;
-        }
-
-        //Parse & add job
-        foreach ($delay_jobs as $item) {
-            $data = json_decode($item, true);
-
-            //Delay job error
-            if (!is_array($data) || !isset($data['group']) || !isset($data['job'])) {
-                $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$item, 'return' => 'Delay Job ERROR!'], JSON_FORMAT));
-                continue;
-            }
-
-            $this->add_realtime($data['group'], $data['job']);
-        }
-
-        //Remove added jobs
-        $this->instance->zRemRangeByScore(self::KEY_DELAY_JOBS, $read_from, $read_till);
-        unset($time, $idle_time, $read_till, $read_from, $delay_jobs, $item, $data);
-    }
-
-    /**
      * Get active keys
      *
      * @param string $key
@@ -519,7 +488,6 @@ class redis_queue extends redis
      */
     private function call_unit_delay(): void
     {
-        //Call unit processes
         pclose(popen($this->unit . ' --data="type=delay"', 'r'));
     }
 
