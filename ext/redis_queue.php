@@ -40,7 +40,7 @@ class redis_queue extends redis
     const KEY_FAILED = 'RQ:failed';
 
     //Delay keys
-    const KEY_DELAY_TIME = 'RQ:delay:time';
+    const KEY_DELAY_LOCK = 'RQ:delay:lock';
     const KEY_DELAY_JOBS = 'RQ:delay:jobs';
 
     //Queue key prefix
@@ -53,8 +53,8 @@ class redis_queue extends redis
     protected $max_fork = 10;
     protected $max_exec = 200;
 
-    //Child resources
-    private $child = '';
+    //Unit resources
+    private $unit = '';
 
     /**
      * Add job
@@ -233,22 +233,22 @@ class redis_queue extends redis
         //Close on shutdown
         register_shutdown_function([$this, 'close']);
 
-        //Build child command
-        $this->child = platform::cmd_bg(
+        //Build unit command
+        $this->unit = platform::cmd_bg(
             '"' . platform::php_path() . '" '
             . '"' . ENTRY_SCRIPT . '" --ret '
-            . '--cmd="' . parent::get_app_cmd(strtr(get_class($this), '\\', '/')) . '-child"'
+            . '--cmd="' . parent::get_app_cmd(strtr(get_class($this), '\\', '/')) . '-unit"'
         );
 
         do {
-            //Add delay jobs
-            $this->add_delay_jobs(time(), $idle_time);
+            //Call realtime unit
+            $this->call_unit_delay();
 
             //Get process status
             $valid   = $this->instance->get($master_key) === $master_hash;
             $running = $this->instance->expire($master_key, self::WAIT_SCAN);
 
-            //Idle wait on no job or child process running
+            //Idle wait on no job or unit process running
             if (empty($list = $this->show_queue()) || 1 < count($this->show_process())) {
                 sleep(self::WAIT_IDLE);
                 continue;
@@ -263,8 +263,8 @@ class redis_queue extends redis
             //Re-add queue job
             $this->instance->rPush($queue[0], $queue[1]);
 
-            //Call child process
-            $this->call_child();
+            //Call realtime unit
+            $this->call_unit_realtime();
         } while ($valid && $running);
 
         //On exit
@@ -273,48 +273,81 @@ class redis_queue extends redis
     }
 
     /**
-     * Start child process
+     * Start unit process
+     *
+     * @param string $type
      *
      * @throws \Exception
      */
-    public function child(): void
+    public function unit(string $type): void
     {
-        //Detect running mode
-        if (!parent::$is_CLI) {
-            throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
-        }
+        switch ($type) {
+            case 'delay':
+                //Delay unit on going
+                if (!$this->instance->setnx(self::KEY_DELAY_LOCK, time())) {
+                    return;
+                }
 
-        //Get idle time
-        $idle_time = $this->get_idle_time();
+                do {
+                    $delay_job = $this->instance->rPop(self::KEY_DELAY_JOBS);
 
-        //Build child hash and key
-        $child_hash = hash('crc32b', uniqid(mt_rand(), true));
-        $child_key  = self::PREFIX_WORKER . $child_hash;
+                    if (empty($delay_job)) {
+                        $this->instance->del(self::KEY_DELAY_LOCK);
+                        break;
+                    }
 
-        //Add to watch list
-        $this->instance->set($child_key, '', self::WAIT_SCAN);
-        $this->instance->hSet($this->get_watch_key(), $child_key, time());
+                    $job_data = json_decode($delay_job, true);
 
-        //Close on exit
-        register_shutdown_function([$this, 'close'], $child_hash);
+                    if ($job_data['time'] > time()) {
+                        $this->instance->rPush(self::KEY_DELAY_JOBS, $delay_job);
+                        $this->instance->del(self::KEY_DELAY_LOCK);
+                        break;
+                    }
 
-        $execute = 0;
+                    $this->add_realtime($job_data['group'], $job_data['job']);
+                } while (true);
 
-        do {
-            //Exit on no job
-            if (empty($list = $this->show_queue())) {
                 break;
-            }
 
-            //Execute job
-            if (!empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
-                self::exec_job($queue[1]);
-            }
-        } while (0 < $this->instance->exists($child_key) && $this->instance->expire($child_key, self::WAIT_SCAN) && ++$execute < $this->max_exec);
+            default:
+                //Detect running mode
+                if (!parent::$is_CLI) {
+                    throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
+                }
 
-        //On exit
-        self::stop($child_hash);
-        unset($idle_time, $child_hash, $child_key, $execute, $list, $queue);
+                //Get idle time
+                $idle_time = $this->get_idle_time();
+
+                //Build unit hash and key
+                $unit_hash = hash('crc32b', uniqid(mt_rand(), true));
+                $unit_key  = self::PREFIX_WORKER . $unit_hash;
+
+                //Add to watch list
+                $this->instance->set($unit_key, '', self::WAIT_SCAN);
+                $this->instance->hSet($this->get_watch_key(), $unit_key, time());
+
+                //Close on exit
+                register_shutdown_function([$this, 'close'], $unit_hash);
+
+                $execute = 0;
+
+                do {
+                    //Exit on no job
+                    if (empty($list = $this->show_queue())) {
+                        break;
+                    }
+
+                    //Execute job
+                    if (!empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
+                        self::exec_job($queue[1]);
+                    }
+                } while (0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$execute < $this->max_exec);
+
+                //On exit
+                self::stop($unit_hash);
+                unset($idle_time, $unit_hash, $unit_key, $execute, $list, $queue);
+                break;
+        }
     }
 
     /**
@@ -374,13 +407,13 @@ class redis_queue extends redis
      */
     private function add_delay(string $group, string $data, int $time): int
     {
-        //Set delay time
-        $this->instance->setnx(self::KEY_DELAY_TIME, $now = time());
+        $result = $this->instance->lPush(self::KEY_DELAY_JOBS, json_encode([
+            'group' => &$group,
+            'time'  => time() + $time,
+            'job'   => &$data
+        ], JSON_FORMAT));
 
-        //Add delay job record
-        $result = $this->instance->zAdd(self::KEY_DELAY_JOBS, $now + $time, json_encode(['group' => &$group, 'job' => &$data], JSON_FORMAT));
-
-        unset($group, $data, $time, $now);
+        unset($group, $data, $time);
         return $result;
     }
 
@@ -393,18 +426,18 @@ class redis_queue extends redis
     private function add_delay_jobs(int $time, int $idle_time): void
     {
         //Get read from & read till
-        $read_till = $this->instance->incrBy(self::KEY_DELAY_TIME, $idle_time - 1);
+        $read_till = $this->instance->incrBy(self::KEY_DELAY_LOCK, $idle_time - 1);
         $read_from = $read_till - $idle_time + 1;
 
         //Read time NOT arrive
         if ($read_from > $time) {
-            $this->instance->decrBy(self::KEY_DELAY_TIME, $idle_time - 1);
+            $this->instance->decrBy(self::KEY_DELAY_LOCK, $idle_time - 1);
             return;
         }
 
         //Read time over now
         if ($read_till > $time) {
-            $read_till = $this->instance->decrBy(self::KEY_DELAY_TIME, $read_till - $time + 1);
+            $read_till = $this->instance->decrBy(self::KEY_DELAY_LOCK, $read_till - $time + 1);
         }
 
         //Read jobs from range
@@ -482,9 +515,18 @@ class redis_queue extends redis
     }
 
     /**
-     * Call child process
+     * Delay unit process
      */
-    private function call_child(): void
+    private function call_unit_delay(): void
+    {
+        //Call unit processes
+        pclose(popen($this->unit . ' --data="type=delay"', 'r'));
+    }
+
+    /**
+     * Realtime unit process
+     */
+    private function call_unit_realtime(): void
     {
         //Count running processes
         $running = count($this->show_process());
@@ -512,9 +554,9 @@ class redis_queue extends redis
             $need = &$left;
         }
 
-        //Call child processes
+        //Call unit processes
         for ($i = 0; $i < $need; ++$i) {
-            pclose(popen($this->child, 'r'));
+            pclose(popen($this->unit . ' --data="type=realtime"', 'r'));
         }
 
         unset($running, $left, $queue, $jobs, $key, $item, $need, $i);
