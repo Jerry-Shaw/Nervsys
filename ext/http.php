@@ -33,13 +33,14 @@ class http extends factory
     const CONTENT_TYPE_ENCODED = 'application/x-www-form-urlencoded';
 
     protected $http       = 'HTTP/2.0';                                             //HTTP Version
-    protected $accept     = 'text/plain,text/html,text/xml,application/json,*;q=0'; //Accept types
-    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . SYSVER . ')';        //User Agent string
+    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . SYSVER . ')';     //User Agent string
     protected $connection = 'keep-alive';                                           //Connection type
 
     protected $accept_charset  = 'UTF-8,*;q=0';                 //Accept charset
     protected $accept_encoding = 'gzip,deflate,identity,*;q=0'; //Accept encoding
     protected $accept_language = 'en-US,en,zh-CN,zh,*;q=0';     //Accept language
+
+    protected $accept = 'application/json;q=0.9,application/xml;q=0.8,text/plain;q=0.7,text/html;q=0.6,*/*;q=0.5'; //Accept types
 
     //Job list
     private $jobs = [];
