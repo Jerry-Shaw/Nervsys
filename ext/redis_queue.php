@@ -54,8 +54,8 @@ class redis_queue extends redis
     protected $max_fork = 10;
     protected $max_exec = 200;
 
-    //Unit resources
-    private $unit = '';
+    //Unit command
+    private $unit_cmd = '';
 
     /**
      * Add job
@@ -234,12 +234,10 @@ class redis_queue extends redis
         //Close on shutdown
         register_shutdown_function([$this, 'close']);
 
-        //Build unit command
-        $this->unit = platform::cmd_bg(
-            '"' . platform::php_path() . '" '
+        //Build basic unit command
+        $this->unit_cmd = '"' . platform::php_path() . '" '
             . '"' . ENTRY_SCRIPT . '" --ret '
-            . '--cmd="' . parent::get_app_cmd(strtr(get_class($this), '\\', '/')) . '-unit"'
-        );
+            . '--cmd="' . parent::get_app_cmd(strtr(get_class($this), '\\', '/')) . '-unit"';
 
         do {
             //Call delay unit
@@ -488,7 +486,7 @@ class redis_queue extends redis
      */
     private function call_unit_delay(): void
     {
-        pclose(popen($this->unit . ' --data="type=delay"', 'r'));
+        pclose(popen(platform::cmd_bg($this->unit_cmd . ' --data="type=delay"'), 'r'));
     }
 
     /**
@@ -523,11 +521,13 @@ class redis_queue extends redis
         }
 
         //Call unit processes
+        $cmd = platform::cmd_bg($this->unit_cmd . ' --data="type=realtime"');
+
         for ($i = 0; $i < $need; ++$i) {
-            pclose(popen($this->unit . ' --data="type=realtime"', 'r'));
+            pclose(popen($cmd, 'r'));
         }
 
-        unset($running, $left, $queue, $jobs, $key, $item, $need, $i);
+        unset($running, $left, $queue, $jobs, $key, $item, $need, $cmd, $i);
     }
 
     /**
