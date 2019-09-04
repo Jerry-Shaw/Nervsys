@@ -40,8 +40,9 @@ class redis_queue extends redis
     const KEY_FAILED = 'RQ:failed';
 
     //Delay keys
-    const KEY_DELAY_LOCK = 'RQ:delay:lock';
-    const KEY_DELAY_JOBS = 'RQ:delay:jobs';
+    const KEY_DELAY_LOCK    = 'RQ:delay:lock';
+    const KEY_DELAY_TIME    = 'RQ:delay:time';
+    const PREFIX_DELAY_JOBS = 'RQ:delay:';
 
     //Queue key prefix
     const PREFIX_CMD    = 'RQ:cmd:';
@@ -199,7 +200,7 @@ class redis_queue extends redis
     {
         //Detect env
         if (!parent::$is_CLI) {
-            throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
+            throw new \Exception('Run under CLI!', E_USER_ERROR);
         }
 
         //Set max forks
@@ -283,39 +284,40 @@ class redis_queue extends redis
     {
         //Detect env
         if (!parent::$is_CLI) {
-            throw new \Exception('Redis queue only supports CLI!', E_USER_ERROR);
+            throw new \Exception('Run under CLI!', E_USER_ERROR);
         }
 
-        $execute = 0;
+        $unit_exec = 0;
 
         switch ($type) {
             case 'delay':
-                //Delay unit on going
-                if (!$this->instance->setnx(self::KEY_DELAY_LOCK, time())) {
+                //Read time rec
+                if (empty($time_list = $this->instance->zRangeByScore(self::KEY_DELAY_TIME, 0, time()))) {
                     break;
                 }
 
-                do {
-                    if (false === $delay_job = $this->instance->rPop(self::KEY_DELAY_JOBS)) {
-                        $this->instance->del(self::KEY_DELAY_LOCK);
-                        break;
-                    }
+                //Seek for jobs
+                foreach ($time_list as $time_rec) {
+                    $time_key = (string)$time_rec;
 
-                    $job_data = json_decode($delay_job, true);
+                    do {
+                        //No delay job found
+                        if (false === $delay_job = $this->instance->rPop(self::PREFIX_DELAY_JOBS . $time_key)) {
+                            $this->instance->zRem(self::KEY_DELAY_TIME, $time_key);
+                            $this->instance->hDel(self::KEY_DELAY_LOCK, $time_key);
+                            break;
+                        }
 
-                    if ($job_data['time'] > time()) {
-                        $this->instance->rPush(self::KEY_DELAY_JOBS, $delay_job);
-                        $this->instance->del(self::KEY_DELAY_LOCK);
-                        break;
-                    }
+                        $job_data = json_decode($delay_job, true);
 
-                    //Add realtime job
-                    $this->add_realtime($job_data['group'], $job_data['job']);
-                } while ($this->unit_is_alive(self::KEY_DELAY_LOCK, $execute));
+                        //Add realtime job
+                        $this->add_realtime($job_data['group'], $job_data['job']);
+                    } while (false !== $delay_job && $unit_exec < $this->max_exec);
 
-                $this->instance->del(self::KEY_DELAY_LOCK);
+                    ++$unit_exec;
+                }
 
-                unset($delay_job, $job_data);
+                unset($time_list, $time_rec, $time_key, $delay_job, $job_data);
                 break;
 
             default:
@@ -343,7 +345,7 @@ class redis_queue extends redis
                     if (!empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
                         self::exec_job($queue[1]);
                     }
-                } while ($this->unit_is_alive($unit_key, $execute));
+                } while (0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$unit_exec < $this->max_exec);
 
                 //On exit
                 self::stop($unit_hash);
@@ -352,20 +354,7 @@ class redis_queue extends redis
                 break;
         }
 
-        unset($type, $execute);
-    }
-
-    /**
-     * Get unit alive status
-     *
-     * @param string $unit_key
-     * @param int    $unit_exec
-     *
-     * @return bool
-     */
-    private function unit_is_alive(string $unit_key, int &$unit_exec): bool
-    {
-        return 0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$unit_exec < $this->max_exec;
+        unset($type, $unit_exec);
     }
 
     /**
@@ -425,13 +414,24 @@ class redis_queue extends redis
      */
     private function add_delay(string $group, string $data, int $time): int
     {
-        $result = $this->instance->lPush(self::KEY_DELAY_JOBS, json_encode([
-            'group' => &$group,
-            'time'  => time() + $time,
-            'job'   => &$data
-        ], JSON_FORMAT));
+        //Calculate delay time
+        $delay = time() + $time;
 
-        unset($group, $data, $time);
+        //Set time lock
+        if ($this->instance->hSetNx(self::KEY_DELAY_LOCK, $delay, $delay)) {
+            //Add time rec
+            $this->instance->zAdd(self::KEY_DELAY_TIME, $delay, $delay);
+        }
+
+        //Add delay job
+        $result = $this->instance->lPush(
+            self::PREFIX_DELAY_JOBS . (string)$delay,
+            json_encode([
+                'group' => &$group,
+                'job'   => &$data
+            ], JSON_FORMAT));
+
+        unset($group, $data, $time, $delay);
         return $result;
     }
 
