@@ -214,6 +214,8 @@ class pdo_mysql extends pdo
      */
     public function where(array $where): object
     {
+        if (empty(array_filter($where))) return $this; //array_filter removes empty arrays in where
+        
         if (count($where) === count($where, 1)) {
             $where = [$where];
         }
