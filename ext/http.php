@@ -296,13 +296,13 @@ class http extends factory
         }
 
         $header += [
-            'Accept'          => $this->accept,
-            'Accept-Charset'  => $this->accept_charset,
-            'Accept-Encoding' => $this->accept_encoding,
-            'Accept-Language' => $this->accept_language,
-            'Content-Type'    => $item['content_type'],
+            'Accept'          => $item['accept'] ?? $this->accept,
+            'Accept-Charset'  => $item['accept_charset'] ?? $this->accept_charset,
+            'Accept-Encoding' => $item['accept_encoding'] ?? $this->accept_encoding,
+            'Accept-Language' => $item['accept_language'] ?? $this->accept_language,
+            'Content-Type'    => $item['content_type'] ?? self::CONTENT_TYPE_JSON,
             'User-Agent'      => $item['user_agent'] ?? $this->user_agent,
-            'Connection'      => $this->connection
+            'Connection'      => $item['connection'] ?? $this->connection
         ];
 
         //Reset values
