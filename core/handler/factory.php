@@ -143,7 +143,7 @@ class factory extends system
     public static function get_app_cmd(string $cmd): string
     {
         //Remove defined "app_path"
-        if ('' !== self::$sys['app_path'] && 0 === strpos($cmd, self::$sys['app_path'])) {
+        if ('' !== self::$sys['app_path'] && 0 === strpos(strtr($cmd, '\\', '/'), self::$sys['app_path'])) {
             $cmd = substr($cmd, strlen(self::$sys['app_path']));
         }
 
