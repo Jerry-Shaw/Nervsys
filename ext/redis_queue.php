@@ -45,10 +45,10 @@ class redis_queue extends redis
     const PREFIX_DELAY_JOBS = 'RQ:delay:';
 
     //Queue key prefix
-    const PREFIX_CMD    = 'RQ:cmd:';
     const PREFIX_JOBS   = 'RQ:jobs:';
     const PREFIX_WATCH  = 'RQ:watch:';
     const PREFIX_WORKER = 'RQ:worker:';
+    const PREFIX_UNIQUE = 'RQ:unique:';
 
     //Process properties
     protected $max_fork = 10;
@@ -90,10 +90,9 @@ class redis_queue extends redis
             $type = self::TYPE_REALTIME;
         }
 
-        //Add job
         switch ($type) {
             case self::TYPE_UNIQUE:
-                $result = $this->add_unique($group, $queue, $time);
+                $result = $this->add_unique($group, $queue, $time, $cmd . (isset($data['unique']) ? ':' . $data['unique'] : ''));
                 break;
 
             case self::TYPE_DELAY:
@@ -381,13 +380,14 @@ class redis_queue extends redis
      * @param string $group
      * @param string $data
      * @param int    $time
+     * @param string $unique
      *
      * @return int
      */
-    private function add_unique(string $group, string $data, int $time): int
+    private function add_unique(string $group, string $data, int $time, string $unique): int
     {
         //Check job duration
-        if (!$this->instance->setnx($key = self::PREFIX_CMD . hash('crc32b', $data), time())) {
+        if (!$this->instance->setnx($key = self::PREFIX_UNIQUE . $unique, time())) {
             return -1;
         }
 
@@ -397,7 +397,7 @@ class redis_queue extends redis
         //Add realtime job
         $result = $this->add_realtime($group, $data);
 
-        unset($group, $data, $time, $key);
+        unset($group, $data, $time, $unique, $key);
         return $result;
     }
 
