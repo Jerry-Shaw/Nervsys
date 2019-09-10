@@ -27,35 +27,66 @@ use core\handler\platform;
 class redis_queue extends redis
 {
     //Queue type
-    const TYPE_REALTIME = 'realtime';
-    const TYPE_UNIQUE   = 'unique';
     const TYPE_DELAY    = 'delay';
+    const TYPE_UNIQUE   = 'unique';
+    const TYPE_REALTIME = 'realtime';
 
     //Wait properties
     const WAIT_IDLE = 3;
     const WAIT_SCAN = 60;
 
-    //Queue keys
-    const KEY_LISTEN = 'RQ:listen';
-    const KEY_FAILED = 'RQ:failed';
-
-    //Delay keys
-    const KEY_DELAY_LOCK    = 'RQ:delay:lock';
-    const KEY_DELAY_TIME    = 'RQ:delay:time';
-    const PREFIX_DELAY_JOBS = 'RQ:delay:';
-
-    //Queue key prefix
-    const PREFIX_JOBS   = 'RQ:jobs:';
-    const PREFIX_WATCH  = 'RQ:watch:';
-    const PREFIX_WORKER = 'RQ:worker:';
-    const PREFIX_UNIQUE = 'RQ:unique:';
-
     //Process properties
     protected $max_fork = 10;
     protected $max_exec = 200;
 
+    //Queue keys
+    private $key_listen = 'RQ:listen';
+    private $key_failed = 'RQ:failed';
+
+    //Queue prefix
+    private $prefix_jobs   = 'RQ:jobs:';
+    private $prefix_watch  = 'RQ:watch:';
+    private $prefix_worker = 'RQ:worker:';
+    private $prefix_unique = 'RQ:unique:';
+
+    //Queue delay keys
+    private $key_delay_lock    = 'RQ:delay:lock';
+    private $key_delay_time    = 'RQ:delay:time';
+    private $prefix_delay_jobs = 'RQ:delay:jobs:';
+
     //Unit command
     private $unit_cmd = '';
+
+    /**
+     * redis_queue constructor.
+     *
+     * @param string $space_key
+     */
+    public function __construct(string $space_key = '')
+    {
+        if ('' === $space_key) {
+            return;
+        }
+
+        $space_key .= ':';
+
+        //Modify queue keys
+        $this->key_listen = $space_key . $this->key_listen;
+        $this->key_failed = $space_key . $this->key_failed;
+
+        //Modify queue prefix
+        $this->prefix_jobs   = $space_key . $this->prefix_jobs;
+        $this->prefix_watch  = $space_key . $this->prefix_watch;
+        $this->prefix_worker = $space_key . $this->prefix_worker;
+        $this->prefix_unique = $space_key . $this->prefix_unique;
+
+        //Modify queue delay keys
+        $this->key_delay_lock    = $space_key . $this->key_delay_lock;
+        $this->key_delay_time    = $space_key . $this->key_delay_time;
+        $this->prefix_delay_jobs = $space_key . $this->prefix_delay_jobs;
+
+        unset($space_key);
+    }
 
     /**
      * Add job
@@ -73,9 +104,6 @@ class redis_queue extends redis
     {
         //Add command
         $data['cmd'] = &$cmd;
-
-        //Sort data by key
-        ksort($data);
 
         //Build queue data
         $queue = json_encode($data, JSON_FORMAT);
@@ -119,7 +147,7 @@ class redis_queue extends redis
     public function close(string $key = ''): int
     {
         //Get process list
-        $process = '' === $key ? array_keys($this->show_process()) : [self::PREFIX_WORKER . $key];
+        $process = '' === $key ? array_keys($this->show_process()) : [$this->prefix_worker . $key];
 
         if (empty($process)) {
             return 0;
@@ -147,8 +175,8 @@ class redis_queue extends redis
     public function show_fail(int $start = 0, int $end = -1): array
     {
         $list = [
-            'len'  => $this->instance->lLen(self::KEY_FAILED),
-            'data' => $this->instance->lRange(self::KEY_FAILED, $start, $end)
+            'len'  => $this->instance->lLen($this->key_failed),
+            'data' => $this->instance->lRange($this->key_failed, $start, $end)
         ];
 
         unset($start, $end);
@@ -174,7 +202,7 @@ class redis_queue extends redis
      */
     public function show_queue(): array
     {
-        return $this->get_keys(self::KEY_LISTEN);
+        return $this->get_keys($this->key_listen);
     }
 
     /**
@@ -219,7 +247,7 @@ class redis_queue extends redis
 
         //Build master hash and key
         $master_hash = hash('crc32b', uniqid(mt_rand(), true));
-        $master_key  = self::PREFIX_WORKER . ($_SERVER['HOSTNAME'] ?? 'master');
+        $master_key  = $this->prefix_worker . ($_SERVER['HOSTNAME'] ?? 'master');
 
         //Exit when master process exists
         if (!$this->instance->setnx($master_key, $master_hash)) {
@@ -289,7 +317,7 @@ class redis_queue extends redis
         switch ($type) {
             case 'delay':
                 //Read time rec
-                if (empty($time_list = $this->instance->zRangeByScore(self::KEY_DELAY_TIME, 0, time()))) {
+                if (empty($time_list = $this->instance->zRangeByScore($this->key_delay_time, 0, time()))) {
                     break;
                 }
 
@@ -299,9 +327,9 @@ class redis_queue extends redis
 
                     do {
                         //No delay job found
-                        if (false === $delay_job = $this->instance->rPop(self::PREFIX_DELAY_JOBS . $time_key)) {
-                            $this->instance->zRem(self::KEY_DELAY_TIME, $time_key);
-                            $this->instance->hDel(self::KEY_DELAY_LOCK, $time_key);
+                        if (false === $delay_job = $this->instance->rPop($this->prefix_delay_jobs . $time_key)) {
+                            $this->instance->zRem($this->key_delay_time, $time_key);
+                            $this->instance->hDel($this->key_delay_lock, $time_key);
                             break;
                         }
 
@@ -323,7 +351,7 @@ class redis_queue extends redis
 
                 //Build unit hash and key
                 $unit_hash = hash('crc32b', uniqid(mt_rand(), true));
-                $unit_key  = self::PREFIX_WORKER . $unit_hash;
+                $unit_key  = $this->prefix_worker . $unit_hash;
 
                 //Add to watch list
                 $this->instance->set($unit_key, '', self::WAIT_SCAN);
@@ -365,7 +393,7 @@ class redis_queue extends redis
     private function add_realtime(string $group, string $data): int
     {
         //Add watch list
-        $this->instance->hSet(self::KEY_LISTEN, $key = self::PREFIX_JOBS . $group, time());
+        $this->instance->hSet($this->key_listen, $key = $this->prefix_jobs . $group, time());
 
         //Add job
         $result = (int)$this->instance->lPush($key, $data);
@@ -387,7 +415,7 @@ class redis_queue extends redis
     private function add_unique(string $group, string $data, int $time, string $unique): int
     {
         //Check job duration
-        if (!$this->instance->setnx($key = self::PREFIX_UNIQUE . $unique, time())) {
+        if (!$this->instance->setnx($key = $this->prefix_unique . $unique, time())) {
             return -1;
         }
 
@@ -416,14 +444,14 @@ class redis_queue extends redis
         $delay = time() + $time;
 
         //Set time lock
-        if ($this->instance->hSetNx(self::KEY_DELAY_LOCK, $delay, $delay)) {
+        if ($this->instance->hSetNx($this->key_delay_lock, $delay, $delay)) {
             //Add time rec
-            $this->instance->zAdd(self::KEY_DELAY_TIME, $delay, $delay);
+            $this->instance->zAdd($this->key_delay_time, $delay, $delay);
         }
 
         //Add delay job
         $result = $this->instance->lPush(
-            self::PREFIX_DELAY_JOBS . (string)$delay,
+            $this->prefix_delay_jobs . (string)$delay,
             json_encode([
                 'group' => &$group,
                 'job'   => &$data
@@ -468,7 +496,7 @@ class redis_queue extends redis
      */
     private function get_watch_key(): string
     {
-        return self::PREFIX_WATCH . ($_SERVER['HOSTNAME'] ?? 'worker');
+        return $this->prefix_watch . ($_SERVER['HOSTNAME'] ?? 'worker');
     }
 
     /**
@@ -608,7 +636,7 @@ class redis_queue extends redis
                 self::check_job($data, json_encode($result));
             }
         } catch (\Throwable $throwable) {
-            $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
+            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
             return;
         }
@@ -630,7 +658,7 @@ class redis_queue extends redis
 
         //Save to fail list
         if (!is_null($json) && true !== $json) {
-            $this->instance->lPush(self::KEY_FAILED, json_encode(['data' => &$data, 'return' => &$result], JSON_FORMAT));
+            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'return' => &$result], JSON_FORMAT));
         }
 
         unset($data, $result, $json);
