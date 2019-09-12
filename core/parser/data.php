@@ -20,6 +20,8 @@
 
 namespace core\parser;
 
+use core\handler\factory;
+
 class data
 {
     //Base64 data header
@@ -105,13 +107,13 @@ class data
     /**
      * Build argument
      *
-     * @param object $reflect
-     * @param array  $input
+     * @param \ReflectionMethod $reflect
+     * @param array             $input
      *
      * @return array
-     * @throws \Exception
+     * @throws \ReflectionException
      */
-    public static function build_argv(object $reflect, array $input): array
+    public static function build_argv(\ReflectionMethod $reflect, array $input): array
     {
         //Get method params
         if (empty($params = $reflect->getParameters())) {
@@ -122,32 +124,51 @@ class data
 
         //Process param data
         foreach ($params as $param) {
-            if (isset($input[$name = $param->getName()])) {
-                switch (is_object($type = $param->getType()) ? $type->getName() : 'undefined') {
-                    case 'int':
-                        is_numeric($input[$name]) ? $data[] = (int)$input[$name] : $diff[] = $name;
-                        break;
-                    case 'bool':
-                        is_bool($input[$name]) ? $data[] = (bool)$input[$name] : $diff[] = $name;
-                        break;
-                    case 'float':
-                        is_numeric($input[$name]) ? $data[] = (float)$input[$name] : $diff[] = $name;
-                        break;
-                    case 'array':
-                        is_array($input[$name]) || is_object($input[$name]) ? $data[] = (array)$input[$name] : $diff[] = $name;
-                        break;
-                    case 'string':
-                        is_string($input[$name]) || is_numeric($input[$name]) ? $data[] = trim((string)$input[$name]) : $diff[] = $name;
-                        break;
-                    case 'object':
-                        is_object($input[$name]) || is_array($input[$name]) ? $data[] = (object)$input[$name] : $diff[] = $name;
-                        break;
-                    default:
-                        $data[] = $input[$name];
-                        break;
+            //Get param name
+            $param_name = $param->getName();
+
+            //Check non-exist param
+            if (!isset($input[$param_name])) {
+                if ($param->isDefaultValueAvailable()) {
+                    //Param has default value
+                    $data[] = $param->getDefaultValue();
+                    continue;
+                } else {
+                    //Param has NO default value
+                    if (!is_object($param_class = $param->getClass())) {
+                        $diff[] = $param_name;
+                        continue;
+                    }
+
+                    //Try simple injection
+                    $data[] = factory::obtain($param_class->getName());
+                    continue;
                 }
-            } else {
-                $param->isDefaultValueAvailable() ? $data[] = $param->getDefaultValue() : $diff[] = $name;
+            }
+
+            //Process param with type
+            switch (is_object($param_type = $param->getType()) ? $param_type->getName() : 'undefined') {
+                case 'int':
+                    is_numeric($input[$param_name]) ? $data[] = (int)$input[$param_name] : $diff[] = $param_name;
+                    break;
+                case 'bool':
+                    is_bool($input[$param_name]) ? $data[] = (bool)$input[$param_name] : $diff[] = $param_name;
+                    break;
+                case 'float':
+                    is_numeric($input[$param_name]) ? $data[] = (float)$input[$param_name] : $diff[] = $param_name;
+                    break;
+                case 'array':
+                    is_array($input[$param_name]) || is_object($input[$param_name]) ? $data[] = (array)$input[$param_name] : $diff[] = $param_name;
+                    break;
+                case 'string':
+                    is_string($input[$param_name]) || is_numeric($input[$param_name]) ? $data[] = trim((string)$input[$param_name]) : $diff[] = $param_name;
+                    break;
+                case 'object':
+                    is_object($input[$param_name]) || is_array($input[$param_name]) ? $data[] = (object)$input[$param_name] : $diff[] = $param_name;
+                    break;
+                default:
+                    $data[] = $input[$param_name];
+                    break;
             }
         }
 
@@ -159,7 +180,7 @@ class data
             );
         }
 
-        unset($reflect, $input, $params, $diff, $param, $name);
+        unset($reflect, $input, $params, $diff, $param, $param_name, $param_class, $param_type);
         return $data;
     }
 }
