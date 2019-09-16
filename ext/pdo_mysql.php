@@ -289,7 +289,7 @@ class pdo_mysql extends pdo
      */
     public function limit(int $offset, int $length = 0): object
     {
-        $this->runtime['limit'] = 0 === $length ? '0, ' . $offset : $offset . ', ' . $length;
+        $this->runtime['limit'] = 0 === $length ? (string)$offset : (string)$offset . ', ' . (string)$length;
 
         unset($offset, $length);
         return $this;
