@@ -107,56 +107,91 @@ class ns
     //App path
     public static $app_path = ROOT . DIRECTORY_SEPARATOR . 'app';
 
+    //Runtime values
+    public static $is_CLI = true;
+    public static $is_TLS = true;
 
-    public static function boot(): void
+    //Default setting
+    const CONF = [
+        //Sys setting
+        'sys'  => [
+            'timezone'  => 'UTC',
+            'auto_call' => true
+        ],
+        //Log setting
+        'log'  => [
+            'emergency' => true,
+            'alert'     => true,
+            'critical'  => true,
+            'error'     => true,
+            'warning'   => true,
+            'notice'    => true,
+            'info'      => true,
+            'debug'     => true,
+            'display'   => true
+        ],
+        //Other settings
+        'cgi'  => [],
+        'cli'  => [],
+        'cors' => [],
+        'init' => [],
+        'call' => []
+    ];
+
+    /**
+     * System boot
+     *
+     * @param bool $output
+     */
+    public static function boot(bool $output = true): void
     {
-
         //Load app.ini
-        self::load_ini();
+        $conf = self::load_ini();
+
+        //Get runtime values
+        self::$is_CLI = 'cli' === PHP_SAPI;
+        self::$is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+
+        //Set default timezone
+        date_default_timezone_set($conf['sys']['timezone']);
+
+        //Verify CORS
+        if (!self::pass_cors($conf['cors'])) {
+            exit;
+        }
+
+        //Call CGI script
+
+        //Call CLI script
+        if (self::$is_CLI) {
+
+        }
+
+        //No output
+        if (!$output) {
+            return;
+        }
 
 
-        var_dump(factory::build(pool::class));
+        //Output result
+
+
+
+
     }
 
 
     /**
      * Load app.ini
      */
-    private static function load_ini(): void
+    private static function load_ini(): array
     {
-        /**
-         * Add default settings
-         *
-         * @var \core\lib\pool $pool
-         */
+        /** @var \core\lib\pool $pool */
         $pool = factory::build(pool::class);
 
-        //Set default ini container
-        $pool->conf = [
-            //Sys setting
-            'sys'  => [
-                'timezone'  => 'UTC',
-                'auto_call' => true
-            ],
-            //Log setting
-            'log'  => [
-                'emergency' => true,
-                'alert'     => true,
-                'critical'  => true,
-                'error'     => true,
-                'warning'   => true,
-                'notice'    => true,
-                'info'      => true,
-                'debug'     => true,
-                'display'   => true
-            ],
-            //Other settings
-            'cgi'  => [],
-            'cli'  => [],
-            'cors' => [],
-            'init' => [],
-            'call' => []
-        ];
+        //Set default conf values
+        $pool->conf = self::CONF;
 
         //Read app.ini
         if (is_file($app_ini = self::$app_path . DIRECTORY_SEPARATOR . 'app.ini')) {
@@ -165,14 +200,53 @@ class ns
             foreach ($app_conf as $key => $value) {
                 $key = strtolower($key);
 
+                //Update conf values
                 $pool->conf[$key] = array_replace_recursive($pool->conf[$key], $value);
             }
 
             unset($app_conf, $key, $value);
         }
 
-        unset($pool, $app_ini);
+        unset($app_ini);
+        return $pool->conf;
     }
 
+    /**
+     * Check CORS permission
+     *
+     * @param array $cors_conf
+     *
+     * @return bool
+     */
+    private static function pass_cors(array $cors_conf): bool
+    {
+        //Skip CLI script
+        if (self::$is_CLI) {
+            return true;
+        }
 
+        //Check Server ENV
+        if (!isset($_SERVER['HTTP_ORIGIN'])
+            || $_SERVER['HTTP_ORIGIN'] === (self::$is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+            return true;
+        }
+
+        //Exit on access NOT permitted
+        if (is_null($allow_headers = $cors_conf[$_SERVER['HTTP_ORIGIN']] ?? $cors_conf['*'] ?? null)) {
+            return false;
+        }
+
+        //Response access allowed headers
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+        header('Access-Control-Allow-Headers: ' . $allow_headers);
+        header('Access-Control-Allow-Credentials: true');
+
+        //Exit on OPTION request
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+            return false;
+        }
+
+        unset($cors_conf, $allow_headers);
+        return true;
+    }
 }
