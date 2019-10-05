@@ -169,10 +169,10 @@ final class error
         $trace = array_reverse($trace);
 
         foreach ($trace as $item) {
-            $msg = '\'' . (strtr($item['class'], '\\', '/') ?? '') . ($item['type'] ?? '') . $item['function'] . '\' called';
+            $msg = (strtr($item['class'], '\\', '/') ?? '') . ($item['type'] ?? '') . $item['function'] . ' called';
 
             if (isset($item['file'])) {
-                $msg .= ' in \'' . strtr($item['file'], '\\', '/') . '\'';
+                $msg .= ' in ' . strtr($item['file'], '\\', '/');
             }
 
             if (isset($item['line'])) {

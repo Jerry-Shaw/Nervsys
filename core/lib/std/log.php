@@ -196,8 +196,8 @@ class log
     private function format(string $level, string $message, array $context): string
     {
         $log = date('Y-m-d H:i:s') . PHP_EOL;
-        $log .= ucfirst($level) . ': ' . $message . PHP_EOL . PHP_EOL;
-        $log .= json_encode($context, JSON_PRETTY) . PHP_EOL . PHP_EOL . PHP_EOL;
+        $log .= ucfirst($level) . ': ' . $message . PHP_EOL;
+        $log .= json_encode($context, JSON_PRETTY) . PHP_EOL . PHP_EOL;
 
         unset($level, $message, $context);
         return $log;
