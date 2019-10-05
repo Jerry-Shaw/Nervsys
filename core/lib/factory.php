@@ -31,14 +31,14 @@ final class factory
     private static $pool = [];
 
     /**
-     * Make an instance
+     * Build an instance
      *
      * @param string $class
      * @param array  $params
      *
      * @return object
      */
-    public static function make(string $class, array $params = []): object
+    public static function build(string $class, array $params = []): object
     {
         if (!isset(self::$pool[$key = hash('md5', $class . ':' . json_encode($params))])) {
             self::$pool[$key] = !empty($params) ? new $class(...$params) : new $class();

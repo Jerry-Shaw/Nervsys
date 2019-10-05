@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System Configuration controller
+ * NS System Data Pooling controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -21,21 +21,56 @@
 namespace core\lib;
 
 /**
- * Class conf
+ * Class pool
  *
  * @package core\lib
  */
-final class conf
+final class pool
 {
     /**
-     * Conf value pool
+     * CMD
      *
      * @var array
      */
-    private $pool = [];
+    public $cmd = '';
 
     /**
-     * Get a conf
+     * App.ini
+     *
+     * @var array
+     */
+    public $ini = [];
+
+    /**
+     * Log
+     *
+     * @var array
+     */
+    public $log = [];
+
+    /**
+     * Data
+     *
+     * @var array
+     */
+    public $data = [];
+
+    /**
+     * Error
+     *
+     * @var array
+     */
+    public $error = [];
+
+    /**
+     * Others
+     *
+     * @var array
+     */
+    public $others = [];
+
+    /**
+     * Get value
      *
      * @param string $name
      *
@@ -43,18 +78,18 @@ final class conf
      */
     public function __get(string $name): array
     {
-        return $this->pool[$name] ?? [];
+        return $this->others[$name] ?? [];
     }
 
     /**
-     * Set a conf
+     * Set value
      *
      * @param string $name
      * @param array  $value
      */
-    public function __set(string $name, array $value): void
+    public function __set($name, array $value): void
     {
-        $this->pool[$name] = &$value;
+        $this->others[$name] = &$value;
         unset($name, $value);
     }
 }
