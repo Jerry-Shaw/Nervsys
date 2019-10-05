@@ -161,16 +161,23 @@ class ns
             exit;
         }
 
-        /** @var \core\lib\std\io $unit_io */
-        $unit_io = factory::build(self::$io);
+        //Build pool
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
 
-
-        //Call CGI script
-
-        //Call CLI script
+        //CLI first
         if (self::$is_CLI) {
+            /** @var \core\cli $unit_cli */
+            $unit_cli = factory::build(cli::class);
 
+            $unit_pool->result += $unit_cli->run();
         }
+
+        //CGI second
+        /** @var \core\cgi $unit_cgi */
+        $unit_cgi = factory::build(cgi::class);
+
+        $unit_pool->result += $unit_cgi->run();
 
         //No output
         if (!$output) {

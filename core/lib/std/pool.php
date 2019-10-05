@@ -63,6 +63,13 @@ final class pool
     public $error = [];
 
     /**
+     * Result
+     *
+     * @var array
+     */
+    public $result = [];
+
+    /**
      * Others
      *
      * @var array
