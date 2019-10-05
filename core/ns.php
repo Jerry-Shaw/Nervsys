@@ -100,9 +100,9 @@ set_error_handler([error::class, 'error_handler']);
 class ns
 {
     //Customized libraries
-    public static $io     = core\lib\std\io::class;
-    public static $log    = core\lib\std\log::class;
-    public static $router = core\lib\std\router::class;
+    public static $io     = lib\std\io::class;
+    public static $log    = lib\std\log::class;
+    public static $router = lib\std\router::class;
 
     //App path
     public static $app_path = ROOT . DIRECTORY_SEPARATOR . 'app';
@@ -161,7 +161,8 @@ class ns
             exit;
         }
 
-        //Input process
+        /** @var \core\lib\std\io $unit_io */
+        $unit_io = factory::build(self::$io);
 
 
         //Call CGI script
@@ -188,11 +189,11 @@ class ns
      */
     private static function load_ini(): array
     {
-        /** @var \core\lib\pool $pool */
-        $pool = factory::build(pool::class);
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
 
         //Set default conf values
-        $pool->conf = self::CONF;
+        $unit_pool->conf = self::CONF;
 
         //Read app.ini
         if (is_file($app_ini = self::$app_path . DIRECTORY_SEPARATOR . 'app.ini')) {
@@ -202,14 +203,14 @@ class ns
                 $key = strtolower($key);
 
                 //Update conf values
-                $pool->conf[$key] = array_replace_recursive($pool->conf[$key], $value);
+                $unit_pool->conf[$key] = array_replace_recursive($unit_pool->conf[$key], $value);
             }
 
             unset($app_conf, $key, $value);
         }
 
         unset($app_ini);
-        return $pool->conf;
+        return $unit_pool->conf;
     }
 
     /**

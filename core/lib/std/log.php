@@ -150,7 +150,7 @@ class log
      */
     public function display(string $level, string $message, array $context): void
     {
-        if (true === $this->unit_pool->conf['display']) {
+        if (true === $this->unit_pool->conf['log']['display']) {
             $this->unit_pool->log .= $this->format($level, $message, $context);
         }
 
@@ -166,7 +166,7 @@ class log
      */
     private function save(string $level, string $message, array $context): void
     {
-        if (true !== $this->unit_pool->conf[$level]) {
+        if (true !== $this->unit_pool->conf['log'][$level]) {
             return;
         }
 

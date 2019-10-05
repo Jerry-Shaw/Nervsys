@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System IO controller
+ * OS abstract class
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -18,14 +18,20 @@
  * limitations under the License.
  */
 
-namespace core\lib\std;
+namespace core\abs;
 
 /**
- * Class io
+ * Class os
  *
- * @package core\lib\std
+ * @package core\abs
  */
-class io extends \core\abs\io
+abstract class os
 {
+    /**
+     * Get ROOT path
+     *
+     * @return string
+     */
+    abstract public function get_root(): string;
 
 }
