@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System Factory handler
+ * OS controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -18,33 +18,36 @@
  * limitations under the License.
  */
 
-namespace core\lib\stc;
+namespace core\lib\std;
 
 /**
- * Class factory
+ * Class os
  *
- * @package core\lib\stc
+ * @package core\lib
  */
-final class factory
+final class os
 {
-    //Instance pool
-    private static $pool = [];
+    /**
+     * @var string $os_ctrl
+     */
+    private $os_ctrl = '';
 
     /**
-     * Build an instance
-     *
-     * @param string $class
-     * @param array  $params
-     *
-     * @return object
+     * os constructor.
      */
-    public static function build(string $class, array $params = []): object
+    public function __construct()
     {
-        if (!isset(self::$pool[$key = hash('md5', $class . ':' . json_encode($params))])) {
-            self::$pool[$key] = !empty($params) ? new $class(...$params) : new $class();
-        }
+        $this->os_ctrl = __CLASS__ . '\\' . strtolower(PHP_OS);
+    }
 
-        unset($class, $params);
-        return self::$pool[$key];
+    /**
+     * @param $name
+     * @param $arguments
+     *
+     * @return mixed
+     */
+    public function __call(string $name, array $arguments)
+    {
+        return $this->os_ctrl->$name(...$arguments);
     }
 }

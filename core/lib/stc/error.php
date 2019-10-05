@@ -20,10 +20,13 @@
 
 namespace core\lib\stc;
 
+use core\lib\std\log;
+use core\lib\std\pool;
+
 /**
  * Class error
  *
- * @package core\lib
+ * @package core\lib\stc
  */
 final class error
 {
@@ -119,8 +122,8 @@ final class error
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
-        /** @var \core\lib\pool $pool */
-        $pool = factory::build(pool::class);
+        /** @var \core\lib\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
 
         //Build context
         $context = [
@@ -130,11 +133,11 @@ final class error
             'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms' . PHP_EOL,
 
             //Params & trace
-            'Param: ' . PHP_EOL . json_encode(['cmd' => $pool->cmd] + $pool->data, JSON_PRETTY) . PHP_EOL,
+            'Param: ' . PHP_EOL . json_encode(['cmd' => $unit_pool->cmd] + $unit_pool->data, JSON_PRETTY) . PHP_EOL,
             'Trace: ' . PHP_EOL . $throwable->getTraceAsString() . PHP_EOL
         ];
 
-        unset($throwable, $exception, $pool);
+        unset($throwable, $exception, $unit_pool);
 
         //Parse backtrace
         $trace_list = [];
@@ -160,9 +163,12 @@ final class error
 
         unset($trace_list, $backtrace, $item, $msg);
 
+        /** @var \core\lib\std\log $unit_log */
+        $unit_log = factory::build(log::class);
+
         //Process logs
-        log::$level($message, $context);
-        log::display($level, $message, $context);
+        $unit_log->$level($message, $context);
+        $unit_log->display($level, $message, $context);
 
         //Exit on error
         if (0 < $err_lv & error_reporting()) {

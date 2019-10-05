@@ -7,7 +7,7 @@
  * Note: router.php
  */
 
-namespace core\lib;
+namespace core\lib\std;
 
 
 class router extends \core\abs\router

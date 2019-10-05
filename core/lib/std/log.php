@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System Log handler
+ * NS System Log controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-namespace core\lib;
+namespace core\lib\std;
 
 use core\lib\stc\factory;
 

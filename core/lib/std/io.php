@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OS controller
+ * NS System IO controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -18,36 +18,9 @@
  * limitations under the License.
  */
 
-namespace core\lib;
+namespace core\lib\std;
 
-/**
- * Class os
- *
- * @package core\lib
- */
-final class os
+class io extends \core\abs\io
 {
-    /**
-     * @var string $os_ctrl
-     */
-    private $os_ctrl = '';
 
-    /**
-     * os constructor.
-     */
-    public function __construct()
-    {
-        $this->os_ctrl = __CLASS__ . '\\' . strtolower(PHP_OS);
-    }
-
-    /**
-     * @param $name
-     * @param $arguments
-     *
-     * @return mixed
-     */
-    public function __call(string $name, array $arguments)
-    {
-        return $this->os_ctrl->$name(...$arguments);
-    }
 }

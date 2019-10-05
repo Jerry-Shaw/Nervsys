@@ -7,7 +7,7 @@
  * Note: trustzone.php
  */
 
-namespace core\lib;
+namespace core\lib\std;
 
 
 class trustzone

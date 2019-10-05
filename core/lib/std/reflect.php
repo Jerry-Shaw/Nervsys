@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-namespace core\lib;
+namespace core\lib\std;
 
 /**
  * Class reflect

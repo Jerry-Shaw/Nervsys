@@ -83,7 +83,7 @@ spl_autoload_register(
 );
 
 //Load libraries
-use core\lib\pool;
+use core\lib\std\pool;
 use core\lib\stc\error;
 use core\lib\stc\factory;
 
@@ -100,9 +100,9 @@ set_error_handler([error::class, 'error_handler']);
 class ns
 {
     //Customized libraries
-    public static $io     = core\lib\io::class;
-    public static $log    = core\lib\log::class;
-    public static $router = core\lib\router::class;
+    public static $io     = core\lib\std\io::class;
+    public static $log    = core\lib\std\log::class;
+    public static $router = core\lib\std\router::class;
 
     //App path
     public static $app_path = ROOT . DIRECTORY_SEPARATOR . 'app';
@@ -161,6 +161,9 @@ class ns
             exit;
         }
 
+        //Input process
+
+
         //Call CGI script
 
         //Call CLI script
@@ -174,9 +177,7 @@ class ns
         }
 
 
-        //Output result
-
-
+        //Output process
 
 
     }
