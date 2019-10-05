@@ -128,40 +128,16 @@ final class error
         //Build context
         $context = [
             //Memory & Duration
-            'Peak: ' . round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
-            'Memory: ' . round(memory_get_usage(true) / 1048576, 4) . 'MB',
-            'Duration: ' . round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms' . PHP_EOL,
+            'Peak'     => round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
+            'Memory'   => round(memory_get_usage(true) / 1048576, 4) . 'MB',
+            'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
 
             //Params & trace
-            'Param: ' . PHP_EOL . json_encode(['cmd' => $unit_pool->cmd] + $unit_pool->data, JSON_PRETTY) . PHP_EOL,
-            'Trace: ' . PHP_EOL . $throwable->getTraceAsString() . PHP_EOL
+            'Param'    => ['cmd' => $unit_pool->cmd] + $unit_pool->data,
+            'Trace'    => self::get_trace_list($throwable->getTrace())
         ];
 
         unset($throwable, $exception, $unit_pool);
-
-        //Parse backtrace
-        $trace_list = [];
-        $backtrace  = array_reverse(debug_backtrace());
-
-        //Simplify backtrace records
-        foreach ($backtrace as $item) {
-            $msg = '"' . ($item['class'] ?? '') . ($item['type'] ?? '') . $item['function'] . '" called';
-
-            if (isset($item['file'])) {
-                $msg .= ' in "' . $item['file'] . '"';
-            }
-
-            if (isset($item['line'])) {
-                $msg .= ' on line ' . $item['line'];
-            }
-
-            $trace_list[] = $msg;
-        }
-
-        //Add backtrace records
-        $context[] = 'Backtrace: ' . PHP_EOL . implode(PHP_EOL, $trace_list);
-
-        unset($trace_list, $backtrace, $item, $msg);
 
         /** @var \core\lib\std\log $unit_log */
         $unit_log = factory::build(log::class);
@@ -178,5 +154,35 @@ final class error
 
 
         unset($level, $message, $context);
+    }
+
+    /**
+     * Get simple trace list
+     *
+     * @param array $trace
+     *
+     * @return array
+     */
+    private static function get_trace_list(array $trace): array
+    {
+        $list  = [];
+        $trace = array_reverse($trace);
+
+        foreach ($trace as $item) {
+            $msg = '\'' . (strtr($item['class'], '\\', '/') ?? '') . ($item['type'] ?? '') . $item['function'] . '\' called';
+
+            if (isset($item['file'])) {
+                $msg .= ' in \'' . strtr($item['file'], '\\', '/') . '\'';
+            }
+
+            if (isset($item['line'])) {
+                $msg .= ' on line ' . $item['line'];
+            }
+
+            $list[] = $msg;
+        }
+
+        unset($trace, $item, $msg);
+        return $list;
     }
 }
