@@ -20,14 +20,12 @@
 
 namespace core\lib;
 
-use core\ns;
-
 /**
  * Class reflect
  *
  * @package core\lib
  */
-final class reflect extends ns
+final class reflect
 {
     //Reflection pool
     private static $pool = [];

@@ -20,14 +20,12 @@
 
 namespace core\lib;
 
-use core\ns;
-
 /**
  * Class factory
  *
  * @package core\lib
  */
-final class factory extends ns
+final class factory
 {
     //Instance pool
     private static $pool = [];
@@ -46,6 +44,7 @@ final class factory extends ns
             self::$pool[$key] = !empty($params) ? new $class(...$params) : new $class();
         }
 
+        unset($class, $params);
         return self::$pool[$key];
     }
 }
