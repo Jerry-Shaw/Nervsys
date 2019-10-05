@@ -30,23 +30,23 @@ final class pool
     /**
      * CMD
      *
-     * @var array
+     * @var string
      */
     public $cmd = '';
 
     /**
-     * App.ini
-     *
-     * @var array
-     */
-    public $ini = [];
-
-    /**
      * Log
      *
+     * @var string
+     */
+    public $log = '';
+
+    /**
+     * conf
+     *
      * @var array
      */
-    public $log = [];
+    public $conf = [];
 
     /**
      * Data
