@@ -83,9 +83,9 @@ spl_autoload_register(
 );
 
 //Load libraries
-use core\lib\conf;
-use core\lib\error;
-use core\lib\factory;
+use core\lib\pool;
+use core\lib\stc\error;
+use core\lib\stc\factory;
 
 //Register error handler
 register_shutdown_function([error::class, 'shutdown_handler']);
@@ -107,23 +107,17 @@ class ns
     //App path
     public static $app_path = ROOT . DIRECTORY_SEPARATOR . 'app';
 
-    //System log path
-    public static $log_path = ROOT . DIRECTORY_SEPARATOR . 'logs';
-
-
-    //Current error level
-    protected static $err_lv = E_ALL;
-
 
     public static function boot(): void
     {
-        //Get error_reporting level
-        self::$err_lv = error_reporting();
 
         //Load app.ini
         self::load_ini();
 
+
+        var_dump(factory::build(pool::class));
     }
+
 
     /**
      * Load app.ini
@@ -133,31 +127,36 @@ class ns
         /**
          * Add default settings
          *
-         * @var \core\lib\conf $conf
+         * @var \core\lib\pool $pool
          */
-        $conf = factory::make(conf::class);
+        $pool = factory::build(pool::class);
 
-        //Sys setting
-        $conf->sys = [
-            'timezone'  => 'UTC',
-            'auto_call' => true
+        //Set default ini container
+        $pool->conf = [
+            //Sys setting
+            'sys'  => [
+                'timezone'  => 'UTC',
+                'auto_call' => true
+            ],
+            //Log setting
+            'log'  => [
+                'emergency' => true,
+                'alert'     => true,
+                'critical'  => true,
+                'error'     => true,
+                'warning'   => true,
+                'notice'    => true,
+                'info'      => true,
+                'debug'     => true,
+                'display'   => true
+            ],
+            //Other settings
+            'cgi'  => [],
+            'cli'  => [],
+            'cors' => [],
+            'init' => [],
+            'call' => []
         ];
-
-        //Log setting
-        $conf->log = [
-            'emergency' => true,
-            'alert'     => true,
-            'critical'  => true,
-            'error'     => true,
-            'warning'   => true,
-            'notice'    => true,
-            'info'      => true,
-            'debug'     => true,
-            'display'   => true
-        ];
-
-        //Other settings
-        $conf->cgi = $conf->cli = $conf->cors = $conf->init = $conf->call = [];
 
         //Read app.ini
         if (is_file($app_ini = self::$app_path . DIRECTORY_SEPARATOR . 'app.ini')) {
@@ -166,16 +165,13 @@ class ns
             foreach ($app_conf as $key => $value) {
                 $key = strtolower($key);
 
-                $conf->$key = array_replace_recursive($conf->$key, $value);
+                $pool->conf[$key] = array_replace_recursive($pool->conf[$key], $value);
             }
 
             unset($app_conf, $key, $value);
         }
 
-
-        $conf->get_all();
-
-        unset($conf, $app_ini);
+        unset($pool, $app_ini);
     }
 
 
