@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-namespace core\lib;
+namespace core\lib\stc;
 
 /**
  * Class error
@@ -112,7 +112,7 @@ final class error
         $exception = get_class($throwable);
 
         //Get error level
-        $level = self::LEVEL[$throwable->getCode()] ?? 'notice';
+        $level = self::LEVEL[$err_lv = $throwable->getCode()] ?? 'notice';
 
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
@@ -163,6 +163,13 @@ final class error
         //Process logs
         log::$level($message, $context);
         log::display($level, $message, $context);
+
+        //Exit on error
+        if (0 < $err_lv & error_reporting()) {
+            //todo flush result
+            exit;
+        }
+
 
         unset($level, $message, $context);
     }
