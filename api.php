@@ -1,7 +1,7 @@
 <?php
 
 /**
- * API Entry
+ * API Entry script
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -21,14 +21,12 @@
 //Declare strict types
 declare(strict_types = 1);
 
-//Define root path
-define('ROOT', __DIR__ . DIRECTORY_SEPARATOR);
-
-//Define entry path
-define('ENTRY_SCRIPT', __FILE__);
+set_time_limit(0);
+error_reporting(E_ALL);
+ignore_user_abort(true);
 
 //Load system script
-require __DIR__ . '/core/system.php';
+require __DIR__ . '/core/ns.php';
 
-//Boot system
-\core\system::boot();
+//System boot
+\core\ns::boot();
