@@ -28,7 +28,7 @@ namespace core\lib;
 final class reflect
 {
     //Reflection pool
-    private static $pool = [];
+    private $pool = [];
 
     /**
      * Get class reflection
@@ -38,13 +38,13 @@ final class reflect
      * @return \ReflectionClass
      * @throws \ReflectionException
      */
-    public static function get_class(string $class): \ReflectionClass
+    public function get_class(string $class): \ReflectionClass
     {
-        if (!isset(self::$pool[$class])) {
-            self::$pool[$class] = new \ReflectionClass($class);
+        if (!isset($this->pool[$class])) {
+            $this->pool[$class] = new \ReflectionClass($class);
         }
 
-        return self::$pool[$class];
+        return $this->pool[$class];
     }
 
     /**
@@ -56,14 +56,14 @@ final class reflect
      * @return \ReflectionMethod
      * @throws \ReflectionException
      */
-    public static function get_method(string $class, string $method): \ReflectionMethod
+    public function get_method(string $class, string $method): \ReflectionMethod
     {
-        if (!isset(self::$pool[$key = $class . ':method:' . $method])) {
-            self::$pool[$key] = self::get_class($class)->getMethod($method);
+        if (!isset($this->pool[$key = $class . ':method:' . $method])) {
+            $this->pool[$key] = $this->get_class($class)->getMethod($method);
         }
 
         unset($class, $method);
-        return self::$pool[$key];
+        return $this->pool[$key];
     }
 
     /**
@@ -75,14 +75,14 @@ final class reflect
      * @return \ReflectionProperty
      * @throws \ReflectionException
      */
-    public static function get_property(string $class, string $property): \ReflectionProperty
+    public function get_property(string $class, string $property): \ReflectionProperty
     {
-        if (!isset(self::$pool[$key = $class . ':property:' . $property])) {
-            self::$pool[$key] = self::get_class($class)->getProperty($property);
+        if (!isset($this->pool[$key = $class . ':property:' . $property])) {
+            $this->pool[$key] = $this->get_class($class)->getProperty($property);
         }
 
         unset($class, $method);
-        return self::$pool[$key];
+        return $this->pool[$key];
     }
 
     /**
@@ -94,14 +94,14 @@ final class reflect
      * @return array
      * @throws \ReflectionException
      */
-    public static function get_params(string $class, string $method): array
+    public function get_params(string $class, string $method): array
     {
-        if (!isset(self::$pool[$key = $class . ':params:' . $method])) {
-            self::$pool[$key] = self::get_method($class, $method)->getParameters();
+        if (!isset($this->pool[$key = $class . ':params:' . $method])) {
+            $this->pool[$key] = $this->get_method($class, $method)->getParameters();
         }
 
         unset($class, $method);
-        return self::$pool[$key];
+        return $this->pool[$key];
     }
 
 
@@ -114,9 +114,9 @@ final class reflect
      * @return array
      * @throws \ReflectionException
      */
-    public static function get_method_list(string $class, int $filter): array
+    public function get_method_list(string $class, int $filter): array
     {
-        return self::get_class($class)->getMethods($filter);
+        return $this->get_class($class)->getMethods($filter);
     }
 
     /**
@@ -128,9 +128,9 @@ final class reflect
      * @return array
      * @throws \ReflectionException
      */
-    public static function get_property_list(string $class, int $filter): array
+    public function get_property_list(string $class, int $filter): array
     {
-        return self::get_class($class)->getProperties($filter);
+        return $this->get_class($class)->getProperties($filter);
     }
 
     /**
@@ -141,7 +141,7 @@ final class reflect
      * @return array
      * @throws \ReflectionException
      */
-    public static function get_param_info(\ReflectionParameter $parameter): array
+    public function get_param_info(\ReflectionParameter $parameter): array
     {
         $info = [];
 
