@@ -128,8 +128,8 @@ final class error
         //Build context
         $context = [
             //Memory & Duration
-            'Peak'     => round(memory_get_peak_usage(true) / 1048576, 4) . 'MB',
-            'Memory'   => round(memory_get_usage(true) / 1048576, 4) . 'MB',
+            'Peak'     => round(memory_get_peak_usage() / 1048576, 4) . 'MB',
+            'Memory'   => round(memory_get_usage() / 1048576, 4) . 'MB',
             'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
 
             //Params & trace
