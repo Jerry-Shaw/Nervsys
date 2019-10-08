@@ -10,7 +10,7 @@
 namespace core\lib\std;
 
 
-class router extends \core\abs\router
+class router
 {
 
 }

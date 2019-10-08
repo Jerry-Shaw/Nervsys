@@ -25,7 +25,7 @@ namespace core\lib\std;
  *
  * @package core\lib\std
  */
-class io extends \core\abs\io
+class io
 {
 
 }
