@@ -70,6 +70,20 @@ final class pool
     public $result = [];
 
     /**
+     * CLI mode
+     *
+     * @var bool
+     */
+    public $is_CLI = true;
+
+    /**
+     * Via https
+     *
+     * @var bool
+     */
+    public $is_TLS = true;
+
+    /**
      * Others
      *
      * @var array
@@ -94,7 +108,7 @@ final class pool
      * @param string $name
      * @param array  $value
      */
-    public function __set($name, array $value): void
+    public function __set(string $name, array $value): void
     {
         $this->others[$name] = &$value;
         unset($name, $value);

@@ -83,9 +83,12 @@ spl_autoload_register(
 );
 
 //Load libraries
-use core\lib\std\pool;
+use core\lib\cgi;
 use core\lib\stc\error;
 use core\lib\stc\factory;
+use core\lib\std\io;
+use core\lib\std\pool;
+use core\lib\std\router;
 
 //Register error handler
 register_shutdown_function([error::class, 'shutdown_handler']);
@@ -99,17 +102,11 @@ set_error_handler([error::class, 'error_handler']);
  */
 class ns
 {
-    //Customized libraries
-    public static $io     = lib\std\io::class;
-    public static $log    = lib\std\log::class;
-    public static $router = lib\std\router::class;
-
     //App path
     public static $app_path = ROOT . DIRECTORY_SEPARATOR . 'app';
 
-    //Runtime values
-    public static $is_CLI = true;
-    public static $is_TLS = true;
+    /** @var \core\lib\std\pool $unit_pool */
+    private static $unit_pool;
 
     //Default setting
     const CONF = [
@@ -148,9 +145,15 @@ class ns
         //Load app.ini
         $conf = self::load_ini();
 
+        /** @var \core\lib\std\router $unit_router */
+        $unit_router = factory::build(router::class);
+
+        /** @var \core\lib\cgi $unit_cgi */
+        $unit_cgi = factory::build(cgi::class);
+
         //Get runtime values
-        self::$is_CLI = 'cli' === PHP_SAPI;
-        self::$is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+        self::$unit_pool->is_CLI = 'cli' === PHP_SAPI;
+        self::$unit_pool->is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         //Set default timezone
@@ -161,23 +164,31 @@ class ns
             exit;
         }
 
-        //Build pool
-        /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
+        //Run INIT section (ONLY CGI)
+        if (!empty(self::$unit_pool->conf['init'])) {
+            foreach (self::$unit_pool->conf['init'] as $value) {
+                $cmd_list = $unit_router->parse($value);
 
-        //CLI first
-        if (self::$is_CLI) {
-            /** @var \core\cli $unit_cli */
-            $unit_cli = factory::build(cli::class);
 
-            $unit_pool->result += $unit_cli->run();
+                $result = $unit_cgi->run($cmd_list);
+            }
+
+
         }
 
-        //CGI second
-        /** @var \core\cgi $unit_cgi */
-        $unit_cgi = factory::build(cgi::class);
 
-        $unit_pool->result += $unit_cgi->run();
+        //Get IO input parser list
+        $unit_input_list = self::$unit_pool->unit_input_parser;
+
+        //Add default input parser
+        $unit_input_list[] = [io::class, 'read_input'];
+
+        //Parse input
+        foreach ($unit_input_list as $parser) {
+
+
+        }
+
 
         //No output
         if (!$output) {
@@ -196,11 +207,11 @@ class ns
      */
     private static function load_ini(): array
     {
-        /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
+        /** @var \core\lib\std\pool unit_pool */
+        self::$unit_pool = factory::build(pool::class);
 
         //Set default conf values
-        $unit_pool->conf = self::CONF;
+        self::$unit_pool->conf = self::CONF;
 
         //Read app.ini
         if (is_file($app_ini = self::$app_path . DIRECTORY_SEPARATOR . 'app.ini')) {
@@ -210,14 +221,14 @@ class ns
                 $key = strtolower($key);
 
                 //Update conf values
-                $unit_pool->conf[$key] = array_replace_recursive($unit_pool->conf[$key], $value);
+                self::$unit_pool->conf[$key] = array_replace_recursive(self::$unit_pool->conf[$key], $value);
             }
 
             unset($app_conf, $key, $value);
         }
 
         unset($app_ini);
-        return $unit_pool->conf;
+        return self::$unit_pool->conf;
     }
 
     /**
@@ -230,13 +241,13 @@ class ns
     private static function pass_cors(array $cors_conf): bool
     {
         //Skip CLI script
-        if (self::$is_CLI) {
+        if (self::$unit_pool->is_CLI) {
             return true;
         }
 
         //Check Server ENV
         if (!isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (self::$is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+            || $_SERVER['HTTP_ORIGIN'] === (self::$unit_pool->is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return true;
         }
 

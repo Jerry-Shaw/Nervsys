@@ -18,22 +18,28 @@
  * limitations under the License.
  */
 
-namespace core;
+namespace core\lib;
 
 /**
  * Class cgi
  *
- * @package core
+ * @package core\lib
  */
 class cgi
 {
-    public function __construct()
+    /**
+     * @param array $cmd_list
+     *
+     * @return array
+     */
+    public function run(array $cmd_list): array
     {
-    }
+        $class = key($cmd_list);
 
 
-    public function run(): array
-    {
+        var_dump(111, $class, $cmd_list);
+
+        return [];
 
     }
 }
