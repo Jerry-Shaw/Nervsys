@@ -41,14 +41,13 @@ display = on
 ; * = X-Requested-With, Content-Type, Content-Length
 
 [INIT]
-; Custom function on system startup
-; Array setting is allowed in this section
-; Calling in prepare state (S1), before input reading
-; Key makes no sense for system, but for developers to know what it is
+; Custom function on system initializing
+; Array settings are accepted in this section
+; Calling before input reading, under default router rules
+; Key makes non-sense for system, but for developers to know what it is
 
 [CALL]
 ; Custom function on module calling
-; Array setting is accepted to call multiple functions
-; Calling in process state (S2), on accessing first level sub-folders
-; Key points to the name of the sub-folder which is now being accessed by system
-; When "app_path" entry was set, sub-folders are related to the "app_path" instead
+; Array settings are accepted to call multiple functions
+; Calling before entering first-level sub-folder, under default router rules
+; Key points to the name of the sub-folder which is now being accessed by system related to "/app/" or absolute folder path from "ROOT"
