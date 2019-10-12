@@ -49,11 +49,31 @@ final class pool
     public $log = '';
 
     /**
-     * conf
+     * Default conf
      *
      * @var array
      */
-    public $conf = [];
+    public $conf = [
+        'sys'  => [
+            'timezone'  => 'UTC',
+            'auto_call' => true
+        ],
+        'log'  => [
+            'emergency' => true,
+            'alert'     => true,
+            'critical'  => true,
+            'error'     => true,
+            'warning'   => true,
+            'notice'    => true,
+            'info'      => true,
+            'debug'     => true,
+            'display'   => true
+        ],
+        'cli'  => [],
+        'cors' => [],
+        'init' => [],
+        'call' => []
+    ];
 
     /**
      * Data
@@ -84,7 +104,7 @@ final class pool
     public $is_CLI = true;
 
     /**
-     * Via https
+     * TLS mode
      *
      * @var bool
      */

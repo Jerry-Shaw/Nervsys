@@ -44,6 +44,9 @@ $root_path  = implode(DIRECTORY_SEPARATOR, array_intersect($sys_path, $entry_pat
 //Define ROOT path
 define('ROOT', $root_path);
 
+//Define APP path (ROOT related)
+define('APP_PATH', 'app');
+
 //Define entry script file path
 define('ENTRY_SCRIPT', $entry_script);
 
@@ -102,37 +105,8 @@ set_error_handler([error::class, 'error_handler']);
  */
 class ns
 {
-    //App path
-    public static $app_path = ROOT . DIRECTORY_SEPARATOR . 'app';
-
     /** @var \core\lib\std\pool $unit_pool */
     private static $unit_pool;
-
-    //Default setting
-    const CONF = [
-        //Sys setting
-        'sys'  => [
-            'timezone'  => 'UTC',
-            'auto_call' => true
-        ],
-        //Log setting
-        'log'  => [
-            'emergency' => true,
-            'alert'     => true,
-            'critical'  => true,
-            'error'     => true,
-            'warning'   => true,
-            'notice'    => true,
-            'info'      => true,
-            'debug'     => true,
-            'display'   => true
-        ],
-        //Other settings
-        'cli'  => [],
-        'cors' => [],
-        'init' => [],
-        'call' => []
-    ];
 
     /**
      * System boot
@@ -161,12 +135,21 @@ class ns
         //Run INIT section (ONLY CGI)
         if (!empty(self::$unit_pool->conf['init'])) {
             foreach (self::$unit_pool->conf['init'] as $value) {
-                self::$unit_pool->result += $unit_cgi->run($unit_router->parse($value));
+                //Parse cmd using default router
+                $cmd_group = $unit_router->parse($value);
+
+                $class   = key($cmd_group);
+                $methods = current($cmd_group);
+
+                //Run cmd and capture results
+                foreach ($methods as $method) {
+                    self::$unit_pool->result += $unit_cgi->call_fn($class, $method, []);
+                }
             }
         }
 
 
-        var_dump(self::$unit_pool);
+        var_dump(self::$unit_pool->result);
 
 
         //Get IO input parser list
@@ -202,11 +185,8 @@ class ns
         /** @var \core\lib\std\pool unit_pool */
         self::$unit_pool = factory::build(pool::class);
 
-        //Set default conf values
-        self::$unit_pool->conf = self::CONF;
-
         //Read app.ini
-        if (is_file($app_ini = self::$app_path . DIRECTORY_SEPARATOR . 'app.ini')) {
+        if (is_file($app_ini = ROOT . DIRECTORY_SEPARATOR . APP_PATH . DIRECTORY_SEPARATOR . 'app.ini')) {
             $app_conf = parse_ini_file($app_ini, true, INI_SCANNER_TYPED);
 
             foreach ($app_conf as $key => $value) {
