@@ -27,10 +27,6 @@ debug     = on
 ; Disable: "off" or "0"
 display = on
 
-[CGI]
-; CGI settings
-; For short commands
-
 [CLI]
 ; CLI settings
 ; For external programs

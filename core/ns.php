@@ -128,7 +128,6 @@ class ns
             'display'   => true
         ],
         //Other settings
-        'cgi'  => [],
         'cli'  => [],
         'cors' => [],
         'init' => [],
@@ -151,11 +150,6 @@ class ns
         /** @var \core\lib\cgi $unit_cgi */
         $unit_cgi = factory::build(cgi::class);
 
-        //Get runtime values
-        self::$unit_pool->is_CLI = 'cli' === PHP_SAPI;
-        self::$unit_pool->is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
-
         //Set default timezone
         date_default_timezone_set($conf['sys']['timezone']);
 
@@ -167,14 +161,12 @@ class ns
         //Run INIT section (ONLY CGI)
         if (!empty(self::$unit_pool->conf['init'])) {
             foreach (self::$unit_pool->conf['init'] as $value) {
-                $cmd_list = $unit_router->parse($value);
-
-
-                $result = $unit_cgi->run($cmd_list);
+                self::$unit_pool->result += $unit_cgi->run($unit_router->parse($value));
             }
-
-
         }
+
+
+        var_dump(self::$unit_pool);
 
 
         //Get IO input parser list
