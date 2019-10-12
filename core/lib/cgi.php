@@ -168,7 +168,7 @@ class cgi
      * @return array
      * @throws \ReflectionException
      */
-    public function call_fn(string $class, string $method, array $params): array
+    public function call_fn(string $class, string $method, array $params = []): array
     {
         //Get full class name
         $class = $this->get_cls($class);

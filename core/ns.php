@@ -112,6 +112,8 @@ class ns
      * System boot
      *
      * @param bool $output
+     *
+     * @throws \ReflectionException
      */
     public static function boot(bool $output = true): void
     {
@@ -133,18 +135,16 @@ class ns
         }
 
         //Run INIT section (ONLY CGI)
-        if (!empty(self::$unit_pool->conf['init'])) {
-            foreach (self::$unit_pool->conf['init'] as $value) {
-                //Parse cmd using default router
-                $cmd_group = $unit_router->parse($value);
+        foreach (self::$unit_pool->conf['init'] as $value) {
+            //Parse cmd using default router
+            $cmd_group = $unit_router->parse($value);
 
-                $class   = key($cmd_group);
-                $methods = current($cmd_group);
+            $class   = key($cmd_group);
+            $methods = current($cmd_group);
 
-                //Run cmd and capture results
-                foreach ($methods as $method) {
-                    self::$unit_pool->result += $unit_cgi->call_fn($class, $method, []);
-                }
+            //Run cmd and capture results
+            foreach ($methods as $method) {
+                self::$unit_pool->result += $unit_cgi->call_fn($class, $method);
             }
         }
 
