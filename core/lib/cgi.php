@@ -178,7 +178,7 @@ class cgi
 
         //Check method visibility
         if (!$method_reflect->isPublic()) {
-            return [$this->get_name($class, $method) => 'NOT for public!'];
+            throw new \Exception($this->get_name($class, $method) . ' => NOT for public!', E_USER_NOTICE);
         }
 
         //Check method property
@@ -187,7 +187,7 @@ class cgi
                 $matched_params = $this->get_params($this->unit_reflect->get_params($class, '__construct'), $params);
 
                 if (!empty($matched_params['diff'])) {
-                    return [$this->get_name($class, '__construct') => 'Missing params: [' . implode(', ', $matched_params['diff']) . ']'];
+                    throw new \Exception($this->get_name($class, '__construct') . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
                 }
 
                 //Get class object with __construct
@@ -205,7 +205,7 @@ class cgi
         $matched_params = $this->get_params($this->unit_reflect->get_params($class, $method), $params);
 
         if (!empty($matched_params['diff'])) {
-            return [$this->get_name($class, $method) => 'Missing params: [' . implode(', ', $matched_params['diff']) . ']'];
+            throw new \Exception($this->get_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
         }
 
         //Call method
