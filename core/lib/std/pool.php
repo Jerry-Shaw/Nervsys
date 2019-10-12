@@ -28,6 +28,13 @@ namespace core\lib\std;
 final class pool
 {
     /**
+     * IP
+     *
+     * @var string
+     */
+    public $ip = '';
+
+    /**
      * CMD
      *
      * @var string
@@ -89,6 +96,47 @@ final class pool
      * @var array
      */
     public $others = [];
+
+    /**
+     * pool constructor.
+     */
+    public function __construct()
+    {
+        //Get running mode
+        $this->is_CLI = 'cli' === PHP_SAPI;
+
+        //Skip on CLI mode
+        if ($this->is_CLI) {
+            return;
+        }
+
+        //Get TLS mode
+        $this->is_TLS = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+
+        //Build full IP records
+        $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+            ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
+            : $_SERVER['REMOTE_ADDR'];
+
+        //Build IP list
+        $ip_list = false !== strpos($ip_rec, ', ')
+            ? explode(', ', $ip_rec)
+            : [$ip_rec];
+
+        //Get valid client IP
+        foreach ($ip_list as $value) {
+            if (false === $addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+                continue;
+            }
+
+            //Copy client addr
+            $this->ip = &$addr;
+            break;
+        }
+
+        unset($ip_rec, $ip_list, $value, $addr);
+    }
 
     /**
      * Get value

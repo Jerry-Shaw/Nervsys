@@ -55,7 +55,9 @@ final class router
                 continue;
             }
 
-            $routes[$cmd_key][] = $value;
+            if (!in_array($value, $routes[$cmd_key], true)) {
+                $routes[$cmd_key][] = $value;
+            }
         }
 
         unset($cmd, $full_cmd, $is_multi, $cmd_key, $cmd_list, $value);
