@@ -50,12 +50,9 @@ class io
             $stop = strlen($_SERVER['REQUEST_URI']);
         }
 
-        if (1 < $len = $stop - $from) {
-            return substr($_SERVER['REQUEST_URI'], $from + 1, $len);
-        }
+        $len = $stop - ++$from;
 
-        unset($from, $stop, $len);
-        return '';
+        return 1 < $len ? substr($_SERVER['REQUEST_URI'], $from, $len) : '';
     }
 
 
