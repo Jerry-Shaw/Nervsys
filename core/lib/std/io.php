@@ -28,4 +28,70 @@ namespace core\lib\std;
 class io
 {
 
+
+    /**
+     * Read URL CMD
+     *
+     * @return string
+     */
+    public function read_url(): string
+    {
+        //Read from PATH_INFO
+        if (isset($_SERVER['PATH_INFO']) && 1 < strlen($_SERVER['PATH_INFO'])) {
+            return substr($_SERVER['PATH_INFO'], 1);
+        }
+
+        //Read from REQUEST_URI
+        if (false === $from = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
+            return '';
+        }
+
+        if (false === $stop = strpos($_SERVER['REQUEST_URI'], '?')) {
+            $stop = strlen($_SERVER['REQUEST_URI']);
+        }
+
+        if (1 < $len = $stop - $from) {
+            return substr($_SERVER['REQUEST_URI'], $from + 1, $len);
+        }
+
+        unset($from, $stop, $len);
+        return '';
+    }
+
+
+    /**
+     * Read HTTP data
+     */
+    public function read_http(): array
+    {
+        return $_FILES + $_POST + $_GET;
+    }
+
+    /**
+     * Read input data
+     */
+    public function read_input(): array
+    {
+        //Read raw data
+        if ('' === $input = (string)file_get_contents('php://input')) {
+            return [];
+        }
+
+        //Decode data in JSON
+        if (is_array($data = json_decode($input, true))) {
+            unset($input);
+            return $data;
+        }
+
+        //Decode data in XML
+        libxml_use_internal_errors(true);
+        $xml  = simplexml_load_string($input);
+        $data = false !== $xml ? (array)$xml : [];
+        libxml_clear_errors();
+
+        unset($input, $xml);
+        return $data;
+    }
+
+
 }
