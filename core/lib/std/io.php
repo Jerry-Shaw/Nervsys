@@ -28,6 +28,8 @@ namespace core\lib\std;
 class io
 {
 
+    //Base64 data header
+    const BASE64 = 'data:text/argv;base64,';
 
     /**
      * Read URL CMD
@@ -91,4 +93,124 @@ class io
     }
 
 
+    public function read_argv(): array
+    {
+
+    }
+
+    public function read_pipe(): array
+    {
+
+    }
+
+
+    /**
+     * Encode data into base64 (url safe)
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    public function base64_url_encode(string $string): string
+    {
+        return strtr(rtrim(base64_encode($string), '='), '+/', '-_');
+    }
+
+    /**
+     * Decode data from base64 (url safe)
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    public function base64_url_decode(string $string): string
+    {
+        $string   = strtr($string, '-_', '+/');
+        $data_len = strlen($string);
+
+        if (0 < $pad_len = $data_len % 4) {
+            $string = str_pad($string, $data_len + $pad_len, '=', STR_PAD_RIGHT);
+        }
+
+        unset($data_len, $pad_len);
+        return (string)base64_decode($string);
+    }
+
+
+    /**
+     * Encode data in base64 with data header
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function encode(string $value): string
+    {
+        return self::BASE64 . base64_encode($value);
+    }
+
+    /**
+     * Decode data in base64 with data header
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function decode(string $value): string
+    {
+        if (0 === strpos($value, self::BASE64)) {
+            $value = substr($value, strlen(self::BASE64));
+            $value = base64_decode($value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Build XML
+     *
+     * @param array $data
+     * @param bool  $root
+     * @param bool  $pretty
+     *
+     * @return string
+     */
+    public function build_xml(array $data, bool $root = true, bool $pretty = false): string
+    {
+        $xml = $end = '';
+
+        if ($root && 1 < count($data)) {
+            $xml .= '<xml>';
+            $end = '</xml>';
+
+            if ($pretty) {
+                $xml .= PHP_EOL;
+            }
+        }
+
+        foreach ($data as $key => $item) {
+            if (is_numeric($key)) {
+                $key = 'xml_' . $key;
+            }
+
+            $xml .= '<' . $key . '>';
+
+            $xml .= is_array($item)
+                ? self::build_xml($item, false, $pretty)
+                : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
+
+            $xml .= '</' . $key . '>';
+
+            if ($pretty) {
+                $xml .= PHP_EOL;
+            }
+        }
+
+        if ($root) {
+            $xml .= $end;
+        }
+
+        unset($data, $root, $pretty, $end, $key, $item);
+        return $xml;
+    }
 }
