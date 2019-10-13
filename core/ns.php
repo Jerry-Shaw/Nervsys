@@ -47,7 +47,7 @@ define('ROOT', $root_path);
 //Define APP path (ROOT related)
 define('APP_PATH', 'app');
 
-//Define entry script file path
+//Define entry script file path (default: api.php)
 define('ENTRY_SCRIPT', $entry_script);
 
 //Free memory
@@ -113,7 +113,7 @@ class ns
      *
      * @param bool $output
      *
-     * @throws \ReflectionException
+     * @throws \Exception
      */
     public static function boot(bool $output = true): void
     {
@@ -143,26 +143,18 @@ class ns
             $methods = current($cmd_group);
 
             //Run cmd and capture results
-            foreach ($methods as $method) {
-                self::$unit_pool->result += $unit_cgi->call_fn($class, $method);
+            try {
+                foreach ($methods as $method) {
+                    self::$unit_pool->result += $unit_cgi->call_fn($class, $method);
+                }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable, false);
+                throw new \Exception('Initialize Failed!', E_USER_ERROR);
             }
         }
 
-
-        var_dump(self::$unit_pool->result);
-
-
-        //Get IO input parser list
-        $unit_input_list = self::$unit_pool->unit_input_parser;
-
-        //Add default input parser
-        $unit_input_list[] = [io::class, 'read_input'];
-
-        //Parse input
-        foreach ($unit_input_list as $parser) {
-
-
-        }
+        //Read input
+        $unit_io = factory::build(io::class);
 
 
         //No output

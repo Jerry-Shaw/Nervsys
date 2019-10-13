@@ -108,8 +108,9 @@ final class error
      * Exception handler
      *
      * @param \Throwable $throwable
+     * @param bool       $stop_on_error
      */
-    public static function exception_handler(\Throwable $throwable): void
+    public static function exception_handler(\Throwable $throwable, bool $stop_on_error = true): void
     {
         //Get exception name
         $exception = get_class($throwable);
@@ -147,13 +148,13 @@ final class error
         $unit_log->display($level, $message, $context);
 
         //Exit on error
-        if (0 < $err_lv & error_reporting()) {
+        if ($stop_on_error && 0 < ($err_lv & error_reporting())) {
             //todo flush result
             exit;
         }
 
 
-        unset($level, $message, $context);
+        unset($stop_on_error, $level, $message, $context);
     }
 
     /**
