@@ -126,11 +126,14 @@ class ns
         /** @var \core\lib\cgi $unit_cgi */
         $unit_cgi = factory::build(cgi::class);
 
+        /** @var \core\lib\std\io $unit_io */
+        $unit_io = factory::build(io::class);
+
         //Set default timezone
         date_default_timezone_set($conf['sys']['timezone']);
 
         //Verify CORS
-        if (!self::pass_cors($conf['cors'])) {
+        if (!self::pass_cors($conf['cors']) || 'OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             exit;
         }
 
@@ -153,8 +156,29 @@ class ns
             }
         }
 
-        //Read input
-        $unit_io = factory::build(io::class);
+        //Read input data
+        if (self::$unit_pool->is_CLI) {
+            //Read argv
+
+
+            //Read pipe
+
+
+        } else {
+            //Read CMD from URL
+            $url_cmd = $unit_io->read_url();
+
+            //Read HTTP Quests
+            $data_http = $unit_io->read_http();
+
+            //Read input data
+            $data_input = $unit_io->read_input(file_get_contents('php://input'));
+
+
+        }
+
+
+        var_dump($unit_io->read_url(), $unit_io->read_http(), $unit_io->read_input());
 
 
         //No output
@@ -224,11 +248,6 @@ class ns
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
-
-        //Exit on OPTION request
-        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            return false;
-        }
 
         unset($cors_conf, $allow_headers);
         return true;

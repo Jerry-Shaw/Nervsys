@@ -65,14 +65,13 @@ class io
 
     /**
      * Read input data
+     *
+     * @param string $input
+     *
+     * @return array
      */
-    public function read_input(): array
+    public function read_input(string $input): array
     {
-        //Read raw data
-        if ('' === $input = (string)file_get_contents('php://input')) {
-            return [];
-        }
-
         //Decode data in JSON
         if (is_array($data = json_decode($input, true))) {
             unset($input);
