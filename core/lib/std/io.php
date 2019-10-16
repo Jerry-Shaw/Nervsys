@@ -27,12 +27,11 @@ namespace core\lib\std;
  */
 class io
 {
-
     //Base64 data header
     const BASE64 = 'data:text/argv;base64,';
 
     /**
-     * Read URL CMD
+     * Read CMD from URL
      *
      * @return string
      */
@@ -44,19 +43,17 @@ class io
         }
 
         //Read from REQUEST_URI
-        if (false === $from = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
-            return '';
+        if (false !== $start = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
+            $stop = strpos($_SERVER['REQUEST_URI'], '?');
+
+            if (0 < $len = (false === $stop ? strlen($_SERVER['REQUEST_URI']) : $stop) - ++$start) {
+                return substr($_SERVER['REQUEST_URI'], $start, $len);
+            }
         }
 
-        if (false === $stop = strpos($_SERVER['REQUEST_URI'], '?')) {
-            $stop = strlen($_SERVER['REQUEST_URI']);
-        }
-
-        $len = $stop - ++$from;
-
-        return 1 < $len ? substr($_SERVER['REQUEST_URI'], $from, $len) : '';
+        //CMD NOT found
+        return '';
     }
-
 
     /**
      * Read HTTP data
@@ -101,39 +98,6 @@ class io
     public function read_pipe(): array
     {
 
-    }
-
-
-    /**
-     * Encode data into base64 (url safe)
-     *
-     * @param string $string
-     *
-     * @return string
-     */
-    public function base64_url_encode(string $string): string
-    {
-        return strtr(rtrim(base64_encode($string), '='), '+/', '-_');
-    }
-
-    /**
-     * Decode data from base64 (url safe)
-     *
-     * @param string $string
-     *
-     * @return string
-     */
-    public function base64_url_decode(string $string): string
-    {
-        $string   = strtr($string, '-_', '+/');
-        $data_len = strlen($string);
-
-        if (0 < $pad_len = $data_len % 4) {
-            $string = str_pad($string, $data_len + $pad_len, '=', STR_PAD_RIGHT);
-        }
-
-        unset($data_len, $pad_len);
-        return (string)base64_decode($string);
     }
 
 
