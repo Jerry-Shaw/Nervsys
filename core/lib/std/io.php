@@ -88,17 +88,61 @@ class io
         return $data;
     }
 
-
+    /**
+     * Read CLI arguments
+     *
+     * @return array
+     */
     public function read_argv(): array
     {
+        /**
+         * CLI options
+         *
+         * c: Commands
+         * d: Data package (Pass to CGI script)
+         * p: Pipe data package (Pass to CLI program)
+         * r: Return type (json/xml, default: none, no output)
+         */
+        $opt = getopt('c:d:p:r:', [], $optind);
 
+        //Default data
+        $data = ['c' => '', 'r' => '', 'p' => '', 'a' => [], 'd' => []];
+
+        //Read argv data
+        $data['a'] = array_slice($_SERVER['argv'], $optind);
+
+        //Decode data package
+        if (isset($opt['d'])) {
+            $data_text = $this->decode($opt['d']);
+            $data['d'] = $this->read_input($data_text);
+
+            if (empty($data['d'])) {
+                parse_str($data_text, $data['d']);
+            }
+
+            unset($opt['d'], $data_text);
+        }
+
+        //Decode pipe data
+        if (isset($opt['p'])) {
+            $data['p'] = $this->decode($opt['p']);
+            unset($opt['p']);
+        }
+
+        //Copy other option values
+        foreach ($opt as $key => $value) {
+            $data[$key] = $value;
+        }
+
+        //Command NOT found
+        if ('' === $data['c']) {
+            //Move first argv to command
+            $data['c'] = array_shift($data['a']) ?? '';
+        }
+
+        unset($opt, $optind, $key, $value);
+        return $data;
     }
-
-    public function read_pipe(): array
-    {
-
-    }
-
 
     /**
      * Encode data in base64 with data header
@@ -130,25 +174,32 @@ class io
     }
 
     /**
+     * Build JSON
+     *
+     * @param array $data
+     *
+     * @return string
+     */
+    public function build_json(array $data): string
+    {
+        return json_encode($data, JSON_FORMAT);
+    }
+
+    /**
      * Build XML
      *
      * @param array $data
      * @param bool  $root
-     * @param bool  $pretty
      *
      * @return string
      */
-    public function build_xml(array $data, bool $root = true, bool $pretty = false): string
+    public function build_xml(array $data, bool $root = true): string
     {
         $xml = $end = '';
 
         if ($root && 1 < count($data)) {
             $xml .= '<xml>';
             $end = '</xml>';
-
-            if ($pretty) {
-                $xml .= PHP_EOL;
-            }
         }
 
         foreach ($data as $key => $item) {
@@ -159,21 +210,17 @@ class io
             $xml .= '<' . $key . '>';
 
             $xml .= is_array($item)
-                ? self::build_xml($item, false, $pretty)
+                ? self::build_xml($item, false)
                 : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
 
             $xml .= '</' . $key . '>';
-
-            if ($pretty) {
-                $xml .= PHP_EOL;
-            }
         }
 
         if ($root) {
             $xml .= $end;
         }
 
-        unset($data, $root, $pretty, $end, $key, $item);
+        unset($data, $root, $end, $key, $item);
         return $xml;
     }
 }
