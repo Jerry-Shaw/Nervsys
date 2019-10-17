@@ -49,6 +49,14 @@ final class pool
     public $log = '';
 
     /**
+     * Return type
+     * json/xml/empty
+     *
+     * @var string
+     */
+    public $ret = 'json';
+
+    /**
      * Default conf
      *
      * @var array
@@ -146,13 +154,11 @@ final class pool
 
         //Get valid client IP
         foreach ($ip_list as $value) {
-            if (false === $addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
-                continue;
+            if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
+                //Copy client addr
+                $this->ip = &$addr;
+                break;
             }
-
-            //Copy client addr
-            $this->ip = &$addr;
-            break;
         }
 
         unset($ip_rec, $ip_list, $value, $addr);

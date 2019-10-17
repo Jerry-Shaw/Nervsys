@@ -22,6 +22,7 @@ namespace core\lib\stc;
 
 use core\lib\std\log;
 use core\lib\std\pool;
+use core\ns;
 
 /**
  * Class error
@@ -123,7 +124,7 @@ final class error
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
-        /** @var \core\lib\pool $unit_pool */
+        /** @var \core\lib\std\pool $unit_pool */
         $unit_pool = factory::build(pool::class);
 
         //Build context
@@ -134,7 +135,7 @@ final class error
             'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
 
             //Params & trace
-            'Param'    => ['cmd' => $unit_pool->cmd] + $unit_pool->data,
+            'Param'    => ['ip' => $unit_pool->ip, 'cmd' => $unit_pool->cmd] + $unit_pool->data,
             'Trace'    => self::get_trace_list($throwable->getTrace())
         ];
 
@@ -148,12 +149,7 @@ final class error
         $unit_log->display($level, $message, $context);
 
         //Exit on error
-        if ($stop_on_error && 0 < ($err_lv & error_reporting())) {
-            //todo flush result
-            exit;
-        }
-
-
+        $stop_on_error && 0 < ($err_lv & error_reporting()) && ns::stop();
         unset($stop_on_error, $level, $message, $context);
     }
 

@@ -25,7 +25,7 @@ namespace core\lib\std;
  *
  * @package core\lib\std
  */
-class io
+final class io
 {
     //Base64 data header
     const BASE64 = 'data:text/argv;base64,';

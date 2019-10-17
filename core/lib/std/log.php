@@ -22,9 +22,9 @@ namespace core\lib\std;
 
 use core\lib\stc\factory;
 
-class log
+final class log
 {
-    /** @var \core\lib\pool $unit_pool */
+    /** @var \core\lib\std\pool $unit_pool */
     private $unit_pool;
 
     //System log path

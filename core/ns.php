@@ -132,8 +132,8 @@ class ns
         //Set default timezone
         date_default_timezone_set($conf['sys']['timezone']);
 
-        //Verify CORS
-        if (!self::pass_cors($conf['cors']) || 'OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+        //Verify CORS in CGI mode
+        if (!self::$unit_pool->is_CLI && !self::pass_cors($conf['cors'])) {
             exit;
         }
 
@@ -158,37 +158,53 @@ class ns
 
         //Read input data
         if (self::$unit_pool->is_CLI) {
-            //Read argv
-
-
-            //Read pipe
-
-
+            //Read arguments
+            $data_argv = $unit_io->read_argv();
         } else {
             //Read CMD from URL
             $url_cmd = $unit_io->read_url();
 
-            //Read HTTP Quests
-            $data_http = $unit_io->read_http();
+            //Read data package
+            $data_pack = $unit_io->read_http() + $unit_io->read_input(file_get_contents('php://input'));
 
-            //Read input data
-            $data_input = $unit_io->read_input(file_get_contents('php://input'));
+            //Merge arguments
+            $data_argv = [
+                'c' => '' !== $url_cmd ? $url_cmd : ($data_pack['c'] ?? ''),
+                'r' => $data_pack['r'] ?? 'json',
+                'd' => &$data_pack
+            ];
 
-
+            unset($data_pack['c'], $data_pack['r']);
         }
 
-
-        var_dump($unit_io->read_url(), $unit_io->read_http(), $unit_io->read_input());
+        //Copy to pool
+        self::$unit_pool->cmd  = &$data_argv['c'];
+        self::$unit_pool->ret  = &$data_argv['r'];
+        self::$unit_pool->data = &$data_argv['d'];
 
 
         //No output
-        if (!$output) {
+        if (!$output || !in_array($data_argv['r'], ['json', 'xml'], true)) {
             return;
         }
 
+        //Output
+        $unit_io->output();
+    }
 
-        //Output process
 
+    /**
+     * System stop
+     */
+    public static function stop(): void
+    {
+        self::output();
+        exit;
+    }
+
+
+    public static function output(): void
+    {
 
     }
 
@@ -228,11 +244,6 @@ class ns
      */
     private static function pass_cors(array $cors_conf): bool
     {
-        //Skip CLI script
-        if (self::$unit_pool->is_CLI) {
-            return true;
-        }
-
         //Check Server ENV
         if (!isset($_SERVER['HTTP_ORIGIN'])
             || $_SERVER['HTTP_ORIGIN'] === (self::$unit_pool->is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
@@ -248,6 +259,11 @@ class ns
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
+
+        //Skip OPTION request
+        if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+            return false;
+        }
 
         unset($cors_conf, $allow_headers);
         return true;
