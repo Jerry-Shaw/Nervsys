@@ -116,8 +116,19 @@ final class error
         //Get exception name
         $exception = get_class($throwable);
 
+        //Get error code
+        $err_code = $throwable->getCode();
+
         //Get error level
-        $level = self::LEVEL[$err_lv = $throwable->getCode()] ?? 'notice';
+        if (isset(self::LEVEL[$err_code])) {
+            $err_lv = self::LEVEL[$err_code];
+        } elseif (false !== stripos($exception, 'error')) {
+            $err_lv   = 'error';
+            $err_code = E_USER_ERROR;
+        } else {
+            $err_lv   = 'notice';
+            $err_code = E_USER_NOTICE;
+        }
 
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
@@ -145,12 +156,12 @@ final class error
         $unit_log = factory::build(log::class);
 
         //Process logs
-        $unit_log->$level($message, $context);
-        $unit_log->display($level, $message, $context);
+        $unit_log->$err_lv($message, $context);
+        $unit_log->display($err_lv, $message, $context);
 
         //Exit on error
-        $stop_on_error && 0 < ($err_lv & error_reporting()) && ns::stop();
-        unset($stop_on_error, $level, $message, $context);
+        $stop_on_error && 0 < ($err_code & error_reporting()) && ns::stop();
+        unset($stop_on_error, $err_code, $err_lv, $message, $context, $unit_log);
     }
 
     /**
