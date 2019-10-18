@@ -216,7 +216,7 @@ class ns
 
         //Output results & logs
         echo self::$unit_io->{'build_' . self::$unit_pool->ret}($result);
-        echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . elf::$unit_pool->log : '';
+        echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
 
         unset($result);
     }
