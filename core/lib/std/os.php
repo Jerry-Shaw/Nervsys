@@ -40,7 +40,7 @@ final class os
      */
     public function __construct()
     {
-        $this->os_ctrl = '\core\lib\os\\' . strtolower(PHP_OS);
+        $this->os_ctrl = '\\core\\lib\\os\\' . strtolower(PHP_OS);
     }
 
     /**
