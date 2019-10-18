@@ -26,7 +26,7 @@ use core\lib\stc\factory;
 /**
  * Class os
  *
- * @package core\lib
+ * @package core\lib\std
  */
 final class os
 {

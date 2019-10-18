@@ -1,4 +1,5 @@
 <?php
+
 /**
  * winnt handler
  *
@@ -54,7 +55,7 @@ final class winnt
 
         $output = array_filter($output);
         $output = array_unique($output);
-        var_dump($output);
+
         $hash = hash('sha256', json_encode($output));
 
         unset($queries, $output, $query, $status);

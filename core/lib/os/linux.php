@@ -1,4 +1,5 @@
 <?php
+
 /**
  * linux handler
  *
@@ -43,6 +44,7 @@ final class linux
         ];
 
         $output = [];
+
         foreach ($queries as $query) {
             exec($query, $output, $status);
 
