@@ -4,6 +4,7 @@
  * OS controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2016-2019 liu <2579186091@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +20,8 @@
  */
 
 namespace core\lib\std;
+
+use core\lib\stc\factory;
 
 /**
  * Class os
@@ -37,7 +40,7 @@ final class os
      */
     public function __construct()
     {
-        $this->os_ctrl = __CLASS__ . '\\' . strtolower(PHP_OS);
+        $this->os_ctrl = '\core\lib\os\\' . strtolower(PHP_OS);
     }
 
     /**
@@ -48,6 +51,6 @@ final class os
      */
     public function __call(string $name, array $arguments)
     {
-        return $this->os_ctrl->$name(...$arguments);
+        return factory::build($this->os_ctrl)->$name(...$arguments);
     }
 }
