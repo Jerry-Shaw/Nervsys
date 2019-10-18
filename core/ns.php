@@ -108,6 +108,9 @@ class ns
     /** @var \core\lib\std\pool $unit_pool */
     private static $unit_pool;
 
+    /** @var \core\lib\std\io $unit_io */
+    private static $unit_io;
+
     /**
      * System boot
      *
@@ -126,8 +129,8 @@ class ns
         /** @var \core\lib\cgi $unit_cgi */
         $unit_cgi = factory::build(cgi::class);
 
-        /** @var \core\lib\std\io $unit_io */
-        $unit_io = factory::build(io::class);
+        /** @var \core\lib\std\io unit_io */
+        self::$unit_io = factory::build(io::class);
 
         //Set default timezone
         date_default_timezone_set($conf['sys']['timezone']);
@@ -159,13 +162,13 @@ class ns
         //Read input data
         if (self::$unit_pool->is_CLI) {
             //Read arguments
-            $data_argv = $unit_io->read_argv();
+            $data_argv = self::$unit_io->read_argv();
         } else {
             //Read CMD from URL
-            $url_cmd = $unit_io->read_url();
+            $url_cmd = self::$unit_io->read_url();
 
             //Read data package
-            $data_pack = $unit_io->read_http() + $unit_io->read_input(file_get_contents('php://input'));
+            $data_pack = self::$unit_io->read_http() + self::$unit_io->read_input(file_get_contents('php://input'));
 
             //Merge arguments
             $data_argv = [
@@ -189,9 +192,8 @@ class ns
         }
 
         //Output
-        $unit_io->output();
+        self::output();
     }
-
 
     /**
      * System stop
@@ -202,12 +204,22 @@ class ns
         exit;
     }
 
-
+    /**
+     * System output
+     */
     public static function output(): void
     {
+        //Get final results
+        $result = !empty(self::$unit_pool->error)
+            ? self::$unit_pool->error + ['data' => self::$unit_pool->result]
+            : (1 === count(self::$unit_pool->result) ? current(self::$unit_pool->result) : self::$unit_pool->result);
 
+        //Output results & logs
+        echo self::$unit_io->{'build_' . self::$unit_pool->ret}($result);
+        echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
+
+        unset($result);
     }
-
 
     /**
      * Load app.ini
