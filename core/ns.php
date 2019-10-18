@@ -214,11 +214,11 @@ class ns
             ? self::$unit_pool->error + ['data' => self::$unit_pool->result]
             : (1 === count(self::$unit_pool->result) ? current(self::$unit_pool->result) : self::$unit_pool->result);
 
-        //Output results
+        //Output results & logs
         echo self::$unit_io->{'build_' . self::$unit_pool->ret}($result);
-
-        //Output logs when exists
         echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . elf::$unit_pool->log : '';
+
+        unset($result);
     }
 
     /**
