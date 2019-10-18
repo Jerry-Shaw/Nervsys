@@ -19,8 +19,12 @@
 
 namespace core\lib\os;
 
-
-class winnt
+/**
+ * Class winnt
+ *
+ * @package core\lib\os
+ */
+final class winnt
 {
     /**
      * Get hardware hash

@@ -19,8 +19,12 @@
 
 namespace core\lib\os;
 
-
-class linux
+/**
+ * Class linux
+ *
+ * @package core\lib\os
+ */
+final class linux
 {
     /**
      * Get hardware hash
