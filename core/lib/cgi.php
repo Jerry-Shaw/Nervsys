@@ -96,9 +96,7 @@ class cgi
         }
 
         //Call method
-        $fn_result = !empty($matched_params['param'])
-            ? forward_static_call_array([$class_object, $method], $matched_params['param'])
-            : forward_static_call([$class_object, $method]);
+        $fn_result = call_user_func([$class_object, $method], ...$matched_params['param']);
 
         //Build result
         $result = !is_null($fn_result) ? [$this->unit_router->get_name($class, $method) => &$fn_result] : [];
