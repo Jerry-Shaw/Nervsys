@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OS controller
+ * NS System OS controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2019 liu <2579186091@qq.com>
