@@ -20,6 +20,9 @@
 
 namespace core\lib\stc;
 
+use core\lib\std\reflect;
+use core\lib\std\router;
+
 /**
  * Class factory
  *
@@ -46,5 +49,40 @@ final class factory
 
         unset($class, $params);
         return self::$pool[$key];
+    }
+
+    /**
+     * Create class instance
+     *
+     * @param string $class
+     * @param array  $params
+     *
+     * @return object
+     * @throws \ReflectionException
+     */
+    public static function create(string $class, array $params): object
+    {
+        //Create class instance without '__construct'
+        if (!method_exists($class, '__construct')) {
+            $class_object = self::build($class);
+        } else {
+            /** @var \core\lib\std\reflect $unit_reflect */
+            $unit_reflect = self::build(reflect::class);
+
+            //Get matched param list
+            $matched_params = $unit_reflect->build_params($class, '__construct', $params);
+
+            if (!empty($matched_params['diff'])) {
+                throw new \Exception(self::build(router::class)->get_name($class, '__construct') . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
+            }
+
+            //Get class object with '__construct'
+            $class_object = self::build($class, $matched_params['param']);
+
+            unset($unit_reflect, $matched_params);
+        }
+
+        unset($class, $params);
+        return $class_object;
     }
 }

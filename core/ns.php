@@ -143,7 +143,7 @@ class ns
         //Run INIT section (ONLY CGI)
         foreach (self::$unit_pool->conf['init'] as $value) {
             //Parse cmd using default router
-            $cmd_group = $unit_router->parse($value);
+            $cmd_group = $unit_router->parse_cmd($value);
 
             $class   = key($cmd_group);
             $methods = current($cmd_group);
@@ -215,7 +215,7 @@ class ns
             : (1 === count(self::$unit_pool->result) ? current(self::$unit_pool->result) : self::$unit_pool->result);
 
         //Output results & logs
-        echo self::$unit_io->{'build_' . self::$unit_pool->ret}($result);
+        echo self::$unit_io->{'build_' . self::$unit_pool->ret}((array)$result);
         echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
 
         unset($result);

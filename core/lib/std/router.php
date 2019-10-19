@@ -29,12 +29,13 @@ final class router
 {
     /**
      * Parse CMD
+     * Result format: ['class_name' => ['method_1', 'method_2', ...], ...]
      *
      * @param string $cmd
      *
      * @return array
      */
-    public function parse(string $cmd): array
+    public function parse_cmd(string $cmd): array
     {
         $full_cmd = strtr($cmd, '/', '\\');
         $is_multi = strpos($full_cmd, '-');
@@ -62,5 +63,30 @@ final class router
 
         unset($cmd, $full_cmd, $is_multi, $cmd_key, $cmd_list, $value);
         return $routes;
+    }
+
+    /**
+     * Get full class name
+     *
+     * @param string $class
+     *
+     * @return string
+     */
+    public function get_cls(string $class): string
+    {
+        return 0 !== strpos($class, '\\') ? '\\' . APP_PATH . '\\' . $class : $class;
+    }
+
+    /**
+     * Get router key name
+     *
+     * @param string $class
+     * @param string $method
+     *
+     * @return string
+     */
+    public function get_name(string $class, string $method): string
+    {
+        return strtr($class . '/' . $method, '\\', '/');
     }
 }

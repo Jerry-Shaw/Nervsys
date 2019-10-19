@@ -20,6 +20,8 @@
 
 namespace core\lib\std;
 
+use core\lib\stc\factory;
+
 /**
  * Class reflect
  *
@@ -174,5 +176,87 @@ final class reflect
 
         unset($parameter);
         return $info;
+    }
+
+    /**
+     * Build params for a method
+     *
+     * @param string $class
+     * @param string $method
+     * @param array  $params
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function build_params(string $class, string $method, array $params): array
+    {
+        //Default result
+        $result = ['param' => [], 'diff' => []];
+
+        //Get needed params
+        $need_params = $this->get_params($class, $method);
+
+        /** @var \ReflectionParameter $param_reflect */
+        foreach ($need_params as $param_reflect) {
+            $param_info = $this->get_param_info($param_reflect);
+
+            //Dependency injection
+            if ($param_info['has_class']) {
+                $result['param'][] = factory::build($param_info['class']);
+                continue;
+            }
+
+            //Param NOT exists
+            if (!isset($params[$param_info['name']])) {
+                $result['diff'][] = $param_info['name'];
+                continue;
+            }
+
+            //Param without type
+            if (!$param_info['has_type']) {
+                $result['param'][] = $params[$param_info['name']];
+                continue;
+            }
+
+            //Type detection
+            switch ($param_info['type']) {
+                case 'int':
+                    is_numeric($params[$param_info['name']])
+                        ? $result['param'][] = (int)$params[$param_info['name']]
+                        : $result['diff'][] = $param_info['name'];
+                    break;
+                case 'bool':
+                    is_bool($params[$param_info['name']])
+                        ? $result['param'][] = (bool)$params[$param_info['name']]
+                        : $result['diff'][] = $param_info['name'];
+                    break;
+                case 'float':
+                    is_numeric($params[$param_info['name']])
+                        ? $result['param'][] = (float)$params[$param_info['name']]
+                        : $result['diff'][] = $param_info['name'];
+                    break;
+                case 'array':
+                    is_array($params[$param_info['name']]) || is_object($params[$param_info['name']])
+                        ? $result['param'][] = (array)$params[$param_info['name']]
+                        : $result['diff'][] = $param_info['name'];
+                    break;
+                case 'string':
+                    is_string($params[$param_info['name']]) || is_numeric($params[$param_info['name']])
+                        ? $result['param'][] = trim((string)$params[$param_info['name']])
+                        : $result['diff'][] = $param_info['name'];
+                    break;
+                case 'object':
+                    is_object($params[$param_info['name']]) || is_array($params[$param_info['name']])
+                        ? $result['param'][] = (object)$params[$param_info['name']]
+                        : $result['diff'][] = $param_info['name'];
+                    break;
+                default:
+                    $result['param'][] = $params[$param_info['name']];
+                    break;
+            }
+        }
+
+        unset($class, $method, $params, $need_params, $param_reflect, $param_info);
+        return $result;
     }
 }
