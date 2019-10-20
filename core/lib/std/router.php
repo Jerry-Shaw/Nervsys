@@ -46,6 +46,10 @@ final class router
         $cmd_list = $is_multi ? explode('-', $full_cmd) : [$full_cmd];
 
         foreach ($cmd_list as $value) {
+            if ('' === $value = trim($value)) {
+                continue;
+            }
+
             if (empty($routes) || false !== strpos($value, '\\')) {
                 $cmd_key = $value;
 
