@@ -51,15 +51,67 @@ class cgi
 
 
     /**
-     * @param string $class
-     * @param array  $methods
+     * @param array $cmd_group
+     * @param array $input_params
+     * @param array $call_section
      *
      * @return array
      */
-    public function run(string $class, array $methods): array
+    public function call(array $cmd_group, array $call_section, array $input_params): array
     {
+        //Get function call before list
+        $call_before = [];
+
+        foreach ($call_section as $path => $cmd) {
+            $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse_cmd($cmd);
+        }
+
+        unset($call_section, $path, $cmd);
+
+
+        foreach ($cmd_group as $class => $methods) {
+            //Fill class name
+            $class = $this->unit_router->get_cls($class);
+
+
+
+
+
+
+        }
+    }
+
+
+    private function call_before(string $class, array $params, array $call_before): array
+    {
+        //Extract class units
+        $class_units = false !== strpos($class, '\\') ? explode('\\', $class) : [$class];
+
+        $call_results = [];
+
+        //Root namespace starts
+        $namespace = '\\';
+
+        //Find all matched paths
+        foreach ($class_units as $unit) {
+            $namespace .= $unit;
+
+            //Try to find matched path
+            if (isset($call_before[$namespace])) {
+
+
+
+
+            }
+
+            //Fill last namespace separator
+            $namespace .= '\\';
+        }
+
+
 
     }
+
 
 
     /**
@@ -72,7 +124,7 @@ class cgi
      * @return array
      * @throws \ReflectionException
      */
-    public function call_fn(string $class, string $method, array $params = []): array
+    private function call_func(string $class, string $method, array $params = []): array
     {
         //Get full class name
         $class = $this->unit_router->get_cls($class);

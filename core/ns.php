@@ -142,17 +142,9 @@ class ns
 
         //Run INIT section (ONLY CGI)
         foreach (self::$unit_pool->conf['init'] as $value) {
-            //Parse cmd using default router
-            $cmd_group = $unit_router->parse_cmd($value);
-
-            $class   = key($cmd_group);
-            $methods = current($cmd_group);
-
-            //Run cmd and capture results
             try {
-                foreach ($methods as $method) {
-                    self::$unit_pool->result += $unit_cgi->call_fn($class, $method);
-                }
+                //Call INIT functions using default router
+                self::$unit_pool->result += $unit_cgi->call($unit_router->parse_cmd($value), self::$unit_pool->conf['call'], []);
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable, false);
                 throw new \Exception('Initialize Failed!', E_USER_ERROR);
@@ -185,9 +177,22 @@ class ns
         self::$unit_pool->ret  = &$data_argv['r'];
         self::$unit_pool->data = &$data_argv['d'];
 
+        //Get router stack
+        $router_stack = self::$unit_pool->router_stack;
+
+        //Append default router
+        $router_stack[] = [$unit_router, 'parse_cmd'];
+
+        //Proceed once CMD can be parsed
+        foreach ($router_stack as $router) {
+            if (!empty($cmd_group = call_user_func($router, $data_argv['c']))) {
+                self::$unit_pool->result += $unit_cgi->call($cmd_group, self::$unit_pool->conf['call'], $data_argv['d']);
+                break;
+            }
+        }
 
         //No output
-        if (!$output || !in_array($data_argv['r'], ['json', 'xml'], true)) {
+        if (!$output) {
             return;
         }
 
@@ -214,8 +219,12 @@ class ns
             ? self::$unit_pool->error + ['data' => self::$unit_pool->result]
             : (1 === count(self::$unit_pool->result) ? current(self::$unit_pool->result) : self::$unit_pool->result);
 
-        //Output results & logs
-        echo self::$unit_io->{'build_' . self::$unit_pool->ret}((array)$result);
+        //Output results
+        if (in_array(self::$unit_pool->ret, ['json', 'xml'], true)) {
+            echo self::$unit_io->{'build_' . self::$unit_pool->ret}((array)$result);
+        }
+
+        //Output logs
         echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
 
         unset($result);
