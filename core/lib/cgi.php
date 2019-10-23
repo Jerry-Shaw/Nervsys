@@ -21,6 +21,7 @@
 namespace core\lib;
 
 use core\lib\stc\factory;
+use core\lib\std\pool;
 use core\lib\std\reflect;
 use core\lib\std\router;
 
@@ -31,6 +32,9 @@ use core\lib\std\router;
  */
 class cgi
 {
+    /** @var \core\lib\std\pool $unit_pool */
+    private $unit_pool;
+
     /** @var \core\lib\std\router $unit_router */
     private $unit_router;
 
@@ -42,6 +46,9 @@ class cgi
      */
     public function __construct()
     {
+        /** @var \core\lib\std\pool unit_pool */
+        $this->unit_pool = factory::build(pool::class);
+
         /** @var \core\lib\std\router unit_router */
         $this->unit_router = factory::build(router::class);
 
@@ -53,12 +60,11 @@ class cgi
      * Call CMD group
      *
      * @param array $cmd_group
-     * @param array $input_params
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function call_group(array $cmd_group, array $input_params = []): array
+    public function call_group(array $cmd_group): array
     {
         //CGI results
         $call_results = [];
@@ -69,11 +75,11 @@ class cgi
 
             //Call methods
             foreach ($methods as $method) {
-                $call_results += $this->call_func($class, $method, $input_params);
+                $call_results += $this->call_func($class, $method, $this->unit_pool->data);
             }
         }
 
-        unset($cmd_group, $input_params, $class, $methods, $method);
+        unset($cmd_group, $class, $methods, $method);
         return $call_results;
     }
 
@@ -82,12 +88,11 @@ class cgi
      *
      * @param array $cmd_group
      * @param array $call_section
-     * @param array $input_params
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function call_service(array $cmd_group, array $call_section, array $input_params): array
+    public function call_service(array $cmd_group, array $call_section): array
     {
         //CGI results and call before list
         $call_results = $call_before = [];
@@ -104,15 +109,15 @@ class cgi
             $class = $this->unit_router->get_cls($class);
 
             //Run call before functions
-            $call_results += $this->call_before($class, $call_before, $input_params);
+            $call_results += $this->call_before($class, $call_before, $this->unit_pool->data);
 
             //Run service function
             foreach ($methods as $method) {
-                $call_results += $this->call_func($class, $method, $input_params);
+                $call_results += $this->call_func($class, $method, $this->unit_pool->data);
             }
         }
 
-        unset($cmd_group, $input_params, $call_before, $class, $methods, $method);
+        unset($cmd_group, $call_before, $class, $methods, $method);
         return $call_results;
     }
 
@@ -121,12 +126,11 @@ class cgi
      *
      * @param string $class
      * @param array  $call_before
-     * @param array  $input_params
      *
      * @return array
      * @throws \ReflectionException
      */
-    private function call_before(string $class, array $call_before, array $input_params): array
+    private function call_before(string $class, array $call_before): array
     {
         //CGI results
         $call_results = [];
@@ -144,14 +148,14 @@ class cgi
             //Try to find matched path
             if (isset($call_before[$namespace])) {
                 //Run CALL section
-                $call_results += $this->call_group($call_before[$namespace], $input_params);
+                $call_results += $this->call_group($call_before[$namespace], $this->unit_pool->data);
             }
 
             //Fill last namespace separator
             $namespace .= '\\';
         }
 
-        unset($class, $call_before, $input_params, $namespace, $class_units, $path_unit, $pre_class, $pre_methods, $pre_method);
+        unset($class, $call_before, $namespace, $class_units, $path_unit, $pre_class, $pre_methods, $pre_method);
         return $call_results;
     }
 
@@ -160,12 +164,11 @@ class cgi
      *
      * @param string $class
      * @param string $method
-     * @param array  $params
      *
      * @return array
      * @throws \ReflectionException
      */
-    private function call_func(string $class, string $method, array $params = []): array
+    private function call_func(string $class, string $method): array
     {
         /** @var \ReflectionMethod $method_reflect */
         $method_reflect = $this->unit_reflect->get_method($class, $method);
@@ -176,10 +179,10 @@ class cgi
         }
 
         //Create class instance
-        $class_object = !$method_reflect->isStatic() ? factory::create($class, $params) : $class;
+        $class_object = !$method_reflect->isStatic() ? factory::create($class, $this->unit_pool->data) : $class;
 
         //Filter method params
-        $matched_params = $this->unit_reflect->build_params($class, $method, $params);
+        $matched_params = $this->unit_reflect->build_params($class, $method, $this->unit_pool->data);
 
         if (!empty($matched_params['diff'])) {
             throw new \Exception($this->unit_router->get_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
@@ -191,7 +194,7 @@ class cgi
         //Build result
         $result = !is_null($fn_result) ? [$this->unit_router->get_name($class, $method) => &$fn_result] : [];
 
-        unset($class, $method, $params, $method_reflect, $matched_params, $class_object, $fn_result);
+        unset($class, $method, $method_reflect, $matched_params, $class_object, $fn_result);
         return $result;
     }
 }

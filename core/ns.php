@@ -146,8 +146,8 @@ class ns
                 //Call INIT functions using default router
                 self::$unit_pool->result += $unit_cgi->call_group($unit_router->parse_cmd($value));
             } catch (\Throwable $throwable) {
-                error::exception_handler($throwable, false);
-                throw new \Exception('Initialize Failed!', E_USER_ERROR);
+                error::exception_handler($throwable);
+                self::stop();
             }
         }
 
@@ -173,9 +173,11 @@ class ns
         }
 
         //Copy to pool
-        self::$unit_pool->cmd  = &$data_argv['c'];
-        self::$unit_pool->ret  = &$data_argv['r'];
-        self::$unit_pool->data = &$data_argv['d'];
+        self::$unit_pool->cmd = &$data_argv['c'];
+        self::$unit_pool->ret = &$data_argv['r'];
+
+        //Copy input data
+        self::$unit_pool->data += $data_argv['d'];
 
         //Get router stack
         $router_stack = self::$unit_pool->router_stack;
@@ -186,7 +188,7 @@ class ns
         //Proceed once CMD can be parsed
         foreach ($router_stack as $router) {
             if (!empty($cmd_group = call_user_func($router, $data_argv['c']))) {
-                self::$unit_pool->result += $unit_cgi->call_service($cmd_group, self::$unit_pool->conf['call'], $data_argv['d']);
+                self::$unit_pool->result += $unit_cgi->call_service($cmd_group, self::$unit_pool->conf['call']);
                 break;
             }
         }
