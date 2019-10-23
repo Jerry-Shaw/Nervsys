@@ -33,6 +33,8 @@ class pdo_mysql extends pdo
 
     //Runtime data
     protected $runtime = [];
+    //Full SQL
+    protected $fullSql = '';
 
     /**
      * Insert into table
@@ -312,7 +314,8 @@ class pdo_mysql extends pdo
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         unset($sql);
@@ -342,7 +345,8 @@ class pdo_mysql extends pdo
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         array_shift($sql_param);
@@ -366,17 +370,32 @@ class pdo_mysql extends pdo
 
             $stmt = $this->instance->prepare($this->sql);
             $stmt->execute($this->runtime['bind_value'] ?? null);
+            $this->full_sql();
 
-            $this->rows    = $stmt->rowCount();
+            $this->rows = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->fullSql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll($fetch_style);
 
         unset($fetch_style, $stmt);
         return $data;
+    }
+
+    /**
+     * full sql
+     */
+    public function full_sql()
+    {
+        $where = $this->runtime['bind_where'] ?? [];
+        $values = array_merge($where, $this->runtime['bind_value']);
+        foreach ($values as $k => $v) {
+            $sql = str_replace($k, $v, $this->sql);
+        }
+        $this->fullSql = $sql;
     }
 
     /**
@@ -392,10 +411,12 @@ class pdo_mysql extends pdo
             $stmt   = $this->instance->prepare($this->sql);
             $result = $stmt->execute($this->runtime['bind_value'] ?? null);
 
+            $this->full_sql();
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->fullSql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         unset($stmt);
@@ -793,7 +814,8 @@ class pdo_mysql extends pdo
             $condition .= $this->escape($value[0]) . ' ';
 
             if (3 === count($value)) {
-                if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                if (!in_array($item = strtoupper($value[1]),
+                    ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
                     throw new \PDOException('Incorrect operator: "' . $value[1] . '"!', E_USER_ERROR);
                 }
 
