@@ -34,18 +34,6 @@ class factory
     }
 
     /**
-     * Copy object as alias (overwrite)
-     *
-     * @param string $alias
-     *
-     * @return $this
-     */
-    public function as($alias): object
-    {
-        return \core\lib\stc\factory::move($this, $alias);
-    }
-
-    /**
      * Get original object from called class with alias
      * Defined by class created from "as"
      *
@@ -54,7 +42,6 @@ class factory
      * @return $this
      * @throws \Exception
      */
-
     public static function use($alias): object
     {
         return \core\lib\stc\factory::find($alias);
@@ -67,7 +54,7 @@ class factory
      *
      * @return $this
      */
-    public function config(array $setting): object
+    public function conf(array $setting): object
     {
         $setting = array_intersect_key($setting, get_object_vars($this));
 
@@ -77,5 +64,17 @@ class factory
 
         unset($setting, $key, $val);
         return $this;
+    }
+
+    /**
+     * Copy object as alias (overwrite)
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function as($alias): object
+    {
+        return \core\lib\stc\factory::move($this, $alias);
     }
 }
