@@ -50,14 +50,15 @@ class cgi
     }
 
     /**
-     * Call INIT commands
+     * Call CMD group
      *
      * @param array $cmd_group
+     * @param array $input_params
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function call_init(array $cmd_group): array
+    public function call_group(array $cmd_group, array $input_params = []): array
     {
         //CGI results
         $call_results = [];
@@ -68,11 +69,11 @@ class cgi
 
             //Call methods
             foreach ($methods as $method) {
-                $call_results += $this->call_func($class, $method);
+                $call_results += $this->call_func($class, $method, $input_params);
             }
         }
 
-        unset($cmd_group, $class, $methods, $method);
+        unset($cmd_group, $input_params, $class, $methods, $method);
         return $call_results;
     }
 
@@ -107,7 +108,7 @@ class cgi
 
             //Run service function
             foreach ($methods as $method) {
-                $call_results += $this->call_before($class, $method, $input_params);
+                $call_results += $this->call_func($class, $method, $input_params);
             }
         }
 
@@ -143,15 +144,7 @@ class cgi
             //Try to find matched path
             if (isset($call_before[$namespace])) {
                 //Run CALL section
-                foreach ($call_before[$namespace] as $pre_class => $pre_methods) {
-                    //Fill class name
-                    $pre_class = $this->unit_router->get_cls($pre_class);
-
-                    //Call methods
-                    foreach ($pre_methods as $pre_method) {
-                        $call_results += $this->call_func($pre_class, $pre_method, $input_params);
-                    }
-                }
+                $call_results += $this->call_group($call_before[$namespace], $input_params);
             }
 
             //Fill last namespace separator

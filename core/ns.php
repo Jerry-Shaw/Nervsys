@@ -144,7 +144,7 @@ class ns
         foreach (self::$unit_pool->conf['init'] as $value) {
             try {
                 //Call INIT functions using default router
-                self::$unit_pool->result += $unit_cgi->call_init($unit_router->parse_cmd($value));
+                self::$unit_pool->result += $unit_cgi->call_group($unit_router->parse_cmd($value));
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable, false);
                 throw new \Exception('Initialize Failed!', E_USER_ERROR);
