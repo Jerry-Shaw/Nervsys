@@ -92,16 +92,23 @@ final class router
         /** @var \core\lib\std\pool $unit_pool */
         $unit_pool = factory::build(pool::class);
 
-        //Example commands via TrustZone
+        //Filter commands via TrustZone
         foreach ($cmd_group as $class => $methods) {
-            $trust_data = array_intersect(trustzone::init($this->get_cls($class), $unit_pool->data), $methods);
+            //Get trust data
+            $trust_data = trustzone::init($this->get_cls($class), $unit_pool->data);
 
+            //Check auto_call mode
+            if (!$unit_pool->conf['sys']['auto_call'] || !empty($methods)) {
+                $trust_data = array_intersect($trust_data, $methods);
+            }
+
+            //Add to trust group
             if (!empty($trust_data)) {
                 $trust_group[$class] = $trust_data;
             }
         }
 
-        unset($cmd, $cmd_group, $unit_pool, $unit_trustzone, $class, $methods, $trust_data);
+        unset($cmd, $cmd_group, $unit_pool, $class, $methods, $trust_data);
         return $trust_group;
     }
 
