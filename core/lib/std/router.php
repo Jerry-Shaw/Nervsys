@@ -32,7 +32,6 @@ final class router
 {
     /**
      * Get Parsed CMD
-     * Result format: ['class_name' => ['method_1', 'method_2', ...], ...]
      *
      * @param string $cmd
      *
@@ -40,11 +39,11 @@ final class router
      */
     public function parse_cmd(string $cmd): array
     {
+        $routes  = [];
+        $cmd_key = -1;
+
         $full_cmd = strtr($cmd, '/', '\\');
         $is_multi = strpos($full_cmd, '-');
-
-        $routes  = [];
-        $cmd_key = '';
 
         $cmd_list = $is_multi ? explode('-', $full_cmd) : [$full_cmd];
 
@@ -54,13 +53,9 @@ final class router
             }
 
             if (empty($routes) || false !== strpos($value, '\\')) {
-                $cmd_key = $value;
-
-                if (!isset($routes[$cmd_key])) {
+                if (!isset($routes[++$cmd_key])) {
                     $routes[$cmd_key] = [];
                 }
-
-                continue;
             }
 
             if (!in_array($value, $routes[$cmd_key], true)) {
@@ -68,13 +63,12 @@ final class router
             }
         }
 
-        unset($cmd, $full_cmd, $is_multi, $cmd_key, $cmd_list, $value);
+        unset($cmd, $cmd_key, $full_cmd, $is_multi, $cmd_list, $value);
         return $routes;
     }
 
     /**
      * Get trust CMD
-     * Result format: ['class_name' => ['method_1', 'method_2', ...], ...]
      *
      * @param string $cmd
      *
@@ -93,22 +87,26 @@ final class router
         $unit_pool = factory::build(pool::class);
 
         //Filter commands via TrustZone
-        foreach ($cmd_group as $class => $methods) {
+        while (is_array($group = array_shift($cmd_group))) {
+            //Get class input name
+            $class = array_shift($group);
+
             //Get trust data
             $trust_data = trustzone::init($this->get_cls($class), $unit_pool->data);
 
             //Check auto_call mode
-            if (!$unit_pool->conf['sys']['auto_call'] || !empty($methods)) {
-                $trust_data = array_intersect($trust_data, $methods);
+            if (!$unit_pool->conf['sys']['auto_call'] || !empty($group)) {
+                $trust_data = array_intersect($trust_data, $group);
             }
 
             //Add to trust group
             if (!empty($trust_data)) {
-                $trust_group[$class] = $trust_data;
+                array_unshift($trust_data, $class);
+                $trust_group[] = $trust_data;
             }
         }
 
-        unset($cmd, $cmd_group, $unit_pool, $class, $methods, $trust_data);
+        unset($cmd, $cmd_group, $unit_pool, $group, $class, $trust_data);
         return $trust_group;
     }
 

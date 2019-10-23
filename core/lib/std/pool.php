@@ -119,6 +119,20 @@ final class pool
     public $is_TLS = true;
 
     /**
+     * CGI command group
+     *
+     * @var array
+     */
+    public $cgi_group = [];
+
+    /**
+     * CLI command group
+     *
+     * @var array
+     */
+    public $cli_group = [];
+
+    /**
      * Router stack
      *
      * @var array

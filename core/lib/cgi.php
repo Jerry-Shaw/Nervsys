@@ -69,34 +69,34 @@ class cgi
         //CGI results
         $call_results = [];
 
-        foreach ($cmd_group as $class => $methods) {
-            //Fill class name
-            $class = $this->unit_router->get_cls($class);
+        while (is_array($group = array_shift($cmd_group))) {
+            //Get full class name
+            $class = $this->unit_router->get_cls(array_shift($group));
 
             //Call methods
-            foreach ($methods as $method) {
-                $call_results += $this->call_func($class, $method, $this->unit_pool->data);
+            foreach ($group as $method) {
+                $call_results += $this->call_func($class, $method);
             }
         }
 
-        unset($cmd_group, $class, $methods, $method);
+        unset($cmd_group, $group, $class, $method);
         return $call_results;
     }
 
     /**
      * Call service commands
      *
-     * @param array $cmd_group
      * @param array $call_section
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function call_service(array $cmd_group, array $call_section): array
+    public function call_service(array $call_section): array
     {
         //CGI results and call before list
         $call_results = $call_before = [];
 
+        //Get call before list
         foreach ($call_section as $path => $cmd) {
             $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse_cmd($cmd);
         }
@@ -104,20 +104,20 @@ class cgi
         unset($call_section, $path, $cmd);
 
         //Process CMD group
-        foreach ($cmd_group as $class => $methods) {
-            //Fill class name
-            $class = $this->unit_router->get_cls($class);
+        while (is_array($cmd_group = array_shift($this->unit_pool->cgi_group))) {
+            //Get full class name
+            $class = $this->unit_router->get_cls(array_shift($cmd_group));
 
             //Run call before functions
-            $call_results += $this->call_before($class, $call_before, $this->unit_pool->data);
+            $call_results += $this->call_before($class, $call_before);
 
             //Run service function
-            foreach ($methods as $method) {
-                $call_results += $this->call_func($class, $method, $this->unit_pool->data);
+            foreach ($cmd_group as $method) {
+                $call_results += $this->call_func($class, $method);
             }
         }
 
-        unset($cmd_group, $call_before, $class, $methods, $method);
+        unset($call_before, $cmd_group, $class, $method);
         return $call_results;
     }
 
@@ -148,7 +148,7 @@ class cgi
             //Try to find matched path
             if (isset($call_before[$namespace])) {
                 //Run CALL section
-                $call_results += $this->call_group($call_before[$namespace], $this->unit_pool->data);
+                $call_results += $this->call_group($call_before[$namespace]);
             }
 
             //Fill last namespace separator

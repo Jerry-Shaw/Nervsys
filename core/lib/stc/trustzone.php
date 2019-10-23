@@ -44,6 +44,13 @@ final class trustzone
         //Get all public methods
         $method_list = get_class_methods($class_object);
 
+        //Remove all magic methods
+        foreach ($method_list as $key => $value) {
+            if (0 === strpos($value, '__')) {
+                unset($method_list[$key]);
+            }
+        }
+
         //Get TrustZone data from class
         $tz_data = $class_object->tz ?? [];
 
