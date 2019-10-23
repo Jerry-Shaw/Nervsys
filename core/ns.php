@@ -144,7 +144,7 @@ class ns
         foreach (self::$unit_pool->conf['init'] as $value) {
             try {
                 //Call INIT functions using default router
-                self::$unit_pool->result += $unit_cgi->call($unit_router->parse_cmd($value), self::$unit_pool->conf['call'], []);
+                self::$unit_pool->result += $unit_cgi->call_init($unit_router->parse_cmd($value));
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable, false);
                 throw new \Exception('Initialize Failed!', E_USER_ERROR);
@@ -186,7 +186,7 @@ class ns
         //Proceed once CMD can be parsed
         foreach ($router_stack as $router) {
             if (!empty($cmd_group = call_user_func($router, $data_argv['c']))) {
-                self::$unit_pool->result += $unit_cgi->call($cmd_group, self::$unit_pool->conf['call'], $data_argv['d']);
+                self::$unit_pool->result += $unit_cgi->call_service($cmd_group, self::$unit_pool->conf['call'], $data_argv['d']);
                 break;
             }
         }

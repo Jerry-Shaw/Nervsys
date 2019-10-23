@@ -49,18 +49,47 @@ class cgi
         $this->unit_reflect = factory::build(reflect::class);
     }
 
-
     /**
+     * Call INIT commands
+     *
      * @param array $cmd_group
-     * @param array $input_params
-     * @param array $call_section
      *
      * @return array
+     * @throws \ReflectionException
      */
-    public function call(array $cmd_group, array $call_section, array $input_params): array
+    public function call_init(array $cmd_group): array
     {
-        //Get function call before list
-        $call_before = [];
+        //CGI results
+        $call_results = [];
+
+        foreach ($cmd_group as $class => $methods) {
+            //Fill class name
+            $class = $this->unit_router->get_cls($class);
+
+            //Call methods
+            foreach ($methods as $method) {
+                $call_results += $this->call_func($class, $method);
+            }
+        }
+
+        unset($cmd_group, $class, $methods, $method);
+        return $call_results;
+    }
+
+    /**
+     * Call service commands
+     *
+     * @param array $cmd_group
+     * @param array $call_section
+     * @param array $input_params
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function call_service(array $cmd_group, array $call_section, array $input_params): array
+    {
+        //CGI results and call before list
+        $call_results = $call_before = [];
 
         foreach ($call_section as $path => $cmd) {
             $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse_cmd($cmd);
@@ -68,51 +97,70 @@ class cgi
 
         unset($call_section, $path, $cmd);
 
-
+        //Process CMD group
         foreach ($cmd_group as $class => $methods) {
             //Fill class name
             $class = $this->unit_router->get_cls($class);
 
+            //Run call before functions
+            $call_results += $this->call_before($class, $call_before, $input_params);
 
-
-
-
-
+            //Run service function
+            foreach ($methods as $method) {
+                $call_results += $this->call_before($class, $method, $input_params);
+            }
         }
+
+        unset($cmd_group, $input_params, $call_before, $class, $methods, $method);
+        return $call_results;
     }
 
-
-    private function call_before(string $class, array $params, array $call_before): array
+    /**
+     * Run CALL section
+     *
+     * @param string $class
+     * @param array  $call_before
+     * @param array  $input_params
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    private function call_before(string $class, array $call_before, array $input_params): array
     {
-        //Extract class units
-        $class_units = false !== strpos($class, '\\') ? explode('\\', $class) : [$class];
-
+        //CGI results
         $call_results = [];
 
-        //Root namespace starts
+        //Root namespace prefix
         $namespace = '\\';
 
+        //Extract class units
+        $class_units = false !== strpos($class = trim($class, '\\'), '\\') ? explode('\\', $class) : [$class];
+
         //Find all matched paths
-        foreach ($class_units as $unit) {
-            $namespace .= $unit;
+        foreach ($class_units as $path_unit) {
+            $namespace .= $path_unit;
 
             //Try to find matched path
             if (isset($call_before[$namespace])) {
+                //Run CALL section
+                foreach ($call_before[$namespace] as $pre_class => $pre_methods) {
+                    //Fill class name
+                    $pre_class = $this->unit_router->get_cls($pre_class);
 
-
-
-
+                    //Call methods
+                    foreach ($pre_methods as $pre_method) {
+                        $call_results += $this->call_func($pre_class, $pre_method, $input_params);
+                    }
+                }
             }
 
             //Fill last namespace separator
             $namespace .= '\\';
         }
 
-
-
+        unset($class, $call_before, $input_params, $namespace, $class_units, $path_unit, $pre_class, $pre_methods, $pre_method);
+        return $call_results;
     }
-
-
 
     /**
      * Call function
@@ -126,9 +174,6 @@ class cgi
      */
     private function call_func(string $class, string $method, array $params = []): array
     {
-        //Get full class name
-        $class = $this->unit_router->get_cls($class);
-
         /** @var \ReflectionMethod $method_reflect */
         $method_reflect = $this->unit_reflect->get_method($class, $method);
 
