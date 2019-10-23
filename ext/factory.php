@@ -51,7 +51,7 @@ class factory
      *
      * @param $alias
      *
-     * @return object
+     * @return $this
      * @throws \Exception
      */
 
