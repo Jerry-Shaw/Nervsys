@@ -1,6 +1,7 @@
 <?php
+
 /**
- * Factory
+ * Factory Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  * Copyright 2016-2019 vicky <904428723@qq.com>
@@ -17,10 +18,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace ext;
 
 class factory
 {
+    /**
+     * Get new object from called class
+     * Defined by class and arguments
+     *
+     * @return $this
+     */
+    public static function new(): object
+    {
+        return \core\lib\stc\factory::build(get_called_class(), func_get_args());
+    }
+
+
     //Factory storage
     private static $storage = [];
 
@@ -42,16 +56,6 @@ class factory
         return self::$storage[$key];
     }
 
-    /**
-     * Get new cloned object from called class
-     * Defined by class and arguments
-     *
-     * @return $this
-     */
-    public static function new(): object
-    {
-        return clone self::get_stock(__FUNCTION__, get_called_class(), func_get_args());
-    }
 
     /**
      * Obtain original object from another class
