@@ -22,6 +22,11 @@ namespace core\lib\std;
 
 use core\lib\stc\factory;
 
+/**
+ * Class log
+ *
+ * @package core\lib\std
+ */
 final class log
 {
     /** @var \core\lib\std\pool $unit_pool */

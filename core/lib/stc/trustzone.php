@@ -23,7 +23,7 @@ namespace core\lib\stc;
 /**
  * Class trustzone
  *
- * @package core\lib\std
+ * @package core\lib\stc
  */
 final class trustzone
 {
