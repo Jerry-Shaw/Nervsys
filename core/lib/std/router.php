@@ -20,6 +20,9 @@
 
 namespace core\lib\std;
 
+use core\lib\stc\factory;
+use core\lib\stc\trustzone;
+
 /**
  * Class router
  *
@@ -28,7 +31,7 @@ namespace core\lib\std;
 final class router
 {
     /**
-     * Parse CMD
+     * Get Parsed CMD
      * Result format: ['class_name' => ['method_1', 'method_2', ...], ...]
      *
      * @param string $cmd
@@ -67,6 +70,39 @@ final class router
 
         unset($cmd, $full_cmd, $is_multi, $cmd_key, $cmd_list, $value);
         return $routes;
+    }
+
+    /**
+     * Get trust CMD
+     * Result format: ['class_name' => ['method_1', 'method_2', ...], ...]
+     *
+     * @param string $cmd
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function trust_cmd(string $cmd): array
+    {
+        //Trust group
+        $trust_group = [];
+
+        //Parse command
+        $cmd_group = $this->parse_cmd($cmd);
+
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        //Example commands via TrustZone
+        foreach ($cmd_group as $class => $methods) {
+            $trust_data = array_intersect(trustzone::init($class, $unit_pool->data), $methods);
+
+            if (!empty($trust_data)) {
+                $trust_group[$class] = $trust_data;
+            }
+        }
+
+        unset($cmd, $cmd_group, $unit_pool, $unit_trustzone, $class, $methods, $trust_data);
+        return $trust_group;
     }
 
     /**

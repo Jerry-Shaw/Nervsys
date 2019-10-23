@@ -26,7 +26,7 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
 }
 
 //Define NervSys version
-define('SYSVER', '7.4.0 Beta');
+define('SYSVER', '7.4.0 RC');
 
 //Define system root path
 define('SYSROOT', dirname(__DIR__));
@@ -180,7 +180,7 @@ class ns
         self::$unit_pool->data += $data_argv['d'];
 
         //Append default router
-        self::$unit_pool->router_stack[] = [$unit_router, 'parse_cmd'];
+        self::$unit_pool->router_stack[] = [$unit_router, 'trust_cmd'];
 
         //Proceed once CMD can be parsed
         foreach (self::$unit_pool->router_stack as $router) {

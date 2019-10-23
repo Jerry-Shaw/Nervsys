@@ -18,9 +18,7 @@
  * limitations under the License.
  */
 
-namespace core\lib\std;
-
-use core\lib\stc\factory;
+namespace core\lib\stc;
 
 /**
  * Class trustzone
@@ -29,18 +27,16 @@ use core\lib\stc\factory;
  */
 final class trustzone
 {
-    //TrustZone data
-    private $tz_data = [];
-
     /**
      * Initialize TrustZone
      *
      * @param string $class
      * @param array  $params
      *
+     * @return array
      * @throws \ReflectionException
      */
-    public function init(string $class, array $params): void
+    public static function init(string $class, array $params): array
     {
         //Create class object
         $class_object = factory::create($class, $params);
@@ -52,21 +48,9 @@ final class trustzone
         $tz_data = $class_object->tz ?? [];
 
         //Get filtered methods as TrustZone data
-        $this->tz_data = !in_array('*', $tz_data, true) ? array_intersect($method_list, $tz_data) : $method_list;
+        $tz_data = !in_array('*', $tz_data, true) ? array_intersect($method_list, $tz_data) : $method_list;
 
-        //Free memory
-        unset($class, $params, $class_object, $method_list, $tz_data);
-    }
-
-    /**
-     * Check permission in TrustZone
-     *
-     * @param string $method
-     *
-     * @return bool
-     */
-    public function deny(string $method): bool
-    {
-        return !in_array($method, $this->tz_data, true);
+        unset($class, $params, $class_object, $method_list);
+        return $tz_data;
     }
 }
