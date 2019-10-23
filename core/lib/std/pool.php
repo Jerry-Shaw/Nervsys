@@ -119,11 +119,11 @@ final class pool
     public $is_TLS = true;
 
     /**
-     * Others
+     * Router stack
      *
      * @var array
      */
-    public $others = [];
+    public $router_stack = [];
 
     /**
      * pool constructor.
@@ -162,29 +162,5 @@ final class pool
         }
 
         unset($ip_rec, $ip_list, $value, $addr);
-    }
-
-    /**
-     * Get value
-     *
-     * @param string $name
-     *
-     * @return array
-     */
-    public function __get(string $name): array
-    {
-        return $this->others[$name] ?? [];
-    }
-
-    /**
-     * Set value
-     *
-     * @param string $name
-     * @param array  $value
-     */
-    public function __set(string $name, array $value): void
-    {
-        $this->others[$name] = &$value;
-        unset($name, $value);
     }
 }
