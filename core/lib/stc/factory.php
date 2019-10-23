@@ -34,24 +34,6 @@ final class factory
     private static $pool = [];
 
     /**
-     * Build an instance
-     *
-     * @param string $class
-     * @param array  $params
-     *
-     * @return object
-     */
-    public static function build(string $class, array $params = []): object
-    {
-        if (!isset(self::$pool[$key = hash('md5', $class . ':' . json_encode($params))])) {
-            self::$pool[$key] = !empty($params) ? new $class(...$params) : new $class();
-        }
-
-        unset($class, $params);
-        return self::$pool[$key];
-    }
-
-    /**
      * Create class instance
      *
      * @param string $class
@@ -84,5 +66,63 @@ final class factory
 
         unset($class, $params);
         return $class_object;
+    }
+
+    /**
+     * Build an instance
+     *
+     * @param string $class
+     * @param array  $params
+     *
+     * @return object
+     */
+    public static function build(string $class, array $params = []): object
+    {
+        if (!isset(self::$pool[$key = hash('md5', $class . ':' . json_encode($params))])) {
+            self::$pool[$key] = !empty($params) ? new $class(...$params) : new $class();
+        }
+
+        unset($class, $params);
+        return self::$pool[$key];
+    }
+
+    /**
+     * Move an object associated with alias
+     *
+     * @param object $object
+     * @param string $alias
+     *
+     * @return object
+     */
+    public static function move(object $object, string $alias): object
+    {
+        //Unset original index
+        if (false !== $key = array_search(self::$pool, $object, true)) {
+            unset(self::$pool[$key]);
+        }
+
+        //Save object
+        self::$pool[$alias] = &$object;
+
+        unset($alias, $key);
+        return $object;
+    }
+
+    /**
+     * Find an object via alias
+     *
+     * @param string $alias
+     *
+     * @return object
+     * @throws \Exception
+     */
+    public static function find(string $alias): object
+    {
+        if (isset(self::$pool[$alias])) {
+            return self::$pool[$alias];
+        }
+
+        //Alias NOT found
+        throw new \Exception('Object named [' . $alias . '] NOT found in factory!', E_USER_ERROR);
     }
 }
