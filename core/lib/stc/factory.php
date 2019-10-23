@@ -97,7 +97,7 @@ final class factory
     public static function move(object $object, string $alias): object
     {
         //Unset original index
-        if (false !== $key = array_search(self::$pool, $object, true)) {
+        if (false !== $key = array_search($object, self::$pool, true)) {
             unset(self::$pool[$key]);
         }
 
