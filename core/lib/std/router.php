@@ -94,7 +94,7 @@ final class router
 
         //Example commands via TrustZone
         foreach ($cmd_group as $class => $methods) {
-            $trust_data = array_intersect(trustzone::init($class, $unit_pool->data), $methods);
+            $trust_data = array_intersect(trustzone::init($this->get_cls($class), $unit_pool->data), $methods);
 
             if (!empty($trust_data)) {
                 $trust_group[$class] = $trust_data;
