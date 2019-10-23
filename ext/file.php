@@ -67,7 +67,7 @@ class file
         }
 
         //Create directories
-        $dir = $root . $path;
+        $dir = $root . DIRECTORY_SEPARATOR . $path;
         if (!is_dir($dir)) {
             //Create directory recursively
             mkdir($dir, $mode, true);

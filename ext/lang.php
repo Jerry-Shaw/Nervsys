@@ -51,7 +51,7 @@ class lang
 
         $dir = '/' !== $dir ? trim($dir, '\\/') . DIRECTORY_SEPARATOR : '';
 
-        bindtextdomain($file, ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR);
+        bindtextdomain($file, ROOT . DIRECTORY_SEPARATOR . $dir . self::DIR . DIRECTORY_SEPARATOR);
         textdomain($file);
 
         unset($dir, $file, $lang);
@@ -65,7 +65,7 @@ class lang
     public static function detect(): string
     {
         static $lang = '';
-        $data =  factory::obtain(pool::class)->data;
+        $data = factory::obtain(pool::class)->data;
         if ('' === $lang) {
             if (isset($data['lang'])) {
                 $lang = $data['lang'];

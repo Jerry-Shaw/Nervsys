@@ -372,7 +372,7 @@ class pdo_mysql extends pdo
             $stmt->execute($this->runtime['bind_value'] ?? null);
             $this->full_sql();
 
-            $this->rows = $stmt->rowCount();
+            $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $this->fullSql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
@@ -390,7 +390,7 @@ class pdo_mysql extends pdo
      */
     public function full_sql()
     {
-        $where = $this->runtime['bind_where'] ?? [];
+        $where  = $this->runtime['bind_where'] ?? [];
         $values = array_merge($where, $this->runtime['bind_value']);
         foreach ($values as $k => $v) {
             $sql = str_replace($k, $v, $this->sql);

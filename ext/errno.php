@@ -50,7 +50,7 @@ class errno
     {
         $dir = '/' !== $dir ? trim($dir, '\\/') . DIRECTORY_SEPARATOR : '';
 
-        $file = ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
+        $file = ROOT . DIRECTORY_SEPARATOR . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
 
         if (is_array($data = parse_ini_file($file, false, INI_SCANNER_TYPED))) {
             self::$lang = &$lang;

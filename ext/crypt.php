@@ -62,8 +62,8 @@ class crypt extends factory
      */
     public function rsa_keys(): array
     {
-        $keys   = ['public' => '', 'private' => ''];
-        $config = ['config' => $this->conf];
+        $keys    = ['public' => '', 'private' => ''];
+        $config  = ['config' => $this->conf];
         $openssl = openssl_pkey_new($config);
 
         if (false === $openssl) {

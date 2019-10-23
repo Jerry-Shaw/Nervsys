@@ -46,7 +46,7 @@ class conf
     public static function load(string $dir, string $name): array
     {
         $dir  = '/' !== $dir ? trim($dir, "/\\") . DIRECTORY_SEPARATOR : '';
-        $file = ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
+        $file = ROOT . DIRECTORY_SEPARATOR . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
 
         is_array($data = parse_ini_file($file, true, INI_SCANNER_TYPED))
             ? self::$pool = array_replace(self::$pool, $data)
