@@ -31,7 +31,7 @@ use core\lib\std\router;
  *
  * @package core\lib
  */
-class cgi
+final class cgi
 {
     /** @var \core\lib\std\pool $unit_pool */
     private $unit_pool;
