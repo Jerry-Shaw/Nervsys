@@ -229,7 +229,7 @@ final class ns
             : (1 === count(self::$unit_pool->result) ? current(self::$unit_pool->result) : self::$unit_pool->result);
 
         //Output results
-        if (in_array(self::$unit_pool->ret, ['json', 'xml'], true)) {
+        if (in_array(self::$unit_pool->ret, ['json', 'xml', 'io'], true)) {
             echo self::$unit_io->{'build_' . self::$unit_pool->ret}((array)$result);
         }
 

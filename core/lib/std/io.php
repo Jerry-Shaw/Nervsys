@@ -219,4 +219,36 @@ final class io
         unset($data, $root, $end, $key, $item);
         return $xml;
     }
+
+    /**
+     * Build IO
+     *
+     * @param array $data
+     *
+     * @return string
+     */
+    public function build_io(array $data): string
+    {
+        return $this->to_string($data);
+    }
+
+    /**
+     * Array content to string
+     *
+     * @param array $array
+     *
+     * @return string
+     */
+    private function to_string(array $array): string
+    {
+        $string = '';
+
+        //Format to string
+        foreach ($array as $key => $value) {
+            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . (is_string($value) ? $value . PHP_EOL : $this->to_string($value));
+        }
+
+        unset($array, $key, $value);
+        return $string;
+    }
 }
