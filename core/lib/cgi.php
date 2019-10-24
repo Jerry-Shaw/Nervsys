@@ -135,7 +135,6 @@ class cgi
      * @param array  $call_before
      *
      * @return array
-     * @throws \ReflectionException
      */
     private function call_before(string $class, array $call_before): array
     {
@@ -152,9 +151,8 @@ class cgi
         foreach ($class_units as $path_unit) {
             $namespace .= $path_unit;
 
-            //Try to find matched path
+            //Find matched path and call defined methods
             if (isset($call_before[$namespace])) {
-                //Run CALL section
                 $call_results += $this->call_group($call_before[$namespace]);
             }
 
