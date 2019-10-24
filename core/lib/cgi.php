@@ -20,6 +20,7 @@
 
 namespace core\lib;
 
+use core\lib\stc\error;
 use core\lib\stc\factory;
 use core\lib\std\pool;
 use core\lib\std\reflect;
@@ -62,7 +63,6 @@ class cgi
      * @param array $cmd_group
      *
      * @return array
-     * @throws \ReflectionException
      */
     public function call_group(array $cmd_group): array
     {
@@ -70,12 +70,17 @@ class cgi
         $call_results = [];
 
         while (is_array($group = array_shift($cmd_group))) {
-            //Get full class name
-            $class = $this->unit_router->get_cls(array_shift($group));
+            try {
+                //Get full class name
+                $class = $this->unit_router->get_cls(array_shift($group));
 
-            //Call methods
-            foreach ($group as $method) {
-                $call_results += $this->call_func($class, $method);
+                //Call methods
+                foreach ($group as $method) {
+                    $call_results += $this->call_func($class, $method);
+                }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable);
+                unset($throwable);
             }
         }
 
@@ -87,7 +92,6 @@ class cgi
      * Call service commands
      *
      * @return array
-     * @throws \ReflectionException
      */
     public function call_service(): array
     {
@@ -101,17 +105,22 @@ class cgi
 
         //Process CMD group
         while (is_array($group = array_shift($this->unit_pool->cgi_group))) {
-            //Skip non-exist class
-            if (!class_exists($class = $this->unit_router->get_cls(array_shift($group)))) {
-                continue;
-            }
+            try {
+                //Skip non-exist class
+                if (!class_exists($class = $this->unit_router->get_cls(array_shift($group)))) {
+                    continue;
+                }
 
-            //Run call before functions
-            $call_results += $this->call_before($class, $call_before);
+                //Run call before functions
+                $call_results += $this->call_before($class, $call_before);
 
-            //Run service function
-            foreach ($group as $method) {
-                $call_results += $this->call_func($class, $method);
+                //Run service function
+                foreach ($group as $method) {
+                    $call_results += $this->call_func($class, $method);
+                }
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable, false);
+                unset($throwable);
             }
         }
 
@@ -182,6 +191,7 @@ class cgi
         //Filter method params
         $matched_params = $this->unit_reflect->build_params($class, $method, $this->unit_pool->data);
 
+        //Argument params NOT matched
         if (!empty($matched_params['diff'])) {
             throw new \Exception($this->unit_router->get_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
         }
