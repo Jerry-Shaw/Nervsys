@@ -32,22 +32,25 @@ final class log
     /** @var \core\lib\std\pool $unit_pool */
     private $unit_pool;
 
-    //System log path
-    private $log_path = ROOT . DIRECTORY_SEPARATOR . 'logs';
+    //Log save path
+    private $log_path = '';
 
     /**
-     * log constructor.
+     * cli constructor.
      */
     public function __construct()
     {
+        //Build pool
+        $this->unit_pool = factory::build(pool::class);
+
+        //Set log path
+        $this->log_path = $this->unit_pool->conf['log']['save_path'];
+
         //Check log path
         if (!is_dir($this->log_path)) {
             mkdir($this->log_path, 0777, true);
             chmod($this->log_path, 0777);
         }
-
-        //Build pool
-        $this->unit_pool = factory::build(pool::class);
     }
 
     /**
@@ -178,7 +181,7 @@ final class log
         $key = date('Ymd') . '-' . $level;
         $log = $this->log_path . DIRECTORY_SEPARATOR . $key . '.log';
 
-        static $file = [];
+        $file = [];
 
         if (!isset($file[$key])) {
             $file[$key] = fopen($log, 'ab+');
@@ -201,6 +204,7 @@ final class log
     private function format(string $level, string $message, array $context): string
     {
         $log = date('Y-m-d H:i:s') . PHP_EOL;
+
         $log .= ucfirst($level) . ': ' . $message . PHP_EOL;
         $log .= json_encode($context, JSON_PRETTY) . PHP_EOL . PHP_EOL;
 
