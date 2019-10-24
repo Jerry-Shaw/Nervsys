@@ -99,11 +99,16 @@ final class router
                 $trust_data = array_intersect($trust_data, $group);
             }
 
-            //Add to trust group
-            if (!empty($trust_data)) {
-                array_unshift($trust_data, $class);
-                $trust_group[] = $trust_data;
+            //Skip empty trust data calling
+            if (empty($trust_data)) {
+                continue;
             }
+
+            //Prepend class into trust data
+            array_unshift($trust_data, $class);
+
+            //Add to trust group
+            $trust_group[] = $trust_data;
         }
 
         unset($cmd, $cmd_group, $unit_pool, $group, $class, $trust_data);

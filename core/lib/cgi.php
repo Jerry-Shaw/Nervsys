@@ -86,38 +86,34 @@ class cgi
     /**
      * Call service commands
      *
-     * @param array $call_section
-     *
      * @return array
      * @throws \ReflectionException
      */
-    public function call_service(array $call_section): array
+    public function call_service(): array
     {
         //CGI results and call before list
         $call_results = $call_before = [];
 
         //Get call before list
-        foreach ($call_section as $path => $cmd) {
+        foreach ($this->unit_pool->conf['call'] as $path => $cmd) {
             $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse_cmd($cmd);
         }
 
-        unset($call_section, $path, $cmd);
-
         //Process CMD group
-        while (is_array($cmd_group = array_shift($this->unit_pool->cgi_group))) {
+        while (is_array($group = array_shift($this->unit_pool->cgi_group))) {
             //Get full class name
-            $class = $this->unit_router->get_cls(array_shift($cmd_group));
+            $class = $this->unit_router->get_cls(array_shift($group));
 
             //Run call before functions
             $call_results += $this->call_before($class, $call_before);
 
             //Run service function
-            foreach ($cmd_group as $method) {
+            foreach ($group as $method) {
                 $call_results += $this->call_func($class, $method);
             }
         }
 
-        unset($call_before, $cmd_group, $class, $method);
+        unset($call_before, $path, $cmd, $group, $class, $method);
         return $call_results;
     }
 

@@ -51,13 +51,12 @@ final class trustzone
             }
         }
 
-        //Get TrustZone data from class
-        $tz_data = $class_object->tz ?? [];
-
         //Get filtered methods as TrustZone data
-        $tz_data = !in_array('*', $tz_data, true) ? array_intersect($method_list, $tz_data) : $method_list;
+        $tz_data = !in_array('*', $tz_data = $class_object->tz ?? [], true)
+            ? array_intersect($method_list, $tz_data)
+            : $method_list;
 
-        unset($class, $params, $class_object, $method_list);
+        unset($class, $params, $class_object, $method_list, $key, $value);
         return $tz_data;
     }
 }

@@ -185,7 +185,7 @@ class ns
         //Proceed once CMD can be parsed
         foreach (self::$unit_pool->router_stack as $router) {
             if (!empty(self::$unit_pool->cgi_group = call_user_func($router, $data_argv['c']))) {
-                self::$unit_pool->result += $unit_cgi->call_service(self::$unit_pool->conf['call']);
+                self::$unit_pool->result += $unit_cgi->call_service();
                 break;
             }
         }
