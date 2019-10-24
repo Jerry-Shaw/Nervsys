@@ -101,8 +101,10 @@ class cgi
 
         //Process CMD group
         while (is_array($group = array_shift($this->unit_pool->cgi_group))) {
-            //Get full class name
-            $class = $this->unit_router->get_cls(array_shift($group));
+            //Skip non-exist class
+            if (!class_exists($class = $this->unit_router->get_cls(array_shift($group)))) {
+                continue;
+            }
 
             //Run call before functions
             $call_results += $this->call_before($class, $call_before);

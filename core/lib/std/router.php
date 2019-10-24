@@ -43,8 +43,7 @@ final class router
         $cmd_key = -1;
 
         $full_cmd = strtr($cmd, '/', '\\');
-        $is_multi = strpos($full_cmd, '-');
-
+        $is_multi = false !== strpos($full_cmd, '-');
         $cmd_list = $is_multi ? explode('-', $full_cmd) : [$full_cmd];
 
         foreach ($cmd_list as $value) {
@@ -88,11 +87,13 @@ final class router
 
         //Filter commands via TrustZone
         while (is_array($group = array_shift($cmd_group))) {
-            //Get class input name
-            $class = array_shift($group);
+            //Skip non-exist class
+            if (!class_exists($class = $this->get_cls(array_shift($group)))) {
+                continue;
+            }
 
             //Get trust data
-            $trust_data = trustzone::init($this->get_cls($class), $unit_pool->data);
+            $trust_data = trustzone::init($class, $unit_pool->data);
 
             //Check auto_call mode
             if (!$unit_pool->conf['sys']['auto_call'] || !empty($group)) {
@@ -112,6 +113,23 @@ final class router
         }
 
         unset($cmd, $cmd_group, $unit_pool, $group, $class, $trust_data);
+        return $trust_group;
+    }
+
+    /**
+     * Get trust CLI
+     *
+     * @param string $cmd
+     * @param array  $cli_conf
+     *
+     * @return array
+     */
+    public function trust_cli(string $cmd, array $cli_conf): array
+    {
+        $cmd_group   = false !== strpos($cmd, '-') ? array_flip(explode('-', $cmd)) : [$cmd => 0];
+        $trust_group = array_intersect_key($cli_conf, $cmd_group);
+
+        unset($cmd, $cli_conf, $cmd_group);
         return $trust_group;
     }
 

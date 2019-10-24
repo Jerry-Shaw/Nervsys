@@ -26,7 +26,7 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
 }
 
 //Define NervSys version
-define('SYSVER', '7.4.0 RC');
+define('SYSVER', '7.4.0');
 
 //Define system root path
 define('SYSROOT', dirname(__DIR__));
@@ -87,6 +87,7 @@ spl_autoload_register(
 
 //Load libraries
 use core\lib\cgi;
+use core\lib\cli;
 use core\lib\stc\error;
 use core\lib\stc\factory;
 use core\lib\std\io;
@@ -103,7 +104,7 @@ set_error_handler([error::class, 'error_handler']);
  *
  * @package core
  */
-class ns
+final class ns
 {
     /** @var \core\lib\std\pool $unit_pool */
     private static $unit_pool;
@@ -123,14 +124,17 @@ class ns
         //Load app.ini
         $conf = self::load_ini();
 
+        /** @var \core\lib\std\io unit_io */
+        self::$unit_io = factory::build(io::class);
+
         /** @var \core\lib\std\router $unit_router */
         $unit_router = factory::build(router::class);
 
         /** @var \core\lib\cgi $unit_cgi */
         $unit_cgi = factory::build(cgi::class);
 
-        /** @var \core\lib\std\io unit_io */
-        self::$unit_io = factory::build(io::class);
+        /** @var \core\lib\cli $unit_cli */
+        $unit_cli = factory::build(cli::class);
 
         //Set default timezone
         date_default_timezone_set($conf['sys']['timezone']);
@@ -147,6 +151,7 @@ class ns
                 self::$unit_pool->result += $unit_cgi->call_group($unit_router->parse_cmd($value));
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
+                unset($throwable);
                 self::stop();
             }
         }
@@ -155,6 +160,10 @@ class ns
         if (self::$unit_pool->is_CLI) {
             //Read arguments
             $data_argv = self::$unit_io->read_argv();
+
+            //Copy to pool
+            self::$unit_pool->cli_params['argv'] = &$data_argv['a'];
+            self::$unit_pool->cli_params['pipe'] = &$data_argv['p'];
         } else {
             //Read CMD from URL
             $url_cmd = self::$unit_io->read_url();
@@ -169,7 +178,7 @@ class ns
                 'd' => &$data_pack
             ];
 
-            unset($data_pack['c'], $data_pack['r']);
+            unset($url_cmd, $data_pack);
         }
 
         //Copy to pool
@@ -182,7 +191,7 @@ class ns
         //Append default router
         self::$unit_pool->router_stack[] = [$unit_router, 'trust_cmd'];
 
-        //Proceed once CMD can be parsed
+        //Proceed CGI once CMD can be parsed
         foreach (self::$unit_pool->router_stack as $router) {
             if (!empty(self::$unit_pool->cgi_group = call_user_func($router, $data_argv['c']))) {
                 self::$unit_pool->result += $unit_cgi->call_service();
@@ -190,14 +199,14 @@ class ns
             }
         }
 
-        //Run CLI commands
-        if (self::$unit_pool->is_CLI) {
-
-
+        //Proceed CLI once CMD can be parsed
+        if (self::$unit_pool->is_CLI && !empty(self::$unit_pool->cli_group = $unit_router->trust_cli($data_argv['c'], self::$unit_pool->conf['cli']))) {
+            self::$unit_pool->result += $unit_cli->call_program();
         }
 
         //Output
         $output && self::output();
+        unset($output, $conf, $unit_router, $unit_cgi, $unit_cli, $value, $data_argv, $router);
     }
 
     /**
@@ -226,7 +235,6 @@ class ns
 
         //Output logs
         echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
-
         unset($result);
     }
 
@@ -242,11 +250,9 @@ class ns
         if (is_file($app_ini = ROOT . DIRECTORY_SEPARATOR . APP_PATH . DIRECTORY_SEPARATOR . 'app.ini')) {
             $app_conf = parse_ini_file($app_ini, true, INI_SCANNER_TYPED);
 
+            //Update conf values
             foreach ($app_conf as $key => $value) {
-                $key = strtolower($key);
-
-                //Update conf values
-                self::$unit_pool->conf[$key] = array_replace_recursive(self::$unit_pool->conf[$key], $value);
+                self::$unit_pool->conf[$key = strtolower($key)] = array_replace_recursive(self::$unit_pool->conf[$key], $value);
             }
 
             unset($app_conf, $key, $value);

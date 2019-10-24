@@ -103,7 +103,7 @@ final class io
          * p: Pipe data package (Pass to CLI program)
          * r: Return type (json/xml, default: none, no output)
          */
-        $opt = getopt('c:d:p:r:', [], $optind);
+        $opt = getopt('c:d:p:r::', [], $optind);
 
         //Default data
         $data = ['c' => '', 'r' => '', 'p' => '', 'a' => [], 'd' => []];
@@ -120,27 +120,23 @@ final class io
                 parse_str($data_text, $data['d']);
             }
 
-            unset($opt['d'], $data_text);
+            unset($data_text);
         }
 
         //Decode pipe data
         if (isset($opt['p'])) {
             $data['p'] = $this->decode($opt['p']);
-            unset($opt['p']);
         }
 
-        //Copy other option values
-        foreach ($opt as $key => $value) {
-            $data[$key] = $value;
+        //Set ret value
+        if (isset($opt['r'])) {
+            $data['r'] = in_array($opt['r'], ['json', 'xml', 'io'], true) ? $opt['r'] : 'io';
         }
 
-        //Command NOT found
-        if ('' === $data['c']) {
-            //Move first argv to command
-            $data['c'] = array_shift($data['a']) ?? '';
-        }
+        //Get command
+        $data['c'] = !isset($opt['c']) ? (array_shift($data['a']) ?? '') : $opt['c'];
 
-        unset($opt, $optind, $key, $value);
+        unset($opt, $optind);
         return $data;
     }
 

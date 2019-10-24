@@ -133,6 +133,13 @@ final class pool
     public $cli_group = [];
 
     /**
+     * CLI param pool
+     *
+     * @var array
+     */
+    public $cli_params = [];
+
+    /**
      * Router stack
      *
      * @var array
@@ -169,7 +176,6 @@ final class pool
         //Get valid client IP
         foreach ($ip_list as $value) {
             if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
-                //Copy client addr
                 $this->ip = &$addr;
                 break;
             }
