@@ -7,7 +7,7 @@
 timezone = PRC
 
 ; Enable/disable automatic calling mode when no specific method name was given
-auto_call = on
+auto_call = off
 
 [LOG]
 ; Log levels
@@ -27,9 +27,13 @@ debug     = on
 ; Disable: "off" or "0"
 display = on
 
+; Log save path
+; Absolute path should be provided, Or, leave it NOT set
+; save_path =
+
 [CLI]
 ; CLI settings
-; For external programs
+; For calling external programs
 
 [CORS]
 ; CORS settings
@@ -45,5 +49,5 @@ display = on
 [CALL]
 ; Custom function on module calling
 ; Array settings are accepted to call multiple functions
-; Calling before entering first-level sub-folder, under default router rules
+; Calling before entering sub-folders by any level, under default router rules
 ; Key points to the name of the sub-folder which is now being accessed by system related to "/app/" or absolute folder path from "ROOT"
