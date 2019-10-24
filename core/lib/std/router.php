@@ -85,6 +85,9 @@ final class router
         /** @var \core\lib\std\pool $unit_pool */
         $unit_pool = factory::build(pool::class);
 
+        //Get auto call mode
+        $auto_call = $unit_pool->conf['sys']['auto_call'];
+
         //Filter commands via TrustZone
         while (is_array($group = array_shift($cmd_group))) {
             //Skip non-exist class
@@ -95,24 +98,19 @@ final class router
             //Get trust data
             $trust_data = trustzone::init($class, $unit_pool->data);
 
-            //Check auto_call mode
-            if (!$unit_pool->conf['sys']['auto_call'] || !empty($group)) {
+            //Check auto call mode
+            if (!$auto_call || !empty($group)) {
                 $trust_data = array_intersect($trust_data, $group);
             }
 
-            //Skip empty trust data calling
-            if (empty($trust_data)) {
-                continue;
-            }
-
-            //Prepend class into trust data
-            array_unshift($trust_data, $class);
-
             //Add to trust group
-            $trust_group[] = $trust_data;
+            if (!empty($trust_data)) {
+                array_unshift($trust_data, $class);
+                $trust_group[] = $trust_data;
+            }
         }
 
-        unset($cmd, $cmd_group, $unit_pool, $group, $class, $trust_data);
+        unset($cmd, $cmd_group, $unit_pool, $auto_call, $group, $class, $trust_data);
         return $trust_group;
     }
 
@@ -126,10 +124,20 @@ final class router
      */
     public function trust_cli(string $cmd, array $cli_conf): array
     {
-        $cmd_group   = false !== strpos($cmd, '-') ? array_flip(explode('-', $cmd)) : [$cmd => 0];
-        $trust_group = array_intersect_key($cli_conf, $cmd_group);
+        //Trust group
+        $trust_group = [];
 
-        unset($cmd, $cli_conf, $cmd_group);
+        //Extract CMD group
+        $cmd_group = false !== strpos($cmd, '-') ? explode('-', $cmd) : [$cmd];
+
+        //Find CLI definition
+        foreach ($cmd_group as $cmd_value) {
+            if (isset($cli_conf[$cmd_value])) {
+                $trust_group[] = [$cmd_value, $cli_conf[$cmd_value]];
+            }
+        }
+
+        unset($cmd, $cli_conf, $cmd_group, $cmd_value);
         return $trust_group;
     }
 
