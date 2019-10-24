@@ -75,7 +75,8 @@ final class pool
             'notice'    => true,
             'info'      => true,
             'debug'     => true,
-            'display'   => true
+            'display'   => true,
+            'save_path' => ROOT . DIRECTORY_SEPARATOR . 'logs'
         ],
         'cli'  => [],
         'cors' => [],
@@ -151,11 +152,8 @@ final class pool
      */
     public function __construct()
     {
-        //Get running mode
-        $this->is_CLI = 'cli' === PHP_SAPI;
-
         //Skip on CLI mode
-        if ($this->is_CLI) {
+        if ($this->is_CLI = 'cli' === PHP_SAPI) {
             return;
         }
 
