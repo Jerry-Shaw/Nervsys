@@ -201,7 +201,7 @@ class mpc extends factory
 
             //Merge resource
             $resource[$key]['res']  = true;
-            $resource[$key]['cmd']  = $job['cmd'];
+            $resource[$key]['cmd']  = $job['c'];
             $resource[$key]['pipe'] = $pipes;
             $resource[$key]['proc'] = $process;
         }
