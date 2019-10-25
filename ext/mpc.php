@@ -76,7 +76,7 @@ class mpc extends factory
      *
      * @param array $job
      *
-     * @return object
+     * @return $this
      * @throws \Exception
      */
     public function add(array $job = []): object
