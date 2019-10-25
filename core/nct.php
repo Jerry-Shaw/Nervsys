@@ -21,6 +21,7 @@
 namespace core;
 
 use core\lib\stc\factory;
+use core\lib\std\os;
 use core\lib\std\pool;
 
 /**
@@ -30,6 +31,26 @@ use core\lib\std\pool;
  */
 final class nct
 {
+    /**
+     * CLI running mode
+     *
+     * @return bool
+     */
+    public static function is_CLI(): bool
+    {
+        return factory::build(pool::class)->is_CLI;
+    }
+
+    /**
+     * Request vis TLS
+     *
+     * @return bool
+     */
+    public static function is_TLS(): bool
+    {
+        return factory::build(pool::class)->is_TLS;
+    }
+
     /**
      * Register CMD router parser
      *
@@ -49,11 +70,8 @@ final class nct
     public static function set_error(array $error): void
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
-
-        //Replace error content
+        $unit_pool        = factory::build(pool::class);
         $unit_pool->error = array_replace_recursive($unit_pool->error, $error);
-
         unset($error, $unit_pool);
     }
 
@@ -70,6 +88,16 @@ final class nct
     }
 
     /**
+     * Get client IP
+     *
+     * @return string
+     */
+    public static function get_ip(): string
+    {
+        return factory::build(pool::class)->ip;
+    }
+
+    /**
      * Get data
      *
      * @param string $key
@@ -83,32 +111,22 @@ final class nct
     }
 
     /**
-     * Get client IP
+     * Get PHP executable path
      *
      * @return string
      */
-    public static function get_ip(): string
+    public static function get_php_path(): string
     {
-        return factory::build(pool::class)->ip;
+        return factory::build(os::class)->php_path();
     }
 
     /**
-     * CLI running mode
+     * Get log save path
      *
-     * @return bool
+     * @return string
      */
-    public static function is_CLI(): bool
+    public static function get_log_path(): string
     {
-        return factory::build(pool::class)->is_CLI;
-    }
-
-    /**
-     * Request vis TLS
-     *
-     * @return bool
-     */
-    public static function is_TLS(): bool
-    {
-        return factory::build(pool::class)->is_TLS;
+        return factory::build(pool::class)->conf['log']['save_path'];
     }
 }
