@@ -245,7 +245,7 @@ final class io
 
         //Format to string
         foreach ($array as $key => $value) {
-            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . (is_string($value) ? $value . PHP_EOL : $this->to_string($value));
+            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . (is_array($value) ? $this->to_string($value) : (string)$value . PHP_EOL);
         }
 
         unset($array, $key, $value);
