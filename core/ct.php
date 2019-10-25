@@ -25,11 +25,11 @@ use core\lib\std\os;
 use core\lib\std\pool;
 
 /**
- * Class nct
+ * Class ct
  *
  * @package core
  */
-final class nct
+final class ct
 {
     /**
      * CLI running mode
