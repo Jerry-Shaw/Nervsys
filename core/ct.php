@@ -70,7 +70,9 @@ final class ct
     public static function set_error(array $error): void
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool        = factory::build(pool::class);
+        $unit_pool = factory::build(pool::class);
+
+        //Replace error content
         $unit_pool->error = array_replace_recursive($unit_pool->error, $error);
         unset($error, $unit_pool);
     }
@@ -104,10 +106,16 @@ final class ct
      *
      * @return mixed|null
      */
-    public static function get_data(string $key)
+    public static function get_data(string $key = '')
     {
-        return factory::build(pool::class)->data[$key] ?? null;
-        unset($key);
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        //Find data
+        $data = '' === $key ? $unit_pool->data : ($unit_pool->data[$key] ?? null);
+
+        unset($key, $unit_pool);
+        return $data;
     }
 
     /**
