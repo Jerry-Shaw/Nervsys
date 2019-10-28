@@ -396,6 +396,7 @@ class pdo_mysql extends pdo
             $sql = str_replace($k, $v, $this->sql);
         }
         $this->fullSql = $sql;
+        unset($sql,$where,$values);
     }
 
     /**
