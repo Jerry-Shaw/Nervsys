@@ -4,7 +4,6 @@
  * Redis Lock Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
- * Copyright 2016-2019 vicky <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +46,7 @@ class redis_lock extends redis
     {
         $retry = 0;
         $key   = self::PREFIX . $key;
+
         while ($retry <= self::RETRY) {
             if ($this->lock($key, $life)) {
                 register_shutdown_function([$this, 'clear']);
@@ -103,9 +103,11 @@ class redis_lock extends redis
         if (!$this->instance->setnx($key, time())) {
             return false;
         }
+
         //Set lock life
         $this->instance->expire($key, 0 < $life ? $life : 3);
         $this->locks[] = &$key;
+
         unset($key, $life);
         return true;
     }
