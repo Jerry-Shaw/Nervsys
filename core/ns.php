@@ -32,8 +32,8 @@ define('SYSVER', '7.4.0');
 define('SYSROOT', dirname(__DIR__));
 
 //Get api path and cwd path
-$api_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR);
-$cwd_path = strtr(getcwd(), '\\/', DIRECTORY_SEPARATOR);
+$api_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+$cwd_path = strtr(getcwd(), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
 
 //Get entry script file path
 $entry_script = false === strpos($api_path, $cwd_path)
