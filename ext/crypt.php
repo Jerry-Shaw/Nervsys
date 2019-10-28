@@ -4,7 +4,6 @@
  * Crypt Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
- * Copyright 2016-2019 vicky <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,27 +20,32 @@
 
 namespace ext;
 
-
+/**
+ * Class crypt
+ *
+ * @package ext
+ */
 class crypt extends factory
 {
-    //OpenSSL config path
-    protected $conf = '/openssl.cnf';
-
     //Crypt method
-    protected $method = 'AES-256-CTR';
+    public $method = 'AES-256-CTR';
 
     //Keygen class
-    protected $keygen = keygen::class;
+    private $keygen = keygen::class;
+
+    //OpenSSL conf path
+    private $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
 
     /**
      * crypt constructor.
      *
      * @param string $keygen
+     * @param string $conf_path
      */
-    public function __construct(string $keygen = keygen::class)
+    public function __construct(string $keygen = keygen::class, string $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf')
     {
-        //Copy keygen class
-        $this->keygen = &$keygen;
+        $this->keygen    = &$keygen;
+        $this->conf_path = &$conf_path;
     }
 
     /**
@@ -62,11 +66,10 @@ class crypt extends factory
      */
     public function rsa_keys(): array
     {
-        $keys    = ['public' => '', 'private' => ''];
-        $config  = ['config' => $this->conf];
-        $openssl = openssl_pkey_new($config);
+        $keys   = ['public' => '', 'private' => ''];
+        $config = ['config' => $this->conf_path];
 
-        if (false === $openssl) {
+        if (false === $openssl = openssl_pkey_new($config)) {
             throw new \Exception('OpenSSL config ERROR!', E_USER_ERROR);
         }
 

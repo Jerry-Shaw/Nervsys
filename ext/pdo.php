@@ -4,7 +4,6 @@
  * PDO Connector Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
- * Copyright 2016-2019 vicky <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,40 +22,47 @@ namespace ext;
 
 class pdo extends factory
 {
-    //PDO arguments
-    protected $type    = 'mysql';
-    protected $host    = '127.0.0.1';
-    protected $port    = 3306;
-    protected $user    = 'root';
-    protected $pwd     = '';
-    protected $db      = '';
-    protected $timeout = 10;
-    protected $persist = true;
-    protected $charset = 'utf8mb4';
-
     /** @var \PDO $instance */
     protected $instance = null;
 
-    //Connection params
-    private $dsn = '';
-    private $opt = [];
-
     /**
-     * PDO connector
+     * pdo constructor.
      *
-     * @return $this
+     * @param string $type
+     * @param string $host
+     * @param int    $port
+     * @param string $user
+     * @param string $pwd
+     * @param string $db
+     * @param int    $timeout
+     * @param bool   $persist
+     * @param string $charset
      */
-    public function connect(): object
+    public function __construct(
+        string $type = 'mysql',
+        string $host = '127.0.0.1',
+        int $port = 3306,
+        string $user = 'root',
+        string $pwd = '',
+        string $db = '',
+        int $timeout = 10,
+        bool $persist = true,
+        string $charset = 'utf8mb4'
+    )
     {
-        if (!is_object($this->instance)) {
-            //Build DSN & OPTION
-            $this->build_param();
-
-            //Obtain PDO instance from factory
-            $this->instance = parent::obtain(\PDO::class, [$this->dsn, $this->user, $this->pwd, $this->opt]);
+        //PDO already connected
+        if (is_object($this->instance)) {
+            return;
         }
 
-        return $this;
+        //Build DSN & OPTION
+        $dsn_opt = $this->build_dsn($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
+
+        //Build PDO instance
+        $this->instance = \core\lib\stc\factory::build(\PDO::class, [$dsn_opt['dsn'], $user, $pwd, $dsn_opt['opt']]);
+
+        //Free memory
+        unset($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset, $dsn_opt);
     }
 
     /**
@@ -66,69 +72,91 @@ class pdo extends factory
      */
     public function get_pdo(): \PDO
     {
-        if (!is_object($this->instance)) {
-            $this->connect();
-        }
-
         return $this->instance;
     }
 
     /**
-     * Build connection params for PDO
+     * Build DSN OPT for PDO
+     *
+     * @param string $type
+     * @param string $host
+     * @param int    $port
+     * @param string $user
+     * @param string $pwd
+     * @param string $db
+     * @param int    $timeout
+     * @param bool   $persist
+     * @param string $charset
+     *
+     * @return array
      */
-    private function build_param(): void
+    private function build_dsn(
+        string $type,
+        string $host,
+        int $port,
+        string $user,
+        string $pwd,
+        string $db,
+        int $timeout,
+        bool $persist,
+        string $charset
+    ): array
     {
-        //DSN
-        $this->dsn = $this->type . ':';
-
-        //Option
-        $this->opt = [
-            \PDO::ATTR_CASE               => \PDO::CASE_NATURAL,
-            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_PERSISTENT         => $this->persist,
-            \PDO::ATTR_ORACLE_NULLS       => \PDO::NULL_NATURAL,
-            \PDO::ATTR_EMULATE_PREPARES   => false,
-            \PDO::ATTR_STRINGIFY_FETCHES  => false,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC
+        //Build DSN OPT
+        $dsn_opt = [
+            //DSN
+            'dsn' => $type . ':',
+            //Option
+            'opt' => [
+                \PDO::ATTR_CASE               => \PDO::CASE_NATURAL,
+                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_PERSISTENT         => $persist,
+                \PDO::ATTR_ORACLE_NULLS       => \PDO::NULL_NATURAL,
+                \PDO::ATTR_EMULATE_PREPARES   => false,
+                \PDO::ATTR_STRINGIFY_FETCHES  => false,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC
+            ]
         ];
 
-        //Specific settings
-        switch ($this->type) {
+        switch ($type) {
             case 'mysql':
-                $this->dsn .= 'host=' . $this->host
-                    . ';port=' . $this->port
-                    . ';dbname=' . $this->db
-                    . ';charset=' . $this->charset;
+                $dsn_opt['dsn'] .= 'host=' . $host
+                    . ';port=' . $port
+                    . ';dbname=' . $db
+                    . ';charset=' . $charset;
 
-                $this->opt[\PDO::ATTR_TIMEOUT]                  = $this->timeout;
-                $this->opt[\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $this->charset;
-                $this->opt[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                $dsn_opt['opt'][\PDO::ATTR_TIMEOUT]                  = $timeout;
+                $dsn_opt['opt'][\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
+                $dsn_opt['opt'][\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
                 break;
 
             case 'mssql':
-                $this->dsn .= 'host=' . $this->host
-                    . ',' . $this->port
-                    . ';dbname=' . $this->db
-                    . ';charset=' . $this->charset;
+                $dsn_opt['dsn'] .= 'host=' . $host
+                    . ',' . $port
+                    . ';dbname=' . $db
+                    . ';charset=' . $charset;
                 break;
 
             case 'pgsql':
-                $this->dsn .= 'host=' . $this->host
-                    . ';port=' . $this->port
-                    . ';dbname=' . $this->db
-                    . ';user=' . $this->user
-                    . ';password=' . $this->pwd;
+                $dsn_opt['dsn'] .= 'host=' . $host
+                    . ';port=' . $port
+                    . ';dbname=' . $db
+                    . ';user=' . $user
+                    . ';password=' . $pwd;
                 break;
 
             case 'oci':
-                $this->dsn .= 'dbname=//' . $this->host
-                    . ':' . $this->port
-                    . '/' . $this->db
-                    . ';charset=' . $this->charset;
+                $dsn_opt['dsn'] .= 'dbname=//' . $host
+                    . ':' . $port
+                    . '/' . $db
+                    . ';charset=' . $charset;
                 break;
 
             default:
-                throw new \PDOException('Unsupported type: ' . $this->type, E_USER_ERROR);
+                throw new \PDOException('Unsupported type: ' . $type, E_USER_ERROR);
         }
+
+        unset($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
+        return $dsn_opt;
     }
 }

@@ -58,7 +58,7 @@ class file
         }
 
         //Get clean path
-        $path = strtr($path, ['/' => DIRECTORY_SEPARATOR, '\\' => DIRECTORY_SEPARATOR]);
+        $path = strtr($path, '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
         $path = trim($path, DIRECTORY_SEPARATOR);
 
         //Return root path
@@ -67,8 +67,7 @@ class file
         }
 
         //Create directories
-        $dir = $root . DIRECTORY_SEPARATOR . $path;
-        if (!is_dir($dir)) {
+        if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
             //Create directory recursively
             mkdir($dir, $mode, true);
             //Set permissions to path
@@ -94,27 +93,30 @@ class file
     public static function get_list(string $path, string $pattern = '*', bool $recursive = false): array
     {
         //Check path
-        if (false === $pathname = realpath($path)) {
+        if (false === $path_name = realpath($path)) {
             return [];
         }
 
-        $pathname .= DIRECTORY_SEPARATOR;
-        $list     = glob($pathname . $pattern, GLOB_NOSORT | GLOB_BRACE);
+        $path_name .= DIRECTORY_SEPARATOR;
+
+        //Get file list
+        $file_list = glob($path_name . $pattern, GLOB_NOSORT | GLOB_BRACE);
 
         //Return list on non-recursive
         if (!$recursive) {
-            unset($path, $pattern, $recursive, $pathname);
-            return $list;
+            unset($path, $pattern, $recursive, $path_name);
+            return $file_list;
         }
+
+        //Get dir list
+        $dir_list = glob($path_name . '*', GLOB_NOSORT | GLOB_ONLYDIR);
 
         //Get file list recursively
-        $dirs = glob($pathname . '*', GLOB_NOSORT | GLOB_ONLYDIR);
-
-        foreach ($dirs as $dir) {
-            $list = array_merge($list, self::get_list($dir, $pattern, true));
+        foreach ($dir_list as $dir) {
+            $file_list = array_merge($file_list, self::get_list($dir, $pattern, true));
         }
 
-        unset($path, $pattern, $recursive, $pathname, $dirs, $dir);
-        return $list;
+        unset($path, $pattern, $recursive, $path_name, $dir_list, $dir);
+        return $file_list;
     }
 }

@@ -4,6 +4,7 @@
  * Factory Extension
  *
  * Copyright 2016-2019 liu <2579186091@qq.com>
+ * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +27,14 @@ class factory
      * Get new object from called class
      * Defined by class and arguments
      *
-     * @return $this
+     * @param array $arguments
+     *
+     * @return object
+     * @throws \ReflectionException
      */
-    public static function new(): object
+    public static function new(array $arguments = []): object
     {
-        return \core\lib\stc\factory::build(get_called_class(), func_get_args());
+        return \core\lib\stc\factory::create(get_called_class(), $arguments);
     }
 
     /**

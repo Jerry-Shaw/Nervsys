@@ -4,7 +4,6 @@
  * HTTP Request Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
- * Copyright 2016-2019 vicky <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +19,8 @@
  */
 
 namespace ext;
+
+use core\lib\std\io;
 
 class http extends factory
 {
@@ -386,6 +387,7 @@ class http extends factory
                 $opt[CURLOPT_PROXYUSERPWD] = &$item['proxy_user_pwd'];
             }
         }
+
         if (isset($item['data'])) {
             switch ($item['content_type']) {
                 case self::CONTENT_TYPE_JSON:
@@ -393,7 +395,7 @@ class http extends factory
                     break;
 
                 case self::CONTENT_TYPE_XML:
-                    $opt[CURLOPT_POSTFIELDS] = data::build_xml($item['data']);
+                    $opt[CURLOPT_POSTFIELDS] = \core\lib\stc\factory::build(io::class)->build_xml($item['data']);
                     break;
 
                 case self::CONTENT_TYPE_ENCODED:

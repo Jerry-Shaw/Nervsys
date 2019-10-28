@@ -4,7 +4,6 @@
  * Crypt Image Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
- * Copyright 2016-2019 vicky <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,14 +29,17 @@ class crypt_img extends crypt
     const TYPE_PLUS = 'plus';
     const TYPE_CALC = 'calc';
 
-    //Support types
-    const TYPES = ['mix', 'num', 'word', 'plus', 'calc'];
+    //Supported types
+    const TYPES = [
+        self::TYPE_MIX,
+        self::TYPE_NUM,
+        self::TYPE_WORD,
+        self::TYPE_PLUS,
+        self::TYPE_CALC,
+    ];
 
     //Code output types
-    protected $type = [];
-
-    //Lifetime (in seconds)
-    protected $life = 60;
+    protected $types = [];
 
     //Image size (in pixels)
     protected $width  = 120;
@@ -47,29 +49,68 @@ class crypt_img extends crypt
     protected $length = 6;
 
     //Font filename (stored in "/ext/font/")
-    protected $font = 'font.ttf';
+    protected $font_name = 'font.ttf';
+
+    /**
+     * Set img size
+     *
+     * @param int $width
+     * @param int $height
+     *
+     * @return $this
+     */
+    public function set_size(int $width = 120, int $height = 40): object
+    {
+        $this->width  = &$width;
+        $this->height = &$height;
+    }
+
+    /**
+     * Set font
+     *
+     * @param string $font_name
+     *
+     * @return object
+     */
+    public function set_font(string $font_name): object
+    {
+        $this->font_name = &$font_name;
+    }
+
+    /**
+     * Set code types
+     *
+     * @param string ...$types
+     *
+     * @return $this
+     */
+    public function set_types(string ...$types): object
+    {
+        $this->types = &$types;
+    }
 
     /**
      * Get Code
      *
+     * @param int $life
+     *
      * @return array
      * @throws \Exception
      */
-    public function get(): array
+    public function get(int $life = 60): array
     {
         //Validate code types
-        $type = !empty($type) ? array_intersect($type, self::TYPES) : self::TYPES;
+        $types = !empty($this->types) ? array_intersect($this->types, self::TYPES) : self::TYPES;
 
         //Generate Auth Code
-        $codes = $this->{'build_' . $type[mt_rand(0, count($type) - 1)]}();
+        $codes = $this->{'build_' . $types[mt_rand(0, count($types) - 1)]}();
 
         //Encrypt result with lifetime
-        $codes['code'] = parent::sign(json_encode(['code' => $codes['code'], 'life' => time() + (0 < $this->life ? $this->life : 60)]));
+        $codes['code'] = parent::sign(json_encode(['code' => $codes['code'], 'life' => time() + (0 < $life ? $life : 60)]));
 
-        //Image properties
-        $font_file = __DIR__ . DIRECTORY_SEPARATOR . 'font' . DIRECTORY_SEPARATOR . $this->font;
+        //Font properties
+        $font_file = __DIR__ . DIRECTORY_SEPARATOR . 'font' . DIRECTORY_SEPARATOR . $this->font_name;
 
-        //Calculate image canvas
         $font_height = (int)($this->height / 1.6);
         $font_width  = (int)($this->width / count($codes['char']));
         $font_size   = $font_width < $font_height ? $font_width : $font_height;
@@ -154,7 +195,7 @@ class crypt_img extends crypt
         ob_clean();
         ob_end_clean();
 
-        unset($type, $font_file, $font_height, $font_width, $font_size, $top_padding, $left_padding, $image);
+        unset($types, $font_file, $font_height, $font_width, $font_size, $top_padding, $left_padding, $image);
         return $codes;
     }
 
@@ -169,9 +210,7 @@ class crypt_img extends crypt
      */
     public function check(string $code, string $input): bool
     {
-        $res = parent::verify($code);
-
-        if ('' === $res) {
+        if ('' === $res = parent::verify($code)) {
             return false;
         }
 

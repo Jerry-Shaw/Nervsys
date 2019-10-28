@@ -1,9 +1,9 @@
 <?php
+
 /**
  * Redis Connector Extension
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
- * Copyright 2016-2019 vicky <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,97 +22,81 @@ namespace ext;
 
 class redis extends factory
 {
-    //Redis arguments
-    protected $host       = '127.0.0.1';
-    protected $port       = 6379;
-    protected $auth       = '';
-    protected $db         = 1;
-    protected $prefix     = '';
-    protected $timeout    = 10;
-    protected $persist    = true;
-    protected $persist_id = null;
-
     /** @var \Redis $instance */
     protected $instance = null;
 
-    //Instance pool
-    private static $pool = [];
-
     /**
-     * Redis connector
+     * redis constructor.
      *
-     * @return $this
+     * @param string $host
+     * @param int    $port
+     * @param string $auth
+     * @param int    $db
+     * @param string $prefix
+     * @param int    $timeout
+     * @param bool   $persist
+     * @param string $persist_id
+     *
      * @throws \RedisException
      */
-    public function connect(): object
+    public function __construct(
+        string $host = '127.0.0.1',
+        int $port = 6379,
+        string $auth = '',
+        int $db = 1,
+        string $prefix = '',
+        int $timeout = 10,
+        bool $persist = true,
+        string $persist_id = ''
+    )
     {
-        //Build instance key
-        $key = $this->build_key();
-
-        if (!isset(self::$pool[$key])) {
-            //Obtain Redis instance from factory
-            $redis = parent::obtain(\Redis::class);
-
-            //Connect
-            $this->persist
-                ? $redis->pconnect($this->host, $this->port, $this->timeout, $this->persist_id)
-                : $redis->connect($this->host, $this->port, $this->timeout);
-
-            //Set auth
-            if ('' !== $this->auth && !$redis->auth($this->auth)) {
-                throw new \RedisException('Authentication Failed!', E_USER_ERROR);
-            }
-
-            //Set DB
-            if (!$redis->select($this->db)) {
-                throw new \RedisException('DB [' . $this->db . '] NOT found!', E_USER_ERROR);
-            }
-
-            //Set prefix
-            if ('' !== $this->prefix) {
-                $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
-            }
-
-            //Set read timeout
-            $redis->setOption(\Redis::OPT_READ_TIMEOUT, -1);
-
-            //Set serializer mode
-            $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-
-            //Save connection
-            self::$pool[$key] = &$redis;
-            unset($redis);
+        //Redis already connected
+        if (is_object($this->instance)) {
+            return;
         }
 
-        //Copy instance
-        $this->instance = self::$pool[$key];
+        //Build Redis instance
+        $this->instance = \core\lib\stc\factory::build(\Redis::class);
 
-        unset($key);
-        return $this;
+        //Connect
+        $connect = $persist
+            ? $this->instance->pconnect($host, $port, $timeout, $persist_id)
+            : $this->instance->connect($host, $port, $timeout);
+
+        //Connect failed
+        if (!$connect) {
+            throw new \RedisException('Connect Failed!', E_USER_ERROR);
+        }
+
+        //Set auth
+        if ('' !== $auth && !$this->instance->auth($auth)) {
+            throw new \RedisException('Authentication Failed!', E_USER_ERROR);
+        }
+
+        //Set DB
+        if (!$this->instance->select($db)) {
+            throw new \RedisException('DB [' . $db . '] NOT found!', E_USER_ERROR);
+        }
+
+        //Set prefix
+        if ('' !== $prefix) {
+            $this->instance->setOption(\Redis::OPT_PREFIX, $prefix . ':');
+        }
+
+        //Set read timeout & serializer mode
+        $this->instance->setOption(\Redis::OPT_READ_TIMEOUT, -1);
+        $this->instance->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+
+        unset($host, $port, $auth, $db, $prefix, $timeout, $persist, $persist_id, $connect);
     }
 
     /**
      * Get \Redis instance
      *
      * @return \Redis
-     * @throws \RedisException
      */
     public function get_redis(): \Redis
     {
-        if (!is_object($this->instance)) {
-            $this->connect();
-        }
-
         return $this->instance;
-    }
-
-    /**
-     * Build connection key
-     *
-     * @return string
-     */
-    private function build_key(): string
-    {
-        return hash('crc32b', json_encode([$this->host, $this->port, $this->db, $this->persist_id]));
     }
 }
