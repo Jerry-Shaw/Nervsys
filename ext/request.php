@@ -2,6 +2,7 @@
 namespace ext;
 
 use core\lib\stc\factory;
+use core\lib\std\os;
 use core\lib\std\pool;
 
 class request

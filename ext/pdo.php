@@ -53,7 +53,7 @@ class pdo extends factory
             $this->build_param();
 
             //Obtain PDO instance from factory
-            $this->instance = parent::obtain(\PDO::class, [$this->dsn, $this->user, $this->pwd, $this->opt]);
+            $this->instance = parent::build(\PDO::class, [$this->dsn, $this->user, $this->pwd, $this->opt]);
         }
 
         return $this;

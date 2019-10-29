@@ -77,4 +77,15 @@ class factory
     {
         return \core\lib\stc\factory::move($this, $alias);
     }
+    /**
+     * Build an instance
+     * @param string $class
+     * @param array  $params
+     *
+     * @return object
+     */
+    public function build(string $class,array $params = []):object
+    {
+        return \core\lib\stc\factory::build($class, $params);
+    }
 }
