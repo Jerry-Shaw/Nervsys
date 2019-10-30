@@ -186,7 +186,7 @@ class mpc extends factory
                 [
                     ['pipe', 'r'],
                     ['pipe', 'w'],
-                    ['file', misc::get_log_path() . DIRECTORY_SEPARATOR . date('Y-m-d') . '_mpc_error' . '.log', 'ab+']
+                    ['file', \core\lib\stc\factory::build(pool::class)->conf['log']['save_path'] . DIRECTORY_SEPARATOR . date('Y-m-d') . '_mpc_error' . '.log', 'ab+']
                 ],
                 $pipes
             );
