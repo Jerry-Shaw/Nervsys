@@ -22,6 +22,11 @@ namespace ext;
 
 use core\lib\std\pool;
 
+/**
+ * Class lang
+ *
+ * @package ext
+ */
 class lang
 {
     /**
@@ -62,6 +67,7 @@ class lang
             return $lang;
         }
 
+        //Get request data
         $data = \core\lib\stc\factory::build(pool::class)->data;
 
         if (isset($data['lang'])) {

@@ -20,10 +20,15 @@
 
 namespace ext;
 
+/**
+ * Class pdo
+ *
+ * @package ext
+ */
 class pdo extends factory
 {
     /** @var \PDO $instance */
-    protected $instance = null;
+    protected $instance;
 
     /**
      * pdo constructor.
@@ -66,11 +71,24 @@ class pdo extends factory
     }
 
     /**
-     * Get \PDO instance
+     * Set \PDO instance
+     *
+     * @param \PDO $pdo
+     *
+     * @return $this
+     */
+    public function set_instance(\PDO $pdo): object
+    {
+        return $this->instance = &$pdo;
+        unset($pdo);
+    }
+
+    /**
+     * Get \Redis instance
      *
      * @return \PDO
      */
-    public function get_pdo(): \PDO
+    public function get_instance(): \PDO
     {
         return $this->instance;
     }
@@ -104,9 +122,7 @@ class pdo extends factory
     {
         //Build DSN OPT
         $dsn_opt = [
-            //DSN
             'dsn' => $type . ':',
-            //Option
             'opt' => [
                 \PDO::ATTR_CASE               => \PDO::CASE_NATURAL,
                 \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,

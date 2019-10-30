@@ -20,6 +20,11 @@
 
 namespace ext;
 
+/**
+ * Class crypt_img
+ *
+ * @package ext
+ */
 class crypt_img extends crypt
 {
     //Predefined types
@@ -70,7 +75,7 @@ class crypt_img extends crypt
      *
      * @param string $font_name
      *
-     * @return object
+     * @return $this
      */
     public function set_font(string $font_name): object
     {

@@ -21,6 +21,13 @@
 
 namespace ext;
 
+use core\lib\stc\factory as core_factory;
+
+/**
+ * Class factory
+ *
+ * @package ext
+ */
 class factory
 {
     /**
@@ -29,12 +36,12 @@ class factory
      *
      * @param array $arguments
      *
-     * @return object
+     * @return $this
      * @throws \ReflectionException
      */
     public static function new(array $arguments = []): object
     {
-        return \core\lib\stc\factory::create(get_called_class(), $arguments);
+        return core_factory::create(get_called_class(), $arguments);
     }
 
     /**
@@ -48,11 +55,11 @@ class factory
      */
     public static function use($alias): object
     {
-        return \core\lib\stc\factory::find($alias);
+        return core_factory::find($alias);
     }
 
     /**
-     * Configure class properties
+     * Configurate class properties
      *
      * @param array $setting
      *
@@ -60,6 +67,7 @@ class factory
      */
     public function conf(array $setting): object
     {
+        //Filter settings
         $setting = array_intersect_key($setting, get_object_vars($this));
 
         foreach ($setting as $key => $val) {
@@ -79,6 +87,6 @@ class factory
      */
     public function as($alias): object
     {
-        return \core\lib\stc\factory::move($this, $alias);
+        return core_factory::move($this, $alias);
     }
 }

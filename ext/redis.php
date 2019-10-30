@@ -20,10 +20,15 @@
 
 namespace ext;
 
+/**
+ * Class redis
+ *
+ * @package ext
+ */
 class redis extends factory
 {
     /** @var \Redis $instance */
-    protected $instance = null;
+    protected $instance;
 
     /**
      * redis constructor.
@@ -91,11 +96,24 @@ class redis extends factory
     }
 
     /**
+     * Set \Redis instance
+     *
+     * @param \Redis $redis
+     *
+     * @return $this
+     */
+    public function set_instance(\Redis $redis): object
+    {
+        return $this->instance = &$redis;
+        unset($redis);
+    }
+
+    /**
      * Get \Redis instance
      *
      * @return \Redis
      */
-    public function get_redis(): \Redis
+    public function get_instance(): \Redis
     {
         return $this->instance;
     }

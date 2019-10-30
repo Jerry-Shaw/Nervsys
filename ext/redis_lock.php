@@ -20,6 +20,11 @@
 
 namespace ext;
 
+/**
+ * Class redis_lock
+ *
+ * @package ext
+ */
 class redis_lock extends redis
 {
     //Key prefix
@@ -42,11 +47,12 @@ class redis_lock extends redis
      *
      * @return bool
      */
-    public function on(string $key, int $life = 3): bool
+    public function on(string $key, int $life = 60): bool
     {
         $retry = 0;
         $key   = self::PREFIX . $key;
 
+        //Try to set lock
         while ($retry <= self::RETRY) {
             if ($this->lock($key, $life)) {
                 register_shutdown_function([$this, 'clear']);

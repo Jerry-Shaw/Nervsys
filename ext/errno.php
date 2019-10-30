@@ -23,6 +23,11 @@ namespace ext;
 
 use core\lib\std\pool;
 
+/**
+ * Class errno
+ *
+ * @package ext
+ */
 class errno
 {
     //Error message pool
@@ -43,6 +48,7 @@ class errno
         $file_path = '/' !== $file_path ? trim($file_path, '\\/') . DIRECTORY_SEPARATOR : '';
         $msg_file  = ROOT . DIRECTORY_SEPARATOR . $file_path . $file_name . '.ini';
 
+        //Read ini file
         if (is_array($data = parse_ini_file($msg_file, false, INI_SCANNER_TYPED))) {
             self::$multi_lang = &$multi_lang;
             self::$msg_pool   = array_replace(self::$msg_pool, $data);
@@ -63,7 +69,7 @@ class errno
         /** @var \core\lib\std\pool $unit_pool */
         $unit_pool = \core\lib\stc\factory::build(pool::class);
 
-        //Update error pool
+        //Update message pool
         $unit_pool->error = array_replace_recursive($unit_pool->error, self::get($code, $errno, $message));
         unset($code, $errno, $message, $unit_pool);
     }

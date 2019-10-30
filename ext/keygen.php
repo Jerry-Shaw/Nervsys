@@ -22,6 +22,11 @@ namespace ext;
 
 use ext\lib\key;
 
+/**
+ * Class keygen
+ *
+ * @package ext
+ */
 class keygen implements key
 {
     /**

@@ -24,6 +24,11 @@ use core\lib\std\io;
 use core\lib\std\os;
 use core\lib\std\pool;
 
+/**
+ * Class mpc
+ *
+ * @package ext
+ */
 class mpc extends factory
 {
     /**

@@ -22,6 +22,11 @@ namespace ext;
 
 use core\lib\std\io;
 
+/**
+ * Class http
+ *
+ * @package ext
+ */
 class http extends factory
 {
     //Pre-defined content types

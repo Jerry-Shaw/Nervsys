@@ -20,6 +20,11 @@
 
 namespace ext;
 
+/**
+ * Class file
+ *
+ * @package ext
+ */
 class file
 {
     /**
@@ -31,9 +36,7 @@ class file
      */
     public static function get_ext(string $path): string
     {
-        $ext = pathinfo($path, PATHINFO_EXTENSION);
-
-        if ('' !== $ext) {
+        if ('' !== $ext = pathinfo($path, PATHINFO_EXTENSION)) {
             $ext = strtolower($ext);
         }
 
@@ -70,6 +73,7 @@ class file
         if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
             //Create directory recursively
             mkdir($dir, $mode, true);
+
             //Set permissions to path
             chmod($dir, $mode);
         }

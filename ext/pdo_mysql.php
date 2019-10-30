@@ -19,6 +19,11 @@
 
 namespace ext;
 
+/**
+ * Class pdo_mysql
+ *
+ * @package ext
+ */
 class pdo_mysql extends pdo
 {
     //Last SQL
