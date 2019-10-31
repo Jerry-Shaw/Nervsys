@@ -271,7 +271,7 @@ class redis_queue extends redis
         //Build basic unit command
         $this->unit_cmd = '"' . $this->unit_os->php_path() . '" '
             . '"' . ENTRY_SCRIPT . '" -r"json" '
-            . '-c"' . get_class($this) . '-unit"';
+            . '-c"' . '/' . strtr(get_class($this), '\\', '/') . '-unit"';
 
         do {
             //Call delay unit
