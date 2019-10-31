@@ -134,7 +134,7 @@ final class io
         }
 
         //Get command
-        $data['c'] = !isset($opt['c']) ? (array_shift($data['a']) ?? '') : $opt['c'];
+        $data['c'] = $this->decode(!isset($opt['c']) ? (array_shift($data['a']) ?? '') : $opt['c']);
 
         unset($opt, $optind);
         return $data;
