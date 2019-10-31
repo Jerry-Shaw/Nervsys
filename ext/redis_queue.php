@@ -577,7 +577,7 @@ class redis_queue extends redis
         }
 
         //Call unit processes
-        $cmd = $this->unit_os->cmd_bg($this->unit_cmd . ' -"type=realtime"');
+        $cmd = $this->unit_os->cmd_bg($this->unit_cmd . ' -d"type=realtime"');
 
         for ($i = 0; $i < $need; ++$i) {
             pclose(popen($cmd, 'r'));
