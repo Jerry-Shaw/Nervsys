@@ -208,7 +208,10 @@ final class reflect
 
             //Param NOT exists
             if (!isset($params[$param_info['name']])) {
-                $result['diff'][] = $param_info['name'];
+                //Check default value
+                $param_info['has_default']
+                    ? $result['param'][] = $param_info['default']
+                    : $result['diff'][] = $param_info['name'];
                 continue;
             }
 
