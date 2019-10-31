@@ -63,6 +63,7 @@ final class cgi
      * @param array $cmd_group
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function call_group(array $cmd_group): array
     {
@@ -70,17 +71,12 @@ final class cgi
         $call_results = [];
 
         while (is_array($group = array_shift($cmd_group))) {
-            try {
-                //Get full class name
-                $class = $this->unit_router->get_cls(array_shift($group));
+            //Get full class name
+            $class = $this->unit_router->get_cls(array_shift($group));
 
-                //Call methods
-                foreach ($group as $method) {
-                    $call_results += $this->call_func($class, $method);
-                }
-            } catch (\Throwable $throwable) {
-                error::exception_handler($throwable);
-                unset($throwable);
+            //Call methods
+            foreach ($group as $method) {
+                $call_results += $this->call_func($class, $method);
             }
         }
 
@@ -105,22 +101,29 @@ final class cgi
 
         //Process CMD group
         while (is_array($group = array_shift($this->unit_pool->cgi_group))) {
+            //Skip non-exist class
+            if (!class_exists($class = $this->unit_router->get_cls(array_shift($group)))) {
+                continue;
+            }
+
             try {
-                //Skip non-exist class
-                if (!class_exists($class = $this->unit_router->get_cls(array_shift($group)))) {
-                    continue;
-                }
-
-                //Run call before functions
+                //Run preset calls before service
                 $call_results += $this->call_before($class, $call_before);
-
-                //Run service function
-                foreach ($group as $method) {
-                    $call_results += $this->call_func($class, $method);
-                }
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable, false);
                 unset($throwable);
+                continue;
+            }
+
+            //Run service functions
+            foreach ($group as $method) {
+                try {
+                    $call_results += $this->call_func($class, $method);
+                } catch (\Throwable $throwable) {
+                    error::exception_handler($throwable, false);
+                    unset($throwable);
+                    continue;
+                }
             }
         }
 
@@ -135,6 +138,7 @@ final class cgi
      * @param array  $call_before
      *
      * @return array
+     * @throws \ReflectionException
      */
     private function call_before(string $class, array $call_before): array
     {
