@@ -178,7 +178,7 @@ final class io
      */
     public function build_json(array $data): string
     {
-        return json_encode($data, JSON_FORMAT);
+        return json_encode(1 === count($data) ? current($data) : $data, JSON_FORMAT);
     }
 
     /**

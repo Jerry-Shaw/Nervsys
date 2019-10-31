@@ -227,10 +227,10 @@ final class ns
      */
     public static function output(): void
     {
-        //Get final results
+        //Build final results
         $result = !empty(self::$unit_pool->error)
             ? self::$unit_pool->error + ['data' => self::$unit_pool->result]
-            : (1 === count(self::$unit_pool->result) ? current(self::$unit_pool->result) : self::$unit_pool->result);
+            : self::$unit_pool->result;
 
         //Output results
         if (in_array(self::$unit_pool->ret, ['json', 'xml', 'io'], true)) {
