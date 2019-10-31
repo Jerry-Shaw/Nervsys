@@ -20,9 +20,8 @@
 
 namespace ext;
 
-use core\parser\data;
-
 use core\handler\platform;
+use core\parser\data;
 
 class redis_queue extends redis
 {
@@ -294,7 +293,7 @@ class redis_queue extends redis
         } while ($valid && $running);
 
         //On exit
-        self::close();
+        $this->close();
         unset($idle_time, $master_hash, $master_key, $valid, $running, $list, $queue);
     }
 
@@ -368,12 +367,12 @@ class redis_queue extends redis
 
                     //Execute job
                     if (!empty($queue = $this->instance->brPop(array_keys($list), $idle_time))) {
-                        self::exec_job($queue[1]);
+                        $this->exec_job($queue[1]);
                     }
                 } while (0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$unit_exec < $this->max_exec);
 
                 //On exit
-                self::stop($unit_hash);
+                $this->close($unit_hash);
 
                 unset($idle_time, $unit_hash, $unit_key, $list, $queue);
                 break;
@@ -633,7 +632,7 @@ class redis_queue extends redis
                     : forward_static_call([$job[0], $job[1]]);
 
                 //Check result
-                self::check_job($data, json_encode($result));
+                $this->check_job($data, json_encode($result));
             }
         } catch (\Throwable $throwable) {
             $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
