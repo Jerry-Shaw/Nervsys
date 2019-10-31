@@ -48,7 +48,7 @@ class redis extends factory
         string $host = '127.0.0.1',
         int $port = 6379,
         string $auth = '',
-        int $db = 1,
+        int $db = 0,
         string $prefix = '',
         int $timeout = 10,
         bool $persist = true,
