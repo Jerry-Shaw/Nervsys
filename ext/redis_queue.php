@@ -385,7 +385,7 @@ class redis_queue extends redis
                 } while (0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$unit_exec < $this->max_exec);
 
                 //On exit
-                $this->stop($unit_hash);
+                $this->close($unit_hash);
 
                 unset($unit_router, $unit_reflect, $unit_hash, $unit_key, $idle_time, $list, $queue);
                 break;
