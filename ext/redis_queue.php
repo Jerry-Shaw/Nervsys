@@ -635,7 +635,7 @@ class redis_queue extends redis
                 $this->check_job($data, json_encode($result));
             }
         } catch (\Throwable $throwable) {
-            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
+            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
             return;
         }
@@ -657,7 +657,7 @@ class redis_queue extends redis
 
         //Save to fail list
         if (!is_null($json) && true !== $json) {
-            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'return' => &$result], JSON_FORMAT));
+            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => &$result], JSON_FORMAT));
         }
 
         unset($data, $result, $json);
