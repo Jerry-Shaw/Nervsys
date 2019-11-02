@@ -67,81 +67,6 @@ final class router
     }
 
     /**
-     * Get trust CMD
-     *
-     * @param string $cmd
-     *
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function trust_cmd(string $cmd): array
-    {
-        //Trust group
-        $trust_group = [];
-
-        //Parse command
-        $cmd_group = $this->parse_cmd($cmd);
-
-        /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
-
-        //Get auto call mode
-        $auto_call = $unit_pool->conf['sys']['auto_call'];
-
-        //Filter commands via TrustZone
-        while (is_array($group = array_shift($cmd_group))) {
-            //Skip non-exist class
-            if (!class_exists($class = $this->get_cls(array_shift($group)))) {
-                continue;
-            }
-
-            //Get trust data
-            $trust_data = trustzone::init($class, $unit_pool->data);
-
-            //Check auto call mode
-            if (!$auto_call || !empty($group)) {
-                $trust_data = array_intersect($trust_data, $group);
-            }
-
-            //Add to trust group
-            if (!empty($trust_data)) {
-                array_unshift($trust_data, $class);
-                $trust_group[] = $trust_data;
-            }
-        }
-
-        unset($cmd, $cmd_group, $unit_pool, $auto_call, $group, $class, $trust_data);
-        return $trust_group;
-    }
-
-    /**
-     * Get trust CLI
-     *
-     * @param string $cmd
-     * @param array  $cli_conf
-     *
-     * @return array
-     */
-    public function trust_cli(string $cmd, array $cli_conf): array
-    {
-        //Trust group
-        $trust_group = [];
-
-        //Extract CMD group
-        $cmd_group = false !== strpos($cmd, '-') ? explode('-', $cmd) : [$cmd];
-
-        //Find CLI definition
-        foreach ($cmd_group as $cmd_value) {
-            if (isset($cli_conf[$cmd_value])) {
-                $trust_group[] = [$cmd_value, $cli_conf[$cmd_value]];
-            }
-        }
-
-        unset($cmd, $cli_conf, $cmd_group, $cmd_value);
-        return $trust_group;
-    }
-
-    /**
      * Get full class name
      *
      * @param string $class
@@ -161,8 +86,61 @@ final class router
      *
      * @return string
      */
-    public function get_name(string $class, string $method): string
+    public function get_key_name(string $class, string $method): string
     {
         return strtr($class . '/' . $method, '\\', '/');
+    }
+
+    /**
+     * Get CGI trust list
+     *
+     * @param string $class
+     * @param array  $methods
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function cgi_get_trust(string $class, array $methods): array
+    {
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        //Get trust data group
+        $trust_group = trustzone::init($class, $unit_pool->data);
+
+        //Check auto call mode
+        if (!$unit_pool->conf['sys']['auto_call'] || !empty($methods)) {
+            $trust_group = array_intersect($trust_group, $methods);
+        }
+
+        unset($class, $methods, $unit_pool);
+        return $trust_group;
+    }
+
+    /**
+     * Get CLI trust list
+     *
+     * @param string $cmd
+     * @param array  $cli_conf
+     *
+     * @return array
+     */
+    public function cli_get_trust(string $cmd, array $cli_conf): array
+    {
+        //Trust group
+        $trust_group = [];
+
+        //Extract CMD group
+        $cmd_group = false !== strpos($cmd, '-') ? explode('-', $cmd) : [$cmd];
+
+        //Find CLI definition
+        foreach ($cmd_group as $cmd_value) {
+            if (isset($cli_conf[$cmd_value])) {
+                $trust_group[] = [$cmd_value, $cli_conf[$cmd_value]];
+            }
+        }
+
+        unset($cmd, $cli_conf, $cmd_group, $cmd_value);
+        return $trust_group;
     }
 }

@@ -55,7 +55,7 @@ final class factory
             $matched_params = $unit_reflect->build_params($class, '__construct', $params);
 
             if (!empty($matched_params['diff'])) {
-                throw new \Exception(self::build(router::class)->get_name($class, '__construct') . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
+                throw new \Exception(self::build(router::class)->get_key_name($class, '__construct') . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
             }
 
             //Get class object with '__construct'

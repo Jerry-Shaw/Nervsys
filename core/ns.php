@@ -193,7 +193,7 @@ final class ns
         self::$unit_pool->data += $data_argv['d'];
 
         //Append default router
-        self::$unit_pool->router_stack[] = [$unit_router, 'trust_cmd'];
+        self::$unit_pool->router_stack[] = [$unit_router, 'parse_cmd'];
 
         //Proceed CGI once CMD can be parsed
         foreach (self::$unit_pool->router_stack as $router) {
@@ -204,7 +204,7 @@ final class ns
         }
 
         //Proceed CLI once CMD can be parsed
-        if (self::$unit_pool->is_CLI && !empty(self::$unit_pool->cli_group = $unit_router->trust_cli($data_argv['c'], self::$unit_pool->conf['cli']))) {
+        if (self::$unit_pool->is_CLI && !empty(self::$unit_pool->cli_group = $unit_router->cli_get_trust($data_argv['c'], self::$unit_pool->conf['cli']))) {
             self::$unit_pool->result += $unit_cli->call_program();
         }
 

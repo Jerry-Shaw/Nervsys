@@ -67,7 +67,6 @@ final class cgi
      */
     public function call_group(array $cmd_group): array
     {
-        //CGI results
         $call_results = [];
 
         while (is_array($group = array_shift($cmd_group))) {
@@ -91,7 +90,6 @@ final class cgi
      */
     public function call_service(): array
     {
-        //CGI results and call before list
         $call_results = $call_before = [];
 
         //Get call before list
@@ -100,9 +98,9 @@ final class cgi
         }
 
         //Process CMD group
-        while (is_array($group = array_shift($this->unit_pool->cgi_group))) {
+        while (is_array($methods = array_shift($this->unit_pool->cgi_group))) {
             //Skip non-exist class
-            if (!class_exists($class = $this->unit_router->get_cls(array_shift($group)))) {
+            if (!class_exists($class = $this->unit_router->get_cls(array_shift($methods)))) {
                 continue;
             }
 
@@ -115,8 +113,17 @@ final class cgi
                 continue;
             }
 
+            try {
+                //Get trusted method list
+                $methods = $this->unit_router->cgi_get_trust($class, $methods);
+            } catch (\Throwable $throwable) {
+                error::exception_handler($throwable, false);
+                unset($throwable);
+                continue;
+            }
+
             //Run service functions
-            foreach ($group as $method) {
+            foreach ($methods as $method) {
                 try {
                     $call_results += $this->call_func($class, $method);
                 } catch (\Throwable $throwable) {
@@ -127,7 +134,7 @@ final class cgi
             }
         }
 
-        unset($call_before, $path, $cmd, $group, $class, $method);
+        unset($call_before, $path, $cmd, $methods, $class, $method);
         return $call_results;
     }
 
@@ -142,10 +149,9 @@ final class cgi
      */
     private function call_before(string $class, array $call_before): array
     {
-        //CGI results
         $call_results = [];
 
-        //Root namespace prefix
+        //Root namespace
         $namespace = '\\';
 
         //Extract class units
@@ -184,7 +190,7 @@ final class cgi
 
         //Check method visibility
         if (!$method_reflect->isPublic()) {
-            throw new \Exception($this->unit_router->get_name($class, $method) . ' => NOT for public!', E_USER_NOTICE);
+            throw new \Exception($this->unit_router->get_key_name($class, $method) . ' => NOT for public!', E_USER_NOTICE);
         }
 
         //Create class instance
@@ -195,14 +201,14 @@ final class cgi
 
         //Argument params NOT matched
         if (!empty($matched_params['diff'])) {
-            throw new \Exception($this->unit_router->get_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
+            throw new \Exception($this->unit_router->get_key_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
         }
 
         //Call method
         $fn_result = call_user_func([$class_object, $method], ...$matched_params['param']);
 
         //Build result
-        $result = !is_null($fn_result) ? [$this->unit_router->get_name($class, $method) => &$fn_result] : [];
+        $result = !is_null($fn_result) ? [$this->unit_router->get_key_name($class, $method) => &$fn_result] : [];
 
         unset($class, $method, $method_reflect, $matched_params, $class_object, $fn_result);
         return $result;
