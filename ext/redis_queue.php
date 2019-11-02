@@ -620,7 +620,7 @@ class redis_queue extends redis
 
                     //Check method visibility
                     if (!$method_reflect->isPublic()) {
-                        throw new \Exception($unit_router->get_name($class, $method) . ' => NOT for public!', E_USER_NOTICE);
+                        throw new \Exception($unit_router->get_key_name($class, $method) . ' => NOT for public!', E_USER_NOTICE);
                     }
 
                     //Create class instance
@@ -631,7 +631,7 @@ class redis_queue extends redis
 
                     //Argument params NOT matched
                     if (!empty($matched_params['diff'])) {
-                        throw new \Exception($unit_router->get_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
+                        throw new \Exception($unit_router->get_key_name($class, $method) . ' => Missing params: [' . implode(', ', $matched_params['diff']) . ']', E_USER_NOTICE);
                     }
 
                     //Check result
