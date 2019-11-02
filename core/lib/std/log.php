@@ -181,7 +181,7 @@ final class log
         $key = date('Ymd') . '-' . $level;
         $log = $this->log_path . DIRECTORY_SEPARATOR . $key . '.log';
 
-        $file = [];
+        static $file = [];
 
         if (!isset($file[$key])) {
             $file[$key] = fopen($log, 'ab+');
