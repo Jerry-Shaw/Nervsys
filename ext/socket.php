@@ -119,7 +119,7 @@ class socket extends factory
      *
      * @return $this
      */
-    public function create(bool $block = false): object
+    public function start(bool $block = false): object
     {
         $this->{'start_' . $this->run_as}($block);
 
