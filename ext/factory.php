@@ -31,31 +31,56 @@ use core\lib\stc\factory as core_factory;
 class factory
 {
     /**
-     * Get new object from called class
-     * Defined by class and arguments
+     * Create a stdClass by passing multiple mixed arguments
+     * Arguments will be filled in the right order automatically
      *
      * @param array $arguments
      *
      * @return $this
      * @throws \ReflectionException
      */
-    public static function new(array $arguments = []): object
+    public static function create(array $arguments = []): object
     {
         return core_factory::create(get_called_class(), $arguments);
     }
 
     /**
-     * Get original object from called class with alias
-     * Defined by class created from "as"
+     * New a stdClass by passing simply arguments
+     * Arguments will be filled in the order as being passed
      *
-     * @param $alias
+     * @param mixed ...$arguments
+     *
+     * @return $this
+     */
+    public static function new(...$arguments): object
+    {
+        return core_factory::build(get_called_class(), $arguments);
+    }
+
+    /**
+     * Get original stdClass from called class with alias
+     * Defined by class saved from "as"
+     *
+     * @param string $alias
      *
      * @return $this
      * @throws \Exception
      */
-    public static function use($alias): object
+    public static function use(string $alias): object
     {
         return core_factory::find($alias);
+    }
+
+    /**
+     * Move stdClass under alias (overwrite)
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function as(string $alias): object
+    {
+        return core_factory::move($this, $alias);
     }
 
     /**
@@ -76,17 +101,5 @@ class factory
 
         unset($setting, $key, $val);
         return $this;
-    }
-
-    /**
-     * Copy object as alias (overwrite)
-     *
-     * @param string $alias
-     *
-     * @return $this
-     */
-    public function as($alias): object
-    {
-        return core_factory::move($this, $alias);
     }
 }
