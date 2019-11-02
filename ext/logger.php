@@ -89,7 +89,7 @@ class logger extends factory
             chmod($log, 0666);
         }
 
-        fwrite($file[$key], implode(PHP_EOL, $this->log_pool));
+        fwrite($file[$key], implode(PHP_EOL, $this->log_pool) . PHP_EOL . PHP_EOL);
         unset($key, $log);
     }
 }
