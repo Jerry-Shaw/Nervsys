@@ -48,11 +48,11 @@ class factory
      * New a stdClass by passing simply arguments
      * Arguments will be filled in the order as being passed
      *
-     * @param mixed ...$arguments
+     * @param string ...$arguments
      *
-     * @return $this
+     * @return object
      */
-    public static function new(...$arguments): object
+    public static function new(string ...$arguments): object
     {
         return core_factory::build(get_called_class(), $arguments);
     }
