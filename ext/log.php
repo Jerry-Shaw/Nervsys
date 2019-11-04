@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Logger Extension
+ * Log Extension
  *
  * Copyright 2016-2019 leo <2579186091@qq.com>
  *
@@ -36,10 +36,10 @@ class log extends factory
     private $log_file = 'default.log';
 
     //Log save path
-    private $log_path = ROOT . DIRECTORY_SEPARATOR . '/logs/logger';
+    private $log_path = ROOT . DIRECTORY_SEPARATOR . '/logs';
 
     /**
-     * logger constructor.
+     * log constructor.
      *
      * @param string $log_name
      */
@@ -48,7 +48,7 @@ class log extends factory
         /** @var \core\lib\std\pool $unit_pool */
         $unit_pool = \core\lib\stc\factory::build(pool::class);
 
-        //Set logger path
+        //Set log path
         $this->log_path = $unit_pool->conf['log']['save_path'] . DIRECTORY_SEPARATOR . date('Y-m');
 
         //Check log path
