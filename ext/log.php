@@ -23,11 +23,11 @@ namespace ext;
 use core\lib\std\pool;
 
 /**
- * Class logger
+ * Class log
  *
  * @package ext
  */
-class logger extends factory
+class log extends factory
 {
     //Log pool
     private $log_pool = [];
