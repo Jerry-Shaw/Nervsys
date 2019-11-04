@@ -50,7 +50,7 @@ class factory
      *
      * @param string ...$arguments
      *
-     * @return object
+     * @return $this
      */
     public static function new(string ...$arguments): object
     {
