@@ -23,6 +23,7 @@ namespace ext;
 use core\lib\stc\factory;
 use core\lib\std\os;
 use core\lib\std\pool;
+use core\ns;
 
 /**
  * Class core
@@ -31,6 +32,14 @@ use core\lib\std\pool;
  */
 class core
 {
+    /**
+     * Stop NS system
+     */
+    public static function stop(): void
+    {
+        ns::output(true);
+    }
+
     /**
      * Get client IP
      *
