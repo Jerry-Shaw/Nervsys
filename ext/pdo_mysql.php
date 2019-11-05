@@ -126,7 +126,7 @@ class pdo_mysql extends pdo
         foreach ($values as $key => $value) {
             $this->runtime['value'][$key] = $bind_key = $this->rand_key($key);
 
-            $this->runtime['bind_value'][$bind_key] = $value;
+            $this->runtime['bind_value'][] = $value;
         }
 
         unset($values, $key, $value, $bind_key);
@@ -316,7 +316,8 @@ class pdo_mysql extends pdo
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         unset($sql);
@@ -346,7 +347,8 @@ class pdo_mysql extends pdo
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         array_shift($sql_param);
@@ -369,12 +371,14 @@ class pdo_mysql extends pdo
             $this->fill_sql();
 
             $stmt = $this->instance->prepare($this->sql);
-            $stmt->execute($this->runtime['bind_value'] ?? null);
+            $stmt->execute($this->runtime['bind_value'] ?? []);
 
+            $this->build_last_sql($this->runtime['bind_value']);
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll($fetch_style);
@@ -394,15 +398,16 @@ class pdo_mysql extends pdo
             $this->fill_sql();
 
             $stmt   = $this->instance->prepare($this->sql);
-            $result = $stmt->execute($this->runtime['bind_value'] ?? null);
-
+            $result = $stmt->execute($this->runtime['bind_value']);
+            $this->build_last_sql($this->runtime['bind_value']);
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
         }
 
-        unset($stmt);
+        unset($stmt, $parms);
         return $result;
     }
 
@@ -414,6 +419,16 @@ class pdo_mysql extends pdo
     public function last_sql(): string
     {
         return $this->sql;
+    }
+
+    private function build_last_sql(array $value)
+    {
+        $arr = [];
+        for ($i = 0; $i < count($value); $i++) {
+            array_push($arr, '?');
+        }
+        $this->sql = str_replace($arr, $value, $this->sql);
+        unset($value, $arr);
     }
 
     /**
@@ -477,7 +492,7 @@ class pdo_mysql extends pdo
      */
     protected function rand_key(string $key): string
     {
-        return ':' . strtr($key, '.', '_') . '_' . hash('crc32b', uniqid(mt_rand(), true));
+        return '?';
     }
 
     /**
@@ -676,7 +691,7 @@ class pdo_mysql extends pdo
             $sql .= 'WHERE ' . $this->runtime['where'];
 
             $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
-                ? $this->runtime['bind_value'] + $this->runtime['bind_where']
+                ? array_merge($this->runtime['bind_value'], $this->runtime['bind_where'])
                 : $this->runtime['bind_where'];
         }
 
@@ -688,7 +703,7 @@ class pdo_mysql extends pdo
             $sql .= 'HAVING ' . $this->runtime['having'];
 
             $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
-                ? $this->runtime['bind_value'] + $this->runtime['bind_having']
+                ? array_merge($this->runtime['bind_value'], $this->runtime['bind_having'])
                 : $this->runtime['bind_having'];
         }
 
@@ -739,7 +754,7 @@ class pdo_mysql extends pdo
             $sql .= 'WHERE ' . $this->runtime['where'];
 
             $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
-                ? $this->runtime['bind_value'] + $this->runtime['bind_where']
+                ? array_merge($this->runtime['bind_value'], $this->runtime['bind_where'])
                 : $this->runtime['bind_where'];
         }
 
@@ -761,7 +776,7 @@ class pdo_mysql extends pdo
             $sql .= 'WHERE ' . $this->runtime['where'];
 
             $this->runtime['bind_value'] = isset($this->runtime['bind_value'])
-                ? $this->runtime['bind_value'] + $this->runtime['bind_where']
+                ? array_merge($this->runtime['bind_value'], $this->runtime['bind_where'])
                 : $this->runtime['bind_where'];
         }
 
@@ -797,7 +812,8 @@ class pdo_mysql extends pdo
             $condition .= $this->escape($value[0]) . ' ';
 
             if (3 === count($value)) {
-                if (!in_array($item = strtoupper($value[1]), ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                if (!in_array($item = strtoupper($value[1]),
+                    ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
                     throw new \PDOException('Incorrect operator: "' . $value[1] . '"!', E_USER_ERROR);
                 }
 
@@ -807,14 +823,14 @@ class pdo_mysql extends pdo
                     $bind_key  = $this->rand_key($value[0]);
                     $condition .= $bind_key . ' ';
 
-                    $this->runtime[$param_key][$bind_key] = $value[2];
+                    $this->runtime[$param_key][] = $value[2];
                 } elseif ('BETWEEN' !== $item) {
                     $bind_keys = [];
 
                     foreach ($value[2] as $val) {
                         $bind_keys[] = $bind_key = $this->rand_key($value[0]);
 
-                        $this->runtime[$param_key][$bind_key] = $val;
+                        $this->runtime[$param_key][] = $val;
                     }
 
                     $condition .= '(' . implode(', ', $bind_keys) . ') ';
@@ -824,7 +840,7 @@ class pdo_mysql extends pdo
                     foreach ($value[2] as $val) {
                         $bind_keys[] = $bind_key = $this->rand_key($value[0]);
 
-                        $this->runtime[$param_key][$bind_key] = $val;
+                        $this->runtime[$param_key][] = $val;
                     }
 
                     $condition .= implode(' AND ', $bind_keys) . ' ';
@@ -834,7 +850,7 @@ class pdo_mysql extends pdo
                     $bind_key  = $this->rand_key($value[0]);
                     $condition .= '= ' . $bind_key . ' ';
 
-                    $this->runtime[$param_key][$bind_key] = $value[1];
+                    $this->runtime[$param_key][] = $value[1];
                 } else {
                     $condition .= $item . ' ';
                 }
@@ -844,7 +860,7 @@ class pdo_mysql extends pdo
                 foreach ($value[1] as $val) {
                     $bind_keys[] = $bind_key = $this->rand_key($value[0]);
 
-                    $this->runtime[$param_key][$bind_key] = $val;
+                    $this->runtime[$param_key][] = $val;
                 }
 
                 $condition .= 'IN (' . implode(', ', $bind_keys) . ') ';
