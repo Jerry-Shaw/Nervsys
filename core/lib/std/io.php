@@ -172,41 +172,95 @@ final class io
     /**
      * Build JSON
      *
+     * @param array $error
      * @param array $data
      *
      * @return string
      */
-    public function build_json(array $data): string
+    public function build_json(array $error, array $data): string
     {
-        return json_encode(1 === count($data) ? current($data) : $data, JSON_FORMAT);
+        //Reduce data depth
+        if (1 === count($data)) {
+            $data = current($data);
+        }
+
+        //Build full result
+        $result = json_encode(!empty($error) ? $error + ['data' => &$data] : $data, JSON_FORMAT);
+
+        unset($error, $data);
+        return $result;
     }
 
     /**
      * Build XML
      *
+     * @param array $error
      * @param array $data
+     *
+     * @return string
+     */
+    public function build_xml(array $error, array $data): string
+    {
+        //Reduce data depth
+        if (1 === count($data)) {
+            $data = current($data);
+        }
+
+        //Build full result
+        $result = $this->to_string(!empty($error) ? $error + ['data' => &$data] : $data);
+
+        unset($error, $data);
+        return $result;
+    }
+
+    /**
+     * Build IO
+     *
+     * @param array $error
+     * @param array $data
+     *
+     * @return string
+     */
+    public function build_io(array $error, array $data): string
+    {
+        //Reduce data depth
+        if (1 === count($data)) {
+            $data = current($data);
+        }
+
+        //Build full result
+        $result = $this->to_string(!empty($error) ? $error + ['data' => &$data] : $data);
+
+        unset($error, $data);
+        return $result;
+    }
+
+    /**
+     * Array content to XML
+     *
+     * @param array $array
      * @param bool  $root
      *
      * @return string
      */
-    public function build_xml(array $data, bool $root = true): string
+    private function to_xml(array $array, bool $root = true): string
     {
         $xml = $end = '';
 
-        if ($root && 1 < count($data)) {
+        if ($root && 1 < count($array)) {
             $xml .= '<xml>';
             $end = '</xml>';
         }
 
-        foreach ($data as $key => $item) {
+        foreach ($array as $key => $item) {
             if (is_numeric($key)) {
-                $key = 'xml_' . $key;
+                $key = 'xml_' . (string)$key;
             }
 
             $xml .= '<' . $key . '>';
 
             $xml .= is_array($item)
-                ? self::build_xml($item, false)
+                ? self::to_xml($item, false)
                 : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
 
             $xml .= '</' . $key . '>';
@@ -216,20 +270,8 @@ final class io
             $xml .= $end;
         }
 
-        unset($data, $root, $end, $key, $item);
+        unset($array, $root, $end, $key, $item);
         return $xml;
-    }
-
-    /**
-     * Build IO
-     *
-     * @param array $data
-     *
-     * @return string
-     */
-    public function build_io(array $data): string
-    {
-        return $this->to_string($data);
     }
 
     /**

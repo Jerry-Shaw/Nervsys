@@ -156,7 +156,7 @@ final class ns
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
                 unset($throwable);
-                self::stop();
+                self::output(true);
             }
         }
 
@@ -214,32 +214,24 @@ final class ns
     }
 
     /**
-     * System stop
-     */
-    public static function stop(): void
-    {
-        self::output();
-        exit;
-    }
-
-    /**
      * System output
+     *
+     * @param bool $stop
      */
-    public static function output(): void
+    public static function output(bool $stop = false): void
     {
-        //Build final results
-        $result = !empty(self::$unit_pool->error)
-            ? self::$unit_pool->error + ['data' => self::$unit_pool->result]
-            : self::$unit_pool->result;
-
         //Output results
         if (in_array(self::$unit_pool->ret, ['json', 'xml', 'io'], true)) {
-            echo self::$unit_io->{'build_' . self::$unit_pool->ret}((array)$result);
+            echo self::$unit_io->{'build_' . self::$unit_pool->ret}(self::$unit_pool->error, self::$unit_pool->result);
         }
 
         //Output logs
         echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
-        unset($result);
+
+        //Stop
+        if ($stop) {
+            exit(0);
+        }
     }
 
     /**

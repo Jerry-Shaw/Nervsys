@@ -160,7 +160,7 @@ final class error
         $unit_log->display($err_lv, $message, $context);
 
         //Exit on error
-        $stop_on_error && 0 < ($err_code & error_reporting()) && ns::stop();
+        $stop_on_error && 0 < ($err_code & error_reporting()) && ns::output(true);
         unset($stop_on_error, $err_code, $err_lv, $message, $context, $unit_log);
     }
 
