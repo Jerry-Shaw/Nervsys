@@ -132,6 +132,22 @@ class core
     }
 
     /**
+     * Add error content
+     *
+     * @param string $key
+     * @param        $error
+     */
+    public static function add_error(string $key, $error): void
+    {
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        //Replace error content
+        $unit_pool->error[$key][] = $error;
+        unset($key, $error, $unit_pool);
+    }
+
+    /**
      * Set error content
      *
      * @param array $error
