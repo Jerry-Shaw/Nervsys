@@ -784,8 +784,8 @@ class pdo_mysql extends pdo
         }
 
         if (isset($this->runtime['order'])) {
-            $prep[] = 'ORDER BY ' . implode(' ', $this->runtime['order']);
-            $real[] = 'ORDER BY ' . implode(' ', $this->runtime['order']);
+            $prep[] = 'ORDER BY ' . implode(', ', $this->runtime['order']);
+            $real[] = 'ORDER BY ' . implode(', ', $this->runtime['order']);
         }
 
         if (isset($this->runtime['limit'])) {
