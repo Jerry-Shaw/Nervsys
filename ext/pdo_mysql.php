@@ -756,17 +756,17 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Build prep/real SQL
+     * Build real/prep SQL
      */
     protected function build_sql(): void
     {
         $sql_list = $this->{'build_' . strtolower($this->runtime['action'])}();
 
-        //Copy real SQL
-        $this->sql = &$sql_list['real'];
+        //Build real SQL
+        $this->sql = implode(' ', $sql_list['real']);
 
-        //Copy prepared SQL
-        $this->runtime['sql'] = &$sql_list['prep'];
+        //Build prepared SQL
+        $this->runtime['sql'] = implode(' ', $sql_list['prep']);
 
         unset($sql_list);
     }
@@ -871,24 +871,20 @@ class pdo_mysql extends pdo
      */
     protected function build_insert(): array
     {
-        $result = $prep = [];
+        $result = ['prep' => [], 'real' => []];
 
-        $prep[] = 'INSERT INTO';
-        $prep[] = $this->runtime['table'];
-        $prep[] = '(' . implode(', ', array_keys($this->runtime['value']['k'])) . ')';
-        $prep[] = 'VALUES';
+        $result['prep'][] = 'INSERT INTO';
+        $result['prep'][] = $this->runtime['table'];
+        $result['prep'][] = '(' . implode(', ', array_keys($this->runtime['value']['k'])) . ')';
+        $result['prep'][] = 'VALUES';
 
-        $real = $prep;
+        $result['real'] = $result['prep'];
 
-        $prep[] = '(' . implode(', ', array_values($this->runtime['value']['k'])) . ')';
-        $real[] = '(' . implode(', ', $this->get_cond($this->runtime['value']['k'], $this->runtime['value']['v'])) . ')';
-
-        $result['prep'] = implode(' ', $prep);
-        $result['real'] = implode(' ', $real);
+        $result['prep'][] = '(' . implode(', ', array_values($this->runtime['value']['k'])) . ')';
+        $result['real'][] = '(' . implode(', ', $this->get_cond($this->runtime['value']['k'], $this->runtime['value']['v'])) . ')';
 
         $this->runtime['bind'] = &$this->runtime['value']['v'];
 
-        unset($prep, $real);
         return $result;
     }
 
@@ -899,42 +895,42 @@ class pdo_mysql extends pdo
      */
     protected function build_select(): array
     {
-        $result = $prep = [];
+        $result = ['prep' => [], 'real' => []];
 
-        $prep[] = 'SELECT';
-        $prep[] = isset($this->runtime['field']) ? implode(', ', $this->runtime['field']) : '*';
-        $prep[] = 'FROM ' . $this->runtime['table'];
+        $result['prep'][] = 'SELECT';
+        $result['prep'][] = isset($this->runtime['field']) ? implode(', ', $this->runtime['field']) : '*';
+        $result['prep'][] = 'FROM ' . $this->runtime['table'];
 
         if (isset($this->runtime['join'])) {
-            $prep[] = implode(' ', $this->runtime['join']);
+            $result['prep'][] = implode(' ', $this->runtime['join']);
         }
 
-        $real = $prep;
+        $result['real'] = $result['prep'];
 
         if (isset($this->runtime['where'])) {
-            $prep[] = 'WHERE';
-            $real[] = 'WHERE';
+            $result['prep'][] = 'WHERE';
+            $result['real'][] = 'WHERE';
 
             foreach ($this->runtime['where'] as $cond) {
-                $prep[] = implode(' ', $cond);
-                $real[] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
+                $result['prep'][] = implode(' ', $cond);
+                $result['real'][] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
             }
 
             $this->runtime['bind'] = &$this->runtime['value']['cond'];
         }
 
         if (isset($this->runtime['group'])) {
-            $prep[] = 'GROUP BY ' . implode(' ', $this->runtime['group']);
-            $real[] = 'GROUP BY ' . implode(' ', $this->runtime['group']);
+            $result['prep'][] = 'GROUP BY ' . implode(' ', $this->runtime['group']);
+            $result['real'][] = 'GROUP BY ' . implode(' ', $this->runtime['group']);
         }
 
         if (isset($this->runtime['having'])) {
-            $prep[] = 'HAVING';
-            $real[] = 'HAVING';
+            $result['prep'][] = 'HAVING';
+            $result['real'][] = 'HAVING';
 
             foreach ($this->runtime['having'] as $cond) {
-                $prep[] = implode(' ', $cond);
-                $real[] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
+                $result['prep'][] = implode(' ', $cond);
+                $result['real'][] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
             }
 
             if (!isset($this->runtime['bind'])) {
@@ -943,24 +939,21 @@ class pdo_mysql extends pdo
         }
 
         if (isset($this->runtime['order'])) {
-            $prep[] = 'ORDER BY ' . implode(', ', $this->runtime['order']);
-            $real[] = 'ORDER BY ' . implode(', ', $this->runtime['order']);
+            $result['prep'][] = 'ORDER BY ' . implode(', ', $this->runtime['order']);
+            $result['real'][] = 'ORDER BY ' . implode(', ', $this->runtime['order']);
         }
 
         if (isset($this->runtime['limit'])) {
-            $prep[] = 'LIMIT ' . $this->runtime['limit'];
-            $real[] = 'LIMIT ' . $this->runtime['limit'];
+            $result['prep'][] = 'LIMIT ' . $this->runtime['limit'];
+            $result['real'][] = 'LIMIT ' . $this->runtime['limit'];
         }
 
         if (isset($this->runtime['lock'])) {
-            $prep[] = 'FOR ' . $this->runtime['lock'];
-            $real[] = 'FOR ' . $this->runtime['lock'];
+            $result['prep'][] = 'FOR ' . $this->runtime['lock'];
+            $result['real'][] = 'FOR ' . $this->runtime['lock'];
         }
 
-        $result['prep'] = implode(' ', $prep);
-        $result['real'] = implode(' ', $real);
-
-        unset($prep, $real, $cond);
+        unset($cond);
         return $result;
     }
 
@@ -971,13 +964,13 @@ class pdo_mysql extends pdo
      */
     protected function build_update(): array
     {
-        $result = $prep = [];
+        $result = ['prep' => [], 'real' => []];
 
-        $prep[] = 'UPDATE';
-        $prep[] = $this->runtime['table'];
-        $prep[] = 'SET';
+        $result['prep'][] = 'UPDATE';
+        $result['prep'][] = $this->runtime['table'];
+        $result['prep'][] = 'SET';
 
-        $real = $prep;
+        $result['real'] = $result['prep'];
 
         $updates = $values = [];
 
@@ -993,29 +986,29 @@ class pdo_mysql extends pdo
             }
         }
 
-        $prep[] = implode(', ', $updates);
-        $real[] = implode(', ', $values);
+        $result['prep'][] = implode(', ', $updates);
+        $result['real'][] = implode(', ', $values);
+
+        $this->runtime['bind'] = $this->runtime['value']['v'] ?? [];
 
         if (isset($this->runtime['where'])) {
-            $prep[] = 'WHERE';
-            $real[] = 'WHERE';
+            $result['prep'][] = 'WHERE';
+            $result['real'][] = 'WHERE';
 
             foreach ($this->runtime['where'] as $cond) {
-                $prep[] = implode(' ', $cond);
-                $real[] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
+                $result['prep'][] = implode(' ', $cond);
+                $result['real'][] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
             }
 
-            $this->runtime['bind'] = array_merge($this->runtime['value']['v'], $this->runtime['cond']);
-        } else {
-            $this->runtime['bind'] = &$this->runtime['value']['v'];
+            $this->runtime['bind'] = array_merge($this->runtime['bind'], $this->runtime['cond']);
         }
 
         if (isset($this->runtime['limit'])) {
-            $prep[] = 'LIMIT ' . $this->runtime['limit'];
-            $real[] = 'LIMIT ' . $this->runtime['limit'];
+            $result['prep'][] = 'LIMIT ' . $this->runtime['limit'];
+            $result['real'][] = 'LIMIT ' . $this->runtime['limit'];
         }
 
-        unset($prep, $real, $updates, $values, $col, $val, $item, $cond);
+        unset($updates, $values, $col, $val, $item, $cond);
         return $result;
     }
 
@@ -1026,31 +1019,31 @@ class pdo_mysql extends pdo
      */
     protected function build_delete(): array
     {
-        $result = $prep = [];
+        $result = ['prep' => [], 'real' => []];
 
-        $prep[] = 'DELETE FROM';
-        $prep[] = $this->runtime['table'];
+        $result['prep'][] = 'DELETE FROM';
+        $result['prep'][] = $this->runtime['table'];
 
-        $real = $prep;
+        $result['real'] = $result['prep'];
 
         if (isset($this->runtime['where'])) {
-            $prep[] = 'WHERE';
-            $real[] = 'WHERE';
+            $result['prep'][] = 'WHERE';
+            $result['real'][] = 'WHERE';
 
             foreach ($this->runtime['where'] as $cond) {
-                $prep[] = implode(' ', $cond);
-                $real[] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
+                $result['prep'][] = implode(' ', $cond);
+                $result['real'][] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
             }
 
             $this->runtime['bind'] = &$this->runtime['value']['cond'];
         }
 
         if (isset($this->runtime['limit'])) {
-            $prep[] = 'LIMIT ' . $this->runtime['limit'];
-            $real[] = 'LIMIT ' . $this->runtime['limit'];
+            $result['prep'][] = 'LIMIT ' . $this->runtime['limit'];
+            $result['real'][] = 'LIMIT ' . $this->runtime['limit'];
         }
 
-        unset($prep, $real, $cond);
+        unset($cond);
         return $result;
     }
 }
