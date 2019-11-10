@@ -230,7 +230,8 @@ class pdo_mysql extends pdo
                 $this->runtime['value']['k'][$col] = $val;
             } else {
                 $this->runtime['value']['k'][$col] = '?';
-                $this->runtime['value']['v'][]     = $val;
+
+                $this->runtime['value']['v'][] = $val;
             }
         }
 
@@ -249,13 +250,12 @@ class pdo_mysql extends pdo
     public function incr(array $values): object
     {
         foreach ($values as $col => $val) {
-            $opt = 0 <= $val ? '+' : '-';
             $col = $this->escape($col);
 
-            $this->runtime['value']['k'][$col] = $col . $opt . (string)abs($val);
+            $this->runtime['value']['k'][$col] = $col . (0 <= $val ? '+' : '-') . (string)abs($val);
         }
 
-        unset($values, $col, $val, $opt);
+        unset($values, $col, $val);
         return $this;
     }
 
@@ -407,7 +407,9 @@ class pdo_mysql extends pdo
      */
     public function limit(int $offset, int $length = 0): object
     {
-        $this->runtime['limit'] = 0 === $length ? (string)$offset : (string)$offset . ', ' . (string)$length;
+        $this->runtime['limit'] = 0 < $length
+            ? (string)$offset . ', ' . (string)$length
+            : (string)$offset;
 
         unset($offset, $length);
         return $this;
@@ -648,6 +650,7 @@ class pdo_mysql extends pdo
                         }
 
                         $list[] = ['opt', '('];
+
                         ++$find[1];
                     } elseif ($find[1] > $offset) {
                         $value   = substr($item, $offset, $find[1] - $offset);
