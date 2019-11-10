@@ -91,8 +91,7 @@ class pdo_mysql extends pdo
         try {
             $stmt = $this->instance->prepare($this->runtime['sql']);
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         return $stmt;
@@ -476,8 +475,7 @@ class pdo_mysql extends pdo
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($sql);
@@ -508,8 +506,7 @@ class pdo_mysql extends pdo
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($sql, $fetch_style, $col_no, $sql_param);
@@ -531,8 +528,7 @@ class pdo_mysql extends pdo
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         unset($stmt);
@@ -556,8 +552,7 @@ class pdo_mysql extends pdo
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         $data = $stmt->fetch($fetch_style);
@@ -587,8 +582,7 @@ class pdo_mysql extends pdo
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll($fetch_style);
@@ -916,7 +910,7 @@ class pdo_mysql extends pdo
                 $result['real'][] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
             }
 
-            $this->runtime['bind'] = &$this->runtime['value']['cond'];
+            $this->runtime['bind'] = &$this->runtime['cond'];
         }
 
         if (isset($this->runtime['group'])) {
@@ -934,7 +928,7 @@ class pdo_mysql extends pdo
             }
 
             if (!isset($this->runtime['bind'])) {
-                $this->runtime['bind'] = &$this->runtime['value']['cond'];
+                $this->runtime['bind'] = &$this->runtime['cond'];
             }
         }
 
@@ -1035,7 +1029,7 @@ class pdo_mysql extends pdo
                 $result['real'][] = implode(' ', $this->get_cond($cond, $this->runtime['cond']));
             }
 
-            $this->runtime['bind'] = &$this->runtime['value']['cond'];
+            $this->runtime['bind'] = &$this->runtime['cond'];
         }
 
         if (isset($this->runtime['limit'])) {
