@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pdo MySQL Extension
+ * PDO MySQL Extension
  *
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
@@ -28,6 +28,9 @@ namespace ext;
  */
 class pdo_mysql extends pdo
 {
+    //Last SQL
+    protected $sql = '';
+
     //Affected rows
     protected $rows = 0;
 
@@ -38,11 +41,27 @@ class pdo_mysql extends pdo
     protected $runtime = [];
 
     /**
+     * Set string value with raw prefix
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function set_raw(string $value): string
+    {
+        if (!isset($this->runtime['raw'])) {
+            $this->runtime['raw'] = ':' . hash('crc32b', uniqid(microtime() . mt_rand(), true)) . ':';
+        }
+
+        return $this->runtime['raw'] . $value;
+    }
+
+    /**
      * Set table name using prefix
      *
      * @param string $table
      */
-    protected function set_table(string $table): void
+    public function set_table(string $table): void
     {
         if (isset($this->runtime['table'])) {
             return;
@@ -50,16 +69,65 @@ class pdo_mysql extends pdo
 
         if ('' === $table) {
             $table = get_class($this);
+        }
 
-            if (false !== $pos = strrpos($table, '\\')) {
-                $table = substr($table, $pos + 1);
-            }
-
-            unset($pos);
+        if (false !== $pos = strrpos($table, '\\')) {
+            $table = substr($table, $pos + 1);
         }
 
         $this->runtime['table'] = $this->escape($this->prefix . $table);
-        unset($table);
+        unset($table, $pos);
+    }
+
+    /**
+     * Get current PDOStatement
+     *
+     * @return \PDOStatement
+     */
+    public function get_stmt(): \PDOStatement
+    {
+        $this->build_sql();
+
+        try {
+            $stmt = $this->instance->prepare($this->runtime['sql']);
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
+        }
+
+        return $stmt;
+    }
+
+    /**
+     * Get last executed SQL
+     *
+     * @return string
+     */
+    public function get_last_sql(): string
+    {
+        return $this->sql;
+    }
+
+    /**
+     * Get the number of rows affected by the last DELETE, INSERT, or UPDATE statement
+     *
+     * @return int
+     */
+    public function get_last_affected(): int
+    {
+        return $this->rows;
+    }
+
+    /**
+     * Get last insert value from AUTO_INCREMENT column
+     *
+     * @param string $name
+     *
+     * @return int
+     */
+    public function get_last_insert_id(string $name = ''): int
+    {
+        return (int)$this->instance->lastInsertId('' === $name ? null : $name);
     }
 
     /**
@@ -95,7 +163,7 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Update table date
+     * Update table set data
      *
      * @param string $table
      *
@@ -127,57 +195,24 @@ class pdo_mysql extends pdo
     }
 
     /**
-     * Set lock mode
-     * UPDATE/SHARE, NOWAIT/SKIP LOCKED
+     * Set select column fields
      *
-     * @param string ...$modes
+     * @param string ...$fields
      *
      * @return $this
      */
-    public function lock(string ...$modes): object
+    public function fields(string ...$fields): object
     {
-        $this->runtime['lock'] = implode(' ', $modes);
+        foreach ($fields as $field) {
+            if (!$this->is_raw($field)) {
+                $field = $this->escape($field);
+            }
 
-        unset($modes);
+            $this->runtime['field'][] = $field;
+        }
+
+        unset($fields, $field);
         return $this;
-    }
-
-
-    /**
-     * Set string value with raw prefix
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function set_raw(string $value): string
-    {
-        if (!isset($this->runtime['raw'])) {
-            $this->runtime['raw'] = ':' . hash('crc32b', uniqid(microtime() . mt_rand(), true)) . ':';
-        }
-
-        return $this->runtime['raw'] . $value;
-    }
-
-    /**
-     * Check a value is raw formatted
-     *
-     * @param string $value
-     *
-     * @return bool
-     */
-    private function is_raw(string &$value): bool
-    {
-        if (!isset($this->runtime['raw'])) {
-            return false;
-        }
-
-        if (0 !== strpos($value, $this->runtime['raw'])) {
-            return false;
-        }
-
-        $value = substr($value, strlen($this->runtime['raw']));
-        return true;
     }
 
     /**
@@ -218,35 +253,12 @@ class pdo_mysql extends pdo
             $opt = 0 <= $val ? '+' : '-';
             $col = $this->escape($col);
 
-            $this->runtime['value']['k'][$col] = $col . $opt . abs($val);
+            $this->runtime['value']['k'][$col] = $col . $opt . (string)abs($val);
         }
 
         unset($values, $col, $val, $opt);
         return $this;
     }
-
-
-    /**
-     * Set select fields
-     *
-     * @param string ...$fields
-     *
-     * @return $this
-     */
-    public function fields(string ...$fields): object
-    {
-        foreach ($fields as $field) {
-            if (!$this->is_raw($field)) {
-                $field = $this->escape($field);
-            }
-
-            $this->runtime['field'][] = $field;
-        }
-
-        unset($fields, $field);
-        return $this;
-    }
-
 
     /**
      * Set join conditions
@@ -315,6 +327,78 @@ class pdo_mysql extends pdo
     }
 
     /**
+     * Set where conditions
+     *
+     * @param array $where
+     *
+     * @return $this
+     */
+    public function where(array $where): object
+    {
+        $this->build_cond($where, 'where');
+
+        unset($where);
+        return $this;
+    }
+
+    /**
+     * Set having conditions
+     *
+     * @param array $having
+     *
+     * @return $this
+     */
+    public function having(array $having): object
+    {
+        $this->build_cond($having, 'having');
+
+        unset($having);
+        return $this;
+    }
+
+    /**
+     * Set group by conditions
+     *
+     * @param string ...$groups
+     *
+     * @return $this
+     */
+    public function group(string ...$groups): object
+    {
+        foreach ($groups as $group) {
+            if (!$this->is_raw($group)) {
+                $group = $this->escape($group);
+            }
+
+            $this->runtime['group'][] = $group;
+        }
+
+        unset($groups, $group);
+        return $this;
+    }
+
+    /**
+     * Set order by
+     *
+     * @param array $orders
+     *
+     * @return $this
+     */
+    public function order(array $orders): object
+    {
+        foreach ($orders as $col => $val) {
+            if (!$this->is_raw($col)) {
+                $col = $this->escape($col);
+            }
+
+            $this->runtime['order'][] = $col . ' ' . strtoupper($val);
+        }
+
+        unset($orders, $col, $val);
+        return $this;
+    }
+
+    /**
      * Set limit
      *
      * @param int $offset
@@ -328,6 +412,189 @@ class pdo_mysql extends pdo
 
         unset($offset, $length);
         return $this;
+    }
+
+    /**
+     * Set lock mode
+     * UPDATE/SHARE, NOWAIT/SKIP LOCKED
+     *
+     * @param string ...$modes
+     *
+     * @return $this
+     */
+    public function lock(string ...$modes): object
+    {
+        $this->runtime['lock'] = implode(' ', $modes);
+
+        unset($modes);
+        return $this;
+    }
+
+    /**
+     * Begin transaction
+     *
+     * @return bool
+     */
+    public function begin(): bool
+    {
+        return $this->instance->beginTransaction();
+    }
+
+    /**
+     * Commit transaction
+     *
+     * @return bool
+     */
+    public function commit(): bool
+    {
+        return $this->instance->commit();
+    }
+
+    /**
+     * Rollback transaction
+     *
+     * @return bool
+     */
+    public function rollback(): bool
+    {
+        return $this->instance->rollBack();
+    }
+
+    /**
+     * Exec SQL and return affected rows
+     *
+     * @param string $sql
+     *
+     * @return int
+     */
+    public function exec(string $sql): int
+    {
+        try {
+            $this->sql = &$sql;
+
+            if (false === $this->rows = $this->instance->exec($sql)) {
+                $this->rows = -1;
+            }
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
+        }
+
+        unset($sql);
+        return $this->rows;
+    }
+
+    /**
+     * Query SQL and return PDOStatement
+     *
+     * @param string $sql
+     * @param int    $fetch_style
+     * @param int    $col_no
+     *
+     * @return \PDOStatement
+     */
+    public function query(string $sql, int $fetch_style = \PDO::FETCH_ASSOC, int $col_no = 0): \PDOStatement
+    {
+        try {
+            $this->sql = &$sql;
+
+            $sql_param = [$sql, $fetch_style];
+
+            if ($fetch_style === \PDO::FETCH_COLUMN) {
+                $sql_param[] = &$col_no;
+            }
+
+            $stmt = $this->instance->query(...$sql_param);
+
+            $this->rows = $stmt->rowCount();
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
+        }
+
+        unset($sql, $fetch_style, $col_no, $sql_param);
+        return $stmt;
+    }
+
+    /**
+     * Execute prepared SQL and return execute result
+     *
+     * @return bool
+     */
+    public function execute(): bool
+    {
+        $stmt = $this->get_stmt();
+
+        try {
+            $result = $stmt->execute($this->runtime['bind'] ?? []);
+
+            $this->rows    = $stmt->rowCount();
+            $this->runtime = [];
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
+        }
+
+        unset($stmt);
+        return $result;
+    }
+
+    /**
+     * Fetch one row
+     *
+     * @param int $fetch_style
+     *
+     * @return array
+     */
+    public function fetch_row(int $fetch_style = \PDO::FETCH_ASSOC): array
+    {
+        $stmt = $this->get_stmt();
+
+        try {
+            $stmt->execute($this->runtime['bind'] ?? []);
+
+            $this->rows    = $stmt->rowCount();
+            $this->runtime = [];
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
+        }
+
+        $data = $stmt->fetch($fetch_style);
+
+        if (!is_array($data)) {
+            $data = false !== $data ? [$data] : [];
+        }
+
+        unset($fetch_style, $stmt);
+        return $data;
+    }
+
+    /**
+     * Fetch all rows
+     *
+     * @param int $fetch_style
+     *
+     * @return array
+     */
+    public function fetch_all(int $fetch_style = \PDO::FETCH_ASSOC): array
+    {
+        $stmt = $this->get_stmt();
+
+        try {
+            $stmt->execute($this->runtime['bind'] ?? []);
+
+            $this->rows    = $stmt->rowCount();
+            $this->runtime = [];
+        } catch (\Throwable $throwable) {
+            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
+                E_USER_ERROR);
+        }
+
+        $data = $stmt->fetchAll($fetch_style);
+
+        unset($fetch_style, $stmt);
+        return $data;
     }
 
     /**
@@ -441,6 +708,68 @@ class pdo_mysql extends pdo
         return $field;
     }
 
+    /**
+     * Check a value is raw formatted
+     *
+     * @param string $value
+     *
+     * @return bool
+     */
+    protected function is_raw(string &$value): bool
+    {
+        if (!isset($this->runtime['raw'])) {
+            return false;
+        }
+
+        if (0 !== strpos($value, $this->runtime['raw'])) {
+            return false;
+        }
+
+        $value = substr($value, strlen($this->runtime['raw']));
+        return true;
+    }
+
+    /**
+     * Get condition data list
+     *
+     * @param array $cond_list
+     * @param array $bind_list
+     *
+     * @return array
+     */
+    protected function get_cond(array $cond_list, array $bind_list): array
+    {
+        $data = [];
+
+        foreach ($cond_list as $value) {
+            if ('?' === $value) {
+                $item   = current($bind_list);
+                $data[] = is_string($item) ? '"' . $item . '"' : $item;
+                next($bind_list);
+            } else {
+                $data[] = $value;
+            }
+        }
+
+        unset($cond_list, $bind_list, $value, $item);
+        return $data;
+    }
+
+    /**
+     * Build prep/real SQL
+     */
+    protected function build_sql(): void
+    {
+        $sql_list = $this->{'build_' . strtolower($this->runtime['action'])}();
+
+        //Copy real SQL
+        $this->sql = &$sql_list['real'];
+
+        //Copy prepared SQL
+        $this->runtime['sql'] = &$sql_list['prep'];
+
+        unset($sql_list);
+    }
 
     /**
      * Build SQL conditions
@@ -449,7 +778,7 @@ class pdo_mysql extends pdo
      * @param array  $values
      * @param string $refer_key
      */
-    private function build_cond(array $values, string $refer_key): void
+    protected function build_cond(array $values, string $refer_key): void
     {
         //Rewrite condition
         if (count($values) === count($values, COUNT_RECURSIVE)) {
@@ -531,183 +860,16 @@ class pdo_mysql extends pdo
             ++$cond_key;
         }
 
-        //Merge conditions
         $this->runtime[$refer_key] = array_merge($this->runtime[$refer_key], $cond_list);
         unset($values, $refer_key, $cond_key, $cond_list, $value, $item, $field, $data, $commas, $key);
     }
-
-    /**
-     * Set where conditions
-     *
-     * @param array $where
-     *
-     * @return $this
-     */
-    public function where(array $where): object
-    {
-        $this->build_cond($where, 'where');
-
-        unset($where);
-        return $this;
-    }
-
-    /**
-     * Set having conditions
-     *
-     * @param array $having
-     *
-     * @return $this
-     */
-    public function having(array $having): object
-    {
-        $this->build_cond($having, 'having');
-
-        unset($having);
-        return $this;
-    }
-
-
-    /**
-     * Set order
-     *
-     * @param array $orders
-     *
-     * @return $this
-     */
-    public function order(array $orders): object
-    {
-        foreach ($orders as $col => $val) {
-            if (!$this->is_raw($col)) {
-                $col = $this->escape($col);
-            }
-
-            $this->runtime['order'][] = $col . ' ' . strtoupper($val);
-        }
-
-        unset($orders, $col, $val);
-        return $this;
-    }
-
-    /**
-     * Set group conditions
-     *
-     * @param string ...$groups
-     *
-     * @return $this
-     */
-    public function group(string ...$groups): object
-    {
-        foreach ($groups as $group) {
-            if (!$this->is_raw($group)) {
-                $group = $this->escape($group);
-            }
-
-            $this->runtime['group'][] = $group;
-        }
-
-        unset($groups, $group);
-        return $this;
-    }
-
-
-    /**
-     * Get the number of rows affected by the last DELETE, INSERT, or UPDATE statement
-     *
-     * @return int
-     */
-    public function last_affect(): int
-    {
-        return $this->rows;
-    }
-
-    /**
-     * Get last insert value from AUTO_INCREMENT column
-     *
-     * @param string $name
-     *
-     * @return int
-     */
-    public function last_insert(string $name = ''): int
-    {
-        return (int)$this->instance->lastInsertId('' === $name ? null : $name);
-    }
-
-    /**
-     * Begin transaction
-     *
-     * @return bool
-     */
-    public function begin(): bool
-    {
-        return $this->instance->beginTransaction();
-    }
-
-    /**
-     * Commit transaction
-     *
-     * @return bool
-     */
-    public function commit(): bool
-    {
-        return $this->instance->commit();
-    }
-
-    /**
-     * Rollback transaction
-     *
-     * @return bool
-     */
-    public function rollback(): bool
-    {
-        return $this->instance->rollBack();
-    }
-
-    /**
-     * Build prep/real SQL
-     */
-    public function build_sql(): void
-    {
-        $sql_list = $this->{'build_' . strtolower($this->runtime['action'])}();
-
-        $this->runtime['sql_prep'] = &$sql_list['prep'];
-        $this->runtime['sql_real'] = &$sql_list['real'];
-
-        unset($sql_list);
-    }
-
-    /**
-     * Get condition data list
-     *
-     * @param array $cond_list
-     * @param array $bind_list
-     *
-     * @return array
-     */
-    private function get_cond(array $cond_list, array $bind_list): array
-    {
-        $data = [];
-
-        foreach ($cond_list as $value) {
-            if ('?' === $value) {
-                $item   = current($bind_list);
-                $data[] = is_string($item) ? '"' . $item . '"' : $item;
-                next($bind_list);
-            } else {
-                $data[] = $value;
-            }
-        }
-
-        unset($cond_list, $bind_list, $value, $item);
-        return $data;
-    }
-
 
     /**
      * Build SQL for INSERT
      *
      * @return array
      */
-    private function build_insert(): array
+    protected function build_insert(): array
     {
         $result = $prep = [];
 
@@ -735,7 +897,7 @@ class pdo_mysql extends pdo
      *
      * @return array
      */
-    private function build_select(): array
+    protected function build_select(): array
     {
         $result = $prep = [];
 
@@ -807,7 +969,7 @@ class pdo_mysql extends pdo
      *
      * @return array
      */
-    private function build_update(): array
+    protected function build_update(): array
     {
         $result = $prep = [];
 
@@ -862,7 +1024,7 @@ class pdo_mysql extends pdo
      *
      * @return array
      */
-    private function build_delete(): array
+    protected function build_delete(): array
     {
         $result = $prep = [];
 
@@ -891,175 +1053,4 @@ class pdo_mysql extends pdo
         unset($prep, $real, $cond);
         return $result;
     }
-
-    /**
-     * Exec SQL and return affected rows
-     *
-     * @param string $sql
-     *
-     * @return int
-     */
-    public function exec(string $sql): int
-    {
-        try {
-            $this->runtime['sql_real'] = &$sql;
-
-            if (false === $this->rows = $this->instance->exec($sql)) {
-                $this->rows = -1;
-            }
-        } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
-        }
-
-        unset($sql);
-        return $this->rows;
-    }
-
-
-
-    /**
-     * Get current PDOStatement
-     *
-     * @return \PDOStatement
-     */
-    public function get_stmt(): \PDOStatement
-    {
-        $this->build_sql();
-
-        try {
-            $stmt = $this->instance->prepare($this->runtime['sql_prep']);
-        } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->runtime['sql_real'] . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
-        }
-
-        return $stmt;
-    }
-
-
-    /**
-     * Query SQL and return PDOStatement
-     *
-     * @param string $sql
-     * @param int    $fetch_style
-     * @param int    $col_no
-     *
-     * @return \PDOStatement
-     */
-    public function query(string $sql, int $fetch_style = \PDO::FETCH_ASSOC, int $col_no = 0): \PDOStatement
-    {
-        try {
-            $this->runtime['sql_real'] = &$sql;
-            $sql_param                 = [$sql, $fetch_style];
-
-            if ($fetch_style === \PDO::FETCH_COLUMN) {
-                $sql_param[] = &$col_no;
-            }
-
-            $stmt = $this->instance->query(...$sql_param);
-
-            $this->rows = $stmt->rowCount();
-        } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
-        }
-
-        unset($sql, $fetch_style, $col_no, $sql_param);
-        return $stmt;
-    }
-
-
-    /**
-     * Fetch one row
-     * @param int $fetch_style
-     *
-     * @return array
-     */
-    public function fetch_row(int $fetch_style = \PDO::FETCH_ASSOC): array
-    {
-        $stmt = $this->get_stmt();
-
-        try {
-            $stmt->execute($this->runtime['bind'] ?? []);
-
-            $this->rows    = $stmt->rowCount();
-            $this->runtime = [];
-        } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->runtime['sql_real'] . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
-        }
-
-        $data = $stmt->fetch($fetch_style);
-
-        if (!is_array($data)) {
-            $data = [$data];
-        }
-
-        unset($fetch_style, $stmt);
-        return $data;
-    }
-
-    /**
-     * Fetch all rows
-     * @param int $fetch_style
-     *
-     * @return array
-     */
-    public function fetch_all(int $fetch_style = \PDO::FETCH_ASSOC): array
-    {
-        $stmt = $this->get_stmt();
-
-        try {
-            $stmt->execute($this->runtime['bind'] ?? []);
-
-            $this->rows    = $stmt->rowCount();
-            $this->runtime = [];
-        } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->runtime['sql_real'] . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
-        }
-
-        $data = $stmt->fetchAll($fetch_style);
-
-        unset($fetch_style, $stmt);
-        return $data;
-    }
-
-
-    /**
-     * Execute prepared SQL and return execute result
-     *
-     * @return bool
-     */
-    public function execute(): bool
-    {
-        $stmt = $this->get_stmt();
-
-        try {
-            $result = $stmt->execute($this->runtime['bind'] ?? []);
-
-            $this->rows    = $stmt->rowCount();
-            $this->runtime = [];
-        } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->runtime['sql_real'] . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(),
-                E_USER_ERROR);
-        }
-
-        unset($stmt);
-        return $result;
-    }
-
-
-    /**
-     * Get last executed SQL
-     *
-     * @return string
-     */
-    public function last_sql(): string
-    {
-        return $this->runtime['sql_real'];
-    }
-
-
 }
