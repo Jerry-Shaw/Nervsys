@@ -803,7 +803,9 @@ class pdo_mysql extends pdo
                 }
             } else {
                 //Check and add raw SQL
-                if ($this->is_raw($item = (string)current($value))) {
+                $item = (string)current($value);
+
+                if ($this->is_raw($item)) {
                     $cond_list[$cond_key][] = $item;
 
                     if (!isset($this->runtime['cond'])) {
