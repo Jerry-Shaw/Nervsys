@@ -793,21 +793,25 @@ class pdo_mysql extends pdo
 
         //Process conditions
         foreach ($values as $value) {
-            //Process raw SQL
-            if (is_string($value)) {
+            if (1 < count($value)) {
+                //Condition
+                if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
+                    $cond_list[$cond_key][] = $item;
+                    array_shift($value);
+                } elseif (!empty($cond_list)) {
+                    $cond_list[$cond_key][] = 'AND';
+                }
+            } else {
                 //Check and add raw SQL
-                if ($this->is_raw($value)) {
-                    $cond_list[$cond_key][] = $value;
+                if ($this->is_raw($item = (string)current($value))) {
+                    $cond_list[$cond_key][] = $item;
+
+                    if (!isset($this->runtime['cond'])) {
+                        $this->runtime['cond'] = [];
+                    }
                 }
 
                 continue;
-            }
-
-            //Condition
-            if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
-                $cond_list[$cond_key][] = strtoupper(array_shift($value));
-            } elseif (!empty($cond_list)) {
-                $cond_list[$cond_key][] = 'AND';
             }
 
             //Field
