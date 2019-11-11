@@ -793,6 +793,16 @@ class pdo_mysql extends pdo
 
         //Process conditions
         foreach ($values as $value) {
+            //Process raw SQL
+            if (is_string($value)) {
+                //Check and add raw SQL
+                if ($this->is_raw($value)) {
+                    $cond_list[$cond_key][] = $value;
+                }
+
+                continue;
+            }
+
             //Condition
             if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
                 $cond_list[$cond_key][] = strtoupper(array_shift($value));
