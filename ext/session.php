@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Redis Session Extension
+ * Session Extension (on Redis)
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
@@ -21,27 +21,44 @@
 namespace ext;
 
 /**
- * Class redis_session
+ * Class session
  *
  * @package ext
  */
-class redis_session extends redis
+class session extends factory
 {
     //SESSION key prefix
     const PREFIX = 'SESS:';
 
     //SESSION life
-    public $life = 600;
+    protected $life = 600;
+
+    /** @var \Redis $instance */
+    protected $instance;
 
     /**
-     * Start Redis SESSION
+     * session constructor.
+     *
+     * @param array $conf
+     *
+     * @throws \RedisException
+     * @throws \ReflectionException
      */
-    public function start(): void
+    public function __construct(array $conf = [])
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {
             return;
         }
+
+        //Set session life
+        if (isset($conf['life']) && 0 < $conf['life'] = (int)$conf['life']) {
+            $this->life = &$conf['life'];
+        }
+
+        //Connect Redis
+        $this->instance = redis::create($conf)->connect();
+        unset($conf);
 
         //Set SESSION GC configurations
         ini_set('session.gc_divisor', 100);

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Redis Queue Extension
+ * Queue Extension (on Redis)
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
@@ -20,18 +20,18 @@
 
 namespace ext;
 
-use core\lib\stc\factory;
+use core\lib\stc\factory as fty;
 use core\lib\std\os;
 use core\lib\std\pool;
 use core\lib\std\reflect;
 use core\lib\std\router;
 
 /**
- * Class redis_queue
+ * Class queue
  *
  * @package ext
  */
-class redis_queue extends redis
+class queue extends factory
 {
     //Queue type
     const TYPE_DELAY    = 'delay';
@@ -67,8 +67,25 @@ class redis_queue extends redis
     /** @var \core\lib\std\os $unit_os */
     private $unit_os;
 
+    /** @var \Redis $instance */
+    protected $instance;
+
     /**
-     * Set group key
+     * queue constructor.
+     *
+     * @param array $conf
+     *
+     * @throws \RedisException
+     * @throws \ReflectionException
+     */
+    public function __construct(array $conf = [])
+    {
+        $this->instance = redis::create($conf)->connect();
+        unset($conf);
+    }
+
+    /**
+     * Set group key (cloned queue)
      *
      * @param string $group_key
      *
@@ -76,25 +93,26 @@ class redis_queue extends redis
      */
     public function set_group(string $group_key): object
     {
-        $group_key .= ':';
+        $group_key   .= ':';
+        $clone_queue = clone $this;
 
         //Modify queue keys
-        $this->key_listen = $group_key . $this->key_listen;
-        $this->key_failed = $group_key . $this->key_failed;
+        $clone_queue->key_listen = $group_key . $this->key_listen;
+        $clone_queue->key_failed = $group_key . $this->key_failed;
 
         //Modify queue prefix
-        $this->prefix_jobs   = $group_key . $this->prefix_jobs;
-        $this->prefix_watch  = $group_key . $this->prefix_watch;
-        $this->prefix_worker = $group_key . $this->prefix_worker;
-        $this->prefix_unique = $group_key . $this->prefix_unique;
+        $clone_queue->prefix_jobs   = $group_key . $this->prefix_jobs;
+        $clone_queue->prefix_watch  = $group_key . $this->prefix_watch;
+        $clone_queue->prefix_worker = $group_key . $this->prefix_worker;
+        $clone_queue->prefix_unique = $group_key . $this->prefix_unique;
 
         //Modify queue delay keys
-        $this->key_delay_lock    = $group_key . $this->key_delay_lock;
-        $this->key_delay_time    = $group_key . $this->key_delay_time;
-        $this->prefix_delay_jobs = $group_key . $this->prefix_delay_jobs;
+        $clone_queue->key_delay_lock    = $group_key . $this->key_delay_lock;
+        $clone_queue->key_delay_time    = $group_key . $this->key_delay_time;
+        $clone_queue->prefix_delay_jobs = $group_key . $this->prefix_delay_jobs;
 
         unset($group_key);
-        return $this;
+        return $clone_queue;
     }
 
     /**
@@ -353,10 +371,10 @@ class redis_queue extends redis
 
             default:
                 /** @var \core\lib\std\router $unit_router */
-                $unit_router = factory::build(router::class);
+                $unit_router = fty::build(router::class);
 
                 /** @var \core\lib\std\reflect $unit_reflect */
-                $unit_reflect = factory::build(reflect::class);
+                $unit_reflect = fty::build(reflect::class);
 
                 //Build unit hash and key
                 $unit_hash = hash('crc32b', uniqid(mt_rand(), true));
@@ -402,12 +420,12 @@ class redis_queue extends redis
     private function proc_init(): void
     {
         //Detect env (only support CLI)
-        if (!factory::build(pool::class)->is_CLI) {
+        if (!fty::build(pool::class)->is_CLI) {
             throw new \Exception('Only support CLI!', E_USER_ERROR);
         }
 
         /** @var \core\lib\std\os unit_os */
-        $this->unit_os = factory::build(os::class);
+        $this->unit_os = fty::build(os::class);
     }
 
     /**
@@ -624,7 +642,7 @@ class redis_queue extends redis
                     }
 
                     //Create class instance
-                    $class_object = !$method_reflect->isStatic() ? factory::create($class, $input_data) : $class;
+                    $class_object = !$method_reflect->isStatic() ? fty::create($class, $input_data) : $class;
 
                     //Filter method params
                     $matched_params = $unit_reflect->build_params($class, $method, $input_data);

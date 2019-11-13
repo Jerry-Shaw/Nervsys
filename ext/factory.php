@@ -21,7 +21,7 @@
 
 namespace ext;
 
-use core\lib\stc\factory as core_factory;
+use core\lib\stc\factory as fty;
 
 /**
  * Class factory
@@ -41,20 +41,20 @@ class factory
      */
     public static function create(array $arguments = []): object
     {
-        return core_factory::create(get_called_class(), $arguments);
+        return fty::create(get_called_class(), $arguments);
     }
 
     /**
      * New a stdClass by passing simply arguments
      * Arguments will be filled in the order as being passed
      *
-     * @param string ...$arguments
+     * @param mixed ...$arguments
      *
-     * @return $this
+     * @return object
      */
-    public static function new(string ...$arguments): object
+    public static function new(...$arguments): object
     {
-        return core_factory::build(get_called_class(), $arguments);
+        return fty::build(get_called_class(), $arguments);
     }
 
     /**
@@ -68,7 +68,7 @@ class factory
      */
     public static function use(string $alias): object
     {
-        return core_factory::find($alias);
+        return fty::find($alias);
     }
 
     /**
@@ -80,7 +80,7 @@ class factory
      */
     public function as(string $alias): object
     {
-        return core_factory::move($this, $alias);
+        return fty::move($this, $alias);
     }
 
     /**

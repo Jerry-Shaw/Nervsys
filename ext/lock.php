@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Redis Lock Extension
+ * Lock Extension (on Redis)
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
@@ -21,11 +21,11 @@
 namespace ext;
 
 /**
- * Class redis_lock
+ * Class lock
  *
  * @package ext
  */
-class redis_lock extends redis
+class lock extends factory
 {
     //Key prefix
     const PREFIX = 'LOCK:';
@@ -38,6 +38,23 @@ class redis_lock extends redis
 
     //Lock pool
     private $locks = [];
+
+    /** @var \Redis $instance */
+    protected $instance;
+
+    /**
+     * lock constructor.
+     *
+     * @param array $conf
+     *
+     * @throws \RedisException
+     * @throws \ReflectionException
+     */
+    public function __construct(array $conf = [])
+    {
+        $this->instance = redis::create($conf)->connect();
+        unset($conf);
+    }
 
     /**
      * Lock on
@@ -52,7 +69,6 @@ class redis_lock extends redis
         $retry = 0;
         $key   = self::PREFIX . $key;
 
-        //Try to set lock
         while ($retry <= self::RETRY) {
             if ($this->lock($key, $life)) {
                 register_shutdown_function([$this, 'clear']);
@@ -110,7 +126,6 @@ class redis_lock extends redis
             return false;
         }
 
-        //Set lock life
         $this->instance->expire($key, 0 < $life ? $life : 3);
         $this->locks[] = &$key;
 

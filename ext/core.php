@@ -20,7 +20,7 @@
 
 namespace ext;
 
-use core\lib\stc\factory;
+use core\lib\stc\factory as fty;
 use core\lib\std\os;
 use core\lib\std\pool;
 use core\ns;
@@ -47,7 +47,7 @@ class core
      */
     public static function get_ip(): string
     {
-        return factory::build(pool::class)->ip;
+        return fty::build(pool::class)->ip;
     }
 
     /**
@@ -87,7 +87,7 @@ class core
      */
     public static function get_log_path(): string
     {
-        return factory::build(pool::class)->conf['log']['save_path'];
+        return fty::build(pool::class)->conf['log']['save_path'];
     }
 
     /**
@@ -97,7 +97,7 @@ class core
      */
     public static function get_php_path(): string
     {
-        return factory::build(os::class)->php_path();
+        return fty::build(os::class)->php_path();
     }
 
     /**
@@ -107,7 +107,7 @@ class core
      */
     public static function register_router(array $router): void
     {
-        factory::build(pool::class)->router_stack[] = $router;
+        fty::build(pool::class)->router_stack[] = $router;
         unset($router);
     }
 
@@ -118,7 +118,7 @@ class core
      */
     public static function is_CLI(): bool
     {
-        return factory::build(pool::class)->is_CLI;
+        return fty::build(pool::class)->is_CLI;
     }
 
     /**
@@ -128,7 +128,7 @@ class core
      */
     public static function is_TLS(): bool
     {
-        return factory::build(pool::class)->is_TLS;
+        return fty::build(pool::class)->is_TLS;
     }
 
     /**
@@ -140,7 +140,7 @@ class core
     public static function add_error(string $key, $error): void
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
+        $unit_pool = fty::build(pool::class);
 
         //Replace error content
         $unit_pool->error[$key][] = $error;
@@ -155,7 +155,7 @@ class core
     public static function set_error(array $error): void
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
+        $unit_pool = fty::build(pool::class);
 
         //Replace error content
         $unit_pool->error = array_replace_recursive($unit_pool->error, $error);
@@ -170,7 +170,7 @@ class core
      */
     public static function add_data(string $key, $value): void
     {
-        factory::build(pool::class)->data[$key] = $value;
+        fty::build(pool::class)->data[$key] = $value;
         unset($key, $value);
     }
 
@@ -184,7 +184,7 @@ class core
     public static function get_data(string $key = '')
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
+        $unit_pool = fty::build(pool::class);
 
         //Find data
         $data = '' === $key ? $unit_pool->data : ($unit_pool->data[$key] ?? null);

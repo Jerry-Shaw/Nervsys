@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Redis Cache Extension
+ * Cache Extension (on Redis)
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
@@ -21,14 +21,31 @@
 namespace ext;
 
 /**
- * Class redis_cache
+ * Class cache
  *
  * @package ext
  */
-class redis_cache extends redis
+class cache extends factory
 {
     //Cache key prefix
     const PREFIX = 'CAS:';
+
+    /** @var \Redis $instance */
+    protected $instance;
+
+    /**
+     * cache constructor.
+     *
+     * @param array $conf
+     *
+     * @throws \RedisException
+     * @throws \ReflectionException
+     */
+    public function __construct(array $conf = [])
+    {
+        $this->instance = redis::create($conf)->connect();
+        unset($conf);
+    }
 
     /**
      * Set cache
@@ -63,9 +80,7 @@ class redis_cache extends redis
             return [];
         }
 
-        $data = json_decode($cache, true);
-
-        if (!is_array($data)) {
+        if (!is_array($data = json_decode($cache, true))) {
             return [];
         }
 

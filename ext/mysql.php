@@ -44,24 +44,20 @@ class mysql extends factory
     protected $instance;
 
     /**
-     * Connect MySQL
+     * mysql constructor.
      *
      * @param array $conf
      *
-     * @return $this
      * @throws \ReflectionException
      */
-    public function connect(array $conf): object
+    public function __construct(array $conf = [])
     {
         if (isset($conf['prefix'])) {
             $this->prefix = &$conf['prefix'];
-            unset($conf['prefix']);
         }
 
-        $this->instance = \core\lib\stc\factory::create(pdo::class, $conf)->connect();
-
+        $this->instance = pdo::create($conf)->connect();
         unset($conf);
-        return $this;
     }
 
     /**
