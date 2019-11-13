@@ -1,7 +1,7 @@
 <?php
 
 /**
- * PDO MySQL Extension
+ * MySQL Extension
  *
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
@@ -22,11 +22,11 @@
 namespace ext;
 
 /**
- * Class pdo_mysql
+ * Class mysql
  *
  * @package ext
  */
-class pdo_mysql extends pdo
+class mysql extends factory
 {
     //Last SQL
     protected $sql = '';
@@ -39,6 +39,30 @@ class pdo_mysql extends pdo
 
     //Runtime data
     protected $runtime = [];
+
+    /** @var \PDO $instance */
+    protected $instance;
+
+    /**
+     * Connect MySQL
+     *
+     * @param array $conf
+     *
+     * @return $this
+     * @throws \ReflectionException
+     */
+    public function connect(array $conf): object
+    {
+        if (isset($conf['prefix'])) {
+            $this->prefix = &$conf['prefix'];
+            unset($conf['prefix']);
+        }
+
+        $this->instance = \core\lib\stc\factory::create(pdo::class, $conf)->connect();
+
+        unset($conf);
+        return $this;
+    }
 
     /**
      * Set string value with raw prefix
