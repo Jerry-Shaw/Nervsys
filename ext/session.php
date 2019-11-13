@@ -30,11 +30,11 @@ class session extends factory
     //SESSION key prefix
     const PREFIX = 'SESS:';
 
+    /** @var \Redis $instance */
+    public $instance;
+
     //SESSION life
     protected $life = 600;
-
-    /** @var \Redis $instance */
-    protected $instance;
 
     /**
      * session constructor.

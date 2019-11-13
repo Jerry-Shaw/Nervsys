@@ -28,6 +28,9 @@ namespace ext;
  */
 class mysql extends factory
 {
+    /** @var \PDO $instance */
+    public $instance;
+
     //Last SQL
     protected $sql = '';
 
@@ -39,9 +42,6 @@ class mysql extends factory
 
     //Runtime data
     protected $runtime = [];
-
-    /** @var \PDO $instance */
-    protected $instance;
 
     /**
      * mysql constructor.

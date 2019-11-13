@@ -36,11 +36,11 @@ class lock extends factory
     //Retry limit
     const RETRY = 10;
 
+    /** @var \Redis $instance */
+    public $instance;
+
     //Lock pool
     private $locks = [];
-
-    /** @var \Redis $instance */
-    protected $instance;
 
     /**
      * lock constructor.

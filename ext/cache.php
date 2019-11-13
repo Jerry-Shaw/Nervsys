@@ -31,7 +31,7 @@ class cache extends factory
     const PREFIX = 'CAS:';
 
     /** @var \Redis $instance */
-    protected $instance;
+    public $instance;
 
     /**
      * cache constructor.

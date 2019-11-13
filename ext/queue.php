@@ -42,6 +42,9 @@ class queue extends factory
     const WAIT_IDLE = 3;
     const WAIT_SCAN = 60;
 
+    /** @var \Redis $instance */
+    public $instance;
+
     //Process properties
     protected $max_fork = 10;
     protected $max_exec = 1000;
@@ -66,9 +69,6 @@ class queue extends factory
 
     /** @var \core\lib\std\os $unit_os */
     private $unit_os;
-
-    /** @var \Redis $instance */
-    protected $instance;
 
     /**
      * queue constructor.
