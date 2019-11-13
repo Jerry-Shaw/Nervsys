@@ -50,7 +50,7 @@ class factory
      *
      * @param mixed ...$arguments
      *
-     * @return object
+     * @return $this
      */
     public static function new(...$arguments): object
     {
