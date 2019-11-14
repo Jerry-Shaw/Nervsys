@@ -884,7 +884,7 @@ class mysql extends factory
                         $cond_list[$cond_key][] = ',';
                     }
 
-                    $this->runtime['cond'][] = $item;
+                    $this->runtime['cond'][] = is_string($item) ? '"' . $item . '"' : $item;
                 }
 
                 $cond_list[$cond_key][] = ')';
