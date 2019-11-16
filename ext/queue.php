@@ -85,7 +85,7 @@ class queue extends factory
     }
 
     /**
-     * Set group key (cloned queue)
+     * Set group key
      *
      * @param string $group_key
      *
@@ -93,26 +93,25 @@ class queue extends factory
      */
     public function set_group(string $group_key): object
     {
-        $group_key   .= ':';
-        $clone_queue = clone $this;
+        $group_key .= ':';
 
         //Modify queue keys
-        $clone_queue->key_listen = $group_key . $this->key_listen;
-        $clone_queue->key_failed = $group_key . $this->key_failed;
+        $this->key_listen = $group_key . $this->key_listen;
+        $this->key_failed = $group_key . $this->key_failed;
 
         //Modify queue prefix
-        $clone_queue->prefix_jobs   = $group_key . $this->prefix_jobs;
-        $clone_queue->prefix_watch  = $group_key . $this->prefix_watch;
-        $clone_queue->prefix_worker = $group_key . $this->prefix_worker;
-        $clone_queue->prefix_unique = $group_key . $this->prefix_unique;
+        $this->prefix_jobs   = $group_key . $this->prefix_jobs;
+        $this->prefix_watch  = $group_key . $this->prefix_watch;
+        $this->prefix_worker = $group_key . $this->prefix_worker;
+        $this->prefix_unique = $group_key . $this->prefix_unique;
 
         //Modify queue delay keys
-        $clone_queue->key_delay_lock    = $group_key . $this->key_delay_lock;
-        $clone_queue->key_delay_time    = $group_key . $this->key_delay_time;
-        $clone_queue->prefix_delay_jobs = $group_key . $this->prefix_delay_jobs;
+        $this->key_delay_lock    = $group_key . $this->key_delay_lock;
+        $this->key_delay_time    = $group_key . $this->key_delay_time;
+        $this->prefix_delay_jobs = $group_key . $this->prefix_delay_jobs;
 
         unset($group_key);
-        return $clone_queue;
+        return $this;
     }
 
     /**
