@@ -41,6 +41,12 @@ final class trustzone
         //Create class object
         $class_object = factory::create($class, $params);
 
+        //TrustZone NOT found
+        if (!isset($class_object->tz)) {
+            unset($class, $params, $class_object);
+            return [];
+        }
+
         //Get all public methods
         $method_list = get_class_methods($class_object);
 
@@ -52,7 +58,7 @@ final class trustzone
         }
 
         //Get filtered methods as TrustZone data
-        $tz_data = !in_array('*', $tz_data = $class_object->tz ?? [], true)
+        $tz_data = !in_array('*', $tz_data = (array)$class_object->tz, true)
             ? array_intersect($method_list, $tz_data)
             : $method_list;
 
