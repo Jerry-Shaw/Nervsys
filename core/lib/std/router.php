@@ -75,7 +75,17 @@ final class router
      */
     public function get_cls(string $class): string
     {
-        return 0 !== strpos($class = strtr($class, '/', '\\'), '\\') ? '\\' . APP_PATH . '\\' . $class : $class;
+        $class = strtr($class, '/', '\\');
+
+        if (0 === strpos($class, '\\')) {
+            return $class;
+        }
+
+        if (0 === strpos($class, APP_PATH)) {
+            return '\\' . $class;
+        }
+
+        return '\\' . APP_PATH . '\\' . $class;
     }
 
     /**
