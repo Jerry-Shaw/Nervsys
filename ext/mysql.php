@@ -87,7 +87,11 @@ class mysql extends factory
     public function set_table(string $table): void
     {
         if ('' === $table) {
-            $table = '' === $this->table ? get_class($this) : $this->table;
+            if ('' !== $this->table) {
+                return;
+            }
+
+            $table = get_class($this);
         }
 
         if (false !== $pos = strrpos($table, '\\')) {
@@ -775,6 +779,7 @@ class mysql extends factory
      */
     protected function build_sql(): void
     {
+        //Call builder
         $sql_list = $this->{'build_' . strtolower($this->runtime['action'])}();
 
         //Build real SQL
