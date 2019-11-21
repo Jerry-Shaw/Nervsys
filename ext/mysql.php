@@ -37,6 +37,9 @@ class mysql extends factory
     //Affected rows
     protected $rows = 0;
 
+    //Table name
+    protected $table = '';
+
     //Table prefix
     protected $prefix = '';
 
@@ -83,19 +86,15 @@ class mysql extends factory
      */
     public function set_table(string $table): void
     {
-        if (isset($this->runtime['table'])) {
-            return;
-        }
-
         if ('' === $table) {
-            $table = get_class($this);
+            $table = '' === $this->table ? get_class($this) : $this->table;
         }
 
         if (false !== $pos = strrpos($table, '\\')) {
             $table = substr($table, $pos + 1);
         }
 
-        $this->runtime['table'] = $this->escape($this->prefix . $table);
+        $this->table = $this->escape($this->prefix . $table);
         unset($table, $pos);
     }
 
@@ -517,7 +516,6 @@ class mysql extends factory
     {
         try {
             $this->sql = &$sql;
-
             $sql_param = [$sql, $fetch_style];
 
             if ($fetch_style === \PDO::FETCH_COLUMN) {
@@ -907,7 +905,7 @@ class mysql extends factory
         $result = ['prep' => [], 'real' => []];
 
         $result['prep'][] = 'INSERT INTO';
-        $result['prep'][] = $this->runtime['table'];
+        $result['prep'][] = $this->table;
         $result['prep'][] = '(' . implode(', ', array_keys($this->runtime['value']['k'])) . ')';
         $result['prep'][] = 'VALUES';
 
@@ -932,7 +930,7 @@ class mysql extends factory
 
         $result['prep'][] = 'SELECT';
         $result['prep'][] = isset($this->runtime['field']) ? implode(', ', $this->runtime['field']) : '*';
-        $result['prep'][] = 'FROM ' . $this->runtime['table'];
+        $result['prep'][] = 'FROM ' . $this->table;
 
         if (isset($this->runtime['join'])) {
             $result['prep'][] = implode(' ', $this->runtime['join']);
@@ -1000,7 +998,7 @@ class mysql extends factory
         $result = ['prep' => [], 'real' => []];
 
         $result['prep'][] = 'UPDATE';
-        $result['prep'][] = $this->runtime['table'];
+        $result['prep'][] = $this->table;
         $result['prep'][] = 'SET';
 
         $result['real'] = $result['prep'];
@@ -1055,7 +1053,7 @@ class mysql extends factory
         $result = ['prep' => [], 'real' => []];
 
         $result['prep'][] = 'DELETE FROM';
-        $result['prep'][] = $this->runtime['table'];
+        $result['prep'][] = $this->table;
 
         $result['real'] = $result['prep'];
 
