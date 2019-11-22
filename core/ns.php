@@ -35,10 +35,11 @@ define('SYSROOT', dirname(__DIR__));
 $api_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
 $cwd_path = strtr(getcwd(), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
 
-//Get entry script file path
-$entry_script = false === strpos($api_path, $cwd_path)
-    ? $cwd_path . DIRECTORY_SEPARATOR . $api_path
-    : $api_path;
+//Get possible entry file
+$entry_file = $cwd_path . DIRECTORY_SEPARATOR . ltrim($api_path, DIRECTORY_SEPARATOR);
+
+//Get entry script path
+$entry_script = is_file($entry_file) ? $entry_file : $api_path;
 
 //Find true ROOT path
 $sys_path   = explode(DIRECTORY_SEPARATOR, SYSROOT);
@@ -55,7 +56,7 @@ define('APP_PATH', 'app');
 define('ENTRY_SCRIPT', $entry_script);
 
 //Free memory
-unset($api_path, $cwd_path, $entry_script, $sys_path, $entry_path, $root_path);
+unset($api_path, $cwd_path, $entry_file, $entry_script, $sys_path, $entry_path, $root_path);
 
 //Define JSON formats
 define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
