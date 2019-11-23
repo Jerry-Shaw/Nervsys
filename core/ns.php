@@ -31,20 +31,20 @@ define('SYSVER', '7.4.0');
 //Define system root path
 define('SYSROOT', dirname(__DIR__));
 
-//Get api path and cwd path
-$api_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-$cwd_path = strtr(getcwd(), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+//Get script file as entry script
+$entry_script = &$_SERVER['SCRIPT_FILENAME'];
 
-//Get possible entry file
-$entry_file = $cwd_path . DIRECTORY_SEPARATOR . ltrim($api_path, DIRECTORY_SEPARATOR);
+//Check absolute path of entry script and correct
+if (DIRECTORY_SEPARATOR !== $entry_script[0] && ':' !== $entry_script[1]) {
+    $entry_script = getcwd() . DIRECTORY_SEPARATOR . $entry_script;
+}
 
-//Get entry script path
-$entry_script = is_file($entry_file) ? $entry_file : $api_path;
-
-//Find true ROOT path
+//Explode SYSROOT path and entry script path
 $sys_path   = explode(DIRECTORY_SEPARATOR, SYSROOT);
 $entry_path = explode(DIRECTORY_SEPARATOR, $entry_script);
-$root_path  = implode(DIRECTORY_SEPARATOR, array_intersect($sys_path, $entry_path));
+
+//Compare and get ROOT path
+$root_path = implode(DIRECTORY_SEPARATOR, array_intersect($sys_path, $entry_path));
 
 //Define ROOT path
 define('ROOT', $root_path);
@@ -52,11 +52,11 @@ define('ROOT', $root_path);
 //Define APP path (ROOT related)
 define('APP_PATH', 'app');
 
-//Define entry script file path (default: api.php)
+//Define entry script path (default: api.php)
 define('ENTRY_SCRIPT', $entry_script);
 
 //Free memory
-unset($api_path, $cwd_path, $entry_file, $entry_script, $sys_path, $entry_path, $root_path);
+unset($entry_script, $sys_path, $entry_path, $root_path);
 
 //Define JSON formats
 define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
