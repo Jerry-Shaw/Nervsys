@@ -77,7 +77,7 @@ final class router
     {
         $class = strtr($class, '/', '\\');
 
-        if (0 === strpos($class, '\\')) {
+        if ('\\' === $class[0]) {
             return $class;
         }
 
