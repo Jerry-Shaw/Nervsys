@@ -206,7 +206,7 @@ class crypt extends factory
 
         $noises = str_split($key, 8);
 
-        $string = 0 === (ord(substr($key, 0, 1)) & 1)
+        $string = 0 === (ord($key[0]) & 1)
             ? $noises[0] . ':' . $string . ':' . $noises[2]
             : $noises[1] . ':' . $string . ':' . $noises[3];
 
