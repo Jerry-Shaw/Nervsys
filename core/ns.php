@@ -32,7 +32,7 @@ define('SYSVER', '7.4.0');
 define('SYSROOT', dirname(__DIR__));
 
 //Get script file as entry script
-$entry_script = &$_SERVER['SCRIPT_FILENAME'];
+$entry_script = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
 
 //Check absolute path of entry script and correct
 if (DIRECTORY_SEPARATOR !== $entry_script[0] && ':' !== $entry_script[1]) {
