@@ -75,7 +75,7 @@ final class error
     /**
      * Shutdown handler
      *
-     * @throws \Exception
+     * @throws \ErrorException
      */
     public static function shutdown_handler(): void
     {
@@ -85,8 +85,7 @@ final class error
             return;
         }
 
-        self::exception_handler(new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']));
-        unset($error);
+        throw new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']);
     }
 
     /**
@@ -97,12 +96,11 @@ final class error
      * @param string $errfile
      * @param int    $errline
      *
-     * @throws \Exception
+     * @throws \ErrorException
      */
     public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): void
     {
-        self::exception_handler(new \ErrorException($errstr, $errno, $errno, $errfile, $errline));
-        unset($errno, $errstr, $errfile, $errline);
+        throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
     }
 
     /**
