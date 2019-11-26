@@ -53,6 +53,9 @@ class queue extends factory
     private $max_fork = 10;
     private $max_exec = 1000;
 
+    //Key prepare status
+    private $key_prep = false;
+
     //Queue name
     private $key_name = 'main:';
 
@@ -487,6 +490,10 @@ class queue extends factory
      */
     private function build_keys(): void
     {
+        if ($this->key_prep) {
+            return;
+        }
+
         //Build prefix
         $prefix = self::KEY_PREFIX . $this->key_name;
 
@@ -507,6 +514,9 @@ class queue extends factory
 
         //Fill watch key
         $this->key_watch .= $_SERVER['HOSTNAME'] ?? 'worker';
+
+        //Set key prepare status
+        $this->key_prep = true;
 
         unset($prefix, $key);
     }
