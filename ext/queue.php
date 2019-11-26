@@ -49,33 +49,34 @@ class queue extends factory
     /** @var \Redis $instance */
     public $instance;
 
+    /** @var \core\lib\std\os $unit_os */
+    private $unit_os;
+
     //Process properties
     private $max_fork = 10;
     private $max_exec = 1000;
 
-    //Key prepare status
-    private $key_prep = false;
-
     //Queue name
     private $key_name = 'main:';
 
-    //Queue keys
-    private $key_listen = 'listen';
-    private $key_failed = 'failed';
+    //Runtime key slot
+    private $key_slot = [];
 
-    //Queue prefix
-    private $key_jobs   = 'jobs:';
-    private $key_watch  = 'watch:';
-    private $key_worker = 'worker:';
-    private $key_unique = 'unique:';
-
-    //Queue delay keys
-    private $key_delay_lock = 'delay:lock';
-    private $key_delay_time = 'delay:time';
-    private $key_delay_jobs = 'delay:jobs:';
-
-    /** @var \core\lib\std\os $unit_os */
-    private $unit_os;
+    //Default key list
+    private $key_list = [
+        //Process keys
+        'listen'     => 'listen',
+        'failed'     => 'failed',
+        //Queue prefix
+        'jobs'       => 'jobs:',
+        'watch'      => 'watch:',
+        'worker'     => 'worker:',
+        'unique'     => 'unique:',
+        //Queue delay keys
+        'delay_lock' => 'delay:lock',
+        'delay_time' => 'delay:time',
+        'delay_jobs' => 'delay:jobs:'
+    ];
 
     /**
      * queue constructor.
@@ -102,6 +103,7 @@ class queue extends factory
     {
         $object = clone $this;
 
+        $object->key_slot = [];
         $object->key_name = $name . ':';
 
         unset($name);
@@ -143,7 +145,7 @@ class queue extends factory
 
         switch ($type) {
             case self::TYPE_UNIQUE:
-                $result = $this->add_unique($group, $job, $time, $cmd . (isset($data['unique']) ? ':' . $data['unique'] : ''));
+                $result = $this->add_unique($group, $job, $time, $cmd . (isset($data['unique_id']) ? ':' . (string)$data['unique_id'] : ''));
                 break;
 
             case self::TYPE_DELAY:
@@ -173,7 +175,7 @@ class queue extends factory
         $this->build_keys();
 
         //Get process list
-        $proc_list = '' === $proc_hash ? array_keys($this->get_keys($this->key_watch)) : [$this->key_worker . $proc_hash];
+        $proc_list = '' === $proc_hash ? array_keys($this->get_keys($this->key_slot['watch'])) : [$this->key_slot['worker'] . $proc_hash];
 
         if (empty($proc_list)) {
             return 0;
@@ -183,7 +185,7 @@ class queue extends factory
         $result = call_user_func_array([$this->instance, 'del'], $proc_list);
 
         //Remove worker keys
-        array_unshift($proc_list, $this->key_watch);
+        array_unshift($proc_list, $this->key_slot['watch']);
         call_user_func_array([$this->instance, 'hDel'], $proc_list);
 
         unset($proc_hash, $proc_list);
@@ -204,8 +206,8 @@ class queue extends factory
         $this->build_keys();
 
         $list = [
-            'len'  => $this->instance->lLen($this->key_failed),
-            'data' => $this->instance->lRange($this->key_failed, $start, $end)
+            'len'  => $this->instance->lLen($this->key_slot['failed']),
+            'data' => $this->instance->lRange($this->key_slot['failed'], $start, $end)
         ];
 
         unset($start, $end);
@@ -234,7 +236,7 @@ class queue extends factory
         //Build process keys
         $this->build_keys();
 
-        return $this->get_keys($this->key_listen);
+        return $this->get_keys($this->key_slot['listen']);
     }
 
     /**
@@ -247,7 +249,7 @@ class queue extends factory
         //Build process keys
         $this->build_keys();
 
-        return $this->get_keys($this->key_watch);
+        return $this->get_keys($this->key_slot['watch']);
     }
 
     /**
@@ -283,7 +285,7 @@ class queue extends factory
 
         //Build master hash and key
         $master_hash = hash('crc32b', uniqid(mt_rand(), true));
-        $master_key  = $this->key_worker . ($_SERVER['HOSTNAME'] ?? 'master');
+        $master_key  = $this->key_slot['worker'] . ($_SERVER['HOSTNAME'] ?? 'master');
 
         //Exit when master process exists
         if (!$this->instance->setnx($master_key, $master_hash)) {
@@ -292,13 +294,13 @@ class queue extends factory
 
         //Set process life and add to watch list
         $this->instance->expire($master_key, self::WAIT_SCAN);
-        $this->instance->hSet($this->key_watch, $master_key, time());
+        $this->instance->hSet($this->key_slot['watch'], $master_key, time());
 
         //Create kill_all function
         $kill_all = function (): void
         {
             //Get process list
-            if (empty($proc_list = array_keys($this->get_keys($this->key_watch)))) {
+            if (empty($proc_list = array_keys($this->get_keys($this->key_slot['watch'])))) {
                 return;
             }
 
@@ -306,7 +308,7 @@ class queue extends factory
             call_user_func_array([$this->instance, 'del'], $proc_list);
 
             //Remove worker from watch list
-            array_unshift($proc_list, $this->key_watch);
+            array_unshift($proc_list, $this->key_slot['watch']);
             call_user_func_array([$this->instance, 'hDel'], $proc_list);
 
             unset($proc_list);
@@ -337,7 +339,7 @@ class queue extends factory
             $running = $this->instance->expire($master_key, self::WAIT_SCAN);
 
             //Idle wait on no job or unit process running
-            if (empty($list = $this->get_keys($this->key_listen)) || 1 < count($this->get_keys($this->key_watch))) {
+            if (empty($list = $this->get_keys($this->key_slot['listen'])) || 1 < count($this->get_keys($this->key_slot['watch']))) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -386,7 +388,7 @@ class queue extends factory
         switch ($type) {
             case 'delay':
                 //Read time rec
-                if (empty($time_list = $this->instance->zRangeByScore($this->key_delay_time, 0, time()))) {
+                if (empty($time_list = $this->instance->zRangeByScore($this->key_slot['delay_time'], 0, time()))) {
                     break;
                 }
 
@@ -396,9 +398,9 @@ class queue extends factory
 
                     do {
                         //No delay job found
-                        if (false === $delay_job = $this->instance->rPop($this->key_delay_jobs . $time_key)) {
-                            $this->instance->zRem($this->key_delay_time, $time_key);
-                            $this->instance->hDel($this->key_delay_lock, $time_key);
+                        if (false === $delay_job = $this->instance->rPop($this->key_slot['delay_jobs'] . $time_key)) {
+                            $this->instance->zRem($this->key_slot['delay_time'], $time_key);
+                            $this->instance->hDel($this->key_slot['delay_lock'], $time_key);
                             break;
                         }
 
@@ -423,20 +425,20 @@ class queue extends factory
 
                 //Build unit hash and key
                 $unit_hash = hash('crc32b', uniqid(mt_rand(), true));
-                $unit_key  = $this->key_worker . $unit_hash;
+                $unit_key  = $this->key_slot['worker'] . $unit_hash;
 
                 //Add to watch list
                 $this->instance->set($unit_key, '', self::WAIT_SCAN);
-                $this->instance->hSet($this->key_watch, $unit_key, time());
+                $this->instance->hSet($this->key_slot['watch'], $unit_key, time());
 
                 //Create kill_unit function
                 $kill_unit = function (string $unit_hash): void
                 {
                     //Remove worker from process list
-                    $this->instance->del($worker_key = $this->key_worker . $unit_hash);
+                    $this->instance->del($worker_key = $this->key_slot['worker'] . $unit_hash);
 
                     //Remove worker from watch list
-                    $this->instance->hDel($this->key_watch, $worker_key);
+                    $this->instance->hDel($this->key_slot['watch'], $worker_key);
 
                     unset($unit_hash);
                 };
@@ -449,7 +451,7 @@ class queue extends factory
 
                 do {
                     //Exit on no job
-                    if (empty($list = $this->get_keys($this->key_listen))) {
+                    if (empty($list = $this->get_keys($this->key_slot['listen']))) {
                         break;
                     }
 
@@ -490,35 +492,21 @@ class queue extends factory
      */
     private function build_keys(): void
     {
-        if ($this->key_prep) {
+        if (!empty($this->key_slot)) {
             return;
         }
 
         //Build prefix
         $prefix = self::KEY_PREFIX . $this->key_name;
 
-        //Build queue keys
-        foreach ([
-            'key_listen',
-            'key_failed',
-            'key_jobs',
-            'key_watch',
-            'key_worker',
-            'key_unique',
-            'key_delay_lock',
-            'key_delay_time',
-            'key_delay_jobs'
-        ] as $key) {
-            $this->$key = $prefix . $this->$key;
+        //Build queue key slot
+        foreach ($this->key_list as $key => $value) {
+            $this->key_slot[$key] = $prefix . $value;
         }
 
-        //Fill watch key
-        $this->key_watch .= $_SERVER['HOSTNAME'] ?? 'worker';
-
-        //Set key prepare status
-        $this->key_prep = true;
-
-        unset($prefix, $key);
+        //Fill watch key slot
+        $this->key_slot['watch'] .= $_SERVER['HOSTNAME'] ?? 'worker';
+        unset($prefix, $key, $value);
     }
 
     /**
@@ -532,7 +520,7 @@ class queue extends factory
     private function add_realtime(string $group, string $data): int
     {
         //Add watch list
-        $this->instance->hSet($this->key_listen, $key = $this->key_jobs . $group, time());
+        $this->instance->hSet($this->key_slot['listen'], $key = $this->key_slot['jobs'] . $group, time());
 
         //Add job
         $result = (int)$this->instance->lPush($key, $data);
@@ -547,14 +535,14 @@ class queue extends factory
      * @param string $group
      * @param string $data
      * @param int    $time
-     * @param string $unique
+     * @param string $unique_id
      *
      * @return int
      */
-    private function add_unique(string $group, string $data, int $time, string $unique): int
+    private function add_unique(string $group, string $data, int $time, string $unique_id): int
     {
-        //Check job duration
-        if (!$this->instance->setnx($key = $this->key_unique . $unique, time())) {
+        //Check job unique id
+        if (!$this->instance->setnx($key = $this->key_slot['unique'] . $unique_id, time())) {
             return -1;
         }
 
@@ -564,7 +552,7 @@ class queue extends factory
         //Add realtime job
         $result = $this->add_realtime($group, $data);
 
-        unset($group, $data, $time, $unique, $key);
+        unset($group, $data, $time, $unique_id, $key);
         return $result;
     }
 
@@ -583,14 +571,14 @@ class queue extends factory
         $delay = time() + $time;
 
         //Set time lock
-        if ($this->instance->hSetNx($this->key_delay_lock, $delay, $delay)) {
+        if ($this->instance->hSetNx($this->key_slot['delay_lock'], $delay, $delay)) {
             //Add time rec
-            $this->instance->zAdd($this->key_delay_time, $delay, $delay);
+            $this->instance->zAdd($this->key_slot['delay_time'], $delay, $delay);
         }
 
         //Add delay job
         $result = $this->instance->lPush(
-            $this->key_delay_jobs . (string)$delay,
+            $this->key_slot['delay_jobs'] . (string)$delay,
             json_encode([
                 'group' => &$group,
                 'job'   => &$data
@@ -657,14 +645,14 @@ class queue extends factory
     private function call_unit_realtime(string $cmd): void
     {
         //Count running processes
-        $runs = count($this->get_keys($this->key_watch));
+        $runs = count($this->get_keys($this->key_slot['watch']));
 
         if (0 >= $left = $this->max_fork - $runs + 1) {
             return;
         }
 
         //Read queue list
-        $list = $this->get_keys($this->key_listen);
+        $list = $this->get_keys($this->key_slot['listen']);
 
         //Count jobs
         $jobs = 0;
@@ -743,7 +731,7 @@ class queue extends factory
                 }
             }
         } catch (\Throwable $throwable) {
-            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => $throwable->getMessage()], JSON_FORMAT));
+            $this->instance->lPush($this->key_slot['failed'], json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
         }
 
@@ -764,7 +752,7 @@ class queue extends factory
 
         //Save to fail list
         if (!is_null($json) && true !== $json) {
-            $this->instance->lPush($this->key_failed, json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => &$result], JSON_FORMAT));
+            $this->instance->lPush($this->key_slot['failed'], json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => &$result], JSON_FORMAT));
         }
 
         unset($data, $result, $json);
