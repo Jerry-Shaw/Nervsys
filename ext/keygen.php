@@ -20,7 +20,7 @@
 
 namespace ext;
 
-use ext\lib\key;
+use ext\imp\key;
 
 /**
  * Class keygen

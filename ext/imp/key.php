@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-namespace ext\lib;
+namespace ext\imp;
 
 interface key
 {
