@@ -46,7 +46,7 @@ class factory
 
     /**
      * New a stdClass by passing simply arguments
-     * Arguments will be filled in the order as being passed
+     * Arguments will be simply passed as is
      *
      * @param mixed ...$arguments
      *

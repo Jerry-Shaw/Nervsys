@@ -96,15 +96,13 @@ final class factory
      */
     public static function move(object $object, string $alias): object
     {
-        //Unset original index
-        if (false !== $key = array_search($object, self::$pool, true)) {
-            unset(self::$pool[$key]);
-        }
+        //Delete original object
+        self::del($object);
 
-        //Save object
+        //Save object as alias
         self::$pool[$alias] = &$object;
 
-        unset($alias, $key);
+        unset($alias);
         return $object;
     }
 
@@ -124,5 +122,21 @@ final class factory
 
         //Alias NOT found
         throw new \Exception('Object named [' . $alias . '] NOT found in factory!', E_USER_ERROR);
+    }
+
+    /**
+     * Delete an object from pool
+     *
+     * @param object $object
+     */
+    public static function del(object $object): void
+    {
+        if (!empty($keys = array_keys(self::$pool, $object, true))) {
+            foreach ($keys as $key) {
+                unset(self::$pool[$key]);
+            }
+        }
+
+        unset($object, $keys, $key);
     }
 }
