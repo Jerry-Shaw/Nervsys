@@ -86,15 +86,12 @@ class doc extends factory
                 $properties = $class_reflect->getDefaultProperties();
 
                 //Skip class with tz NOT open
-                if (empty($tz_data = $properties['tz'] ?? [])) {
+                if (empty($tz_data = isset($properties['tz']) ? (array)$properties['tz'] : [])) {
                     continue;
                 }
 
-                //Get all public methods
-                $pub_func = $this->unit_reflect->get_method_list($class, \ReflectionMethod::IS_PUBLIC);
-
                 //Skip class with no public method
-                if (empty($pub_func)) {
+                if (empty($pub_func = $this->unit_reflect->get_method_list($class, \ReflectionMethod::IS_PUBLIC))) {
                     continue;
                 }
 
@@ -103,7 +100,7 @@ class doc extends factory
 
                 //Get trust list
                 $trust_list = !in_array('*', $tz_data, true)
-                    ? array_intersect($method_list, $tz_data)
+                    ? array_intersect($tz_data, $method_list)
                     : $method_list;
 
                 //Remove magic methods
@@ -151,7 +148,7 @@ class doc extends factory
         $doc = [];
 
         //Get class name & method
-        list($name, $method) = explode('-', $cmd);
+        [$name, $method] = explode('-', $cmd);
 
         //Build full class name
         $class = $this->unit_router->get_cls($name);

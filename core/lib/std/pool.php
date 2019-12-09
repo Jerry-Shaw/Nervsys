@@ -49,8 +49,7 @@ final class pool
     public $log = '';
 
     /**
-     * Return type
-     * json/xml/empty
+     * Return type (json/xml/io/none)
      *
      * @var string
      */
@@ -146,6 +145,13 @@ final class pool
      * @var array
      */
     public $router_stack = [];
+
+    /**
+     * Output handler
+     *
+     * @var array
+     */
+    public $output_handler = [];
 
     /**
      * pool constructor.

@@ -255,7 +255,7 @@ class crypt extends factory
             return '';
         }
 
-        list($mix, $enc) = explode('.', $string, 2);
+        [$mix, $enc] = explode('.', $string, 2);
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? $this->base64_url_decode($mix) : $this->rsa_decrypt($mix, $rsa_key);

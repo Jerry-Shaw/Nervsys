@@ -18,7 +18,15 @@
  * limitations under the License.
  */
 
+//Strict type declare
+declare(strict_types = 1);
+
+//Namespace declare
 namespace core;
+
+//Misc settings
+set_time_limit(0);
+ignore_user_abort(true);
 
 //Require PHP version >= 7.2.0
 if (version_compare(PHP_VERSION, '7.2.0', '<')) {
@@ -112,25 +120,15 @@ set_error_handler([error::class, 'error_handler']);
 final class ns
 {
     /** @var \core\lib\std\pool $unit_pool */
-    private static $unit_pool;
-
-    /** @var \core\lib\std\io $unit_io */
-    private static $unit_io;
+    private $unit_pool;
 
     /**
-     * System boot
-     *
-     * @param bool $output
-     *
-     * @throws \Exception
+     * ns constructor.
      */
-    public static function boot(bool $output = true): void
+    public function __construct()
     {
-        //Load app.ini
-        $conf = self::load_ini();
-
-        /** @var \core\lib\std\io unit_io */
-        self::$unit_io = factory::build(io::class);
+        /** @var \core\lib\std\pool unit_pool */
+        $this->unit_pool = factory::build(pool::class);
 
         /** @var \core\lib\std\router $unit_router */
         $unit_router = factory::build(router::class);
@@ -141,40 +139,47 @@ final class ns
         /** @var \core\lib\cli $unit_cli */
         $unit_cli = factory::build(cli::class);
 
+        /** @var \core\lib\std\io $unit_io */
+        $unit_io = factory::build(io::class);
+
+        //Load app.ini
+        $conf = $this->load_ini();
+
         //Set default timezone
         date_default_timezone_set($conf['sys']['timezone']);
 
         //Verify CORS in CGI mode
-        if (!self::$unit_pool->is_CLI && !self::pass_cors($conf['cors'])) {
+        if (!$this->unit_pool->is_CLI && !$this->pass_cors($conf['cors'])) {
             exit;
         }
 
         //Run INIT section (ONLY CGI)
-        foreach (self::$unit_pool->conf['init'] as $value) {
+        foreach ($this->unit_pool->conf['init'] as $value) {
             try {
                 //Call INIT functions using default router
-                self::$unit_pool->result += $unit_cgi->call_group($unit_router->parse_cmd($value));
+                $this->unit_pool->result += $unit_cgi->call_group($unit_router->parse_cmd($value));
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
+                $unit_io->output($this->unit_pool);
                 unset($throwable);
-                self::output(true);
+                exit(0);
             }
         }
 
         //Read input data
-        if (self::$unit_pool->is_CLI) {
+        if ($this->unit_pool->is_CLI) {
             //Read arguments
-            $data_argv = self::$unit_io->read_argv();
+            $data_argv = $unit_io->read_argv();
 
             //Copy to pool
-            self::$unit_pool->cli_params['argv'] = &$data_argv['a'];
-            self::$unit_pool->cli_params['pipe'] = &$data_argv['p'];
+            $this->unit_pool->cli_params['argv'] = &$data_argv['a'];
+            $this->unit_pool->cli_params['pipe'] = &$data_argv['p'];
         } else {
             //Read CMD from URL
-            $url_cmd = self::$unit_io->read_url();
+            $url_cmd = $unit_io->read_url();
 
             //Read data package
-            $data_pack = self::$unit_io->read_http() + self::$unit_io->read_input(file_get_contents('php://input'));
+            $data_pack = $unit_io->read_http() + $unit_io->read_input(file_get_contents('php://input'));
 
             //Merge arguments
             $data_argv = [
@@ -187,76 +192,51 @@ final class ns
         }
 
         //Copy to pool
-        self::$unit_pool->cmd = &$data_argv['c'];
-        self::$unit_pool->ret = &$data_argv['r'];
+        $this->unit_pool->cmd = &$data_argv['c'];
+        $this->unit_pool->ret = &$data_argv['r'];
 
         //Copy input data
-        self::$unit_pool->data += $data_argv['d'];
+        $this->unit_pool->data += $data_argv['d'];
 
         //Append default router
-        self::$unit_pool->router_stack[] = [$unit_router, 'parse_cmd'];
+        $this->unit_pool->router_stack[] = [$unit_router, 'parse_cmd'];
 
         //Proceed CGI once CMD can be parsed
-        foreach (self::$unit_pool->router_stack as $router) {
-            if (!empty(self::$unit_pool->cgi_group = call_user_func($router, $data_argv['c']))) {
-                self::$unit_pool->result += $unit_cgi->call_service();
+        foreach ($this->unit_pool->router_stack as $router) {
+            if (!empty($this->unit_pool->cgi_group = call_user_func($router, $data_argv['c']))) {
+                $this->unit_pool->result += $unit_cgi->call_service();
                 break;
             }
         }
 
         //Proceed CLI once CMD can be parsed
-        if (self::$unit_pool->is_CLI && !empty(self::$unit_pool->cli_group = $unit_router->cli_get_trust($data_argv['c'], self::$unit_pool->conf['cli']))) {
-            self::$unit_pool->result += $unit_cli->call_program();
+        if ($this->unit_pool->is_CLI && !empty($this->unit_pool->cli_group = $unit_router->cli_get_trust($data_argv['c'], $this->unit_pool->conf['cli']))) {
+            $this->unit_pool->result += $unit_cli->call_program();
         }
 
-        //Output
-        $output && self::output();
-        unset($output, $conf, $unit_router, $unit_cgi, $unit_cli, $value, $data_argv, $router);
-    }
-
-    /**
-     * System output
-     *
-     * @param bool $stop
-     */
-    public static function output(bool $stop = false): void
-    {
-        //Output results
-        if (in_array(self::$unit_pool->ret, ['json', 'xml', 'io'], true)) {
-            echo self::$unit_io->{'build_' . self::$unit_pool->ret}(self::$unit_pool->error, self::$unit_pool->result);
-        }
-
-        //Output logs
-        echo '' !== self::$unit_pool->log ? PHP_EOL . PHP_EOL . self::$unit_pool->log : '';
-
-        //Stop
-        if ($stop) {
-            exit(0);
-        }
+        //Output data
+        $unit_io->output($this->unit_pool);
+        unset($unit_router, $unit_cgi, $unit_cli, $unit_io, $conf, $value, $data_argv, $router);
     }
 
     /**
      * Load app.ini
      */
-    private static function load_ini(): array
+    private function load_ini(): array
     {
-        /** @var \core\lib\std\pool unit_pool */
-        self::$unit_pool = factory::build(pool::class);
-
-        //Read app.ini
         if (is_file($app_ini = ROOT . DIRECTORY_SEPARATOR . APP_PATH . DIRECTORY_SEPARATOR . 'app.ini')) {
             $app_conf = parse_ini_file($app_ini, true, INI_SCANNER_TYPED);
 
             //Update conf values
             foreach ($app_conf as $key => $value) {
-                self::$unit_pool->conf[$key = strtolower($key)] = array_replace_recursive(self::$unit_pool->conf[$key], $value);
+                $this->unit_pool->conf[$key = strtolower($key)] = array_replace_recursive($this->unit_pool->conf[$key], $value);
             }
 
             unset($app_conf, $key, $value);
         }
 
         unset($app_ini);
-        return self::$unit_pool->conf;
+        return $this->unit_pool->conf;
     }
 
     /**
@@ -266,11 +246,11 @@ final class ns
      *
      * @return bool
      */
-    private static function pass_cors(array $cors_conf): bool
+    private function pass_cors(array $cors_conf): bool
     {
         //Check Server ENV
         if (!isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === (self::$unit_pool->is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+            || $_SERVER['HTTP_ORIGIN'] === ($this->unit_pool->is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return true;
         }
 

@@ -141,6 +141,32 @@ final class io
     }
 
     /**
+     * Output results and logs
+     *
+     * @param \core\lib\std\pool $unit_pool
+     */
+    public function output(pool $unit_pool): void
+    {
+        //Using registered output handler
+        if (!empty($unit_pool->output_handler)) {
+            call_user_func($unit_pool->output_handler, $unit_pool);
+            return;
+        }
+
+        //Using default output handler
+        if (method_exists($this, $data_type = 'make_' . $unit_pool->ret)) {
+            echo $this->{$data_type}($unit_pool->error, $unit_pool->result);
+        }
+
+        //Output system logs
+        if ('' !== $unit_pool->log) {
+            echo PHP_EOL . PHP_EOL . $unit_pool->log;
+        }
+
+        unset($unit_pool, $data_type);
+    }
+
+    /**
      * Encode data in base64 with data header
      *
      * @param string $value
@@ -170,14 +196,14 @@ final class io
     }
 
     /**
-     * Build JSON
+     * Make JSON
      *
      * @param array $error
      * @param array $data
      *
      * @return string
      */
-    public function build_json(array $error, array $data): string
+    private function make_json(array $error, array $data): string
     {
         //Reduce data depth
         if (1 === count($data)) {
@@ -192,14 +218,14 @@ final class io
     }
 
     /**
-     * Build XML
+     * Make XML
      *
      * @param array $error
      * @param array $data
      *
      * @return string
      */
-    public function build_xml(array $error, array $data): string
+    private function make_xml(array $error, array $data): string
     {
         //Reduce data depth
         if (1 === count($data)) {
@@ -214,14 +240,14 @@ final class io
     }
 
     /**
-     * Build IO
+     * Make IO
      *
      * @param array $error
      * @param array $data
      *
      * @return string
      */
-    public function build_io(array $error, array $data): string
+    private function make_io(array $error, array $data): string
     {
         //Reduce data depth
         if (1 === count($data)) {

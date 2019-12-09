@@ -59,7 +59,7 @@ final class trustzone
 
         //Get filtered methods as TrustZone data
         $tz_data = !in_array('*', $tz_data = (array)$class_object->tz, true)
-            ? array_intersect($method_list, $tz_data)
+            ? array_intersect($tz_data, $method_list)
             : $method_list;
 
         unset($class, $params, $class_object, $method_list, $key, $value);

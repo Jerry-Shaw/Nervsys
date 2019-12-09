@@ -73,7 +73,7 @@ final class cli
         while (is_array($cmd_pair = array_shift($this->unit_pool->cli_group))) {
             try {
                 //Extract CMD contents
-                list($cmd_key, $cmd_value) = $cmd_pair;
+                [$cmd_key, $cmd_value] = $cmd_pair;
 
                 //Skip empty command
                 if ('' === $cmd_value = trim($cmd_value)) {

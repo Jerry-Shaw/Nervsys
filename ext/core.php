@@ -21,9 +21,11 @@
 namespace ext;
 
 use core\lib\stc\factory as fty;
+use core\lib\std\io;
 use core\lib\std\os;
 use core\lib\std\pool;
-use core\ns;
+use core\lib\std\reflect;
+use core\lib\std\router;
 
 /**
  * Class core
@@ -37,7 +39,8 @@ class core
      */
     public static function stop(): void
     {
-        ns::output(true);
+        fty::build(io::class)->output(fty::build(pool::class));
+        exit(0);
     }
 
     /**
@@ -101,14 +104,104 @@ class core
     }
 
     /**
-     * Register CMD router parser
+     * Get parsed cmd list
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public static function get_cmd_list(): array
+    {
+        $cmd_list = [];
+
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = fty::build(pool::class);
+
+        /** @var \core\lib\std\router $unit_router */
+        $unit_router = fty::build(router::class);
+
+        /** @var \core\lib\std\reflect $unit_reflect */
+        $unit_reflect = fty::build(reflect::class);
+
+        foreach ($unit_pool->router_stack as $router) {
+            //Parse CMD
+            $cmd_group = call_user_func($router, $unit_pool->cmd);
+
+            if (empty($cmd_group) || !is_array($cmd_group)) {
+                continue;
+            }
+
+            //Build CMD list
+            while (is_array($methods = array_shift($cmd_group))) {
+                //Get full class name
+                $class = $unit_router->get_cls(array_shift($methods));
+
+                if (empty($methods) && $unit_pool->conf['sys']['auto_call']) {
+                    //Get default properties
+                    $properties = $unit_reflect->get_class($class)->getDefaultProperties();
+
+                    //Skip class with tz NOT open
+                    if (empty($tz_data = isset($properties['tz']) ? (array)$properties['tz'] : [])) {
+                        continue;
+                    }
+
+                    //Skip class with no public method
+                    if (empty($pub_func = $unit_reflect->get_method_list($class, \ReflectionMethod::IS_PUBLIC))) {
+                        continue;
+                    }
+
+                    //Get method list
+                    $method_list = array_column($pub_func, 'name');
+
+                    //Get trust list
+                    $methods = !in_array('*', $tz_data, true)
+                        ? array_intersect($tz_data, $method_list)
+                        : $method_list;
+
+                    //Remove magic methods
+                    foreach ($methods as $key => $func) {
+                        if (0 === strpos($func, '__')) {
+                            unset($methods[$key]);
+                        }
+                    }
+
+                    //Skip class with no trust method
+                    if (empty($methods)) {
+                        continue;
+                    }
+
+                    unset($properties, $tz_data, $pub_func, $method_list, $key, $func);
+                }
+
+                foreach ($methods as $method) {
+                    $cmd_list[] = $class . '-' . $method;
+                }
+            }
+        }
+
+        unset($unit_pool, $unit_router, $unit_reflect, $router, $cmd_group, $methods, $class, $method);
+        return $cmd_list;
+    }
+
+    /**
+     * Register custom router parser
      *
      * @param array $router
      */
-    public static function register_router(array $router): void
+    public static function register_router_function(array $router): void
     {
         fty::build(pool::class)->router_stack[] = $router;
         unset($router);
+    }
+
+    /**
+     * Set custom output handler
+     *
+     * @param array $handler
+     */
+    public static function set_output_handler(array $handler): void
+    {
+        fty::build(pool::class)->output_handler = $handler;
+        unset($handler);
     }
 
     /**

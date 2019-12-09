@@ -18,15 +18,11 @@
  * limitations under the License.
  */
 
-//Declare strict types
-declare(strict_types = 1);
-
-set_time_limit(0);
+//Set error_reporting level
 error_reporting(E_ALL);
-ignore_user_abort(true);
 
-//Load system script
+//Load main script
 require __DIR__ . '/core/ns.php';
 
-//System boot
-\core\ns::boot();
+//Boot NS
+new \core\ns();

@@ -20,9 +20,9 @@
 
 namespace core\lib\stc;
 
+use core\lib\std\io;
 use core\lib\std\log;
 use core\lib\std\pool;
-use core\ns;
 
 /**
  * Class error
@@ -128,13 +128,16 @@ final class error
             $err_code = E_USER_NOTICE;
         }
 
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        /** @var \core\lib\std\log $unit_log */
+        $unit_log = factory::build(log::class);
+
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
-
-        /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
 
         //Build context
         $context = [
@@ -148,18 +151,19 @@ final class error
             'Trace'    => self::get_trace_list($throwable->getTrace())
         ];
 
-        unset($throwable, $exception, $unit_pool);
-
-        /** @var \core\lib\std\log $unit_log */
-        $unit_log = factory::build(log::class);
-
         //Process logs
         $unit_log->$err_lv($message, $context);
         $unit_log->display($err_lv, $message, $context);
 
+        unset($throwable, $exception, $err_lv, $unit_log, $message, $context);
+
         //Exit on error
-        $stop_on_error && 0 < ($err_code & error_reporting()) && ns::output(true);
-        unset($stop_on_error, $err_code, $err_lv, $message, $context, $unit_log);
+        if ($stop_on_error && 0 < ($err_code & error_reporting())) {
+            factory::build(io::class)->output($unit_pool);
+            exit(0);
+        }
+
+        unset($stop_on_error, $err_code, $unit_pool);
     }
 
     /**
