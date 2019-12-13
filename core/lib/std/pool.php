@@ -119,25 +119,25 @@ final class pool
     public $is_TLS = true;
 
     /**
-     * CGI command group
+     * CGI command stack
      *
      * @var array
      */
-    public $cgi_group = [];
+    public $cgi_stack = [];
 
     /**
-     * CLI command group
+     * CLI command stack
      *
      * @var array
      */
-    public $cli_group = [];
+    public $cli_stack = [];
 
     /**
      * CLI param pool
      *
      * @var array
      */
-    public $cli_params = [];
+    public $cli_param = [];
 
     /**
      * Router stack
@@ -158,8 +158,10 @@ final class pool
      */
     public function __construct()
     {
-        //Skip on CLI mode
+        //Skip in CLI mode
         if ($this->is_CLI = 'cli' === PHP_SAPI) {
+            //Rewrite IP for CLI
+            $this->ip = 'Local CLI';
             return;
         }
 

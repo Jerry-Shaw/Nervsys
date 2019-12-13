@@ -172,8 +172,8 @@ final class ns
             $data_argv = $unit_io->read_argv();
 
             //Copy to pool
-            $this->unit_pool->cli_params['argv'] = &$data_argv['a'];
-            $this->unit_pool->cli_params['pipe'] = &$data_argv['p'];
+            $this->unit_pool->cli_param['argv'] = &$data_argv['a'];
+            $this->unit_pool->cli_param['pipe'] = &$data_argv['p'];
         } else {
             //Read CMD from URL
             $url_cmd = $unit_io->read_url();
@@ -202,21 +202,21 @@ final class ns
         $this->unit_pool->router_stack[] = [$unit_router, 'parse_cmd'];
 
         //Proceed CGI once CMD can be parsed
-        foreach ($this->unit_pool->router_stack as $router) {
-            if (!empty($this->unit_pool->cgi_group = call_user_func($router, $data_argv['c']))) {
+        foreach ($this->unit_pool->router_stack as $router_handler) {
+            if (!empty($this->unit_pool->cgi_stack = call_user_func($router_handler, $data_argv['c']))) {
                 $this->unit_pool->result += $unit_cgi->call_service();
                 break;
             }
         }
 
         //Proceed CLI once CMD can be parsed
-        if ($this->unit_pool->is_CLI && !empty($this->unit_pool->cli_group = $unit_router->cli_get_trust($data_argv['c'], $this->unit_pool->conf['cli']))) {
+        if ($this->unit_pool->is_CLI && !empty($this->unit_pool->cli_stack = $unit_router->cli_get_trust($data_argv['c'], $this->unit_pool->conf['cli']))) {
             $this->unit_pool->result += $unit_cli->call_program();
         }
 
         //Output data
         $unit_io->output($this->unit_pool);
-        unset($unit_router, $unit_cgi, $unit_cli, $unit_io, $conf, $value, $data_argv, $router);
+        unset($unit_router, $unit_cgi, $unit_cli, $unit_io, $conf, $value, $data_argv, $router_handler);
     }
 
     /**

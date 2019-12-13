@@ -70,7 +70,7 @@ final class cli
         $unit_os = factory::build(os::class);
 
         //Process CLI command
-        while (is_array($cmd_pair = array_shift($this->unit_pool->cli_group))) {
+        while (is_array($cmd_pair = array_shift($this->unit_pool->cli_stack))) {
             try {
                 //Extract CMD contents
                 [$cmd_key, $cmd_value] = $cmd_pair;
@@ -81,7 +81,7 @@ final class cli
                 }
 
                 //Get CMD argv
-                $cmd_argv = $this->unit_pool->cli_params['argv'];
+                $cmd_argv = $this->unit_pool->cli_param['argv'];
 
                 //Build CLI command
                 $cli_cmd = '"' . $cmd_value . '"' . (!empty($cmd_argv) ? ' ' . implode(' ', $cmd_argv) : '');
@@ -108,7 +108,7 @@ final class cli
                 }
 
                 //Send data via pipe
-                '' !== $this->unit_pool->cli_params['pipe'] && fwrite($pipes[0], $this->unit_pool->cli_params['pipe']);
+                '' !== $this->unit_pool->cli_param['pipe'] && fwrite($pipes[0], $this->unit_pool->cli_param['pipe']);
 
                 //Collect result
                 if ('' !== $this->unit_pool->ret) {

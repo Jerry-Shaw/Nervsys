@@ -98,7 +98,7 @@ final class cgi
         }
 
         //Process CMD group
-        while (is_array($methods = array_shift($this->unit_pool->cgi_group))) {
+        while (is_array($methods = array_shift($this->unit_pool->cgi_stack))) {
             //Skip non-exist class
             if (!class_exists($class = $this->unit_router->get_cls(array_shift($methods)))) {
                 continue;
