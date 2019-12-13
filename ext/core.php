@@ -20,11 +20,10 @@
 
 namespace ext;
 
-use core\lib\stc\factory as fty;
+use core\lib\stc\factory;
 use core\lib\std\io;
 use core\lib\std\os;
 use core\lib\std\pool;
-use core\lib\std\reflect;
 use core\lib\std\router;
 
 /**
@@ -39,7 +38,7 @@ class core
      */
     public static function stop(): void
     {
-        fty::build(io::class)->output(fty::build(pool::class));
+        factory::build(io::class)->output(factory::build(pool::class));
         exit(0);
     }
 
@@ -50,7 +49,7 @@ class core
      */
     public static function get_ip(): string
     {
-        return fty::build(pool::class)->ip;
+        return factory::build(pool::class)->ip;
     }
 
     /**
@@ -90,7 +89,7 @@ class core
      */
     public static function get_log_path(): string
     {
-        return fty::build(pool::class)->conf['log']['save_path'];
+        return factory::build(pool::class)->conf['log']['save_path'];
     }
 
     /**
@@ -100,7 +99,7 @@ class core
      */
     public static function get_php_path(): string
     {
-        return fty::build(os::class)->php_path();
+        return factory::build(os::class)->php_path();
     }
 
     /**
@@ -114,71 +113,32 @@ class core
         $cmd_list = [];
 
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = fty::build(pool::class);
+        $unit_pool = factory::build(pool::class);
 
         /** @var \core\lib\std\router $unit_router */
-        $unit_router = fty::build(router::class);
+        $unit_router = factory::build(router::class);
 
-        /** @var \core\lib\std\reflect $unit_reflect */
-        $unit_reflect = fty::build(reflect::class);
-
-        foreach ($unit_pool->router_stack as $router) {
+        foreach ($unit_pool->router_stack as $router_handler) {
             //Parse CMD
-            $cmd_group = call_user_func($router, $unit_pool->cmd);
-
-            if (empty($cmd_group) || !is_array($cmd_group)) {
+            if (empty($parsed_cmd = call_user_func($router_handler, $unit_pool->cmd))) {
                 continue;
             }
 
-            //Build CMD list
-            while (is_array($methods = array_shift($cmd_group))) {
+            while (is_array($methods = array_shift($parsed_cmd))) {
                 //Get full class name
                 $class = $unit_router->get_cls(array_shift($methods));
 
-                if (empty($methods) && $unit_pool->conf['sys']['auto_call']) {
-                    //Get default properties
-                    $properties = $unit_reflect->get_class($class)->getDefaultProperties();
+                //Refill methods
+                $methods = $unit_router->cgi_get_trust($class, $methods);
 
-                    //Skip class with tz NOT open
-                    if (empty($tz_data = isset($properties['tz']) ? (array)$properties['tz'] : [])) {
-                        continue;
-                    }
-
-                    //Skip class with no public method
-                    if (empty($pub_func = $unit_reflect->get_method_list($class, \ReflectionMethod::IS_PUBLIC))) {
-                        continue;
-                    }
-
-                    //Get method list
-                    $method_list = array_column($pub_func, 'name');
-
-                    //Get trust list
-                    $methods = !in_array('*', $tz_data, true)
-                        ? array_intersect($tz_data, $method_list)
-                        : $method_list;
-
-                    //Remove magic methods
-                    foreach ($methods as $key => $func) {
-                        if (0 === strpos($func, '__')) {
-                            unset($methods[$key]);
-                        }
-                    }
-
-                    //Skip class with no trust method
-                    if (empty($methods)) {
-                        continue;
-                    }
-
-                    unset($properties, $tz_data, $pub_func, $method_list, $key, $func);
-                }
-
+                //Build CMD list
                 foreach ($methods as $method) {
                     $cmd_list[] = $class . '-' . $method;
                 }
             }
         }
 
-        unset($unit_pool, $unit_router, $unit_reflect, $router, $cmd_group, $methods, $class, $method);
+        unset($unit_pool, $unit_router, $router_handler, $parsed_cmd, $methods, $class, $method);
         return $cmd_list;
     }
 
@@ -189,7 +149,7 @@ class core
      */
     public static function register_router_function(array $router): void
     {
-        fty::build(pool::class)->router_stack[] = $router;
+        factory::build(pool::class)->router_stack[] = &$router;
         unset($router);
     }
 
@@ -200,7 +160,7 @@ class core
      */
     public static function set_output_handler(array $handler): void
     {
-        fty::build(pool::class)->output_handler = $handler;
+        factory::build(pool::class)->output_handler = &$handler;
         unset($handler);
     }
 
@@ -211,7 +171,7 @@ class core
      */
     public static function is_CLI(): bool
     {
-        return fty::build(pool::class)->is_CLI;
+        return factory::build(pool::class)->is_CLI;
     }
 
     /**
@@ -221,7 +181,7 @@ class core
      */
     public static function is_TLS(): bool
     {
-        return fty::build(pool::class)->is_TLS;
+        return factory::build(pool::class)->is_TLS;
     }
 
     /**
@@ -233,10 +193,10 @@ class core
     public static function add_error(string $key, $error): void
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = fty::build(pool::class);
+        $unit_pool = factory::build(pool::class);
 
         //Replace error content
-        $unit_pool->error[$key][] = $error;
+        $unit_pool->error[$key][] = &$error;
         unset($key, $error, $unit_pool);
     }
 
@@ -248,7 +208,7 @@ class core
     public static function set_error(array $error): void
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = fty::build(pool::class);
+        $unit_pool = factory::build(pool::class);
 
         //Replace error content
         $unit_pool->error = array_replace_recursive($unit_pool->error, $error);
@@ -263,7 +223,7 @@ class core
      */
     public static function add_data(string $key, $value): void
     {
-        fty::build(pool::class)->data[$key] = $value;
+        factory::build(pool::class)->data[$key] = &$value;
         unset($key, $value);
     }
 
@@ -277,7 +237,7 @@ class core
     public static function get_data(string $key = '')
     {
         /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = fty::build(pool::class);
+        $unit_pool = factory::build(pool::class);
 
         //Find data
         $data = '' === $key ? $unit_pool->data : ($unit_pool->data[$key] ?? null);
