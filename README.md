@@ -25,16 +25,17 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
 
 ## Table of Contents
 
-1. [Core Structure](doc/01.CoreStructure.md)
-2. [Configurations](doc/02.Configurations.md)
-3. [About Factory](doc/03.AboutFactory.md)
-4. [About TrustZone](doc/04.AboutTrustZone.md)
-5. [Reserved Words](doc/05.ReservedWords.md)
-6. [How to Install](doc/06.HowtoInstall.md)
-7. [Custom Router](doc/07.CustomRouter.md)
-8. [Custom Output Handler](doc/08.CustomOutputHandler.md)
-9. [Develop Examples](doc/09.DevelopExamples.md)
-10. [Extension List](doc/10.ExtensionList.md)
+1. [Core Structure](doc/CoreStructure.md)
+2. [Configurations](doc/Configurations.md)
+3. [Reserved Words](doc/ReservedWords.md)
+4. [About Factory](doc/AboutFactory.md)
+5. [About TrustZone](doc/AboutTrustZone.md)
+6. [Dependency Injection](doc/DependencyInjection.md)
+7. [How to Install](doc/HowtoInstall.md)
+8. [Custom Router](doc/CustomRouter.md)
+9. [Custom Output Handler](doc/CustomOutputHandler.md)
+10. [Develop Examples](doc/DevelopExamples.md)
+11. [Extension List](doc/ExtensionList.md)
 
 ## Supporters
 
