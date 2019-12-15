@@ -48,13 +48,11 @@ class factory
      * New a stdClass by passing simply arguments
      * Arguments will be simply passed as is
      *
-     * @param mixed ...$arguments
-     *
      * @return $this
      */
-    public static function new(...$arguments): object
+    public static function new(): object
     {
-        return fty::build(get_called_class(), $arguments);
+        return fty::build(get_called_class(), func_get_args());
     }
 
     /**
@@ -84,7 +82,7 @@ class factory
     }
 
     /**
-     * Configurate class properties
+     * Config class properties
      *
      * @param array $setting
      *
@@ -92,7 +90,6 @@ class factory
      */
     public function conf(array $setting): object
     {
-        //Filter settings
         $setting = array_intersect_key($setting, get_object_vars($this));
 
         foreach ($setting as $key => $val) {
