@@ -33,7 +33,7 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
 6. [How to Install](doc/06.HowtoInstall.md)
 7. [Custom Router](doc/07.CustomRouter.md)
 8. [Custom Output Handler](doc/08.CustomOutputHandler.md)
-9. [Usage Examples](doc/09.UsageExamples.md)
+9. [Develop Examples](doc/09.DevelopExamples.md)
 10. [Extension List](doc/10.ExtensionList.md)
 
 ## Supporters
