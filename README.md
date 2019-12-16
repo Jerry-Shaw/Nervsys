@@ -36,32 +36,32 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
 9. [Custom Router](doc/CustomRouter.md)
 10. [Custom Output Handler](doc/CustomOutputHandler.md)
 11. [Develop Examples](doc/DevelopExamples.md)
-    1. CGI
-    2. CLI
+    1. [CGI](doc/example/CGI.md)
+    2. [CLI](doc/example/CLI.md)
 12. [Extension List](doc/ExtensionList.md)
-    1. cache
-    2. conf
-    3. core
-    4. crypt
-    5. crypt_img
-    6. doc
-    7. errno
-    8. factory
-    9. file
-    10. http
-    11. image
-    12. keygen
-    13. lang
-    14. lock
-    15. log
-    16. mpc
-    17. mysql
-    18. pdo
-    19. queue
-    20. redis
-    21. session
-    22. socket
-    23. upload
+    1. [cache](doc/extension/cache.md)
+    2. [conf](doc/extension/conf.md)
+    3. [core](doc/extension/core.md)
+    4. [crypt](doc/extension/crypt.md)
+    5. [crypt_img](doc/extension/crypt_img.md)
+    6. [doc](doc/extension/doc.md)
+    7. [errno](doc/extension/errno.md)
+    8. [factory](doc/extension/factory.md)
+    9. [file](doc/extension/file.md)
+    10. [http](doc/extension/http.md)
+    11. [image](doc/extension/image.md)
+    12. [keygen](doc/extension/keygen.md)
+    13. [lang](doc/extension/lang.md)
+    14. [lock](doc/extension/lock.md)
+    15. [log](doc/extension/log.md)
+    16. [mpc](doc/extension/mpc.md)
+    17. [mysql](doc/extension/mysql.md)
+    18. [pdo](doc/extension/pdo.md)
+    19. [queue](doc/extension/queue.md)
+    20. [redis](doc/extension/redis.md)
+    21. [session](doc/extension/session.md)
+    22. [socket](doc/extension/socket.md)
+    23. [upload](doc/extension/upload.md)
 
 ## Supporters
 
