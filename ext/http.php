@@ -148,6 +148,9 @@ class http extends factory
         //Close cURL handle
         curl_close($item['curl']);
 
+        //Clear jobs
+        $this->jobs = [];
+
         unset($item);
         return $res;
     }
@@ -207,6 +210,9 @@ class http extends factory
 
         //Close cURL handle
         curl_multi_close($curl);
+
+        //Clear jobs
+        $this->jobs = [];
 
         unset($curl, $item, $key);
         return $res;
