@@ -1,5 +1,8 @@
 # Core structure
 
+Structure of NS core is listed below, which doesn't mean the whole project.  
+Please follow [How to Install](HowtoInstall.md) to build up your own project based on NS.  
+
 ```text
 /
 ├─core/                            DIR: core
@@ -52,4 +55,3 @@
 ├─api.php.example                  entry script example
 └─app.ini.example                  configuration file example
 ```
-
