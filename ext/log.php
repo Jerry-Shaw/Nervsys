@@ -90,6 +90,7 @@ class log extends factory
         }
 
         fwrite($file[$key], implode(PHP_EOL, $this->log_pool) . PHP_EOL . PHP_EOL);
+        $this->log_pool = [];
         unset($key, $log);
     }
 }
