@@ -877,6 +877,7 @@ class mysql extends factory
                 }
             } else {
                 $commas = count($data) - 1;
+                $data   = array_values($data);
 
                 $cond_list[$cond_key][] = '(';
 
