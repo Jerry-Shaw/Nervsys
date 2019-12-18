@@ -756,7 +756,7 @@ class mysql extends factory
      *
      * @return array
      */
-    protected function get_cond(array $cond_list, array $bind_list): array
+    protected function get_cond(array $cond_list, array &$bind_list): array
     {
         $data = [];
 
