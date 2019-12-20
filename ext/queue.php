@@ -55,6 +55,7 @@ class queue extends factory
     //Process properties
     private $max_fork = 10;
     private $max_exec = 1000;
+    private $max_hist = 2000;
 
     //Queue name
     private $key_name = 'main:';
@@ -67,6 +68,7 @@ class queue extends factory
         //Process keys
         'listen'     => 'listen',
         'failed'     => 'failed',
+        'success'    => 'success',
         //Queue prefix
         'jobs'       => 'jobs:',
         'watch'      => 'watch:',
@@ -215,6 +217,28 @@ class queue extends factory
     }
 
     /**
+     * Show success list
+     *
+     * @param int $start
+     * @param int $end
+     *
+     * @return array
+     */
+    public function show_succ(int $start = 0, int $end = -1): array
+    {
+        //Build process keys
+        $this->build_keys();
+
+        $list = [
+            'len'  => $this->instance->lLen($this->key_slot['success']),
+            'data' => $this->instance->lRange($this->key_slot['success'], $start, $end)
+        ];
+
+        unset($start, $end);
+        return $list;
+    }
+
+    /**
      * Show queue length
      *
      * @param string $queue_key
@@ -257,10 +281,11 @@ class queue extends factory
      *
      * @param int $max_fork
      * @param int $max_exec
+     * @param int $max_hist
      *
      * @throws \Exception
      */
-    public function go(int $max_fork = 10, int $max_exec = 1000): void
+    public function go(int $max_fork = 10, int $max_exec = 1000, int $max_hist = 2000): void
     {
         //Initialize
         $this->proc_init();
@@ -278,7 +303,12 @@ class queue extends factory
             $this->max_exec = &$max_exec;
         }
 
-        unset($max_fork, $max_exec);
+        //Set max history records
+        if (0 < $max_hist) {
+            $this->max_hist = &$max_hist;
+        }
+
+        unset($max_fork, $max_exec, $max_hist);
 
         //Get idle time
         $idle_time = $this->get_idle_time();
@@ -750,10 +780,15 @@ class queue extends factory
         //Decode result
         $json = json_decode($result, true);
 
-        //Save to fail list
-        if (!is_null($json) && true !== $json) {
-            $this->instance->lPush($this->key_slot['failed'], json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => &$result], JSON_FORMAT));
-        }
+        //Build queue log
+        $log = json_encode(['data' => &$data, 'time' => date('Y-m-d H:i:s'), 'return' => &$result], JSON_FORMAT);
+
+        //Save to queue history
+        !is_null($json) && true !== $json
+            //Save to failed history
+            ? $this->instance->lPush($this->key_slot['failed'], $log)
+            //Save to success history
+            : $this->instance->lPush($this->key_slot['success'], $log) && $this->instance->lTrim($this->key_slot['success'], 0, $this->max_hist - 1);
 
         unset($data, $result, $json);
     }
