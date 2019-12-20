@@ -195,46 +195,36 @@ class queue extends factory
     }
 
     /**
-     * Show fail list
+     * Show success/failed logs
      *
-     * @param int $start
-     * @param int $end
+     * @param string $type
+     * @param int    $start
+     * @param int    $end
      *
      * @return array
+     * @throws \Exception
      */
-    public function show_fail(int $start = 0, int $end = -1): array
+    public function show_logs(string $type = 'success', int $start = 0, int $end = -1): array
     {
+        //Check log type
+        if (!in_array($type, ['success', 'failed'], true)) {
+            throw new \Exception('Log type ERROR!');
+        }
+
         //Build process keys
         $this->build_keys();
 
+        //Get log key
+        $key = $this->key_slot[$type];
+
+        //Read logs
         $list = [
-            'len'  => $this->instance->lLen($this->key_slot['failed']),
-            'data' => $this->instance->lRange($this->key_slot['failed'], $start, $end)
+            'key'  => &$key,
+            'len'  => $this->instance->lLen($key),
+            'data' => $this->instance->lRange($key, $start, $end)
         ];
 
-        unset($start, $end);
-        return $list;
-    }
-
-    /**
-     * Show success list
-     *
-     * @param int $start
-     * @param int $end
-     *
-     * @return array
-     */
-    public function show_succ(int $start = 0, int $end = -1): array
-    {
-        //Build process keys
-        $this->build_keys();
-
-        $list = [
-            'len'  => $this->instance->lLen($this->key_slot['success']),
-            'data' => $this->instance->lRange($this->key_slot['success'], $start, $end)
-        ];
-
-        unset($start, $end);
+        unset($type, $start, $end, $key);
         return $list;
     }
 
@@ -788,7 +778,7 @@ class queue extends factory
             //Save to failed history
             ? $this->instance->lPush($this->key_slot['failed'], $log)
             //Save to success history
-            : $this->instance->lPush($this->key_slot['success'], $log) && $this->instance->lTrim($this->key_slot['success'], 0, $this->max_hist - 1);
+            : 0 < (int)$this->instance->lPush($this->key_slot['success'], $log) && $this->instance->lTrim($this->key_slot['success'], 0, $this->max_hist - 1);
 
         unset($data, $result, $json);
     }
