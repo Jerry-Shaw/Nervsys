@@ -22,9 +22,9 @@
     ```text
    public function kill(string $proc_hash = ''): int
     ```   
-    * 查看失败队列
+    * 查看队列执行日志（成功/失败）
     ```text
-     public function show_fail(int $start = 0, int $end = -1): array
+     public function show_logs(string $type = 'success', int $start = 0, int $end = -1): array
     ```   
     * 查看某一组队列的任务数量
     ```text
@@ -46,24 +46,23 @@
     Example #1 queue
     ```php
     <?php
-      use ext\queue;
-      
-      class test
-      {  
-           public function queue()
-           {
-                queue::new()->set_name('app4')->add('test3-redis',['a'=>3],'test6');
-                //查看失败队列
-                $fail_list = queue::new()->set_name('app4')->show_fail();
-                //查看任务数
-                $que_len = queue::new()->set_name('app4')->show_length('Q:app4:jobs:test6');
-                //查看待执行的队列组
-                $que_list = queue::new()->set_name('app4')->show_queue();
-                //查看进程
-                $process_list = queue::new()->set_name('app4')->show_process();
-           }
-      }
-    ?>
+        use ext\queue;
+        
+        class test
+        {  
+            public function queue()
+            {
+                 queue::new()->set_name('app4')->add('test3-redis',['a'=>3],'test6');
+                 //查看失败队列
+                 $fail_list = queue::new()->set_name('app4')->show_logs('failed', 0, 20);
+                 //查看任务数
+                 $que_len = queue::new()->set_name('app4')->show_length('Q:app4:jobs:test6');
+                 //查看待执行的队列组
+                 $que_list = queue::new()->set_name('app4')->show_queue();
+                 //查看进程
+                 $process_list = queue::new()->set_name('app4')->show_process();
+            }
+        }
     ```
 * 异常/异常处理  
  
