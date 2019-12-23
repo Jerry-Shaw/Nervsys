@@ -168,8 +168,9 @@ class crypt_img extends crypt
 
         unset($codes['char'], $text);
 
-        //Add arcs
-        for ($i = 0; $i < 5; ++$i) {
+        //Add arc noise
+        $noise_count = ceil($this->height / 8);
+        for ($i = 0; $i < $noise_count; ++$i) {
             imagearc(
                 $image,
                 mt_rand(0, $this->width),
@@ -182,8 +183,9 @@ class crypt_img extends crypt
             );
         }
 
-        //Add noise
-        for ($i = 0; $i < 500; ++$i) {
+        //Add point noise
+        $noise_count = $this->height * 16;
+        for ($i = 0; $i < $noise_count; ++$i) {
             imagesetpixel(
                 $image,
                 mt_rand(0, $this->width),
@@ -192,7 +194,7 @@ class crypt_img extends crypt
             );
         }
 
-        unset($colors, $color_index, $i);
+        unset($colors, $color_index, $noise_count, $i);
 
         //Start output buffer
         ob_clean();
