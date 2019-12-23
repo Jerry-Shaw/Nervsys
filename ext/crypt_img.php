@@ -68,6 +68,9 @@ class crypt_img extends crypt
     {
         $this->width  = &$width;
         $this->height = &$height;
+
+        unset($width, $height);
+        return $this;
     }
 
     /**
@@ -80,6 +83,9 @@ class crypt_img extends crypt
     public function set_font(string $font_name): object
     {
         $this->font_name = &$font_name;
+
+        unset($font_name);
+        return $this;
     }
 
     /**
@@ -92,6 +98,9 @@ class crypt_img extends crypt
     public function set_types(string ...$types): object
     {
         $this->types = &$types;
+
+        unset($types);
+        return $this;
     }
 
     /**
