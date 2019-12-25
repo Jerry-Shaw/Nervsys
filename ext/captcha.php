@@ -25,7 +25,7 @@ namespace ext;
  *
  * @package ext
  */
-class captcha
+class captcha extends factory
 {
     //Predefined types
     const TYPE_MIX  = 'mix';
@@ -62,7 +62,7 @@ class captcha
     //Length (only works for "num" & "word")
     protected $length = 6;
 
-    //Font filename (stored in "/ext/font/")
+    //Font filename (stored in "/ext/fonts/")
     protected $font_name = 'font.ttf';
 
     /**
@@ -86,7 +86,9 @@ class captcha
     public function use_redis(\Redis $redis): object
     {
         $this->unit_redis = &$redis;
+
         unset($redis);
+        return $this;
     }
 
     /**
@@ -153,7 +155,7 @@ class captcha
         $codes = $this->{'build_' . $types[mt_rand(0, count($types) - 1)]}();
 
         //Generate encrypt code
-        $codes['code'] = $this->gen_code($codes['code'], $life);
+        $codes['code'] = $this->generate_hash($codes['code'], $life);
 
         //Font properties
         $font_file = __DIR__ . DIRECTORY_SEPARATOR . 'fonts' . DIRECTORY_SEPARATOR . $this->font_name;
@@ -249,24 +251,24 @@ class captcha
     }
 
     /**
-     * Check Auth Code & Input values
+     * Check code hash with user input
      *
-     * @param string $code
+     * @param string $hash
      * @param string $input
      *
      * @return bool
      * @throws \Exception
      */
-    public function check(string $code, string $input): bool
+    public function check(string $hash, string $input): bool
     {
-        $result = $this->fetch_code($code) === strtoupper($input);
+        $result = $this->extract_code($hash) === strtoupper($input);
 
-        unset($code, $input);
+        unset($hash, $input);
         return $result;
     }
 
     /**
-     * Generate crypt code
+     * Generate code hash
      *
      * @param string $code
      * @param int    $life
@@ -274,20 +276,15 @@ class captcha
      * @return string
      * @throws \Exception
      */
-    private function gen_code(string $code, int $life): string
+    private function generate_hash(string $code, int $life): string
     {
-        //Fix life time
-        if (0 >= $life) {
-            $life = 60;
-        }
-
         if ($this->unit_redis instanceof \Redis) {
             //Store in Redis
             $key_hash = hash('md5', uniqid((string)(microtime(true) * mt_rand()), true));
             $key_name = self::KEY_PREFIX . $key_hash;
 
             if (!$this->unit_redis->setnx($key_name, $code)) {
-                return $this->gen_code($code, $life);
+                return $this->generate_hash($code, $life);
             }
 
             $this->unit_redis->expire($key_name, $life);
@@ -302,21 +299,28 @@ class captcha
     }
 
     /**
-     * Fetch code from encrypt string
+     * Extract code from code hash
      *
-     * @param string $input
+     * @param string $hash
      *
      * @return string
      * @throws \Exception
      */
-    private function fetch_code(string $input): string
+    private function extract_code(string $hash): string
     {
         if ($this->unit_redis instanceof \Redis) {
             //Store in Redis
-            $code = (string)$this->unit_redis->get(self::KEY_PREFIX . $input);
+            $key_name = self::KEY_PREFIX . $hash;
+            $key_code = $this->unit_redis->get($key_name);
+
+            if (is_string($key_code)) {
+                $this->unit_redis->del($key_name);
+            }
+
+            unset($key_name);
         } else {
             //Store in client
-            if ('' === $res = $this->unit_crypt->verify($input)) {
+            if ('' === $res = $this->unit_crypt->verify($hash)) {
                 return '';
             }
 
@@ -326,12 +330,12 @@ class captcha
                 return '';
             }
 
-            $code = &$json['code'];
+            $key_code = &$json['code'];
             unset($res, $json);
         }
 
-        unset($input);
-        return $code;
+        unset($hash);
+        return $key_code;
     }
 
     /**
