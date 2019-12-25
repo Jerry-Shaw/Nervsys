@@ -6,9 +6,9 @@
 * 预定义常量  
 
 * queue -- queue  
-    * 构造方法，传入redis服务器配置
+    * 构造方法，传入redis对象
     ```text
-    public function __construct(array $conf = [])
+    public function __construct(\Redis $redis)
     ```   
     * 设置以name区分队列实例
     ```text
@@ -52,15 +52,17 @@
         {  
             public function queue()
             {
-                 queue::new()->set_name('app4')->add('test3-redis',['a'=>3],'test6');
+                 $redis = redis::new()->connect();
+                 $queue = queue::new($redis);
+                 $queue->set_name('app4')->add('test3-redis',['a'=>3],'test6');
                  //查看失败队列
-                 $fail_list = queue::new()->set_name('app4')->show_logs('failed', 0, 20);
+                 $fail_list = $queue->set_name('app4')->show_logs('failed', 0, 20);
                  //查看任务数
-                 $que_len = queue::new()->set_name('app4')->show_length('Q:app4:jobs:test6');
+                 $que_len = $queue->set_name('app4')->show_length('Q:app4:jobs:test6');
                  //查看待执行的队列组
-                 $que_list = queue::new()->set_name('app4')->show_queue();
+                 $que_list = $queue->set_name('app4')->show_queue();
                  //查看进程
-                 $process_list = queue::new()->set_name('app4')->show_process();
+                 $process_list = $queue->set_name('app4')->show_process();
             }
         }
     ```
