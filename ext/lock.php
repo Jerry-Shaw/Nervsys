@@ -45,15 +45,12 @@ class lock extends factory
     /**
      * lock constructor.
      *
-     * @param array $conf
-     *
-     * @throws \RedisException
-     * @throws \ReflectionException
+     * @param \Redis $redis
      */
-    public function __construct(array $conf = [])
+    public function __construct(\Redis $redis)
     {
-        $this->instance = redis::create($conf)->connect();
-        unset($conf);
+        $this->instance = &$redis;
+        unset($redis);
     }
 
     /**

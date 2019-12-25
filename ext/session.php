@@ -39,26 +39,18 @@ class session extends factory
     /**
      * session constructor.
      *
-     * @param array $conf
-     *
-     * @throws \RedisException
-     * @throws \ReflectionException
+     * @param \Redis $redis
      */
-    public function __construct(array $conf = [])
+    public function __construct(\Redis $redis)
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {
             return;
         }
 
-        //Set session life
-        if (isset($conf['life']) && 0 < $conf['life'] = (int)$conf['life']) {
-            $this->life = &$conf['life'];
-        }
-
-        //Connect Redis
-        $this->instance = redis::create($conf)->connect();
-        unset($conf);
+        //Set redis instance
+        $this->instance = &$redis;
+        unset($redis);
 
         //Set SESSION GC configurations
         ini_set('session.gc_divisor', 100);
@@ -78,6 +70,22 @@ class session extends factory
         //Start SESSION
         register_shutdown_function('session_write_close');
         session_start();
+    }
+
+    /**
+     * Set session life
+     *
+     * @param int $life
+     *
+     * @throws \Exception
+     */
+    public function set_life(int $life): void
+    {
+        if (0 < $life) {
+            $this->life = &$life;
+        }
+
+        unset($life);
     }
 
     /**

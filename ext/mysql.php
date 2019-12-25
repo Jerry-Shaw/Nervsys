@@ -49,18 +49,12 @@ class mysql extends factory
     /**
      * mysql constructor.
      *
-     * @param array $conf
-     *
-     * @throws \ReflectionException
+     * @param \PDO $pdo
      */
-    public function __construct(array $conf = [])
+    public function __construct(\PDO $pdo)
     {
-        if (isset($conf['prefix'])) {
-            $this->prefix = &$conf['prefix'];
-        }
-
-        $this->instance = pdo::create($conf)->connect();
-        unset($conf);
+        $this->instance = &$pdo;
+        unset($pdo);
     }
 
     /**
@@ -91,6 +85,7 @@ class mysql extends factory
                 return;
             }
 
+            //Using class name
             $table = get_class($this);
         }
 
@@ -100,6 +95,17 @@ class mysql extends factory
 
         $this->table = $this->escape($this->prefix . $table);
         unset($table, $pos);
+    }
+
+    /**
+     * Set table prefix
+     *
+     * @param string $prefix
+     */
+    public function set_prefix(string $prefix): void
+    {
+        $this->prefix = &$prefix;
+        unset($prefix);
     }
 
     /**
