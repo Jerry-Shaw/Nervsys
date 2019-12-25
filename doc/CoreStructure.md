@@ -30,10 +30,10 @@ Please follow [How to Install](HowtoInstall.md) to build up your own project bas
 │    ├─imp/                        DIR: interface implements
 │    │    └─key.php                key interface for keygen
 │    ├─cache.php                   cache in redis
+│    ├─captcha.php                 captcha image generator/validator
 │    ├─conf.php                    conf file reader
 │    ├─core.php                    core api extension
 │    ├─crypt.php                   data crypt handler
-│    ├─crypt_img.php               crypt image scr:base64/validator
 │    ├─doc.php                     document scanner
 │    ├─errno.php                   error number/message controller
 │    ├─factory.php                 factory extension
