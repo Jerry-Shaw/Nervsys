@@ -155,7 +155,7 @@ class captcha extends factory
         $codes = $this->{'build_' . $types[mt_rand(0, count($types) - 1)]}();
 
         //Generate encrypt code
-        $codes['code'] = $this->generate_hash($codes['code'], $life);
+        $codes['hash'] = $this->generate_hash($codes['hash'], $life);
 
         //Font properties
         $font_file = __DIR__ . DIRECTORY_SEPARATOR . 'fonts' . DIRECTORY_SEPARATOR . $this->font_name;
@@ -291,7 +291,7 @@ class captcha extends factory
             unset($key_name);
         } else {
             //Store in client
-            $key_hash = $this->unit_crypt->sign(json_encode(['code' => &$code, 'life' => time() + $life]));
+            $key_hash = $this->unit_crypt->sign(json_encode(['hash' => &$code, 'life' => time() + $life]));
         }
 
         unset($code, $life);
@@ -322,11 +322,11 @@ class captcha extends factory
 
             $json = json_decode($res, true);
 
-            if (is_null($json) || !isset($json['life']) || !isset($json['code']) || $json['life'] < time()) {
+            if (is_null($json) || !isset($json['life']) || !isset($json['hash']) || $json['life'] < time()) {
                 return '';
             }
 
-            $key_code = &$json['code'];
+            $key_code = &$json['hash'];
             unset($res, $json);
         }
 
@@ -349,7 +349,7 @@ class captcha extends factory
             $result['char'][] = $list[mt_rand(0, 35)];
         }
 
-        $result['code'] = implode($result['char']);
+        $result['hash'] = implode($result['char']);
 
         unset($list, $i);
         return $result;
@@ -368,7 +368,7 @@ class captcha extends factory
             $result['char'][] = (string)mt_rand(0, 9);
         }
 
-        $result['code'] = implode($result['char']);
+        $result['hash'] = implode($result['char']);
 
         unset($i);
         return $result;
@@ -389,7 +389,7 @@ class captcha extends factory
             $result['char'][] = $list[mt_rand(0, 25)];
         }
 
-        $result['code'] = implode($result['char']);
+        $result['hash'] = implode($result['char']);
 
         unset($list, $i);
         return $result;
@@ -408,7 +408,7 @@ class captcha extends factory
         $number = [mt_rand(0, 9), mt_rand(10, 99)];
 
         //Plus tow numbers
-        $result['code'] = (string)($number[0] + $number[1]);
+        $result['hash'] = (string)($number[0] + $number[1]);
 
         //Add number chars
         $result['char'][] = (string)$number[$i = mt_rand(0, 1)];
@@ -463,10 +463,10 @@ class captcha extends factory
         //Calculate result
         switch ($result['char'][1] <=> $result['char'][3]) {
             case -1:
-                $result['code'] = (string)$calc($result['char'][0], $result['char'][1], $calc($result['char'][2], $result['char'][3], $result['char'][4]));
+                $result['hash'] = (string)$calc($result['char'][0], $result['char'][1], $calc($result['char'][2], $result['char'][3], $result['char'][4]));
                 break;
             default:
-                $result['code'] = (string)$calc($calc($result['char'][0], $result['char'][1], $result['char'][2]), $result['char'][3], $result['char'][4]);
+                $result['hash'] = (string)$calc($calc($result['char'][0], $result['char'][1], $result['char'][2]), $result['char'][3], $result['char'][4]);
                 break;
         }
 
