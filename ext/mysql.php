@@ -4,7 +4,7 @@
  * MySQL Extension
  *
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
- * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
+ * Copyright 2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,8 +77,10 @@ class mysql extends factory
      * Set table name using prefix
      *
      * @param string $table
+     *
+     * @return $this
      */
-    public function set_table(string $table): void
+    public function set_table(string $table): object
     {
         if ('' === $table) {
             if ('' !== $this->table) {
@@ -94,18 +96,24 @@ class mysql extends factory
         }
 
         $this->table = $this->escape($this->prefix . $table);
+
         unset($table, $pos);
+        return $this;
     }
 
     /**
      * Set table prefix
      *
      * @param string $prefix
+     *
+     * @return $this
      */
-    public function set_prefix(string $prefix): void
+    public function set_prefix(string $prefix): object
     {
         $this->prefix = &$prefix;
+
         unset($prefix);
+        return $this;
     }
 
     /**
