@@ -311,12 +311,8 @@ class captcha extends factory
         if ($this->unit_redis instanceof \Redis) {
             //Store in Redis
             $key_name = self::KEY_PREFIX . $hash;
-            $key_code = $this->unit_redis->get($key_name);
-
-            if (is_string($key_code)) {
-                $this->unit_redis->del($key_name);
-            }
-
+            $key_code = (string)$this->unit_redis->get($key_name);
+            $this->unit_redis->del($key_name);
             unset($key_name);
         } else {
             //Store in client
