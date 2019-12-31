@@ -192,6 +192,55 @@ class queue extends factory
     }
 
     /**
+     * Rollback a failed job to realtime list
+     *
+     * @param string $job_json
+     *
+     * @return int
+     * @throws \Exception
+     */
+    public function rollback(string $job_json): int
+    {
+        //Get failed list key
+        $failed_key = $this->get_log_key('failed');
+
+        //Remove from failed list
+        if (0 === (int)($this->instance->lRem($failed_key, $job_json, 1))) {
+            unset($job_json, $failed_key);
+            return 0;
+        }
+
+        //Decode job data
+        if (is_null($job_data = json_decode($job_json, true))) {
+            unset($job_json, $failed_key, $job_data);
+            return 0;
+        }
+
+        //Add job as realtime job in rollback group
+        $result = $this->add_realtime('rollback', $job_data['data']);
+
+        unset($job_json, $failed_key, $job_data);
+        return $result;
+    }
+
+    /**
+     * Delete logs
+     *
+     * @param string $type
+     *
+     * @return int
+     * @throws \Exception
+     */
+    public function del_logs(string $type = 'success'): int
+    {
+        //Remove key
+        $del = $this->instance->del($this->get_log_key($type));
+
+        unset($type);
+        return $del;
+    }
+
+    /**
      * Show success/failed logs
      *
      * @param string $type
@@ -203,16 +252,8 @@ class queue extends factory
      */
     public function show_logs(string $type = 'success', int $start = 0, int $end = -1): array
     {
-        //Check log type
-        if (!in_array($type, ['success', 'failed'], true)) {
-            throw new \Exception('Log type ERROR!');
-        }
-
-        //Build process keys
-        $this->build_keys();
-
         //Get log key
-        $key = $this->key_slot[$type];
+        $key = $this->get_log_key($type);
 
         //Read logs
         $list = [
@@ -631,6 +672,28 @@ class queue extends factory
 
         unset($key, $k, $v);
         return $keys;
+    }
+
+    /**
+     * Get log key
+     *
+     * @param string $type
+     *
+     * @return string
+     * @throws \Exception
+     */
+    private function get_log_key(string $type): string
+    {
+        //Check log type
+        if (!in_array($type, ['success', 'failed'], true)) {
+            throw new \Exception('Log type ERROR!');
+        }
+
+        //Build process keys
+        $this->build_keys();
+
+        //Get log key
+        return $this->key_slot[$type];
     }
 
     /**
