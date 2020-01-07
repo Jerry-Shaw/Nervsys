@@ -84,7 +84,7 @@ class mysql extends factory
     {
         if ('' === $table) {
             if ('' !== $this->table) {
-                return;
+                return $this;
             }
 
             //Using class name
