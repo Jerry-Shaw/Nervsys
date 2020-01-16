@@ -397,7 +397,7 @@ class queue extends factory
             $running = $this->instance->expire($master_key, self::WAIT_SCAN);
 
             //Idle wait on no job or unit process running
-            if (false === $job_key = $this->instance->sRandMember($this->key_slot['listen']) || 1 < count($this->get_keys($this->key_slot['watch']))) {
+            if (false === ($job_key = $this->instance->sRandMember($this->key_slot['listen'])) || 1 < count($this->get_keys($this->key_slot['watch']))) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -759,8 +759,8 @@ class queue extends factory
 
         //Count jobs
         $jobs = 0;
-        foreach ($list as $key => $item) {
-            $jobs += $this->instance->lLen($key);
+        foreach ($list as $item) {
+            $jobs += $this->instance->lLen($item);
         }
 
         //Exit on no job
@@ -778,7 +778,7 @@ class queue extends factory
             pclose(popen($cmd, 'r'));
         }
 
-        unset($cmd, $runs, $left, $list, $jobs, $key, $item, $need, $i);
+        unset($cmd, $runs, $left, $list, $jobs, $item, $need, $i);
     }
 
     /**
