@@ -288,7 +288,7 @@ class queue extends factory
         //Build process keys
         $this->build_keys();
 
-        return $this->get_keys($this->key_slot['listen']);
+        return $this->instance->sMembers($this->key_slot['listen']);
     }
 
     /**
@@ -397,13 +397,13 @@ class queue extends factory
             $running = $this->instance->expire($master_key, self::WAIT_SCAN);
 
             //Idle wait on no job or unit process running
-            if (empty($list = $this->get_keys($this->key_slot['listen'])) || 1 < count($this->get_keys($this->key_slot['watch']))) {
+            if (false === $job_key = $this->instance->sRandMember($this->key_slot['listen']) || 1 < count($this->get_keys($this->key_slot['watch']))) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
 
             //Idle wait on no job
-            if (empty($job = $this->instance->brPop(array_keys($list), $idle_time))) {
+            if (empty($job = $this->get_job($job_key, $idle_time))) {
                 sleep(self::WAIT_IDLE);
                 continue;
             }
@@ -418,7 +418,7 @@ class queue extends factory
         //On exit
         $kill_all();
 
-        unset($idle_time, $master_hash, $master_key, $kill_all, $unit_io, $unit_cmd, $cmd_delay, $cmd_realtime, $valid, $running, $list, $job);
+        unset($idle_time, $master_hash, $master_key, $kill_all, $unit_io, $unit_cmd, $cmd_delay, $cmd_realtime, $valid, $running, $job_key, $job);
     }
 
     /**
@@ -505,16 +505,16 @@ class queue extends factory
                 register_shutdown_function($kill_unit, $unit_hash);
 
                 //Get idle time
-                $idle_time = $this->get_idle_time();
+                $idle_time = $this->get_idle_time() / 2;
 
                 do {
                     //Exit on no job
-                    if (empty($list = $this->get_keys($this->key_slot['listen']))) {
+                    if (false === $job_key = $this->instance->sRandMember($this->key_slot['listen'])) {
                         break;
                     }
 
                     //Execute job
-                    if (!empty($job = $this->instance->brPop(array_keys($list), $idle_time))) {
+                    if (!empty($job = $this->get_job($job_key, $idle_time))) {
                         $this->exec_job($job[1], $unit_router, $unit_reflect);
                     }
                 } while (0 < $this->instance->exists($unit_key) && $this->instance->expire($unit_key, self::WAIT_SCAN) && ++$unit_exec < $this->max_exec);
@@ -522,7 +522,7 @@ class queue extends factory
                 //On exit
                 $kill_unit($unit_hash);
 
-                unset($unit_router, $unit_reflect, $unit_hash, $unit_key, $kill_unit, $idle_time, $list, $job);
+                unset($unit_router, $unit_reflect, $unit_hash, $unit_key, $kill_unit, $idle_time, $job_key, $job);
                 break;
         }
 
@@ -543,6 +543,29 @@ class queue extends factory
 
         /** @var \core\lib\std\os unit_os */
         $this->unit_os = fty::build(os::class);
+    }
+
+    /**
+     * Get job from queue stack
+     *
+     * @param string $job_key
+     * @param int    $idle_time
+     *
+     * @return array
+     */
+    private function get_job(string $job_key, int $idle_time): array
+    {
+        //Check job length & get job content
+        if (0 < $this->instance->lLen($job_key) && !empty($job = $this->instance->brPop($job_key, $idle_time))) {
+            unset($job_key, $idle_time);
+            return $job;
+        }
+
+        //Remove empty job list
+        $this->instance->sRem($this->key_slot['listen'], $job_key);
+
+        unset($job_key, $idle_time);
+        return [];
     }
 
     /**
@@ -577,8 +600,8 @@ class queue extends factory
      */
     private function add_realtime(string $group, string $data): int
     {
-        //Add watch list
-        $this->instance->hSet($this->key_slot['listen'], $key = $this->key_slot['jobs'] . $group, time());
+        //Add listen list
+        $this->instance->sAdd($this->key_slot['listen'], $key = $this->key_slot['jobs'] . $group);
 
         //Add job
         $result = (int)$this->instance->lPush($key, $data);
@@ -732,7 +755,7 @@ class queue extends factory
         }
 
         //Read queue list
-        $list = $this->get_keys($this->key_slot['listen']);
+        $list = $this->instance->sMembers($this->key_slot['listen']);
 
         //Count jobs
         $jobs = 0;
