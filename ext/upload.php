@@ -162,7 +162,7 @@ class upload extends factory
         }
 
         if ((empty($this->ext) && !isset(self::MIME[(string)$ext]))
-            || (!empty($this->ext && !in_array($ext, $this->ext, true)))
+            || (!empty($this->ext) && !in_array($ext, $this->ext, true))
         ) {
             return $this->get_error(UPLOAD_ERR_EXTENSION);
         }
