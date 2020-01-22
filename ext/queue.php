@@ -35,7 +35,7 @@ use core\lib\std\router;
 class queue extends factory
 {
     //Key prefix
-    const KEY_PREFIX = 'Q:';
+    const KEY_PREFIX = '{Q}:';
 
     //Queue type
     const TYPE_DELAY    = 'delay';

@@ -28,7 +28,7 @@ namespace ext;
 class lock extends factory
 {
     //Key prefix
-    const PREFIX = 'LOCK:';
+    const PREFIX = '{LCK}:';
 
     //Wait time
     const WAIT = 1000;
