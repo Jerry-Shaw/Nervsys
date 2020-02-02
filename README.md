@@ -38,7 +38,7 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
 11. [Develop Examples]
     1. [CGI](doc/example/CGI.md)
     2. [CLI](doc/example/CLI.md)
-12. [Extension List] (Thanks for these lovely Chinese guys, only Chinese now)
+12. [Extension List] (Thanks for these lovely Chinese guys, only Chinese start writing now)
     1. [cache](doc/extension/cache.md)
     2. [conf](doc/extension/conf.md)
     3. [core](doc/extension/core.md)
