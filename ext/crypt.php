@@ -20,28 +20,32 @@
 
 namespace ext;
 
-use core\handler\factory;
-
+/**
+ * Class crypt
+ *
+ * @package ext
+ */
 class crypt extends factory
 {
-    //OpenSSL config path
-    protected $conf = '/openssl.cnf';
-
     //Crypt method
-    protected $method = 'AES-256-CTR';
+    public $method = 'AES-256-CTR';
 
     //Keygen class
-    protected $keygen = keygen::class;
+    private $keygen = keygen::class;
+
+    //OpenSSL conf path
+    private $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
 
     /**
      * crypt constructor.
      *
      * @param string $keygen
+     * @param string $conf_path
      */
-    public function __construct(string $keygen = keygen::class)
+    public function __construct(string $keygen = keygen::class, string $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf')
     {
-        //Copy keygen class
-        $this->keygen = &$keygen;
+        $this->keygen    = &$keygen;
+        $this->conf_path = &$conf_path;
     }
 
     /**
@@ -63,11 +67,9 @@ class crypt extends factory
     public function rsa_keys(): array
     {
         $keys   = ['public' => '', 'private' => ''];
-        $config = ['config' => $this->conf];
+        $config = ['config' => $this->conf_path];
 
-        $openssl = openssl_pkey_new($config);
-
-        if (false === $openssl) {
+        if (false === $openssl = openssl_pkey_new($config)) {
             throw new \Exception('OpenSSL config ERROR!', E_USER_ERROR);
         }
 
@@ -204,7 +206,7 @@ class crypt extends factory
 
         $noises = str_split($key, 8);
 
-        $string = 0 === (ord(substr($key, 0, 1)) & 1)
+        $string = 0 === (ord($key[0]) & 1)
             ? $noises[0] . ':' . $string . ':' . $noises[2]
             : $noises[1] . ':' . $string . ':' . $noises[3];
 
@@ -253,7 +255,7 @@ class crypt extends factory
             return '';
         }
 
-        list($mix, $enc) = explode('.', $string, 2);
+        [$mix, $enc] = explode('.', $string, 2);
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? $this->base64_url_decode($mix) : $this->rsa_decrypt($mix, $rsa_key);

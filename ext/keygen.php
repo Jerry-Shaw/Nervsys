@@ -20,8 +20,13 @@
 
 namespace ext;
 
-use ext\lib\key;
+use ext\imp\key;
 
+/**
+ * Class keygen
+ *
+ * @package ext
+ */
 class keygen implements key
 {
     /**
@@ -46,7 +51,7 @@ class keygen implements key
         $keys = [];
 
         $keys['key'] = &$key;
-        $keys['iv']  = 0 === (ord(substr($key, 0, 1)) & 1)
+        $keys['iv']  = 0 === (ord($key[0]) & 1)
             ? substr($key, 0, 16)
             : substr($key, -16, 16);
 
@@ -66,7 +71,7 @@ class keygen implements key
         $unit = str_split($key, 4);
 
         foreach ($unit as $k => $v) {
-            $unit_key = substr($v, 0, 1);
+            $unit_key = $v[0];
 
             if (self::validate_kv($k, $unit_key)) {
                 $v = strrev($v);

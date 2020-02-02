@@ -20,18 +20,24 @@
 
 namespace ext;
 
-use core\parser\data;
+use core\lib\std\io;
+use core\lib\std\os;
+use core\lib\std\pool;
 
-use core\handler\factory;
-use core\handler\platform;
-
+/**
+ * Class mpc
+ *
+ * @package ext
+ */
 class mpc extends factory
 {
-    //PHP key name in "system.ini"
-    protected $php_key = 'php';
-
-    //PHP executable path (in "system.ini" or configured)
-    protected $php_exe = '';
+    /**
+     * PHP executable path
+     * key: "PHP", defined in "cli" section in ""app.ini"
+     *
+     * @var string
+     */
+    private $php_exe = '';
 
     //Basic command
     private $php_cmd = '';
@@ -39,23 +45,49 @@ class mpc extends factory
     //Job list
     private $jobs = [];
 
+    /** @var \core\lib\std\pool $unit_pool */
+    private $unit_pool;
+
+    /** @var \core\lib\std\io $unit_io */
+    private $unit_io;
+
+    /** @var \core\lib\std\os $unit_os */
+    private $unit_os;
+
+    /**
+     * mpc constructor.
+     *
+     * @throws \Exception
+     */
+    public function __construct()
+    {
+        /** @var \core\lib\std\pool unit_pool */
+        $this->unit_pool = \core\lib\stc\factory::build(pool::class);
+
+        //Get PHP executable path
+        if ('' === $this->php_exe = $this->unit_pool->conf['cli']['PHP'] ?? '') {
+            throw new \Exception('"PHP" NOT defined in "app.ini"', E_USER_ERROR);
+        }
+
+        /** @var \core\lib\std\io unit_io */
+        $this->unit_io = \core\lib\stc\factory::build(io::class);
+
+        /** @var \core\lib\std\os unit_os */
+        $this->unit_os = \core\lib\stc\factory::build(os::class);
+    }
+
     /**
      * Add job
      *
      * @param array $job
-     * cmd:  string, command
-     * data: array,  data pack to pass
-     * pipe: array,  pipe data to pass
-     * argv: array,  argv data to pass
      *
      * @return $this
      * @throws \Exception
      */
     public function add(array $job = []): object
     {
-        //Check cmd
-        if (!isset($job['cmd'])) {
-            throw new \Exception('Missing "cmd"!', E_USER_ERROR);
+        if (!isset($job['c'])) {
+            throw new \Exception('Missing param: "c"!', E_USER_ERROR);
         }
 
         //Add job
@@ -81,16 +113,6 @@ class mpc extends factory
             return [];
         }
 
-        //Check php cli settings
-        if ('' === $this->php_exe) {
-            if (!isset(parent::$cli[$this->php_key])) {
-                throw new \Exception('[' . $this->php_key . '] NOT configured in "system.ini"', E_USER_ERROR);
-            }
-
-            //Get PHP executable path from "system.ini"
-            $this->php_exe = parent::$cli[$this->php_key];
-        }
-
         //Split jobs
         $job_packs = count($this->jobs) > $max_fork
             ? array_chunk($this->jobs, $max_fork, true)
@@ -104,7 +126,7 @@ class mpc extends factory
 
         //Add wait option
         if ($wait_ret) {
-            $this->php_cmd .= ' --ret';
+            $this->php_cmd .= ' -r"json"';
         }
 
         $result = [];
@@ -115,7 +137,7 @@ class mpc extends factory
             }
         }
 
-        unset($max_fork, $wait_ret, $job_packs, $jobs, $data);
+        unset($wait_ret, $max_fork, $job_packs, $jobs, $data);
         return $result;
     }
 
@@ -135,52 +157,61 @@ class mpc extends factory
 
         //Start process
         foreach ($jobs as $key => $job) {
-            //Add cmd
-            $cmd = $this->php_cmd . ' --cmd "' . data::encode($job['cmd']) . '"';
+            //Build cmd
+            $cmd = $this->php_cmd . ' -c"' . $this->unit_io->encode($job['c']) . '"';
 
             //Append data
-            if (!empty($job['data'])) {
-                $cmd .= ' --data "' . data::encode(json_encode($job['data'])) . '"';
+            if (!empty($job['d'])) {
+                $cmd .= ' -d"' . $this->unit_io->encode(json_encode($job['d'])) . '"';
             }
 
             //Append pipe
-            if (!empty($job['pipe'])) {
-                $cmd .= ' --pipe "' . data::encode(json_encode($job['pipe'])) . '"';
+            if (!empty($job['p'])) {
+                $cmd .= ' -p"' . $this->unit_io->encode(json_encode($job['p'])) . '"';
             }
 
             //Append argv
-            if (!empty($job['argv'])) {
-                $cmd .= ' ' . implode(' ', $job['argv']);
+            if (!empty($job['a'])) {
+                $cmd .= ' ' . implode(' ', $job['a']);
             }
 
             //Add no wait option
             if (!$wait) {
-                $cmd = platform::cmd_bg($cmd);
+                $cmd = $this->unit_os->cmd_bg($cmd);
             }
 
             //Create process
             $process = proc_open(
-                platform::cmd_proc($cmd),
+                $this->unit_os->cmd_proc($cmd),
                 [
                     ['pipe', 'r'],
                     ['pipe', 'w'],
-                    ['file', SYSROOT . 'logs' . DIRECTORY_SEPARATOR . 'error_mpc_' . date('Y-m-d') . '.log', 'a']
+                    ['file', \core\lib\stc\factory::build(pool::class)->conf['log']['save_path'] . DIRECTORY_SEPARATOR . date('Ymd') . '_mpc_error' . '.log', 'ab+']
                 ],
                 $pipes
             );
 
-            //Merge process resources
-            if (is_resource($process)) {
-                $resource[$key]['res']  = true;
-                $resource[$key]['cmd']  = $job['cmd'];
-                $resource[$key]['pipe'] = $pipes;
-                $resource[$key]['proc'] = $process;
-            } else {
-                $resource[$key]['res'] = false;
+            //Create failed
+            if (!is_resource($process)) {
+                throw new \Exception('"' . $job['c'] . '" create failed!', E_USER_ERROR);
             }
+
+            //Check process status
+            $status = proc_get_status($process);
+
+            if (!$status['running'] && 0 < $status['exitcode']) {
+                proc_close($process);
+                throw new \Exception('"' . $job['c'] . '" calling failed!', E_USER_ERROR);
+            }
+
+            //Merge resource
+            $resource[$key]['res']  = true;
+            $resource[$key]['cmd']  = $job['c'];
+            $resource[$key]['pipe'] = $pipes;
+            $resource[$key]['proc'] = $process;
         }
 
-        unset($jobs, $key, $job, $cmd, $pipes);
+        unset($jobs, $key, $job, $cmd, $pipes, $status);
 
         //Check wait option
         if (!$wait) {
@@ -237,7 +268,7 @@ class mpc extends factory
                 }
 
                 //Read pipe
-                $result[$key]['data'] .= trim((string)fgets($item['pipe'][1], 4096));
+                $result[$key]['data'] .= fread($item['pipe'][1], 8192);
             }
         }
 
