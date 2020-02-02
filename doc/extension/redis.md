@@ -7,7 +7,7 @@ redis缓存类
 
 * redis -- redis  
     * 构造方法，可传入redis服务器配置
-    ```text
+```text
     public function __construct(
             string $host = '127.0.0.1',
             int $port = 6379,
@@ -18,27 +18,26 @@ redis缓存类
             bool $persist = true,
             string $persist_id = ''
         )
-    ```   
+```   
     * redis连接
-    ```text
+```text
     public function connect(): \Redis
-    ```   
+```   
 * 范例  
     Example #1 redis
-    ```php
-    <?php
-      use ext\redis;
-      
-      class test
-      {  
-           public function redis()
-           {
-               $redis = redis::new()->connect();
-               $redis->set('aa','123');
-               echo $redis->get('aa');
-           }
-      }
-    ?>
-    ```
+```php
+<?php
+use ext\redis;
+
+class test
+{  
+     public function redis()
+     {
+         $redis = redis::new()->connect();
+         $redis->set('aa','123');
+         echo $redis->get('aa');
+     }
+}
+```
 * 异常/异常处理  
  

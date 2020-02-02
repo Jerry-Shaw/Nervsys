@@ -19,18 +19,18 @@
 * 范例  
     Example #1 conf  
     prod.ini
-    ```text
-    [redis]
-    host = "127.0.0.1"
-    auth =
-    db = 0
-    ```
-    ```php
-    <?php
-      conf::load('conf','prod');      //导入conf目录下的prod.ini文件
-      conf::set('redis',['db'=>1]);   //设置配置中的db为0
-      conf::get('redis');             //获取到数据为数组{"host":"127.0.0.1","auth":"","db":1}
-    ?>
-    ```
+```text
+[redis]
+host = "127.0.0.1"
+auth =
+db = 0
+```
+```php
+<?php
+    conf::load('conf','prod');      //导入conf目录下的prod.ini文件
+    conf::set('redis',['db'=>1]);   //设置配置中的db为0
+    conf::get('redis');             //获取到数据为数组{"host":"127.0.0.1","auth":"","db":1}
+?>
+```
 * 异常/异常处理  
  

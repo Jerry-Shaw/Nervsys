@@ -24,18 +24,18 @@ PREFIX(string)--缓存key前缀
     ```
 * 范例  
     Example #1 cache
-    ```php
-    <?php
-      $conf = [
-          'host'=>'127.0.0.1',
-          'auth'=>'',
-          'db'=>1
-      ];
-      $obj = cache::new($conf);
-      $obj->set('cache_test', ['cache1' => 1]);   //会存储key：CAS:cache_test,value:{"cache1":1}
-      $obj->get('cache_test');                    //会返回数组{"cache1":1}
-      $obj->del('cache_test');                    //会清除CAS:cache_test
-    ?>
-    ```
+```php
+<?php
+    $conf = [
+        'host'=>'127.0.0.1',
+        'auth'=>'',
+        'db'=>1
+    ];
+    $obj = cache::new($conf);
+    $obj->set('cache_test', ['cache1' => 1]);   //会存储key：CAS:cache_test,value:{"cache1":1}
+    $obj->get('cache_test');                    //会返回数组{"cache1":1}
+    $obj->del('cache_test');                    //会清除CAS:cache_test
+?>
+```
 * 异常/异常处理  
  
