@@ -20,10 +20,13 @@
 
 namespace ext;
 
-use core\parser\data;
+use core\lib\std\io;
 
-use core\handler\factory;
-
+/**
+ * Class http
+ *
+ * @package ext
+ */
 class http extends factory
 {
     //Pre-defined content types
@@ -145,6 +148,9 @@ class http extends factory
         //Close cURL handle
         curl_close($item['curl']);
 
+        //Clear jobs
+        $this->jobs = [];
+
         unset($item);
         return $res;
     }
@@ -204,6 +210,9 @@ class http extends factory
 
         //Close cURL handle
         curl_multi_close($curl);
+
+        //Clear jobs
+        $this->jobs = [];
 
         unset($curl, $item, $key);
         return $res;
@@ -397,7 +406,7 @@ class http extends factory
                     break;
 
                 case self::CONTENT_TYPE_XML:
-                    $opt[CURLOPT_POSTFIELDS] = data::build_xml($item['data']);
+                    $opt[CURLOPT_POSTFIELDS] = \core\lib\stc\factory::build(io::class)->build_xml($item['data']);
                     break;
 
                 case self::CONTENT_TYPE_ENCODED:

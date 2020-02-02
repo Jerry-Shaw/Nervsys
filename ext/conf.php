@@ -20,38 +20,34 @@
 
 namespace ext;
 
+/**
+ * Class conf
+ *
+ * @package ext
+ */
 class conf
 {
-    /**
-     * Config file directory
-     *
-     * Related to "ROOT/$dir/"
-     * Written in multi-section mode
-     * Put as "ROOT/$dir/self::DIR/filename.ini"
-     */
-    const DIR = 'conf';
-
     //Configuration pool
-    private static $pool = [];
+    private static $conf_pool = [];
 
     /**
      * Load config file
      *
-     * @param string $dir
-     * @param string $name
+     * @param string $file_path
+     * @param string $file_name
      *
      * @return array
      */
-    public static function load(string $dir, string $name): array
+    public static function load(string $file_path, string $file_name): array
     {
-        $dir  = '/' !== $dir ? trim($dir, "/\\") . DIRECTORY_SEPARATOR : '';
-        $file = ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR . $name . '.ini';
+        $file_path = '/' !== $file_path ? trim($file_path, "/\\") . DIRECTORY_SEPARATOR : '';
+        $conf_file = ROOT . DIRECTORY_SEPARATOR . $file_path . $file_name . '.ini';
 
-        is_array($data = parse_ini_file($file, true, INI_SCANNER_TYPED))
-            ? self::$pool = array_replace(self::$pool, $data)
+        is_array($data = parse_ini_file($conf_file, true, INI_SCANNER_TYPED))
+            ? self::$conf_pool = array_replace(self::$conf_pool, $data)
             : $data = [];
 
-        unset($dir, $name, $file);
+        unset($file_path, $file_name, $conf_file);
         return $data;
     }
 
@@ -64,21 +60,21 @@ class conf
      */
     public static function get(string $section): array
     {
-        return self::$pool[$section] ?? [];
+        return self::$conf_pool[$section] ?? [];
     }
 
     /**
      * Set configuration of a section
      *
      * @param string $section
-     * @param array  $config
+     * @param array  $values
      */
-    public static function set(string $section, array $config): void
+    public static function set(string $section, array $values): void
     {
-        self::$pool[$section] = isset(self::$pool[$section])
-            ? array_replace(self::$pool[$section], $config)
-            : $config;
+        self::$conf_pool[$section] = isset(self::$conf_pool[$section])
+            ? array_replace(self::$conf_pool[$section], $values)
+            : $values;
 
-        unset($section, $config);
+        unset($section, $values);
     }
 }

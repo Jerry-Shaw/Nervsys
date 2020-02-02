@@ -20,8 +20,11 @@
 
 namespace ext;
 
-use core\handler\factory;
-
+/**
+ * Class socket
+ *
+ * @package ext
+ */
 class socket extends factory
 {
     //Socket source
@@ -110,15 +113,14 @@ class socket extends factory
     }
 
     /**
-     * Create stream socket
+     * Create stream socket (server/client/broadcast)
      *
      * @param bool $block
      *
      * @return $this
      */
-    public function create(bool $block = false): object
+    public function start(bool $block = false): object
     {
-        //Create server/client/broadcast
         $this->{'start_' . $this->run_as}($block);
 
         unset($block);
@@ -136,7 +138,7 @@ class socket extends factory
     {
         $write = $except = [];
 
-        $client[hash('sha1', uniqid(mt_rand(), true))] = $this->source;
+        $client[hash('md5', uniqid(microtime() . mt_rand(), true))] = $this->source;
 
         $select = stream_select($client, $write, $except, $this->timeout);
 

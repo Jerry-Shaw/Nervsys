@@ -1,4 +1,2 @@
 .idea/
-exp/
-*.log
-*.ttf
+logs/

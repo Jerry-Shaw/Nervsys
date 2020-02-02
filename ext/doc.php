@@ -20,397 +20,243 @@
 
 namespace ext;
 
-use core\handler\factory;
+use core\lib\std\reflect;
+use core\lib\std\router;
 
+/**
+ * Class doc
+ *
+ * @package ext
+ */
 class doc extends factory
 {
-    //Define exclude paths
-    protected $exclude_path = ['core', 'ext'];
+    /** @var \core\lib\std\reflect $unit_reflect */
+    private $unit_reflect;
+
+    /** @var \core\lib\std\router $unit_router */
+    private $unit_router;
 
     /**
-     * Add exclude path
-     *
-     * @param string $path
+     * doc constructor.
      */
-    public function add_exclude(string $path): void
+    public function __construct()
     {
-        if ('' !== parent::$sys['app_path']) {
-            $path = trim(parent::$sys['app_path'], '\\/') . DIRECTORY_SEPARATOR . $path;
-        }
+        /** @var \core\lib\std\reflect unit_reflect */
+        $this->unit_reflect = \core\lib\stc\factory::build(reflect::class);
 
-        if (!is_dir(ROOT . $path)) {
-            return;
-        }
-
-        $this->exclude_path[] = strtr($path, '/', DIRECTORY_SEPARATOR);
+        /** @var \core\lib\std\router unit_router */
+        $this->unit_router = \core\lib\stc\factory::build(router::class);
     }
 
     /**
-     * Get structure list
+     * Show API list
      *
      * @return array
-     * @throws \ReflectionException
      */
-    public function get_struct(): array
+    public function show_api(): array
     {
         $struct = [];
-        $path   = ROOT;
 
-        //Refill path with app_path
-        if ('' !== parent::$sys['app_path']) {
-            $path .= trim(parent::$sys['app_path'], '\\/');
-        }
+        //Build app path
+        $app_path = ROOT . DIRECTORY_SEPARATOR . APP_PATH . DIRECTORY_SEPARATOR;
 
         //Get all php scripts
-        $files = file::get_list($path, '*.php', true);
+        $files = file::get_list($app_path, '*.php', true);
 
         //Collect valid classes
         foreach ($files as $item) {
-            //Remove ROOT path
-            $name = substr($item, strlen(ROOT));
-
-            //Skip ROOT path
-            if (false === strpos($name, DIRECTORY_SEPARATOR)) {
-                continue;
-            }
-
-            //Skip paths or files in exclude path settings
-            foreach ($this->exclude_path as $exclude) {
-                if (0 === strpos($name, $exclude)) {
-                    continue 2;
-                }
-            }
-
             //Skip files NOT valid
             $script = file_get_contents($item);
+
             if (false === strpos($script, 'class') || false === strpos($script, '$tz')) {
                 continue;
             }
 
-            //Get class name
-            $class = substr($name, 0, -4);
+            //Get CMD class name
+            $name = substr($item, strlen($app_path), -4);
 
-            //Reflect class
-            $class_reflect = parent::reflect_class(parent::get_app_class(DIRECTORY_SEPARATOR . $class));
+            try {
+                //Get full class name
+                $class = $this->unit_router->get_cls($name);
 
-            //Check TrustZone
-            if (empty($this->get_trustzone($class_reflect))) {
-                continue;
+                //Reflect class
+                $class_reflect = $this->unit_reflect->get_class($class);
+
+                //Get default properties
+                $properties = $class_reflect->getDefaultProperties();
+
+                //Skip class with tz NOT open
+                if (empty($tz_data = isset($properties['tz']) ? (array)$properties['tz'] : [])) {
+                    continue;
+                }
+
+                //Skip class with no public method
+                if (empty($pub_func = $this->unit_reflect->get_method_list($class, \ReflectionMethod::IS_PUBLIC))) {
+                    continue;
+                }
+
+                //Get method list
+                $method_list = array_column($pub_func, 'name');
+
+                //Get trust list
+                $trust_list = !in_array('*', $tz_data, true)
+                    ? array_intersect($tz_data, $method_list)
+                    : $method_list;
+
+                //Remove magic methods
+                foreach ($trust_list as $key => $func) {
+                    if (0 === strpos($func, '__')) {
+                        unset($trust_list[$key]);
+                    }
+                }
+
+                //Skip class with no trust method
+                if (empty($trust_list)) {
+                    continue;
+                }
+
+                //Get first sub-level dir name
+                $dir_name = false !== strpos($name = strtr($name, '\\', '/'), '/')
+                    ? strstr($name, '/', true)
+                    : $name;
+
+                //Save to struct
+                $struct[$dir_name][] = [
+                    'name'     => $this->find_named_comment((string)$class_reflect->getDocComment(), '@api'),
+                    'value'    => $name,
+                    'cmd_list' => $this->fill_cmd_list($name, $class, $trust_list)
+                ];
+            } catch (\Throwable $throwable) {
+                unset($throwable);
             }
-
-            //Process path
-            $path_unit = explode(DIRECTORY_SEPARATOR, $class);
-
-            //Remove app_path
-            if ('' !== parent::$sys['app_path']) {
-                array_shift($path_unit);
-            }
-
-            //Get file name
-            $file_name = array_pop($path_unit);
-
-            //Build path name
-            $path_name = implode('/', $path_unit);
-
-            //Get class comment
-            $comment_string = (string)$class_reflect->getDocComment();
-
-            //Convert comment from string to array
-            $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
-
-            //Save to struct
-            $struct[$path_name][] = [
-                'name'  => $this->find_named_comment($comment_array, '@api'),
-                'value' => $file_name
-            ];
         }
 
-        unset($path, $files, $item, $name, $exclude, $script, $class, $class_reflect, $path_unit, $file_name, $path_name, $comment_string, $comment_array, $module);
+        unset($app_path, $files, $item, $script, $name, $class, $class_reflect, $properties, $tz_data, $pub_func, $method_list, $trust_list, $key, $func, $dir_name);
         return $struct;
     }
 
     /**
-     * Get API list from a class
+     * Show API Doc
      *
-     * @param string $module
-     * @param string $class
-     *
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function get_api(string $module, string $class): array
-    {
-        //Build full module name
-        $module_name = '' !== parent::$sys['app_path']
-            ? trim(parent::$sys['app_path'], '\\/') . '\\' . $module
-            : $module;
-
-        //Build class name
-        $class_name = parent::get_app_class('\\' . $module_name . '\\' . $class);
-
-        //Reflect class
-        $class_reflect = parent::reflect_class($class_name);
-
-        //Fetch TrustZone
-        $trustzone = array_keys($this->get_trustzone($class_reflect));
-
-        //Get public method
-        $method_list = $class_reflect->getMethods(\ReflectionMethod::IS_PUBLIC);
-
-        //Get API list
-        $list = $this->get_api_list($module . '/' . $class, $method_list, $trustzone);
-
-        unset($module, $class, $module_name, $class_name, $class_reflect, $trustzone, $method_list);
-        return $list;
-    }
-
-    /**
-     * Build DOC
-     *
-     * @param string $api
+     * @param string $cmd
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function get_doc(string $api): array
+    public function show_doc(string $cmd): array
     {
         $doc = [];
 
-        //Refill path with app_path
-        if ('' !== parent::$sys['app_path']) {
-            $api = parent::$sys['app_path'] . $api;
-        }
+        //Get class name & method
+        [$name, $method] = explode('-', $cmd);
 
-        //Refill CMD using "__construct"
-        if (false === strpos($api, '-')) {
-            $api .= '__construct';
-        }
-
-        //Get class & method
-        list($class, $method) = explode('-', $api);
-
-        //Build class name
-        $class = parent::get_app_class('/' . $class);
+        //Build full class name
+        $class = $this->unit_router->get_cls($name);
 
         //Get method reflection
-        $reflect_method = parent::reflect_method($class, $method);
+        $reflect_method = $this->unit_reflect->get_method($class, $method);
 
         //Get comment string
         $comment_string = (string)$reflect_method->getDocComment();
 
-        //Convert comment from string to array
-        $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
+        //Get doc name and return
+        $doc['name']   = $this->find_named_comment($comment_string, '@api');
+        $doc['return'] = $this->find_named_comment($comment_string, '@return');
 
-        //Get API CMD & DESC
-        $doc['cmd']  = parent::get_app_cmd($api);
-        $doc['desc'] = $this->find_named_comment($comment_array, '@api');
+        //Get param list
+        $reflect_params = $this->unit_reflect->get_params($class, $method);
 
-        //Get parameters
-        $params = $reflect_method->getParameters();
+        //Build param info list
+        foreach ($reflect_params as $reflect_param) {
+            try {
+                $data = [];
 
-        //Build param info
-        foreach ($params as $param) {
-            $data = [];
+                //Get param info
+                $param_info = $this->unit_reflect->get_param_info($reflect_param);
 
-            $data['name']    = $param->getName();
-            $data['type']    = is_object($type = $param->getType()) ? $type->getName() : 'undefined';
-            $data['require'] = !$param->isDefaultValueAvailable();
+                $data['name'] = $param_info['name'];
+                $data['type'] = $param_info['has_type'] ? $param_info['type'] : 'mixed';
 
-            if (!$data['require']) {
-                $data['default'] = $param->getDefaultValue();
+                $data['require'] = !$param_info['has_default'];
+
+                if ($param_info['has_default']) {
+                    $data['default'] = $param_info['default'];
+                }
+
+                $data['comment'] = $this->find_named_comment($comment_string, '$' . $data['name']);
+
+                //Add param info
+                $doc['param'][] = $data;
+            } catch (\Throwable $throwable) {
+                unset($throwable);
             }
-
-            //Find param comment
-            $data['comment'] = $this->find_param_comment($comment_array, $data['name']);
-
-            //Add param info
-            $doc['param'][] = $data;
         }
 
-        //Get TrustZone
-        $trustzone = $this->get_trustzone(parent::reflect_class($class));
-
-        //Add TrustZone and return comment
-        $doc['tz']   = $trustzone[$method] ?? '*';
-        $doc['note'] = $this->find_named_comment($comment_array, '@return');
-
-        unset($api, $class, $method, $reflect_method, $comment_string, $comment_array, $params, $param, $data, $type, $trustzone);
+        unset($cmd, $name, $method, $class, $reflect_method, $comment_string, $reflect_params, $reflect_param, $data, $param_info);
         return $doc;
     }
 
     /**
-     * Get API CMD list
+     * Fill CMD name
      *
+     * @param string $name
      * @param string $class
      * @param array  $methods
-     * @param array  $trustzone
      *
      * @return array
+     * @throws \ReflectionException
      */
-    private function get_api_list(string $class, array $methods, array $trustzone): array
+    private function fill_cmd_list(string $name, string $class, array $methods): array
     {
-        $api = [];
+        $cmd_list = [];
 
-        //Get API method
-        foreach ($methods as $item) {
-            //Get method name
-            $name = $item->name;
+        foreach ($methods as $method) {
+            $reflect_method = $this->unit_reflect->get_method($class, $method);
 
-            //Skip exclude method
-            if (!in_array($name, $trustzone, true)) {
-                continue;
-            }
-
-            //Get comment string
-            $comment_string = (string)$item->getDocComment();
-
-            //Convert comment from string to array
-            $comment_array = '' !== $comment_string ? explode("\n", $comment_string) : [];
-
-            //Save method
-            $api[] = [
-                'name'  => $this->find_named_comment($comment_array, '@api'),
-                'value' => $class . '-' . $name
+            $cmd_list[] = [
+                'name'  => $this->find_named_comment((string)$reflect_method->getDocComment(), '@api'),
+                'value' => $name . '-' . $method
             ];
         }
 
-        unset($class, $methods, $trustzone, $item, $name, $comment_string, $comment_array);
-        return $api;
-    }
-
-    /**
-     * Get TrustZone
-     *
-     * @param \ReflectionClass $class
-     *
-     * @return array
-     */
-    private function get_trustzone(\ReflectionClass $class): array
-    {
-        //Get TrustZone
-        $property = $class->getDefaultProperties();
-
-        //TrustZone not open
-        if (!isset($property['tz']) || empty($property['tz'])) {
-            return [];
-        }
-
-        $trustzone = &$property['tz'];
-        unset($property);
-
-        //Rebuild TrustZone
-        if (is_string($trustzone)) {
-            if ('*' === $trustzone) {
-                //Get self methods
-                $methods = $this->get_methods($class);
-
-                //Check parent methods
-                if (is_object($parent_class = $class->getParentClass())) {
-                    $methods = array_diff($methods, $this->get_methods($parent_class));
-                }
-
-                unset($parent_class);
-            } else {
-                //Get defined TrustZone
-                $methods = false !== strpos($trustzone, ',') ? explode(',', $trustzone) : [$trustzone];
-            }
-
-            //Rebuild TrustZone
-            $tmp = [];
-            foreach ($methods as $item) {
-                $tmp[$item] = '';
-            }
-
-            $trustzone = &$tmp;
-            unset($methods, $tmp);
-        }
-
-        //Fetch param
-        foreach ($trustzone as $key => $item) {
-            if (isset($item['param'])) {
-                $item = $item['param'];
-            }
-
-            if (is_array($item)) {
-                $trustzone[$key] = implode(',', $item);
-            }
-        }
-
-        unset($class, $key, $item);
-        return $trustzone;
-    }
-
-    /**
-     * Get all public methods
-     *
-     * @param \ReflectionClass $class
-     *
-     * @return array
-     */
-    private function get_methods(\ReflectionClass $class): array
-    {
-        $list    = [];
-        $methods = $class->getMethods(\ReflectionMethod::IS_PUBLIC);
-
-        foreach ($methods as $method) {
-            $list[] = $method->getName();
-        }
-
-        unset($class, $methods, $method);
-        return $list;
-    }
-
-    /**
-     * Find param comment
-     *
-     * @param array  $comments
-     * @param string $param
-     *
-     * @return string
-     */
-    private function find_param_comment(array $comments, string $param): string
-    {
-        $comment = '';
-
-        foreach ($comments as $item) {
-            if (false === strpos($item, '@param')) {
-                continue;
-            }
-
-            if (false === $pos = strpos($item, '$' . $param)) {
-                continue;
-            }
-
-            $comment = trim(substr($item, $pos + strlen($param) + 1));
-            break;
-        }
-
-        unset($comments, $param, $item, $pos);
-        return $comment;
+        unset($name, $class, $methods, $method, $reflect_method);
+        return $cmd_list;
     }
 
     /**
      * Find named comment
      *
-     * @param array  $comments
+     * @param string $comment
      * @param string $name
      *
      * @return string
      */
-    private function find_named_comment(array $comments, string $name): string
+    private function find_named_comment(string $comment, string $name): string
     {
-        $comment = '';
-
-        foreach ($comments as $item) {
-            if (false === $pos = strpos($item, $name)) {
-                continue;
-            }
-
-            $comment = trim(substr($item, $pos + strlen($name)));
-            break;
+        //Name NOT found
+        if (false === $row_start = strpos($comment, $name)) {
+            return 'NOT found';
         }
 
-        unset($comments, $name, $item, $pos);
-        return $comment;
+        //Find comment end
+        if (false === $end = strpos($comment, "\n", $row_start)) {
+            $end = strlen($comment);
+        }
+
+        //Find comment start
+        if (false === $start = strpos($comment, ' ', $row_start)) {
+            $start = &$row_start;
+        }
+
+        //Start overflow
+        if (++$start > $end) {
+            return 'NOT found';
+        }
+
+        //Get comment text
+        $text = trim(substr($comment, $start, $end - $start));
+
+        unset($comment, $name, $row_start, $end, $start);
+        return $text;
     }
 }

@@ -20,6 +20,11 @@
 
 namespace ext;
 
+/**
+ * Class image
+ *
+ * @package ext
+ */
 class image
 {
     //Support MIME-Type
@@ -61,12 +66,15 @@ class image
 
         //Transparent for GIF/PNG
         switch ($img_info[2]) {
-            case 1://Deal with the transparent color in a GIF
+            case 1:
+                //Deal with the transparent color in a GIF
                 $transparent = imagecolorallocate($img_thumb, 0, 0, 0);
                 imagefill($img_thumb, 0, 0, $transparent);
                 imagecolortransparent($img_thumb, $transparent);
                 break;
-            case 3://Deal with the transparent color in a PNG
+
+            case 3:
+                //Deal with the transparent color in a PNG
                 $transparent = imagecolorallocatealpha($img_thumb, 0, 0, 0, 127);
                 imagealphablending($img_thumb, false);
                 imagefill($img_thumb, 0, 0, $transparent);

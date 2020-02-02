@@ -20,8 +20,13 @@
 
 namespace ext;
 
-use core\handler\factory;
+use core\lib\std\pool;
 
+/**
+ * Class upload
+ *
+ * @package ext
+ */
 class upload extends factory
 {
     //Default MIME-Type
@@ -108,8 +113,11 @@ class upload extends factory
      */
     public function fetch(string $name, string $as = ''): object
     {
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = \core\lib\stc\factory::build(pool::class);
+
         //Check file
-        if (!isset(parent::$data[$name])) {
+        if (!isset($unit_pool->data[$name])) {
             $this->file['error'] = UPLOAD_ERR_NO_FILE;
             return $this;
         }
@@ -118,12 +126,12 @@ class upload extends factory
         $this->file = [];
 
         //Receive file/base64
-        is_array(parent::$data[$name]) ? $this->recv_file(parent::$data[$name]) : $this->recv_base64(parent::$data[$name]);
+        is_array($unit_pool->data[$name]) ? $this->recv_file($unit_pool->data[$name]) : $this->recv_base64($unit_pool->data[$name]);
 
         //Save file as
-        $this->file['save_as'] = '' === $as ? misc::uuid() : $as;
+        $this->file['save_as'] = '' === $as ? core::get_uuid() : $as;
 
-        unset($name, $as);
+        unset($name, $as, $unit_pool);
         return $this;
     }
 
@@ -154,7 +162,7 @@ class upload extends factory
         }
 
         if ((empty($this->ext) && !isset(self::MIME[(string)$ext]))
-            || (!empty($this->ext && !in_array($ext, $this->ext, true)))
+            || (!empty($this->ext) && !in_array($ext, $this->ext, true))
         ) {
             return $this->get_error(UPLOAD_ERR_EXTENSION);
         }

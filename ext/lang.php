@@ -20,40 +20,38 @@
 
 namespace ext;
 
-use core\system;
+use core\lib\std\pool;
 
+/**
+ * Class lang
+ *
+ * @package ext
+ */
 class lang
 {
     /**
-     * Language file directory
-     *
-     * Related to "ROOT/$dir/"
-     * Language file should be located in "ROOT/$dir/self::DIR/$lang/LC_MESSAGES/filename.mo"
-     */
-    const DIR = 'locales';
-
-    /**
      * Load language file
+     * Language file should be located in "ROOT/$file_path/$lang/LC_MESSAGES/filename.mo"
      *
-     * @param string $dir
-     * @param string $file
-     * @param string $lang
+     * @param string $file_path
+     * @param string $file_name
+     * @param string $lang_type
      */
-    public static function load(string $dir, string $file, string $lang = ''): void
+    public static function load(string $file_path, string $file_name, string $lang_type = ''): void
     {
-        if ('' === $lang) {
-            $lang = self::detect();
+        if ('' === $lang_type) {
+            $lang_type = self::detect();
         }
 
-        putenv('LANG=' . $lang);
-        setlocale(LC_ALL, $lang);
+        putenv('LANG=' . $lang_type);
+        setlocale(LC_ALL, $lang_type);
 
-        $dir = '/' !== $dir ? trim($dir, '\\/') . DIRECTORY_SEPARATOR : '';
+        $file_path = '/' !== $file_path ? trim($file_path, '\\/') . DIRECTORY_SEPARATOR : '';
 
-        bindtextdomain($file, ROOT . $dir . self::DIR . DIRECTORY_SEPARATOR);
-        textdomain($file);
+        bindtextdomain($file_name, ROOT . DIRECTORY_SEPARATOR . $file_path . DIRECTORY_SEPARATOR);
+        textdomain($file_name);
 
-        unset($dir, $file, $lang);
+        unset($file_path, $file_name, $lang_type);
     }
 
     /**
@@ -65,16 +63,22 @@ class lang
     {
         static $lang = '';
 
-        if ('' === $lang) {
-            if (isset(system::$data['lang'])) {
-                $lang = system::$data['lang'];
-            } elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-                $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
-            } else {
-                $lang = 'en-US';
-            }
+        if ('' !== $lang) {
+            return $lang;
         }
 
+        //Get request data
+        $data = \core\lib\stc\factory::build(pool::class)->data;
+
+        if (isset($data['lang'])) {
+            $lang = &$data['lang'];
+        } elseif (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            $lang = 'zh' === substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) ? 'zh-CN' : 'en-US';
+        } else {
+            $lang = 'en-US';
+        }
+
+        unset($data);
         return $lang;
     }
 }

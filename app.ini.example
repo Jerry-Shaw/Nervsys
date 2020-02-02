@@ -1,0 +1,53 @@
+; NervSys Setting Example
+; Rewrite file location: ROOT/app/app.ini
+; Copy all modified keys including section keys to rewrite file
+
+[SYS]
+; System TimeZone
+timezone = PRC
+
+; Enable/disable automatic calling mode when no specific method name was given
+auto_call = off
+
+[LOG]
+; Log levels
+; Enable: "on" or "1"
+; Disable: "off" or "0"
+emergency = on
+alert     = on
+critical  = on
+error     = on
+warning   = on
+notice    = on
+info      = on
+debug     = on
+
+; Display logs
+; Enable: "on" or "1"
+; Disable: "off" or "0"
+display = on
+
+; Log save path
+; Absolute path should be provided, Or, leave it NOT set
+; save_path =
+
+[CLI]
+; CLI settings
+; For calling external programs
+
+[CORS]
+; CORS settings
+; For Cross-origin resource sharing permission
+; * = X-Requested-With, Content-Type, Content-Length
+
+[INIT]
+; Custom function on system initializing
+; Array settings are accepted in this section
+; Calling before input reading, under default router rules
+; Key makes non-sense for system, but for developers to know what it is
+
+[CALL]
+; Custom function on module calling
+; Array settings are accepted to call multiple functions
+; Calling before entering sub-folders by any level, under default router rules
+; Key points to the name of the sub-folder which is now being accessed by system related to "/app/" or absolute folder path from "ROOT"
