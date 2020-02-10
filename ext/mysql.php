@@ -1019,6 +1019,11 @@ class mysql extends factory
 
         $result['prep'][] = 'UPDATE';
         $result['prep'][] = $this->table;
+
+        if (isset($this->runtime['join'])) {
+            $result['prep'][] = implode(' ', $this->runtime['join']);
+        }
+
         $result['prep'][] = 'SET';
 
         $result['real'] = $result['prep'];
