@@ -232,8 +232,13 @@ final class io
             $data = current($data);
         }
 
+        //Merge error data
+        if (!empty($error)) {
+            $data = $error + ['data' => &$data];
+        }
+
         //Build full result
-        $result = $this->to_string(!empty($error) ? $error + ['data' => &$data] : $data);
+        $result = $this->to_xml((array)$data);
 
         unset($error, $data);
         return $result;
@@ -254,8 +259,13 @@ final class io
             $data = current($data);
         }
 
+        //Merge error data
+        if (!empty($error)) {
+            $data = $error + ['data' => &$data];
+        }
+
         //Build full result
-        $result = $this->to_string(!empty($error) ? $error + ['data' => &$data] : $data);
+        $result = is_array($data) ? $this->to_string($data) : (string)$data;
 
         unset($error, $data);
         return $result;
