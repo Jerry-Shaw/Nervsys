@@ -211,7 +211,7 @@ final class io
         }
 
         //Build full result
-        $result = json_encode(!empty($error) ? $error + ['data' => &$data] : $data, JSON_FORMAT);
+        $result = json_encode(!empty($error) ? $error + ['data' => $data] : $data, JSON_FORMAT);
 
         unset($error, $data);
         return $result;
@@ -234,7 +234,7 @@ final class io
 
         //Merge error data
         if (!empty($error)) {
-            $data = $error + ['data' => &$data];
+            $data = $error + ['data' => $data];
         }
 
         //Build full result
@@ -261,7 +261,7 @@ final class io
 
         //Merge error data
         if (!empty($error)) {
-            $data = $error + ['data' => &$data];
+            $data = $error + ['data' => $data];
         }
 
         //Build full result
