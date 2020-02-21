@@ -104,6 +104,16 @@ class upload extends factory
     private $file = [];
 
     /**
+     * upload constructor.
+     *
+     * @param string $upload_root
+     */
+    public function __construct(string $upload_root = ROOT)
+    {
+        $this->root = &$upload_root;
+    }
+
+    /**
      * Fetch upload file/base64
      *
      * @param string $name
