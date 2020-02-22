@@ -65,7 +65,7 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
 
 ## Supporters
 
-Thanks to [JetBrains](https://www.jetbrains.com/) for supporting the project, within the Open Source Support Program.  
+Thanks to [JetBrains](https://www.jetbrains.com/?from=Nervsys) for supporting the project, within the Open Source Support Program.  
 
 ## Licensing
 
