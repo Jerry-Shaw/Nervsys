@@ -57,7 +57,6 @@ class factory
 
     /**
      * Get original stdClass from called class with alias
-     * Defined by class saved from "as"
      *
      * @param string $alias
      *
@@ -70,7 +69,7 @@ class factory
     }
 
     /**
-     * Move stdClass under alias (overwrite)
+     * Move stdClass using alias (overwrite)
      *
      * @param string $alias
      *
@@ -79,24 +78,5 @@ class factory
     public function as(string $alias): object
     {
         return fty::move($this, $alias);
-    }
-
-    /**
-     * Config class properties
-     *
-     * @param array $setting
-     *
-     * @return $this
-     */
-    public function conf(array $setting): object
-    {
-        $setting = array_intersect_key($setting, get_object_vars($this));
-
-        foreach ($setting as $key => $val) {
-            $this->$key = $val;
-        }
-
-        unset($setting, $key, $val);
-        return $this;
     }
 }
