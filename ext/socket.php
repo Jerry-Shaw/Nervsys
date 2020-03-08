@@ -31,25 +31,14 @@ class socket extends factory
     public $source = null;
 
     //Start Options
-    private $run_as  = 'server';
-    private $address = 'tcp://0.0.0.0:65535';
+    public $run_as  = 'server';
+    public $address = 'tcp://0.0.0.0:65535';
 
     //Runtime Options
     private $msg     = '';
     private $block   = 0;
     private $timeout = 60;
     private $options = [];
-
-    /**
-     * socket constructor.
-     *
-     * @param string $run_as server/client/broadcast
-     */
-    public function __construct(string $run_as)
-    {
-        $this->run_as = &$run_as;
-        unset($run_as);
-    }
 
     /**
      * Set timeout/timewait

@@ -89,29 +89,19 @@ class upload extends factory
     ];
 
     //Allowed ext
-    protected $ext = [];
+    public $ext = [];
 
     //Root path
-    protected $root = ROOT;
+    public $root = ROOT;
 
     //Permission
-    protected $perm = 0666;
+    public $perm = 0666;
 
     //Max size
-    protected $size = 20971520;
+    public $size = 20971520;
 
     //File
     private $file = [];
-
-    /**
-     * upload constructor.
-     *
-     * @param string $upload_root
-     */
-    public function __construct(string $upload_root = ROOT)
-    {
-        $this->root = &$upload_root;
-    }
 
     /**
      * Fetch upload file/base64

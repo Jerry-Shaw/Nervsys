@@ -66,32 +66,6 @@ class captcha extends factory
     protected $font_name = 'font.ttf';
 
     /**
-     * captcha constructor.
-     *
-     * @param \ext\crypt $crypt
-     */
-    public function __construct(crypt $crypt)
-    {
-        $this->unit_crypt = &$crypt;
-        unset($crypt);
-    }
-
-    /**
-     * Using redis (high security)
-     *
-     * @param \Redis $redis
-     *
-     * @return $this
-     */
-    public function use_redis(\Redis $redis): object
-    {
-        $this->unit_redis = &$redis;
-
-        unset($redis);
-        return $this;
-    }
-
-    /**
      * Set img size
      *
      * @param int $width

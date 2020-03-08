@@ -38,19 +38,13 @@ class session extends factory
 
     /**
      * session constructor.
-     *
-     * @param \Redis $redis
      */
-    public function __construct(\Redis $redis)
+    public function __construct()
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {
             return;
         }
-
-        //Set redis instance
-        $this->instance = &$redis;
-        unset($redis);
 
         //Set SESSION GC configurations
         ini_set('session.gc_divisor', 100);

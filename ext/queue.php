@@ -81,17 +81,6 @@ class queue extends factory
     ];
 
     /**
-     * queue constructor.
-     *
-     * @param \Redis $redis
-     */
-    public function __construct(\Redis $redis)
-    {
-        $this->instance = &$redis;
-        unset($redis);
-    }
-
-    /**
      * Name cloned queue instance
      *
      * @param string $name

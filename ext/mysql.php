@@ -47,17 +47,6 @@ class mysql extends factory
     protected $runtime = [];
 
     /**
-     * mysql constructor.
-     *
-     * @param \PDO $pdo
-     */
-    public function __construct(\PDO $pdo)
-    {
-        $this->instance = &$pdo;
-        unset($pdo);
-    }
-
-    /**
      * Set string value with raw prefix
      *
      * @param string $value

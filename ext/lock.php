@@ -43,17 +43,6 @@ class lock extends factory
     private $locks = [];
 
     /**
-     * lock constructor.
-     *
-     * @param \Redis $redis
-     */
-    public function __construct(\Redis $redis)
-    {
-        $this->instance = &$redis;
-        unset($redis);
-    }
-
-    /**
      * Lock on
      *
      * @param string $key
@@ -69,6 +58,7 @@ class lock extends factory
         while ($retry <= self::RETRY) {
             if ($this->lock($key, $life)) {
                 register_shutdown_function([$this, 'clear']);
+
                 unset($key, $life, $retry);
                 return true;
             }

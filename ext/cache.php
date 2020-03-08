@@ -34,17 +34,6 @@ class cache extends factory
     public $instance;
 
     /**
-     * cache constructor.
-     *
-     * @param \Redis $redis
-     */
-    public function __construct(\Redis $redis)
-    {
-        $this->instance = &$redis;
-        unset($redis);
-    }
-
-    /**
      * Set cache
      *
      * @param string $key
@@ -94,9 +83,6 @@ class cache extends factory
      */
     public function del(string $key): int
     {
-        $result = $this->instance->del(self::PREFIX . $key);
-
-        unset($key);
-        return $result;
+        return $this->instance->del(self::PREFIX . $key);
     }
 }

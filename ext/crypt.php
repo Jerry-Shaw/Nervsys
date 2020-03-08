@@ -31,22 +31,10 @@ class crypt extends factory
     public $method = 'AES-256-CTR';
 
     //Keygen class
-    private $keygen = keygen::class;
+    public $keygen = keygen::class;
 
     //OpenSSL conf path
-    private $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
-
-    /**
-     * crypt constructor.
-     *
-     * @param string $keygen
-     * @param string $conf_path
-     */
-    public function __construct(string $keygen = keygen::class, string $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf')
-    {
-        $this->keygen    = &$keygen;
-        $this->conf_path = &$conf_path;
-    }
+    public $conf_path = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
 
     /**
      * Get crypt key
