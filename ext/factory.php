@@ -40,7 +40,7 @@ class factory
      */
     public function __call(string $name, array $arguments): object
     {
-        if (0 === strpos($name, 'use_') && false !== $var_name = substr($name, 4)) {
+        if (in_array(substr($name, 0, 4), ['set_', 'use_'], true) && false !== $var_name = substr($name, 4)) {
             $this->$var_name = current($arguments);
         }
 
