@@ -28,7 +28,7 @@ namespace ext;
 class conf
 {
     //Configuration pool
-    private static $conf_pool = [];
+    private static $pool = [];
 
     /**
      * Load config file
@@ -44,7 +44,7 @@ class conf
         $conf_file = ROOT . DIRECTORY_SEPARATOR . $file_path . $file_name . '.ini';
 
         is_array($data = parse_ini_file($conf_file, true, INI_SCANNER_TYPED))
-            ? self::$conf_pool = array_replace(self::$conf_pool, $data)
+            ? self::$pool = array_replace(self::$pool, $data)
             : $data = [];
 
         unset($file_path, $file_name, $conf_file);
@@ -60,7 +60,7 @@ class conf
      */
     public static function get(string $section): array
     {
-        return self::$conf_pool[$section] ?? [];
+        return self::$pool[$section] ?? [];
     }
 
     /**
@@ -71,8 +71,8 @@ class conf
      */
     public static function set(string $section, array $values): void
     {
-        self::$conf_pool[$section] = isset(self::$conf_pool[$section])
-            ? array_replace(self::$conf_pool[$section], $values)
+        self::$pool[$section] = isset(self::$pool[$section])
+            ? array_replace(self::$pool[$section], $values)
             : $values;
 
         unset($section, $values);
