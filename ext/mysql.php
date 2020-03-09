@@ -637,7 +637,7 @@ class mysql extends factory
 
                 $offset = 0;
                 $length = strlen($item);
-                $symbol = ['+', '-', '*', '/', '(', ')'];
+                $symbol = ['.', '+', '-', '*', '/', '(', ')'];
 
                 do {
                     $find  = [];
