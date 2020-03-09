@@ -30,20 +30,25 @@ class session extends factory
     //SESSION key prefix
     const PREFIX = 'SESS:';
 
-    /** @var \Redis $instance */
-    public $instance;
+    /** @var \Redis $redis */
+    public $redis;
 
     //SESSION life
     protected $life = 600;
 
     /**
-     * session constructor.
+     * Start session
      */
-    public function __construct()
+    public function start()
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {
             return;
+        }
+
+        //Check redis connection
+        if (!($this->redis instanceof \Redis)) {
+            throw new \Exception('Redis connection NOT defined!', E_USER_ERROR);
         }
 
         //Set SESSION GC configurations
@@ -61,25 +66,8 @@ class session extends factory
             [$this, 'session_gc']
         );
 
-        //Start SESSION
         register_shutdown_function('session_write_close');
         session_start();
-    }
-
-    /**
-     * Set session life
-     *
-     * @param int $life
-     *
-     * @throws \Exception
-     */
-    public function set_life(int $life): void
-    {
-        if (0 < $life) {
-            $this->life = &$life;
-        }
-
-        unset($life);
     }
 
     /**
@@ -115,7 +103,7 @@ class session extends factory
      */
     public function session_read(string $session_id): string
     {
-        return (string)$this->instance->get(self::PREFIX . $session_id);
+        return (string)$this->redis->get(self::PREFIX . $session_id);
     }
 
     /**
@@ -128,7 +116,7 @@ class session extends factory
      */
     public function session_write(string $session_id, string $session_data): bool
     {
-        $write = $this->instance->set(self::PREFIX . $session_id, $session_data, $this->life);
+        $write = $this->redis->set(self::PREFIX . $session_id, $session_data, $this->life);
 
         unset($session_id, $session_data);
         return (bool)$write;
@@ -143,7 +131,7 @@ class session extends factory
      */
     public function session_destroy(string $session_id): bool
     {
-        $this->instance->del(self::PREFIX . $session_id);
+        $this->redis->del(self::PREFIX . $session_id);
 
         unset($session_id);
         return true;
