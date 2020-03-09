@@ -28,8 +28,8 @@ namespace ext;
  */
 class mysql extends factory
 {
-    /** @var \PDO $instance */
-    public $instance;
+    /** @var \PDO $pdo */
+    public $pdo;
 
     //Last SQL
     protected $sql = '';
@@ -115,7 +115,7 @@ class mysql extends factory
         $this->build_sql();
 
         try {
-            $stmt = $this->instance->prepare($this->runtime['sql']);
+            $stmt = $this->pdo->prepare($this->runtime['sql']);
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
@@ -152,7 +152,7 @@ class mysql extends factory
      */
     public function get_last_insert_id(string $name = ''): int
     {
-        return (int)$this->instance->lastInsertId('' === $name ? null : $name);
+        return (int)$this->pdo->lastInsertId('' === $name ? null : $name);
     }
 
     /**
@@ -464,7 +464,7 @@ class mysql extends factory
      */
     public function begin(): bool
     {
-        return $this->instance->beginTransaction();
+        return $this->pdo->beginTransaction();
     }
 
     /**
@@ -474,7 +474,7 @@ class mysql extends factory
      */
     public function commit(): bool
     {
-        return $this->instance->commit();
+        return $this->pdo->commit();
     }
 
     /**
@@ -484,7 +484,7 @@ class mysql extends factory
      */
     public function rollback(): bool
     {
-        return $this->instance->rollBack();
+        return $this->pdo->rollBack();
     }
 
     /**
@@ -499,7 +499,7 @@ class mysql extends factory
         try {
             $this->sql = &$sql;
 
-            if (false === $this->rows = $this->instance->exec($sql)) {
+            if (false === $this->rows = $this->pdo->exec($sql)) {
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
@@ -529,7 +529,7 @@ class mysql extends factory
                 $sql_param[] = &$col_no;
             }
 
-            $stmt = $this->instance->query(...$sql_param);
+            $stmt = $this->pdo->query(...$sql_param);
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
