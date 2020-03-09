@@ -31,6 +31,23 @@ use core\lib\stc\factory as fty;
 class factory
 {
     /**
+     * @param string $name
+     * @param array  $arguments
+     *
+     * @return $this
+     */
+    public function __call(string $name, array $arguments): object
+    {
+        if (0 === strpos($name, 'use_') && false !== $arg_name = substr($name, 4)) {
+            $this->$arg_name = current($arguments);
+            unset($arg_name);
+        }
+
+        unset($name, $arguments);
+        return $this;
+    }
+
+    /**
      * Create a stdClass by passing multiple mixed arguments
      * Arguments will be filled in the right order automatically
      *
