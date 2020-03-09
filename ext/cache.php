@@ -30,8 +30,8 @@ class cache extends factory
     //Cache key prefix
     const PREFIX = 'CAS:';
 
-    /** @var \Redis $instance */
-    public $instance;
+    /** @var \Redis $redis */
+    public $redis;
 
     /**
      * Set cache
@@ -47,7 +47,7 @@ class cache extends factory
         $key   = self::PREFIX . $key;
         $cache = json_encode($data, JSON_FORMAT);
 
-        $result = 0 < $life ? $this->instance->set($key, $cache, $life) : $this->instance->set($key, $cache);
+        $result = 0 < $life ? $this->redis->set($key, $cache, $life) : $this->redis->set($key, $cache);
 
         unset($key, $data, $life, $cache);
         return $result;
@@ -62,7 +62,7 @@ class cache extends factory
      */
     public function get(string $key): array
     {
-        if (false === $cache = $this->instance->get(self::PREFIX . $key)) {
+        if (false === $cache = $this->redis->get(self::PREFIX . $key)) {
             return [];
         }
 
@@ -83,6 +83,6 @@ class cache extends factory
      */
     public function del(string $key): int
     {
-        return $this->instance->del(self::PREFIX . $key);
+        return $this->redis->del(self::PREFIX . $key);
     }
 }
