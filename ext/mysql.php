@@ -53,7 +53,7 @@ class mysql extends factory
      *
      * @return string
      */
-    public function set_raw(string $value): string
+    public function raw(string $value): string
     {
         if (!isset($this->runtime['raw'])) {
             $this->runtime['raw'] = ':' . hash('crc32b', uniqid(microtime() . mt_rand(), true)) . ':';
