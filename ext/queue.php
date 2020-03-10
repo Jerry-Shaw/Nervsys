@@ -37,10 +37,10 @@ class queue extends factory
     //Key prefix
     const KEY_PREFIX = '{Q}:';
 
-    //Queue type
-    const TYPE_DELAY    = 'delay';
-    const TYPE_UNIQUE   = 'unique';
-    const TYPE_REALTIME = 'realtime';
+    //Queue types (in BitMask)
+    const TYPE_REALTIME = 1;
+    const TYPE_UNIQUE   = 2;
+    const TYPE_DELAY    = 4;
 
     //Wait properties
     const WAIT_IDLE = 3;
@@ -105,12 +105,13 @@ class queue extends factory
      * @param string $cmd
      * @param array  $data
      * @param string $group
-     * @param string $type default realtime
-     * @param int    $time in seconds
+     * @param string $type_mask BitMask value, default realtime
+     * @param int    $time_wait in seconds
      *
-     * @return int -1: add unique job failed; 0: add job failed; other: succeeded with job length
+     * @return int -1: unique job blocked; 0: add job failed; other: add job done with total job length in groups
+     * @throws \Exception
      */
-    public function add(string $cmd, array $data = [], string $group = 'main', string $type = self::TYPE_REALTIME, int $time = 0): int
+    public function add(string $cmd, array $data = [], string $group = 'main', string $type_mask = self::TYPE_REALTIME, int $time_wait = 0): int
     {
         //Add command
         $data['cmd'] = &$cmd;
@@ -121,35 +122,47 @@ class queue extends factory
         }
 
         //Redirect to REALTIME
-        if (0 === $time) {
-            $type = self::TYPE_REALTIME;
+        if (0 === $time_wait) {
+            $type_mask = self::TYPE_REALTIME;
         }
 
         //Build process keys
         $this->build_keys();
 
-        //Pack queue job
-        $job = json_encode($data, JSON_FORMAT);
-
-        switch ($type) {
-            //Unique
-            case self::TYPE_UNIQUE:
-                $result = $this->add_unique($group, $job, $time, $cmd . (isset($data['unique_id']) ? ':' . (string)$data['unique_id'] : ''));
-                break;
-
-            //Delay
-            case self::TYPE_DELAY:
-                $result = $this->add_delay($group, $job, $time);
-                break;
-
-            //Realtime
-            default:
-                $result = $this->add_realtime($group, $job);
-                break;
+        //Check unique job identifier
+        if (($type_mask & self::TYPE_UNIQUE) === self::TYPE_UNIQUE && !$this->check_unique($cmd, $data['unique_id'] ?? '', $time_wait)) {
+            //Unique job blocked
+            unset($cmd, $data, $group, $type_mask, $time_wait);
+            return -1;
         }
 
-        unset($cmd, $data, $group, $type, $time, $job);
-        return $result;
+        //Set job length
+        $job_len = 0;
+        //Pack job data in JSON
+        $job_data = json_encode($data, JSON_FORMAT);
+
+        //Add realtime job
+        if (($type_mask & self::TYPE_REALTIME) === self::TYPE_REALTIME) {
+            if (0 === $add_res = $this->add_realtime($group, $job_data)) {
+                throw new \Exception('Realtime job add failed!', E_USER_WARNING);
+            }
+
+            //Count group jobs
+            $job_len += $add_res;
+        }
+
+        //Add delay job
+        if (($type_mask & self::TYPE_DELAY) === self::TYPE_DELAY) {
+            if (0 === $add_res = $this->add_delay($group, $job_data, $time_wait)) {
+                throw new \Exception('Delay job add failed!', E_USER_WARNING);
+            }
+
+            //Count group jobs
+            $job_len += $add_res;
+        }
+
+        unset($cmd, $data, $group, $type_mask, $time_wait, $job_data, $add_res);
+        return $job_len;
     }
 
     /**
@@ -603,33 +616,6 @@ class queue extends factory
     }
 
     /**
-     * Add unique job
-     *
-     * @param string $group
-     * @param string $data
-     * @param int    $time
-     * @param string $unique_id
-     *
-     * @return int
-     */
-    private function add_unique(string $group, string $data, int $time, string $unique_id): int
-    {
-        //Check job unique id
-        if (!$this->redis->setnx($key = $this->key_slot['unique'] . $unique_id, time())) {
-            return -1;
-        }
-
-        //Set duration life
-        $this->redis->expire($key, $time);
-
-        //Add realtime job
-        $result = $this->add_realtime($group, $data);
-
-        unset($group, $data, $time, $unique_id, $key);
-        return $result;
-    }
-
-    /**
      * Add delay job
      *
      * @param string $group
@@ -650,7 +636,7 @@ class queue extends factory
         }
 
         //Add delay job
-        $result = $this->redis->lPush(
+        $result = (int)$this->redis->lPush(
             $this->key_slot['delay_jobs'] . (string)$delay,
             json_encode([
                 'group' => &$group,
@@ -831,6 +817,40 @@ class queue extends factory
         }
 
         unset($data, $unit_router, $unit_reflect, $input_data, $cmd_group, $group, $class, $method, $method_reflect, $class_object, $matched_params);
+    }
+
+    /**
+     * Check a unique job
+     *
+     * @param string $job_cmd
+     * @param string $unique_id
+     * @param int    $time_wait
+     *
+     * @return bool
+     */
+    private function check_unique(string $job_cmd, string $unique_id, int $time_wait): bool
+    {
+        //Default result
+        $result = false;
+
+        //Build job unique key
+        $unique_key = $this->key_slot['unique'] . $job_cmd;
+
+        //Append defined unique id
+        if ('' !== $unique_id) {
+            $unique_key .= ':' . $unique_id;
+        }
+
+        //Check job with unique id
+        if ($this->redis->setnx($unique_key, time() + $time_wait)) {
+            //Set unique job duration life
+            $this->redis->expire($unique_key, $time_wait);
+            //Check passed
+            $result = true;
+        }
+
+        unset($job_cmd, $unique_id, $time_wait, $unique_key);
+        return $result;
     }
 
     /**
