@@ -891,7 +891,15 @@ class mysql extends factory
                         $cond_list[$cond_key][] = ',';
                     }
 
-                    $this->runtime['cond'][] = is_string($item) ? '"' . $item . '"' : $item;
+                    if (!is_string($item)) {
+                        $this->runtime['cond'][] = $item;
+                    } elseif (!is_numeric($item)) {
+                        $this->runtime['cond'][] = '"' . $item . '"';
+                    } elseif (false === strpos($item, '.')) {
+                        $this->runtime['cond'][] = (int)$item;
+                    } else {
+                        $this->runtime['cond'][] = (float)$item;
+                    }
                 }
 
                 $cond_list[$cond_key][] = ')';
