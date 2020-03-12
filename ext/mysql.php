@@ -164,7 +164,7 @@ class mysql extends factory
      */
     public function insert(string $table = ''): object
     {
-        $this->runtime['action'] = 'INSERT';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -180,7 +180,7 @@ class mysql extends factory
      */
     public function select(string $table = ''): object
     {
-        $this->runtime['action'] = 'SELECT';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -196,7 +196,7 @@ class mysql extends factory
      */
     public function update(string $table = ''): object
     {
-        $this->runtime['action'] = 'UPDATE';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -212,7 +212,7 @@ class mysql extends factory
      */
     public function delete(string $table = ''): object
     {
-        $this->runtime['action'] = 'DELETE';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -775,6 +775,22 @@ class mysql extends factory
 
         unset($cond_list, $bind_list, $value, $item);
         return $data;
+    }
+
+    /**
+     * Build valid action
+     *
+     * @param string $action
+     */
+    protected function build_act(string $action): void
+    {
+        //Check on going actions
+        if (isset($this->runtime['action'])) {
+            throw new \PDOException('Another "' . $this->runtime['action'] . '" action is waiting to execute!', E_USER_ERROR);
+        }
+
+        $this->runtime['action'] = strtoupper($action);
+        unset($action);
     }
 
     /**
