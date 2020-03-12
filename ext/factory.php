@@ -31,6 +31,8 @@ use core\lib\stc\factory as fty;
 class factory
 {
     /**
+     * Use an object (copy to class property)
+     *
      * @param string $name
      * @param array  $arguments
      *
@@ -38,12 +40,11 @@ class factory
      */
     public function __call(string $name, array $arguments): object
     {
-        if (0 === strpos($name, 'use_') && false !== $arg_name = substr($name, 4)) {
-            $this->$arg_name = current($arguments);
-            unset($arg_name);
+        if (in_array(substr($name, 0, 4), ['set_', 'use_'], true) && false !== $var_name = substr($name, 4)) {
+            $this->$var_name = current($arguments);
         }
 
-        unset($name, $arguments);
+        unset($name, $arguments, $var_name);
         return $this;
     }
 

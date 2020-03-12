@@ -46,11 +46,11 @@ class captcha extends factory
         self::TYPE_CALC,
     ];
 
-    /** @var \ext\crypt $unit_crypt */
-    public $unit_crypt;
+    /** @var \ext\crypt $crypt */
+    public $crypt;
 
-    /** @var \Redis $unit_redis */
-    public $unit_redis;
+    /** @var \Redis $redis */
+    public $redis;
 
     //Code output types
     protected $types = [];
@@ -252,20 +252,20 @@ class captcha extends factory
      */
     private function generate_hash(string $code, int $life): string
     {
-        if ($this->unit_redis instanceof \Redis) {
+        if ($this->redis instanceof \Redis) {
             //Store in Redis
             $key_hash = hash('md5', uniqid((string)(microtime(true) * mt_rand()), true));
             $key_name = self::KEY_PREFIX . $key_hash;
 
-            if (!$this->unit_redis->setnx($key_name, $code)) {
+            if (!$this->redis->setnx($key_name, $code)) {
                 return $this->generate_hash($code, $life);
             }
 
-            $this->unit_redis->expire($key_name, $life);
+            $this->redis->expire($key_name, $life);
             unset($key_name);
         } else {
             //Store in client
-            $key_hash = $this->unit_crypt->sign(json_encode(['hash' => &$code, 'life' => time() + $life]));
+            $key_hash = $this->crypt->sign(json_encode(['hash' => &$code, 'life' => time() + $life]));
         }
 
         unset($code, $life);
@@ -282,15 +282,15 @@ class captcha extends factory
      */
     private function extract_code(string $hash): string
     {
-        if ($this->unit_redis instanceof \Redis) {
+        if ($this->redis instanceof \Redis) {
             //Store in Redis
             $key_name = self::KEY_PREFIX . $hash;
-            $key_code = (string)$this->unit_redis->get($key_name);
-            $this->unit_redis->del($key_name);
+            $key_code = (string)$this->redis->get($key_name);
+            $this->redis->del($key_name);
             unset($key_name);
         } else {
             //Store in client
-            if ('' === $res = $this->unit_crypt->verify($hash)) {
+            if ('' === $res = $this->crypt->verify($hash)) {
                 return '';
             }
 

@@ -28,8 +28,8 @@ namespace ext;
  */
 class mysql extends factory
 {
-    /** @var \PDO $instance */
-    public $instance;
+    /** @var \PDO $pdo */
+    public $pdo;
 
     //Last SQL
     protected $sql = '';
@@ -53,7 +53,7 @@ class mysql extends factory
      *
      * @return string
      */
-    public function set_raw(string $value): string
+    public function raw(string $value): string
     {
         if (!isset($this->runtime['raw'])) {
             $this->runtime['raw'] = ':' . hash('crc32b', uniqid(microtime() . mt_rand(), true)) . ':';
@@ -115,7 +115,7 @@ class mysql extends factory
         $this->build_sql();
 
         try {
-            $stmt = $this->instance->prepare($this->runtime['sql']);
+            $stmt = $this->pdo->prepare($this->runtime['sql']);
         } catch (\Throwable $throwable) {
             throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
         }
@@ -152,7 +152,7 @@ class mysql extends factory
      */
     public function get_last_insert_id(string $name = ''): int
     {
-        return (int)$this->instance->lastInsertId('' === $name ? null : $name);
+        return (int)$this->pdo->lastInsertId('' === $name ? null : $name);
     }
 
     /**
@@ -164,7 +164,7 @@ class mysql extends factory
      */
     public function insert(string $table = ''): object
     {
-        $this->runtime['action'] = 'INSERT';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -180,7 +180,7 @@ class mysql extends factory
      */
     public function select(string $table = ''): object
     {
-        $this->runtime['action'] = 'SELECT';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -196,7 +196,7 @@ class mysql extends factory
      */
     public function update(string $table = ''): object
     {
-        $this->runtime['action'] = 'UPDATE';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -212,7 +212,7 @@ class mysql extends factory
      */
     public function delete(string $table = ''): object
     {
-        $this->runtime['action'] = 'DELETE';
+        $this->build_act(__FUNCTION__);
         $this->set_table($table);
 
         unset($table);
@@ -464,7 +464,7 @@ class mysql extends factory
      */
     public function begin(): bool
     {
-        return $this->instance->beginTransaction();
+        return $this->pdo->beginTransaction();
     }
 
     /**
@@ -474,7 +474,7 @@ class mysql extends factory
      */
     public function commit(): bool
     {
-        return $this->instance->commit();
+        return $this->pdo->commit();
     }
 
     /**
@@ -484,7 +484,7 @@ class mysql extends factory
      */
     public function rollback(): bool
     {
-        return $this->instance->rollBack();
+        return $this->pdo->rollBack();
     }
 
     /**
@@ -499,7 +499,7 @@ class mysql extends factory
         try {
             $this->sql = &$sql;
 
-            if (false === $this->rows = $this->instance->exec($sql)) {
+            if (false === $this->rows = $this->pdo->exec($sql)) {
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
@@ -529,7 +529,7 @@ class mysql extends factory
                 $sql_param[] = &$col_no;
             }
 
-            $stmt = $this->instance->query(...$sql_param);
+            $stmt = $this->pdo->query(...$sql_param);
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
@@ -637,7 +637,7 @@ class mysql extends factory
 
                 $offset = 0;
                 $length = strlen($item);
-                $symbol = ['+', '-', '*', '/', '(', ')'];
+                $symbol = ['.', '+', '-', '*', '/', '(', ')'];
 
                 do {
                     $find  = [];
@@ -778,6 +778,22 @@ class mysql extends factory
     }
 
     /**
+     * Build valid action
+     *
+     * @param string $action
+     */
+    protected function build_act(string $action): void
+    {
+        //Check on going actions
+        if (isset($this->runtime['action'])) {
+            throw new \PDOException('Another "' . $this->runtime['action'] . '" action is waiting to execute!', E_USER_ERROR);
+        }
+
+        $this->runtime['action'] = strtoupper($action);
+        unset($action);
+    }
+
+    /**
      * Build real/prep SQL
      */
     protected function build_sql(): void
@@ -891,7 +907,15 @@ class mysql extends factory
                         $cond_list[$cond_key][] = ',';
                     }
 
-                    $this->runtime['cond'][] = is_string($item) ? '"' . $item . '"' : $item;
+                    if (!is_string($item)) {
+                        $this->runtime['cond'][] = $item;
+                    } elseif (!is_numeric($item)) {
+                        $this->runtime['cond'][] = '"' . $item . '"';
+                    } elseif (false === strpos($item, '.')) {
+                        $this->runtime['cond'][] = (int)$item;
+                    } else {
+                        $this->runtime['cond'][] = (float)$item;
+                    }
                 }
 
                 $cond_list[$cond_key][] = ')';

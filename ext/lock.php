@@ -36,8 +36,8 @@ class lock extends factory
     //Retry limit
     const RETRY = 10;
 
-    /** @var \Redis $instance */
-    public $instance;
+    /** @var \Redis $redis */
+    public $redis;
 
     //Lock pool
     private $locks = [];
@@ -79,7 +79,7 @@ class lock extends factory
     public function off(string $key): void
     {
         $key = self::PREFIX . $key;
-        $this->instance->del($key);
+        $this->redis->del($key);
 
         if (false !== $key = array_search($key, $this->locks, true)) {
             unset($this->locks[$key]);
@@ -94,7 +94,7 @@ class lock extends factory
     public function clear(): void
     {
         if (!empty($this->locks)) {
-            call_user_func_array([$this->instance, 'del'], $this->locks);
+            call_user_func_array([$this->redis, 'del'], $this->locks);
             $this->locks = [];
         }
     }
@@ -109,11 +109,11 @@ class lock extends factory
      */
     private function lock(string $key, int $life): bool
     {
-        if (!$this->instance->setnx($key, time())) {
+        if (!$this->redis->setnx($key, time())) {
             return false;
         }
 
-        $this->instance->expire($key, 0 < $life ? $life : 3);
+        $this->redis->expire($key, 0 < $life ? $life : 3);
         $this->locks[] = &$key;
 
         unset($key, $life);
