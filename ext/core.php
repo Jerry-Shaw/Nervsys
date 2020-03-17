@@ -43,6 +43,30 @@ class core
     }
 
     /**
+     * Set autoload to target path
+     *
+     * @param string $path
+     */
+    public static function autoload(string $path): void
+    {
+        $path = ROOT . '/' . $path;
+
+        spl_autoload_register(
+            static function (string $class) use ($path): void
+            {
+                //Try to load class file "ROOT/$path/namespace/class.php"
+                if (is_file($class_file = $path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php')) {
+                    require $class_file;
+                }
+
+                unset($class, $path, $class_file);
+            }
+        );
+
+        unset($path);
+    }
+
+    /**
      * Get client IP
      *
      * @return string
