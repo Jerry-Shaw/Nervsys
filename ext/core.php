@@ -127,6 +127,16 @@ class core
     }
 
     /**
+     * Get input cmd value
+     *
+     * @return string
+     */
+    public static function get_cmd_val(): string
+    {
+        return factory::build(pool::class)->cmd;
+    }
+
+    /**
      * Get parsed cmd list
      *
      * @return array
