@@ -150,6 +150,7 @@ final class ns
 
         //Verify CORS in CGI mode
         if (!$this->unit_pool->is_CLI && !$this->pass_cors($conf['cors'])) {
+            http_response_code(406);
             exit;
         }
 
