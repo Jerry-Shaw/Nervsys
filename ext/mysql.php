@@ -117,7 +117,7 @@ class mysql extends factory
         try {
             $stmt = $this->pdo->prepare($this->runtime['sql']);
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         return $stmt;
@@ -503,7 +503,7 @@ class mysql extends factory
                 $this->rows = -1;
             }
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         unset($sql);
@@ -533,7 +533,7 @@ class mysql extends factory
 
             $this->rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         unset($sql, $fetch_style, $col_no, $sql_param);
@@ -555,7 +555,7 @@ class mysql extends factory
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         unset($stmt);
@@ -579,7 +579,7 @@ class mysql extends factory
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         $data = $stmt->fetch($fetch_style);
@@ -609,7 +609,7 @@ class mysql extends factory
             $this->rows    = $stmt->rowCount();
             $this->runtime = [];
         } catch (\Throwable $throwable) {
-            throw new \PDOException('SQL: ' . $this->sql . '. ' . PHP_EOL . 'Error:' . $throwable->getMessage(), E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         $data = $stmt->fetchAll($fetch_style);
@@ -786,7 +786,9 @@ class mysql extends factory
     {
         //Check on going actions
         if (isset($this->runtime['action'])) {
-            throw new \PDOException('Another "' . $this->runtime['action'] . '" action is waiting to execute!', E_USER_ERROR);
+            //Build SQL & throw PDOException
+            $this->build_sql();
+            throw new \PDOException('Another "' . $this->runtime['action'] . '" action is on going!' . PHP_EOL . 'SQL: ' . $this->sql, E_USER_ERROR);
         }
 
         $this->runtime['action'] = strtoupper($action);
