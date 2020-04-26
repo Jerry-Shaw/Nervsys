@@ -150,8 +150,7 @@ final class ns
 
         //Verify CORS in CGI mode
         if (!$this->unit_pool->is_CLI && !$this->pass_cors($conf['cors'])) {
-            http_response_code(406);
-            exit;
+            exit(0);
         }
 
         //Run INIT section (ONLY CGI)
@@ -257,6 +256,7 @@ final class ns
 
         //Exit on access NOT permitted
         if (is_null($allow_headers = $cors_conf[$_SERVER['HTTP_ORIGIN']] ?? $cors_conf['*'] ?? null)) {
+            http_response_code(406);
             return false;
         }
 
