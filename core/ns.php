@@ -195,7 +195,7 @@ final class ns
         $this->unit_pool->cmd = &$data_argv['c'];
         $this->unit_pool->ret = &$data_argv['r'];
 
-        //Copy input data
+        //Add input data
         $this->unit_pool->data += $data_argv['d'];
 
         //Append default router
@@ -225,6 +225,7 @@ final class ns
     private function load_ini(): array
     {
         if (is_file($app_ini = ROOT . DIRECTORY_SEPARATOR . APP_PATH . DIRECTORY_SEPARATOR . 'app.ini')) {
+            //Parse "app.ini"
             $app_conf = parse_ini_file($app_ini, true, INI_SCANNER_TYPED);
 
             //Update conf values
@@ -248,28 +249,29 @@ final class ns
      */
     private function pass_cors(array $cors_conf): bool
     {
-        //Check Server ENV
+        //Server ENV passed
         if (!isset($_SERVER['HTTP_ORIGIN'])
             || $_SERVER['HTTP_ORIGIN'] === ($this->unit_pool->is_TLS ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return true;
         }
 
-        //Exit on access NOT permitted
+        //Access NOT allowed
         if (is_null($allow_headers = $cors_conf[$_SERVER['HTTP_ORIGIN']] ?? $cors_conf['*'] ?? null)) {
             http_response_code(406);
             return false;
         }
 
-        //Response access allowed headers
+        //Response allowed headers
         header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
 
-        //Skip OPTION request
+        //Exit OPTION request
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             return false;
         }
 
+        //All passed
         unset($cors_conf, $allow_headers);
         return true;
     }
