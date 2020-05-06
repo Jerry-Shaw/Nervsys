@@ -129,6 +129,9 @@ final class error
             $err_code = E_USER_NOTICE;
         }
 
+        /** @var \core\lib\std\log $unit_log */
+        $unit_log = factory::build(log::class);
+
         /** @var \core\lib\std\pool $unit_pool */
         $unit_pool = factory::build(pool::class);
 
@@ -149,19 +152,13 @@ final class error
             'Trace'    => self::get_trace_list($throwable->getTrace())
         ];
 
-        //Save to log
+        //Save logs
         if ($save_to_log) {
-            /** @var \core\lib\std\log $unit_log */
-            $unit_log = factory::build(log::class);
-
-            //Process logs
             $unit_log->$err_lv($message, $context);
-            $unit_log->display($err_lv, $message, $context);
-
-            unset($unit_log);
         }
 
-        unset($throwable, $exception, $err_lv, $message, $context);
+        //Display logs
+        $unit_log->display($err_lv, $message, $context);
 
         //Output & exit on error
         if (0 < ($err_code & error_reporting())) {
@@ -173,7 +170,7 @@ final class error
             }
         }
 
-        unset($stop_on_error, $err_code, $unit_pool);
+        unset($throwable, $stop_on_error, $save_to_log, $exception, $err_code, $err_lv, $unit_log, $unit_pool, $message, $context);
     }
 
     /**
