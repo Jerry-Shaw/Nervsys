@@ -157,10 +157,14 @@ final class error
 
         unset($throwable, $exception, $err_lv, $unit_log, $message, $context);
 
-        //Exit on error
-        if ($stop_on_error && 0 < ($err_code & error_reporting())) {
+        //Output & exit on error
+        if (0 < ($err_code & error_reporting())) {
+            http_response_code(500);
             factory::build(io::class)->output($unit_pool);
-            exit(0);
+
+            if ($stop_on_error) {
+                exit(0);
+            }
         }
 
         unset($stop_on_error, $err_code, $unit_pool);
