@@ -67,6 +67,42 @@ final class router
     }
 
     /**
+     * Format cmd group values
+     *
+     * @param array $cmd_group
+     *
+     * @return array|array[]
+     */
+    public function format_cmd(array $cmd_group): array
+    {
+        //Process empty array
+        if (empty($cmd_group)) {
+            return [];
+        }
+
+        //Process simple cmd array
+        if (count($cmd_group) === count($cmd_group, 1)) {
+            return [$cmd_group];
+        }
+
+        //Process standard cmd array
+        if (is_int(key($cmd_group))) {
+            return $cmd_group;
+        }
+
+        //Re-format nonstandard cmd array
+        foreach ($cmd_group as $key => &$item) {
+            array_unshift($item, $key);
+        }
+
+        //Get standard cmd values
+        $cmd_group = array_values($cmd_group);
+
+        unset($key, $item);
+        return $cmd_group;
+    }
+
+    /**
      * Get full class name
      *
      * @param string $class

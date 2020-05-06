@@ -203,7 +203,7 @@ final class ns
 
         //Proceed CGI once CMD can be parsed
         foreach ($this->unit_pool->router_stack as $router_handler) {
-            if (!empty($this->unit_pool->cgi_stack = call_user_func($router_handler, $data_argv['c']))) {
+            if (!empty($this->unit_pool->cgi_stack = $unit_router->format_cmd(call_user_func($router_handler, $data_argv['c'])))) {
                 $this->unit_pool->result += $unit_cgi->call_service();
                 break;
             }
