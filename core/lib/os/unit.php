@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System OS unit interface
+ * NS System OS unit controller
  *
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
@@ -25,40 +25,81 @@ namespace core\lib\os;
  *
  * @package core\lib\os
  */
-interface unit
+abstract class unit
 {
+    /**
+     * @var string OS command
+     */
+    protected $os_cmd = '';
+
     /**
      * Get hardware hash value
      *
      * @return string
      */
-    public function get_hw_hash(): string;
+    abstract public function get_hw_hash(): string;
 
     /**
      * Get PHP executable path
      *
      * @return string
      */
-    public function get_php_path(): string;
+    abstract public function get_php_path(): string;
 
     /**
      * Set as background command
      *
      * @return $this
      */
-    public function bg(): object;
+    abstract public function bg(): object;
 
     /**
      * Set command with ENV values
      *
      * @return $this
      */
-    public function env(): object;
+    abstract public function env(): object;
 
     /**
      * Set command for proc_* functions
      *
      * @return $this
      */
-    public function proc(): object;
+    abstract public function proc(): object;
+
+    /**
+     * Set command
+     *
+     * @param string $cmd
+     *
+     * @return $this
+     */
+    public function cmd(string $cmd): object
+    {
+        $this->os_cmd = &$cmd;
+        return $this;
+    }
+
+    /**
+     * Fetch command
+     *
+     * @return string
+     */
+    public function fetch(): string
+    {
+        return $this->os_cmd;
+    }
+
+    /**
+     * Execute unit command & capture outputs
+     *
+     * @param int $return_var
+     *
+     * @return array
+     */
+    public function execute(int &$return_var = 0): array
+    {
+        exec($this->os_cmd, $output, $return_var);
+        return $output;
+    }
 }
