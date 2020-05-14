@@ -4,6 +4,7 @@
  * NS System OS controller
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  * Copyright 2016-2019 liu <2579186091@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +22,7 @@
 
 namespace core\lib\std;
 
+use core\lib\os\unit;
 use core\lib\stc\factory;
 
 /**
@@ -28,29 +30,112 @@ use core\lib\stc\factory;
  *
  * @package core\lib\std
  */
-final class os
+class os implements unit
 {
     /**
-     * @var string $os_ctrl
+     * @var OS controller instance
      */
-    private $os_ctrl = '';
+    protected $unit_os;
 
     /**
-     * os constructor.
+     * @var string Input command
+     */
+    protected $unit_cmd = '';
+
+    /**
+     * ctrl constructor.
      */
     public function __construct()
     {
-        $this->os_ctrl = '\\core\\lib\\os\\' . strtolower(PHP_OS);
+        $this->unit_os = factory::build('\\core\\lib\\os\\unit\\' . strtolower(PHP_OS));
     }
 
     /**
-     * @param $name
-     * @param $arguments
+     * Get hardware hash value
      *
-     * @return mixed
+     * @return string
      */
-    public function __call(string $name, array $arguments)
+    public function get_hw_hash(): string
     {
-        return factory::build($this->os_ctrl)->$name(...$arguments);
+        return $this->unit_os->get_hw_hash();
+    }
+
+    /**
+     * Get PHP executable path
+     *
+     * @return string
+     */
+    public function get_php_path(): string
+    {
+        return $this->unit_os->get_php_path();
+    }
+
+    /**
+     * Set command
+     *
+     * @param string $cmd
+     *
+     * @return $this
+     */
+    public function cmd(string $cmd): object
+    {
+        $this->unit_os->unit_cmd = &$cmd;
+        return $this;
+    }
+
+    /**
+     * Build as background command
+     *
+     * @return $this
+     */
+    public function bg(): object
+    {
+        $this->unit_os->unit_cmd = $this->unit_os->bg();
+        return $this;
+    }
+
+    /**
+     * Build command with ENV values
+     *
+     * @return $this
+     */
+    public function env(): object
+    {
+        $this->unit_os->unit_cmd = $this->unit_os->env();
+        return $this;
+    }
+
+    /**
+     * Build command for proc_* functions
+     *
+     * @return $this
+     */
+    public function proc(): object
+    {
+        $this->unit_os->unit_cmd = $this->unit_os->proc();
+        return $this;
+    }
+
+    /**
+     * Fetch command
+     *
+     * @return string
+     */
+    public function fetch(): string
+    {
+        return $this->unit_os->unit_cmd;
+    }
+
+    /**
+     * Execute unit command & capture outputs
+     *
+     * @param int $return_var
+     *
+     * @return array
+     */
+    public function execute(int &$return_var = 0): array
+    {
+        exec($this->unit_os->unit_cmd, $output, $return_var);
+        return $output;
     }
 }
