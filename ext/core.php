@@ -117,13 +117,23 @@ class core
     }
 
     /**
+     * Get hardware hash value
+     *
+     * @return string
+     */
+    public static function get_hw_hash(): string
+    {
+        return factory::build(os::class)->get_hw_hash();
+    }
+
+    /**
      * Get PHP executable path
      *
      * @return string
      */
     public static function get_php_path(): string
     {
-        return factory::build(os::class)->php_path();
+        return factory::build(os::class)->get_php_path();
     }
 
     /**
