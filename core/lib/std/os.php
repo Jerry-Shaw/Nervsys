@@ -30,17 +30,12 @@ use core\lib\stc\factory;
  *
  * @package core\lib\std
  */
-class os implements unit
+final class os extends unit
 {
     /**
      * @var OS controller instance
      */
     protected $unit_os;
-
-    /**
-     * @var string Input command
-     */
-    protected $unit_cmd = '';
 
     /**
      * ctrl constructor.
@@ -71,26 +66,13 @@ class os implements unit
     }
 
     /**
-     * Set command
-     *
-     * @param string $cmd
-     *
-     * @return $this
-     */
-    public function cmd(string $cmd): object
-    {
-        $this->unit_os->unit_cmd = &$cmd;
-        return $this;
-    }
-
-    /**
      * Build as background command
      *
      * @return $this
      */
     public function bg(): object
     {
-        $this->unit_os->unit_cmd = $this->unit_os->bg();
+        $this->unit_os->os_cmd = $this->unit_os->bg();
         return $this;
     }
 
@@ -101,7 +83,7 @@ class os implements unit
      */
     public function env(): object
     {
-        $this->unit_os->unit_cmd = $this->unit_os->env();
+        $this->unit_os->os_cmd = $this->unit_os->env();
         return $this;
     }
 
@@ -112,30 +94,7 @@ class os implements unit
      */
     public function proc(): object
     {
-        $this->unit_os->unit_cmd = $this->unit_os->proc();
+        $this->unit_os->os_cmd = $this->unit_os->proc();
         return $this;
-    }
-
-    /**
-     * Fetch command
-     *
-     * @return string
-     */
-    public function fetch(): string
-    {
-        return $this->unit_os->unit_cmd;
-    }
-
-    /**
-     * Execute unit command & capture outputs
-     *
-     * @param int $return_var
-     *
-     * @return array
-     */
-    public function execute(int &$return_var = 0): array
-    {
-        exec($this->unit_os->unit_cmd, $output, $return_var);
-        return $output;
     }
 }
