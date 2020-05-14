@@ -72,7 +72,7 @@ final class os extends unit
      */
     public function bg(): object
     {
-        $this->unit_os->os_cmd = $this->unit_os->bg();
+        $this->unit_os->bg();
         return $this;
     }
 
@@ -83,7 +83,7 @@ final class os extends unit
      */
     public function env(): object
     {
-        $this->unit_os->os_cmd = $this->unit_os->env();
+        $this->unit_os->env();
         return $this;
     }
 
@@ -94,7 +94,7 @@ final class os extends unit
      */
     public function proc(): object
     {
-        $this->unit_os->os_cmd = $this->unit_os->proc();
+        $this->unit_os->proc();
         return $this;
     }
 }
