@@ -175,14 +175,17 @@ class mpc extends factory
                 $cmd .= ' ' . implode(' ', $job['a']);
             }
 
+            //Add OS command
+            $this->unit_os->cmd($cmd);
+
             //Add no wait option
             if (!$wait) {
-                $cmd = $this->unit_os->cmd_bg($cmd);
+                $this->unit_os->bg();
             }
 
             //Create process
             $process = proc_open(
-                $this->unit_os->cmd_proc($cmd),
+                $this->unit_os->env()->proc()->fetch(),
                 [
                     ['pipe', 'r'],
                     ['pipe', 'w'],
