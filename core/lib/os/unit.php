@@ -3,6 +3,7 @@
 /**
  * NS System OS unit controller
  *
+ * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +29,9 @@ namespace core\lib\os;
 abstract class unit
 {
     /**
-     * @var string OS command
+     * OS command
+     *
+     * @var string
      */
     protected $os_cmd = '';
 

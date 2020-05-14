@@ -84,16 +84,16 @@ final class cli
                 $cmd_argv = $this->unit_pool->cli_param['argv'];
 
                 //Build CLI command
-                $cli_cmd = '"' . $cmd_value . '"' . (!empty($cmd_argv) ? ' ' . implode(' ', $cmd_argv) : '');
+                $unit_os->cmd('"' . $cmd_value . '"' . (!empty($cmd_argv) ? ' ' . implode(' ', $cmd_argv) : ''));
 
                 //Check ret conf
                 if ('' === $this->unit_pool->ret) {
-                    $cli_cmd = $unit_os->cmd_bg($cli_cmd);
+                    $unit_os->bg();
                 }
 
                 //Create process
                 $process = proc_open(
-                    $unit_os->cmd_proc($cli_cmd),
+                    $unit_os->env()->proc()->fetch(),
                     [
                         ['pipe', 'r'],
                         ['pipe', 'w'],
@@ -136,7 +136,7 @@ final class cli
             }
         }
 
-        unset($unit_os, $cmd_pair, $cmd_key, $cmd_value, $cmd_argv, $cli_cmd, $process, $pipes, $pipe);
+        unset($unit_os, $cmd_pair, $cmd_key, $cmd_value, $cmd_argv, $process, $pipes, $pipe);
         return $call_results;
     }
 }
