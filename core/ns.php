@@ -34,7 +34,7 @@ if (version_compare(PHP_VERSION, '7.2.0', '<')) {
 }
 
 //Define NervSys version
-define('SYSVER', '7.4.0');
+define('SYSVER', '7.4.2');
 
 //Define system root path
 define('SYSROOT', dirname(__DIR__));
