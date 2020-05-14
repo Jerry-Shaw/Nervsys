@@ -98,7 +98,11 @@ final class cgi
         while (is_array($methods = array_shift($this->unit_pool->cgi_stack))) {
             //Skip non-exist class
             if (!class_exists($class = $this->unit_router->get_cls(array_shift($methods)))) {
-                error::exception_handler(new \Exception('Class "' . $class . '" NOT found!', E_USER_NOTICE), false, false);
+                //Skip reporting errors under CLI mode
+                if (!$this->unit_pool->is_CLI) {
+                    error::exception_handler(new \Exception('Class "' . $class . '" NOT found!', E_USER_NOTICE), false, false);
+                }
+
                 continue;
             }
 
@@ -114,7 +118,11 @@ final class cgi
             try {
                 //Get trusted-function list
                 if (empty($methods = $this->unit_router->cgi_get_trust($class, $methods))) {
-                    error::exception_handler(new \Exception('Trusted function NOT found!', E_USER_NOTICE), false, false);
+                    //Skip reporting errors under CLI mode
+                    if (!$this->unit_pool->is_CLI) {
+                        error::exception_handler(new \Exception('Trusted function NOT found!', E_USER_NOTICE), false, false);
+                    }
+
                     continue;
                 }
             } catch (\Throwable $throwable) {
