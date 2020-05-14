@@ -21,7 +21,7 @@
 namespace core\lib\os;
 
 /**
- * Interface unit
+ * Class unit
  *
  * @package core\lib\os
  */
@@ -66,40 +66,4 @@ abstract class unit
      * @return $this
      */
     abstract public function proc(): object;
-
-    /**
-     * Set command
-     *
-     * @param string $cmd
-     *
-     * @return $this
-     */
-    public function cmd(string $cmd): object
-    {
-        $this->os_cmd = &$cmd;
-        return $this;
-    }
-
-    /**
-     * Fetch command
-     *
-     * @return string
-     */
-    public function fetch(): string
-    {
-        return $this->os_cmd;
-    }
-
-    /**
-     * Execute unit command & capture outputs
-     *
-     * @param int $return_var
-     *
-     * @return array
-     */
-    public function execute(int &$return_var = 0): array
-    {
-        exec($this->os_cmd, $output, $return_var);
-        return $output;
-    }
 }

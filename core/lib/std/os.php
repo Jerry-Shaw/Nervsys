@@ -66,6 +66,19 @@ final class os extends unit
     }
 
     /**
+     * Set command
+     *
+     * @param string $cmd
+     *
+     * @return $this
+     */
+    public function cmd(string $cmd): object
+    {
+        $this->unit_os->os_cmd = &$cmd;
+        return $this;
+    }
+
+    /**
      * Build as background command
      *
      * @return $this
@@ -96,5 +109,28 @@ final class os extends unit
     {
         $this->unit_os->proc();
         return $this;
+    }
+
+    /**
+     * Fetch command
+     *
+     * @return string
+     */
+    public function fetch(): string
+    {
+        return $this->unit_os->os_cmd;
+    }
+
+    /**
+     * Execute unit command & capture outputs
+     *
+     * @param int $return_var
+     *
+     * @return array
+     */
+    public function execute(int &$return_var = 0): array
+    {
+        exec($this->unit_os->os_cmd, $output, $return_var);
+        return $output;
     }
 }
