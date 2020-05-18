@@ -46,15 +46,8 @@ final class winnt extends unit
             'wmic memorychip get BankLabel, Capacity /format:value'
         ];
 
-        //Add to OS command
-        $this->os_cmd = implode(' && ', $queries);
-
         //Execute command
-        $status = 0;
-        $output = $this->execute($status);
-
-        //Reset command
-        $this->os_cmd = '';
+        exec(implode(' && ', $queries), $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
@@ -77,15 +70,8 @@ final class winnt extends unit
      */
     public function get_php_path(): string
     {
-        //Add to OS command
-        $this->os_cmd = 'wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value';
-
         //Execute command
-        $status = 0;
-        $output = $this->execute($status);
-
-        //Reset command
-        $this->os_cmd = '';
+        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);

@@ -37,15 +37,8 @@ final class darwin extends unit
      */
     public function get_hw_hash(): string
     {
-        //Add to OS command
-        $this->os_cmd = 'system_profiler SPHardwareDataType SPMemoryDataType SPStorageDataType SPPCIDataType';
-
         //Execute command
-        $status = 0;
-        $output = $this->execute($status);
-
-        //Reset command
-        $this->os_cmd = '';
+        exec('system_profiler SPHardwareDataType SPMemoryDataType SPStorageDataType SPPCIDataType', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
@@ -68,15 +61,8 @@ final class darwin extends unit
      */
     public function get_php_path(): string
     {
-        //Add to OS command
-        $this->os_cmd = 'lsof -p ' . getmypid() . ' -Fn | awk "NR==5{print}" | sed "s/n\//\//"';
-
         //Execute command
-        $status = 0;
-        $output = $this->execute($status);
-
-        //Reset command
-        $this->os_cmd = '';
+        exec('lsof -p ' . getmypid() . ' -Fn | awk "NR==5{print}" | sed "s/n\//\//"', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
