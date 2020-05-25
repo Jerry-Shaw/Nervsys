@@ -24,8 +24,11 @@ error_reporting(E_ALL);
 //Load main script
 require __DIR__ . '/core/ns.php';
 
-//Register custom router if needed
-//\ext\core::register_router_function(['class/object', 'method']);
+/**
+ * Register custom router if needed
+ * Using custom restful router as example
+ */
+//\ext\core::register_router_function([app\lib\router::new(), 'restful']);
 
 //Set custom output handler if needed
 //\ext\core::set_output_handler(['class/object', 'method']);

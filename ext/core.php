@@ -107,6 +107,16 @@ class core
     }
 
     /**
+     * Get NS default router
+     *
+     * @return \core\lib\std\router
+     */
+    public static function get_def_router(): object
+    {
+        return factory::build(router::class);
+    }
+
+    /**
      * Get log save path
      *
      * @return string
