@@ -775,7 +775,7 @@ class queue extends factory
             }
 
             //Parse CMD
-            if (empty($cmd_group = $unit_router->parse_cmd($input_data['cmd']))) {
+            if (empty($cmd_group = $unit_router->parse($input_data['cmd']))) {
                 throw new \Exception('Command NOT found!', E_USER_NOTICE);
             }
 

@@ -92,7 +92,7 @@ final class cgi
 
         //Get call-before list
         foreach ($this->unit_pool->conf['call'] as $path => $cmd) {
-            $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse_cmd($cmd);
+            $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse($cmd);
         }
 
         while (is_array($methods = array_shift($this->unit_pool->cgi_stack))) {

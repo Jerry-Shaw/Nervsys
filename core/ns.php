@@ -157,7 +157,7 @@ final class ns
         foreach ($this->unit_pool->conf['init'] as $value) {
             try {
                 //Call INIT functions using default router
-                $this->unit_pool->result += $unit_cgi->call_group($unit_router->parse_cmd($value));
+                $this->unit_pool->result += $unit_cgi->call_group($unit_router->parse($value));
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable);
                 $unit_io->output($this->unit_pool);
@@ -198,15 +198,9 @@ final class ns
         //Add input data
         $this->unit_pool->data += $data_argv['d'];
 
-        //Append default router
-        $this->unit_pool->router_stack[] = [$unit_router, 'parse_cmd'];
-
-        //Proceed CGI once CMD can be parsed
-        foreach ($this->unit_pool->router_stack as $router_handler) {
-            if (!empty($this->unit_pool->cgi_stack = $unit_router->format_cmd(call_user_func($router_handler, $data_argv['c'])))) {
-                $this->unit_pool->result += $unit_cgi->call_service();
-                break;
-            }
+        //Parse input command
+        if (!empty($this->unit_pool->cgi_stack = $unit_router->parse($data_argv['c']))) {
+            $this->unit_pool->result += $unit_cgi->call_service();
         }
 
         //Proceed CLI once CMD can be parsed
@@ -216,7 +210,7 @@ final class ns
 
         //Output data
         $unit_io->output($this->unit_pool);
-        unset($unit_router, $unit_cgi, $unit_cli, $unit_io, $conf, $value, $data_argv, $router_handler);
+        unset($unit_router, $unit_cgi, $unit_cli, $unit_io, $conf, $value, $data_argv);
     }
 
     /**
