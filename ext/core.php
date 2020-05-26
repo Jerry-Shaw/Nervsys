@@ -176,7 +176,7 @@ class core
 
         //Rebuild cmd list
         foreach ($cmd_group as $item) {
-            $cls = $unit_router->get_cls(array_shift($item));
+            $cls = strtr($unit_router->get_cls(array_shift($item)), '\\', '/');
 
             foreach ($item as $val) {
                 $cmd_list[] = $cls . '/' . $val;
