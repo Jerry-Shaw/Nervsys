@@ -26,12 +26,11 @@ require __DIR__ . '/core/ns.php';
 
 /**
  * Register custom router if needed
- * Using custom restful router as example
  */
-//\ext\core::register_router_function([app\lib\router::new(), 'restful']);
+//\ext\core::register_router_function(['class_object', 'method']);
 
 //Set custom output handler if needed
-//\ext\core::set_output_handler(['class/object', 'method']);
+//\ext\core::set_output_handler(['class_object', 'method']);
 
 //Boot NS
 new \core\ns();
