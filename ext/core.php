@@ -200,11 +200,18 @@ class core
      * Register custom router parser
      *
      * @param array $router
+     * @param bool  $prepend
      */
-    public static function register_router_function(array $router): void
+    public static function register_router_function(array $router, bool $prepend = true): void
     {
-        factory::build(pool::class)->router_stack[] = &$router;
-        unset($router);
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        $prepend
+            ? array_unshift($unit_pool->router_stack, $router)
+            : array_push($unit_pool->router_stack, $router);
+
+        unset($router, $prepend, $unit_pool);
     }
 
     /**
