@@ -160,7 +160,6 @@ class core
      * Get parsed cmd list
      *
      * @return array
-     * @throws \ReflectionException
      */
     public static function get_cmd_list(): array
     {
@@ -172,27 +171,19 @@ class core
         /** @var \core\lib\std\router $unit_router */
         $unit_router = factory::build(router::class);
 
-        foreach ($unit_pool->router_stack as $router_handler) {
-            //Parse CMD
-            if (empty($parsed_cmd = call_user_func($router_handler, $unit_pool->cmd))) {
-                continue;
-            }
+        //Get parsed cmd group
+        $cmd_group = $unit_router->parse($unit_pool->cmd);
 
-            while (is_array($methods = array_shift($parsed_cmd))) {
-                //Get full class name
-                $class = $unit_router->get_cls(array_shift($methods));
+        //Rebuild cmd list
+        foreach ($cmd_group as $item) {
+            $cls = $unit_router->get_cls(array_shift($item));
 
-                //Refill methods
-                $methods = $unit_router->cgi_get_trust($class, $methods);
-
-                //Build CMD list
-                foreach ($methods as $method) {
-                    $cmd_list[] = $class . '-' . $method;
-                }
+            foreach ($item as $val) {
+                $cmd_list[] = $cls . '/' . $val;
             }
         }
 
-        unset($unit_pool, $unit_router, $router_handler, $parsed_cmd, $methods, $class, $method);
+        unset($unit_pool, $unit_router, $cmd_group, $item, $cls, $val);
         return $cmd_list;
     }
 
