@@ -22,7 +22,6 @@
 
 namespace core\lib\std;
 
-use core\lib\os\unit;
 use core\lib\stc\factory;
 
 /**
@@ -30,25 +29,24 @@ use core\lib\stc\factory;
  *
  * @package core\lib\std
  */
-final class os extends unit
+final class os
 {
-    /**
-     * @var OS controller instance
-     */
+    /** @var \core\lib\os\linux|\core\lib\os\winnt|\core\lib\os\darwin $unit_os */
     protected $unit_os;
 
     /**
-     * ctrl constructor.
+     * os constructor.
      */
     public function __construct()
     {
-        $this->unit_os = factory::build('\\core\\lib\\os\\unit\\' . strtolower(PHP_OS));
+        $this->unit_os = factory::build('\\core\\lib\\os\\' . strtolower(PHP_OS));
     }
 
     /**
      * Get hardware hash value
      *
      * @return string
+     * @throws \Exception
      */
     public function get_hw_hash(): string
     {
@@ -59,6 +57,7 @@ final class os extends unit
      * Get PHP executable path
      *
      * @return string
+     * @throws \Exception
      */
     public function get_php_path(): string
     {

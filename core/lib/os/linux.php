@@ -1,7 +1,7 @@
 <?php
 
 /**
- * winnt handler
+ * linux handler
  *
  * Copyright 2016-2019 liu <2579186091@qq.com>
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
@@ -19,17 +19,22 @@
  * limitations under the License.
  */
 
-namespace core\lib\os\unit;
-
-use core\lib\os\unit;
+namespace core\lib\os;
 
 /**
- * Class winnt
+ * Class linux
  *
- * @package core\lib\os\unit
+ * @package core\lib\os
  */
-final class winnt extends unit
+final class linux
 {
+    /**
+     * OS command
+     *
+     * @var string
+     */
+    public $os_cmd = '';
+
     /**
      * Get hardware hash
      *
@@ -39,11 +44,10 @@ final class winnt extends unit
     public function get_hw_hash(): string
     {
         $queries = [
-            'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
-            'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
-            'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
-            'wmic diskdrive get Model, Size /format:value',
-            'wmic memorychip get BankLabel, Capacity /format:value'
+            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
+            'cat /proc/cpuinfo | grep -E "processor|vendor|family|model|microcode|MHz|cache|physical|address"',
+            'ip link show | grep link/ether',
+            'dmidecode -t memory'
         ];
 
         //Execute command
@@ -71,20 +75,14 @@ final class winnt extends unit
     public function get_php_path(): string
     {
         //Execute command
-        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
+        exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        //Parse output as ini string
-        $output = parse_ini_string(implode($output));
-
-        if (false === $output) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
-        }
-
-        $env = &$output['ExecutablePath'];
+        //Get path value
+        $env = &$output[0];
 
         unset($output, $status);
         return $env;
@@ -97,7 +95,7 @@ final class winnt extends unit
      */
     public function bg(): object
     {
-        $this->os_cmd = 'start "" /B ' . $this->os_cmd . ' >nul 2>&1';
+        $this->os_cmd = 'nohup ' . $this->os_cmd . ' > /dev/null 2>&1 &';
         return $this;
     }
 
@@ -108,6 +106,7 @@ final class winnt extends unit
      */
     public function env(): object
     {
+        $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
         return $this;
     }
 
@@ -118,7 +117,6 @@ final class winnt extends unit
      */
     public function proc(): object
     {
-        $this->os_cmd = '"' . $this->os_cmd . '"';
         return $this;
     }
 }

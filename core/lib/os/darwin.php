@@ -1,9 +1,8 @@
 <?php
 
 /**
- * linux handler
+ * Darwin handler
  *
- * Copyright 2016-2019 liu <2579186091@qq.com>
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,17 +18,22 @@
  * limitations under the License.
  */
 
-namespace core\lib\os\unit;
-
-use core\lib\os\unit;
+namespace core\lib\os;
 
 /**
- * Class linux
+ * Class darwin
  *
- * @package core\lib\os\unit
+ * @package core\lib\os
  */
-final class linux extends unit
+final class darwin
 {
+    /**
+     * OS command
+     *
+     * @var string
+     */
+    public $os_cmd = '';
+
     /**
      * Get hardware hash
      *
@@ -38,16 +42,8 @@ final class linux extends unit
      */
     public function get_hw_hash(): string
     {
-        $queries = [
-            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
-            'cat /proc/cpuinfo | grep -E "processor|vendor|family|model|microcode|MHz|cache|physical|address"',
-            'dmidecode -t memory',
-            'mac'  => 'ip link show | grep link/ether',
-            'disk' => 'lsblk'
-        ];
-
         //Execute command
-        exec(implode(' && ', $queries), $output, $status);
+        exec('system_profiler SPHardwareDataType SPMemoryDataType SPPCIDataType', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
@@ -71,7 +67,7 @@ final class linux extends unit
     public function get_php_path(): string
     {
         //Execute command
-        exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
+        exec('lsof -p ' . getmypid() . ' -Fn | awk "NR==5{print}" | sed "s/n\//\//"', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
@@ -91,7 +87,7 @@ final class linux extends unit
      */
     public function bg(): object
     {
-        $this->os_cmd = 'nohup ' . $this->os_cmd . ' > /dev/null 2>&1 &';
+        $this->os_cmd = 'screen ' . $this->os_cmd . ' > /dev/null 2>&1 &';
         return $this;
     }
 

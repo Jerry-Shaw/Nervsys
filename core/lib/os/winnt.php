@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Darwin handler
+ * winnt handler
  *
+ * Copyright 2016-2019 liu <2579186091@qq.com>
  * Copyright 2016-2019 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,17 +19,22 @@
  * limitations under the License.
  */
 
-namespace core\lib\os\unit;
-
-use core\lib\os\unit;
+namespace core\lib\os;
 
 /**
- * Class darwin
+ * Class winnt
  *
- * @package core\lib\os\unit
+ * @package core\lib\os
  */
-final class darwin extends unit
+final class winnt
 {
+    /**
+     * OS command
+     *
+     * @var string
+     */
+    public $os_cmd = '';
+
     /**
      * Get hardware hash
      *
@@ -37,8 +43,15 @@ final class darwin extends unit
      */
     public function get_hw_hash(): string
     {
+        $queries = [
+            'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
+            'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
+            'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
+            'wmic memorychip get BankLabel, Capacity /format:value'
+        ];
+
         //Execute command
-        exec('system_profiler SPHardwareDataType SPMemoryDataType SPStorageDataType SPPCIDataType', $output, $status);
+        exec(implode(' && ', $queries), $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
@@ -62,14 +75,20 @@ final class darwin extends unit
     public function get_php_path(): string
     {
         //Execute command
-        exec('lsof -p ' . getmypid() . ' -Fn | awk "NR==5{print}" | sed "s/n\//\//"', $output, $status);
+        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        //Get path value
-        $env = &$output[0];
+        //Parse output as ini string
+        $output = parse_ini_string(implode($output));
+
+        if (false === $output) {
+            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
+        }
+
+        $env = &$output['ExecutablePath'];
 
         unset($output, $status);
         return $env;
@@ -82,7 +101,7 @@ final class darwin extends unit
      */
     public function bg(): object
     {
-        $this->os_cmd = 'screen ' . $this->os_cmd . ' > /dev/null 2>&1 &';
+        $this->os_cmd = 'start "" /B ' . $this->os_cmd . ' >nul 2>&1';
         return $this;
     }
 
@@ -93,7 +112,6 @@ final class darwin extends unit
      */
     public function env(): object
     {
-        $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
         return $this;
     }
 
@@ -104,6 +122,7 @@ final class darwin extends unit
      */
     public function proc(): object
     {
+        $this->os_cmd = '"' . $this->os_cmd . '"';
         return $this;
     }
 }
