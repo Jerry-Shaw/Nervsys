@@ -51,7 +51,7 @@ define('APP_PATH', 'app');
 define('ENTRY_SCRIPT', $entry_script);
 
 //Define ROOT path
-define('ROOT', is_dir($parent_path = (dirname($entry_path = dirname($entry_script)) . DIRECTORY_SEPARATOR . APP_PATH)) ? $parent_path : $entry_path);
+define('ROOT', is_dir(($parent_path = dirname($entry_path = dirname($entry_script))) . DIRECTORY_SEPARATOR . APP_PATH) ? $parent_path : $entry_path);
 
 //Define JSON formats
 define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
