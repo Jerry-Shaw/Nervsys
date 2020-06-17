@@ -36,7 +36,7 @@ class http extends factory
     const CONTENT_TYPE_ENCODED = 'application/x-www-form-urlencoded';
 
     protected $http       = 'HTTP/2.0';                                             //HTTP Version
-    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . SYSVER . ')';     //User Agent string
+    protected $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')';     //User Agent string
     protected $connection = 'keep-alive';                                           //Connection type
 
     protected $accept_charset  = 'UTF-8,*;q=0';                 //Accept charset

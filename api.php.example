@@ -18,11 +18,8 @@
  * limitations under the License.
  */
 
-//Set error_reporting level
-error_reporting(E_ALL);
-
 //Load main script
-require __DIR__ . '/core/ns.php';
+require __DIR__ . '/core/sys.php';
 
 /**
  * Register custom router if needed
@@ -32,5 +29,5 @@ require __DIR__ . '/core/ns.php';
 //Set custom output handler if needed
 //\ext\core::set_output_handler(['class_object', 'method']);
 
-//Boot NS
-new \core\ns();
+//Start System
+core\sys::boot();

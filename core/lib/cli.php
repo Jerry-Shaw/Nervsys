@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System CLI script
+ * NS System CLI Library
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *

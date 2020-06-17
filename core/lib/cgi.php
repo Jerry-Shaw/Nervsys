@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System CGI script
+ * NS System CGI Library
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
