@@ -1,6 +1,6 @@
 # Nervsys
 
-Stable version: 7.4.0  
+Stable version: 7.4.5  
 Extension version: 3.0  
 
 ## About Nervsys
@@ -22,6 +22,9 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
     2. API controller for all types of Apps
     3. Client for program communication
     4. More...
+    
+* Demo & Projects:  
+    [Demo](https://github.com/NervSys/Demo)  
 
 ## Table of Contents
 
@@ -62,6 +65,10 @@ PHP **7.2+** and above. Any kind of web server or running under CLI mode.
     21. [session](doc/extension/session.md)
     22. [socket](doc/extension/socket.md)
     23. [upload](doc/extension/upload.md)
+    
+## Example source file  
+    1. [api.php](doc/example/api.php.example)
+    2. [app.ini](doc/example/app.ini.example)
 
 ## Supporters
 

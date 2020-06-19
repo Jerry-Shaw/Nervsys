@@ -1,6 +1,6 @@
 # Configurations
 
-As you may notice that, there are two .example files in the root of NS. One with the name of "app.ini.example" is the main configuration file, which controls the core behavior.  
+As you may notice that, there are two .example files in the example folder (doc/example) of NS. One with the name of "app.ini.example" is the main configuration file, which controls the core behavior.  
 
 Main configuration is NOT required for system as default values are already defined in core. But, in some cases, some of the configurations need to be changed for advanced users. See below for details.  
 

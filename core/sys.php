@@ -39,7 +39,7 @@ if (DIRECTORY_SEPARATOR !== $entry_script[0] && ':' !== $entry_script[1]) {
 }
 
 //Define NervSys version
-define('NS_VER', '7.4.2');
+define('NS_VER', '7.4.5');
 
 //Define system root path
 define('SYSROOT', dirname(__DIR__));
