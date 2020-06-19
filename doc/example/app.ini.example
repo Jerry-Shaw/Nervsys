@@ -14,13 +14,13 @@ auto_call = off
 ; Enable: "on" or "1"
 ; Disable: "off" or "0"
 emergency = on
-alert = on
-critical = on
-error = on
-warning = on
-notice = on
-info = on
-debug = on
+alert     = on
+critical  = on
+error     = on
+warning   = on
+notice    = on
+info      = on
+debug     = on
 
 ; Display logs
 ; Enable: "on" or "1"
