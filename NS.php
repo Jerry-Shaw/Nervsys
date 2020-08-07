@@ -94,7 +94,7 @@ class NS
         //Set error_reporting level
         error_reporting(E_ALL);
 
-        //Init App
+        //Init App library
         $App = \Core\Lib\App::new();
 
         //Set include path
@@ -103,9 +103,13 @@ class NS
         //Set default timezone
         date_default_timezone_set($App->timezone);
 
+        //Init Error library
+        $Error = \Core\Lib\Error::new();
 
-
-
+        //Register error handler
+        register_shutdown_function($Error->shutdown_handler);
+        set_exception_handler($Error->exception_handler);
+        set_error_handler($Error->error_handler);
 
     }
 }

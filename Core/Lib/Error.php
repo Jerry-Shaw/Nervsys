@@ -30,7 +30,6 @@ use Core\Factory;
  */
 class Error extends Factory
 {
-
     /*
      * 1: E_ERROR
      * 2: E_WARNING
@@ -72,20 +71,66 @@ class Error extends Factory
         E_USER_DEPRECATED   => 'notice'
     ];
 
+    public array $error_handler;
+    public array $shutdown_handler;
+    public array $exception_handler;
+
     /**
-     * Shutdown handler
-     *
-     * @throws \ErrorException
+     * Error constructor.
      */
-    public static function shutdown_handler(): void
+    public function __construct()
     {
-        $error = error_get_last();
+        $this->error_handler     = [$this, 'errorHandler'];
+        $this->shutdown_handler  = [$this, 'shutdownHandler'];
+        $this->exception_handler = [$this, 'exceptionHandler'];
+    }
 
-        if (is_null($error) || 'error' !== self::LEVEL[$error['type']]) {
-            return;
-        }
+    /**
+     * Set custom ErrorHandler
+     *
+     * @param object $handler_object
+     * @param string $handler_method
+     *
+     * @return $this
+     */
+    public function setErrorHandler(object $handler_object, string $handler_method): self
+    {
+        $this->error_handler = [$handler_object, $handler_method];
 
-        throw new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']);
+        unset($handler_object, $handler_method);
+        return $this;
+    }
+
+    /**
+     * Set custom ShutdownHandler
+     *
+     * @param object $handler_object
+     * @param string $handler_method
+     *
+     * @return $this
+     */
+    public function setShutdownHandler(object $handler_object, string $handler_method): self
+    {
+        $this->shutdown_handler = [$handler_object, $handler_method];
+
+        unset($handler_object, $handler_method);
+        return $this;
+    }
+
+    /**
+     * Set custom ExceptionHandler
+     *
+     * @param object $handler_object
+     * @param string $handler_method
+     *
+     * @return $this
+     */
+    public function setExceptionHandler(object $handler_object, string $handler_method): self
+    {
+        $this->exception_handler = [$handler_object, $handler_method];
+
+        unset($handler_object, $handler_method);
+        return $this;
     }
 
     /**
@@ -98,9 +143,25 @@ class Error extends Factory
      *
      * @throws \ErrorException
      */
-    public static function error_handler(int $errno, string $errstr, string $errfile, int $errline): void
+    public function errorHandler(int $errno, string $errstr, string $errfile, int $errline): void
     {
         throw new \ErrorException($errstr, $errno, $errno, $errfile, $errline);
+    }
+
+    /**
+     * Shutdown handler
+     *
+     * @throws \ErrorException
+     */
+    public function shutdownHandler(): void
+    {
+        $error = error_get_last();
+
+        if (is_null($error) || 'error' !== self::LEVEL[$error['type']]) {
+            return;
+        }
+
+        throw new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']);
     }
 
     /**
@@ -108,21 +169,20 @@ class Error extends Factory
      *
      * @param \Throwable $throwable
      * @param bool       $stop_on_error
-     * @param bool       $save_to_log
      */
-    public static function exception_handler(\Throwable $throwable, bool $stop_on_error = true, bool $save_to_log = true): void
+    public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true): void
     {
 
     }
 
     /**
-     * Get simple trace list
+     * Get simple trace history
      *
      * @param array $trace
      *
      * @return array
      */
-    private static function get_trace_list(array $trace): array
+    private function getTraceHist(array $trace): array
     {
         $list  = [];
         $trace = array_reverse($trace);
