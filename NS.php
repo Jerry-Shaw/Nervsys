@@ -66,10 +66,10 @@ function Autoload(string $class_name, string $root_path = NS_ROOT): void
     unset($class_name, $root_path, $file_name, $class_file, $file_compiled);
 }
 
-//Compile Factory module
+//Compile/require Factory module
 Autoload(\Core\Factory::class);
 
-//Register autoload (ROOT_SYS based)
+//Register autoload (NS_ROOT based)
 spl_autoload_register(
     static function (string $class_name): void
     {

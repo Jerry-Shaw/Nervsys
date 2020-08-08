@@ -21,7 +21,11 @@
 
 namespace Core\Lib;
 
-
+/**
+ * Class Logger
+ *
+ * @package Core\Lib
+ */
 class Logger
 {
 
