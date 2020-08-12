@@ -30,33 +30,117 @@ use Core\Factory;
  */
 class IOUnit extends Factory
 {
-    public array $input_handler;
+    public array $cgi_handler;
+    public array $cli_handler;
     public array $output_handler;
 
     public array $header_keys = [];
     public array $cookie_keys = [];
 
-    public string $src_cmd    = '';
+    public string $src_cmd  = '';
+    public string $src_argv = '';
+
     public array  $src_input  = [];
     public array  $src_output = [];
 
-    public string $base64_marker = 'data:text/argv;base64,';
+    protected string $content_type   = '';
+    protected string $base64_marker  = 'data:text/argv;base64,';
+    protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html'];
 
     /**
      * IOUnit constructor.
      */
     public function __construct()
     {
-        $this->input_handler  = [$this, 'inputHandler'];
+        $this->cgi_handler    = [$this, 'cgiHandler'];
+        $this->cli_handler    = [$this, 'cliHandler'];
         $this->output_handler = [$this, 'outputHandler'];
     }
 
     /**
-     * Read input data
+     * Read input data (CGI)
      */
-    public function inputHandler()
+    public function cgiHandler(): void
     {
+        //Read accept type
+        $this->readAccept();
 
+        //Read CMD from URL
+        $this->src_cmd = $this->readURL();
+
+        //Read input date
+        $this->src_input = $this->readHTTP();
+        $this->src_input += $this->readInput(file_get_contents('php://input'));
+
+        //Merge header data
+        if (!empty($this->header_keys)) {
+            $this->src_input += $this->readHeader();
+        }
+
+        //Merge cookie data
+        if (!empty($this->cookie_keys)) {
+            $this->src_input += $this->readCookie();
+        }
+
+        //Fix getting CMD from data
+        if ('' === $this->src_cmd && isset($this->src_input['c'])) {
+            $this->src_cmd = $this->src_input['c'];
+            unset($this->src_input['c']);
+        }
+    }
+
+    /**
+     * Read arguments (CLI)
+     *
+     * c: CMD (required)
+     * d: Data package (required)
+     * t: Return type (json/xml/plain, default: none, optional)
+     * ... Other CLI params (optional)
+     */
+    public function cliHandler(): void
+    {
+        //Read opt data
+        $opt = getopt('c:d:t::', [], $optind);
+
+        //Read argv data
+        $argv = array_slice($_SERVER['argv'], $optind);
+
+        //Pick CMD from argv
+        if (!isset($opt['c']) && !empty($argv)) {
+            $opt['c'] = array_shift($argv);
+        }
+
+        //Fill CLI argv
+        if (!empty($argv)) {
+            $this->src_argv = implode(' ', $argv);
+        }
+
+        //Set return type value
+        if (!isset($opt['t']) || !in_array($opt['t'], ['json', 'text', 'xml'], true)) {
+            $opt['t'] = 'json';
+        }
+
+        //Fill response type
+        foreach ($this->response_types as $type) {
+            if (false !== stripos($type, $opt['t'])) {
+                $this->content_type = &$type;
+                break;
+            }
+        }
+
+        //Decode CMD
+        if (isset($opt['c'])) {
+            $this->src_cmd = $this->decodeData($opt['c']);
+        }
+
+        //Decode input data
+        if (isset($opt['d'])) {
+            $input_data = $this->decodeData($opt['d']);
+
+            if (empty($this->src_input = $this->readInput($input_data))) {
+                parse_str($input_data, $this->src_input);
+            }
+        }
     }
 
     /**
@@ -67,6 +151,104 @@ class IOUnit extends Factory
 
     }
 
+    /**
+     * Set custom ContentType
+     *
+     * @param string $content_type
+     *
+     * @return $this
+     */
+    public function setContentType(string $content_type): self
+    {
+        $this->content_type = &$content_type;
+
+        unset($content_type);
+        return $this;
+    }
+
+    /**
+     * Set custom CgiHandler
+     *
+     * @param object $handler_object
+     * @param string $handler_method
+     *
+     * @return $this
+     */
+    public function setCgiHandler(object $handler_object, string $handler_method): self
+    {
+        $this->cgi_handler = [$handler_object, $handler_method];
+
+        unset($handler_object, $handler_method);
+        return $this;
+    }
+
+    /**
+     * Set custom CliHandler
+     *
+     * @param object $handler_object
+     * @param string $handler_method
+     *
+     * @return $this
+     */
+    public function setCliHandler(object $handler_object, string $handler_method): self
+    {
+        $this->cli_handler = [$handler_object, $handler_method];
+
+        unset($handler_object, $handler_method);
+        return $this;
+    }
+
+    /**
+     * Set custom OutputHandler
+     *
+     * @param object $handler_object
+     * @param string $handler_method
+     *
+     * @return $this
+     */
+    public function setOutputHandler(object $handler_object, string $handler_method): self
+    {
+        $this->output_handler = [$handler_object, $handler_method];
+
+        unset($handler_object, $handler_method);
+        return $this;
+    }
+
+
+    /**
+     * Read accept type
+     */
+    private function readAccept(): void
+    {
+        //Accept type already defined
+        if ('' !== $this->content_type) {
+            return;
+        }
+
+        //Set default accept type to "application/json"
+        if (!isset($_SERVER['HTTP_ACCEPT'])) {
+            $this->content_type = 'application/json';
+            return;
+        }
+
+        //Read accept type from header
+        $match_type = 'application/json';
+        $match_pos  = strlen($_SERVER['HTTP_ACCEPT']);
+
+        foreach ($this->response_types as $type) {
+            if (false === $pos = stripos($_SERVER['HTTP_ACCEPT'], $type)) {
+                continue;
+            }
+
+            if ($pos < $match_pos) {
+                $match_pos  = $pos;
+                $match_type = $type;
+            }
+        }
+
+        $this->content_type = &$match_type;
+        unset($match_type, $match_pos, $type, $pos);
+    }
 
     /**
      * Read CMD from URL
@@ -135,6 +317,10 @@ class IOUnit extends Factory
     private function readHeader(): array
     {
 
+
+        //Read header keys
+
+
     }
 
 
@@ -150,67 +336,13 @@ class IOUnit extends Factory
 
 
     /**
-     * Read CLI arguments
-     *
-     * @return array
-     */
-    private function readArgv(): array
-    {
-        /**
-         * CLI options
-         *
-         * c: Commands
-         * d: Data package (Pass to CGI script)
-         * p: Pipe data package (Pass to CLI program)
-         * r: Return type (json/xml, default: none, no output)
-         */
-        $opt = getopt('c:d:p:r::', [], $optind);
-
-        //Default data
-        $data = ['c' => '', 'r' => '', 'p' => '', 'a' => [], 'd' => []];
-
-        //Read argv data
-        $data['a'] = array_slice($_SERVER['argv'], $optind);
-
-        //Decode data package
-        if (isset($opt['d'])) {
-            $data_text = $this->decode($opt['d']);
-            $data['d'] = $this->read_input($data_text);
-
-            if (empty($data['d'])) {
-                parse_str($data_text, $data['d']);
-            }
-
-            unset($data_text);
-        }
-
-        //Decode pipe data
-        if (isset($opt['p'])) {
-            $data['p'] = $this->decode($opt['p']);
-        }
-
-        //Set ret value
-        if (isset($opt['r'])) {
-            $data['r'] = in_array($opt['r'], ['json', 'xml', 'io'], true) ? $opt['r'] : 'io';
-        }
-
-        //Get command
-        $data['c'] = $this->decode(!isset($opt['c']) ? (array_shift($data['a']) ?? '') : $opt['c']);
-
-        unset($opt, $optind);
-        return $data;
-    }
-
-
-
-    /**
      * Encode data in base64 with data header
      *
      * @param string $value
      *
      * @return string
      */
-    public function encode(string $value): string
+    public function encodeData(string $value): string
     {
         return $this->base64_marker . base64_encode($value);
     }
@@ -222,7 +354,7 @@ class IOUnit extends Factory
      *
      * @return string
      */
-    public function decode(string $value): string
+    public function decodeData(string $value): string
     {
         if (0 === strpos($value, $this->base64_marker)) {
             $value = substr($value, strlen($this->base64_marker));
@@ -240,7 +372,7 @@ class IOUnit extends Factory
      *
      * @return string
      */
-    private function make_json(array $error, array $data): string
+    private function makeJson(array $error, array $data): string
     {
         //Reduce data depth
         if (1 === count($data)) {
@@ -263,7 +395,7 @@ class IOUnit extends Factory
      *
      * @return string
      */
-    private function make_xml(array $error, array $data): string
+    private function makeXml(array $error, array $data): string
     {
         //Reduce data depth
         if (1 === count($data)) {
@@ -276,7 +408,7 @@ class IOUnit extends Factory
         }
 
         //Build full result
-        $result = $this->to_xml((array)$data);
+        $result = $this->toXml((array)$data);
         header('Content-Type: text/xml; charset=utf-8');
 
         unset($error, $data);
@@ -284,14 +416,14 @@ class IOUnit extends Factory
     }
 
     /**
-     * Make IO
+     * Make plain text
      *
      * @param array $error
      * @param array $data
      *
      * @return string
      */
-    private function make_io(array $error, array $data): string
+    private function makeText(array $error, array $data): string
     {
         //Reduce data depth
         if (1 === count($data)) {
@@ -304,7 +436,7 @@ class IOUnit extends Factory
         }
 
         //Build full result
-        $result = is_array($data) ? $this->to_string($data) : (string)$data;
+        $result = is_array($data) ? $this->toString($data) : (string)$data;
         header('Content-Type: text/plain');
 
         unset($error, $data);
@@ -319,7 +451,7 @@ class IOUnit extends Factory
      *
      * @return string
      */
-    private function to_xml(array $array, bool $root = true): string
+    private function toXml(array $array, bool $root = true): string
     {
         $xml = $end = '';
 
@@ -336,7 +468,7 @@ class IOUnit extends Factory
             $xml .= '<' . $key . '>';
 
             $xml .= is_array($item)
-                ? self::to_xml($item, false)
+                ? self::toXml($item, false)
                 : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
 
             $xml .= '</' . $key . '>';
@@ -357,13 +489,13 @@ class IOUnit extends Factory
      *
      * @return string
      */
-    private function to_string(array $array): string
+    private function toString(array $array): string
     {
         $string = '';
 
         //Format to string
         foreach ($array as $key => $value) {
-            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . (is_array($value) ? $this->to_string($value) : (string)$value . PHP_EOL);
+            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . (is_array($value) ? $this->toString($value) : (string)$value . PHP_EOL);
         }
 
         unset($array, $key, $value);

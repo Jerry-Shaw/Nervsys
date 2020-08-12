@@ -94,6 +94,9 @@ class NS
         //Set error_reporting level
         error_reporting(E_ALL);
 
+        //todo CORS detection
+
+
         //Init Error library
         $Error = \Core\Lib\Error::new();
 
@@ -110,6 +113,13 @@ class NS
 
         //Set default timezone
         date_default_timezone_set($App->timezone);
+
+        //Input date parser
+        $IOUnit = \Core\Lib\IOUnit::new();
+
+        //Call data reader handler
+        call_user_func($App->is_cli ? $IOUnit->cli_handler : $IOUnit->cgi_handler);
+
 
     }
 }
