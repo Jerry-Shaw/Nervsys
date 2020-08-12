@@ -38,8 +38,11 @@ class App extends Factory
     public string $app_path = 'app';
     public string $inc_path = 'inc';
 
-    public string $timezone = 'Asia/Shanghai';
+    public string $client_ip = '0.0.0.0';
+    public string $timezone  = 'Asia/Shanghai';
 
+    public bool $is_cli     = false;
+    public bool $is_tls     = false;
     public bool $auto_call  = false;
     public bool $core_debug = false;
 
@@ -61,6 +64,37 @@ class App extends Factory
 
         //Get absolute root path
         $this->root_path = $this->getPath($this->app_path);
+
+        //Skip in CLI mode
+        if ($this->is_cli = ('cli' === PHP_SAPI)) {
+            //Rewrite IP for CLI
+            $this->client_ip = 'Local CLI';
+            return;
+        }
+
+        //Get TLS mode
+        $this->is_tls = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+
+        //Build full IP records
+        $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+            ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
+            : $_SERVER['REMOTE_ADDR'];
+
+        //Build IP list
+        $ip_list = false !== strpos($ip_rec, ', ')
+            ? explode(', ', $ip_rec)
+            : [$ip_rec];
+
+        //Get valid client IP
+        foreach ($ip_list as $value) {
+            if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
+                $this->client_ip = &$addr;
+                break;
+            }
+        }
+
+        unset($ip_rec, $ip_list, $value, $addr);
     }
 
     /**
