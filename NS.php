@@ -94,8 +94,13 @@ class NS
         //Set error_reporting level
         error_reporting(E_ALL);
 
-        //todo CORS detection
+        //Init App library
+        $App = \Core\Lib\App::new();
 
+        //Check CORS Permission
+        if (!$App->is_cli) {
+            \Core\Lib\CORS::new()->checkPerm($App);
+        }
 
         //Init Error library
         $Error = \Core\Lib\Error::new();
@@ -104,9 +109,6 @@ class NS
         register_shutdown_function($Error->shutdown_handler);
         set_exception_handler($Error->exception_handler);
         set_error_handler($Error->error_handler);
-
-        //Init App library
-        $App = \Core\Lib\App::new();
 
         //Set include path
         set_include_path($App->root_path . DIRECTORY_SEPARATOR . $App->inc_path);
