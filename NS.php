@@ -39,7 +39,6 @@ define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 
 //Detect extension support
 define('SPT_OPC', extension_loaded('Zend OPcache'));
-define('SPT_SHM', extension_loaded('shmop'));
 
 //Autoload function
 function Autoload(string $class_name, string $root_path = NS_ROOT): void

@@ -167,6 +167,32 @@ class IOUnit extends Factory
     }
 
     /**
+     * @param string ...$keys
+     *
+     * @return $this
+     */
+    public function setHeaderKeys(string ...$keys): self
+    {
+        $this->header_keys = &$keys;
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
+     * @param string ...$keys
+     *
+     * @return $this
+     */
+    public function setCookieKeys(string ...$keys): self
+    {
+        $this->cookie_keys = &$keys;
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
      * Set custom CgiHandler
      *
      * @param object $handler_object
@@ -308,7 +334,6 @@ class IOUnit extends Factory
         return $data;
     }
 
-
     /**
      * Read header data
      *
@@ -316,13 +341,22 @@ class IOUnit extends Factory
      */
     private function readHeader(): array
     {
+        $http_keys   = [];
+        $header_data = [];
 
+        foreach ($this->header_keys as $key) {
+            $http_keys['HTTP_' . strtoupper(strtr($key, '-', '_'))] = $key;
+        }
 
-        //Read header keys
+        $find_keys = array_intersect_key($_SERVER, $http_keys);
 
+        foreach ($find_keys as $key => $value) {
+            $header_data[$http_keys[$key]] = $value;
+        }
 
+        unset($http_keys, $find_keys, $key, $value);
+        return $header_data;
     }
-
 
     /**
      * Read cookie data
@@ -331,9 +365,8 @@ class IOUnit extends Factory
      */
     private function readCookie(): array
     {
-
+        return array_intersect_key($_COOKIE, array_flip($this->cookie_keys));
     }
-
 
     /**
      * Encode data in base64 with data header
