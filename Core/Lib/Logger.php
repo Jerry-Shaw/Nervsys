@@ -21,12 +21,88 @@
 
 namespace Core\Lib;
 
+use Core\Factory;
+
 /**
  * Class Logger
  *
  * @package Core\Lib
  */
-class Logger
+class Logger extends Factory
 {
+    public App $app;
 
+    public string $path;
+
+    /**
+     * Logger constructor.
+     */
+    public function __construct()
+    {
+        $this->app  = App::new();
+        $this->path = $this->app->root_path . DIRECTORY_SEPARATOR . 'logs';
+
+        if (!is_dir($this->path)) {
+            mkdir($this->path, 0777, true);
+            chmod($this->path, 0777);
+        }
+    }
+
+    /**
+     * Show logs
+     *
+     * @param string $err_lv
+     * @param string $message
+     * @param array  $context
+     */
+    public function show(string $err_lv, string $message, array $context = []): void
+    {
+        if ($this->app->core_debug) {
+            echo $this->format($err_lv, $message, $context);
+        }
+
+        unset($err_lv, $message, $context);
+    }
+
+    /**
+     * Save logs
+     *
+     * @param string $name
+     * @param array  $arguments
+     */
+    public function __call(string $name, array $arguments): void
+    {
+        $log_key  = date('Ymd') . '-' . $name;
+        $log_path = $this->path . DIRECTORY_SEPARATOR . $log_key . '.log';
+
+        static $file_handle = [];
+
+        if (!isset($file_handle[$log_key])) {
+            $file_handle[$log_key] = fopen($log_path, 'ab+');
+            chmod($log_path, 0666);
+        }
+
+        fwrite($file_handle[$log_key], $this->format($name, $arguments[0], $arguments[1] ?? []));
+
+        unset($name, $arguments, $log_key, $log_path);
+    }
+
+    /**
+     * Format log content
+     *
+     * @param string $level
+     * @param string $message
+     * @param array  $context
+     *
+     * @return string
+     */
+    private function format(string $level, string $message, array $context): string
+    {
+        $log = date('Y-m-d H:i:s') . PHP_EOL;
+        $log .= ucfirst($level) . ': ' . $message . PHP_EOL;
+        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . PHP_EOL . PHP_EOL : PHP_EOL;
+
+        unset($level, $message, $context);
+        return $log;
+    }
 }
