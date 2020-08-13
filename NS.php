@@ -97,10 +97,14 @@ class NS
         //Init App library
         $App = \Core\Lib\App::new();
 
+        //Set default timezone
+        date_default_timezone_set($App->timezone);
+
+        //Set include path
+        set_include_path($App->root_path . DIRECTORY_SEPARATOR . $App->inc_path);
+
         //Check CORS Permission
-        if (!$App->is_cli) {
-            \Core\Lib\CORS::new()->checkPerm($App);
-        }
+        \Core\Lib\CORS::new()->checkPerm($App);
 
         //Init Error library
         $Error = \Core\Lib\Error::new();
@@ -109,12 +113,6 @@ class NS
         register_shutdown_function($Error->shutdown_handler);
         set_exception_handler($Error->exception_handler);
         set_error_handler($Error->error_handler);
-
-        //Set include path
-        set_include_path($App->root_path . DIRECTORY_SEPARATOR . $App->inc_path);
-
-        //Set default timezone
-        date_default_timezone_set($App->timezone);
 
         //Input date parser
         $IOUnit = \Core\Lib\IOUnit::new();
