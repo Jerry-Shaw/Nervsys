@@ -172,7 +172,56 @@ class Error extends Factory
      */
     public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true): void
     {
+        //Get exception name
+        $exception = get_class($throwable);
 
+        //Get error code
+        $err_code = $throwable->getCode();
+
+        //Get error level
+        if (isset(self::LEVEL[$err_code])) {
+            $err_lv = self::LEVEL[$err_code];
+        } elseif (false !== stripos($exception, 'error')) {
+            $err_lv   = 'error';
+            $err_code = E_USER_ERROR;
+        } else {
+            $err_lv   = 'notice';
+            $err_code = E_USER_NOTICE;
+        }
+
+        //Init App, IOUnit, Logger
+        $App    = App::new();
+        $IOUnit = IOUnit::new();
+        $Logger = Logger::new();
+
+        //Build message
+        $message = $exception . ' caught in ' . $throwable->getFile()
+            . ' on line ' . $throwable->getLine() . PHP_EOL
+            . 'Message: ' . $throwable->getMessage();
+
+        //Build context
+        $context = [
+            //Memory & Duration
+            'Peak'     => round(memory_get_peak_usage() / 1048576, 4) . 'MB',
+            'Memory'   => round(memory_get_usage() / 1048576, 4) . 'MB',
+            'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
+
+            //Params & trace
+            'Param'    => ['ip' => $App->client_ip, 'cmd' => $IOUnit->src_cmd, 'data' => $IOUnit->src_input, 'argv' => $IOUnit->src_argv],
+            'Trace'    => $this->getTraceHist($throwable->getTrace())
+        ];
+
+        //Show & Save logs
+        $Logger->show($err_lv, $message, $context);
+        $Logger->$err_lv($message, $context);
+
+        //Exit on error
+        if ($stop_on_error && 'error' === $err_lv) {
+            http_response_code(500);
+            exit();
+        }
+
+        unset($throwable, $stop_on_error, $exception, $err_code, $err_lv, $App, $IOUnit, $Logger, $message, $context);
     }
 
     /**
