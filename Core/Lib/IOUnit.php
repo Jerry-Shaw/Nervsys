@@ -159,7 +159,7 @@ class IOUnit extends Factory
         //Read CMD from URL
         $this->src_cmd = $this->readURL();
 
-        //Read input date
+        //Read input data
         $this->src_input = $this->readHTTP();
         $this->src_input += $this->readInput(file_get_contents('php://input'));
 

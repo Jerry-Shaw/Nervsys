@@ -112,7 +112,7 @@ class Execute extends Factory
 
                 //Merge result
                 if (!is_null($fn_result)) {
-                    $result += [$cmd_value => &$fn_result];
+                    $result += [$cmd_value => 'object' !== $Reflect->getReturnType($class_name, $cmd_method) ? $fn_result : (object)$fn_result];
                 }
 
                 unset($cmd_class, $cmd_method, $cmd_value, $class_name, $method_reflect, $class_object, $fn_result);
