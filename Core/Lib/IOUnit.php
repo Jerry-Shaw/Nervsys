@@ -40,6 +40,7 @@ class IOUnit extends Factory
     public string $src_cmd  = '';
     public string $src_argv = '';
 
+    public array  $src_error  = [];
     public array  $src_input  = [];
     public array  $src_output = [];
 
@@ -149,6 +150,38 @@ class IOUnit extends Factory
     }
 
     /**
+     * Set error No & Msg
+     *
+     * @param int    $err_no
+     * @param string $err_msg
+     *
+     * @return $this
+     */
+    public function setErrorNo(int $err_no, string $err_msg): self
+    {
+        $this->src_error['errno']   = &$err_no;
+        $this->src_error['message'] = &$err_msg;
+
+        unset($err_no, $err_msg);
+        return $this;
+    }
+
+    /**
+     * Append error info
+     *
+     * @param array $err_info
+     *
+     * @return $this
+     */
+    public function appendErrorInfo(array $err_info): self
+    {
+        $this->src_error += $err_info;
+
+        unset($err_info);
+        return $this;
+    }
+
+    /**
      * Read input data (CGI)
      */
     public function cgiReader(): void
@@ -206,7 +239,8 @@ class IOUnit extends Factory
             $this->src_argv = implode(' ', $argv);
         }
 
-        //Set cli data type
+        //Set data type
+        $this->content_type  = 'application/json';
         $this->cli_data_type = isset($opt['t']) && in_array($opt['t'], ['json', 'text', 'xml'], true) ? $opt['t'] : 'none';
 
         //Decode CMD
@@ -228,12 +262,51 @@ class IOUnit extends Factory
 
     /**
      * Output data source
+     *
+     * @param \Core\Lib\IOUnit $io_unit
      */
-    public function outputHandler()
+    public function outputHandler(IOUnit $io_unit): void
     {
+        !headers_sent() && header('Content-Type: ' . $io_unit->content_type . '; charset=utf-8');
 
+        $data = 1 === count($io_unit->src_output) ? current($io_unit->src_output) : $io_unit->src_output;
+
+        if (!empty($io_unit->src_error)) {
+            $data = $io_unit->src_error + ['data' => $data];
+        }
+
+        switch ($io_unit->content_type) {
+            case 'application/json':
+                echo json_encode($data, JSON_FORMAT);
+                break;
+
+            case 'application/xml':
+                echo $this->toXml((array)$data);
+                break;
+
+            case 'text/plain':
+                echo is_array($data) ? $this->toString($data) : (string)$data;
+                break;
+
+            case 'text/html':
+                if (is_string($data) || is_numeric($data)) {
+                    echo $data;
+                } elseif (isset($data['data']) && is_string($data['data'])) {
+                    echo $data['data'];
+                } elseif (is_array($data) && is_string($res = current($data))) {
+                    echo $res;
+                } else {
+                    echo 'Invalid HTML Page!';
+                }
+                break;
+
+            default:
+                echo '"' . $io_unit->content_type . '" NOT support!';
+                break;
+        }
+
+        unset($io_unit, $data, $res);
     }
-
 
     /**
      * Read accept type
@@ -392,85 +465,6 @@ class IOUnit extends Factory
     }
 
     /**
-     * Make JSON
-     *
-     * @param array $error
-     * @param array $data
-     *
-     * @return string
-     */
-    private function makeJson(array $error, array $data): string
-    {
-        //Reduce data depth
-        if (1 === count($data)) {
-            $data = current($data);
-        }
-
-        //Build full result
-        $result = json_encode(!empty($error) ? $error + ['data' => $data] : $data, JSON_FORMAT);
-        header('Content-Type: application/json; charset=utf-8');
-
-        unset($error, $data);
-        return $result;
-    }
-
-    /**
-     * Make XML
-     *
-     * @param array $error
-     * @param array $data
-     *
-     * @return string
-     */
-    private function makeXml(array $error, array $data): string
-    {
-        //Reduce data depth
-        if (1 === count($data)) {
-            $data = current($data);
-        }
-
-        //Merge error data
-        if (!empty($error)) {
-            $data = $error + ['data' => $data];
-        }
-
-        //Build full result
-        $result = $this->toXml((array)$data);
-        header('Content-Type: text/xml; charset=utf-8');
-
-        unset($error, $data);
-        return $result;
-    }
-
-    /**
-     * Make plain text
-     *
-     * @param array $error
-     * @param array $data
-     *
-     * @return string
-     */
-    private function makeText(array $error, array $data): string
-    {
-        //Reduce data depth
-        if (1 === count($data)) {
-            $data = current($data);
-        }
-
-        //Merge error data
-        if (!empty($error)) {
-            $data = $error + ['data' => $data];
-        }
-
-        //Build full result
-        $result = is_array($data) ? $this->toString($data) : (string)$data;
-        header('Content-Type: text/plain');
-
-        unset($error, $data);
-        return $result;
-    }
-
-    /**
      * Array content to XML
      *
      * @param array $array
@@ -520,9 +514,8 @@ class IOUnit extends Factory
     {
         $string = '';
 
-        //Format to string
         foreach ($array as $key => $value) {
-            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . (is_array($value) ? $this->toString($value) : (string)$value . PHP_EOL);
+            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . "    " . (is_array($value) ? $this->toString($value) : (string)$value . PHP_EOL);
         }
 
         unset($array, $key, $value);

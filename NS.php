@@ -134,6 +134,7 @@ class NS
         $IOUnit->src_output += $Execute->callScript();
         $IOUnit->src_output += $Execute->callProgram();
 
-
+        //Output result
+        call_user_func($IOUnit->output_handler, $IOUnit);
     }
 }
