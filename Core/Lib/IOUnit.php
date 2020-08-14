@@ -43,8 +43,9 @@ class IOUnit extends Factory
     public array  $src_input  = [];
     public array  $src_output = [];
 
-    protected string $content_type   = '';
-    protected string $cli_data_type  = '';
+    public string $content_type  = '';
+    public string $cli_data_type = '';
+
     protected string $base64_marker  = 'data:text/argv;base64,';
     protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html'];
 
@@ -221,6 +222,8 @@ class IOUnit extends Factory
                 parse_str($input_data, $this->src_input);
             }
         }
+
+        unset($opt, $argv);
     }
 
     /**
