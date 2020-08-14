@@ -44,6 +44,7 @@ class IOUnit extends Factory
     public array  $src_output = [];
 
     protected string $content_type   = '';
+    protected string $cli_data_type  = '';
     protected string $base64_marker  = 'data:text/argv;base64,';
     protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html'];
 
@@ -204,18 +205,8 @@ class IOUnit extends Factory
             $this->src_argv = implode(' ', $argv);
         }
 
-        //Set return type value
-        if (!isset($opt['t']) || !in_array($opt['t'], ['json', 'text', 'xml'], true)) {
-            $opt['t'] = 'json';
-        }
-
-        //Fill response type
-        foreach ($this->response_types as $type) {
-            if (false !== stripos($type, $opt['t'])) {
-                $this->content_type = &$type;
-                break;
-            }
-        }
+        //Set cli data type
+        $this->cli_data_type = isset($opt['t']) && in_array($opt['t'], ['json', 'text', 'xml'], true) ? $opt['t'] : 'none';
 
         //Decode CMD
         if (isset($opt['c'])) {
