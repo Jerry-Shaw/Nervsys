@@ -116,8 +116,13 @@ class NS
         //Input date parser
         $IOUnit = \Core\Lib\IOUnit::new();
 
-        //Call data reader handler
-        call_user_func($App->is_cli ? $IOUnit->cli_handler : $IOUnit->cgi_handler);
+        //Call data reader
+        call_user_func(!$App->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
+
+        //Call router parser
+        $cmd_group = \Core\Lib\Router::new()->parse($IOUnit->src_cmd);
+
+
 
 
     }
