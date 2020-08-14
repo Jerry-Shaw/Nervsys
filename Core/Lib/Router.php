@@ -191,7 +191,7 @@ class Router extends Factory
                 continue;
             }
 
-            $ex_list[$cmd] = $this->cli_mapping[$cmd];
+            $ex_list[] = [$cmd, $this->cli_mapping[$cmd]];
         }
 
         unset($c, $cmd_list, $cmd);
