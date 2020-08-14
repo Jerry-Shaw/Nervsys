@@ -153,7 +153,7 @@ class Router extends Factory
     public function cgiRouter(string $c): array
     {
         $fn_list  = [];
-        $cmd_list = $this->makeList($c);
+        $cmd_list = $this->getList($c);
 
         foreach ($cmd_list as $cmd) {
             if (false === strpos($cmd, '/', 1)) {
@@ -186,7 +186,7 @@ class Router extends Factory
     public function cliRouter(string $c): array
     {
         $ex_list  = [];
-        $cmd_list = $this->makeList($c);
+        $cmd_list = $this->getList($c);
 
         foreach ($cmd_list as $cmd) {
             if (!isset($this->cli_mapping[$cmd])) {
@@ -207,7 +207,7 @@ class Router extends Factory
      *
      * @return array
      */
-    private function makeList(string $c): array
+    private function getList(string $c): array
     {
         return false !== strpos($c, '-') ? explode('-', $c) : [$c];
     }
