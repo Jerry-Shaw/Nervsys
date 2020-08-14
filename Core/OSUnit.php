@@ -36,7 +36,7 @@ class OSUnit extends Factory
      */
     public function __construct()
     {
-        $this->os_obj = parent::getObj('\\Core\\Lib\\OS' . PHP_OS);
+        $this->os_obj = parent::getObj('\\Core\\Lib\\OS\\' . PHP_OS);
     }
 
     /**
