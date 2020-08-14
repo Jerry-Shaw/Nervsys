@@ -30,6 +30,8 @@ use Core\Factory;
  */
 class App extends Factory
 {
+    public Error  $error;
+
     public string $root_path;
     public string $entry_path;
     public string $script_path;
@@ -51,6 +53,9 @@ class App extends Factory
      */
     public function __construct()
     {
+        //Init Error
+        $this->error = Error::new();
+
         //Get script file path
         $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
 
@@ -186,6 +191,21 @@ class App extends Factory
 
         unset($core_debug_mode);
         return $this;
+    }
+
+    /**
+     * Show debug message and continue
+     *
+     * @param \Throwable $throwable
+     * @param bool       $show_on_cli
+     */
+    public function showDebug(\Throwable $throwable, bool $show_on_cli = false): void
+    {
+        if ($this->core_debug && (!$show_on_cli ? !$this->is_cli : $this->is_cli)) {
+            $this->error->exceptionHandler($throwable, false);
+        }
+
+        unset($throwable, $show_on_cli);
     }
 
     /**
