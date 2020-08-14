@@ -102,6 +102,14 @@ class NS
         //Set include path
         set_include_path($App->root_path . DIRECTORY_SEPARATOR . $App->inc_path);
 
+        //Register autoload ($App->root_path based)
+        spl_autoload_register(
+            static function (string $class_name) use ($App): void
+            {
+                Autoload($class_name, $App->root_path);
+            }
+        );
+
         //Check CORS Permission
         \Core\Lib\CORS::new()->checkPerm($App);
 
@@ -119,10 +127,12 @@ class NS
         //Call data reader
         call_user_func(!$App->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
 
-        //Call router parser
-        $cmd_group = \Core\Lib\Router::new()->parse($IOUnit->src_cmd);
+        //Init Execute Module
+        $Execute = \Core\Execute::new(\Core\Lib\Router::new()->parse($IOUnit->src_cmd));
 
-
+        //Fetch results
+        $IOUnit->src_output += $Execute->callScript();
+        $IOUnit->src_output += $Execute->callProgram();
 
 
     }
