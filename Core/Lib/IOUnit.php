@@ -239,9 +239,23 @@ class IOUnit extends Factory
             $this->src_argv = implode(' ', $argv);
         }
 
-        //Set data type
+        //Set default data type
+        $this->cli_data_type = 'none';
         $this->content_type  = 'application/json';
-        $this->cli_data_type = isset($opt['t']) && in_array($opt['t'], ['json', 'text', 'xml'], true) ? $opt['t'] : 'none';
+
+        if (isset($opt['t']) && in_array($opt['t'], ['json', 'text', 'xml'], true)) {
+            $this->cli_data_type = &$opt['t'];
+
+            //Find correct content type
+            foreach ($this->response_types as $type) {
+                if (false !== strpos($type, $opt['t'])) {
+                    $this->content_type = &$type;
+                    break;
+                }
+            }
+
+            unset($type);
+        }
 
         //Decode CMD
         if (isset($opt['c'])) {
@@ -257,7 +271,7 @@ class IOUnit extends Factory
             }
         }
 
-        unset($opt, $argv);
+        unset($opt, $optind, $argv);
     }
 
     /**
