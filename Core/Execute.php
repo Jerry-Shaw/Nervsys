@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS Hook library
+ * NS Execute module
  *
  * Copyright 2016-2020 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2020 秋水之冰 <27206617@qq.com>
@@ -19,16 +19,10 @@
  * limitations under the License.
  */
 
-namespace Core\Lib;
+namespace Core;
 
-use Core\Factory;
 
-/**
- * Class Hook
- *
- * @package Core\Lib
- */
-class Hook extends Factory
+class Execute extends Factory
 {
 
 }

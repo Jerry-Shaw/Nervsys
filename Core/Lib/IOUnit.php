@@ -30,8 +30,8 @@ use Core\Factory;
  */
 class IOUnit extends Factory
 {
-    public array $cgi_handler;
-    public array $cli_handler;
+    public array $cgi_reader;
+    public array $cli_reader;
     public array $output_handler;
 
     public array $header_keys = [];
@@ -52,103 +52,9 @@ class IOUnit extends Factory
      */
     public function __construct()
     {
-        $this->cgi_handler    = [$this, 'cgiHandler'];
-        $this->cli_handler    = [$this, 'cliHandler'];
+        $this->cgi_reader     = [$this, 'cgiReader'];
+        $this->cli_reader     = [$this, 'cliReader'];
         $this->output_handler = [$this, 'outputHandler'];
-    }
-
-    /**
-     * Read input data (CGI)
-     */
-    public function cgiHandler(): void
-    {
-        //Read accept type
-        $this->readAccept();
-
-        //Read CMD from URL
-        $this->src_cmd = $this->readURL();
-
-        //Read input date
-        $this->src_input = $this->readHTTP();
-        $this->src_input += $this->readInput(file_get_contents('php://input'));
-
-        //Merge header data
-        if (!empty($this->header_keys)) {
-            $this->src_input += $this->readHeader();
-        }
-
-        //Merge cookie data
-        if (!empty($this->cookie_keys)) {
-            $this->src_input += $this->readCookie();
-        }
-
-        //Fix getting CMD from data
-        if ('' === $this->src_cmd && isset($this->src_input['c'])) {
-            $this->src_cmd = $this->src_input['c'];
-            unset($this->src_input['c']);
-        }
-    }
-
-    /**
-     * Read arguments (CLI)
-     *
-     * c: CMD (required)
-     * d: Data package (required)
-     * t: Return type (json/xml/plain, default: none, optional)
-     * ... Other CLI params (optional)
-     */
-    public function cliHandler(): void
-    {
-        //Read opt data
-        $opt = getopt('c:d:t::', [], $optind);
-
-        //Read argv data
-        $argv = array_slice($_SERVER['argv'], $optind);
-
-        //Pick CMD from argv
-        if (!isset($opt['c']) && !empty($argv)) {
-            $opt['c'] = array_shift($argv);
-        }
-
-        //Fill CLI argv
-        if (!empty($argv)) {
-            $this->src_argv = implode(' ', $argv);
-        }
-
-        //Set return type value
-        if (!isset($opt['t']) || !in_array($opt['t'], ['json', 'text', 'xml'], true)) {
-            $opt['t'] = 'json';
-        }
-
-        //Fill response type
-        foreach ($this->response_types as $type) {
-            if (false !== stripos($type, $opt['t'])) {
-                $this->content_type = &$type;
-                break;
-            }
-        }
-
-        //Decode CMD
-        if (isset($opt['c'])) {
-            $this->src_cmd = $this->decodeData($opt['c']);
-        }
-
-        //Decode input data
-        if (isset($opt['d'])) {
-            $input_data = $this->decodeData($opt['d']);
-
-            if (empty($this->src_input = $this->readInput($input_data))) {
-                parse_str($input_data, $this->src_input);
-            }
-        }
-    }
-
-    /**
-     * Output data source
-     */
-    public function outputHandler()
-    {
-
     }
 
     /**
@@ -200,9 +106,9 @@ class IOUnit extends Factory
      *
      * @return $this
      */
-    public function setCgiHandler(object $handler_object, string $handler_method): self
+    public function setCgiReader(object $handler_object, string $handler_method): self
     {
-        $this->cgi_handler = [$handler_object, $handler_method];
+        $this->cgi_reader = [$handler_object, $handler_method];
 
         unset($handler_object, $handler_method);
         return $this;
@@ -216,9 +122,9 @@ class IOUnit extends Factory
      *
      * @return $this
      */
-    public function setCliHandler(object $handler_object, string $handler_method): self
+    public function setCliReader(object $handler_object, string $handler_method): self
     {
-        $this->cli_handler = [$handler_object, $handler_method];
+        $this->cli_reader = [$handler_object, $handler_method];
 
         unset($handler_object, $handler_method);
         return $this;
@@ -238,6 +144,100 @@ class IOUnit extends Factory
 
         unset($handler_object, $handler_method);
         return $this;
+    }
+
+    /**
+     * Read input data (CGI)
+     */
+    public function cgiReader(): void
+    {
+        //Read accept type
+        $this->readAccept();
+
+        //Read CMD from URL
+        $this->src_cmd = $this->readURL();
+
+        //Read input date
+        $this->src_input = $this->readHTTP();
+        $this->src_input += $this->readInput(file_get_contents('php://input'));
+
+        //Merge header data
+        if (!empty($this->header_keys)) {
+            $this->src_input += $this->readHeader();
+        }
+
+        //Merge cookie data
+        if (!empty($this->cookie_keys)) {
+            $this->src_input += $this->readCookie();
+        }
+
+        //Fix getting CMD from data
+        if ('' === $this->src_cmd && isset($this->src_input['c'])) {
+            $this->src_cmd = $this->src_input['c'];
+            unset($this->src_input['c']);
+        }
+    }
+
+    /**
+     * Read arguments (CLI)
+     *
+     * c: CMD (required)
+     * d: Data package (required)
+     * t: Return type (json/xml/plain, default: none, optional)
+     * ... Other CLI params (optional)
+     */
+    public function cliReader(): void
+    {
+        //Read opt data
+        $opt = getopt('c:d:t::', [], $optind);
+
+        //Read argv data
+        $argv = array_slice($_SERVER['argv'], $optind);
+
+        //Pick CMD from argv
+        if (!isset($opt['c']) && !empty($argv)) {
+            $opt['c'] = array_shift($argv);
+        }
+
+        //Fill CLI argv
+        if (!empty($argv)) {
+            $this->src_argv = implode(' ', $argv);
+        }
+
+        //Set return type value
+        if (!isset($opt['t']) || !in_array($opt['t'], ['json', 'text', 'xml'], true)) {
+            $opt['t'] = 'json';
+        }
+
+        //Fill response type
+        foreach ($this->response_types as $type) {
+            if (false !== stripos($type, $opt['t'])) {
+                $this->content_type = &$type;
+                break;
+            }
+        }
+
+        //Decode CMD
+        if (isset($opt['c'])) {
+            $this->src_cmd = $this->decodeData($opt['c']);
+        }
+
+        //Decode input data
+        if (isset($opt['d'])) {
+            $input_data = $this->decodeData($opt['d']);
+
+            if (empty($this->src_input = $this->readInput($input_data))) {
+                parse_str($input_data, $this->src_input);
+            }
+        }
+    }
+
+    /**
+     * Output data source
+     */
+    public function outputHandler()
+    {
+
     }
 
 
