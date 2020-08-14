@@ -160,6 +160,8 @@ class Router extends Factory
                 continue;
             }
 
+            $cmd_val = $cmd;
+
             if ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path)) {
                 $cmd = $this->app->api_path . '/' . $cmd;
             }
@@ -167,7 +169,7 @@ class Router extends Factory
             $cmd = trim($cmd, '/');
 
             $fn_pos    = strrpos($cmd, '/');
-            $fn_list[] = [substr($cmd, 0, $fn_pos), substr($cmd, $fn_pos + 1)];
+            $fn_list[] = [substr($cmd, 0, $fn_pos), substr($cmd, $fn_pos + 1), $cmd_val];
         }
 
         unset($c, $cmd_list, $cmd, $fn_pos);
