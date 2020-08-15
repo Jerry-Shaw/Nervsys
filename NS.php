@@ -22,6 +22,13 @@
 //Strict type declare
 declare(strict_types = 1);
 
+use Core\Execute;
+use Core\Factory;
+use Core\Lib\App;
+use Core\Lib\CORS;
+use Core\Lib\IOUnit;
+use Core\Lib\Router;
+
 //Require PHP version >= 7.4.0
 if (version_compare(PHP_VERSION, '7.4.0', '<')) {
     exit('NervSys needs PHP 7.4.0 or higher!');
@@ -66,7 +73,7 @@ function Autoload(string $class_name, string $root_path = NS_ROOT): void
 }
 
 //Compile/require Factory module
-Autoload(\Core\Factory::class);
+Autoload(Factory::class);
 
 //Register autoload (NS_ROOT based)
 spl_autoload_register(
@@ -79,8 +86,10 @@ spl_autoload_register(
 /**
  * Class NS
  */
-class NS
+class NS extends Factory
 {
+    private App $app;
+
     /**
      * NS constructor.
      */
@@ -94,7 +103,10 @@ class NS
         error_reporting(E_ALL);
 
         //Init App library
-        $App = \Core\Lib\App::new();
+        $App = App::new();
+
+        //Copy App library
+        $this->app = &$App;
 
         //Set default timezone
         date_default_timezone_set($App->timezone);
@@ -109,10 +121,13 @@ class NS
                 Autoload($class_name, $App->root_path);
             }
         );
+    }
 
-        //Check CORS Permission
-        \Core\Lib\CORS::new()->checkPerm($App);
-
+    /**
+     * Run NS system
+     */
+    public function run(): void
+    {
         //Init Error library
         $Error = \Core\Lib\Error::new();
 
@@ -121,14 +136,17 @@ class NS
         set_exception_handler($Error->exception_handler);
         set_error_handler($Error->error_handler);
 
+        //Check CORS Permission
+        CORS::new()->checkPerm($this->app);
+
         //Input date parser
-        $IOUnit = \Core\Lib\IOUnit::new();
+        $IOUnit = IOUnit::new();
 
         //Call data reader
-        call_user_func(!$App->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
+        call_user_func(!$this->app->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
 
         //Init Execute Module
-        $Execute = \Core\Execute::new(\Core\Lib\Router::new()->parse($IOUnit->src_cmd));
+        $Execute = Execute::new(Router::new()->parse($IOUnit->src_cmd));
 
         //Fetch results
         $IOUnit->src_output += $Execute->callScript();
