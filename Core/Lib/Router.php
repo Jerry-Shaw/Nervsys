@@ -160,19 +160,29 @@ class Router extends Factory
                 continue;
             }
 
-            $cmd_val = $cmd;
+            //Get class & method from CMD
+            $cmd_val = '/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . $cmd : $cmd;
+            $cmd_val = trim($cmd_val, '/');
+            $fn_pos  = strrpos($cmd_val, '/');
+            $class   = '\\' . strtr(substr($cmd_val, 0, $fn_pos), '/', '\\');
+            $method  = substr($cmd_val, $fn_pos + 1);
 
-            if ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path)) {
-                $cmd = $this->app->api_path . '/' . $cmd;
+            //Skip non-exist class
+            if (!class_exists($class)) {
+                $this->app->showDebug(new \Exception('"' . $class . '" NOT found!', E_USER_NOTICE), false);
+                continue;
             }
 
-            $cmd = trim($cmd, '/');
+            //Skip non-exist method
+            if (!method_exists($class, $method)) {
+                $this->app->showDebug(new \Exception('"' . $cmd . '" NOT found!', E_USER_NOTICE), false);
+                continue;
+            }
 
-            $fn_pos    = strrpos($cmd, '/');
-            $fn_list[] = [substr($cmd, 0, $fn_pos), substr($cmd, $fn_pos + 1), $cmd_val];
+            $fn_list[] = [$class, $method, $cmd];
         }
 
-        unset($c, $cmd_list, $cmd, $fn_pos);
+        unset($c, $cmd_list, $cmd, $cmd_val, $fn_pos, $class, $method);
         return $fn_list;
     }
 

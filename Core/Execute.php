@@ -79,35 +79,20 @@ class Execute extends Factory
                 //Get CMD value
                 $cmd_value = $cmd_pair[2] ?? implode('/', $cmd_pair);
 
-                //Prepare class name
-                $class_name = '\\' . strtr($cmd_class, '/', '\\');
-
-                //Skip non-exist class
-                if (!class_exists($class_name)) {
-                    $this->app->showDebug(new \Exception('"' . $cmd_class . '" NOT found!', E_USER_NOTICE), false);
-                    continue;
-                }
-
-                //Skip non-exist method
-                if (!method_exists($class_name, $cmd_method)) {
-                    $this->app->showDebug(new \Exception('"' . $cmd_value . '" NOT found!', E_USER_NOTICE), false);
-                    continue;
-                }
-
                 //Get method reflection
-                $method_reflect = $Reflect->getMethod($class_name, $cmd_method);
+                $method_reflect = $Reflect->getMethod($cmd_class, $cmd_method);
 
                 //Create class instance
                 $class_object = !$method_reflect->isStatic()
-                    ? (!method_exists($class_name, '__construct')
-                        ? parent::getObj($class_name)
-                        : parent::getObj($class_name, $this->fetchParams($Reflect, $class_name, '__construct', $this->io_unit->src_input, $cmd_class)))
-                    : $class_name;
+                    ? (!method_exists($cmd_class, '__construct')
+                        ? parent::getObj($cmd_class)
+                        : parent::getObj($cmd_class, $this->fetchParams($Reflect, $cmd_class, '__construct', $this->io_unit->src_input, $cmd_class)))
+                    : $cmd_class;
 
                 //Call method
                 $fn_result = call_user_func(
                     [$class_object, $cmd_method],
-                    ...$this->fetchParams($Reflect, $class_name, $cmd_method, $this->io_unit->src_input, $cmd_value)
+                    ...$this->fetchParams($Reflect, $cmd_class, $cmd_method, $this->io_unit->src_input, $cmd_value)
                 );
 
                 //Merge result
@@ -115,7 +100,7 @@ class Execute extends Factory
                     $result += [$cmd_value => &$fn_result];
                 }
 
-                unset($cmd_class, $cmd_method, $cmd_value, $class_name, $method_reflect, $class_object, $fn_result);
+                unset($cmd_class, $cmd_method, $cmd_value, $method_reflect, $class_object, $fn_result);
             } catch (\Throwable $throwable) {
                 $this->app->showDebug($throwable, true);
                 unset($throwable);
@@ -182,7 +167,6 @@ class Execute extends Factory
                 if ('none' !== $this->io_unit->cli_data_type) {
                     $data = '';
 
-                    //Read output via pipe
                     while (!feof($pipes[1])) {
                         $data .= fread($pipes[1], 8192);
                     }
