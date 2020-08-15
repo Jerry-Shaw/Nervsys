@@ -87,17 +87,35 @@ spl_autoload_register(
     static function (string $class_name): void
     {
         Autoload($class_name);
+        unset($class_name);
     }
 );
 
-//Init App library to get root_path
-$root_path = App::new()->root_path;
+//Init App
+$App = App::new();
 
-//Register autoload (App->root_path based)
+//Register autoload ($App->root_path based)
 spl_autoload_register(
-    static function (string $class_name) use ($root_path): void
+    static function (string $class_name) use ($App): void
     {
-        Autoload($class_name, $root_path);
+        if ('' === $App->root_path) {
+            //Get relative path of class file
+            $file_name = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
+
+            //Looking for class file to find correct root path
+            if (is_file(($parent_path = dirname($App->entry_path)) . DIRECTORY_SEPARATOR . $file_name)) {
+                $App->root_path = &$parent_path;
+            } elseif (is_file($App->entry_path . DIRECTORY_SEPARATOR . $file_name)) {
+                $App->root_path = $App->entry_path;
+            } else {
+                return;
+            }
+
+            unset($file_name, $parent_path);
+        }
+
+        Autoload($class_name, $App->root_path);
+        unset($class_name, $App);
     }
 );
 

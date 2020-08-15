@@ -32,9 +32,9 @@ class App extends Factory
 {
     public Error  $error;
 
-    public string $root_path;
-    public string $entry_path;
-    public string $script_path;
+    public string $root_path   = '';
+    public string $entry_path  = '';
+    public string $script_path = '';
 
     public string $api_path = 'api';
     public string $app_path = 'app';
@@ -66,9 +66,6 @@ class App extends Factory
 
         //Get absolute entry path
         $this->entry_path = dirname($this->script_path);
-
-        //Get absolute root path
-        $this->root_path = $this->getPath($this->app_path);
 
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
@@ -126,8 +123,7 @@ class App extends Factory
      */
     public function setAppPath(string $pathname): self
     {
-        $this->app_path  = &$pathname;
-        $this->root_path = $this->getPath($pathname);
+        $this->app_path = &$pathname;
 
         unset($pathname);
         return $this;
@@ -206,20 +202,5 @@ class App extends Factory
         }
 
         unset($throwable, $show_on_cli);
-    }
-
-    /**
-     * Get target path based on app path
-     *
-     * @param string $pathname
-     *
-     * @return string
-     */
-    private function getPath(string $pathname): string
-    {
-        $target_path = is_dir(($parent_path = dirname($this->entry_path)) . DIRECTORY_SEPARATOR . $pathname) ? $parent_path : $this->entry_path;
-
-        unset($pathname, $parent_path);
-        return $target_path;
     }
 }
