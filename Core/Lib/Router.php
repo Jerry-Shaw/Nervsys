@@ -22,6 +22,7 @@
 namespace Core\Lib;
 
 use Core\Factory;
+use Core\Reflect;
 
 /**
  * Class Router
@@ -149,11 +150,16 @@ class Router extends Factory
      * @param string $c
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function cgiRouter(string $c): array
     {
         $fn_list  = [];
         $cmd_list = $this->getList($c);
+
+        //Init IOUnit & Reflect
+        $IOUnit  = IOUnit::new();
+        $Reflect = Reflect::new();
 
         foreach ($cmd_list as $cmd) {
             if (false === strpos($cmd, '/', 1)) {
@@ -179,10 +185,15 @@ class Router extends Factory
                 continue;
             }
 
+            //Save method return type
+            if ('' !== ($return_type = $Reflect->getReturnType($class, $method))) {
+                $IOUnit->return_type[$cmd] = $return_type;
+            }
+
             $fn_list[] = [$class, $method, $cmd];
         }
 
-        unset($c, $cmd_list, $cmd, $cmd_val, $fn_pos, $class, $method);
+        unset($c, $cmd_list, $IOUnit, $Reflect, $cmd, $cmd_val, $fn_pos, $class, $method, $return_type);
         return $fn_list;
     }
 

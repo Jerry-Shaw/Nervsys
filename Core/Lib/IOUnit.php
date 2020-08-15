@@ -44,6 +44,7 @@ class IOUnit extends Factory
     public array  $src_input  = [];
     public array  $src_output = [];
 
+    public array  $return_type   = [];
     public string $content_type  = '';
     public string $cli_data_type = '';
 
@@ -282,8 +283,11 @@ class IOUnit extends Factory
     public function outputHandler(IOUnit $io_unit): void
     {
         !headers_sent() && header('Content-Type: ' . $io_unit->content_type . '; charset=utf-8');
-
         $data = 1 === count($io_unit->src_output) ? current($io_unit->src_output) : $io_unit->src_output;
+
+        if (empty($io_unit->src_output) && in_array('object', $io_unit->return_type, true)) {
+            $data = (object)[];
+        }
 
         if (!empty($io_unit->src_error)) {
             $data = $io_unit->src_error + ['data' => $data];
