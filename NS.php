@@ -60,6 +60,12 @@ function Autoload(string $class_name, string $root_path = NS_ROOT): void
     //Get relative path of class file
     $file_name = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
 
+    //Load script file from include path
+    if (false === strpos($class_name, '\\')) {
+        require $file_name;
+        return;
+    }
+
     //Skip non-existent class file
     if (!is_file($class_file = $root_path . DIRECTORY_SEPARATOR . $file_name)) {
         return;
@@ -94,7 +100,18 @@ spl_autoload_register(
 //Init App
 $App = App::new();
 
-//Register autoload ($App->root_path based)
+//Set include path (entry & parent)
+set_include_path(
+    implode(
+        PATH_SEPARATOR,
+        [
+            $App->entry_path . DIRECTORY_SEPARATOR . $App->inc_path,
+            dirname($App->entry_path) . DIRECTORY_SEPARATOR . $App->inc_path
+        ]
+    )
+);
+
+//Register autoload ($App->root_path detection)
 spl_autoload_register(
     static function (string $class_name) use ($App): void
     {
@@ -134,9 +151,6 @@ class NS extends Factory
 
         //Set default timezone
         date_default_timezone_set($App->timezone);
-
-        //Set include path
-        set_include_path($App->root_path . DIRECTORY_SEPARATOR . $App->inc_path);
 
         //Init Error library
         $Error = \Core\Lib\Error::new();
