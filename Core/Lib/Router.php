@@ -169,7 +169,7 @@ class Router extends Factory
 
             //Skip non-exist class
             if (!class_exists($class)) {
-                $this->app->showDebug(new \Exception('"' . $class . '" NOT found!', E_USER_NOTICE), false);
+                $this->app->showDebug(new \Exception('"' . substr($cmd, 0, strrpos($cmd, '/')) . '" NOT found!', E_USER_NOTICE), false);
                 continue;
             }
 
