@@ -29,6 +29,13 @@ use Core\Lib\CORS;
 use Core\Lib\IOUnit;
 use Core\Lib\Router;
 
+//Misc settings
+set_time_limit(0);
+ignore_user_abort(true);
+
+//Set error_reporting level
+error_reporting(E_ALL);
+
 //Require PHP version >= 7.4.0
 if (version_compare(PHP_VERSION, '7.4.0', '<')) {
     exit('NervSys needs PHP 7.4.0 or higher!');
@@ -83,30 +90,29 @@ spl_autoload_register(
     }
 );
 
+//Init App library to get root_path
+$root_path = App::new()->root_path;
+
+//Register autoload (App->root_path based)
+spl_autoload_register(
+    static function (string $class_name) use ($root_path): void
+    {
+        Autoload($class_name, $root_path);
+    }
+);
+
 /**
  * Class NS
  */
 class NS extends Factory
 {
-    private App $app;
-
     /**
      * NS constructor.
      */
     public function __construct()
     {
-        //Misc settings
-        set_time_limit(0);
-        ignore_user_abort(true);
-
-        //Set error_reporting level
-        error_reporting(E_ALL);
-
-        //Init App library
+        //Init App
         $App = App::new();
-
-        //Copy App library
-        $this->app = &$App;
 
         //Set default timezone
         date_default_timezone_set($App->timezone);
@@ -114,20 +120,6 @@ class NS extends Factory
         //Set include path
         set_include_path($App->root_path . DIRECTORY_SEPARATOR . $App->inc_path);
 
-        //Register autoload ($App->root_path based)
-        spl_autoload_register(
-            static function (string $class_name) use ($App): void
-            {
-                Autoload($class_name, $App->root_path);
-            }
-        );
-    }
-
-    /**
-     * Run NS system
-     */
-    public function run(): void
-    {
         //Init Error library
         $Error = \Core\Lib\Error::new();
 
@@ -137,13 +129,13 @@ class NS extends Factory
         set_error_handler($Error->error_handler);
 
         //Check CORS Permission
-        CORS::new()->checkPerm($this->app);
+        CORS::new()->checkPerm($App);
 
         //Input date parser
         $IOUnit = IOUnit::new();
 
         //Call data reader
-        call_user_func(!$this->app->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
+        call_user_func(!$App->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
 
         //Init Execute Module
         $Execute = Execute::new(Router::new()->parse($IOUnit->src_cmd));
