@@ -101,15 +101,7 @@ spl_autoload_register(
 $App = App::new();
 
 //Set include path (entry & parent)
-set_include_path(
-    implode(
-        PATH_SEPARATOR,
-        [
-            $App->entry_path . DIRECTORY_SEPARATOR . $App->inc_path,
-            dirname($App->entry_path) . DIRECTORY_SEPARATOR . $App->inc_path
-        ]
-    )
-);
+$App->setIncPath($App->inc_path);
 
 //Register autoload ($App->root_path detection)
 spl_autoload_register(

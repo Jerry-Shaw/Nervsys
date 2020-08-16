@@ -140,6 +140,16 @@ class App extends Factory
     {
         $this->inc_path = &$pathname;
 
+        set_include_path(
+            implode(
+                PATH_SEPARATOR,
+                [
+                    $this->entry_path . DIRECTORY_SEPARATOR . $pathname,
+                    dirname($this->entry_path) . DIRECTORY_SEPARATOR . $pathname
+                ]
+            )
+        );
+
         unset($pathname);
         return $this;
     }
