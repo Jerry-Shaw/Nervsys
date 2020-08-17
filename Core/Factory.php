@@ -40,8 +40,8 @@ class Factory
     {
         $params = func_get_args();
 
-        if (!empty($params) && method_exists($class = get_called_class(), '__construct')) {
-            $fn_args = Reflect::new()->buildParams($class, '__construct', $params);
+        if (1 === func_num_args() && method_exists($class = get_called_class(), '__construct')) {
+            $fn_args = Reflect::new()->buildParams($class, '__construct', is_array($params[0]) ? $params[0] : $params);
 
             if (empty($fn_args['diff'])) {
                 $params = &$fn_args['param'];
