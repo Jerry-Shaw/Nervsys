@@ -50,6 +50,8 @@ class App extends Factory
 
     /**
      * App constructor.
+     *
+     * @throws \ReflectionException
      */
     public function __construct()
     {
@@ -204,6 +206,8 @@ class App extends Factory
      *
      * @param \Throwable $throwable
      * @param bool       $show_on_cli
+     *
+     * @throws \ReflectionException
      */
     public function showDebug(\Throwable $throwable, bool $show_on_cli = false): void
     {

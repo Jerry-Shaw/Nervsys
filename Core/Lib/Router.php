@@ -39,6 +39,8 @@ class Router extends Factory
 
     /**
      * Router constructor.
+     *
+     * @throws \ReflectionException
      */
     public function __construct()
     {
@@ -162,6 +164,7 @@ class Router extends Factory
         $Reflect = Reflect::new();
 
         foreach ($cmd_list as $cmd) {
+            //Skip invalid CMD
             if (false === strpos($cmd, '/', 1)) {
                 continue;
             }

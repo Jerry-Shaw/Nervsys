@@ -42,6 +42,8 @@ class Execute extends Factory
      * Execute constructor.
      *
      * @param array $cmd_group
+     *
+     * @throws \ReflectionException
      */
     public function __construct(array $cmd_group)
     {
@@ -58,6 +60,7 @@ class Execute extends Factory
      * Call function script
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function callScript(): array
     {
@@ -115,6 +118,7 @@ class Execute extends Factory
      * Call external program
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function callProgram(): array
     {

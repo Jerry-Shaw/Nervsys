@@ -24,7 +24,7 @@ namespace Core;
 /**
  * Class Factory
  *
- * @package Core\Mod
+ * @package Core
  */
 class Factory
 {
@@ -34,10 +34,24 @@ class Factory
      * Create new object from called class
      *
      * @return $this
+     * @throws \ReflectionException
      */
     public static function new(): self
     {
-        return self::getObj(get_called_class(), func_get_args());
+        $params = func_get_args();
+
+        if (!empty($params) && method_exists($class = get_called_class(), '__construct')) {
+            $fn_args = Reflect::new()->buildParams($class, '__construct', $params);
+
+            if (empty($fn_args['diff'])) {
+                $params = &$fn_args['param'];
+            }
+
+            unset($fn_args);
+        }
+
+        unset($class);
+        return self::getObj(get_called_class(), $params);
     }
 
     /**
