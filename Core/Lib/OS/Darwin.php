@@ -21,14 +21,12 @@
 
 namespace Core\Lib\OS;
 
-use Core\Factory;
-
 /**
  * Class Darwin
  *
  * @package Core\Lib\OS
  */
-class Darwin extends Factory
+class Darwin
 {
     public string $os_cmd;
 

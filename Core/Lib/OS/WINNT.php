@@ -21,14 +21,12 @@
 
 namespace Core\Lib\OS;
 
-use Core\Factory;
-
 /**
  * Class WINNT
  *
  * @package Core\Lib\OS
  */
-class WINNT extends Factory
+class WINNT
 {
     public string $os_cmd;
 

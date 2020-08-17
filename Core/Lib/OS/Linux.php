@@ -21,14 +21,12 @@
 
 namespace Core\Lib\OS;
 
-use Core\Factory;
-
 /**
  * Class Linux
  *
  * @package Core\Lib\OS
  */
-class Linux extends Factory
+class Linux
 {
     public string $os_cmd;
 
