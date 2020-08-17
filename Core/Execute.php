@@ -39,13 +39,14 @@ class Execute extends Factory
     public array $cmd_cli;
 
     /**
-     * Execute constructor.
+     * Set commands
      *
      * @param array $cmd_group
      *
+     * @return $this
      * @throws \ReflectionException
      */
-    public function __construct(array $cmd_group)
+    public function setCMD(array $cmd_group): self
     {
         $this->app     = App::new();
         $this->io_unit = IOUnit::new();
@@ -54,6 +55,7 @@ class Execute extends Factory
         $this->cmd_cli = &$cmd_group['cli'];
 
         unset($cmd_group);
+        return $this;
     }
 
     /**

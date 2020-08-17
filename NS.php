@@ -71,13 +71,14 @@ function Autoload(string $class_name, string $root_path = NS_ROOT): void
         return;
     }
 
-    //Compile/require class file
     $file_compiled = false;
 
+    //Compile class file
     if (SPT_OPC && 0 === strpos($class_file, NS_ROOT)) {
         $file_compiled = opcache_compile_file($class_file);
     }
 
+    //Require class file
     if (!$file_compiled) {
         require $class_file;
     }
@@ -164,7 +165,10 @@ class NS extends Factory
         call_user_func(!$App->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
 
         //Init Execute Module
-        $Execute = Execute::new(Router::new()->parse($IOUnit->src_cmd));
+        $Execute = Execute::new();
+
+        //Set commands
+        $Execute->setCMD(Router::new()->parse($IOUnit->src_cmd));
 
         //Fetch results
         $IOUnit->src_output += $Execute->callScript();
