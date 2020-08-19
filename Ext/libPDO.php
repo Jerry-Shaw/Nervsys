@@ -1,7 +1,7 @@
 <?php
 
 /**
- * PDO Controller Extension
+ * PDO connector Extension
  *
  * Copyright 2016-2020 秋水之冰 <27206617@qq.com>
  *
@@ -23,11 +23,11 @@ namespace Ext;
 use Core\Factory;
 
 /**
- * Class PDOCtrl
+ * Class libPDO
  *
  * @package Ext
  */
-class PDOCtrl extends Factory
+class libPDO extends Factory
 {
     //PDO username
     protected string $usr = '';
@@ -42,7 +42,7 @@ class PDOCtrl extends Factory
     protected array $opt = [];
 
     /**
-     * PDOCtrl constructor.
+     * libPDO constructor.
      *
      * @param string $type
      * @param string $host

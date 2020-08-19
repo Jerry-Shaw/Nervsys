@@ -24,17 +24,17 @@ use Core\Factory;
 use Core\Lib\App;
 
 /**
- * Class ConfGet
+ * Class libConfGet
  *
  * @package Ext
  */
-class ConfGet extends Factory
+class libConfGet extends Factory
 {
     public string $path;
     public array  $pool = [];
 
     /**
-     * ConfGet constructor.
+     * libConfGet constructor.
      *
      * @param string $pathname
      *
