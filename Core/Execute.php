@@ -44,7 +44,6 @@ class Execute extends Factory
      * @param array $cmd_group
      *
      * @return $this
-     * @throws \ReflectionException
      */
     public function setCMD(array $cmd_group): self
     {
@@ -62,7 +61,6 @@ class Execute extends Factory
      * Call function script
      *
      * @return array
-     * @throws \ReflectionException
      */
     public function callScript(): array
     {
@@ -120,7 +118,6 @@ class Execute extends Factory
      * Call external program
      *
      * @return array
-     * @throws \ReflectionException
      */
     public function callProgram(): array
     {
@@ -173,6 +170,7 @@ class Execute extends Factory
                 if ('none' !== $this->io_unit->cli_data_type) {
                     $data = '';
 
+                    //Read from pipe
                     while (!feof($pipes[1])) {
                         $data .= fread($pipes[1], 8192);
                     }

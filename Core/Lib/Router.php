@@ -39,8 +39,6 @@ class Router extends Factory
 
     /**
      * Router constructor.
-     *
-     * @throws \ReflectionException
      */
     public function __construct()
     {

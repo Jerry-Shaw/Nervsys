@@ -21,6 +21,8 @@
 
 namespace Core;
 
+use Core\Lib\App;
+
 /**
  * Class Factory
  *
@@ -34,24 +36,28 @@ class Factory
      * Create new object from called class
      *
      * @return $this
-     * @throws \ReflectionException
      */
     public static function new(): self
     {
         $params = func_get_args();
+        $class  = get_called_class();
 
-        if (1 === func_num_args() && method_exists($class = get_called_class(), '__construct')) {
-            $fn_args = Reflect::new()->buildParams($class, '__construct', is_array($params[0]) ? $params[0] : $params);
+        if (1 === func_num_args() && method_exists($class, '__construct')) {
+            try {
+                //Try to build args for calling class
+                $fn_args = Reflect::new()->buildParams($class, '__construct', is_array($params[0]) ? $params[0] : $params);
 
-            if (empty($fn_args['diff'])) {
-                $params = &$fn_args['param'];
+                if (empty($fn_args['diff'])) {
+                    $params = &$fn_args['param'];
+                }
+
+                unset($fn_args);
+            } catch (\ReflectionException $exception) {
+                App::new()->showDebug($exception, true);
             }
-
-            unset($fn_args);
         }
 
-        unset($class);
-        return self::getObj(get_called_class(), $params);
+        return self::getObj($class, $params);
     }
 
     /**

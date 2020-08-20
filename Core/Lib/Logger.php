@@ -36,8 +36,6 @@ class Logger extends Factory
 
     /**
      * Logger constructor.
-     *
-     * @throws \ReflectionException
      */
     public function __construct()
     {

@@ -169,8 +169,6 @@ class Error extends Factory
      *
      * @param \Throwable $throwable
      * @param bool       $stop_on_error
-     *
-     * @throws \ReflectionException
      */
     public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true): void
     {

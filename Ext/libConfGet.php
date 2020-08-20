@@ -37,8 +37,6 @@ class libConfGet extends Factory
      * libConfGet constructor.
      *
      * @param string $pathname
-     *
-     * @throws \ReflectionException
      */
     public function __construct(string $pathname)
     {

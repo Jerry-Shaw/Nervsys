@@ -136,8 +136,6 @@ class NS extends Factory
 {
     /**
      * NS constructor.
-     *
-     * @throws \ReflectionException
      */
     public function __construct()
     {
