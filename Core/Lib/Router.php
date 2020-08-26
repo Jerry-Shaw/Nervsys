@@ -136,7 +136,7 @@ class Router extends Factory
             return [];
         }
 
-        if (!empty($c_list) && count($c_list) === count($c_list, 1)) {
+        if (!empty($c_list) && count($c_list) === count($c_list, COUNT_RECURSIVE)) {
             $c_list = [$c_list];
         }
 
