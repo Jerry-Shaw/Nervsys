@@ -32,6 +32,7 @@ class App extends Factory
 {
     public Error  $error;
 
+    public string $log_path    = '';
     public string $root_path   = '';
     public string $entry_path  = '';
     public string $script_path = '';
@@ -69,7 +70,6 @@ class App extends Factory
 
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
-            //Rewrite IP for CLI
             $this->client_ip = 'Local CLI';
             return;
         }

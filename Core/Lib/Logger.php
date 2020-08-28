@@ -32,20 +32,12 @@ class Logger extends Factory
 {
     public App $app;
 
-    public string $path;
-
     /**
      * Logger constructor.
      */
     public function __construct()
     {
-        $this->app  = App::new();
-        $this->path = $this->app->root_path . DIRECTORY_SEPARATOR . 'logs';
-
-        if (!is_dir($this->path)) {
-            mkdir($this->path, 0777, true);
-            chmod($this->path, 0777);
-        }
+        $this->app = App::new();
     }
 
     /**
@@ -73,7 +65,7 @@ class Logger extends Factory
     public function __call(string $name, array $arguments): void
     {
         $log_key  = date('Ymd') . '-' . $name;
-        $log_path = $this->path . DIRECTORY_SEPARATOR . $log_key . '.log';
+        $log_path = $this->app->log_path . DIRECTORY_SEPARATOR . $log_key . '.log';
 
         static $file_handle = [];
 
