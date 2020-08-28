@@ -244,8 +244,8 @@ class IOUnit extends Factory
         $this->cli_data_type = 'none';
         $this->content_type  = 'application/json';
 
-        if (isset($opt['t']) && in_array($opt['t'], ['json', 'text', 'xml'], true)) {
-            $this->cli_data_type = &$opt['t'];
+        if (isset($opt['t'])) {
+            $this->cli_data_type = in_array($opt['t'], ['json', 'text', 'xml'], true) ? $opt['t'] : $opt['t'] = 'text';
 
             //Find correct content type
             foreach ($this->response_types as $type) {
