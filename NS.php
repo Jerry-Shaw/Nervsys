@@ -26,6 +26,7 @@ use Core\Execute;
 use Core\Factory;
 use Core\Lib\App;
 use Core\Lib\CORS;
+use Core\Lib\Error;
 use Core\Lib\IOUnit;
 use Core\Lib\Router;
 
@@ -121,6 +122,12 @@ spl_autoload_register(
                 return;
             }
 
+            //Set global log path
+            if (!is_dir($App->log_path = $App->root_path . DIRECTORY_SEPARATOR . 'logs')) {
+                mkdir($App->log_path, 0777, true);
+                chmod($App->log_path, 0777);
+            }
+
             unset($file_name, $parent_path);
         }
 
@@ -146,7 +153,7 @@ class NS extends Factory
         date_default_timezone_set($App->timezone);
 
         //Init Error library
-        $Error = \Core\Lib\Error::new();
+        $Error = Error::new();
 
         //Register error handler
         register_shutdown_function($Error->shutdown_handler);
@@ -169,8 +176,8 @@ class NS extends Factory
         $Execute->setCMD(Router::new()->parse($IOUnit->src_cmd));
 
         //Fetch results
-        $IOUnit->src_output += $Execute->callScript();
-        $IOUnit->src_output += $Execute->callProgram();
+        $IOUnit->src_output += $Execute->callCGI();
+        $IOUnit->src_output += $Execute->callCLI();
 
         //Output results
         call_user_func($IOUnit->output_handler, $IOUnit);

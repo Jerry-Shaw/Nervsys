@@ -23,7 +23,6 @@ namespace Core;
 
 use Core\Lib\App;
 use Core\Lib\IOUnit;
-use Core\Lib\Logger;
 
 /**
  * Class Execute
@@ -39,6 +38,15 @@ class Execute extends Factory
     public array $cmd_cli;
 
     /**
+     * Execute constructor.
+     */
+    public function __construct()
+    {
+        $this->app     = App::new();
+        $this->io_unit = IOUnit::new();
+    }
+
+    /**
      * Set commands
      *
      * @param array $cmd_group
@@ -47,9 +55,6 @@ class Execute extends Factory
      */
     public function setCMD(array $cmd_group): self
     {
-        $this->app     = App::new();
-        $this->io_unit = IOUnit::new();
-
         $this->cmd_cgi = &$cmd_group['cgi'];
         $this->cmd_cli = &$cmd_group['cli'];
 
@@ -62,7 +67,7 @@ class Execute extends Factory
      *
      * @return array
      */
-    public function callScript(): array
+    public function callCGI(): array
     {
         $result = [];
 
@@ -75,39 +80,7 @@ class Execute extends Factory
 
         //Process CGI command
         while (is_array($cmd_pair = array_shift($this->cmd_cgi))) {
-            try {
-                //Extract CMD contents
-                [$cmd_class, $cmd_method] = $cmd_pair;
-
-                //Get CMD value
-                $cmd_value = $cmd_pair[2] ?? implode('/', $cmd_pair);
-
-                //Get method reflection
-                $method_reflect = $Reflect->getMethod($cmd_class, $cmd_method);
-
-                //Create class instance
-                $class_object = !$method_reflect->isStatic()
-                    ? (!method_exists($cmd_class, '__construct')
-                        ? parent::getObj($cmd_class)
-                        : parent::getObj($cmd_class, $this->fetchParams($Reflect, $cmd_class, '__construct', $this->io_unit->src_input, $cmd_class)))
-                    : $cmd_class;
-
-                //Call method
-                $fn_result = call_user_func(
-                    [$class_object, $cmd_method],
-                    ...$this->fetchParams($Reflect, $cmd_class, $cmd_method, $this->io_unit->src_input, $cmd_value)
-                );
-
-                //Merge result
-                if (!is_null($fn_result)) {
-                    $result += [$cmd_value => &$fn_result];
-                }
-
-                unset($cmd_class, $cmd_method, $cmd_value, $method_reflect, $class_object, $fn_result);
-            } catch (\Throwable $throwable) {
-                $this->app->showDebug($throwable, true);
-                unset($throwable);
-            }
+            $result += $this->runScript($Reflect, $cmd_pair);
         }
 
         unset($Reflect, $cmd_pair);
@@ -119,7 +92,7 @@ class Execute extends Factory
      *
      * @return array
      */
-    public function callProgram(): array
+    public function callCLI(): array
     {
         $result = [];
 
@@ -127,72 +100,141 @@ class Execute extends Factory
             return $result;
         }
 
-        //Init OSUnit & Logger
+        //Init OSUnit
         $OSUnit = OSUnit::new();
-        $Logger = Logger::new();
 
         //Process CLI command
         while (is_array($cmd_pair = array_shift($this->cmd_cli))) {
-            try {
-                //Extract CMD contents
-                [$cmd_name, $exe_path] = $cmd_pair;
-
-                //Skip empty command
-                if ('' === $exe_path = trim($exe_path)) {
-                    continue;
-                }
-
-                //Build CLI command
-                $OSUnit->setCmd('"' . $exe_path . '" ' . $this->io_unit->src_argv);
-
-                //Check for BG command
-                if ('none' === $this->io_unit->cli_data_type) {
-                    $OSUnit->setAsBg();
-                }
-
-                //Create process
-                $process = proc_open(
-                    $OSUnit->setEnvPath()->setForProc()->fetchCmd(),
-                    [
-                        ['pipe', 'r'],
-                        ['pipe', 'w'],
-                        ['file', $Logger->path . DIRECTORY_SEPARATOR . date('Ymd') . '-CLI' . '.log', 'ab+']
-                    ],
-                    $pipes
-                );
-
-                //Create process failed
-                if (!is_resource($process)) {
-                    throw new \Exception($cmd_name . ': Access denied or command ERROR!', E_USER_WARNING);
-                }
-
-                //Collect result
-                if ('none' !== $this->io_unit->cli_data_type) {
-                    $data = '';
-
-                    //Read from pipe
-                    while (!feof($pipes[1])) {
-                        $data .= fread($pipes[1], 8192);
-                    }
-
-                    $result += [$cmd_name => $data];
-                    unset($data);
-                }
-
-                //Close pipes
-                foreach ($pipes as $pipe) {
-                    fclose($pipe);
-                }
-
-                //Close process
-                proc_close($process);
-            } catch (\Throwable $throwable) {
-                $this->app->showDebug($throwable, true);
-                unset($throwable);
-            }
+            $result += $this->runProgram($OSUnit, $cmd_pair);
         }
 
-        unset($OSUnit, $Logger, $cmd_pair, $cmd_name, $exe_path, $process, $pipes, $pipe);
+        unset($OSUnit, $cmd_pair);
+        return $result;
+    }
+
+    /**
+     * Run script method
+     *
+     * @param \Core\Reflect $reflect
+     * @param array         $cmd_pair
+     *
+     * @return array
+     */
+    public function runScript(Reflect $reflect, array $cmd_pair): array
+    {
+        $result = [];
+
+        try {
+            //Extract CMD contents
+            [$cmd_class, $cmd_method] = $cmd_pair;
+
+            //Get CMD value
+            $cmd_value = $cmd_pair[2] ?? implode('/', $cmd_pair);
+
+            //Get method reflection
+            $method_reflect = $reflect->getMethod($cmd_class, $cmd_method);
+
+            //Create class instance
+            $class_object = !$method_reflect->isStatic()
+                ? (!method_exists($cmd_class, '__construct')
+                    ? parent::getObj($cmd_class)
+                    : parent::getObj($cmd_class, $this->fetchParams($reflect, $cmd_class, '__construct', $this->io_unit->src_input, $cmd_class)))
+                : $cmd_class;
+
+            //Call method
+            $fn_result = call_user_func(
+                [$class_object, $cmd_method],
+                ...$this->fetchParams($reflect, $cmd_class, $cmd_method, $this->io_unit->src_input, $cmd_value)
+            );
+
+            //Merge result
+            if (!is_null($fn_result)) {
+                $result += [$cmd_value => &$fn_result];
+            }
+
+            unset($cmd_class, $cmd_method, $cmd_value, $method_reflect, $class_object, $fn_result);
+        } catch (\Throwable $throwable) {
+            $this->app->showDebug($throwable, true);
+            unset($throwable);
+        }
+
+        unset($reflect, $cmd_pair);
+        return $result;
+    }
+
+    /**
+     * Run external program
+     *
+     * @param \Core\OSUnit $os_unit
+     * @param array        $cmd_pair
+     *
+     * @return array
+     */
+    public function runProgram(OSUnit $os_unit, array $cmd_pair): array
+    {
+        $result = [];
+
+        try {
+            //Extract CMD contents
+            [$cmd_name, $exe_path] = $cmd_pair;
+
+            //Skip empty command
+            if ('' === $exe_path = trim($exe_path)) {
+                return [];
+            }
+
+            //Build CLI command
+            $os_unit->setCmd('"' . $exe_path . '" ' . $this->io_unit->src_argv);
+
+            //Check for BG command
+            if ('none' === $this->io_unit->cli_data_type) {
+                $os_unit->setAsBg();
+            }
+
+            //Create process
+            $process = proc_open(
+                $os_unit->setEnvPath()->setForProc()->fetchCmd(),
+                [
+                    ['pipe', 'r'],
+                    ['pipe', 'w'],
+                    ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-CLI' . '.log', 'ab+']
+                ],
+                $pipes
+            );
+
+            //Create process failed
+            if (!is_resource($process)) {
+                throw new \Exception($cmd_name . ': Access denied or command ERROR!', E_USER_WARNING);
+            }
+
+            //Collect result
+            if ('none' !== $this->io_unit->cli_data_type) {
+                $data = '';
+
+                //Read from pipe
+                while (!feof($pipes[1])) {
+                    $data .= fread($pipes[1], 8192);
+                }
+
+                $result += [$cmd_name => $data];
+                unset($data);
+            }
+
+            //Close pipes
+            foreach ($pipes as $pipe) {
+                fclose($pipe);
+            }
+
+            //Close process
+            proc_close($process);
+
+            unset($cmd_name, $exe_path, $process, $pipes, $pipe);
+        } catch (\Throwable $throwable) {
+            $this->app->showDebug($throwable, true);
+            unset($throwable);
+        }
+
+        unset($os_unit, $cmd_pair);
         return $result;
     }
 
