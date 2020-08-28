@@ -84,7 +84,7 @@ class libPDO extends Factory
      */
     public function connect(): \PDO
     {
-        return Factory::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
+        return parent::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
     }
 
     /**
