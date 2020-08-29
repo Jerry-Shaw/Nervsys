@@ -80,10 +80,27 @@ class Execute extends Factory
 
         //Process CGI command
         while (is_array($cmd_pair = array_shift($this->cmd_cgi))) {
-            $result += $this->runScript($Reflect, $cmd_pair);
+            //Extract CMD contents
+            [$cmd_class, $cmd_method] = $cmd_pair;
+
+            //Get CMD input name
+            $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
+
+            //Check core invoke settings
+            if (!$this->app->core_invoke) {
+                if (0 === strpos($cmd_class, '\\NS')
+                    || 0 === strpos($cmd_class, '\\Ext\\')
+                    || 0 === strpos($cmd_class, '\\Core\\')) {
+                    $this->app->showDebug(new \Exception('"' . $input_name . '" invoke failed!', E_USER_NOTICE), true);
+                    continue;
+                }
+            }
+
+            //Run script method
+            $result += $this->runScript($Reflect, $cmd_class, $cmd_method, $input_name);
         }
 
-        unset($Reflect, $cmd_pair);
+        unset($Reflect, $cmd_pair, $cmd_class, $cmd_method, $input_name);
         return $result;
     }
 
@@ -105,7 +122,17 @@ class Execute extends Factory
 
         //Process CLI command
         while (is_array($cmd_pair = array_shift($this->cmd_cli))) {
-            $result += $this->runProgram($OSUnit, $cmd_pair);
+            //Extract CMD contents
+            [$cmd_name, $exe_path] = $cmd_pair;
+
+            //Skip empty command
+            if ('' === $exe_path = trim($exe_path)) {
+                $this->app->showDebug(new \Exception('"' . $cmd_name . '" NOT defined!', E_USER_NOTICE), true);
+                continue;
+            }
+
+            //Run external program
+            $result += $this->runProgram($OSUnit, $cmd_name, $exe_path);
         }
 
         unset($OSUnit, $cmd_pair);
@@ -116,21 +143,17 @@ class Execute extends Factory
      * Run script method
      *
      * @param \Core\Reflect $reflect
-     * @param array         $cmd_pair
+     * @param string        $cmd_class
+     * @param string        $cmd_method
+     * @param string        $input_name
      *
      * @return array
      */
-    public function runScript(Reflect $reflect, array $cmd_pair): array
+    public function runScript(Reflect $reflect, string $cmd_class, string $cmd_method, string $input_name): array
     {
         $result = [];
 
         try {
-            //Extract CMD contents
-            [$cmd_class, $cmd_method] = $cmd_pair;
-
-            //Get CMD value
-            $cmd_value = $cmd_pair[2] ?? implode('/', $cmd_pair);
-
             //Get method reflection
             $method_reflect = $reflect->getMethod($cmd_class, $cmd_method);
 
@@ -144,21 +167,21 @@ class Execute extends Factory
             //Call method
             $fn_result = call_user_func(
                 [$class_object, $cmd_method],
-                ...$this->fetchParams($reflect, $cmd_class, $cmd_method, $this->io_unit->src_input, $cmd_value)
+                ...$this->fetchParams($reflect, $cmd_class, $cmd_method, $this->io_unit->src_input, $input_name)
             );
 
-            //Merge result
+            //Collect result
             if (!is_null($fn_result)) {
-                $result += [$cmd_value => &$fn_result];
+                $result[$input_name] = &$fn_result;
             }
 
-            unset($cmd_class, $cmd_method, $cmd_value, $method_reflect, $class_object, $fn_result);
+            unset($method_reflect, $class_object, $fn_result);
         } catch (\Throwable $throwable) {
             $this->app->showDebug($throwable, true);
             unset($throwable);
         }
 
-        unset($reflect, $cmd_pair);
+        unset($reflect, $cmd_class, $cmd_method, $input_name);
         return $result;
     }
 
@@ -166,23 +189,16 @@ class Execute extends Factory
      * Run external program
      *
      * @param \Core\OSUnit $os_unit
-     * @param array        $cmd_pair
+     * @param string       $cmd_name
+     * @param string       $exe_path
      *
      * @return array
      */
-    public function runProgram(OSUnit $os_unit, array $cmd_pair): array
+    public function runProgram(OSUnit $os_unit, string $cmd_name, string $exe_path): array
     {
         $result = [];
 
         try {
-            //Extract CMD contents
-            [$cmd_name, $exe_path] = $cmd_pair;
-
-            //Skip empty command
-            if ('' === $exe_path = trim($exe_path)) {
-                return [];
-            }
-
             //Build CLI command
             $os_unit->setCmd('"' . $exe_path . '" ' . $this->io_unit->src_argv);
 
@@ -216,7 +232,7 @@ class Execute extends Factory
                     $data .= fread($pipes[1], 8192);
                 }
 
-                $result += [$cmd_name => $data];
+                $result[$cmd_name] = &$data;
                 unset($data);
             }
 
@@ -228,13 +244,13 @@ class Execute extends Factory
             //Close process
             proc_close($process);
 
-            unset($cmd_name, $exe_path, $process, $pipes, $pipe);
+            unset($process, $pipes, $pipe);
         } catch (\Throwable $throwable) {
             $this->app->showDebug($throwable, true);
             unset($throwable);
         }
 
-        unset($os_unit, $cmd_pair);
+        unset($os_unit, $cmd_name, $exe_path);
         return $result;
     }
 
