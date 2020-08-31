@@ -44,11 +44,10 @@ class App extends Factory
     public string $client_ip = '0.0.0.0';
     public string $timezone  = 'Asia/Shanghai';
 
-    public bool $is_cli      = false;
-    public bool $is_tls      = false;
-    public bool $auto_call   = false;
-    public bool $core_debug  = false;
-    public bool $core_invoke = false;
+    public bool $is_cli     = false;
+    public bool $is_tls     = false;
+    public bool $auto_call  = false;
+    public bool $core_debug = false;
 
     /**
      * App constructor.
@@ -197,21 +196,6 @@ class App extends Factory
         $this->core_debug = &$core_debug_mode;
 
         unset($core_debug_mode);
-        return $this;
-    }
-
-    /**
-     * Set core_invoke mode
-     *
-     * @param bool $core_invoke_mode
-     *
-     * @return $this
-     */
-    public function setCoreInvoke(bool $core_invoke_mode): self
-    {
-        $this->core_invoke = &$core_invoke_mode;
-
-        unset($core_invoke_mode);
         return $this;
     }
 

@@ -86,16 +86,6 @@ class Execute extends Factory
             //Get CMD input name
             $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
 
-            //Check core invoke settings
-            if (!$this->app->core_invoke) {
-                if (0 === strpos($cmd_class, '\\NS')
-                    || 0 === strpos($cmd_class, '\\Ext\\')
-                    || 0 === strpos($cmd_class, '\\Core\\')) {
-                    $this->app->showDebug(new \Exception('"' . $input_name . '" invoke failed!', E_USER_NOTICE), true);
-                    continue;
-                }
-            }
-
             //Run script method
             $result += $this->runScript($Reflect, $cmd_class, $cmd_method, $input_name);
         }
