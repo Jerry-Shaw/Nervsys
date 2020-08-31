@@ -92,8 +92,12 @@ class Router extends Factory
     {
         $cmd_list = ['cli' => [], 'cgi' => []];
 
-        if ('' === $c) {
-            unset($c);
+        if ('' === $c
+            //Always prevent system invoke attacks
+            || false !== strpos($c, '/NS')
+            || false !== strpos($c, '/Ext')
+            || false !== strpos($c, '/Core')
+        ) {
             return $cmd_list;
         }
 
