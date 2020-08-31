@@ -370,7 +370,7 @@ class libQueue extends Factory
 
         //Set default unitHandler
         if (empty($this->unit_handler)) {
-            $this->unit_handler = [__CLASS__, 'callUnitHandler'];
+            throw new \Exception('Queue unit handler NOT set!', E_USER_ERROR);
         }
 
         //Set max forks
@@ -481,7 +481,7 @@ class libQueue extends Factory
      *
      * @throws \Exception
      */
-    public function callUnitHandler(string $type, string $name): void
+    public function callUnitHandler(string $type = 'realtime', string $name = 'main:'): void
     {
         //Initialize
         $this->initProc();
