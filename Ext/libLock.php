@@ -20,12 +20,14 @@
 
 namespace Ext;
 
+use Core\Factory;
+
 /**
  * Class libLock
  *
  * @package Ext
  */
-class libLock extends factory
+class libLock extends Factory
 {
     //Key prefix
     const PREFIX = '{LCK}:';
