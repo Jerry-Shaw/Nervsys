@@ -26,9 +26,9 @@ use Core\Lib\App;
 use Core\Lib\IOUnit;
 
 /**
- * Class errno
+ * Class libErrno
  *
- * @package ext
+ * @package Ext
  */
 class libErrno extends Factory
 {
