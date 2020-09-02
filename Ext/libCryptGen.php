@@ -71,7 +71,7 @@ class libCryptGen
         foreach ($unit as $k => $v) {
             $unit_key = $v[0];
 
-            if (self::getKVMode($k, $unit_key)) {
+            if (self::getKvMode($k, $unit_key)) {
                 $v = strrev($v);
             }
 
@@ -98,7 +98,7 @@ class libCryptGen
         foreach ($unit as $k => $v) {
             $unit_key  = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
-            $unit[$k]  = self::getKVMode($k, $unit_key) ? strrev($unit_item) : $unit_item;
+            $unit[$k]  = self::getKvMode($k, $unit_key) ? strrev($unit_item) : $unit_item;
         }
 
         $key = implode($unit);
@@ -115,7 +115,7 @@ class libCryptGen
      *
      * @return bool
      */
-    private static function getKVMode(int $k, string $v): bool
+    private static function getKvMode(int $k, string $v): bool
     {
         return 0 === ($k & ord($v));
     }

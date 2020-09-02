@@ -56,7 +56,7 @@ define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 define('SPT_OPC', extension_loaded('Zend OPcache'));
 
 //Autoload function
-function Autoload(string $class_name, string $root_path = NS_ROOT): void
+function autoload(string $class_name, string $root_path = NS_ROOT): void
 {
     //Get relative path of class file
     $file_name = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
@@ -88,13 +88,13 @@ function Autoload(string $class_name, string $root_path = NS_ROOT): void
 }
 
 //Compile/require Factory module
-Autoload(Factory::class);
+autoload(Factory::class);
 
 //Register autoload (NS_ROOT based)
 spl_autoload_register(
     static function (string $class_name): void
     {
-        Autoload($class_name);
+        autoload($class_name);
         unset($class_name);
     }
 );
@@ -131,7 +131,7 @@ spl_autoload_register(
             unset($file_name, $parent_path);
         }
 
-        Autoload($class_name, $App->root_path);
+        autoload($class_name, $App->root_path);
         unset($class_name, $App);
     }
 );
@@ -173,11 +173,11 @@ class NS extends Factory
         $Execute = Execute::new();
 
         //Set commands
-        $Execute->setCMD(Router::new()->parse($IOUnit->src_cmd));
+        $Execute->setCmd(Router::new()->parse($IOUnit->src_cmd));
 
         //Fetch results
-        $IOUnit->src_output += $Execute->callCGI();
-        $IOUnit->src_output += $Execute->callCLI();
+        $IOUnit->src_output += $Execute->callCgi();
+        $IOUnit->src_output += $Execute->callCli();
 
         //Output results
         call_user_func($IOUnit->output_handler, $IOUnit);

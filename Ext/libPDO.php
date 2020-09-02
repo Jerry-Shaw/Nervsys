@@ -71,7 +71,7 @@ class libPDO extends Factory
         $this->pwd = &$pwd;
 
         //Build DSN & OPTION
-        $this->buildDSN($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
+        $this->buildDsn($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
 
         //Free memory
         unset($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
@@ -100,7 +100,7 @@ class libPDO extends Factory
      * @param bool   $persist
      * @param string $charset
      */
-    private function buildDSN(
+    private function buildDsn(
         string $type,
         string $host,
         int $port,

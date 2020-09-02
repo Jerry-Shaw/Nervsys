@@ -193,10 +193,10 @@ class IOUnit extends Factory
         $this->readAccept();
 
         //Read CMD from URL
-        $this->src_cmd = $this->readURL();
+        $this->src_cmd = $this->readUrl();
 
         //Read input data
-        $this->src_input = $this->readHTTP();
+        $this->src_input = $this->readHttp();
         $this->src_input += $this->readInput(file_get_contents('php://input'));
 
         //Merge header data
@@ -368,7 +368,7 @@ class IOUnit extends Factory
      *
      * @return string
      */
-    private function readURL(): string
+    private function readUrl(): string
     {
         //Read from PATH_INFO
         if (isset($_SERVER['PATH_INFO']) && 1 < strlen($_SERVER['PATH_INFO'])) {
@@ -391,7 +391,7 @@ class IOUnit extends Factory
     /**
      * Read HTTP data
      */
-    private function readHTTP(): array
+    private function readHttp(): array
     {
         return $_FILES + $_POST + $_GET;
     }

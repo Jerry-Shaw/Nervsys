@@ -55,7 +55,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function bindPDO(\PDO $PDO): self
+    public function bindPdo(\PDO $PDO): self
     {
         $this->pdo = &$PDO;
 
@@ -130,7 +130,7 @@ class libMySQL extends Factory
      */
     public function getRow(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $stmt = $this->getSTMT();
+        $stmt = $this->getStmt();
 
         try {
             $stmt->execute($this->runtime['bind'] ?? []);
@@ -160,7 +160,7 @@ class libMySQL extends Factory
      */
     public function getAll(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $stmt = $this->getSTMT();
+        $stmt = $this->getStmt();
 
         try {
             $stmt->execute($this->runtime['bind'] ?? []);
@@ -182,10 +182,10 @@ class libMySQL extends Factory
      *
      * @return \PDOStatement
      */
-    public function getSTMT(): \PDOStatement
+    public function getStmt(): \PDOStatement
     {
         try {
-            $stmt = $this->pdo->prepare($this->buildSQL());
+            $stmt = $this->pdo->prepare($this->buildSql());
         } catch (\Throwable $throwable) {
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
@@ -198,7 +198,7 @@ class libMySQL extends Factory
      *
      * @return string
      */
-    public function getLastSQL(): string
+    public function getLastSql(): string
     {
         return $this->last_sql;
     }
@@ -618,7 +618,7 @@ class libMySQL extends Factory
      */
     public function execute(): bool
     {
-        $stmt = $this->getSTMT();
+        $stmt = $this->getStmt();
 
         try {
             $result = $stmt->execute($this->runtime['bind'] ?? []);
@@ -668,10 +668,10 @@ class libMySQL extends Factory
      *
      * @return string
      */
-    public function buildSQL(): string
+    public function buildSql(): string
     {
         $runtime_sql    = $this->{'build' . ucfirst($this->runtime['action'])}();
-        $this->last_sql = $this->buildReadableSQL($runtime_sql, $this->runtime['bind'] ?? []);
+        $this->last_sql = $this->buildReadableSql($runtime_sql, $this->runtime['bind'] ?? []);
 
         return $runtime_sql;
     }
@@ -754,7 +754,7 @@ class libMySQL extends Factory
      *
      * @return string
      */
-    protected function buildReadableSQL(string $sql, array $params): string
+    protected function buildReadableSql(string $sql, array $params): string
     {
         $sql = str_replace('?', '%s', $sql);
         $sql = sprintf($sql, ...$params);
@@ -790,7 +790,7 @@ class libMySQL extends Factory
     protected function isReady(): void
     {
         if (isset($this->runtime['action'])) {
-            throw new \PDOException('"' . $this->runtime['action'] . '" action is NOT executed!' . PHP_EOL . 'SQL: ' . $this->buildReadableSQL($this->{'build' . ucfirst($this->runtime['action'])}(), $this->runtime['bind']), E_USER_ERROR);
+            throw new \PDOException('"' . $this->runtime['action'] . '" action is NOT executed!' . PHP_EOL . 'SQL: ' . $this->buildReadableSql($this->{'build' . ucfirst($this->runtime['action'])}(), $this->runtime['bind']), E_USER_ERROR);
         }
     }
 

@@ -53,7 +53,7 @@ class Execute extends Factory
      *
      * @return $this
      */
-    public function setCMD(array $cmd_group): self
+    public function setCmd(array $cmd_group): self
     {
         $this->cmd_cgi = &$cmd_group['cgi'];
         $this->cmd_cli = &$cmd_group['cli'];
@@ -67,7 +67,7 @@ class Execute extends Factory
      *
      * @return array
      */
-    public function callCGI(): array
+    public function callCgi(): array
     {
         $result = [];
 
@@ -99,7 +99,7 @@ class Execute extends Factory
      *
      * @return array
      */
-    public function callCLI(): array
+    public function callCli(): array
     {
         $result = [];
 

@@ -146,7 +146,7 @@ class libSession extends Factory
      *
      * @return bool
      */
-    public function sessionGC(int $life): bool
+    public function sessionGc(int $life): bool
     {
         unset($life);
         return true;

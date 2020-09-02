@@ -32,11 +32,11 @@ class libCrypt extends Factory
     //Crypt method
     public string $method = 'AES-256-CTR';
 
-    /** @var \Ext\libCryptGen $keygen */
-    public string $keygen = libCryptGen::class;
+    /** @var \Ext\libCryptGen $crypt_gen */
+    public string $crypt_gen = libCryptGen::class;
 
     //OpenSSL conf path
-    public string $openssl_conf = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
+    public string $openssl_cnf = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
 
     /**
      * Set crypt method
@@ -60,24 +60,24 @@ class libCrypt extends Factory
      *
      * @return $this
      */
-    public function setKeyGen(string $keygen): self
+    public function setCryptGen(string $keygen): self
     {
-        $this->keygen = &$keygen;
+        $this->crypt_gen = &$keygen;
 
         unset($keygen);
         return $this;
     }
 
     /**
-     * Set OpenSSL conf file path
+     * Set OpenSSL cnf file path
      *
      * @param string $file_path
      *
      * @return $this
      */
-    public function setOpenSSLConf(string $file_path): self
+    public function setOpensslCnf(string $file_path): self
     {
-        $this->openssl_conf = &$file_path;
+        $this->openssl_cnf = &$file_path;
 
         unset($file_path);
         return $this;
@@ -90,7 +90,7 @@ class libCrypt extends Factory
      */
     public function getKey(): string
     {
-        return $this->keygen::create();
+        return $this->crypt_gen::create();
     }
 
     /**
@@ -102,7 +102,7 @@ class libCrypt extends Factory
     public function getRsaKeys(): array
     {
         $keys   = ['public' => '', 'private' => ''];
-        $config = ['config' => $this->openssl_conf];
+        $config = ['config' => $this->openssl_cnf];
 
         if (false === $openssl = openssl_pkey_new($config)) {
             throw new \Exception('OpenSSL config ERROR!', E_USER_ERROR);
@@ -260,8 +260,8 @@ class libCrypt extends Factory
     public function sign(string $string, string $rsa_key = ''): string
     {
         //Prepare key
-        $key = $this->keygen::create();
-        $mix = $this->keygen::obscure($key);
+        $key = $this->crypt_gen::create();
+        $mix = $this->crypt_gen::obscure($key);
 
         //Encrypt signature
         $mix = '' === $rsa_key ? $this->base64UrlEncode($mix) : $this->rsaEncrypt($mix, $rsa_key);
@@ -291,7 +291,7 @@ class libCrypt extends Factory
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? $this->base64UrlDecode($mix) : $this->rsaDecrypt($mix, $rsa_key);
-        $key = $this->keygen::rebuild($mix);
+        $key = $this->crypt_gen::rebuild($mix);
 
         //Decrypt signature
         $sig = $this->decrypt($enc, $key);
@@ -313,7 +313,7 @@ class libCrypt extends Factory
         $iv_len = openssl_cipher_iv_length($this->method);
 
         //Parse keys from key string
-        $keys = $this->keygen::extract($key);
+        $keys = $this->crypt_gen::extract($key);
 
         //Correct iv when length not match
         switch ($iv_len <=> strlen($keys['iv'])) {
