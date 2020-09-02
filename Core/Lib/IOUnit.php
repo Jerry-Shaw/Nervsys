@@ -278,6 +278,93 @@ class IOUnit extends Factory
     }
 
     /**
+     * Encode data in base64 with data header
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function encodeData(string $value): string
+    {
+        return $this->base64_marker . base64_encode($value);
+    }
+
+    /**
+     * Decode data in base64 with data header
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function decodeData(string $value): string
+    {
+        if (0 === strpos($value, $this->base64_marker)) {
+            $value = substr($value, strlen($this->base64_marker));
+            $value = base64_decode($value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Array content to XML
+     *
+     * @param array $array
+     * @param bool  $root
+     *
+     * @return string
+     */
+    public function toXml(array $array, bool $root = true): string
+    {
+        $xml = $end = '';
+
+        if ($root && 1 < count($array)) {
+            $xml .= '<xml>';
+            $end = '</xml>';
+        }
+
+        foreach ($array as $key => $item) {
+            if (is_numeric($key)) {
+                $key = 'xml_' . (string)$key;
+            }
+
+            $xml .= '<' . $key . '>';
+
+            $xml .= is_array($item)
+                ? self::toXml($item, false)
+                : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
+
+            $xml .= '</' . $key . '>';
+        }
+
+        if ($root) {
+            $xml .= $end;
+        }
+
+        unset($array, $root, $end, $key, $item);
+        return $xml;
+    }
+
+    /**
+     * Array content to string
+     *
+     * @param array $array
+     *
+     * @return string
+     */
+    public function toString(array $array): string
+    {
+        $string = '';
+
+        foreach ($array as $key => $value) {
+            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . "    " . (is_array($value) ? $this->toString($value) : (string)$value . PHP_EOL);
+        }
+
+        unset($array, $key, $value);
+        return $string;
+    }
+
+    /**
      * Output data source
      *
      * @param \Core\Lib\IOUnit $io_unit
@@ -453,92 +540,5 @@ class IOUnit extends Factory
     private function readCookie(): array
     {
         return array_intersect_key($_COOKIE, array_flip($this->cookie_keys));
-    }
-
-    /**
-     * Encode data in base64 with data header
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function encodeData(string $value): string
-    {
-        return $this->base64_marker . base64_encode($value);
-    }
-
-    /**
-     * Decode data in base64 with data header
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function decodeData(string $value): string
-    {
-        if (0 === strpos($value, $this->base64_marker)) {
-            $value = substr($value, strlen($this->base64_marker));
-            $value = base64_decode($value);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Array content to XML
-     *
-     * @param array $array
-     * @param bool  $root
-     *
-     * @return string
-     */
-    private function toXml(array $array, bool $root = true): string
-    {
-        $xml = $end = '';
-
-        if ($root && 1 < count($array)) {
-            $xml .= '<xml>';
-            $end = '</xml>';
-        }
-
-        foreach ($array as $key => $item) {
-            if (is_numeric($key)) {
-                $key = 'xml_' . (string)$key;
-            }
-
-            $xml .= '<' . $key . '>';
-
-            $xml .= is_array($item)
-                ? self::toXml($item, false)
-                : (!is_numeric($item) ? '<![CDATA[' . $item . ']]>' : $item);
-
-            $xml .= '</' . $key . '>';
-        }
-
-        if ($root) {
-            $xml .= $end;
-        }
-
-        unset($array, $root, $end, $key, $item);
-        return $xml;
-    }
-
-    /**
-     * Array content to string
-     *
-     * @param array $array
-     *
-     * @return string
-     */
-    private function toString(array $array): string
-    {
-        $string = '';
-
-        foreach ($array as $key => $value) {
-            $string .= (is_string($key) ? $key . ':' . PHP_EOL : '') . "    " . (is_array($value) ? $this->toString($value) : (string)$value . PHP_EOL);
-        }
-
-        unset($array, $key, $value);
-        return $string;
     }
 }
