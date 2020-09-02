@@ -151,19 +151,21 @@ class IOUnit extends Factory
     }
 
     /**
-     * Set error No & Msg
+     * Set error code, NO & Msg
      *
+     * @param int    $code
      * @param int    $err_no
      * @param string $err_msg
      *
      * @return $this
      */
-    public function setErrorNo(int $err_no, string $err_msg): self
+    public function setErrorData(int $code, int $err_no, string $err_msg): self
     {
+        $this->src_error['code']    = &$code;
         $this->src_error['errno']   = &$err_no;
         $this->src_error['message'] = &$err_msg;
 
-        unset($err_no, $err_msg);
+        unset($code, $err_no, $err_msg);
         return $this;
     }
 
