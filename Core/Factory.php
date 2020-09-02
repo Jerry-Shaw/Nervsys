@@ -85,4 +85,18 @@ class Factory
         unset($class_name, $class_params, $key);
         return self::$obj_list[$hash_key];
     }
+
+    /**
+     * Destroy from Factory
+     */
+    public function destroy(): void
+    {
+        if (empty($keys = array_keys(self::$obj_list, $this, true))) {
+            return;
+        }
+
+        foreach ($keys as $key) {
+            unset(self::$obj_list[$key]);
+        }
+    }
 }
