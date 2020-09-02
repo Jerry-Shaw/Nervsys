@@ -36,7 +36,7 @@ class libCrypt extends Factory
     public string $crypt_gen = libCryptGen::class;
 
     //OpenSSL conf path
-    public string $openssl_cnf = ROOT . DIRECTORY_SEPARATOR . 'openssl.cnf';
+    public string $openssl_cnf = __DIR__ . DIRECTORY_SEPARATOR . 'openssl.cnf';
 
     /**
      * Set crypt method
