@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NS System CGI script
+ * NS System CGI Library
  *
  * Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
  *
@@ -58,7 +58,7 @@ final class cgi
     }
 
     /**
-     * Call CMD group
+     * Call parsed CMD group
      *
      * @param array $cmd_group
      *
@@ -70,10 +70,8 @@ final class cgi
         $call_results = [];
 
         while (is_array($group = array_shift($cmd_group))) {
-            //Get full class name
             $class = $this->unit_router->get_cls(array_shift($group));
 
-            //Call methods
             foreach ($group as $method) {
                 $call_results += $this->call_func($class, $method);
             }
@@ -92,15 +90,19 @@ final class cgi
     {
         $call_results = $call_before = [];
 
-        //Get call before list
+        //Get call-before list
         foreach ($this->unit_pool->conf['call'] as $path => $cmd) {
-            $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse_cmd($cmd);
+            $call_before[$this->unit_router->get_cls($path)] = $this->unit_router->parse($cmd);
         }
 
-        //Process CMD group
         while (is_array($methods = array_shift($this->unit_pool->cgi_stack))) {
             //Skip non-exist class
             if (!class_exists($class = $this->unit_router->get_cls(array_shift($methods)))) {
+                //Skip reporting errors under CLI mode
+                if (!$this->unit_pool->is_CLI) {
+                    error::exception_handler(new \Exception('Class "' . $class . '" NOT found!', E_USER_NOTICE), false, false);
+                }
+
                 continue;
             }
 
@@ -114,15 +116,22 @@ final class cgi
             }
 
             try {
-                //Get trusted method list
-                $methods = $this->unit_router->cgi_get_trust($class, $methods);
+                //Get trusted-function list
+                if (empty($methods = $this->unit_router->cgi_get_trust($class, $methods))) {
+                    //Skip reporting errors under CLI mode
+                    if (!$this->unit_pool->is_CLI) {
+                        error::exception_handler(new \Exception('Trusted function NOT found!', E_USER_NOTICE), false, false);
+                    }
+
+                    continue;
+                }
             } catch (\Throwable $throwable) {
                 error::exception_handler($throwable, false);
                 unset($throwable);
                 continue;
             }
 
-            //Run service functions
+            //Call trusted functions
             foreach ($methods as $method) {
                 try {
                     $call_results += $this->call_func($class, $method);
@@ -182,6 +191,7 @@ final class cgi
      *
      * @return array
      * @throws \ReflectionException
+     * @throws \Exception
      */
     private function call_func(string $class, string $method): array
     {

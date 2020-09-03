@@ -108,8 +108,9 @@ final class error
      *
      * @param \Throwable $throwable
      * @param bool       $stop_on_error
+     * @param bool       $save_to_log
      */
-    public static function exception_handler(\Throwable $throwable, bool $stop_on_error = true): void
+    public static function exception_handler(\Throwable $throwable, bool $stop_on_error = true, bool $save_to_log = true): void
     {
         //Get exception name
         $exception = get_class($throwable);
@@ -128,11 +129,11 @@ final class error
             $err_code = E_USER_NOTICE;
         }
 
-        /** @var \core\lib\std\pool $unit_pool */
-        $unit_pool = factory::build(pool::class);
-
         /** @var \core\lib\std\log $unit_log */
         $unit_log = factory::build(log::class);
+
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
 
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
@@ -151,19 +152,22 @@ final class error
             'Trace'    => self::get_trace_list($throwable->getTrace())
         ];
 
-        //Process logs
-        $unit_log->$err_lv($message, $context);
+        //Save logs
+        if ($save_to_log) {
+            $unit_log->$err_lv($message, $context);
+        }
+
+        //Display logs
         $unit_log->display($err_lv, $message, $context);
 
-        unset($throwable, $exception, $err_lv, $unit_log, $message, $context);
-
-        //Exit on error
+        //Output & exit on error
         if ($stop_on_error && 0 < ($err_code & error_reporting())) {
+            http_response_code(500);
             factory::build(io::class)->output($unit_pool);
             exit(0);
         }
 
-        unset($stop_on_error, $err_code, $unit_pool);
+        unset($throwable, $stop_on_error, $save_to_log, $exception, $err_code, $err_lv, $unit_log, $unit_pool, $message, $context);
     }
 
     /**

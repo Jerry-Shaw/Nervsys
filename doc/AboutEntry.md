@@ -1,6 +1,6 @@
 # About Entry
 
-The file named "**api.php.example**" under the root of NervSys directory is our suggested entry script, which can be directly use in your project, or slightly modified if needed.  
+The file named "**api.php.example**" in the example folder (doc/example) of NervSys is our suggested entry script, which can be directly use in your project, or slightly modified if needed.  
 
 ### usage
 

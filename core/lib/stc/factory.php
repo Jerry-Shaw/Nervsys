@@ -41,6 +41,7 @@ final class factory
      *
      * @return object
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public static function create(string $class, array $params): object
     {
@@ -131,10 +132,12 @@ final class factory
      */
     public static function del(object $object): void
     {
-        if (!empty($keys = array_keys(self::$pool, $object, true))) {
-            foreach ($keys as $key) {
-                unset(self::$pool[$key]);
-            }
+        if (empty($keys = array_keys(self::$pool, $object, true))) {
+            return;
+        }
+
+        foreach ($keys as $key) {
+            unset(self::$pool[$key]);
         }
 
         unset($object, $keys, $key);

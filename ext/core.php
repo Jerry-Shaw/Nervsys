@@ -107,6 +107,16 @@ class core
     }
 
     /**
+     * Get NS default router
+     *
+     * @return \core\lib\std\router
+     */
+    public static function get_def_router(): object
+    {
+        return factory::build(router::class);
+    }
+
+    /**
      * Get log save path
      *
      * @return string
@@ -117,20 +127,39 @@ class core
     }
 
     /**
+     * Get hardware hash value
+     *
+     * @return string
+     */
+    public static function get_hw_hash(): string
+    {
+        return factory::build(os::class)->get_hw_hash();
+    }
+
+    /**
      * Get PHP executable path
      *
      * @return string
      */
     public static function get_php_path(): string
     {
-        return factory::build(os::class)->php_path();
+        return factory::build(os::class)->get_php_path();
+    }
+
+    /**
+     * Get input cmd value
+     *
+     * @return string
+     */
+    public static function get_cmd_val(): string
+    {
+        return factory::build(pool::class)->cmd;
     }
 
     /**
      * Get parsed cmd list
      *
      * @return array
-     * @throws \ReflectionException
      */
     public static function get_cmd_list(): array
     {
@@ -142,27 +171,19 @@ class core
         /** @var \core\lib\std\router $unit_router */
         $unit_router = factory::build(router::class);
 
-        foreach ($unit_pool->router_stack as $router_handler) {
-            //Parse CMD
-            if (empty($parsed_cmd = call_user_func($router_handler, $unit_pool->cmd))) {
-                continue;
-            }
+        //Get parsed cmd group
+        $cmd_group = $unit_router->parse($unit_pool->cmd);
 
-            while (is_array($methods = array_shift($parsed_cmd))) {
-                //Get full class name
-                $class = $unit_router->get_cls(array_shift($methods));
+        //Rebuild cmd list
+        foreach ($cmd_group as $item) {
+            $cls = strtr($unit_router->get_cls(array_shift($item)), '\\', '/');
 
-                //Refill methods
-                $methods = $unit_router->cgi_get_trust($class, $methods);
-
-                //Build CMD list
-                foreach ($methods as $method) {
-                    $cmd_list[] = $class . '-' . $method;
-                }
+            foreach ($item as $val) {
+                $cmd_list[] = $cls . '/' . $val;
             }
         }
 
-        unset($unit_pool, $unit_router, $router_handler, $parsed_cmd, $methods, $class, $method);
+        unset($unit_pool, $unit_router, $cmd_group, $item, $cls, $val);
         return $cmd_list;
     }
 
@@ -170,11 +191,18 @@ class core
      * Register custom router parser
      *
      * @param array $router
+     * @param bool  $prepend
      */
-    public static function register_router_function(array $router): void
+    public static function register_router_function(array $router, bool $prepend = true): void
     {
-        factory::build(pool::class)->router_stack[] = &$router;
-        unset($router);
+        /** @var \core\lib\std\pool $unit_pool */
+        $unit_pool = factory::build(pool::class);
+
+        $prepend
+            ? array_unshift($unit_pool->router_stack, $router)
+            : array_push($unit_pool->router_stack, $router);
+
+        unset($router, $prepend, $unit_pool);
     }
 
     /**

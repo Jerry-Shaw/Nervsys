@@ -80,7 +80,7 @@ final class io
 
         //Decode data in XML
         libxml_use_internal_errors(true);
-        $xml  = simplexml_load_string($input);
+        $xml  = simplexml_load_string($input, 'SimpleXMLElement', LIBXML_NOCDATA);
         $data = false !== $xml ? (array)$xml : [];
         libxml_clear_errors();
 
@@ -212,6 +212,7 @@ final class io
 
         //Build full result
         $result = json_encode(!empty($error) ? $error + ['data' => $data] : $data, JSON_FORMAT);
+        header('Content-Type: application/json; charset=utf-8');
 
         unset($error, $data);
         return $result;
@@ -239,6 +240,7 @@ final class io
 
         //Build full result
         $result = $this->to_xml((array)$data);
+        header('Content-Type: text/xml; charset=utf-8');
 
         unset($error, $data);
         return $result;
@@ -266,6 +268,7 @@ final class io
 
         //Build full result
         $result = is_array($data) ? $this->to_string($data) : (string)$data;
+        header('Content-Type: text/plain');
 
         unset($error, $data);
         return $result;

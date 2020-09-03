@@ -384,14 +384,14 @@ class queue extends factory
         $unit_io = fty::build(io::class);
 
         //Build unit command
-        $unit_cmd = '"' . $this->unit_os->php_path() . '" "' . ENTRY_SCRIPT . '" -r"json" ';
+        $unit_cmd = '"' . $this->unit_os->get_php_path() . '" "' . ENTRY_SCRIPT . '" -r"json" ';
         $unit_cmd .= '-c"' . $unit_io->encode('/' . strtr(get_class($this), '\\', '/') . '-unit') . '" ';
 
         //Build delay command
-        $cmd_delay = $this->unit_os->cmd_bg($unit_cmd . '-d"' . $unit_io->encode(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"');
+        $cmd_delay = $this->unit_os->cmd($unit_cmd . '-d"' . $unit_io->encode(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"')->bg()->env()->fetch();
 
         //Build realtime command
-        $cmd_realtime = $this->unit_os->cmd_bg($unit_cmd . '-d"' . $unit_io->encode(json_encode(['type' => 'realtime', 'name' => $this->key_name], JSON_FORMAT)) . '"');
+        $cmd_realtime = $this->unit_os->cmd($unit_cmd . '-d"' . $unit_io->encode(json_encode(['type' => 'realtime', 'name' => $this->key_name], JSON_FORMAT)) . '"')->bg()->env()->fetch();
 
         do {
             //Call delay unit
@@ -775,7 +775,7 @@ class queue extends factory
             }
 
             //Parse CMD
-            if (empty($cmd_group = $unit_router->parse_cmd($input_data['cmd']))) {
+            if (empty($cmd_group = $unit_router->parse($input_data['cmd']))) {
                 throw new \Exception('Command NOT found!', E_USER_NOTICE);
             }
 
