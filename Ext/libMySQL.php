@@ -401,8 +401,8 @@ class libMySQL extends Factory
         $this->runtime['stage'] = 'join';
 
         !isset($this->runtime['join'])
-            ? $this->runtime['join'] = [$type . ' JOIN ' . $table]
-            : $this->runtime['join'][] = $type . ' JOIN ' . $table;
+            ? $this->runtime['join'] = [$type . ' JOIN ' . $this->prefix . $table]
+            : $this->runtime['join'][] = $type . ' JOIN ' . $this->prefix . $table;
 
         unset($table, $type);
         return $this;
