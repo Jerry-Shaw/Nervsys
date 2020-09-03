@@ -48,16 +48,19 @@ class libFile extends Factory
     }
 
     /**
-     * Check & create directory (Related to "root_path")
+     * Check & create directory ($root based)
      *
      * @param string $path
+     * @param string $root
      *
      * @return string
      */
-    public function getPath(string $path): string
+    public function getPath(string $path, string $root = ''): string
     {
-        //Init App
-        $App = App::new();
+        //Define root
+        if ('' === $root) {
+            $root = App::new()->root_path;
+        }
 
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) {
@@ -70,11 +73,11 @@ class libFile extends Factory
 
         //Return root path
         if ('' === $path) {
-            return $App->root_path . DIRECTORY_SEPARATOR;
+            return $root . DIRECTORY_SEPARATOR;
         }
 
         //Create directories
-        if (!is_dir($dir = $App->root_path . DIRECTORY_SEPARATOR . $path)) {
+        if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
             //Create directory recursively
             mkdir($dir, 0777, true);
             //Set permissions to path
@@ -82,9 +85,9 @@ class libFile extends Factory
         }
 
         //Check path property
-        $path = (is_readable($dir) ? $path : $App->root_path) . DIRECTORY_SEPARATOR;
+        $path = (is_readable($dir) ? $path : $root) . DIRECTORY_SEPARATOR;
 
-        unset($App, $dir);
+        unset($root, $dir);
         return $path;
     }
 
