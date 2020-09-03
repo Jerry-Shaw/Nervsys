@@ -22,7 +22,6 @@ namespace Ext;
 
 use Core\Factory;
 use Core\Lib\IOUnit;
-use core\lib\std\pool;
 
 /**
  * Class libUpload
@@ -92,6 +91,7 @@ class libUpload extends Factory
 
     public IOUnit $io_unit;
     public string $upload_root;
+
     public array  $ext  = [];
     public int    $perm = 0666;
     public int    $size = 20971520;
