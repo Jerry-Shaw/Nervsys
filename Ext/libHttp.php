@@ -73,10 +73,7 @@ class libHttp extends Factory
      */
     public function __construct(string $url = '')
     {
-        if ('' !== $url) {
-            $this->url = &$url;
-        }
-
+        $this->url = &$url;
         unset($url);
     }
 
@@ -149,21 +146,6 @@ class libHttp extends Factory
         }
 
         unset($cookie, $key, $val);
-        return $this;
-    }
-
-    /**
-     * Set request URL
-     *
-     * @param string $url
-     *
-     * @return $this
-     */
-    public function setUrl(string $url): self
-    {
-        $this->url = &$url;
-
-        unset($url);
         return $this;
     }
 
