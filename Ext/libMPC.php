@@ -35,6 +35,7 @@ class libMPC extends Factory
     private App    $app;
     private IOUnit $io_unit;
     private OSUnit $os_unit;
+
     private string $php_path;
     private array  $job_list = [];
 
@@ -70,13 +71,12 @@ class libMPC extends Factory
     }
 
     /**
-     * Commit job
+     * Commit jobs
      *
      * @param bool $wait_ret
      * @param int  $max_fork
      *
      * @return array
-     * @throws \Exception
      */
     public function go(bool $wait_ret = false, int $max_fork = 10): array
     {
