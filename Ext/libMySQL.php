@@ -756,6 +756,12 @@ class libMySQL extends Factory
      */
     protected function buildReadableSql(string $sql, array $params): string
     {
+        foreach ($params as &$param) {
+            if (!is_numeric($param)) {
+                $param = '"' . $param . '"';
+            }
+        }
+
         $sql = str_replace('?', '%s', $sql);
         $sql = sprintf($sql, ...$params);
 
