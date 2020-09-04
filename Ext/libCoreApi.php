@@ -203,7 +203,7 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function responseContentType(string $content_type): self
+    public function setContentType(string $content_type): self
     {
         IOUnit::new()->setContentType($content_type);
 
