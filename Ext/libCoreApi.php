@@ -1,5 +1,23 @@
 <?php
 
+/**
+ * CoreAPI Extension
+ *
+ * Copyright 2016-2020 take your time <704505144@qq.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 namespace Ext;
 
 use Core\Factory;
@@ -8,44 +26,6 @@ use Core\Lib\CORS;
 use Core\Lib\IOUnit;
 use Core\Lib\Error;
 use Core\Lib\Router;
-//Autoload function
-function Autoload(string $class_name, string $root_path = NS_ROOT): void
-{
-    //Get relative path of class file
-    $file_name = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
-
-    //Load script file from include path
-    if (false === strpos($class_name, '\\')) {
-        require $file_name;
-        return;
-    }
-
-    //Skip non-existent class file
-    if (!is_file($class_file = $root_path . DIRECTORY_SEPARATOR . $file_name)) {
-        return;
-    }
-
-    $file_compiled = false;
-
-    //Compile class file
-    if (SPT_OPC && 0 === strpos($class_file, NS_ROOT)) {
-        $file_compiled = opcache_compile_file($class_file);
-    }
-
-    //Require class file
-    if (!$file_compiled) {
-        require $class_file;
-    }
-
-    unset($class_name, $root_path, $file_name, $class_file, $file_compiled);
-}
-//Register autoload (NS_ROOT based)
-spl_autoload_register(
-    static function (string $class_name): void {
-        Autoload($class_name);
-        unset($class_name);
-    }
-);
 /**
  * Class libCoreAPI
  *
@@ -54,8 +34,30 @@ spl_autoload_register(
 class libCoreAPI extends Factory
 {
     /**
-     * App
-     * start
+     * Set autoload to target path
+     *
+     * @param string $path
+     */
+    public static function autoLoad(string $path): void
+    {
+        $path = App::new()->root_path . '/' . $path;
+
+        spl_autoload_register(
+            static function (string $class) use ($path): void
+            {
+                //Try to load class file "ROOT/$path/namespace/class.php"
+                if (is_file($class_file = $path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php')) {
+                    require $class_file;
+                }
+
+                unset($class, $path, $class_file);
+            }
+        );
+
+        unset($path);
+    }
+    /**
+     * App start
      */
     /**
      * Set api pathname
