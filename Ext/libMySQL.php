@@ -335,60 +335,6 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set where condition
-     *
-     * @param array ...$where
-     *
-     * @return $this
-     */
-    public function where(array ...$where): self
-    {
-        $this->runtime['where'] = [];
-        $this->runtime['stage'] = 'where';
-
-        if (empty($where)) {
-            return $this;
-        }
-
-        $cond = $this->parseCond($where);
-
-        array_unshift($cond, '(');
-        $cond[] = ')';
-
-        $this->runtime['where'] = &$cond;
-
-        unset($where, $cond);
-        return $this;
-    }
-
-    /**
-     * Set having condition
-     *
-     * @param array ...$where
-     *
-     * @return $this
-     */
-    public function having(array ...$where): self
-    {
-        $this->runtime['having'] = [];
-        $this->runtime['stage']  = 'having';
-
-        if (empty($where)) {
-            return $this;
-        }
-
-        $cond = $this->parseCond($where);
-
-        array_unshift($cond, '(');
-        $cond[] = ')';
-
-        $this->runtime['having'] = &$cond;
-
-        unset($where, $cond);
-        return $this;
-    }
-
-    /**
      * Set join
      *
      * @param string $table
@@ -398,37 +344,12 @@ class libMySQL extends Factory
      */
     public function join(string $table, string $type = 'INNER'): self
     {
-        $this->runtime['stage'] = 'join';
-
-        !isset($this->runtime['join'])
-            ? $this->runtime['join'] = [$type . ' JOIN ' . $this->prefix . $table]
-            : $this->runtime['join'][] = $type . ' JOIN ' . $this->prefix . $table;
+        $this->runtime['on']     = [];
+        $this->runtime['join']   ??= [];
+        $this->runtime['stage']  = 'join';
+        $this->runtime['join'][] = $type . ' JOIN ' . $this->prefix . $table;
 
         unset($table, $type);
-        return $this;
-    }
-
-    /**
-     * Set cond for "AND"
-     *
-     * @param array ...$where
-     *
-     * @return $this
-     */
-    public function and(array ...$where): self
-    {
-        if (empty($where)) {
-            return $this;
-        }
-
-        $cond = $this->parseCond($where);
-
-        array_unshift($cond, !empty($this->runtime[$this->runtime['stage']]) ? 'AND (' : '(');
-        $cond[] = ')';
-
-        $this->runtime[$this->runtime['stage']] = array_merge($this->runtime[$this->runtime['stage']], $cond);
-
-        unset($where, $cond);
         return $this;
     }
 
@@ -445,9 +366,72 @@ class libMySQL extends Factory
             return $this;
         }
 
-        $cond = $this->parseCond($where);
+        $this->runtime['join'] = array_merge($this->runtime['join'], $this->runtime['on'] = $this->parseCond($where, 'on'));
 
-        array_unshift($cond, !empty($this->runtime[$this->runtime['stage']]) ? 'ON (' : '(');
+        unset($where);
+        return $this;
+    }
+
+    /**
+     * Set where condition
+     *
+     * @param array ...$where
+     *
+     * @return $this
+     */
+    public function where(array ...$where): self
+    {
+        $this->runtime['where'] ??= [];
+        $this->runtime['stage'] = 'where';
+
+        if (empty($where)) {
+            return $this;
+        }
+
+        $this->runtime['where'] = array_merge($this->runtime['where'], $this->parseCond($where, 'where'));
+
+        unset($where);
+        return $this;
+    }
+
+    /**
+     * Set having condition
+     *
+     * @param array ...$where
+     *
+     * @return $this
+     */
+    public function having(array ...$where): self
+    {
+        $this->runtime['having'] ??= [];
+        $this->runtime['stage']  = 'having';
+
+        if (empty($where)) {
+            return $this;
+        }
+
+        $this->runtime['having'] = array_merge($this->runtime['having'], $this->parseCond($where, 'having'));
+
+        unset($where);
+        return $this;
+    }
+
+    /**
+     * Set cond for "AND"
+     *
+     * @param array ...$where
+     *
+     * @return $this
+     */
+    public function and(array ...$where): self
+    {
+        if (empty($where)) {
+            return $this;
+        }
+
+        $cond = $this->parseCond($where, 'and');
+
+        array_unshift($cond, !empty($this->runtime[$this->runtime['stage']]) ? 'AND (' : '(');
         $cond[] = ')';
 
         $this->runtime[$this->runtime['stage']] = array_merge($this->runtime[$this->runtime['stage']], $cond);
@@ -469,7 +453,7 @@ class libMySQL extends Factory
             return $this;
         }
 
-        $cond = $this->parseCond($where);
+        $cond = $this->parseCond($where, 'or');
 
         array_unshift($cond, !empty($this->runtime[$this->runtime['stage']]) ? 'OR (' : '(');
         $cond[] = ')';
@@ -803,24 +787,32 @@ class libMySQL extends Factory
     /**
      * Parse condition values
      *
-     * @param array $where
+     * @param array  $where
+     * @param string $option
      *
      * @return array
      */
-    protected function parseCond(array $where): array
+    protected function parseCond(array $where, string $option): array
     {
-        if (!isset($this->runtime[$stage = 'bind_' . $this->runtime['stage']]) && 'join' !== $this->runtime['stage']) {
-            $this->runtime[$stage] = [];
+        $cond_list  = [];
+        $in_group   = false;
+        $bind_stage = 'bind_' . $this->runtime['stage'];
+
+        $this->runtime[$bind_stage] ??= [];
+
+        //option
+        if (in_array($option, ['on', 'where', 'having'], true)) {
+            $in_group    = true;
+            $cond_list[] = (empty($this->runtime[$option]) ? strtoupper($option) : 'AND') . ' (';
         }
 
-        $cond_list = [];
         foreach ($where as $value) {
             //Condition
             if (1 < count($value)) {
                 if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
                     $cond_list[] = $item;
                     array_shift($value);
-                } elseif (!empty($cond_list)) {
+                } elseif (1 < count($cond_list)) {
                     $cond_list[] = 'AND';
                 }
             } else {
@@ -865,7 +857,7 @@ class libMySQL extends Factory
                 if ('join' !== $this->runtime['stage']) {
                     $cond_list[] = '?';
 
-                    $this->runtime[$stage][] = $data;
+                    $this->runtime[$bind_stage][] = $data;
                 } else {
                     $cond_list[] = $data;
                 }
@@ -881,9 +873,9 @@ class libMySQL extends Factory
                             $param .= $key < $count ? '?,' : '?';
 
                             if (is_int($item) || is_float($item) || is_numeric($item)) {
-                                $this->runtime[$stage][] = $item;
+                                $this->runtime[$bind_stage][] = $item;
                             } else {
-                                $this->runtime[$stage][] = '"' . $item . '"';
+                                $this->runtime[$bind_stage][] = '"' . $item . '"';
                             }
                         }
                     } else {
@@ -895,8 +887,8 @@ class libMySQL extends Factory
                     if ('join' !== $this->runtime['stage']) {
                         $cond_list[] = '? AND ?';
 
-                        $this->runtime[$stage][] = $data[0];
-                        $this->runtime[$stage][] = $data[1];
+                        $this->runtime[$bind_stage][] = $data[0];
+                        $this->runtime[$bind_stage][] = $data[1];
                     } else {
                         $cond_list[] = $data[0] . ' AND ' . $data[1];
                     }
@@ -904,7 +896,11 @@ class libMySQL extends Factory
             }
         }
 
-        unset($where, $stage, $value, $item, $data, $param, $count, $key);
+        if ($in_group) {
+            $cond_list[] = ')';
+        }
+
+        unset($where, $option, $in_group, $bind_stage, $value, $item, $data, $param, $count, $key);
         return $cond_list;
     }
 
@@ -924,7 +920,7 @@ class libMySQL extends Factory
         if (isset($this->runtime['where'])) {
             $this->runtime['bind'] = array_merge($this->runtime['bind'] ?? [], $this->runtime['bind_where'] ?? []);
 
-            $sql .= ' WHERE ' . implode(' ', $this->runtime['where']);
+            $sql .= ' ' . implode(' ', $this->runtime['where']);
             unset($this->runtime['where'], $this->runtime['bind_where']);
         }
 
@@ -935,7 +931,7 @@ class libMySQL extends Factory
         if (isset($this->runtime['having'])) {
             $this->runtime['bind'] = array_merge($this->runtime['bind'] ?? [], $this->runtime['bind_having'] ?? []);
 
-            $sql .= ' HAVING ' . implode(' ', $this->runtime['having']);
+            $sql .= ' ' . implode(' ', $this->runtime['having']);
             unset($this->runtime['having'], $this->runtime['bind_having']);
         }
 
