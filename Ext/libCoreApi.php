@@ -23,9 +23,10 @@ namespace Ext;
 use Core\Factory;
 use Core\Lib\App;
 use Core\Lib\CORS;
-use Core\Lib\IOUnit;
 use Core\Lib\Error;
+use Core\Lib\IOUnit;
 use Core\Lib\Router;
+
 /**
  * Class libCoreAPI
  *
@@ -37,15 +38,17 @@ class libCoreAPI extends Factory
      * Set autoload to target path
      *
      * @param string $path
+     *
+     * @return $this
      */
-    public static function autoLoad(string $path): void
+    public function autoLoad(string $path): self
     {
-        $path = App::new()->root_path . '/' . $path;
+        $path = App::new()->root_path . DIRECTORY_SEPARATOR . $path;
 
         spl_autoload_register(
-            static function (string $class) use ($path): void
+            function (string $class) use ($path): void
             {
-                //Try to load class file "ROOT/$path/namespace/class.php"
+                //Try to load class file "root_path/$path/namespace/class.php"
                 if (is_file($class_file = $path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php')) {
                     require $class_file;
                 }
@@ -55,14 +58,43 @@ class libCoreAPI extends Factory
         );
 
         unset($path);
+        return $this;
     }
+
     /**
-     * App start
+     * Generate UUID (string hash based)
+     *
+     * @param string $string
+     *
+     * @return string
      */
+    public function getUuid(string $string = ''): string
+    {
+        if ('' === $string) {
+            $string = uniqid(microtime() . getmypid() . mt_rand(), true);
+        }
+
+        $start  = 0;
+        $codes  = [];
+        $length = [8, 4, 4, 4, 12];
+        $string = hash('md5', $string);
+
+        foreach ($length as $len) {
+            $codes[] = substr($string, $start, $len);
+            $start   += $len;
+        }
+
+        $uuid = implode('-', $codes);
+
+        unset($string, $start, $codes, $length, $len);
+        return $uuid;
+    }
+
     /**
      * Set api pathname
      *
      * @param string $pathname
+     *
      * @return self
      */
     public function setApiPath(string $pathname): self
@@ -70,10 +102,12 @@ class libCoreAPI extends Factory
         App::new()->setApiPath($pathname);
         return $this;
     }
+
     /**
      * Set app pathname and root path
      *
      * @param string $pathname
+     *
      * @return self
      */
     public function setAppPath(string $pathname): self
@@ -81,6 +115,7 @@ class libCoreAPI extends Factory
         App::new()->setAppPath($pathname);
         return $this;
     }
+
     /**
      * Set inc pathname
      *
@@ -93,6 +128,7 @@ class libCoreAPI extends Factory
         App::new()->setIncPath($pathname);
         return $this;
     }
+
     /**
      * Set default timezone
      *
@@ -105,7 +141,6 @@ class libCoreAPI extends Factory
         App::new()->setTimezone($timezone);
         return $this;
     }
-
 
     /**
      * Set auto_call mode
@@ -134,12 +169,6 @@ class libCoreAPI extends Factory
     }
 
     /**
-     * App end
-     */
-    /**
-     * IOUnit start 
-     */
-    /**
      * Set custom ContentType
      *
      * @param string $content_type
@@ -154,6 +183,8 @@ class libCoreAPI extends Factory
     }
 
     /**
+     * Set header keys to read
+     *
      * @param string ...$keys
      *
      * @return $this
@@ -165,6 +196,8 @@ class libCoreAPI extends Factory
     }
 
     /**
+     * Set cookie keys to read
+     *
      * @param string ...$keys
      *
      * @return $this
@@ -185,7 +218,7 @@ class libCoreAPI extends Factory
      */
     public function setCgiReader(object $handler_object, string $handler_method): self
     {
-        IOUnit::new()->setCgiReader($handler_object,$handler_method);
+        IOUnit::new()->setCgiReader($handler_object, $handler_method);
         return $this;
     }
 
@@ -199,7 +232,7 @@ class libCoreAPI extends Factory
      */
     public function setCliReader(object $handler_object, string $handler_method): self
     {
-        IOUnit::new()->setCliReader($handler_object,$handler_method);
+        IOUnit::new()->setCliReader($handler_object, $handler_method);
         return $this;
     }
 
@@ -230,12 +263,7 @@ class libCoreAPI extends Factory
         IOUnit::new()->setErrorNo($err_no, $err_msg);
         return $this;
     }
-    /**
-     * IOUnit end
-     */
-    /**
-     * CORS start
-     */
+
     /**
      * Add CORS record
      *
@@ -246,22 +274,10 @@ class libCoreAPI extends Factory
      */
     public function addRecord(string $allow_origin, string $allow_headers = ''): self
     {
-        CORS::new()->addRecord($allow_origin,$allow_headers);
+        CORS::new()->addRecord($allow_origin, $allow_headers);
         return $this;
     }
 
-    /**
-     * Check CORS permission
-     *
-     * @param \Core\Lib\App $app
-     */
-    public function checkPerm(App $app): void
-    {
-        CORS::new()->checkPerm($app);
-    }
-    /**
-     * ERROR
-     */
     /**
      * Set custom ErrorHandler
      *
@@ -272,7 +288,7 @@ class libCoreAPI extends Factory
      */
     public function setErrorHandler(object $handler_object, string $handler_method): self
     {
-        Error::new()->setErrorHandler($handler_object,$handler_method);
+        Error::new()->setErrorHandler($handler_object, $handler_method);
         return $this;
     }
 
@@ -286,7 +302,7 @@ class libCoreAPI extends Factory
      */
     public function setShutdownHandler(object $handler_object, string $handler_method): self
     {
-        Error::new()->setShutdownHandler($handler_object,$handler_method);
+        Error::new()->setShutdownHandler($handler_object, $handler_method);
         return $this;
     }
 
@@ -300,37 +316,55 @@ class libCoreAPI extends Factory
      */
     public function setExceptionHandler(object $handler_object, string $handler_method): self
     {
-        Error::new()->setExceptionHandler($handler_object,$handler_method);
+        Error::new()->setExceptionHandler($handler_object, $handler_method);
         return $this;
     }
 
     /**
-     * Generate UUID (string hash based)
+     * Add custom router
      *
-     * @param string $string
+     * @param object $router_object
+     * @param string $router_method
+     * @param string $target_stack
      *
-     * @return string
+     * @return $this
      */
-    public function getUuid(string $string = ''): string
+    public function addStack(object $router_object, string $router_method, string $target_stack = 'cgi'): self
     {
-        if ('' === $string) {
-            //Create random string
-            $string = uniqid(microtime() . getmypid() . mt_rand(), true);
-        }
+        Router::new()->addStack($router_object, $router_method, $target_stack);
 
-        $start  = 0;
-        $codes  = [];
-        $length = [8, 4, 4, 4, 12];
-        $string = hash('md5', $string);
+        unset($router_object, $router_method, $target_stack);
+        return $this;
+    }
 
-        foreach ($length as $len) {
-            $codes[] = substr($string, $start, $len);
-            $start   += $len;
-        }
+    /**
+     * Add executable path mapping
+     *
+     * @param string $name
+     * @param string $path
+     *
+     * @return $this
+     */
+    public function addMapping(string $name, string $path): self
+    {
+        Router::new()->addMapping($name, $path);
 
-        $uuid = implode('-', $codes);
+        unset($name, $path);
+        return $this;
+    }
 
-        unset($string, $start, $codes, $length, $len);
-        return $uuid;
+    /**
+     * Open root execute permission
+     *
+     * @param bool $open_root_exec
+     *
+     * @return $this
+     */
+    public function openRootExec(bool $open_root_exec): self
+    {
+        Router::new()->openRootExec($open_root_exec);
+
+        unset($open_root_exec);
+        return $this;
     }
 }
