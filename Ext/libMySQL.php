@@ -812,7 +812,7 @@ class libMySQL extends Factory
                 if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
                     $cond_list[] = $item;
                     array_shift($value);
-                } elseif (!$in_group && !empty($cond_list)) {
+                } elseif (1 < count($cond_list)) {
                     $cond_list[] = 'AND';
                 }
             } else {
