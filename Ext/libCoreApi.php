@@ -41,7 +41,7 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function autoLoad(string $path): self
+    public function autoload(string $path): self
     {
         $path = App::new()->root_path . DIRECTORY_SEPARATOR . $path;
 
@@ -100,6 +100,8 @@ class libCoreAPI extends Factory
     public function setApiPath(string $pathname): self
     {
         App::new()->setApiPath($pathname);
+
+        unset($pathname);
         return $this;
     }
 
@@ -113,6 +115,8 @@ class libCoreAPI extends Factory
     public function setAppPath(string $pathname): self
     {
         App::new()->setAppPath($pathname);
+
+        unset($pathname);
         return $this;
     }
 
@@ -126,6 +130,8 @@ class libCoreAPI extends Factory
     public function setIncPath(string $pathname): self
     {
         App::new()->setIncPath($pathname);
+
+        unset($pathname);
         return $this;
     }
 
@@ -139,6 +145,8 @@ class libCoreAPI extends Factory
     public function setTimezone(string $timezone): self
     {
         App::new()->setTimezone($timezone);
+
+        unset($timezone);
         return $this;
     }
 
@@ -152,6 +160,8 @@ class libCoreAPI extends Factory
     public function setAutoCall(bool $auto_call_mode): self
     {
         App::new()->setAutoCall($auto_call_mode);
+
+        unset($auto_call_mode);
         return $this;
     }
 
@@ -165,6 +175,24 @@ class libCoreAPI extends Factory
     public function setCoreDebug(bool $core_debug_mode): self
     {
         App::new()->setCoreDebug($core_debug_mode);
+
+        unset($core_debug_mode);
+        return $this;
+    }
+
+    /**
+     * Show debug message and continue
+     *
+     * @param \Throwable $throwable
+     * @param bool       $show_on_cli
+     *
+     * @return $this
+     */
+    public function showDebug(\Throwable $throwable, bool $show_on_cli = false): self
+    {
+        App::new()->showDebug($throwable, $show_on_cli);
+
+        unset($throwable, $show_on_cli);
         return $this;
     }
 
@@ -175,10 +203,11 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function setContentType(string $content_type): self
+    public function responseContentType(string $content_type): self
     {
-
         IOUnit::new()->setContentType($content_type);
+
+        unset($content_type);
         return $this;
     }
 
@@ -189,9 +218,11 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function setHeaderKeys(string ...$keys): self
+    public function readHeaderKeys(string ...$keys): self
     {
         IOUnit::new()->setHeaderKeys(...$keys);
+
+        unset($keys);
         return $this;
     }
 
@@ -202,9 +233,11 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function setCookieKeys(string ...$keys): self
+    public function readCookieKeys(string ...$keys): self
     {
         IOUnit::new()->setCookieKeys(...$keys);
+
+        unset($keys);
         return $this;
     }
 
@@ -219,6 +252,8 @@ class libCoreAPI extends Factory
     public function setCgiReader(object $handler_object, string $handler_method): self
     {
         IOUnit::new()->setCgiReader($handler_object, $handler_method);
+
+        unset($handler_object, $handler_method);
         return $this;
     }
 
@@ -233,6 +268,8 @@ class libCoreAPI extends Factory
     public function setCliReader(object $handler_object, string $handler_method): self
     {
         IOUnit::new()->setCliReader($handler_object, $handler_method);
+
+        unset($handler_object, $handler_method);
         return $this;
     }
 
@@ -247,20 +284,40 @@ class libCoreAPI extends Factory
     public function setOutputHandler(object $handler_object, string $handler_method): self
     {
         IOUnit::new()->setOutputHandler($handler_object, $handler_method);
+
+        unset($handler_object, $handler_method);
         return $this;
     }
 
     /**
-     * Set error No & Msg
+     * Set error code, NO & Msg
      *
+     * @param int    $code
      * @param int    $err_no
      * @param string $err_msg
      *
      * @return $this
      */
-    public function setErrorNo(int $err_no, string $err_msg): self
+    public function setErrorData(int $code, int $err_no, string $err_msg): self
     {
-        IOUnit::new()->setErrorNo($err_no, $err_msg);
+        IOUnit::new()->setErrorData($code, $err_no, $err_msg);
+
+        unset($code, $err_no, $err_msg);
+        return $this;
+    }
+
+    /**
+     * Append error info
+     *
+     * @param array $err_info
+     *
+     * @return $this
+     */
+    public function appendErrorInfo(array $err_info): self
+    {
+        IOUnit::new()->appendErrorInfo($err_info);
+
+        unset($err_info);
         return $this;
     }
 
@@ -272,9 +329,11 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function addRecord(string $allow_origin, string $allow_headers = ''): self
+    public function addCorsRecord(string $allow_origin, string $allow_headers = ''): self
     {
         CORS::new()->addRecord($allow_origin, $allow_headers);
+
+        unset($allow_origin, $allow_headers);
         return $this;
     }
 
@@ -289,6 +348,8 @@ class libCoreAPI extends Factory
     public function setErrorHandler(object $handler_object, string $handler_method): self
     {
         Error::new()->setErrorHandler($handler_object, $handler_method);
+
+        unset($handler_object, $handler_method);
         return $this;
     }
 
@@ -303,6 +364,8 @@ class libCoreAPI extends Factory
     public function setShutdownHandler(object $handler_object, string $handler_method): self
     {
         Error::new()->setShutdownHandler($handler_object, $handler_method);
+
+        unset($handler_object, $handler_method);
         return $this;
     }
 
@@ -317,6 +380,8 @@ class libCoreAPI extends Factory
     public function setExceptionHandler(object $handler_object, string $handler_method): self
     {
         Error::new()->setExceptionHandler($handler_object, $handler_method);
+
+        unset($handler_object, $handler_method);
         return $this;
     }
 
@@ -329,7 +394,7 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function addStack(object $router_object, string $router_method, string $target_stack = 'cgi'): self
+    public function addRouterStack(object $router_object, string $router_method, string $target_stack = 'cgi'): self
     {
         Router::new()->addStack($router_object, $router_method, $target_stack);
 
@@ -345,7 +410,7 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function addMapping(string $name, string $path): self
+    public function addCliMapping(string $name, string $path): self
     {
         Router::new()->addMapping($name, $path);
 
