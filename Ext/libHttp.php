@@ -371,7 +371,7 @@ class libHttp extends Factory
                     $opt[CURLOPT_POSTFIELDS] = IOUnit::new()->toXml($this->data);
                     break;
 
-                case self::CONTENT_TYPE_ENCODED:
+                case self::CONTENT_TYPE_URL_ENCODED:
                     $opt[CURLOPT_POSTFIELDS] = http_build_query($this->data);
                     break;
 
