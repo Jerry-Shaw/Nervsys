@@ -47,7 +47,12 @@ class Hook extends Factory
      */
     public function register(string $input_c, string $hook_class, string $hook_method, bool $prepend = true): self
     {
-        $prepend ? array_unshift($this->before[$input_c], [$hook_class, $hook_method]) : $this->after[$input_c][] = [$hook_class, $hook_method];
+        if ($prepend) {
+            $this->before[$input_c] ??= [];
+            array_unshift($this->before[$input_c], [$hook_class, $hook_method]);
+        } else {
+            $this->after[$input_c][] = [$hook_class, $hook_method];
+        }
 
         unset($input_c, $hook_class, $hook_method, $prepend);
         return $this;
