@@ -116,18 +116,20 @@ class Hook extends Factory
      */
     private function getFn(string $input_c, bool $prepend): array
     {
-        $fn_list = [];
-
+        $c_list = $fn_list = [];
         $h_list = $prepend ? $this->before : $this->after;
-        $c_list = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
+        $c_part = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
 
-        foreach ($c_list as $c) {
-            if (isset($h_list[$c])) {
-                $fn_list = array_merge($fn_list, $h_list[$c]);
+        foreach ($c_part as $value) {
+            $c_list[] = $value;
+            $c_string = implode('/', $c_list);
+
+            if (isset($h_list[$c_string])) {
+                $fn_list = array_merge($fn_list, $h_list[$c_string]);
             }
         }
 
-        unset($input_c, $prepend, $h_list, $c_list, $c);
+        unset($input_c, $prepend, $c_list, $h_list, $c_part, $value, $c_string);
         return $fn_list;
     }
 
