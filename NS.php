@@ -100,40 +100,40 @@ spl_autoload_register(
 );
 
 //Init App
-$App = App::new();
+$app = App::new();
 
 //Set include path (entry & parent)
-$App->setIncPath($App->inc_path);
+$app->setIncPath($app->inc_path);
 
-//Register autoload ($App->root_path detection)
+//Register autoload ($app->root_path detection)
 spl_autoload_register(
-    static function (string $class_name) use ($App): void
+    static function (string $class_name) use ($app): void
     {
-        if ('' === $App->root_path) {
-            $parent_path = dirname($App->entry_path);
+        if ('' === $app->root_path) {
+            $parent_path = dirname($app->entry_path);
             $file_name   = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
 
             //Looking for class file and app/api directory to find correct root path
             if (is_file($parent_path . DIRECTORY_SEPARATOR . $file_name)
-                || is_dir($parent_path . DIRECTORY_SEPARATOR . $App->app_path)
-                || is_dir($parent_path . DIRECTORY_SEPARATOR . $App->api_path)
+                || is_dir($parent_path . DIRECTORY_SEPARATOR . $app->app_path)
+                || is_dir($parent_path . DIRECTORY_SEPARATOR . $app->api_path)
             ) {
-                $App->root_path = &$parent_path;
+                $app->root_path = &$parent_path;
             } else {
-                $App->root_path = $App->entry_path;
+                $app->root_path = $app->entry_path;
             }
 
             //Set global log path
-            if (!is_dir($App->log_path = $App->root_path . DIRECTORY_SEPARATOR . 'logs')) {
-                mkdir($App->log_path, 0777, true);
-                chmod($App->log_path, 0777);
+            if (!is_dir($app->log_path = $app->root_path . DIRECTORY_SEPARATOR . 'logs')) {
+                mkdir($app->log_path, 0777, true);
+                chmod($app->log_path, 0777);
             }
 
             unset($file_name, $parent_path);
         }
 
-        autoload($class_name, $App->root_path);
-        unset($class_name, $App);
+        autoload($class_name, $app->root_path);
+        unset($class_name, $app);
     }
 );
 
@@ -148,39 +148,39 @@ class NS extends Factory
     public function __construct()
     {
         //Init App
-        $App = App::new();
+        $app = App::new();
 
         //Set default timezone
-        date_default_timezone_set($App->timezone);
+        date_default_timezone_set($app->timezone);
 
         //Init Error library
-        $Error = Error::new();
+        $error = Error::new();
 
         //Register error handler
-        register_shutdown_function($Error->shutdown_handler);
-        set_exception_handler($Error->exception_handler);
-        set_error_handler($Error->error_handler);
+        register_shutdown_function($error->shutdown_handler);
+        set_exception_handler($error->exception_handler);
+        set_error_handler($error->error_handler);
 
         //Check CORS Permission
-        CORS::new()->checkPerm($App);
+        CORS::new()->checkPerm($app);
 
         //Input date parser
-        $IOUnit = IOUnit::new();
+        $io_unit = IOUnit::new();
 
         //Call data reader
-        call_user_func(!$App->is_cli ? $IOUnit->cgi_reader : $IOUnit->cli_reader);
+        call_user_func(!$app->is_cli ? $io_unit->cgi_reader : $io_unit->cli_reader);
 
         //Init Execute Module
-        $Execute = Execute::new();
+        $execute = Execute::new();
 
         //Set commands
-        $Execute->setCmd(Router::new()->parse($IOUnit->src_cmd));
+        $execute->setCmd(Router::new()->parse($io_unit->src_cmd));
 
         //Fetch results
-        $IOUnit->src_output += $Execute->callCgi();
-        $IOUnit->src_output += $Execute->callCli();
+        $io_unit->src_output += $execute->callCgi();
+        $io_unit->src_output += $execute->callCli();
 
         //Output results
-        call_user_func($IOUnit->output_handler, $IOUnit);
+        call_user_func($io_unit->output_handler, $io_unit);
     }
 }

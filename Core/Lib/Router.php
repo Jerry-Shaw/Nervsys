@@ -178,8 +178,8 @@ class Router extends Factory
         $cmd_list = $this->getList($c);
 
         //Init IOUnit & Reflect
-        $IOUnit  = IOUnit::new();
-        $Reflect = Reflect::new();
+        $io_unit = IOUnit::new();
+        $reflect = Reflect::new();
 
         foreach ($cmd_list as $cmd) {
             //Skip invalid CMD
@@ -213,14 +213,14 @@ class Router extends Factory
             }
 
             //Save method return type
-            if ('' !== ($return_type = $Reflect->getReturnType($class, $method))) {
-                $IOUnit->return_type[$cmd] = $return_type;
+            if ('' !== ($return_type = $reflect->getReturnType($class, $method))) {
+                $io_unit->return_type[$cmd] = $return_type;
             }
 
             $fn_list[] = [$class, $method, $cmd];
         }
 
-        unset($c, $cmd_list, $IOUnit, $Reflect, $cmd, $cmd_val, $fn_pos, $class, $method, $return_type);
+        unset($c, $cmd_list, $io_unit, $reflect, $cmd, $cmd_val, $fn_pos, $class, $method, $return_type);
         return $fn_list;
     }
 

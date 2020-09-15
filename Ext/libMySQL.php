@@ -51,15 +51,15 @@ class libMySQL extends Factory
     /**
      * Bind to PDO connection
      *
-     * @param \PDO $PDO
+     * @param \PDO $pdo
      *
      * @return $this
      */
-    public function bindPdo(\PDO $PDO): self
+    public function bindPdo(\PDO $pdo): self
     {
-        $this->pdo = &$PDO;
+        $this->pdo = &$pdo;
 
-        unset($PDO);
+        unset($pdo);
         return $this;
     }
 
