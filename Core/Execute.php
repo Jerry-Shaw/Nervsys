@@ -22,6 +22,7 @@
 namespace Core;
 
 use Core\Lib\App;
+use Core\Lib\Hook;
 use Core\Lib\IOUnit;
 
 /**
@@ -75,7 +76,8 @@ class Execute extends Factory
             return $result;
         }
 
-        //Init Reflect
+        //Init Hook & Reflect
+        $hook    = Hook::new();
         $reflect = Reflect::new();
 
         //Process CGI command
@@ -86,11 +88,21 @@ class Execute extends Factory
             //Get CMD input name
             $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
 
+            //Run prepend hooks
+            if (!$hook->passPrepend($this, $reflect, $input_name)) {
+                break;
+            }
+
             //Run script method
             $result += $this->runScript($reflect, $cmd_class, $cmd_method, $input_name);
+
+            //Run append hooks
+            if (!$hook->passAppend($this, $reflect, $input_name)) {
+                break;
+            }
         }
 
-        unset($reflect, $cmd_pair, $cmd_class, $cmd_method, $input_name);
+        unset($hook, $reflect, $cmd_pair, $cmd_class, $cmd_method, $input_name);
         return $result;
     }
 
