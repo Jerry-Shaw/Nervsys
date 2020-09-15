@@ -62,7 +62,7 @@ class Hook extends Factory
      *
      * @return bool
      */
-    public function runBefore(Execute $execute, Reflect $reflect, string $input_c): bool
+    public function passPrepend(Execute $execute, Reflect $reflect, string $input_c): bool
     {
         $fn_list = $this->getFn($input_c, true);
 
@@ -86,7 +86,7 @@ class Hook extends Factory
      *
      * @return bool
      */
-    public function runAfter(Execute $execute, Reflect $reflect, string $input_c): bool
+    public function passAppend(Execute $execute, Reflect $reflect, string $input_c): bool
     {
         $fn_list = $this->getFn($input_c, false);
 
