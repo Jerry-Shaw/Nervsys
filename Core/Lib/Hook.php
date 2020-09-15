@@ -32,8 +32,8 @@ use Core\Reflect;
  */
 class Hook extends Factory
 {
-    public array $before = [];
-    public array $after  = [];
+    public array $prepend = [];
+    public array $append  = [];
 
     /**
      * Register hook function to c
@@ -48,10 +48,10 @@ class Hook extends Factory
     public function register(string $input_c, string $hook_class, string $hook_method, bool $prepend = true): self
     {
         if ($prepend) {
-            $this->before[$input_c] ??= [];
-            array_unshift($this->before[$input_c], [$hook_class, $hook_method]);
+            $this->prepend[$input_c] ??= [];
+            array_unshift($this->prepend[$input_c], [$hook_class, $hook_method]);
         } else {
-            $this->after[$input_c][] = [$hook_class, $hook_method];
+            $this->append[$input_c][] = [$hook_class, $hook_method];
         }
 
         unset($input_c, $hook_class, $hook_method, $prepend);
@@ -69,7 +69,7 @@ class Hook extends Factory
      */
     public function passPrepend(Execute $execute, Reflect $reflect, string $input_c): bool
     {
-        $fn_list = $this->getFn($input_c, true);
+        $fn_list = $this->getFn($input_c, $this->prepend);
 
         foreach ($fn_list as $hook_fn) {
             if (!$this->callFn($execute, $reflect, $hook_fn)) {
@@ -93,7 +93,7 @@ class Hook extends Factory
      */
     public function passAppend(Execute $execute, Reflect $reflect, string $input_c): bool
     {
-        $fn_list = $this->getFn($input_c, false);
+        $fn_list = $this->getFn($input_c, $this->append);
 
         foreach ($fn_list as $hook_fn) {
             if (!$this->callFn($execute, $reflect, $hook_fn)) {
@@ -110,15 +110,15 @@ class Hook extends Factory
      * Get function list for input_c
      *
      * @param string $input_c
-     * @param bool   $prepend
+     * @param array  $h_list
      *
      * @return array
      */
-    private function getFn(string $input_c, bool $prepend): array
+    private function getFn(string $input_c, array $h_list): array
     {
-        $c_list = $fn_list = [];
-        $h_list = $prepend ? $this->before : $this->after;
-        $c_part = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
+        $fn_list = [];
+        $c_list  = [];
+        $c_part  = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
 
         foreach ($c_part as $value) {
             $c_list[] = $value;
@@ -129,7 +129,7 @@ class Hook extends Factory
             }
         }
 
-        unset($input_c, $prepend, $c_list, $h_list, $c_part, $value, $c_string);
+        unset($input_c, $h_list, $c_list, $c_part, $value, $c_string);
         return $fn_list;
     }
 
