@@ -446,7 +446,7 @@ class libCoreAPI extends Factory
     {
 
         Hook::new()->prepend[$input_c] ??= [];
-        array_unshift($this->prepend[$input_c], [$hook_class, $hook_method]);
+        array_unshift(Hook::new()->prepend[$input_c], [$hook_class, $hook_method]);
 
         unset($input_c, $hook_class, $hook_method, $prepend);
         return $this;
