@@ -22,6 +22,7 @@
 namespace Core;
 
 use Core\Lib\App;
+use Core\Lib\Hook;
 use Core\Lib\IOUnit;
 
 /**
@@ -75,8 +76,9 @@ class Execute extends Factory
             return $result;
         }
 
-        //Init Reflect
-        $Reflect = Reflect::new();
+        //Init Hook & Reflect
+        $hook    = Hook::new();
+        $reflect = Reflect::new();
 
         //Process CGI command
         while (is_array($cmd_pair = array_shift($this->cmd_cgi))) {
@@ -86,11 +88,21 @@ class Execute extends Factory
             //Get CMD input name
             $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
 
+            //Run prepend hooks
+            if (!$hook->passPrepend($this, $reflect, $input_name)) {
+                break;
+            }
+
             //Run script method
-            $result += $this->runScript($Reflect, $cmd_class, $cmd_method, $input_name);
+            $result += $this->runScript($reflect, $cmd_class, $cmd_method, $input_name);
+
+            //Run append hooks
+            if (!$hook->passAppend($this, $reflect, $input_name)) {
+                break;
+            }
         }
 
-        unset($Reflect, $cmd_pair, $cmd_class, $cmd_method, $input_name);
+        unset($hook, $reflect, $cmd_pair, $cmd_class, $cmd_method, $input_name);
         return $result;
     }
 
@@ -108,7 +120,7 @@ class Execute extends Factory
         }
 
         //Init OSUnit
-        $OSUnit = OSUnit::new();
+        $os_unit = OSUnit::new();
 
         //Process CLI command
         while (is_array($cmd_pair = array_shift($this->cmd_cli))) {
@@ -122,10 +134,10 @@ class Execute extends Factory
             }
 
             //Run external program
-            $result += $this->runProgram($OSUnit, $cmd_name, $exe_path);
+            $result += $this->runProgram($os_unit, $cmd_name, $exe_path);
         }
 
-        unset($OSUnit, $cmd_pair);
+        unset($os_unit, $cmd_pair);
         return $result;
     }
 

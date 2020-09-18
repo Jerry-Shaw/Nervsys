@@ -119,7 +119,7 @@ class libFile extends Factory
 
         //Get file list recursively
         foreach ($dir_list as $dir) {
-            $file_list = array_merge($file_list, self::get_list($dir, $pattern, true));
+            $file_list = array_merge($file_list, $this->getList($dir, $pattern, true));
         }
 
         unset($path, $pattern, $recursive, $path_name, $dir_list, $dir);

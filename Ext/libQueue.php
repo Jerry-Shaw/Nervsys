@@ -90,15 +90,15 @@ class libQueue extends Factory
     /**
      * Bind to Redis connection
      *
-     * @param \Redis $Redis
+     * @param \Redis $redis
      *
      * @return $this
      */
-    public function bindRedis(\Redis $Redis): self
+    public function bindRedis(\Redis $redis): self
     {
-        $this->redis = &$Redis;
+        $this->redis = &$redis;
 
-        unset($Redis);
+        unset($redis);
         return $this;
     }
 
@@ -528,9 +528,9 @@ class libQueue extends Factory
 
             default:
                 //Init Router, Reflect, Execute
-                $Router  = Router::new();
-                $Reflect = Reflect::new();
-                $Execute = Execute::new();
+                $router  = Router::new();
+                $reflect = Reflect::new();
+                $execute = Execute::new();
 
                 //Build unit hash and key
                 $unit_hash = hash('crc32b', uniqid(mt_rand(), true));
@@ -566,14 +566,14 @@ class libQueue extends Factory
 
                     //Execute job
                     if (!empty($job = $this->getJob($job_key, $idle_time))) {
-                        $this->execJob($job[1], $Router, $Reflect, $Execute);
+                        $this->execJob($job[1], $router, $reflect, $execute);
                     }
                 } while (0 < $this->redis->exists($unit_key) && $this->redis->expire($unit_key, self::WAIT_SCAN) && ++$exec_count < $this->max_exec);
 
                 //On exit
                 $kill_unit($unit_hash);
 
-                unset($Router, $Reflect, $Execute, $unit_hash, $unit_key, $kill_unit, $idle_time, $job_key, $job);
+                unset($router, $reflect, $execute, $unit_hash, $unit_key, $kill_unit, $idle_time, $job_key, $job);
                 break;
         }
 

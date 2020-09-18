@@ -190,9 +190,9 @@ class Error extends Factory
         }
 
         //Init App, IOUnit, Logger
-        $App    = App::new();
-        $IOUnit = IOUnit::new();
-        $Logger = Logger::new();
+        $app     = App::new();
+        $io_unit = IOUnit::new();
+        $logger  = Logger::new();
 
         //Build message
         $message = $exception . ' caught in ' . $throwable->getFile()
@@ -207,13 +207,13 @@ class Error extends Factory
             'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
 
             //Params & trace
-            'Param'    => ['ip' => $App->client_ip, 'cmd' => $IOUnit->src_cmd, 'data' => $IOUnit->src_input, 'argv' => $IOUnit->src_argv],
+            'Param'    => ['ip' => $app->client_ip, 'cmd' => $io_unit->src_cmd, 'data' => $io_unit->src_input, 'argv' => $io_unit->src_argv],
             'Trace'    => $this->getTraceHist($throwable->getTrace())
         ];
 
         //Show & Save logs
-        $Logger->show($err_lv, $message, $context);
-        $Logger->$err_lv($message, $context);
+        $logger->show($err_lv, $message, $context);
+        $logger->$err_lv($message, $context);
 
         //Exit on error
         if ($stop_on_error && 'error' === $err_lv) {
@@ -221,7 +221,7 @@ class Error extends Factory
             exit();
         }
 
-        unset($throwable, $stop_on_error, $exception, $err_code, $err_lv, $App, $IOUnit, $Logger, $message, $context);
+        unset($throwable, $stop_on_error, $exception, $err_code, $err_lv, $app, $io_unit, $logger, $message, $context);
     }
 
     /**
