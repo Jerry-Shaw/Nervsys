@@ -26,7 +26,7 @@ use Core\Lib\CORS;
 use Core\Lib\Error;
 use Core\Lib\IOUnit;
 use Core\Lib\Router;
-
+use Core\Lib\Hook;
 /**
  * Class libCoreAPI
  *
@@ -429,6 +429,44 @@ class libCoreAPI extends Factory
         Router::new()->openRootExec($open_root_exec);
 
         unset($open_root_exec);
+        return $this;
+    }
+
+    /**
+     * frontHook function to c
+     *
+     * @param string $input_c
+     * @param string $hook_class
+     * @param string $hook_method
+     * @param bool   $prepend
+     *
+     * @return $this
+     */
+    public function frontHook(string $input_c, string $hook_class, string $hook_method): self
+    {
+
+        Hook::new()->prepend[$input_c] ??= [];
+        array_unshift($this->prepend[$input_c], [$hook_class, $hook_method]);
+
+        unset($input_c, $hook_class, $hook_method, $prepend);
+        return $this;
+    }
+
+    /**
+     * rearHook function to c
+     *
+     * @param string $input_c
+     * @param string $hook_class
+     * @param string $hook_method
+     * @param bool   $prepend
+     *
+     * @return $this
+     */
+    public function rearHook(string $input_c, string $hook_class, string $hook_method): self
+    {
+
+        Hook::new()->append[$input_c][] = [$hook_class, $hook_method];
+        unset($input_c, $hook_class, $hook_method, $prepend);
         return $this;
     }
 }
