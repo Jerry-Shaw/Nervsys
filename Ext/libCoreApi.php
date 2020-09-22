@@ -433,7 +433,7 @@ class libCoreAPI extends Factory
     }
 
     /**
-     * frontHook function to c
+     * hookBefore function to c
      *
      * @param string $input_c
      * @param string $hook_class
@@ -442,7 +442,7 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function frontHook(string $input_c, string $hook_class, string $hook_method): self
+    public function hookBefore(string $input_c, string $hook_class, string $hook_method): self
     {
 
         Hook::new()->prepend[$input_c] ??= [];
@@ -453,7 +453,7 @@ class libCoreAPI extends Factory
     }
 
     /**
-     * rearHook function to c
+     * hookAfter function to c
      *
      * @param string $input_c
      * @param string $hook_class
@@ -462,7 +462,7 @@ class libCoreAPI extends Factory
      *
      * @return $this
      */
-    public function rearHook(string $input_c, string $hook_class, string $hook_method): self
+    public function hookAfter(string $input_c, string $hook_class, string $hook_method): self
     {
 
         Hook::new()->append[$input_c][] = [$hook_class, $hook_method];
