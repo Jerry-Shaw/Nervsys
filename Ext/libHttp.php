@@ -54,8 +54,8 @@ class libHttp extends Factory
     public int $max_follow    = 0;
     public int $response_code = 0;
 
-    public string $http_ver   = 'HTTP/2.0';                                             //HTTP Version
-    public string $method     = 'POST';                                                 //Request method
+    public string $http_ver   = 'HTTP/2';                                               //HTTP Version
+    public string $method     = 'GET';                                                  //Request method
     public string $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')';     //User Agent string
     public string $connection = 'keep-alive';                                           //Connection type
 
