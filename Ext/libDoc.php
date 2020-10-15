@@ -160,7 +160,7 @@ class libDoc extends Factory
      *
      * @return string
      */
-    public function getDoc(string $class, string $method): string
+    private function getDoc(string $class, string $method): string
     {
         try {
             $doc = (new \ReflectionMethod($class, $method))->getDocComment();
@@ -184,29 +184,27 @@ class libDoc extends Factory
      *
      * @return string
      */
-    public function getName(string $doc): string
+    private function getName(string $doc): string
     {
-        $start  = 0;
-        $result = '';
+        return $this->getTagInfo($doc, 0);
+    }
 
-        while (false !== ($pos = strpos($doc, "\n", $start))) {
-            $line = substr($doc, $start, $pos - $start);
-            $line = ltrim(trim($line), '/* ');
-
-            if ('' === $line) {
-                $start = $pos + 1;
-                continue;
-            }
-
-            if (0 === strpos($line, '@')) {
-                break;
-            }
-
-            $result .= '' === $result ? $line : ', ' . $line;
-            $start  = $pos + 1;
+    /**
+     * Get return content from comment
+     *
+     * @param string $doc
+     *
+     * @return string
+     */
+    private function getReturn(string $doc): string
+    {
+        if (false === ($start = strpos($doc, '@return'))) {
+            return 'void';
         }
 
-        unset($doc, $start, $pos, $line);
+        $result = $this->getTagInfo($doc, $start + 7);
+
+        unset($doc, $start);
         return $result;
     }
 
@@ -217,7 +215,7 @@ class libDoc extends Factory
      *
      * @return array
      */
-    public function getParamList(string $doc): array
+    private function getParamList(string $doc): array
     {
         $start  = 0;
         $result = [];
@@ -240,21 +238,16 @@ class libDoc extends Factory
     }
 
     /**
-     * Get return content from comment
+     * Get info by comment tag
      *
      * @param string $doc
+     * @param int    $start
      *
      * @return string
      */
-    public function getReturn(string $doc): string
+    private function getTagInfo(string $doc, int $start): string
     {
         $result = '';
-
-        if (false === ($start = strpos($doc, '@return'))) {
-            return 'void';
-        }
-
-        $start += 7;
 
         while (false !== ($pos = strpos($doc, "\n", $start))) {
             $line = substr($doc, $start, $pos - $start);
