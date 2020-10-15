@@ -136,9 +136,13 @@ class libDoc extends Factory
                     continue;
                 }
 
-                $fn_info         = [];
-                $fn_info['api']  = $api_name . '/' . $fn_name;
-                $fn_info['name'] = $this->getName($this->getDoc($class, $fn_name));
+                $fn_info = [];
+                $fn_doc  = $this->getDoc($class, $fn_name);
+
+                $fn_info['api']    = $api_name . '/' . $fn_name;
+                $fn_info['name']   = $this->getName($fn_doc);
+                $fn_info['params'] = $this->getParamList($fn_doc);
+                $fn_info['return'] = $this->getReturn($fn_doc);
 
                 $api_list[] = $fn_info;
             }
@@ -184,6 +188,73 @@ class libDoc extends Factory
     {
         $start  = 0;
         $result = '';
+
+        while (false !== ($pos = strpos($doc, "\n", $start))) {
+            $line = substr($doc, $start, $pos - $start);
+            $line = ltrim(trim($line), '/* ');
+
+            if ('' === $line) {
+                $start = $pos + 1;
+                continue;
+            }
+
+            if (0 === strpos($line, '@')) {
+                break;
+            }
+
+            $result .= '' === $result ? $line : ', ' . $line;
+            $start  = $pos + 1;
+        }
+
+        unset($doc, $start, $pos, $line);
+        return $result;
+    }
+
+    /**
+     * Get param list from comment
+     *
+     * @param string $doc
+     *
+     * @return array
+     */
+    public function getParamList(string $doc): array
+    {
+        $start  = 0;
+        $result = [];
+
+        while (false !== ($pos = strpos($doc, "\n", $start))) {
+            $line = substr($doc, $start, $pos - $start);
+            $line = ltrim(trim($line), '/* ');
+
+            if ('' === $line || 0 !== strpos($line, '@param')) {
+                $start = $pos + 1;
+                continue;
+            }
+
+            $result[] = substr($line, 7);
+            $start    = $pos + 1;
+        }
+
+        unset($doc, $start, $pos, $line);
+        return $result;
+    }
+
+    /**
+     * Get return content from comment
+     *
+     * @param string $doc
+     *
+     * @return string
+     */
+    public function getReturn(string $doc): string
+    {
+        $result = '';
+
+        if (false === ($start = strpos($doc, '@return'))) {
+            return 'void';
+        }
+
+        $start += 7;
 
         while (false !== ($pos = strpos($doc, "\n", $start))) {
             $line = substr($doc, $start, $pos - $start);
