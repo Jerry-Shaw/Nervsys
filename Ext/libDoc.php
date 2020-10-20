@@ -22,6 +22,7 @@ namespace Ext;
 
 use Core\Factory;
 use Core\Lib\App;
+use Core\Lib\Router;
 
 /**
  * Class libDoc
@@ -93,13 +94,13 @@ class libDoc extends Factory
 
     /**
      * Get all API list in all/one module class(es)
-     * Parent APIs will be ignored
+     * Factory APIs will be ignored
      *
-     * @param string $module_name
+     * @param string $c_name
      *
      * @return array
      */
-    public function getApiList(string $module_name = ''): array
+    public function getApiList(string $c_name = ''): array
     {
         $get_fn = function (string $class): array
         {
@@ -107,11 +108,9 @@ class libDoc extends Factory
                 return [];
             }
 
-            if (false !== ($parent = get_parent_class($class))) {
-                $fn_list = array_diff($fn_list, get_class_methods($parent));
-            }
+            $fn_list = array_diff($fn_list, get_class_methods(Factory::class));
 
-            unset($class, $parent);
+            unset($class);
             return $fn_list;
         };
 
@@ -119,7 +118,7 @@ class libDoc extends Factory
         $root_len = strlen($this->app->root_path);
         $api_len  = strlen($this->app->api_path) + 2;
 
-        $module_list = '' !== $module_name ? [$module_name] : $this->getEntryList();
+        $module_list = '' !== $c_name ? [$c_name] : $this->getEntryList();
 
         foreach ($module_list as $value) {
             $value = strtr(($this->api_path . DIRECTORY_SEPARATOR . $value), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
@@ -148,8 +147,30 @@ class libDoc extends Factory
             }
         }
 
-        unset($module_name, $get_fn, $root_len, $api_len, $module_list, $value, $class, $fn_list, $api_name, $fn_name, $fn_info);
+        unset($c_name, $get_fn, $root_len, $api_len, $module_list, $value, $class, $fn_list, $api_name, $fn_name, $fn_info);
         return $api_list;
+    }
+
+    /**
+     * Get raw comment string
+     *
+     * @param string $c
+     *
+     * @return string
+     */
+    public function getComment(string $c): string
+    {
+        $cmd_group = Router::new()->parse($c);
+
+        if (empty($cmd_group['cgi'])) {
+            return '';
+        }
+
+        $cmd_group = current($cmd_group['cgi']);
+        $comment   = $this->getDoc($cmd_group[0], $cmd_group[1]);
+
+        unset($c, $cmd_group);
+        return $comment;
     }
 
     /**
@@ -180,48 +201,48 @@ class libDoc extends Factory
     /**
      * Get API comment name (first rows before "@")
      *
-     * @param string $doc
+     * @param string $comment
      *
      * @return string
      */
-    private function getName(string $doc): string
+    private function getName(string $comment): string
     {
-        return $this->getTagInfo($doc, 0);
+        return $this->getTagInfo($comment, 0);
     }
 
     /**
      * Get return content from comment
      *
-     * @param string $doc
+     * @param string $comment
      *
      * @return string
      */
-    private function getReturn(string $doc): string
+    private function getReturn(string $comment): string
     {
-        if (false === ($start = strpos($doc, '@return'))) {
+        if (false === ($start = strpos($comment, '@return'))) {
             return 'void';
         }
 
-        $result = $this->getTagInfo($doc, $start + 7);
+        $result = $this->getTagInfo($comment, $start + 7);
 
-        unset($doc, $start);
+        unset($comment, $start);
         return $result;
     }
 
     /**
      * Get param list from comment
      *
-     * @param string $doc
+     * @param string $comment
      *
      * @return array
      */
-    private function getParamList(string $doc): array
+    private function getParamList(string $comment): array
     {
         $start  = 0;
         $result = [];
 
-        while (false !== ($pos = strpos($doc, "\n", $start))) {
-            $line = substr($doc, $start, $pos - $start);
+        while (false !== ($pos = strpos($comment, "\n", $start))) {
+            $line = substr($comment, $start, $pos - $start);
             $line = ltrim(trim($line), '/* ');
 
             if ('' === $line || 0 !== strpos($line, '@param')) {
@@ -233,24 +254,24 @@ class libDoc extends Factory
             $start    = $pos + 1;
         }
 
-        unset($doc, $start, $pos, $line);
+        unset($comment, $start, $pos, $line);
         return $result;
     }
 
     /**
      * Get info by comment tag
      *
-     * @param string $doc
+     * @param string $comment
      * @param int    $start
      *
      * @return string
      */
-    private function getTagInfo(string $doc, int $start): string
+    private function getTagInfo(string $comment, int $start): string
     {
         $result = '';
 
-        while (false !== ($pos = strpos($doc, "\n", $start))) {
-            $line = substr($doc, $start, $pos - $start);
+        while (false !== ($pos = strpos($comment, "\n", $start))) {
+            $line = substr($comment, $start, $pos - $start);
             $line = ltrim(trim($line), '/* ');
 
             if ('' === $line) {
@@ -266,7 +287,7 @@ class libDoc extends Factory
             $start  = $pos + 1;
         }
 
-        unset($doc, $start, $pos, $line);
+        unset($comment, $start, $pos, $line);
         return $result;
     }
 }
