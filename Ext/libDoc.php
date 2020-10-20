@@ -23,6 +23,7 @@ namespace Ext;
 use Core\Factory;
 use Core\Lib\App;
 use Core\Lib\Router;
+use Core\Reflect;
 
 /**
  * Class libDoc
@@ -120,6 +121,8 @@ class libDoc extends Factory
 
         $module_list = '' !== $c_name ? [$c_name] : $this->getEntryList();
 
+        $reflect = Reflect::new();
+
         foreach ($module_list as $value) {
             $value = strtr(($this->api_path . DIRECTORY_SEPARATOR . $value), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
             $class = strtr(substr($value, $root_len), '/', '\\');
@@ -135,15 +138,31 @@ class libDoc extends Factory
                     continue;
                 }
 
-                $fn_info = [];
-                $fn_doc  = $this->getDoc($class, $fn_name);
+                try {
+                    $method  = new \ReflectionMethod($class, $fn_name);
+                    $fn_doc  = $this->getDoc($method);
+                    $fn_info = [];
 
-                $fn_info['api']    = $api_name . '/' . $fn_name;
-                $fn_info['name']   = $this->getName($fn_doc);
-                $fn_info['params'] = $this->getParamList($fn_doc);
-                $fn_info['return'] = $this->getReturn($fn_doc);
+                    $fn_info['api']    = $api_name . '/' . $fn_name;
+                    $fn_info['name']   = $this->getName($fn_doc);
+                    $fn_info['return'] = $this->getReturn($fn_doc);
 
-                $api_list[] = $fn_info;
+                    $params = $this->getParamList($fn_doc);
+
+                    $param_list = $method->getParameters();
+
+                    $param_data = [];
+                    foreach ($param_list as $param_reflect) {
+                        $param_info         = $reflect->getParamInfo($param_reflect);
+                        $param_info['desc'] = $params[$param_info['name']];
+                        $param_data[] = $param_info;
+                    }
+                    $fn_info['params'] = $param_data;
+
+                    $api_list[] = $fn_info;
+                } catch (\Throwable $throwable) {
+                    continue;
+                }
             }
         }
 
@@ -152,11 +171,12 @@ class libDoc extends Factory
     }
 
     /**
-     * Get raw comment string
+     * Get raw comment string from c
      *
      * @param string $c
      *
      * @return string
+     * @throws \ReflectionException
      */
     public function getComment(string $c): string
     {
@@ -167,7 +187,7 @@ class libDoc extends Factory
         }
 
         $cmd_group = current($cmd_group['cgi']);
-        $comment   = $this->getDoc($cmd_group[0], $cmd_group[1]);
+        $comment   = $this->getDoc(new \ReflectionMethod($cmd_group[0], $cmd_group[1]));
 
         unset($c, $cmd_group);
         return $comment;
@@ -176,26 +196,20 @@ class libDoc extends Factory
     /**
      * Get raw doc comment string
      *
-     * @param string $class
-     * @param string $method
+     * @param \ReflectionMethod $method
      *
      * @return string
      */
-    private function getDoc(string $class, string $method): string
+    private function getDoc(\ReflectionMethod $method): string
     {
-        try {
-            $doc = (new \ReflectionMethod($class, $method))->getDocComment();
+        $doc = $method->getDocComment();
 
-            if (false === $doc) {
-                return '';
-            }
-
-            unset($class, $method);
-            return $doc;
-        } catch (\Throwable $throwable) {
-            unset($class, $method, $throwable);
+        if (false === $doc) {
             return '';
         }
+
+        unset($method);
+        return $doc;
     }
 
     /**
@@ -245,16 +259,20 @@ class libDoc extends Factory
             $line = substr($comment, $start, $pos - $start);
             $line = ltrim(trim($line), '/* ');
 
-            if ('' === $line || 0 !== strpos($line, '@param')) {
-                $start = $pos + 1;
+            $start = $pos + 1;
+
+            if ('' === $line || 0 !== strpos($line, '@param') || false === ($p_start = strpos($line, '$'))) {
                 continue;
             }
 
-            $result[] = substr($line, 7);
-            $start    = $pos + 1;
+            if (false !== ($p_end = strpos($line, ' ', $p_start))) {
+                $result[substr($line, $p_start + 1, $p_end - $p_start)] = trim(substr($line, $p_end + 1));
+            } else {
+                $result[substr($line, $p_start + 1)] = '';
+            }
         }
 
-        unset($comment, $start, $pos, $line);
+        unset($comment, $start, $pos, $line, $p_start, $p_end);
         return $result;
     }
 
@@ -274,8 +292,9 @@ class libDoc extends Factory
             $line = substr($comment, $start, $pos - $start);
             $line = ltrim(trim($line), '/* ');
 
+            $start = $pos + 1;
+
             if ('' === $line) {
-                $start = $pos + 1;
                 continue;
             }
 
@@ -284,7 +303,6 @@ class libDoc extends Factory
             }
 
             $result .= '' === $result ? $line : ', ' . $line;
-            $start  = $pos + 1;
         }
 
         unset($comment, $start, $pos, $line);
