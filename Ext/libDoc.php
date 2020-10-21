@@ -121,8 +121,6 @@ class libDoc extends Factory
 
         $module_list = '' !== $c_name ? [$c_name] : $this->getEntryList();
 
-        $reflect = Reflect::new();
-
         foreach ($module_list as $value) {
             $value = strtr(($this->api_path . DIRECTORY_SEPARATOR . $value), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
             $class = strtr(substr($value, $root_len), '/', '\\');
@@ -131,42 +129,76 @@ class libDoc extends Factory
                 continue;
             }
 
-            $api_name = substr(strtr($class, '\\', '/'), $api_len);
+            $api_list[] = $this->buildMethodData($class, $api_len, $fn_list);
+        }
 
-            foreach ($fn_list as $fn_name) {
-                if (0 === strpos($fn_name, '__')) {
-                    continue;
-                }
+        unset($c_name, $get_fn, $root_len, $api_len, $module_list, $value, $class, $fn_list);
+        return $api_list;
+    }
 
-                try {
-                    $method  = new \ReflectionMethod($class, $fn_name);
-                    $fn_doc  = $this->getDoc($method);
-                    $fn_info = [];
+    /**
+     * Build param info data
+     *
+     * @param \ReflectionMethod $method
+     * @param string            $fn_doc
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    private function buildParamData(\ReflectionMethod $method, string $fn_doc): array
+    {
+        $param_data = [];
+        $reflect    = Reflect::new();
+        $param_doc  = $this->getParamList($fn_doc);
+        $param_list = $method->getParameters();
 
-                    $fn_info['api']    = $api_name . '/' . $fn_name;
-                    $fn_info['name']   = $this->getName($fn_doc);
-                    $fn_info['return'] = $this->getReturn($fn_doc);
+        foreach ($param_list as $param_reflect) {
+            $param_info         = $reflect->getParamInfo($param_reflect);
+            $param_info['desc'] = $param_doc[$param_info['name']] ?? '';
+            $param_data[]       = $param_info;
+        }
 
-                    $params = $this->getParamList($fn_doc);
+        unset($method, $fn_doc, $reflect, $param_doc, $param_list, $param_reflect, $param_info);
+        return $param_data;
+    }
 
-                    $param_list = $method->getParameters();
+    /**
+     * Build method info data
+     *
+     * @param string $class
+     * @param int    $api_len
+     * @param array  $fn_list
+     *
+     * @return array
+     */
+    private function buildMethodData(string $class, int $api_len, array $fn_list): array
+    {
+        $api_list = [];
+        $api_name = substr(strtr($class, '\\', '/'), $api_len);
 
-                    $param_data = [];
-                    foreach ($param_list as $param_reflect) {
-                        $param_info         = $reflect->getParamInfo($param_reflect);
-                        $param_info['desc'] = $params[$param_info['name']];
-                        $param_data[] = $param_info;
-                    }
-                    $fn_info['params'] = $param_data;
+        foreach ($fn_list as $fn_name) {
+            if (0 === strpos($fn_name, '__')) {
+                continue;
+            }
 
-                    $api_list[] = $fn_info;
-                } catch (\Throwable $throwable) {
-                    continue;
-                }
+            try {
+                $method  = new \ReflectionMethod($class, $fn_name);
+                $fn_doc  = $this->getDoc($method);
+                $fn_info = [];
+
+                $fn_info['api']    = $api_name . '/' . $fn_name;
+                $fn_info['name']   = $this->getName($fn_doc);
+                $fn_info['return'] = $this->getReturn($fn_doc);
+                $fn_info['params'] = $this->buildParamData($method, $fn_doc);
+
+                $api_list[] = $fn_info;
+            } catch (\Throwable $throwable) {
+                unset($throwable);
+                continue;
             }
         }
 
-        unset($c_name, $get_fn, $root_len, $api_len, $module_list, $value, $class, $fn_list, $api_name, $fn_name, $fn_info);
+        unset($class, $api_len, $fn_list, $api_name, $fn_name, $method, $fn_doc, $fn_info);
         return $api_list;
     }
 
