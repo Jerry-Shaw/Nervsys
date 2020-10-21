@@ -103,18 +103,6 @@ class libDoc extends Factory
      */
     public function getApiList(string $c_name = ''): array
     {
-        $get_fn = function (string $class): array
-        {
-            if (empty($fn_list = get_class_methods($class))) {
-                return [];
-            }
-
-            $fn_list = array_diff($fn_list, get_class_methods(Factory::class));
-
-            unset($class);
-            return $fn_list;
-        };
-
         $api_list = [];
         $root_len = strlen($this->app->root_path);
         $api_len  = strlen($this->app->api_path) + 2;
@@ -125,15 +113,38 @@ class libDoc extends Factory
             $value = strtr(($this->api_path . DIRECTORY_SEPARATOR . $value), '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
             $class = strtr(substr($value, $root_len), '/', '\\');
 
-            if (empty($fn_list = $get_fn($class))) {
+            if (empty($fn_list = $this->getFnList($class))) {
                 continue;
             }
 
             $api_list[] = $this->buildMethodData($class, $api_len, $fn_list);
         }
 
-        unset($c_name, $get_fn, $root_len, $api_len, $module_list, $value, $class, $fn_list);
+        unset($c_name, $root_len, $api_len, $module_list, $value, $class, $fn_list);
         return $api_list;
+    }
+
+    /**
+     * Get raw comment string from c
+     *
+     * @param string $c
+     *
+     * @return string
+     * @throws \ReflectionException
+     */
+    public function getComment(string $c): string
+    {
+        $cmd_group = Router::new()->parse($c);
+
+        if (empty($cmd_group['cgi'])) {
+            return '';
+        }
+
+        $cmd_group = current($cmd_group['cgi']);
+        $comment   = $this->getDoc(new \ReflectionMethod($cmd_group[0], $cmd_group[1]));
+
+        unset($c, $cmd_group);
+        return $comment;
     }
 
     /**
@@ -203,29 +214,6 @@ class libDoc extends Factory
     }
 
     /**
-     * Get raw comment string from c
-     *
-     * @param string $c
-     *
-     * @return string
-     * @throws \ReflectionException
-     */
-    public function getComment(string $c): string
-    {
-        $cmd_group = Router::new()->parse($c);
-
-        if (empty($cmd_group['cgi'])) {
-            return '';
-        }
-
-        $cmd_group = current($cmd_group['cgi']);
-        $comment   = $this->getDoc(new \ReflectionMethod($cmd_group[0], $cmd_group[1]));
-
-        unset($c, $cmd_group);
-        return $comment;
-    }
-
-    /**
      * Get raw doc comment string
      *
      * @param \ReflectionMethod $method
@@ -273,6 +261,25 @@ class libDoc extends Factory
 
         unset($comment, $start);
         return $result;
+    }
+
+    /**
+     * Get function list from a class
+     *
+     * @param string $class
+     *
+     * @return array
+     */
+    private function getFnList(string $class): array
+    {
+        if (empty($fn_list = get_class_methods($class))) {
+            return [];
+        }
+
+        $fn_list = array_diff($fn_list, get_class_methods(Factory::class));
+
+        unset($class);
+        return $fn_list;
     }
 
     /**
