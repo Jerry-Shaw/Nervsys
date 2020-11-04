@@ -53,6 +53,9 @@ class libQueue extends Factory
     /** @var \Core\Lib\App $app */
     private App $app;
 
+    /** @var \Core\Lib\IOUnit $io_unit */
+    private IOUnit $io_unit;
+
     /** @var \Core\OSUnit $os_unit */
     private OSUnit $os_unit;
 
@@ -427,18 +430,15 @@ class libQueue extends Factory
         //Close on shutdown
         register_shutdown_function($kill_all);
 
-        //Init IOUnit
-        $io_unit = IOUnit::new();
-
         //Build unit command
         $unit_cmd = '"' . $this->os_unit->getPhpPath() . '" "' . $this->app->script_path . '" -t"json" ';
-        $unit_cmd .= '-c"' . $io_unit->encodeData('/' . strtr($this->unit_handler[0], '\\', '/') . '/' . $this->unit_handler[1]) . '" ';
+        $unit_cmd .= '-c"' . $this->io_unit->encodeData('/' . strtr($this->unit_handler[0], '\\', '/') . '/' . $this->unit_handler[1]) . '" ';
 
         //Build delay command
-        $cmd_delay = $this->os_unit->setCmd($unit_cmd . '-d"' . $io_unit->encodeData(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_delay = $this->os_unit->setCmd($unit_cmd . '-d"' . $this->io_unit->encodeData(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
 
         //Build realtime command
-        $cmd_realtime = $this->os_unit->setCmd($unit_cmd . '-d"' . $io_unit->encodeData(json_encode(['type' => 'realtime', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_realtime = $this->os_unit->setCmd($unit_cmd . '-d"' . $this->io_unit->encodeData(json_encode(['type' => 'realtime', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
 
         do {
             //Call delay unit
@@ -470,7 +470,7 @@ class libQueue extends Factory
         //On exit
         $kill_all();
 
-        unset($idle_time, $master_hash, $master_key, $kill_all, $io_unit, $unit_cmd, $cmd_delay, $cmd_realtime, $is_valid, $is_running, $job_key, $job);
+        unset($idle_time, $master_hash, $master_key, $kill_all, $unit_cmd, $cmd_delay, $cmd_realtime, $is_valid, $is_running, $job_key, $job);
     }
 
     /**
@@ -594,7 +594,10 @@ class libQueue extends Factory
             throw new \Exception('Only in CLI!', E_USER_ERROR);
         }
 
-        /** @var OSUnit os_unit */
+        /** @var \Core\Lib\IOUnit io_unit */
+        $this->io_unit = IOUnit::new();
+
+        /** @var \Core\OSUnit os_unit */
         $this->os_unit = OSUnit::new();
     }
 
@@ -830,6 +833,8 @@ class libQueue extends Factory
 
             //Call CGI
             if (!empty($cmd_group['cgi'])) {
+                //Remap input data
+                $this->io_unit->src_input = &$input_data;
                 //Process CGI command
                 while (is_array($cmd_pair = array_shift($cmd_group['cgi']))) {
                     //Extract CMD contents
@@ -852,6 +857,8 @@ class libQueue extends Factory
 
             //Call CLI
             if (!empty($cmd_group['cli'])) {
+                //Remap argv data
+                $this->io_unit->src_argv = &$input_data['argv'];
                 //Process CLI command
                 while (is_array($cmd_pair = array_shift($cmd_group['cli']))) {
                     //Extract CMD contents

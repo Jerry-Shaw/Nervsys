@@ -144,9 +144,15 @@ class Hook extends Factory
      */
     private function callFn(Execute $execute, Reflect $reflect, array $hook_fn): bool
     {
-        $result = $execute->runScript($reflect, $hook_fn[0], $hook_fn[1], implode('/', $hook_fn));
+        try {
+            $result = $execute->runScript($reflect, $hook_fn[0], $hook_fn[1], implode('/', $hook_fn));
 
-        unset($execute, $reflect, $hook_fn);
-        return (empty($result) || true === current($result));
+            unset($execute, $reflect, $hook_fn);
+            return (empty($result) || true === current($result));
+        } catch (\Throwable $throwable) {
+            $this->app->showDebug($throwable, true);
+            unset($execute, $reflect, $hook_fn, $throwable);
+            return false;
+        }
     }
 }
