@@ -33,7 +33,7 @@ use Core\Lib\Router;
  *
  * @package Ext
  */
-class libCoreAPI extends Factory
+class libCoreApi extends Factory
 {
     /**
      * Set autoload to target path
