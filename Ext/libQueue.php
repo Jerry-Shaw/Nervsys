@@ -143,7 +143,7 @@ class libQueue extends Factory
      * Add job
      *
      * @param string $cmd
-     * @param array  $data      Use "job_hash" to mark as unique key
+     * @param array  $data      Use string "job_hash" to mark as unique key, use string "argv" to pass as command argv param
      * @param string $group
      * @param string $type_mask BitMask value, default realtime
      * @param int    $time_wait in seconds
@@ -822,66 +822,90 @@ class libQueue extends Factory
      */
     private function execJob(string $data, Router $router, Reflect $reflect, Execute $execute): void
     {
-        try {
-            //Decode data in JSON
-            if (!is_array($input_data = json_decode($data, true))) {
-                throw new \Exception('Data ERROR!', E_USER_NOTICE);
-            }
+        //Decode data in JSON
+        $input_data = json_decode($data, true);
 
+        //Source data parse failed
+        if (!is_array($input_data)) {
+            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$data, 'return' => 'Data ERROR!'], JSON_FORMAT));
+
+            unset($data, $router, $reflect, $execute, $input_data);
+            return;
+        }
+
+        try {
             //Parse CMD
             $cmd_group = $router->parse($input_data['c']);
 
             //Call CGI
             if (!empty($cmd_group['cgi'])) {
                 //Remap input data
-                $this->io_unit->src_input = &$input_data;
-                //Process CGI command
-                while (is_array($cmd_pair = array_shift($cmd_group['cgi']))) {
-                    //Extract CMD contents
-                    [$cmd_class, $cmd_method] = $cmd_pair;
-
-                    //Get CMD input name
-                    $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
-
-                    //Run script method
-                    $result = $execute->runScript($reflect, $cmd_class, $cmd_method, $input_name);
-
-                    //Check result
-                    if (!empty($result)) {
-                        $this->checkJob($data, $result);
-                    }
-                }
-
-                unset($cmd_pair, $cmd_class, $cmd_method, $input_name, $result);
+                $this->io_unit->src_input = $input_data;
+                //Execute CGI command
+                $this->callCgi($cmd_group['cgi'], $reflect, $execute);
             }
 
             //Call CLI
             if (!empty($cmd_group['cli'])) {
                 //Remap argv data
-                $this->io_unit->src_argv = &$input_data['argv'];
-                //Process CLI command
-                while (is_array($cmd_pair = array_shift($cmd_group['cli']))) {
-                    //Extract CMD contents
-                    [$cmd_name, $exe_path] = $cmd_pair;
-
-                    //Skip empty command
-                    if ('' === $exe_path = trim($exe_path)) {
-                        $this->app->showDebug(new \Exception('"' . $cmd_name . '" NOT defined!', E_USER_NOTICE), true);
-                        continue;
-                    }
-
-                    //Run external program
-                    $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
-                }
-
-                unset($cmd_pair, $cmd_name, $exe_path);
+                $this->io_unit->src_argv = $input_data['argv'] ?? '';
+                //Execute CLI command
+                $this->callCli($cmd_group['cli'], $execute);
             }
         } catch (\Throwable $throwable) {
-            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
+            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$input_data, 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
         }
 
         unset($data, $router, $reflect, $execute, $input_data, $cmd_group);
+    }
+
+    /**
+     * Call CGI command
+     *
+     * @param array         $cmd_group
+     * @param \Core\Reflect $reflect
+     * @param \Core\Execute $execute
+     *
+     * @throws \ReflectionException
+     */
+    private function callCgi(array $cmd_group, Reflect $reflect, Execute $execute): void
+    {
+        //Process CGI command
+        while (is_array($cmd_pair = array_shift($cmd_group))) {
+            //Extract CMD contents
+            [$cmd_class, $cmd_method] = $cmd_pair;
+            //Run script method
+            $result = $execute->runScript($reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
+            //Check result
+            !empty($result) && $this->checkJob($result);
+        }
+
+        unset($cmd_group, $reflect, $execute, $cmd_pair, $cmd_class, $cmd_method, $result);
+    }
+
+    /**
+     * Call CLI command
+     *
+     * @param array         $cmd_group
+     * @param \Core\Execute $execute
+     *
+     * @throws \Exception
+     */
+    private function callCli(array $cmd_group, Execute $execute): void
+    {
+        //Process CLI command
+        while (is_array($cmd_pair = array_shift($cmd_group))) {
+            //Extract CMD contents
+            [$cmd_name, $exe_path] = $cmd_pair;
+
+            if ('' !== ($exe_path = trim($exe_path))) {
+                //Run external program
+                $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
+            }
+        }
+
+        unset($cmd_group, $execute, $cmd_pair, $cmd_name, $exe_path);
     }
 
     /**
@@ -922,16 +946,15 @@ class libQueue extends Factory
      * Check job
      * Only accept true
      *
-     * @param string $data
-     * @param array  $result
+     * @param array $result
      */
-    private function checkJob(string $data, array $result): void
+    private function checkJob(array $result): void
     {
         //Get return data
         $return = current($result);
 
         //Build queue log
-        $log = json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$data, 'return' => &$return], JSON_FORMAT);
+        $log = json_encode(['time' => date('Y-m-d H:i:s'), 'data' => $this->io_unit->src_input, 'return' => &$return], JSON_FORMAT);
 
         //Save to queue history
         true !== $return
@@ -940,6 +963,6 @@ class libQueue extends Factory
             //Save to success history
             : 0 < (int)$this->redis->lPush($this->key_slot['success'], $log) && $this->redis->lTrim($this->key_slot['success'], 0, $this->max_hist - 1);
 
-        unset($data, $result, $return, $log);
+        unset($result, $return, $log);
     }
 }
