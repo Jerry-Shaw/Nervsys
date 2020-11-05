@@ -72,10 +72,6 @@ class Execute extends Factory
     {
         $result = [];
 
-        if (empty($this->cmd_cgi)) {
-            return $result;
-        }
-
         //Init Hook & Reflect
         $hook    = Hook::new();
         $reflect = Reflect::new();
@@ -121,10 +117,6 @@ class Execute extends Factory
     {
         $result = [];
 
-        if (empty($this->cmd_cli)) {
-            return [];
-        }
-
         //Init OSUnit
         $os_unit = OSUnit::new();
 
@@ -145,7 +137,6 @@ class Execute extends Factory
             } catch (\Throwable $throwable) {
                 $this->app->showDebug($throwable, true);
                 unset($throwable);
-                continue;
             }
         }
 
