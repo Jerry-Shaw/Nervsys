@@ -10,7 +10,7 @@ README: [English](README.md) | [简体中文](README_zh-CN.md)
 [![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md)
 [![QQ](https://img.shields.io/badge/QQ交流群-191879883-lightgrey?style=social)](https://qm.qq.com/cgi-bin/qm/qr?k=FJimjw1l5qKXGdDVSmyoq2-PTQ2ZTqBy&jump_from=github)  
 
-## About Nervsys
+## 关于 Nervsys
 
 * 什么是"Nervsys"?  
 一个非常轻便的PHP开发框架，使用和集成都相当方便。  
@@ -30,14 +30,14 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
     3. 程序通信控制端
     4. 其他...
 
-## Installation
+## 安装
 
 1. 克隆或者下载源码，保存到目标机器的任意位置。每台机器只需要一份副本即可，哪怕是有多个项目一起在运行。
 2. 在项目入口脚本中引用"NS.php"，然后通过"NS::new();"来启动系统。
 3. 如果需要，在"NS::new();"启动系统前，使用"/Ext/libCoreApi"来注册自己的模块和方法。
 4. 如果一切没有改动，在项目下"/api"目录里面写项目api类，在"/app"目录下，写业务类即可。
 
-## Usage
+## 用法
 
 ##### 注意: 所有用例代码均以系统默认设置为基础。
 
@@ -52,7 +52,7 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
 
 
 
-## Todo
+## 待办
 - [x] 基础核心和扩展逻辑
 - [x] 应用代码运行环境监测逻辑
 - [x] 第三方路由模块支持
@@ -63,11 +63,11 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
 - [ ] ML/AI 相关内置路由
 - [ ] 更多详细的文档和范例
 
-## Supporters
+## 支持机构
 
 感谢 [JetBrains](https://www.jetbrains.com/?from=Nervsys) 提供的开源许可证对本项目的支持。  
 
-## License
+## 开源协议
 
 本软件使用 Apache License 2.0 协议，请严格遵照协议内容发行和传播。  
 您能在 [LICENSE.md](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md) 中找到该协议内容的副本。
