@@ -2,11 +2,11 @@
 
 README: [English](README.md) | [简体中文](README_zh-CN.md)
 
-![release](https://img.shields.io/badge/release-8.0.0-blue?style=flat-square)
-![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)
-![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)
-![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/NervSys?style=flat-square)
-![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)  
+[![release](https://img.shields.io/badge/release-8.0.0-blue?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/releases)
+[![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/issues)
+[![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/graphs/contributors)
+[![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/commits/master)
+[![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md)  
 
 ## About Nervsys
 
@@ -68,4 +68,4 @@ Thanks to [JetBrains](https://www.jetbrains.com/?from=Nervsys) for supporting th
 ## License
 
 This software is licensed under the terms of the Apache 2.0 License.  
-You can find a copy of the license in the LICENSE.md file.
+You can find a copy of the license in the [LICENSE.md](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md) file.
