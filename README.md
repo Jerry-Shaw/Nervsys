@@ -34,6 +34,7 @@ PHP **7.4+** and above. Any kind of web server or running under CLI mode.
 2. Include "NS.php" in the main entry script of the project, and call it with using "NS::new();".
 3. If needed, using "/Ext/libCoreApi" to register your own modules and functions before calling "NS::new();".
 4. Write your API code classes under "/api", application code classes under "/app", if not changed, and there you go.
+5. In "/Ext", there are common useful extensions for normal project development, so, please do review them when coding. They can be helpful.
 
 ## Usage
 
