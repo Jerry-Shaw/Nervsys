@@ -1,80 +1,71 @@
 # Nervsys
 
-Stable version: 7.4.5  
-Extension version: 3.0  
+README: [English](README.md) | [简体中文](README_CN.md)
+
+![release](https://img.shields.io/badge/release-8.0.0-blue?style=flat-square)
+![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)
+![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)
+![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/NervSys?style=flat-square)
+![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)  
 
 ## About Nervsys
 
-* What is Nervsys?  
-A very slight framework based on PHP7.2+ for universal API controlling.  
+* What is "Nervsys"?  
+A very slight PHP framework, very easy to use and integrate.  
 
 * Why called "Nervsys"?  
 At the very beginning, as we hoped. The unit could process more like a nerve cell, and build together as a pure data-based calling system. Exact commands would be unnecessary to tell the system what to do.  
 
 * Any short name?  
-**NS**, that's what most of us call it. But, don't mix it up with Nintendo Switch.  
+**NS**, that's what most of us call it, but, don't mix it up with Nintendo Switch.  
 
 * Requirements:  
-PHP **7.2+** and above. Any kind of web server or running under CLI mode.  
+PHP **7.4+** and above. Any kind of web server or running under CLI mode.  
 
-* Usage examples:  
-    1. Ordinary framework for Web-developing
+* Usage example:  
+    1. Ordinary framework for Web-backend-developing
     2. API controller for all types of Apps
     3. Client for program communication
     4. More...
-    
-* Demo & Projects:  
-    [Demo](https://github.com/NervSys/Demo)  
 
-## Table of Contents
+## Installation
 
-1. [Core Structure](doc/CoreStructure.md)
-2. [Configurations](doc/Configurations.md)
-3. [Reserved Words](doc/ReservedWords.md)
-4. [About Entry](doc/AboutEntry.md)
-5. [About Factory](doc/AboutFactory.md)
-6. [About TrustZone](doc/AboutTrustZone.md)
-7. [Dependency Injection](doc/DependencyInjection.md)
-8. [How to Install](doc/HowtoInstall.md)
-9. [Custom Router](doc/CustomRouter.md)
-10. [Custom Output Handler](doc/CustomOutputHandler.md)
-11. [Develop Examples]
-    1. [CGI](doc/example/CGI.md)
-    2. [CLI](doc/example/CLI.md)
-12. [Extension List] (Thanks for these lovely Chinese guys, only Chinese start writing now)
-    1. [cache](doc/extension/cache.md)
-    2. [conf](doc/extension/conf.md)
-    3. [core](doc/extension/core.md)
-    4. [crypt](doc/extension/crypt.md)
-    5. [crypt_img](doc/extension/crypt_img.md)
-    6. [doc](doc/extension/doc.md)
-    7. [errno](doc/extension/errno.md)
-    8. [factory](doc/extension/factory.md)
-    9. [file](doc/extension/file.md)
-    10. [http](doc/extension/http.md)
-    11. [image](doc/extension/image.md)
-    12. [keygen](doc/extension/keygen.md)
-    13. [lang](doc/extension/lang.md)
-    14. [lock](doc/extension/lock.md)
-    15. [log](doc/extension/log.md)
-    16. [mpc](doc/extension/mpc.md)
-    17. [mysql](doc/extension/mysql.md)
-    18. [pdo](doc/extension/pdo.md)
-    19. [queue](doc/extension/queue.md)
-    20. [redis](doc/extension/redis.md)
-    21. [session](doc/extension/session.md)
-    22. [socket](doc/extension/socket.md)
-    23. [upload](doc/extension/upload.md)
-    
-## Example source file  
-    1. [api.php](doc/example/api.php.example)
-    2. [app.ini](doc/example/app.ini.example)
+1. Clone or download source code to anywhere on your machine. Only one copy is required on the same machine even multiple projects exist.
+2. Include "NS.php" in the main entry script of the project, and call it with using "NS::new();".
+3. If needed, using "/Ext/libCoreApi" to register your own modules and functions before calling "NS::new();".
+4. Write your API code classes under "/api", application code classes under "/app", if not changed, and there you go.
+
+## Usage
+
+##### Notice: All demo code is under default system settings.
+
+
+
+
+
+
+
+
+
+
+
+
+## Todo
+- [x] Basic Core and Ext logic
+- [x] App code env detection logic
+- [x] Custom router module support
+- [x] Custom error handler module support
+- [x] Custom data reader/output module support
+- [x] Path based hook registration function support
+- [ ] Socket related functions
+- [ ] ML/AI based internal router
+- [ ] More detailed documents and demos
 
 ## Supporters
 
 Thanks to [JetBrains](https://www.jetbrains.com/?from=Nervsys) for supporting the project, within the Open Source Support Program.  
 
-## Licensing
+## License
 
 This software is licensed under the terms of the Apache 2.0 License.  
 You can find a copy of the license in the LICENSE.md file.
