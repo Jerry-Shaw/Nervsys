@@ -1,6 +1,6 @@
 # Nervsys
 
-README: [English](README.md) | [简体中文](README_CN.md)
+README: [English](README.md) | [简体中文](README_zh-CN.md)
 
 ![release](https://img.shields.io/badge/release-8.0.0-blue?style=flat-square)
 ![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)

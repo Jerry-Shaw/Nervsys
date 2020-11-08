@@ -1,13 +1,13 @@
 # Nervsys
 
-README: [English](README.md) | [简体中文](README_CN.md)
+README: [English](README.md) | [简体中文](README_zh-CN.md)
 
 ![release](https://img.shields.io/badge/release-8.0.0-blue?style=flat-square)
 ![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)
 ![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)
 ![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/NervSys?style=flat-square)
 ![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)
-[![QQ](https://img.shields.io/badge/QQ交流群-191879883-blue?style=flat-square)](https://qm.qq.com/cgi-bin/qm/qr?k=FJimjw1l5qKXGdDVSmyoq2-PTQ2ZTqBy&jump_from=github)  
+[![QQ](https://img.shields.io/badge/QQ交流群-191879883-lightgrey?style=social)](https://qm.qq.com/cgi-bin/qm/qr?k=FJimjw1l5qKXGdDVSmyoq2-PTQ2ZTqBy&jump_from=github)  
 
 ## About Nervsys
 
@@ -38,7 +38,7 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
 
 ## Usage
 
-##### Notice: All demo code is under default system settings.
+##### 注意: 所有用例代码均以系统默认设置为基础。
 
 
 
@@ -68,5 +68,5 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
 
 ## License
 
-本软件使用 Apache License 2.0 协议，请严格遵照协议内容发行和传播。
+本软件使用 Apache License 2.0 协议，请严格遵照协议内容发行和传播。  
 您能在"LICENSE.md"中找到该协议内容的副本。
