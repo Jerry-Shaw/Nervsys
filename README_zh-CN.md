@@ -2,7 +2,6 @@
 
 README: [English](README.md) | [简体中文](README_zh-CN.md)
 
-
 [![release](https://img.shields.io/badge/release-8.0.0-blue?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/releases)
 [![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/issues)
 [![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/graphs/contributors)
@@ -54,6 +53,7 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
 
 ## 待办
 - [x] 基础核心和扩展逻辑
+- [x] 自动化参数映射
 - [x] 应用代码运行环境监测逻辑
 - [x] 第三方路由模块支持
 - [x] 第三方错误处理模块支持

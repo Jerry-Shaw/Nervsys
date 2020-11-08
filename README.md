@@ -52,6 +52,7 @@ PHP **7.4+** and above. Any kind of web server or running under CLI mode.
 
 ## Todo
 - [x] Basic Core and Ext logic
+- [x] Automatic argument mapping
 - [x] App code env detection logic
 - [x] Custom router module support
 - [x] Custom error handler module support
