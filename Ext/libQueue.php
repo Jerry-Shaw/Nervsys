@@ -265,7 +265,7 @@ class libQueue extends Factory
         }
 
         //Add job as realtime job in rollback group
-        $result = $this->addRealtime('rollback', $job_data['data']);
+        $result = $this->addRealtime('rollback', json_encode($job_data['data'], JSON_FORMAT));
 
         unset($job_json, $failed_key, $job_data);
         return $result;
