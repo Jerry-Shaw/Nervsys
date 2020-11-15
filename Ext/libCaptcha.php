@@ -20,12 +20,14 @@
 
 namespace Ext;
 
+use Core\Factory;
+
 /**
  * Class libCaptcha
  *
  * @package Ext
  */
-class libCaptcha extends factory
+class libCaptcha extends Factory
 {
     //Predefined types
     const TYPE_MIX  = 'mix';
@@ -458,8 +460,7 @@ class libCaptcha extends factory
         $result['char'][] = mt_rand(0, 9);
 
         //Calculate function
-        $calc = static function (int $num_1, int $opt, int $num_2): int
-        {
+        $calc = static function (int $num_1, int $opt, int $num_2): int {
             switch ($opt) {
                 case 2:
                     $res = $num_1 * $num_2;
