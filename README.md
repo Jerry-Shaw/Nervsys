@@ -89,8 +89,8 @@ In HTTP request, NS fetch and parse data in the following steps:
 1. read Accept from HTTP request header, decide return type if not defined in entry.
 2. read URl, try to fetch "c" from "PATH_INFO" or "REQUEST_URI" if found.
 3. fetch HTTP FormData in non-overwrite mode in following order: FILES -> POST -> GET.
-4. fetch request Payload, and try to decode in JSON/XML format, add to existing data from above.
-5. read HTTP Header and Cookie data by specific keys defined in entry script, add to existing data from above.
+4. fetch request Payload, and try to decode in JSON/XML format, add to data from above.
+5. read HTTP Header and Cookie data by specific keys defined in entry script, add to data from above.
 6. find and isolate "c" data from data source, and pass it to Router library as request command.
 ```
 
@@ -149,9 +149,7 @@ class user
 {
     public function login($name, $passwd)
     {
-        /**
-            your code
-        */
+        //your code
 
         return $name . ' is online!';
     }
@@ -166,9 +164,7 @@ class user
 {
     public function login($name, $passwd, int $age)
     {
-        /**
-            your code
-        */
+        //your code
 
         return $name . ' is ' . $age . ' years old.';
     }
@@ -193,7 +189,8 @@ With this, developers can register own libraries instead of default ones, such a
 - [ ] ML/AI based internal router
 - [ ] More detailed documents and demos
 
-Except functions listed above, NS still has a long way to go.
+Except functions listed above, NS still has a long way to go.  
+Thanks for issues & pull requests if you found bugs or make it better, or just need help. Contact us.
 
 ## Supporters
 
