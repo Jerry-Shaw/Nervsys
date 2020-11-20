@@ -38,18 +38,148 @@ PHP **7.4+** and above. Any kind of web server or running under CLI mode.
 
 ## Usage
 
-##### Notice: All demo code is under default system settings.
+###### Notice: All demo usage is under default system settings.
 
+#### 1. Suggested project structure
 
+```text
+Root/
+    ├─api/                            default api entry code path
+    │    └─DemoApiClass.php           demo api php class file
+    ├─app/                            default application code path
+    │    └─DemoAppClass.php           demo application php class file
+    ├─config/                         suggested conf file path (use "Ext/libConfGet.php" to process)
+    │       ├─dev.conf                conf file for dev
+    │       ├─prod.conf               conf file for prod
+    │       └─...                     other conf files
+    ├─message/                        suggested conf file path (use "Ext/libErrno.php" to process)
+    │        └─msg.ini                custom message ini file
+    └─home/                           default application code path
+          └─index.php                 main entry script
+```
 
+#### 2. NS integration
 
+Follow "[Installation](#installation)" steps to integrate NS into your entry script. Demo code is as follows.
 
+```php
+require __DIR__ . '/../../NervSys/NS.php';
 
+//optional, if needed, please review "Ext/libCoreApi.php"
+\Ext\libCoreApi::new()
+    //open core debug mode (error display with results)
+    ->setCoreDebug(true)
+    //open CORS to all with default headers
+    ->addCorsRecord('*')
+    //set output content type to "application/json; charset=utf-8"
+    ->setContentType('application/json');
 
+NS::new();
+```
 
+#### 3. Request data format
 
+NS can parse data from both FormData and request Payload via GET or POST.  
+When data is sending as request Payload, both JSON and XML are supported.  
+Data fetcher and parser library in NS is "/Core/Lib/IOUnit.php".  
 
+In HTTP request, NS fetch and parse data in the following steps:
 
+```text
+1. read Accept from HTTP request header, decide return type if not defined in entry.
+2. read URl, try to fetch "c" from "PATH_INFO" or "REQUEST_URI" if found.
+3. fetch HTTP FormData in non-overwrite mode in following order: FILES -> POST -> GET.
+4. fetch request Payload, and try to decode in JSON/XML format, add to existing data from above.
+5. read HTTP Header and Cookie data by specific keys defined in entry script, add to existing data from above.
+6. find and isolate "c" data from data source, and pass it to Router library as request command.
+```
+
+In CLI mode, NS takes "c" from "-c" parameter or the first argument if not found. String parameter "-d" will be taken to decode to get CGI data source. Other arguments will be considered as CLI argv.
+
+#### 4. About key "c"
+
+"c" in request data will be taken as request command, and will lead system to go continue.  
+"c" can be passed in any ways, URL, GET, POST, all is OK, no matter FormData or request Payload.  
+
+In CGI mode, normally known as HTTP request, "c" is always redirected to api path by default for some security reasons, but, CLI mode allows calling from root by adding "/" in the beginning of "c" using full class path, which equals setting "open_root_exec" to true in Router library by using "libCoreApi::new()->openRootExec(true)" in entry script under CGI mode.  
+
+Valid "c" format should be as follows:  
+
+```text
+API path based: innerpath_in_api_path/class_name/public_method_name
+
+examples:
+URL: http://your_domain/index.php/user/login => calling "login" method in "\api\user" class.
+URL: http://your_domain/index.php/user/info/byId => calling "byId" method in "\api\user\info" class.
+
+GET: http://your_domain/index.php?c=user/login
+POST: pass directly "user/login" in "c" parameter, both support FormData or request Payload.
+```
+
+```text
+ROOT path based: /namespace/class_name/public_method_name
+
+examples:
+URL: NOT support.
+
+CLI: php index.php /app/user/login => calling "login" method in "\app\user" class.
+CLI: php index.php -c"/app/user/login" => calling "login" method in "\app\user" class.
+
+GET: http://your_domain/index.php?c=/app/user/login
+POST: pass directly "/app/user/login" in "c" parameter, both support FormData or request Payload.
+```
+
+#### 5. Data autofill
+
+Once "c" and data source are taken by system, Router library and Execute library will be woken up to run exact method. Key matched parameters will be taken out of data source, and pass in the right order automatically into target method when calling. Watch out of all data passed to NS, keys are case-sensitive, and data values are type-strict. All returned results will be captured and output.
+
+example:
+
+```text
+parameters in any order:
+URL: http://your_domain/index.php/user/login?name=admin&passwd=admin&age=30&type=client
+URL: http://your_domain/index.php/user/login?passwd=admin&age=30&name=admin&type=client
+```
+
+* API 1
+```php
+namespace api;
+
+class user
+{
+    public function login($name, $passwd)
+    {
+        /**
+            your code
+        */
+
+        return $name . ' is online!';
+    }
+}
+```
+
+* API 2
+```php
+namespace api;
+
+class user
+{
+    public function login($name, $passwd, int $age)
+    {
+        /**
+            your code
+        */
+
+        return $name . ' is ' . $age . ' years old.';
+    }
+}
+```
+
+#### 6. Exposed Core libraries
+
+NS leaves some important core libraries exposed to developers since 8.0 and on.  
+Thanks to [douglas99](https://github.com/douglas99), all changeable core related APIs are merged into "Ext/libCoreApi.php".  
+With this, developers can register own libraries instead of default ones, such as custom Router, outputHandler, ApiPath, hook related functions, etc...
 
 ## Todo
 - [x] Basic Core and Ext logic
@@ -62,6 +192,8 @@ PHP **7.4+** and above. Any kind of web server or running under CLI mode.
 - [ ] Socket related functions
 - [ ] ML/AI based internal router
 - [ ] More detailed documents and demos
+
+Except functions listed above, NS still has a long way to go.
 
 ## Supporters
 
