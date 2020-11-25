@@ -186,7 +186,8 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2016-2019 Jerry Shaw <jerry-shaw@live.com>
+   Copyright 2016-2020 Jerry Shaw <jerry-shaw@live.com>  
+   Copyright 2016-2020 秋水之冰 <27206617@qq.com>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
