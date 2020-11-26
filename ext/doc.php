@@ -175,7 +175,7 @@ class doc extends factory
                 $param_info = $this->unit_reflect->get_param_info($reflect_param);
 
                 $data['name'] = $param_info['name'];
-                $data['type'] = $param_info['has_type'] ? $param_info['type'] : 'mixed';
+                $data['type'] = $param_info['type'] ?? 'mixed';
 
                 $data['require'] = !$param_info['has_default'];
 

@@ -156,25 +156,18 @@ final class reflect
             $info['default'] = $parameter->getDefaultValue();
         }
 
-        //Get param type
-        $info['has_type'] = $parameter->hasType();
-        if ($info['has_type']) {
-            $info['type'] = $parameter->getType()->getName();
+        //Get param type & class
+        $reflect_type = $parameter->getType();
 
-            //Get class name
-            $param_class       = $parameter->getClass();
-            $info['has_class'] = is_object($param_class);
-
-            if ($info['has_class']) {
-                $info['class'] = $param_class->getName();
-            }
-
-            unset($param_class);
+        if (!is_null($reflect_type)) {
+            $info['type']  = $reflect_type->getName();
+            $info['class'] = !$reflect_type->isBuiltin() ? '\\' . $info['type'] : null;
         } else {
-            $info['has_class'] = false;
+            $info['type']  = null;
+            $info['class'] = null;
         }
 
-        unset($parameter);
+        unset($parameter, $reflect_type);
         return $info;
     }
 
@@ -201,23 +194,17 @@ final class reflect
             $param_info = $this->get_param_info($param_reflect);
 
             //Dependency injection
-            if ($param_info['has_class']) {
+            if (!is_null($param_info['class'])) {
                 $result['param'][] = factory::build($param_info['class']);
                 continue;
             }
 
-            //Param NOT exists
+            //Check existence
             if (!isset($params[$param_info['name']])) {
-                //Check default value
+                //Get default value
                 $param_info['has_default']
                     ? $result['param'][] = $param_info['default']
                     : $result['diff'][] = $param_info['name'];
-                continue;
-            }
-
-            //Param without type
-            if (!$param_info['has_type']) {
-                $result['param'][] = $params[$param_info['name']];
                 continue;
             }
 
