@@ -92,12 +92,8 @@ class Router extends Factory
     {
         $cmd_list = ['cli' => [], 'cgi' => []];
 
-        if ('' === $c
-            //Always prevent system invoke attacks
-            || false !== strpos($c, '/NS')
-            || false !== strpos($c, '/Ext')
-            || false !== strpos($c, '/Core')
-        ) {
+        //CMD NOT found
+        if ('' === ($c = trim($c))) {
             return $cmd_list;
         }
 
@@ -171,7 +167,7 @@ class Router extends Factory
                 continue;
             }
 
-            //Filter & fill CMD
+            //Validate & redirect CMD
             $cmd_val = !$this->app->is_cli
                 ? (0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd)
                 : ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd);
