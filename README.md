@@ -101,7 +101,7 @@ In CLI mode, NS takes "c" from "-c" parameter or the first argument if not found
 "c" in request data will be taken as request command, and will lead system to go continue.  
 "c" can be passed in any ways, URL, GET, POST, all is OK, no matter FormData or request Payload.  
 
-In CGI mode, normally known as HTTP request, "c" is always redirected to api path by default for some security reasons, but, CLI mode allows calling from root by adding "/" in the beginning of "c" using full class namespace path, which equals setting "open_root_exec" to true in Router library by using "libCoreApi::new()->openRootExec(true)" in entry script under CGI mode.  
+In CGI mode, normally known as HTTP request, "c" is always redirected to api path for some security reasons, but, CLI mode allows calling from root by adding "/" in the beginning of "c" using full class namespace path.  
 
 Valid "c" format should be as follows:  
 

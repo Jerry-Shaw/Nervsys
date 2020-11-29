@@ -35,8 +35,7 @@ class Router extends Factory
 
     public array $cgi_stack;
     public array $cli_stack;
-    public array $cli_mapping    = [];
-    public bool  $open_root_exec = false;
+    public array $cli_mapping = [];
 
     /**
      * Router constructor.
@@ -79,21 +78,6 @@ class Router extends Factory
         $this->cli_mapping[$name] = &$path;
 
         unset($name, $path);
-        return $this;
-    }
-
-    /**
-     * Open root execute permission
-     *
-     * @param bool $open_root_exec
-     *
-     * @return $this
-     */
-    public function openRootExec(bool $open_root_exec): self
-    {
-        $this->open_root_exec = &$open_root_exec;
-
-        unset($open_root_exec);
         return $this;
     }
 
@@ -188,11 +172,9 @@ class Router extends Factory
             }
 
             //Filter & fill CMD
-            if (!$this->app->is_cli && !$this->open_root_exec) {
-                $cmd_val = 0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . $cmd : $cmd;
-            } else {
-                $cmd_val = '/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . $cmd : $cmd;
-            }
+            $cmd_val = !$this->app->is_cli
+                ? (0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd)
+                : ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd);
 
             //Get class & method from CMD
             $cmd_val = trim($cmd_val, '/');

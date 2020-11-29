@@ -420,21 +420,6 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Open root execute permission
-     *
-     * @param bool $open_root_exec
-     *
-     * @return $this
-     */
-    public function openRootExec(bool $open_root_exec): self
-    {
-        Router::new()->openRootExec($open_root_exec);
-
-        unset($open_root_exec);
-        return $this;
-    }
-
-    /**
      * Set hookBefore function to c
      *
      * @param string $input_c
