@@ -36,10 +36,13 @@ use Core\Reflect;
  */
 class libMPC extends Factory
 {
-    private App    $app;
-    private Error  $error;
-    private IOUnit $io_unit;
-    private OSUnit $os_unit;
+    private App     $app;
+    private Error   $error;
+    private Router  $router;
+    private Reflect $reflect;
+    private Execute $execute;
+    private IOUnit  $io_unit;
+    private OSUnit  $os_unit;
 
     public int    $proc_idx = 0;
     public int    $proc_cnt = 10;
@@ -56,11 +59,7 @@ class libMPC extends Factory
      */
     public function __construct()
     {
-        $this->app      = App::new();
-        $this->error    = Error::new();
-        $this->io_unit  = IOUnit::new();
-        $this->os_unit  = OSUnit::new();
-        $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
+        $this->io_unit = IOUnit::new();
     }
 
     /**
@@ -100,6 +99,10 @@ class libMPC extends Factory
      */
     public function start(): self
     {
+        $this->app = App::new();
+
+        $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
+
         //Create process
         for ($i = 0; $i < $this->proc_cnt; ++$i) {
             if (!$this->createProc($i)) {
@@ -113,53 +116,6 @@ class libMPC extends Factory
 
         unset($i);
         return $this;
-    }
-
-    /**
-     * Daemon process
-     *
-     * @param int $pid
-     */
-    public function daemonProc(int $pid): void
-    {
-        //Init Router, Reflect, Execute
-        $router  = Router::new();
-        $reflect = Reflect::new();
-        $execute = Execute::new();
-
-        while (true) {
-            $stdin = fgets(STDIN);
-
-            //Receive exit code
-            if ('exit' === ($stdin = trim($stdin))) {
-                return;
-            }
-
-            //Parse data
-            if (!is_array($data = json_decode($stdin, true))) {
-                continue;
-            }
-
-            //Check "c" & "mtk"
-            if (!isset($data['c']) || !isset($data['mtk'])) {
-                continue;
-            }
-
-            //Fetch job data
-            $result = $this->execJob($data, $router, $reflect, $execute);
-
-            //Build result
-            $output = [$data['mtk'] => 1 === count($result) ? current($result) : $result];
-
-            //Output via STDOUT
-            fwrite(STDOUT, json_encode($output, JSON_FORMAT) . PHP_EOL);
-
-            //Free memory
-            unset($stdin, $data, $result, $output);
-        }
-
-        $this->close($pid);
-        unset($pid, $router, $reflect, $execute);
     }
 
     /**
@@ -212,6 +168,57 @@ class libMPC extends Factory
 
         unset($this->job_result[$ticket], $ticket, $idx);
         return $result;
+    }
+
+    /**
+     * Daemon process
+     *
+     * @param int $pid
+     */
+    public function daemonProc(int $pid): void
+    {
+        //Init modules & libraries
+        $this->error   = Error::new();
+        $this->router  = Router::new();
+        $this->reflect = Reflect::new();
+        $this->execute = Execute::new();
+        $this->os_unit = OSUnit::new();
+
+        register_shutdown_function([$this, 'close'], $pid);
+
+        while (true) {
+            $stdin = fgets(STDIN);
+
+            //Receive exit code
+            if ('exit' === ($stdin = trim($stdin))) {
+                return;
+            }
+
+            //Parse data
+            if (!is_array($data = json_decode($stdin, true))) {
+                continue;
+            }
+
+            //Check "c" & "mtk"
+            if (!isset($data['c']) || !isset($data['mtk'])) {
+                continue;
+            }
+
+            //Fetch job data
+            $result = $this->execJob($data);
+
+            //Build result
+            $output = [$data['mtk'] => 1 === count($result) ? current($result) : $result];
+
+            //Output via STDOUT
+            fwrite(STDOUT, json_encode($output, JSON_FORMAT) . PHP_EOL);
+
+            //Free memory
+            unset($stdin, $data, $result, $output);
+        }
+
+        $this->close($pid);
+        unset($pid, $router, $reflect, $execute);
     }
 
     /**
@@ -296,20 +303,17 @@ class libMPC extends Factory
     /**
      * Execute a job
      *
-     * @param array            $data
-     * @param \Core\Lib\Router $router
-     * @param \Core\Reflect    $reflect
-     * @param \Core\Execute    $execute
+     * @param array $data
      *
      * @return array
      */
-    private function execJob(array $data, Router $router, Reflect $reflect, Execute $execute): array
+    private function execJob(array $data): array
     {
         $result = [];
 
         try {
             //Parse CMD
-            $cmd_group = $router->parse($data['c']);
+            $cmd_group = $this->router->parse($data['c']);
 
             //Call CGI
             if (!empty($cmd_group['cgi'])) {
@@ -321,7 +325,7 @@ class libMPC extends Factory
                     //Extract CMD contents
                     [$cmd_class, $cmd_method] = $cmd_pair;
                     //Run script method
-                    $result += $execute->runScript($reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
+                    $result += $this->execute->runScript($this->reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
                 }
             }
 
@@ -337,7 +341,7 @@ class libMPC extends Factory
 
                     if ('' !== ($exe_path = trim($exe_path))) {
                         //Run external program
-                        $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
+                        $this->execute->runProgram($this->os_unit, $cmd_name, $exe_path);
                     }
                 }
             }
@@ -346,7 +350,7 @@ class libMPC extends Factory
             unset($throwable);
         }
 
-        unset($data, $router, $reflect, $execute, $cmd_group, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
+        unset($data, $cmd_group, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
         return $result;
     }
 }
