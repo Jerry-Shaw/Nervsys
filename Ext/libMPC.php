@@ -20,10 +20,14 @@
 
 namespace Ext;
 
+use Core\Execute;
 use Core\Factory;
 use Core\Lib\App;
+use Core\Lib\Error;
 use Core\Lib\IOUnit;
+use Core\Lib\Router;
 use Core\OSUnit;
+use Core\Reflect;
 
 /**
  * Class libMPC
@@ -33,226 +37,264 @@ use Core\OSUnit;
 class libMPC extends Factory
 {
     private App    $app;
+    private Error  $error;
     private IOUnit $io_unit;
     private OSUnit $os_unit;
 
-    private string $php_path;
-    private array  $job_list = [];
+    public int    $proc_cnt = 10;
+    public string $php_path = '';
+    public string $proc_cmd = '';
+
+    public array $proc_list = [];
+    public array $pipe_list = [];
 
     /**
      * libMPC constructor.
-     *
-     * @param string $php_path
      */
-    public function __construct(string $php_path)
+    public function __construct()
     {
-        $this->app      = App::new();
-        $this->io_unit  = IOUnit::new();
-        $this->os_unit  = OSUnit::new();
-        $this->php_path = &$php_path;
-        unset($php_path);
+        $this->app     = App::new();
+        $this->error   = Error::new();
+        $this->io_unit = IOUnit::new();
+        $this->os_unit = OSUnit::new();
+
+        $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
     }
 
     /**
-     * Add a job
+     * Set PHP executable path
      *
-     * @param string $c
-     * @param array  $data
-     * @param string $argv
+     * @param string $php_path
      *
      * @return $this
      */
-    public function add(string $c, array $data = [], string $argv = ''): self
+    public function setPhpPath(string $php_path): self
     {
-        $this->job_list[] = ['c' => &$c, 'd' => &$data, 'a' => &$argv];
+        $this->php_path = &$php_path;
 
-        unset($c, $data, $argv);
+        unset($php_path);
         return $this;
     }
 
     /**
-     * Commit jobs
+     * Set number of process
      *
-     * @param bool $wait_ret
-     * @param int  $max_fork
+     * @param int $proc_count
      *
-     * @return array
+     * @return $this
      */
-    public function go(bool $wait_ret = false, int $max_fork = 10): array
+    public function setProcNum(int $proc_count): self
     {
-        //Check jobs
-        if (empty($this->job_list)) {
-            return [];
-        }
+        $this->proc_cnt = &$proc_count;
 
-        //Split jobs
-        $job_packs = count($this->job_list) > $max_fork
-            ? array_chunk($this->job_list, $max_fork, true)
-            : [$this->job_list];
-
-        //Free jobs
-        $this->job_list = [];
-
-        //Build basic command
-        $php_cmd = $this->php_path . ' "' . $this->app->script_path . '"';
-
-        //Add wait option
-        if ($wait_ret) {
-            $php_cmd .= ' -t"json"';
-        }
-
-        $result = [];
-
-        //Execute jobs
-        foreach ($job_packs as $jobs) {
-            if (!empty($data = $this->execute($php_cmd, $jobs, $wait_ret))) {
-                $result += $data;
-            }
-        }
-
-        unset($wait_ret, $max_fork, $job_packs, $php_cmd, $jobs, $data);
-        return $result;
+        unset($proc_count);
+        return $this;
     }
 
     /**
-     * Execute job
+     * Start MPC
      *
-     * @param string $cmd
-     * @param array  $jobs
-     * @param bool   $wait
-     *
-     * @return array
+     * @return $this
      */
-    private function execute(string $cmd, array $jobs, bool $wait): array
+    public function start(): self
     {
-        //Resource list
-        $resource = [];
-
-        //Start process
-        foreach ($jobs as $key => $job) {
-            //Build cmd
-            $cmd .= ' -c"' . $this->io_unit->encodeData($job['c']) . '"';
-
-            //Append data
-            if (!empty($job['d'])) {
-                $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($job['d'])) . '"';
-            }
-
-            //Append argv
-            if ('' !== $job['a']) {
-                $cmd .= ' ' . $job['a'];
-            }
-
-            //Add OS command
-            $this->os_unit->setCmd($cmd);
-
-            //Add no wait option
-            if (!$wait) {
-                $this->os_unit->setAsBg();
-            }
-
-            //Create process
-            $process = proc_open(
-                $this->os_unit->setEnvPath()->setForProc()->fetchCmd(),
-                [
-                    ['pipe', 'r'],
-                    ['pipe', 'w'],
-                    ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC' . '.log', 'ab+']
-                ],
-                $pipes
-            );
-
-            //Create failed
-            if (!is_resource($process)) {
-                $resource[$key]['res'] = false;
+        //Create process
+        for ($i = 0; $i < $this->proc_cnt; ++$i) {
+            if (!$this->createProc($i)) {
+                --$i;
                 continue;
             }
-
-            //Check process status
-            $status = proc_get_status($process);
-
-            if (!$status['running'] && 0 < $status['exitcode']) {
-                $resource[$key]['res'] = false;
-                proc_close($process);
-                continue;
-            }
-
-            //Merge resource
-            $resource[$key]['res']  = true;
-            $resource[$key]['cmd']  = $job['c'];
-            $resource[$key]['pipe'] = $pipes;
-            $resource[$key]['proc'] = $process;
         }
 
-        unset($cmd, $jobs, $key, $job, $pipes, $status);
+        //Register MPC close function
+        register_shutdown_function([$this, 'closeAll']);
 
-        //Check wait option
-        if (!$wait) {
-            return [];
-        }
-
-        //Collect result
-        $result = $this->collect($resource);
-
-        unset($wait, $resource, $process);
-        return $result;
+        unset($i);
+        return $this;
     }
 
     /**
-     * Collect result
+     * Daemon process
      *
-     * @param array $resource
+     * @param int $pid
+     */
+    public function daemonProc(int $pid): void
+    {
+        while (true) {
+            $stdin = fgets(STDIN);
+
+            //Receive exit code
+            if ('exit' === ($stdin = trim($stdin))) {
+                break;
+            }
+
+            $this->io_unit->src_output = $this->execJob($stdin, Router::new(), Reflect::new(), Execute::new());
+
+            call_user_func($this->io_unit->output_handler, $this->io_unit);
+
+            echo PHP_EOL;
+        }
+    }
+
+    /**
+     * @param string $c
+     * @param array  $data
+     *
+     * @return string
+     */
+    public function addJob(string $c, array $data): string
+    {
+        $data['c'] = $c;
+
+        $to = mt_rand(0, $this->proc_cnt - 1);
+
+        fputs($this->pipe_list[$to][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
+
+        return fgets($this->pipe_list[$to][1]);
+    }
+
+
+    /**
+     * Close one process
+     *
+     * @param int $index
+     */
+    public function close(int $index): void
+    {
+        $status = proc_get_status($this->proc_list[$index]);
+
+        if (!$status['running']) {
+            unset($this->proc_list[$index], $this->pipe_list[$index]);
+            return;
+        }
+
+        foreach ($this->pipe_list[$index] as $key => $pipe) {
+            if (0 === $key) {
+                fputs($pipe, 'exit' . PHP_EOL);
+            }
+
+            fclose($pipe);
+        }
+
+        proc_close($this->proc_list[$index]);
+        unset($this->proc_list[$index], $this->pipe_list[$index], $index, $status, $key, $pipe);
+    }
+
+    /**
+     * Close All process
+     */
+    public function closeAll(): void
+    {
+        foreach ($this->proc_list as $index => $proc) {
+            $this->close($index);
+        }
+
+        unset($index, $proc);
+    }
+
+    /**
+     * Close in the end
+     */
+    public function __destruct()
+    {
+        $this->closeAll();
+    }
+
+    /**
+     * @param string           $data
+     * @param \Core\Lib\Router $router
+     * @param \Core\Reflect    $reflect
+     * @param \Core\Execute    $execute
      *
      * @return array
      */
-    private function collect(array $resource): array
+    private function execJob(string $data, Router $router, Reflect $reflect, Execute $execute): array
     {
+
         $result = [];
+        //Decode data in JSON
+        $input_data = json_decode($data, true);
 
-        while (!empty($resource)) {
-            foreach ($resource as $key => $item) {
-                //Collect process
-                $result[$key]['res'] = $item['res'];
-                $result[$key]['cmd'] = $item['cmd'];
+        try {
+            //Source data parse failed
+            if (!is_array($input_data) || !isset($input_data['c'])) {
+                throw new \Exception('"c" NOT found or MPC data error');
+            }
 
-                //Remove failed process
-                if (!$item['res']) {
-                    unset($resource[$key]);
-                    continue;
+            //Parse CMD
+            $cmd_group = $router->parse($input_data['c']);
+
+            //Call CGI
+            if (!empty($cmd_group['cgi'])) {
+                //Remap input data
+                $this->io_unit->src_input = $input_data;
+
+                //Process CGI command
+                while (is_array($cmd_pair = array_shift($cmd_group['cgi']))) {
+                    //Extract CMD contents
+                    [$cmd_class, $cmd_method] = $cmd_pair;
+                    //Run script method
+                    $result += $execute->runScript($reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
                 }
 
-                //Build process result
-                if (!isset($result[$key]['data'])) {
-                    $result[$key]['data'] = '';
-                }
+            }
 
-                //Remove finished process
-                if (feof($item['pipe'][1])) {
-                    //Close pipes
-                    foreach ($item['pipe'] as $pipe) {
-                        fclose($pipe);
+            //Call CLI
+            if (!empty($cmd_group['cli'])) {
+                //Remap argv data
+                $this->io_unit->src_argv = $input_data['argv'] ?? '';
+
+                //Process CLI command
+                while (is_array($cmd_pair = array_shift($cmd_group['cli']))) {
+                    //Extract CMD contents
+                    [$cmd_name, $exe_path] = $cmd_pair;
+
+                    if ('' !== ($exe_path = trim($exe_path))) {
+                        //Run external program
+                        $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
                     }
-
-                    //Close process
-                    proc_close($item['proc']);
-
-                    unset($resource[$key], $pipe);
-                    continue;
                 }
-
-                //Read pipe
-                $result[$key]['data'] .= fread($item['pipe'][1], 8192);
             }
+        } catch (\Throwable $throwable) {
+            $this->error->exceptionHandler($throwable);
+            unset($throwable);
         }
 
-        //Parse data content
-        foreach ($result as $key => $item) {
-            if ('' !== $item['data'] && !is_null($json = json_decode($item['data'], true))) {
-                $result[$key]['data'] = $json;
-            }
-        }
-
-        unset($resource, $key, $item, $json);
+        unset($data, $router, $reflect, $execute, $input_data, $cmd_group);
         return $result;
     }
+
+
+    /**
+     * Create process
+     *
+     * @param int $pid
+     *
+     * @return bool
+     */
+    private function createProc(int $pid): bool
+    {
+        //Create process
+        $proc = proc_open(
+            $this->php_path . ' ' . $this->proc_cmd . ' -d"' . $this->io_unit->encodeData(json_encode(['pid' => $pid], JSON_FORMAT)) . '"',
+            [
+                ['pipe', 'r'],
+                ['pipe', 'w'],
+                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC' . (string)$pid . '.log', 'ab+']
+            ],
+            $pipes
+        );
+
+        if (!is_resource($proc)) {
+            return false;
+        }
+
+        //Save proc & pipes
+        $this->proc_list[$pid] = $proc;
+        $this->pipe_list[$pid] = $pipes;
+
+        unset($pid, $proc, $pipes);
+        return true;
+    }
+
 }
