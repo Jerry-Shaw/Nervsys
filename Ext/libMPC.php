@@ -41,23 +41,25 @@ class libMPC extends Factory
     private IOUnit $io_unit;
     private OSUnit $os_unit;
 
+    public int    $proc_idx = 0;
     public int    $proc_cnt = 10;
     public string $php_path = '';
     public string $proc_cmd = '';
 
-    public array $proc_list = [];
-    public array $pipe_list = [];
+    public array $proc_list  = [];
+    public array $pipe_list  = [];
+    public array $job_count  = [];
+    public array $job_result = [];
 
     /**
      * libMPC constructor.
      */
     public function __construct()
     {
-        $this->app     = App::new();
-        $this->error   = Error::new();
-        $this->io_unit = IOUnit::new();
-        $this->os_unit = OSUnit::new();
-
+        $this->app      = App::new();
+        $this->error    = Error::new();
+        $this->io_unit  = IOUnit::new();
+        $this->os_unit  = OSUnit::new();
         $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
     }
 
@@ -120,39 +122,97 @@ class libMPC extends Factory
      */
     public function daemonProc(int $pid): void
     {
+        //Init Router, Reflect, Execute
+        $router  = Router::new();
+        $reflect = Reflect::new();
+        $execute = Execute::new();
+
         while (true) {
             $stdin = fgets(STDIN);
 
             //Receive exit code
             if ('exit' === ($stdin = trim($stdin))) {
-                break;
+                return;
             }
 
-            $this->io_unit->src_output = $this->execJob($stdin, Router::new(), Reflect::new(), Execute::new());
+            //Parse data
+            if (!is_array($data = json_decode($stdin, true))) {
+                continue;
+            }
 
-            call_user_func($this->io_unit->output_handler, $this->io_unit);
+            //Check "c" & "mtk"
+            if (!isset($data['c']) || !isset($data['mtk'])) {
+                continue;
+            }
 
-            echo PHP_EOL;
+            //Fetch job data
+            $result = $this->execJob($data, $router, $reflect, $execute);
+
+            //Build result
+            $output = [$data['mtk'] => 1 === count($result) ? current($result) : $result];
+
+            //Output via STDOUT
+            fwrite(STDOUT, json_encode($output, JSON_FORMAT) . PHP_EOL);
+
+            //Free memory
+            unset($stdin, $data, $result, $output);
         }
+
+        $this->close($pid);
+        unset($pid, $router, $reflect, $execute);
     }
 
     /**
+     * Add MPC job
+     *
      * @param string $c
      * @param array  $data
      *
      * @return string
      */
-    public function addJob(string $c, array $data): string
+    public function addJob(string $c, array $data = []): string
     {
-        $data['c'] = $c;
+        //Move idx
+        $idx = $this->proc_idx++;
 
-        $to = mt_rand(0, $this->proc_cnt - 1);
+        //Reset idx
+        if ($idx >= $this->proc_cnt) {
+            $idx = $this->proc_idx = 0;
+        }
 
-        fputs($this->pipe_list[$to][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
+        //Communicate via STDIN
+        $ticket = (string)$idx . '-' . (string)(++$this->job_count[$idx]);
 
-        return fgets($this->pipe_list[$to][1]);
+        //Add "c" into data
+        $data['c']   = &$c;
+        $data['mtk'] = &$ticket;
+
+        fputs($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
+
+        unset($c, $data, $idx);
+        return $ticket;
     }
 
+    /**
+     * @param string $ticket
+     *
+     * @return string
+     */
+    public function fetch(string $ticket): string
+    {
+        //Get idx & index
+        $idx = (int)substr($ticket, 0, strpos($ticket, '-'));
+
+        //Read job result
+        while (0 < $this->job_count[$idx]--) {
+            $this->job_result += json_decode(fgets($this->pipe_list[$idx][1]), true);
+        }
+
+        $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
+
+        unset($this->job_result[$ticket], $ticket, $idx);
+        return $result;
+    }
 
     /**
      * Close one process
@@ -201,71 +261,6 @@ class libMPC extends Factory
     }
 
     /**
-     * @param string           $data
-     * @param \Core\Lib\Router $router
-     * @param \Core\Reflect    $reflect
-     * @param \Core\Execute    $execute
-     *
-     * @return array
-     */
-    private function execJob(string $data, Router $router, Reflect $reflect, Execute $execute): array
-    {
-
-        $result = [];
-        //Decode data in JSON
-        $input_data = json_decode($data, true);
-
-        try {
-            //Source data parse failed
-            if (!is_array($input_data) || !isset($input_data['c'])) {
-                throw new \Exception('"c" NOT found or MPC data error');
-            }
-
-            //Parse CMD
-            $cmd_group = $router->parse($input_data['c']);
-
-            //Call CGI
-            if (!empty($cmd_group['cgi'])) {
-                //Remap input data
-                $this->io_unit->src_input = $input_data;
-
-                //Process CGI command
-                while (is_array($cmd_pair = array_shift($cmd_group['cgi']))) {
-                    //Extract CMD contents
-                    [$cmd_class, $cmd_method] = $cmd_pair;
-                    //Run script method
-                    $result += $execute->runScript($reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
-                }
-
-            }
-
-            //Call CLI
-            if (!empty($cmd_group['cli'])) {
-                //Remap argv data
-                $this->io_unit->src_argv = $input_data['argv'] ?? '';
-
-                //Process CLI command
-                while (is_array($cmd_pair = array_shift($cmd_group['cli']))) {
-                    //Extract CMD contents
-                    [$cmd_name, $exe_path] = $cmd_pair;
-
-                    if ('' !== ($exe_path = trim($exe_path))) {
-                        //Run external program
-                        $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
-                    }
-                }
-            }
-        } catch (\Throwable $throwable) {
-            $this->error->exceptionHandler($throwable);
-            unset($throwable);
-        }
-
-        unset($data, $router, $reflect, $execute, $input_data, $cmd_group);
-        return $result;
-    }
-
-
-    /**
      * Create process
      *
      * @param int $pid
@@ -280,7 +275,7 @@ class libMPC extends Factory
             [
                 ['pipe', 'r'],
                 ['pipe', 'w'],
-                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC' . (string)$pid . '.log', 'ab+']
+                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-' . (string)$pid . '.log', 'ab+']
             ],
             $pipes
         );
@@ -290,6 +285,7 @@ class libMPC extends Factory
         }
 
         //Save proc & pipes
+        $this->job_count[$pid] = 0;
         $this->proc_list[$pid] = $proc;
         $this->pipe_list[$pid] = $pipes;
 
@@ -297,4 +293,60 @@ class libMPC extends Factory
         return true;
     }
 
+    /**
+     * Execute a job
+     *
+     * @param array            $data
+     * @param \Core\Lib\Router $router
+     * @param \Core\Reflect    $reflect
+     * @param \Core\Execute    $execute
+     *
+     * @return array
+     */
+    private function execJob(array $data, Router $router, Reflect $reflect, Execute $execute): array
+    {
+        $result = [];
+
+        try {
+            //Parse CMD
+            $cmd_group = $router->parse($data['c']);
+
+            //Call CGI
+            if (!empty($cmd_group['cgi'])) {
+                //Remap input data
+                $this->io_unit->src_input = $data;
+
+                //Process CGI command
+                while (is_array($cmd_pair = array_shift($cmd_group['cgi']))) {
+                    //Extract CMD contents
+                    [$cmd_class, $cmd_method] = $cmd_pair;
+                    //Run script method
+                    $result += $execute->runScript($reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
+                }
+            }
+
+            //Call CLI
+            if (!empty($cmd_group['cli'])) {
+                //Remap argv data
+                $this->io_unit->src_argv = $data['argv'] ?? '';
+
+                //Process CLI command
+                while (is_array($cmd_pair = array_shift($cmd_group['cli']))) {
+                    //Extract CMD contents
+                    [$cmd_name, $exe_path] = $cmd_pair;
+
+                    if ('' !== ($exe_path = trim($exe_path))) {
+                        //Run external program
+                        $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
+                    }
+                }
+            }
+        } catch (\Throwable $throwable) {
+            $this->error->exceptionHandler($throwable, false);
+            unset($throwable);
+        }
+
+        unset($data, $router, $reflect, $execute, $cmd_group, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
+        return $result;
+    }
 }
