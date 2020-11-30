@@ -47,7 +47,6 @@ class libMPC extends Factory
     public int    $proc_idx = 0;
     public int    $proc_cnt = 10;
     public string $php_path = '';
-    public string $proc_cmd = '';
 
     public array $proc_list  = [];
     public array $pipe_list  = [];
@@ -100,18 +99,14 @@ class libMPC extends Factory
     public function start(): self
     {
         $this->app = App::new();
-
-        $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
+        $proc_cmd  = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
 
         //Create process
         for ($i = 0; $i < $this->proc_cnt; ++$i) {
-            if (!$this->createProc($i)) {
-                --$i;
-                continue;
-            }
+            $this->createProc($i, $proc_cmd);
         }
 
-        //Register MPC close function
+        //Register MPC closeAll function
         register_shutdown_function([$this, 'closeAll']);
 
         unset($i);
@@ -136,13 +131,14 @@ class libMPC extends Factory
             $idx = $this->proc_idx = 0;
         }
 
-        //Communicate via STDIN
+        //Generate job ticket
         $ticket = (string)$idx . '-' . (string)(++$this->job_count[$idx]);
 
-        //Add "c" into data
+        //Add "c" & "mtk" into data
         $data['c']   = &$c;
         $data['mtk'] = &$ticket;
 
+        //Communicate via STDIN
         fputs($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
 
         unset($c, $data, $idx);
@@ -156,26 +152,29 @@ class libMPC extends Factory
      */
     public function fetch(string $ticket): string
     {
-        //Get idx & index
+        //Get idx
         $idx = (int)substr($ticket, 0, strpos($ticket, '-'));
 
-        //Read job result
-        while (0 < $this->job_count[$idx]--) {
-            $this->job_result += json_decode(fgets($this->pipe_list[$idx][1]), true);
+        //Get status
+        $status = proc_get_status($this->proc_list[$idx]);
+
+        //Read STDOUT data
+        if ($status['running']) {
+            while (0 < $this->job_count[$idx]--) {
+                $this->job_result += json_decode(fgets($this->pipe_list[$idx][1]), true);
+            }
         }
 
         $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
 
-        unset($this->job_result[$ticket], $ticket, $idx);
+        unset($this->job_result[$ticket], $ticket, $idx, $status);
         return $result;
     }
 
     /**
      * Daemon process
-     *
-     * @param int $pid
      */
-    public function daemonProc(int $pid): void
+    public function daemonProc(): void
     {
         //Init modules & libraries
         $this->error   = Error::new();
@@ -183,8 +182,6 @@ class libMPC extends Factory
         $this->reflect = Reflect::new();
         $this->execute = Execute::new();
         $this->os_unit = OSUnit::new();
-
-        register_shutdown_function([$this, 'close'], $pid);
 
         while (true) {
             $stdin = fgets(STDIN);
@@ -207,35 +204,29 @@ class libMPC extends Factory
             //Fetch job data
             $result = $this->execJob($data);
 
-            //Build result
-            $output = [$data['mtk'] => 1 === count($result) ? current($result) : $result];
-
             //Output via STDOUT
-            fwrite(STDOUT, json_encode($output, JSON_FORMAT) . PHP_EOL);
+            fwrite(STDOUT, json_encode([$data['mtk'] => 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL);
 
             //Free memory
-            unset($stdin, $data, $result, $output);
+            unset($stdin, $data, $result);
         }
-
-        $this->close($pid);
-        unset($pid, $router, $reflect, $execute);
     }
 
     /**
      * Close one process
      *
-     * @param int $index
+     * @param int $idx
      */
-    public function close(int $index): void
+    public function close(int $idx): void
     {
-        $status = proc_get_status($this->proc_list[$index]);
+        $status = proc_get_status($this->proc_list[$idx]);
 
         if (!$status['running']) {
-            unset($this->proc_list[$index], $this->pipe_list[$index]);
+            unset($this->proc_list[$idx], $this->pipe_list[$idx]);
             return;
         }
 
-        foreach ($this->pipe_list[$index] as $key => $pipe) {
+        foreach ($this->pipe_list[$idx] as $key => $pipe) {
             if (0 === $key) {
                 fputs($pipe, 'exit' . PHP_EOL);
             }
@@ -243,8 +234,8 @@ class libMPC extends Factory
             fclose($pipe);
         }
 
-        proc_close($this->proc_list[$index]);
-        unset($this->proc_list[$index], $this->pipe_list[$index], $index, $status, $key, $pipe);
+        proc_close($this->proc_list[$idx]);
+        unset($this->proc_list[$idx], $this->pipe_list[$idx], $idx, $status, $key, $pipe);
     }
 
     /**
@@ -252,11 +243,11 @@ class libMPC extends Factory
      */
     public function closeAll(): void
     {
-        foreach ($this->proc_list as $index => $proc) {
-            $this->close($index);
+        foreach ($this->proc_list as $idx => $proc) {
+            $this->close($idx);
         }
 
-        unset($index, $proc);
+        unset($idx, $proc);
     }
 
     /**
@@ -270,15 +261,16 @@ class libMPC extends Factory
     /**
      * Create process
      *
-     * @param int $pid
+     * @param int    $pid
+     * @param string $cmd
      *
      * @return bool
      */
-    private function createProc(int $pid): bool
+    private function createProc(int $pid, string $cmd): bool
     {
         //Create process
         $proc = proc_open(
-            $this->php_path . ' ' . $this->proc_cmd . ' -d"' . $this->io_unit->encodeData(json_encode(['pid' => $pid], JSON_FORMAT)) . '"',
+            $this->php_path . ' ' . $cmd,
             [
                 ['pipe', 'r'],
                 ['pipe', 'w'],
@@ -296,7 +288,7 @@ class libMPC extends Factory
         $this->proc_list[$pid] = $proc;
         $this->pipe_list[$pid] = $pipes;
 
-        unset($pid, $proc, $pipes);
+        unset($pid, $cmd, $proc, $pipes);
         return true;
     }
 
