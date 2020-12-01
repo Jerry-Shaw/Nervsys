@@ -139,7 +139,7 @@ class libMPC extends Factory
         $data['mtk'] = &$ticket;
 
         //Communicate via STDIN
-        fputs($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
+        fwrite($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
 
         unset($c, $data, $idx);
         return $ticket;
@@ -205,7 +205,7 @@ class libMPC extends Factory
             $result = $this->execJob($data);
 
             //Output via STDOUT
-            fwrite(STDOUT, json_encode([$data['mtk'] => 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL);
+            echo json_encode([$data['mtk'] => 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
 
             //Free memory
             unset($stdin, $data, $result);
@@ -228,7 +228,7 @@ class libMPC extends Factory
 
         foreach ($this->pipe_list[$idx] as $key => $pipe) {
             if (0 === $key) {
-                fputs($pipe, 'exit' . PHP_EOL);
+                fwrite($pipe, 'exit' . PHP_EOL);
             }
 
             fclose($pipe);
