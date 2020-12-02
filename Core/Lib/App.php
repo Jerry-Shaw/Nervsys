@@ -38,7 +38,6 @@ class App extends Factory
     public string $script_path = '';
 
     public string $api_path = 'api';
-    public string $app_path = 'app';
     public string $inc_path = 'inc';
 
     public string $client_ip = '0.0.0.0';
@@ -109,21 +108,6 @@ class App extends Factory
     public function setApiPath(string $pathname): self
     {
         $this->api_path = &$pathname;
-
-        unset($pathname);
-        return $this;
-    }
-
-    /**
-     * Set app pathname and root path
-     *
-     * @param string $pathname
-     *
-     * @return $this
-     */
-    public function setAppPath(string $pathname): self
-    {
-        $this->app_path = &$pathname;
 
         unset($pathname);
         return $this;

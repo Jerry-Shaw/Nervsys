@@ -19,7 +19,6 @@
  * limitations under the License.
  */
 
-//Strict type declare
 declare(strict_types = 1);
 
 use Core\Execute;
@@ -113,15 +112,10 @@ spl_autoload_register(
             $parent_path = dirname($app->entry_path);
             $file_name   = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
 
-            //Looking for class file and app/api directory to find correct root path
-            if (is_file($parent_path . DIRECTORY_SEPARATOR . $file_name)
-                || is_dir($parent_path . DIRECTORY_SEPARATOR . $app->app_path)
-                || is_dir($parent_path . DIRECTORY_SEPARATOR . $app->api_path)
-            ) {
-                $app->root_path = &$parent_path;
-            } else {
-                $app->root_path = $app->entry_path;
-            }
+            //Looking for class file and api directory to find correct root path
+            $app->root_path = (is_file($parent_path . DIRECTORY_SEPARATOR . $file_name) || is_dir($parent_path . DIRECTORY_SEPARATOR . $app->api_path))
+                ? $parent_path
+                : $app->entry_path;
 
             //Set global log path
             if (!is_dir($app->log_path = $app->root_path . DIRECTORY_SEPARATOR . 'logs')) {

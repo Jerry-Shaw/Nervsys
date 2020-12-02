@@ -4,6 +4,7 @@
  * CoreAPI Extension
  *
  * Copyright 2016-2020 take your time <704505144@qq.com>
+ * Copyright 2016-2020 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,21 +102,6 @@ class libCoreApi extends Factory
     public function setApiPath(string $pathname): self
     {
         App::new()->setApiPath($pathname);
-
-        unset($pathname);
-        return $this;
-    }
-
-    /**
-     * Set app pathname and root path
-     *
-     * @param string $pathname
-     *
-     * @return self
-     */
-    public function setAppPath(string $pathname): self
-    {
-        App::new()->setAppPath($pathname);
 
         unset($pathname);
         return $this;
