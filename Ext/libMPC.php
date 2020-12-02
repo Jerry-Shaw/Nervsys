@@ -141,7 +141,19 @@ class libMPC extends Factory
         //Communicate via STDIN
         fwrite($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
 
-        unset($c, $data, $idx);
+        //Check & read from STDOUT
+        while (0 < (fstat($this->pipe_list[$idx][1]))['size'] && 0 < $this->job_count[$idx]--) {
+            $stdout = fgets($this->pipe_list[$idx][1]);
+
+            if (false === $stdout) {
+                $this->close($idx);
+                break;
+            }
+
+            $this->job_result += json_decode(trim($stdout), true);
+        }
+
+        unset($c, $data, $idx, $stdout);
         return $ticket;
     }
 
@@ -160,7 +172,7 @@ class libMPC extends Factory
 
         //Read STDOUT data
         if ($status['running']) {
-            while (0 < $this->job_count[$idx]--) {
+            while (0 < (fstat($this->pipe_list[$idx][1]))['size'] && 0 < $this->job_count[$idx]--) {
                 $this->job_result += json_decode(fgets($this->pipe_list[$idx][1]), true);
             }
         }
