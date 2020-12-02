@@ -96,6 +96,7 @@ class OSUnit extends Factory
     public function execCmd(int &$return_var = 0): array
     {
         exec($this->os_obj->os_cmd, $output, $return_var);
+
         return $output;
     }
 
@@ -107,6 +108,7 @@ class OSUnit extends Factory
     public function setAsBg(): self
     {
         $this->os_obj->setAsBg();
+
         return $this;
     }
 
@@ -118,17 +120,7 @@ class OSUnit extends Factory
     public function setEnvPath(): self
     {
         $this->os_obj->setEnvPath();
-        return $this;
-    }
 
-    /**
-     * Set command for proc_* functions
-     *
-     * @return $this
-     */
-    public function setForProc(): self
-    {
-        $this->os_obj->setForProc();
         return $this;
     }
 }

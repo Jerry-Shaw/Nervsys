@@ -42,7 +42,8 @@ class WINNT
             'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
             'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
             'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
-            'wmic memorychip get BankLabel, Capacity /format:value'
+            'wmic memorychip get BankLabel, Capacity /format:value',
+            'wmic bios get SerialNumber /format:value'
         ];
 
         exec(implode(' && ', $queries), $output, $status);
@@ -102,17 +103,6 @@ class WINNT
      */
     public function setEnvPath(): self
     {
-        return $this;
-    }
-
-    /**
-     * Set command for proc_* functions
-     *
-     * @return $this
-     */
-    public function setForProc(): self
-    {
-        $this->os_cmd = '"' . $this->os_cmd . '"';
         return $this;
     }
 }

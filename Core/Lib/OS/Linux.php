@@ -39,9 +39,11 @@ class Linux
     public function getHwHash(): string
     {
         $queries = [
-            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
             'cat /proc/cpuinfo | grep -E "processor|vendor|family|model|microcode|MHz|cache|physical|address"',
-            'ip link show | grep link/ether', 'dmidecode -t memory'
+            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
+            'ip link show | grep link/ether',
+            'dmidecode -t 2 | grep Serial',
+            'dmidecode -t memory'
         ];
 
         exec(implode(' && ', $queries), $output, $status);
@@ -97,16 +99,6 @@ class Linux
     public function setEnvPath(): self
     {
         $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
-        return $this;
-    }
-
-    /**
-     * Set command for proc_* functions
-     *
-     * @return $this
-     */
-    public function setForProc(): self
-    {
         return $this;
     }
 }

@@ -93,14 +93,4 @@ class Darwin
         $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
         return $this;
     }
-
-    /**
-     * Set command for proc_* functions
-     *
-     * @return $this
-     */
-    public function setForProc(): self
-    {
-        return $this;
-    }
 }

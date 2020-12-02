@@ -208,7 +208,7 @@ class Execute extends Factory
 
         //Create process
         $process = proc_open(
-            $os_unit->setEnvPath()->setForProc()->fetchCmd(),
+            $os_unit->setEnvPath()->fetchCmd(),
             [
                 ['pipe', 'r'],
                 ['pipe', 'w'],
