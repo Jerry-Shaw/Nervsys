@@ -186,8 +186,8 @@ class libMPC extends Factory
         while (true) {
             $stdin = fgets(STDIN);
 
-            //Receive exit code
-            if ('exit' === ($stdin = trim($stdin))) {
+            //Receive error and exit code
+            if (false === $stdin || 'exit' === ($stdin = trim($stdin))) {
                 return;
             }
 
