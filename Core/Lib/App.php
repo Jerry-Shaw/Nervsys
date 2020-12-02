@@ -67,6 +67,11 @@ class App extends Factory
         //Get absolute entry path
         $this->entry_path = dirname($this->script_path);
 
+        //Create default log path
+        if ('' === $this->root_path) {
+            $this->createLogPath($this->entry_path);
+        }
+
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
@@ -180,6 +185,25 @@ class App extends Factory
         $this->core_debug = &$core_debug_mode;
 
         unset($core_debug_mode);
+        return $this;
+    }
+
+    /**
+     * Create log path
+     *
+     * @param string $log_path
+     *
+     * @return $this
+     */
+    public function createLogPath(string $log_path): self
+    {
+        if (!is_dir($this->log_path = $log_path . DIRECTORY_SEPARATOR . 'logs')) {
+            //Create directory recursively using "0777"
+            mkdir($this->log_path, 0777, true);
+            chmod($this->log_path, 0777);
+        }
+
+        unset($log_path);
         return $this;
     }
 

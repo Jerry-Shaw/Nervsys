@@ -117,13 +117,9 @@ spl_autoload_register(
                 ? $parent_path
                 : $app->entry_path;
 
-            //Set global log path
-            if (!is_dir($app->log_path = $app->root_path . DIRECTORY_SEPARATOR . 'logs')) {
-                mkdir($app->log_path, 0777, true);
-                chmod($app->log_path, 0777);
-            }
-
-            unset($file_name, $parent_path);
+            //Create global log path
+            $app->createLogPath($app->root_path);
+            unset($parent_path, $file_name);
         }
 
         autoload($class_name, $app->root_path);
