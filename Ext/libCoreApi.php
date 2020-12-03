@@ -48,13 +48,10 @@ class libCoreApi extends Factory
         $path = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
 
         spl_autoload_register(
-            function (string $class) use ($path): void
+            static function (string $class_name) use ($path): void
             {
-                if (is_file($class_file = $path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php')) {
-                    require $class_file;
-                }
-
-                unset($class, $path, $class_file);
+                autoload($class_name, $path);
+                unset($class_name, $path);
             }
         );
 
