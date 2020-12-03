@@ -108,21 +108,6 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Set inc pathname
-     *
-     * @param string $pathname
-     *
-     * @return $this
-     */
-    public function setIncPath(string $pathname): self
-    {
-        App::new()->setIncPath($pathname);
-
-        unset($pathname);
-        return $this;
-    }
-
-    /**
      * Set default timezone
      *
      * @param string $timezone
@@ -164,6 +149,21 @@ class libCoreApi extends Factory
         App::new()->setCoreDebug($core_debug_mode);
 
         unset($core_debug_mode);
+        return $this;
+    }
+
+    /**
+     * Add include pathname (root_path related)
+     *
+     * @param string $pathname
+     *
+     * @return $this
+     */
+    public function addIncPath(string $pathname): self
+    {
+        App::new()->addIncPath($pathname);
+
+        unset($pathname);
         return $this;
     }
 

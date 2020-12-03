@@ -78,6 +78,9 @@ class App extends Factory
         //Create global log path
         $this->createLogPath($this->root_path);
 
+        //Set default include path
+        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $this->inc_path);
+
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
@@ -119,31 +122,6 @@ class App extends Factory
     public function setApiPath(string $pathname): self
     {
         $this->api_path = &$pathname;
-
-        unset($pathname);
-        return $this;
-    }
-
-    /**
-     * Set inc pathname
-     *
-     * @param string $pathname
-     *
-     * @return $this
-     */
-    public function setIncPath(string $pathname): self
-    {
-        $this->inc_path = &$pathname;
-
-        set_include_path(
-            implode(
-                PATH_SEPARATOR,
-                [
-                    $this->entry_path . DIRECTORY_SEPARATOR . $pathname,
-                    dirname($this->entry_path) . DIRECTORY_SEPARATOR . $pathname
-                ]
-            )
-        );
 
         unset($pathname);
         return $this;
@@ -195,21 +173,17 @@ class App extends Factory
     }
 
     /**
-     * Create log path
+     * Add include pathname (root_path related)
      *
-     * @param string $log_path
+     * @param string $pathname
      *
      * @return $this
      */
-    public function createLogPath(string $log_path): self
+    public function addIncPath(string $pathname): self
     {
-        if (!is_dir($this->log_path = $log_path . DIRECTORY_SEPARATOR . 'logs')) {
-            //Create directory recursively using "0777"
-            mkdir($this->log_path, 0777, true);
-            chmod($this->log_path, 0777);
-        }
+        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $pathname . PATH_SEPARATOR . get_include_path());
 
-        unset($log_path);
+        unset($pathname);
         return $this;
     }
 
@@ -226,5 +200,23 @@ class App extends Factory
         }
 
         unset($throwable, $show_on_cli);
+    }
+
+    /**
+     * Create log path
+     *
+     * @param string $log_path
+     *
+     * @return $this
+     */
+    private function createLogPath(string $log_path): self
+    {
+        if (!is_dir($this->log_path = $log_path . DIRECTORY_SEPARATOR . 'logs')) {
+            mkdir($this->log_path, 0777, true);
+            chmod($this->log_path, 0777);
+        }
+
+        unset($log_path);
+        return $this;
     }
 }

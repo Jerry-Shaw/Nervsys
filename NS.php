@@ -98,13 +98,10 @@ spl_autoload_register(
     }
 );
 
-//Init App
+//Init App ENV
 $app = App::new();
 
-//Set include path (entry & parent)
-$app->setIncPath($app->inc_path);
-
-//Register autoload ($app->root_path detection)
+//Register autoload ($app->root_path based)
 spl_autoload_register(
     static function (string $class_name) use ($app): void
     {
