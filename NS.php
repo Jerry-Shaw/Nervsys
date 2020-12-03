@@ -108,20 +108,6 @@ $app->setIncPath($app->inc_path);
 spl_autoload_register(
     static function (string $class_name) use ($app): void
     {
-        if ('' === $app->root_path) {
-            $parent_path = dirname($app->entry_path);
-            $file_name   = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
-
-            //Looking for class file and api directory to find correct root path
-            $app->root_path = (is_file($parent_path . DIRECTORY_SEPARATOR . $file_name) || is_dir($parent_path . DIRECTORY_SEPARATOR . $app->api_path))
-                ? $parent_path
-                : $app->entry_path;
-
-            //Create global log path
-            $app->createLogPath($app->root_path);
-            unset($parent_path, $file_name);
-        }
-
         autoload($class_name, $app->root_path);
         unset($class_name, $app);
     }

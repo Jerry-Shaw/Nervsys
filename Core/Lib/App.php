@@ -64,13 +64,19 @@ class App extends Factory
             $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
         }
 
-        //Get absolute entry path
+        //Get entry path
         $this->entry_path = dirname($this->script_path);
 
-        //Create default log path
-        if ('' === $this->root_path) {
-            $this->createLogPath($this->entry_path);
-        }
+        //Goto parent path
+        $parent_path = dirname($this->entry_path);
+
+        //Looking for api directory to get correct root path
+        $this->root_path = is_dir($parent_path . DIRECTORY_SEPARATOR . $this->api_path)
+            ? $parent_path
+            : $this->entry_path;
+
+        //Create global log path
+        $this->createLogPath($this->root_path);
 
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
@@ -100,7 +106,7 @@ class App extends Factory
             }
         }
 
-        unset($ip_rec, $ip_list, $value, $addr);
+        unset($parent_path, $ip_rec, $ip_list, $value, $addr);
     }
 
     /**
