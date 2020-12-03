@@ -37,20 +37,19 @@ use Core\Lib\Router;
 class libCoreApi extends Factory
 {
     /**
-     * Set autoload to target path
+     * Set autoload to target pathname under root_path
      *
-     * @param string $path
+     * @param string $pathname
      *
      * @return $this
      */
-    public function autoload(string $path): self
+    public function autoload(string $pathname): self
     {
-        $path = App::new()->root_path . DIRECTORY_SEPARATOR . $path;
+        $path = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
 
         spl_autoload_register(
             function (string $class) use ($path): void
             {
-                //Try to load class file "root_path/$path/namespace/class.php"
                 if (is_file($class_file = $path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php')) {
                     require $class_file;
                 }
@@ -59,7 +58,7 @@ class libCoreApi extends Factory
             }
         );
 
-        unset($path);
+        unset($pathname, $path);
         return $this;
     }
 
@@ -119,21 +118,6 @@ class libCoreApi extends Factory
         App::new()->setTimezone($timezone);
 
         unset($timezone);
-        return $this;
-    }
-
-    /**
-     * Set auto_call mode
-     *
-     * @param bool $auto_call_mode
-     *
-     * @return $this
-     */
-    public function setAutoCall(bool $auto_call_mode): self
-    {
-        App::new()->setAutoCall($auto_call_mode);
-
-        unset($auto_call_mode);
         return $this;
     }
 

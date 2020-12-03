@@ -45,7 +45,6 @@ class App extends Factory
 
     public bool $is_cli     = false;
     public bool $is_tls     = false;
-    public bool $auto_call  = false;
     public bool $core_debug = false;
 
     /**
@@ -139,21 +138,6 @@ class App extends Factory
         $this->timezone = &$timezone;
 
         unset($timezone);
-        return $this;
-    }
-
-    /**
-     * Set auto_call mode
-     *
-     * @param bool $auto_call_mode
-     *
-     * @return $this
-     */
-    public function setAutoCall(bool $auto_call_mode): self
-    {
-        $this->auto_call = &$auto_call_mode;
-
-        unset($auto_call_mode);
         return $this;
     }
 

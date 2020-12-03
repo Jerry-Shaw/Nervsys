@@ -33,9 +33,6 @@ use Core\Lib\Router;
 set_time_limit(0);
 ignore_user_abort(true);
 
-//Set error_reporting level
-error_reporting(E_ALL);
-
 //Require PHP version >= 7.4.0
 if (version_compare(PHP_VERSION, '7.4.0', '<')) {
     exit('NervSys needs PHP 7.4.0 or higher!');
