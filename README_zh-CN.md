@@ -7,23 +7,23 @@ README: [English](README.md) | [简体中文](README_zh-CN.md)
 [![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/graphs/contributors)
 [![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/commits/master)
 [![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md)
-[![QQ](https://img.shields.io/badge/QQ交流群-191879883-lightgrey?style=social)](https://qm.qq.com/cgi-bin/qm/qr?k=FJimjw1l5qKXGdDVSmyoq2-PTQ2ZTqBy&jump_from=github)  
+[![QQ](https://img.shields.io/badge/QQ交流群-191879883-lightgrey?style=social)](https://qm.qq.com/cgi-bin/qm/qr?k=FJimjw1l5qKXGdDVSmyoq2-PTQ2ZTqBy&jump_from=github)
 
 ## 关于 Nervsys
 
 * 什么是"Nervsys"?  
-一个非常轻便的PHP开发框架，使用和集成都相当方便。  
+  一个非常轻便的PHP开发框架，使用和集成都相当方便。
 
 * 为什么要取名为"Nervsys"?  
-最开始，我们希望他能像神经细胞一样工作，相互结合起来，各自分工，可以形成以数据为导向的处理系统，并不需要依赖具体的处理命令。
+  最开始，我们希望他能像神经细胞一样工作，相互结合起来，各自分工，可以形成以数据为导向的处理系统，并不需要依赖具体的处理命令。
 
 * 有小名么?  
-**NS**, 我们大部分人都这么叫他，但是，不要跟任天堂的NS游戏机搞混了.  
+  **NS**, 我们大部分人都这么叫他，但是，不要跟任天堂的NS游戏机搞混了.
 
 * 系统需求:  
-PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行他。  
+  PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行他。
 
-* 用途举例:  
+* 用途举例:
     1. 普通的网站后端开发框架
     2. 各类App的后端接口控制器框架
     3. 程序通信控制端
@@ -40,8 +40,6 @@ PHP **7.4+** 及以上。任意的Web服务器环境或者在命令行下运行�
 ## 用法
 
 ###### 注意: 所有用例代码均以系统默认设置为基础。
-
-
 
 #### 1. 建议的项目结构
 
@@ -84,7 +82,7 @@ NS::new();
 
 NS可以接续通过GET和POST传过来的参数，FormData and request Payload都可以解析。  
 当数据通过request Payload传输过来时，JSON和XML都支持直接解析。  
-NS的数据捕获和解析类位于"/Core/Lib/IOUnit.php"。  
+NS的数据捕获和解析类位于"/Core/Lib/IOUnit.php"。
 
 在HTTP请求中，NS会依照如下步骤获取和解析数据包:
 
@@ -102,11 +100,11 @@ NS的数据捕获和解析类位于"/Core/Lib/IOUnit.php"。
 #### 4. 关于 "c"
 
 "c" 参数会被当成请求指令，指导系统继续执行后续操作。  
-"c" 可以通过各种形式传入，URL, GET, POST 都可以，也不需要关心是 FormData 还是 request Payload.  
+"c" 可以通过各种形式传入，URL, GET, POST 都可以，也不需要关心是 FormData 还是 request Payload.
 
-在CGI模式下，也就是大家所知的HTTP请求，因为一些安全因素考虑，"c" 永远都是默认重定向到api路径下，但是，CLI模式下允许直接调用root路径下命令，只需要在"c"前面加上"/"，并使用完整的类命名空间路径即可。  
+在CGI模式下，也就是大家所知的HTTP请求，因为一些安全因素考虑，"c" 永远都是默认重定向到api路径下，但是，CLI模式下允许直接调用root路径下命令，只需要在"c"前面加上"/"，并使用完整的类命名空间路径即可。
 
-有效的 "c" 参数格式如下:  
+有效的 "c" 参数格式如下:
 
 ```text
 基于API路径: innerpath_in_api_path/class_name/public_method_name
@@ -134,7 +132,8 @@ POST: 直接用参数"c"传入"/app/user/login"，FormData 或 request Payload �
 
 #### 5. 数据自动填充
 
-当系统获取到"c"和数据源的之后，路由类和执行类会被唤醒，调用具体的方法来处理。键名匹配的参数会被从数据源冲提取出来，并按照正确的顺序排列，在函数调用时自动传给目标函数。要注意所有传输给NS的参数，所有键名都是大小写敏感的，键值是类型严格限制的。所有返回的结果数据会被捕获和输出。
+当系统获取到"c"
+和数据源的之后，路由类和执行类会被唤醒，调用具体的方法来处理。键名匹配的参数会被从数据源冲提取出来，并按照正确的顺序排列，在函数调用时自动传给目标函数。要注意所有传输给NS的参数，所有键名都是大小写敏感的，键值是类型严格限制的。所有返回的结果数据会被捕获和输出。
 
 例子:
 
@@ -145,6 +144,7 @@ URL: http://your_domain/index.php/user/login?passwd=admin&age=30&name=admin&type
 ```
 
 * API 1
+
 ```php
 namespace api;
 
@@ -160,6 +160,7 @@ class user
 ```
 
 * API 2
+
 ```php
 namespace api;
 
@@ -181,6 +182,7 @@ class user
 有了它，开发者可以注册自己的类库，替代系统默认的类库，比如：路由类，输出处理库，Api路径设置，钩子相关的函数等...
 
 ## 待办
+
 - [x] 基础核心和扩展逻辑
 - [x] 自动化参数映射
 - [x] 应用代码运行环境监测逻辑
@@ -197,7 +199,7 @@ class user
 
 ## 支持机构
 
-感谢 [JetBrains](https://www.jetbrains.com/?from=Nervsys) 提供的开源许可证对本项目的支持。  
+感谢 [JetBrains](https://www.jetbrains.com/?from=Nervsys) 提供的开源许可证对本项目的支持。
 
 ## 开源协议
 
