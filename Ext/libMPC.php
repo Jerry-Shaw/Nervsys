@@ -172,14 +172,14 @@ class libMPC extends Factory
 
         //Read STDOUT data
         if ($status['running']) {
-            while (0 < (fstat($this->pipe_list[$idx][1]))['size'] && 0 < $this->job_count[$idx]--) {
+            while (0 < $this->job_count[$idx]--) {
                 $this->job_result += json_decode(fgets($this->pipe_list[$idx][1]), true);
             }
         }
 
         $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
 
-        unset($this->job_result[$ticket], $ticket, $idx, $status);
+        unset($ticket, $idx, $status);
         return $result;
     }
 
