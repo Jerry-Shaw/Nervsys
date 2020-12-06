@@ -50,7 +50,7 @@ class libMPC extends Factory
 
     public array $proc_list  = [];
     public array $pipe_list  = [];
-    public array $job_count  = [];
+    public array $job_queue  = [];
     public array $job_result = [];
 
     /**
@@ -131,8 +131,11 @@ class libMPC extends Factory
             $idx = $this->proc_idx = 0;
         }
 
-        //Generate job ticket
-        $ticket = (string)$idx . '-' . (string)(++$this->job_count[$idx]);
+        //Generate random job ticket
+        $ticket = (string)$idx . '-' . hash('md5', uniqid((string)mt_rand(), true) . microtime());
+
+        //Add job ticket to job queue
+        $this->job_queue[$idx][$ticket] = 1;
 
         //Add "c" & "mtk" into data
         $data['c']   = &$c;
@@ -142,16 +145,7 @@ class libMPC extends Factory
         fwrite($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
 
         //Check & read from STDOUT
-        while (0 < (fstat($this->pipe_list[$idx][1]))['size'] && 0 < $this->job_count[$idx]--) {
-            $stdout = fgets($this->pipe_list[$idx][1]);
-
-            if (false === $stdout) {
-                $this->close($idx);
-                break;
-            }
-
-            $this->job_result += json_decode(trim($stdout), true);
-        }
+        0 < (fstat($this->pipe_list[$idx][1]))['size'] && $this->readPipe($idx);
 
         unset($c, $data, $idx, $stdout);
         return $ticket;
@@ -171,12 +165,9 @@ class libMPC extends Factory
         $status = proc_get_status($this->proc_list[$idx]);
 
         //Read STDOUT data
-        if ($status['running']) {
-            while (0 < $this->job_count[$idx]--) {
-                $this->job_result += json_decode(fgets($this->pipe_list[$idx][1]), true);
-            }
-        }
+        $status['running'] && $this->readPipe($idx);
 
+        //Fetch result by ticket
         $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
 
         unset($ticket, $idx, $status);
@@ -235,6 +226,7 @@ class libMPC extends Factory
 
         if (!$status['running']) {
             unset($this->proc_list[$idx], $this->pipe_list[$idx]);
+            $this->job_queue[$idx] = [];
             return;
         }
 
@@ -246,6 +238,7 @@ class libMPC extends Factory
             fclose($pipe);
         }
 
+        $this->job_queue[$idx] = [];
         proc_close($this->proc_list[$idx]);
         unset($this->proc_list[$idx], $this->pipe_list[$idx], $idx, $status, $key, $pipe);
     }
@@ -296,7 +289,7 @@ class libMPC extends Factory
         }
 
         //Save proc & pipes
-        $this->job_count[$pid] = 0;
+        $this->job_queue[$pid] = [];
         $this->proc_list[$pid] = $proc;
         $this->pipe_list[$pid] = $pipes;
 
@@ -356,5 +349,30 @@ class libMPC extends Factory
 
         unset($data, $cmd_group, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
         return $result;
+    }
+
+    /**
+     * Read data from pipe
+     *
+     * @param int $idx
+     */
+    private function readPipe(int $idx): void
+    {
+        while (0 < count($this->job_queue[$idx])) {
+            $stdout = fgets($this->pipe_list[$idx][1]);
+
+            if (false === $stdout) {
+                $this->close($idx);
+                break;
+            }
+
+            $job_data = json_decode(trim($stdout), true);
+
+            unset($this->job_queue[$idx][key($job_data)]);
+
+            $this->job_result += $job_data;
+        }
+
+        unset($idx, $stdout, $job_data);
     }
 }
