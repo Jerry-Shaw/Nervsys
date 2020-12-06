@@ -46,6 +46,7 @@ class libErrno extends Factory
     {
         $this->path       = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
         $this->multi_lang = &$multi_lang;
+
         unset($pathname, $multi_lang);
     }
 
@@ -53,8 +54,10 @@ class libErrno extends Factory
      * Load error file
      *
      * @param string $file_name
+     *
+     * @return $this
      */
-    public function load(string $file_name): void
+    public function load(string $file_name): self
     {
         $msg_file = $this->path . DIRECTORY_SEPARATOR . $file_name . '.ini';
 
@@ -63,6 +66,7 @@ class libErrno extends Factory
         }
 
         unset($file_name, $msg_file, $data);
+        return $this;
     }
 
     /**
