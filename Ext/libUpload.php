@@ -92,9 +92,9 @@ class libUpload extends Factory
     public IOUnit $io_unit;
     public string $upload_root;
 
-    public array  $ext  = [];
-    public int    $perm = 0666;
-    public int    $size = 20971520;
+    public array $ext  = [];
+    public int   $perm = 0666;
+    public int   $size = 20971520;
 
     private array $runtime = [];
 

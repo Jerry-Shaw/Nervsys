@@ -30,7 +30,7 @@ use Core\Factory;
  */
 class CORS extends Factory
 {
-    private array  $allowed_list = [];
+    private array $allowed_list = [];
 
     private string $allow_headers = 'X-Requested-With, Content-Type, Content-Length';
 

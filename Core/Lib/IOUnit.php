@@ -40,9 +40,9 @@ class IOUnit extends Factory
     public string $src_cmd  = '';
     public string $src_argv = '';
 
-    public array  $src_error  = [];
-    public array  $src_input  = [];
-    public array  $src_output = [];
+    public array $src_error  = [];
+    public array $src_input  = [];
+    public array $src_output = [];
 
     public array  $return_type   = [];
     public string $content_type  = '';

@@ -37,9 +37,9 @@ class libHttp extends Factory
     const CONTENT_TYPE_URL_ENCODED = 'application/x-www-form-urlencoded';
 
     //Job info
-    public array  $data   = [];
-    public array  $file   = [];
-    public array  $header = [];
+    public array $data   = [];
+    public array $file   = [];
+    public array $header = [];
 
     public string $url        = '';
     public string $etag       = '';

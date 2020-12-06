@@ -30,7 +30,7 @@ use Core\Factory;
  */
 class App extends Factory
 {
-    public Error  $error;
+    public Error $error;
 
     public string $log_path    = '';
     public string $root_path   = '';
