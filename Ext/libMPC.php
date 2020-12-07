@@ -46,6 +46,7 @@ class libMPC extends Factory
 
     public int    $proc_idx = 0;
     public int    $proc_cnt = 10;
+    public int    $buf_size = 4096;
     public string $php_path = '';
 
     public array $proc_list = [];
@@ -54,6 +55,21 @@ class libMPC extends Factory
     public array $job_mtk    = [];
     public array $job_count  = [];
     public array $job_result = [];
+
+    /**
+     * Set pipe buffer size (default 4096 byte, block when overflow, set carefully)
+     *
+     * @param int $buf_size
+     *
+     * @return $this
+     */
+    public function setBufSize(int $buf_size): self
+    {
+        $this->buf_size = &$buf_size;
+
+        unset($buf_size);
+        return $this;
+    }
 
     /**
      * Set PHP executable path
@@ -117,11 +133,16 @@ class libMPC extends Factory
      */
     public function addJob(string $c, array $data = []): string
     {
-        //Generate increased job ticket
-        $ticket = base_convert($this->job_mtk[$this->proc_idx]++, 10, 36);
-
         //Get current job count and increase
         $job_count = ++$this->job_count[$this->proc_idx];
+
+        //Reset job mtk when it becomes large enough
+        if ($this->buf_size < ($this->job_mtk[$this->proc_idx] / $job_count)) {
+            $this->job_mtk[$this->proc_idx] = 0;
+        }
+
+        //Generate increased job ticket
+        $ticket = base_convert($this->job_mtk[$this->proc_idx]++, 10, 36);
 
         //Add "c" & "mtk" into data
         $data['c']   = &$c;
@@ -131,15 +152,18 @@ class libMPC extends Factory
         fwrite($this->pipe_list[$this->proc_idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
 
         //Check & read from STDOUT
-        4096 < (fstat($this->pipe_list[$this->proc_idx][1]))['size'] && $this->readPipe($this->proc_idx, $job_count);
+        $this->buf_size < (fstat($this->pipe_list[$this->proc_idx][1]))['size'] && $this->readPipe($this->proc_idx, $job_count);
+
+        //Get current job mtk
+        $mtk = (string)$this->proc_idx . ':' . $ticket;
 
         //Move/Reset idx
         if ((++$this->proc_idx) >= $this->proc_cnt) {
             $this->proc_idx = 0;
         }
 
-        unset($c, $data, $job_count);
-        return (string)$this->proc_idx . ':' . $ticket;
+        unset($c, $data, $job_count, $ticket);
+        return $mtk;
     }
 
     /**
@@ -152,16 +176,13 @@ class libMPC extends Factory
         //Get idx
         $idx = (int)substr($ticket, 0, strpos($ticket, ':'));
 
-        //Get status
-        $status = proc_get_status($this->proc_list[$idx]);
-
         //Read STDOUT data
-        $status['running'] && $this->readPipe($idx, $this->job_count[$idx]);
+        $this->readPipe($idx, $this->job_count[$idx]);
 
         //Fetch result by ticket
         $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
 
-        unset($this->job_result[$ticket], $ticket, $idx, $status);
+        unset($this->job_result[$ticket], $ticket, $idx);
         return $result;
     }
 
