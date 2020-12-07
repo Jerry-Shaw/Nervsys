@@ -136,11 +136,6 @@ class libMPC extends Factory
         //Get current job count and increase
         $job_count = ++$this->job_count[$this->proc_idx];
 
-        //Reset job mtk when it becomes large enough
-        if ($this->buf_size < ($this->job_mtk[$this->proc_idx] / $job_count)) {
-            $this->job_mtk[$this->proc_idx] = 0;
-        }
-
         //Generate increased job ticket
         $ticket = base_convert($this->job_mtk[$this->proc_idx]++, 10, 36);
 
