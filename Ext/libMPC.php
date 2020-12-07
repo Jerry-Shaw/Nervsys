@@ -48,18 +48,12 @@ class libMPC extends Factory
     public int    $proc_cnt = 10;
     public string $php_path = '';
 
-    public array $proc_list  = [];
-    public array $pipe_list  = [];
-    public array $job_queue  = [];
-    public array $job_result = [];
+    public array $proc_list = [];
+    public array $pipe_list = [];
 
-    /**
-     * libMPC constructor.
-     */
-    public function __construct()
-    {
-        $this->io_unit = IOUnit::new();
-    }
+    public array $job_mtk    = [];
+    public array $job_count  = [];
+    public array $job_result = [];
 
     /**
      * Set PHP executable path
@@ -109,7 +103,7 @@ class libMPC extends Factory
         //Register MPC closeAll function
         register_shutdown_function([$this, 'closeAll']);
 
-        unset($i);
+        unset($proc_cmd, $i);
         return $this;
     }
 
@@ -123,32 +117,29 @@ class libMPC extends Factory
      */
     public function addJob(string $c, array $data = []): string
     {
-        //Move idx
-        $idx = $this->proc_idx++;
+        //Generate increased job ticket
+        $ticket = base_convert($this->job_mtk[$this->proc_idx]++, 10, 36);
 
-        //Reset idx
-        if ($idx >= $this->proc_cnt) {
-            $idx = $this->proc_idx = 0;
-        }
-
-        //Generate random job ticket
-        $ticket = (string)$idx . '-' . hash('md5', uniqid((string)mt_rand(), true) . microtime());
-
-        //Add job ticket to job queue
-        $this->job_queue[$idx][$ticket] = 1;
+        //Get current job count and increase
+        $job_count = ++$this->job_count[$this->proc_idx];
 
         //Add "c" & "mtk" into data
         $data['c']   = &$c;
         $data['mtk'] = &$ticket;
 
         //Communicate via STDIN
-        fwrite($this->pipe_list[$idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
+        fwrite($this->pipe_list[$this->proc_idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
 
         //Check & read from STDOUT
-        0 < (fstat($this->pipe_list[$idx][1]))['size'] && $this->readPipe($idx);
+        4096 < (fstat($this->pipe_list[$this->proc_idx][1]))['size'] && $this->readPipe($this->proc_idx, $job_count);
 
-        unset($c, $data, $idx, $stdout);
-        return $ticket;
+        //Move/Reset idx
+        if ((++$this->proc_idx) >= $this->proc_cnt) {
+            $this->proc_idx = 0;
+        }
+
+        unset($c, $data, $job_count);
+        return (string)$this->proc_idx . ':' . $ticket;
     }
 
     /**
@@ -159,18 +150,18 @@ class libMPC extends Factory
     public function fetch(string $ticket): string
     {
         //Get idx
-        $idx = (int)substr($ticket, 0, strpos($ticket, '-'));
+        $idx = (int)substr($ticket, 0, strpos($ticket, ':'));
 
         //Get status
         $status = proc_get_status($this->proc_list[$idx]);
 
         //Read STDOUT data
-        $status['running'] && $this->readPipe($idx);
+        $status['running'] && $this->readPipe($idx, $this->job_count[$idx]);
 
         //Fetch result by ticket
         $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
 
-        unset($ticket, $idx, $status);
+        unset($this->job_result[$ticket], $ticket, $idx, $status);
         return $result;
     }
 
@@ -184,6 +175,7 @@ class libMPC extends Factory
         $this->router  = Router::new();
         $this->reflect = Reflect::new();
         $this->execute = Execute::new();
+        $this->io_unit = IOUnit::new();
         $this->os_unit = OSUnit::new();
 
         while (true) {
@@ -208,7 +200,7 @@ class libMPC extends Factory
             $result = $this->execJob($data);
 
             //Output via STDOUT
-            echo json_encode([$data['mtk'] => 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
+            echo json_encode([$data['mtk'], 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
 
             //Free memory
             unset($stdin, $data, $result);
@@ -224,22 +216,21 @@ class libMPC extends Factory
     {
         $status = proc_get_status($this->proc_list[$idx]);
 
-        if (!$status['running']) {
-            unset($this->proc_list[$idx], $this->pipe_list[$idx]);
-            $this->job_queue[$idx] = [];
-            return;
-        }
+        if ($status['running']) {
+            foreach ($this->pipe_list[$idx] as $key => $pipe) {
+                if (0 === $key) {
+                    fwrite($pipe, 'exit' . PHP_EOL);
+                }
 
-        foreach ($this->pipe_list[$idx] as $key => $pipe) {
-            if (0 === $key) {
-                fwrite($pipe, 'exit' . PHP_EOL);
+                fclose($pipe);
             }
 
-            fclose($pipe);
+            proc_close($this->proc_list[$idx]);
         }
 
-        $this->job_queue[$idx] = [];
-        proc_close($this->proc_list[$idx]);
+        $this->job_mtk[$idx]   = 0;
+        $this->job_count[$idx] = 0;
+
         unset($this->proc_list[$idx], $this->pipe_list[$idx], $idx, $status, $key, $pipe);
     }
 
@@ -288,8 +279,9 @@ class libMPC extends Factory
             return false;
         }
 
-        //Save proc & pipes
-        $this->job_queue[$pid] = [];
+        //Save process properties
+        $this->job_mtk[$pid]   = 0;
+        $this->job_count[$pid] = 0;
         $this->proc_list[$pid] = $proc;
         $this->pipe_list[$pid] = $pipes;
 
@@ -355,24 +347,25 @@ class libMPC extends Factory
      * Read data from pipe
      *
      * @param int $idx
+     * @param int $count
      */
-    private function readPipe(int $idx): void
+    private function readPipe(int $idx, int $count): void
     {
-        while (0 < count($this->job_queue[$idx])) {
-            $stdout = fgets($this->pipe_list[$idx][1]);
-
-            if (false === $stdout) {
+        while (0 <= --$count && 0 <= --$this->job_count[$idx]) {
+            //Read from pipe STDOUT
+            if (false === ($stdout = fgets($this->pipe_list[$idx][1]))) {
                 $this->close($idx);
                 break;
             }
 
-            $job_data = json_decode(trim($stdout), true);
+            if (!is_array($job_data = json_decode(trim($stdout), true))) {
+                continue;
+            }
 
-            unset($this->job_queue[$idx][key($job_data)]);
-
-            $this->job_result += $job_data;
+            //Save to result block
+            $this->job_result += [(string)$idx . ':' . $job_data[0] => $job_data[1]];
         }
 
-        unset($idx, $stdout, $job_data);
+        unset($idx, $count, $stdout, $job_data);
     }
 }
