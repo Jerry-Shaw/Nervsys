@@ -151,7 +151,7 @@ class libSocket extends Factory
         }
 
         $this->lib_mpc = libMPC::new()->setPhpPath(OSUnit::new()->getPhpPath())->start();
-        $this->clients = $this->master = [$this->genId() => $socket];
+        $this->master  = [$this->genId() => $socket];
 
         $this->{'on' . ucfirst($this->type)}();
     }
@@ -177,6 +177,9 @@ class libSocket extends Factory
         $write  = $except = [];
         $socket = current($this->master);
 
+        //Copy master to clients
+        $this->clients = $this->master;
+
         while (true) {
             $read = $this->clients;
 
@@ -200,7 +203,7 @@ class libSocket extends Factory
                     continue;
                 }
 
-                //Client error
+                //Read client message
                 if (false === ($socket_msg = fgets($client))) {
                     unset($this->clients[$sock_id]);
                     fclose($client);
@@ -225,7 +228,7 @@ class libSocket extends Factory
                 $is_ol  = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
 
                 //Send to onSend logic via MPC
-                $mtk = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['msg' => $msg_json, 'to_sid' => $to_sid, 'is_ol' => $is_ol]);
+                $mtk = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['data' => $msg_data, 'to_sid' => $to_sid, 'is_ol' => $is_ol]);
 
                 //Save to message or drop fetched
                 $is_ol ? $send_tk[$to_sid] = $mtk : $this->lib_mpc->fetch($mtk);
@@ -242,7 +245,210 @@ class libSocket extends Factory
 
     private function onWs(): void
     {
+        $write = $except = [];
 
+        //Copy master to clients
+        $this->clients = $this->master;
+
+        //Add master status
+        $client_status[key($this->master)] = 0;
+
+        while (true) {
+            $read = $this->clients;
+
+            if (false === $changes = stream_select($read, $write, $except, 60)) {
+                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
+            }
+
+            if (0 === $changes) {
+                continue;
+            }
+
+            $msg_tk = $send_tk = [];
+
+            //Read from socket and send to MPC
+            foreach ($read as $sock_id => $client) {
+                switch ($client_status[$sock_id]) {
+                    case 1:
+                        //Read all client message in length (json)
+                        $socket_msg = '';
+
+                        while ('' !== ($msg = (string)fread($client, 4096))) {
+                            $socket_msg .= $msg;
+                        }
+
+                        //Check opcode (connection closed: 8)
+                        if (8 === $this->wsGetOpcode($socket_msg)) {
+                            unset($this->clients[$sock_id]);
+                            fclose($client);
+                            break;
+                        }
+
+                        //Decode data
+                        $socket_msg = $this->wsDecode($socket_msg);
+
+                        //Send to onMessage logic via MPC
+                        $msg_tk[$sock_id] = $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['msg' => $socket_msg]);
+                        break;
+
+                    case 2:
+                        //Read client message in length (header)
+                        if (false === ($socket_msg = fread($client, 1024))) {
+                            unset($this->clients[$sock_id]);
+                            fclose($client);
+                            break;
+                        }
+
+                        //Send handshake and sid info
+                        $client_status[$sock_id] = 1;
+                        fwrite($client, $this->wsHandshake($socket_msg));
+                        fwrite($client, $this->wsEncode($this->lib_mpc->fetch($this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => $sock_id]))));
+                        break;
+
+                    default:
+                        //Accept new connection
+                        if (false !== ($connect = stream_socket_accept($client))) {
+                            stream_set_blocking($connect, false);
+
+                            $accept_id = $this->genId();
+
+                            $this->clients[$accept_id] = $connect;
+                            $client_status[$accept_id] = 2;
+                        }
+                        break;
+                }
+            }
+
+            //Process message
+            foreach ($msg_tk as $sock_id => $mtk) {
+                $msg_json = $this->lib_mpc->fetch($mtk);
+
+                if (!is_array($msg_data = json_decode($msg_json, true))) {
+                    fclose($this->clients[$sock_id]);
+                    unset($this->clients[$sock_id]);
+                    continue;
+                }
+
+                $to_sid = (string)($msg_data['to_sid'] ?? '');
+                $is_ol  = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
+
+                //Send to onSend logic via MPC
+                $mtk = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['data' => $msg_data, 'to_sid' => $to_sid, 'is_ol' => $is_ol]);
+
+                //Save to message or drop fetched
+                $is_ol ? $send_tk[$to_sid] = $mtk : $this->lib_mpc->fetch($mtk);
+            }
+
+            //Send message
+            foreach ($send_tk as $sock_id => $mtk) {
+                $msg_json = $this->lib_mpc->fetch($mtk);
+                fwrite($this->clients[$sock_id], $this->wsEncode($msg_json));
+            }
+        }
+    }
+
+    /**
+     * WebSocket get opcode
+     *
+     * @param string $buff
+     *
+     * @return int
+     */
+    public function wsGetOpcode(string $buff): int
+    {
+        return ord($buff[0]) & 0x0F;
+    }
+
+    /**
+     * WebSocket generate handshake response
+     *
+     * @param string $header
+     *
+     * @return string
+     */
+    public function wsHandshake(string $header): string
+    {
+        //WebSocket key name & key mask
+        $key_name = 'Sec-WebSocket-Key';
+        $key_mask = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+
+        //Get key position
+        if (false === $key_pos = strpos($header, $key_name)) {
+            return '';
+        }
+
+        //Move key offset
+        $key_pos += strlen($key_name) + 2;
+
+        //Get WebSocket key & rehash
+        $key = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
+        $key = hash('sha1', $key . $key_mask, true);
+
+        //Generate response
+        $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
+            . 'Upgrade: websocket' . "\r\n"
+            . 'Connection: Upgrade' . "\r\n"
+            . 'Sec-WebSocket-Accept: ' . base64_encode($key) . "\r\n\r\n";
+
+        unset($header, $key_name, $key_mask, $key_pos, $key);
+        return $response;
+    }
+
+    /**
+     * WebSocket decode message
+     *
+     * @param string $buff
+     *
+     * @return string
+     */
+    public function wsDecode(string $buff): string
+    {
+        switch (ord($buff[1]) & 0x7F) {
+            case 126:
+                $mask = substr($buff, 4, 4);
+                $data = substr($buff, 8);
+                break;
+
+            case 127:
+                $mask = substr($buff, 10, 4);
+                $data = substr($buff, 14);
+                break;
+
+            default:
+                $mask = substr($buff, 2, 4);
+                $data = substr($buff, 6);
+                break;
+        }
+
+        $msg = '';
+        $len = strlen($data);
+
+        for ($i = 0; $i < $len; ++$i) {
+            $msg .= $data[$i] ^ $mask[$i % 4];
+        }
+
+        unset($buff, $mask, $data, $len, $i);
+        return $msg;
+    }
+
+    /**
+     * WebSocket encode message
+     *
+     * @param string $msg
+     *
+     * @return string
+     */
+    public function wsEncode(string $msg): string
+    {
+        $buff = '';
+        $seg  = str_split($msg, 125);
+
+        foreach ($seg as $val) {
+            $buff .= chr(0x81) . chr(strlen($val)) . $val;
+        }
+
+        unset($msg, $seg, $val);
+        return $buff;
     }
 
 
