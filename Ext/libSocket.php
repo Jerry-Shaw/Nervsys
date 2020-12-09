@@ -43,17 +43,18 @@ class libSocket extends Factory
     public array $master  = [];
     public array $clients = [];
 
+    public string $master_id;
+    public string $handler_class;
+
     /** @var \Ext\libMPC $lib_mpc */
     public libMPC $lib_mpc;
-
-    public string $handler_class;
 
     /**
      * Listen to bind address
      *
      * @param string $address
      * @param int    $port
-     * @param string $protocol (tcp/udp/ssl/tlsv1.3/...)
+     * @param string $protocol (tcp/udp/ssl/tlsv1.2/tlsv1.3/...)
      *
      * @return $this
      */
@@ -153,8 +154,12 @@ class libSocket extends Factory
             throw new \Exception($errno . ': ' . $errstr, E_USER_ERROR);
         }
 
-        $this->lib_mpc = libMPC::new()->setProcNum($mpc_cnt)->setPhpPath(OSUnit::new()->getPhpPath())->start();
-        $this->master  = [$this->genId() => $socket];
+        $this->master_id = $this->genId();
+        $this->master    = [$this->master_id => &$socket];
+        $this->lib_mpc   = libMPC::new()
+            ->setProcNum($mpc_cnt)
+            ->setPhpPath(OSUnit::new()->getPhpPath())
+            ->start();
 
         $this->{'on' . ucfirst($this->type)}();
     }
@@ -208,7 +213,7 @@ class libSocket extends Factory
         }
 
         unset($sock_id, $buff);
-        return $msg;
+        return trim($msg);
     }
 
     /**
@@ -384,8 +389,7 @@ class libSocket extends Factory
      */
     private function onTcp(): void
     {
-        $write  = $except = [];
-        $socket = current($this->master);
+        $write = $except = [];
 
         //Copy master to clients
         $this->clients = $this->master;
@@ -405,28 +409,25 @@ class libSocket extends Factory
 
             //Read from socket and send to MPC
             foreach ($read as $sock_id => $client) {
-                //Accept new connection
-                if ($client === $socket) {
+                if ($sock_id !== $this->master_id) {
+                    //Send to onMessage logic via MPC
+                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->readMsg($sock_id)]);
+                } else {
+                    //Accept new connection
                     try {
-                        $accept = stream_socket_accept($client);
-
-                        if (false === $accept) {
+                        if (false === ($accept = stream_socket_accept($client))) {
                             continue;
                         }
 
                         stream_set_blocking($accept, false);
                     } catch (\Throwable $throwable) {
+                        unset($throwable);
                         continue;
                     }
 
                     $this->clients[$sid = $this->genId()] = $accept;
                     $this->sendMsg($sid, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sid])));
-
-                    continue;
                 }
-
-                //Send to onMessage logic via MPC
-                $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->readMsg($sock_id)]);
             }
 
             //Process message
@@ -440,7 +441,7 @@ class libSocket extends Factory
             unset($read, $changes, $msg_tk, $sock_id, $client, $accept, $sid, $send_tk, $stk);
         }
 
-        unset($write, $except, $socket);
+        unset($write, $except);
     }
 
     /**
@@ -456,7 +457,7 @@ class libSocket extends Factory
         $this->clients = $this->master;
 
         //Add master status
-        $client_status[key($this->master)] = 0;
+        $client_status[$this->master_id] = 0;
 
         while (true) {
             $read = $this->clients;
@@ -485,38 +486,31 @@ class libSocket extends Factory
                             break;
                         }
 
-                        //Decode websocket data
-                        $socket_msg = $this->wsDecode($socket_msg);
-
                         //Send to onMessage logic via MPC
-                        $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
+                        $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->wsDecode($socket_msg)]);
                         break;
 
                     case 2:
-                        //Read client message in length (header)
-                        $socket_msg = $this->readMsg($sock_id);
-
                         //Send handshake and sid info
                         $client_status[$sock_id] = 1;
-                        $this->sendMsg($sock_id, $this->wsHandshake($socket_msg));
+                        $this->sendMsg($sock_id, $this->wsHandshake($this->readMsg($sock_id)));
                         $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
                         break;
 
                     default:
                         //Accept new connection
                         try {
-                            $accept = stream_socket_accept($client);
-
-                            if (false === $accept) {
+                            if (false === ($accept = stream_socket_accept($client))) {
                                 break;
                             }
 
                             stream_set_blocking($accept, false);
+                            $accept_id = $this->genId();
                         } catch (\Throwable $throwable) {
+                            unset($throwable);
                             break;
                         }
 
-                        $accept_id                 = $this->genId();
                         $this->clients[$accept_id] = $accept;
                         $client_status[$accept_id] = 2;
                         break;
