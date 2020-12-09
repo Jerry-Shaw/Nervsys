@@ -468,7 +468,7 @@ class libSocket extends Factory
                             break;
                         }
 
-                        //Decode data
+                        //Decode websocket data
                         $socket_msg = $this->wsDecode($socket_msg);
 
                         //Send to onMessage logic via MPC
