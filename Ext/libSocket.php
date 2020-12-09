@@ -161,190 +161,109 @@ class libSocket extends Factory
      *
      * @return string
      */
-    private function genId(): string
+    protected function genId(): string
     {
         $uid = substr(hash('md5', uniqid(microtime() . (string)mt_rand(), true)), 8, 16);
         return !isset($this->clients[$uid]) ? $uid : $this->genId();
     }
 
     /**
-     * Tcp server
+     * Add MPC job
      *
-     * @throws \Exception
+     * @param string $method
+     * @param array  $data
+     *
+     * @return string
      */
-    private function onTcp(): void
+    protected function addMpc(string $method, array $data): string
     {
-        $write  = $except = [];
-        $socket = current($this->master);
+        $tk = $this->lib_mpc->addJob($this->handler_class . '/' . $method, $data);
 
-        //Copy master to clients
-        $this->clients = $this->master;
-
-        while (true) {
-            $read = $this->clients;
-
-            if (false === $changes = stream_select($read, $write, $except, 60)) {
-                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
-            }
-
-            if (0 === $changes) {
-                continue;
-            }
-
-            $msg_tk = $send_tk = [];
-
-            //Read from socket and send to MPC
-            foreach ($read as $sock_id => $client) {
-                //Accept new connection
-                if ($client === $socket && false !== ($connect = stream_socket_accept($client))) {
-                    stream_set_blocking($connect, false);
-                    $this->clients[$id = $this->genId()] = $connect;
-                    fwrite($connect, $this->lib_mpc->fetch($this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => $id])));
-                    continue;
-                }
-
-                //Read client message
-                if (false === ($socket_msg = fgets($client))) {
-                    unset($this->clients[$sock_id]);
-                    fclose($client);
-                    continue;
-                }
-
-                //Send to onMessage logic via MPC
-                $msg_tk[$sock_id] = $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['msg' => $socket_msg]);
-            }
-
-            //Process message
-            foreach ($msg_tk as $sock_id => $mtk) {
-                $msg_json = $this->lib_mpc->fetch($mtk);
-
-                if (!is_array($msg_data = json_decode($msg_json, true))) {
-                    fclose($this->clients[$sock_id]);
-                    unset($this->clients[$sock_id]);
-                    continue;
-                }
-
-                $to_sid = (string)($msg_data['to_sid'] ?? '');
-                $is_ol  = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
-
-                //Send to onSend logic via MPC
-                $mtk = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['data' => $msg_data, 'to_sid' => $to_sid, 'is_ol' => $is_ol]);
-
-                //Save to message or drop fetched
-                $is_ol ? $send_tk[$to_sid] = $mtk : $this->lib_mpc->fetch($mtk);
-            }
-
-            //Send message
-            foreach ($send_tk as $sock_id => $mtk) {
-                $msg_json = $this->lib_mpc->fetch($mtk);
-                fwrite($this->clients[$sock_id], $msg_json);
-            }
-        }
+        unset($method, $data);
+        return $tk;
     }
 
-
-    private function onWs(): void
+    /**
+     * Read full message from client
+     *
+     * @param string $sock_id
+     *
+     * @return string
+     */
+    protected function readMsg(string $sock_id): string
     {
-        $write = $except = [];
+        $msg = fread($this->clients[$sock_id], 1024);
 
-        //Copy master to clients
-        $this->clients = $this->master;
+        if (false === $msg || '' === $msg) {
+            fclose($this->clients[$sock_id]);
+            unset($this->clients[$sock_id], $sock_id, $msg);
+            return '';
+        }
 
-        //Add master status
-        $client_status[key($this->master)] = 0;
+        while ('' !== ($buff = fread($this->clients[$sock_id], 4096))) {
+            $msg .= $buff;
+        }
 
-        while (true) {
-            $read = $this->clients;
+        unset($sock_id, $buff);
+        return $msg;
+    }
 
-            if (false === $changes = stream_select($read, $write, $except, 60)) {
-                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
-            }
+    /**
+     * Prepare send message
+     *
+     * @param array $msg_tk
+     *
+     * @return array
+     */
+    protected function prepMsg(array $msg_tk): array
+    {
+        $send_tk = [];
 
-            if (0 === $changes) {
+        foreach ($msg_tk as $sock_id => $mtk) {
+            if (!is_array($msg_data = json_decode($this->lib_mpc->fetch($mtk), true))) {
+                fclose($this->clients[$sock_id]);
+                unset($this->clients[$sock_id]);
                 continue;
             }
 
-            $msg_tk = $send_tk = [];
+            $to_sid = (string)($msg_data['to_sid'] ?? '');
+            $sid_ol = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
 
-            //Read from socket and send to MPC
-            foreach ($read as $sock_id => $client) {
-                switch ($client_status[$sock_id]) {
-                    case 1:
-                        //Read all client message in length (json)
-                        $socket_msg = '';
+            //Send to onSend logic via MPC
+            $stk = $this->addMpc('onSend', [
+                'data'   => $msg_data,
+                'to_sid' => $to_sid,
+                'sid_ol' => $sid_ol
+            ]);
 
-                        while ('' !== ($msg = (string)fread($client, 4096))) {
-                            $socket_msg .= $msg;
-                        }
-
-                        //Check opcode (connection closed: 8)
-                        if (8 === $this->wsGetOpcode($socket_msg)) {
-                            unset($this->clients[$sock_id]);
-                            fclose($client);
-                            break;
-                        }
-
-                        //Decode data
-                        $socket_msg = $this->wsDecode($socket_msg);
-
-                        //Send to onMessage logic via MPC
-                        $msg_tk[$sock_id] = $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['msg' => $socket_msg]);
-                        break;
-
-                    case 2:
-                        //Read client message in length (header)
-                        if (false === ($socket_msg = fread($client, 1024))) {
-                            unset($this->clients[$sock_id]);
-                            fclose($client);
-                            break;
-                        }
-
-                        //Send handshake and sid info
-                        $client_status[$sock_id] = 1;
-                        fwrite($client, $this->wsHandshake($socket_msg));
-                        fwrite($client, $this->wsEncode($this->lib_mpc->fetch($this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => $sock_id]))));
-                        break;
-
-                    default:
-                        //Accept new connection
-                        if (false !== ($connect = stream_socket_accept($client))) {
-                            stream_set_blocking($connect, false);
-
-                            $accept_id = $this->genId();
-
-                            $this->clients[$accept_id] = $connect;
-                            $client_status[$accept_id] = 2;
-                        }
-                        break;
-                }
-            }
-
-            //Process message
-            foreach ($msg_tk as $sock_id => $mtk) {
-                $msg_json = $this->lib_mpc->fetch($mtk);
-
-                if (!is_array($msg_data = json_decode($msg_json, true))) {
-                    fclose($this->clients[$sock_id]);
-                    unset($this->clients[$sock_id]);
-                    continue;
-                }
-
-                $to_sid = (string)($msg_data['to_sid'] ?? '');
-                $is_ol  = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
-
-                //Send to onSend logic via MPC
-                $mtk = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['data' => $msg_data, 'to_sid' => $to_sid, 'is_ol' => $is_ol]);
-
-                //Save to message or drop fetched
-                $is_ol ? $send_tk[$to_sid] = $mtk : $this->lib_mpc->fetch($mtk);
-            }
-
-            //Send message
-            foreach ($send_tk as $sock_id => $mtk) {
-                $msg_json = $this->lib_mpc->fetch($mtk);
-                fwrite($this->clients[$sock_id], $this->wsEncode($msg_json));
-            }
+            //Save stk to send_tk or drop offline data
+            $sid_ol ? $send_tk[$to_sid] = $stk : $this->lib_mpc->fetch($stk);
         }
+
+        unset($msg_tk, $sock_id, $mtk, $msg_data, $to_sid, $sid_ol, $stk);
+        return $send_tk;
+    }
+
+    /**
+     * Send message to a client
+     *
+     * @param string $sock_id
+     * @param string $msg
+     *
+     * @return int
+     */
+    protected function sendMsg(string $sock_id, string $msg): int
+    {
+        try {
+            $byte = fwrite($this->clients[$sock_id], $msg);
+        } catch (\Throwable $throwable) {
+            fclose($this->clients[$sock_id]);
+            unset($this->clients[$sock_id], $sock_id, $msg, $byte, $throwable);
+            return 0;
+        }
+
+        unset($sock_id, $msg);
+        return $byte;
     }
 
     /**
@@ -354,7 +273,7 @@ class libSocket extends Factory
      *
      * @return int
      */
-    public function wsGetOpcode(string $buff): int
+    protected function wsGetOpcode(string $buff): int
     {
         return ord($buff[0]) & 0x0F;
     }
@@ -366,7 +285,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    public function wsHandshake(string $header): string
+    protected function wsHandshake(string $header): string
     {
         //WebSocket key name & key mask
         $key_name = 'Sec-WebSocket-Key';
@@ -401,7 +320,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    public function wsDecode(string $buff): string
+    protected function wsDecode(string $buff): string
     {
         switch (ord($buff[1]) & 0x7F) {
             case 126:
@@ -438,7 +357,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    public function wsEncode(string $msg): string
+    protected function wsEncode(string $msg): string
     {
         $buff = '';
         $seg  = str_split($msg, 125);
@@ -451,7 +370,150 @@ class libSocket extends Factory
         return $buff;
     }
 
+    /**
+     * Tcp server
+     *
+     * @throws \Exception
+     */
+    private function onTcp(): void
+    {
+        $write  = $except = [];
+        $socket = current($this->master);
 
+        //Copy master to clients
+        $this->clients = $this->master;
+
+        while (true) {
+            $read = $this->clients;
+
+            if (false === ($changes = stream_select($read, $write, $except, 60))) {
+                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
+            }
+
+            if (0 === $changes) {
+                continue;
+            }
+
+            $msg_tk = [];
+
+            //Read from socket and send to MPC
+            foreach ($read as $sock_id => $client) {
+                //Accept new connection
+                if ($client === $socket && false !== ($connect = stream_socket_accept($client))) {
+                    stream_set_blocking($connect, false);
+                    $this->clients[$sid = $this->genId()] = $connect;
+                    $this->sendMsg($sid, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sid])));
+                    continue;
+                }
+
+                //Send to onMessage logic via MPC
+                $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->readMsg($sock_id)]);
+            }
+
+            //Process message
+            $send_tk = $this->prepMsg($msg_tk);
+
+            //Send message
+            foreach ($send_tk as $sock_id => $stk) {
+                $this->sendMsg($sock_id, $this->lib_mpc->fetch($stk));
+            }
+
+            unset($read, $changes, $msg_tk, $sock_id, $client, $connect, $sid, $send_tk, $stk);
+        }
+
+        unset($write, $except, $socket);
+    }
+
+    /**
+     * SebSocket server
+     *
+     * @throws \Exception
+     */
+    private function onWs(): void
+    {
+        $write = $except = [];
+
+        //Copy master to clients
+        $this->clients = $this->master;
+
+        //Add master status
+        $client_status[key($this->master)] = 0;
+
+        while (true) {
+            $read = $this->clients;
+
+            if (false === ($changes = stream_select($read, $write, $except, 60))) {
+                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
+            }
+
+            if (0 === $changes) {
+                continue;
+            }
+
+            $msg_tk = [];
+
+            //Read from socket and send to MPC
+            foreach ($read as $sock_id => $client) {
+                switch ($client_status[$sock_id]) {
+                    case 1:
+                        //Read all client message in length (json)
+                        $socket_msg = $this->readMsg($sock_id);
+
+                        //Check opcode (connection closed: 8)
+                        if (8 === $this->wsGetOpcode($socket_msg)) {
+                            unset($this->clients[$sock_id], $client_status[$sock_id]);
+                            fclose($client);
+                            break;
+                        }
+
+                        //Decode data
+                        $socket_msg = $this->wsDecode($socket_msg);
+
+                        //Send to onMessage logic via MPC
+                        $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
+                        break;
+
+                    case 2:
+                        //Read client message in length (header)
+                        $socket_msg = $this->readMsg($sock_id);
+
+                        //Send handshake and sid info
+                        $client_status[$sock_id] = 1;
+                        $this->sendMsg($sock_id, $this->wsHandshake($socket_msg));
+                        $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
+                        break;
+
+                    default:
+                        //Accept new connection
+                        if (false !== ($connect = stream_socket_accept($client))) {
+                            stream_set_blocking($connect, false);
+
+                            $accept_id = $this->genId();
+
+                            $this->clients[$accept_id] = $connect;
+                            $client_status[$accept_id] = 2;
+                        }
+                        break;
+                }
+            }
+
+            //Process message
+            $send_tk = $this->prepMsg($msg_tk);
+
+            //Send message
+            foreach ($send_tk as $sock_id => $stk) {
+                $this->sendMsg($sock_id, $this->lib_mpc->fetch($stk));
+            }
+
+            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $connect, $accept_id, $send_tk, $stk);
+        }
+
+        unset($write, $except, $client_status);
+    }
+
+    /**
+     * UDP server
+     */
     private function onUdp(): void
     {
 
