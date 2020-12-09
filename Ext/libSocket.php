@@ -406,10 +406,22 @@ class libSocket extends Factory
             //Read from socket and send to MPC
             foreach ($read as $sock_id => $client) {
                 //Accept new connection
-                if ($client === $socket && false !== ($connect = stream_socket_accept($client))) {
-                    stream_set_blocking($connect, false);
-                    $this->clients[$sid = $this->genId()] = $connect;
+                if ($client === $socket) {
+                    try {
+                        $accept = stream_socket_accept($client);
+
+                        if (false === $accept) {
+                            continue;
+                        }
+
+                        stream_set_blocking($accept, false);
+                    } catch (\Throwable $throwable) {
+                        continue;
+                    }
+
+                    $this->clients[$sid = $this->genId()] = $accept;
                     $this->sendMsg($sid, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sid])));
+
                     continue;
                 }
 
@@ -425,7 +437,7 @@ class libSocket extends Factory
                 $this->sendMsg($sock_id, $this->lib_mpc->fetch($stk));
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $connect, $sid, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $accept, $sid, $send_tk, $stk);
         }
 
         unset($write, $except, $socket);
@@ -492,14 +504,21 @@ class libSocket extends Factory
 
                     default:
                         //Accept new connection
-                        if (false !== ($connect = stream_socket_accept($client))) {
-                            stream_set_blocking($connect, false);
+                        try {
+                            $accept = stream_socket_accept($client);
 
-                            $accept_id = $this->genId();
+                            if (false === $accept) {
+                                break;
+                            }
 
-                            $this->clients[$accept_id] = $connect;
-                            $client_status[$accept_id] = 2;
+                            stream_set_blocking($accept, false);
+                        } catch (\Throwable $throwable) {
+                            break;
                         }
+
+                        $accept_id                 = $this->genId();
+                        $this->clients[$accept_id] = $accept;
+                        $client_status[$accept_id] = 2;
                         break;
                 }
             }
@@ -512,7 +531,7 @@ class libSocket extends Factory
                 $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($stk)));
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $connect, $accept_id, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $accept, $accept_id, $send_tk, $stk);
         }
 
         unset($write, $except, $client_status);
