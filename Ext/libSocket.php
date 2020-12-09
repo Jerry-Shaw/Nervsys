@@ -52,7 +52,7 @@ class libSocket extends Factory
      *
      * @param string $address
      * @param int    $port
-     * @param string $protocol (tcp/udp/ssl/tls1.2/...)
+     * @param string $protocol (tcp/udp/ssl/tlsv1.3/...)
      *
      * @return $this
      */
@@ -120,9 +120,11 @@ class libSocket extends Factory
     /**
      * Run socket server
      *
+     * @param int $mpc_cnt
+     *
      * @throws \Exception
      */
-    public function run(): void
+    public function run(int $mpc_cnt = 10): void
     {
         $context = stream_context_create();
 
@@ -150,7 +152,7 @@ class libSocket extends Factory
             throw new \Exception($errno . ': ' . $errstr, E_USER_ERROR);
         }
 
-        $this->lib_mpc = libMPC::new()->setPhpPath(OSUnit::new()->getPhpPath())->start();
+        $this->lib_mpc = libMPC::new()->setProcNum($mpc_cnt)->setPhpPath(OSUnit::new()->getPhpPath())->start();
         $this->master  = [$this->genId() => $socket];
 
         $this->{'on' . ucfirst($this->type)}();
