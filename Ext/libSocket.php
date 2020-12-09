@@ -480,7 +480,7 @@ class libSocket extends Factory
                         $socket_msg = $this->readMsg($sock_id);
 
                         //Check opcode (connection closed: 8)
-                        if (8 === $this->wsGetOpcode($socket_msg)) {
+                        if ('' === $socket_msg || 8 === $this->wsGetOpcode($socket_msg)) {
                             unset($this->clients[$sock_id], $client_status[$sock_id]);
                             fclose($client);
                             break;
