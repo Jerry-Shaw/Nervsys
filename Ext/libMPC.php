@@ -57,7 +57,7 @@ class libMPC extends Factory
     public array $job_result = [];
 
     /**
-     * Set pipe buffer size (default 4096 byte, block when overflow, set carefully)
+     * Set pipe buffer size (default 4096 bytes, block when overflow, set carefully)
      *
      * @param int $buf_size
      *
@@ -162,6 +162,8 @@ class libMPC extends Factory
     }
 
     /**
+     * Fetch data by ticket (json|string)
+     *
      * @param string $ticket
      *
      * @return string
@@ -175,9 +177,10 @@ class libMPC extends Factory
         $this->readPipe($idx, $this->job_count[$idx]);
 
         //Fetch result by ticket
-        $result = json_encode($this->job_result[$ticket] ?? '', JSON_FORMAT);
+        $tk_data = $this->job_result[$ticket] ?? '';
+        $result  = is_string($tk_data) ? $tk_data : json_encode($tk_data, JSON_FORMAT);
 
-        unset($this->job_result[$ticket], $ticket, $idx);
+        unset($this->job_result[$ticket], $ticket, $idx, $tk_data);
         return $result;
     }
 
