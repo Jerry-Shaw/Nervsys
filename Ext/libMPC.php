@@ -198,20 +198,25 @@ class libMPC extends Factory
         $this->os_unit = OSUnit::new();
 
         while (true) {
-            $stdin = fgets(STDIN);
+            //Pipe broken
+            if (false === ($stdin = fgets(STDIN))) {
+                return;
+            }
 
-            //Receive error and exit code
-            if (false === $stdin || 'exit' === ($stdin = trim($stdin))) {
+            //On exit code
+            if ('exit' === ($stdin = trim($stdin))) {
                 return;
             }
 
             //Parse data
-            if (!is_array($data = json_decode($stdin, true))) {
+            if ('' === $stdin || !is_array($data = json_decode($stdin, true))) {
+                echo PHP_EOL;
                 continue;
             }
 
             //Check "c" & "mtk"
             if (!isset($data['c']) || !isset($data['mtk'])) {
+                echo PHP_EOL;
                 continue;
             }
 
@@ -377,7 +382,7 @@ class libMPC extends Factory
                 break;
             }
 
-            if (!is_array($job_data = json_decode(trim($stdout), true))) {
+            if ('' === ($stdout = trim($stdout)) || !is_array($job_data = json_decode($stdout, true))) {
                 continue;
             }
 
