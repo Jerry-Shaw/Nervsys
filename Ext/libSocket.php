@@ -200,9 +200,7 @@ class libSocket extends Factory
      */
     protected function readMsg(string $sock_id): string
     {
-        $msg = fread($this->clients[$sock_id], 1024);
-
-        if (false === $msg || '' === $msg) {
+        if (false === ($msg = fread($this->clients[$sock_id], 1024))) {
             fclose($this->clients[$sock_id]);
             unset($this->clients[$sock_id], $sock_id, $msg);
             return '';
@@ -375,14 +373,17 @@ class libSocket extends Factory
      */
     protected function wsEncode(string $msg): string
     {
-        $buff = '';
-        $seg  = str_split($msg, 125);
+        $msg_len = strlen($msg);
 
-        foreach ($seg as $val) {
-            $buff .= chr(0x81) . chr(strlen($val)) . $val;
+        if (125 >= $msg_len) {
+            $buff = chr(0x81) . chr($msg_len) . $msg;
+        } elseif (65535 >= $msg_len) {
+            $buff = chr(0x81) . chr(126) . pack('n', $msg_len) . $msg;
+        } else {
+            $buff = chr(0x81) . chr(127) . pack('xxxxN', $msg_len) . $msg;
         }
 
-        unset($msg, $seg, $val);
+        unset($msg, $msg_len);
         return $buff;
     }
 
@@ -414,8 +415,13 @@ class libSocket extends Factory
             //Read from socket and send to MPC
             foreach ($read as $sock_id => $client) {
                 if ($sock_id !== $this->master_id) {
+                    //Read all client message (binary|string)
+                    if ('' === ($socket_msg = $this->readMsg($sock_id))) {
+                        break;
+                    }
+
                     //Send to onMessage logic via MPC
-                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->readMsg($sock_id)]);
+                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
                 } else {
                     //Accept new connection
                     try {
@@ -442,7 +448,7 @@ class libSocket extends Factory
                 $this->sendMsg($sock_id, $this->lib_mpc->fetch($stk));
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $accept, $sid, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $accept, $sid, $send_tk, $stk);
         }
 
         unset($write, $except);
@@ -481,17 +487,20 @@ class libSocket extends Factory
                 switch ($client_status[$sock_id]) {
                     case 1:
                         //Read all client message (json)
-                        if ('' === $socket_msg = $this->readMsg($sock_id)) {
-                            unset($this->clients[$sock_id], $client_status[$sock_id]);
-                            fclose($client);
+                        if ('' === ($socket_msg = $this->readMsg($sock_id))) {
                             break;
                         }
 
                         //Get header codes
                         $codes = $this->wsGetCodes($socket_msg);
 
+                        //Skip Ping/Pong or non-masked frames
+                        if (in_array($codes['opcode'], [0x9, 0xA], true) || 1 !== $codes['mask']) {
+                            break;
+                        }
+
                         //Check mask & opcode (mask: 0 || connection closed: 8)
-                        if (1 !== $codes['mask'] || 8 === $codes['opcode']) {
+                        if (0x8 === $codes['opcode']) {
                             unset($this->clients[$sock_id], $client_status[$sock_id]);
                             fclose($client);
                             break;
@@ -536,7 +545,7 @@ class libSocket extends Factory
                 $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($stk)));
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $codes, $socket_msg, $accept, $accept_id, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $codes, $accept, $accept_id, $send_tk, $stk);
         }
 
         unset($write, $except, $client_status);
