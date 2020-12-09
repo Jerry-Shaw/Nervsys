@@ -43,6 +43,7 @@ class libSocket extends Factory
     public array $master  = [];
     public array $clients = [];
 
+    /** @var \Ext\libMPC $lib_mpc */
     public libMPC $lib_mpc;
 
     public string $handler_class;
@@ -222,7 +223,11 @@ class libSocket extends Factory
         $send_tk = [];
 
         foreach ($msg_tk as $sock_id => $mtk) {
-            if (!is_array($msg_data = json_decode($this->lib_mpc->fetch($mtk), true))) {
+            if ('' === ($msg = trim($this->lib_mpc->fetch($mtk)))) {
+                continue;
+            }
+
+            if (!is_array($msg_data = json_decode($msg, true))) {
                 fclose($this->clients[$sock_id]);
                 unset($this->clients[$sock_id]);
                 continue;
@@ -242,7 +247,7 @@ class libSocket extends Factory
             $sid_ol ? $send_tk[$to_sid] = $stk : $this->lib_mpc->fetch($stk);
         }
 
-        unset($msg_tk, $sock_id, $mtk, $msg_data, $to_sid, $sid_ol, $stk);
+        unset($msg_tk, $sock_id, $mtk, $msg, $msg_data, $to_sid, $sid_ol, $stk);
         return $send_tk;
     }
 
