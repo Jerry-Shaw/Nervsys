@@ -279,15 +279,19 @@ class libSocket extends Factory
     }
 
     /**
-     * WebSocket get opcode
+     * Get WebSocket header codes (fin, opcode, mask)
      *
      * @param string $buff
      *
-     * @return int
+     * @return int[]
      */
-    protected function wsGetOpcode(string $buff): int
+    protected function wsGetCodes(string $buff): array
     {
-        return ord($buff[0]) & 0x0F;
+        $char = ord($buff[0]);
+        $code = ['fin' => $char >> 7, 'opcode' => $char & 0x0F, 'mask' => ord($buff[1]) >> 7];
+
+        unset($buff, $char);
+        return $code;
     }
 
     /**
@@ -476,11 +480,18 @@ class libSocket extends Factory
             foreach ($read as $sock_id => $client) {
                 switch ($client_status[$sock_id]) {
                     case 1:
-                        //Read all client message in length (json)
-                        $socket_msg = $this->readMsg($sock_id);
+                        //Read all client message (json)
+                        if ('' === $socket_msg = $this->readMsg($sock_id)) {
+                            unset($this->clients[$sock_id], $client_status[$sock_id]);
+                            fclose($client);
+                            break;
+                        }
 
-                        //Check opcode (connection closed: 8)
-                        if ('' === $socket_msg || 8 === $this->wsGetOpcode($socket_msg)) {
+                        //Get header codes
+                        $codes = $this->wsGetCodes($socket_msg);
+
+                        //Check mask & opcode (mask: 0 || connection closed: 8)
+                        if (1 !== $codes['mask'] || 8 === $codes['opcode']) {
                             unset($this->clients[$sock_id], $client_status[$sock_id]);
                             fclose($client);
                             break;
@@ -525,7 +536,7 @@ class libSocket extends Factory
                 $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($stk)));
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $accept, $accept_id, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $codes, $socket_msg, $accept, $accept_id, $send_tk, $stk);
         }
 
         unset($write, $except, $client_status);
