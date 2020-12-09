@@ -502,7 +502,7 @@ class libSocket extends Factory
 
             //Send message
             foreach ($send_tk as $sock_id => $stk) {
-                $this->sendMsg($sock_id, $this->lib_mpc->fetch($stk));
+                $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($stk)));
             }
 
             unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $connect, $accept_id, $send_tk, $stk);
