@@ -388,6 +388,28 @@ class libSocket extends Factory
     }
 
     /**
+     * Send WebSocket Ping frame
+     *
+     * @param string $sock_id
+     */
+    protected function wsPing(string $sock_id): void
+    {
+        $this->sendMsg($sock_id, chr(0x89) . chr(0));
+        unset($sock_id);
+    }
+
+    /**
+     * Send WebSocket Pong frame
+     *
+     * @param string $sock_id
+     */
+    protected function wsPong(string $sock_id): void
+    {
+        $this->sendMsg($sock_id, chr(0x8A) . chr(0));
+        unset($sock_id);
+    }
+
+    /**
      * Tcp server
      *
      * @throws \Exception
@@ -494,12 +516,23 @@ class libSocket extends Factory
                         //Get header codes
                         $codes = $this->wsGetCodes($socket_msg);
 
-                        //Skip Ping/Pong or non-masked frames
-                        if (in_array($codes['opcode'], [0x9, 0xA], true) || 1 !== $codes['mask']) {
+                        //Respond to ping frame (ping:0x9)
+                        if (0x9 === $codes['opcode']) {
+                            $this->wsPong($sock_id);
                             break;
                         }
 
-                        //Check mask & opcode (mask: 0 || connection closed: 8)
+                        //Accept pong frame (pong:0xA)
+                        if (0xA === $codes['opcode']) {
+                            break;
+                        }
+
+                        //Drop non-masked frames
+                        if (1 !== $codes['mask']) {
+                            break;
+                        }
+
+                        //Check opcode (connection closed: 8)
                         if (0x8 === $codes['opcode']) {
                             unset($this->clients[$sock_id], $client_status[$sock_id]);
                             fclose($client);
