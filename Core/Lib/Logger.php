@@ -49,10 +49,7 @@ class Logger extends Factory
      */
     public function show(string $err_lv, string $message, array $context = []): void
     {
-        if ($this->app->core_debug) {
-            echo $this->format($err_lv, $message, $context);
-        }
-
+        echo $this->format($err_lv, $message, $context);
         unset($err_lv, $message, $context);
     }
 
@@ -75,7 +72,6 @@ class Logger extends Factory
         }
 
         fwrite($file_handle[$log_key], $this->format($name, $arguments[0], $arguments[1] ?? []));
-
         unset($name, $arguments, $log_key, $log_path);
     }
 
