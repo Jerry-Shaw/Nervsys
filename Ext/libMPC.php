@@ -48,6 +48,7 @@ class libMPC extends Factory
     public int    $proc_cnt = 10;
     public int    $buf_size = 4096;
     public string $php_path = '';
+    public string $proc_cmd = '';
 
     public array $proc_list = [];
     public array $pipe_list = [];
@@ -108,18 +109,18 @@ class libMPC extends Factory
      */
     public function start(): self
     {
-        $this->app = App::new();
-        $proc_cmd  = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
+        $this->app      = App::new();
+        $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
 
         //Create process
         for ($i = 0; $i < $this->proc_cnt; ++$i) {
-            $this->createProc($i, $proc_cmd);
+            $this->createProc($i);
         }
 
         //Register MPC closeAll function
         register_shutdown_function([$this, 'closeAll']);
 
-        unset($proc_cmd, $i);
+        unset($i);
         return $this;
     }
 
@@ -133,6 +134,11 @@ class libMPC extends Factory
      */
     public function addJob(string $c, array $data = []): string
     {
+        //Check proc status
+        if (!(proc_get_status($this->proc_list[$this->proc_idx])['running'])) {
+            $this->createProc($this->proc_idx);
+        }
+
         //Get current job count and increase
         $job_count = ++$this->job_count[$this->proc_idx];
 
@@ -281,16 +287,15 @@ class libMPC extends Factory
     /**
      * Create process
      *
-     * @param int    $pid
-     * @param string $cmd
+     * @param int $pid
      *
      * @return bool
      */
-    private function createProc(int $pid, string $cmd): bool
+    private function createProc(int $pid): bool
     {
         //Create process
         $proc = proc_open(
-            $this->php_path . ' ' . $cmd,
+            $this->php_path . ' ' . $this->proc_cmd,
             [
                 ['pipe', 'r'],
                 ['pipe', 'w'],
@@ -309,7 +314,7 @@ class libMPC extends Factory
         $this->proc_list[$pid] = $proc;
         $this->pipe_list[$pid] = $pipes;
 
-        unset($pid, $cmd, $proc, $pipes);
+        unset($pid, $proc, $pipes);
         return true;
     }
 
@@ -378,7 +383,9 @@ class libMPC extends Factory
         while (0 <= --$count && 0 <= --$this->job_count[$idx]) {
             //Read from pipe STDOUT
             if (false === ($stdout = fgets($this->pipe_list[$idx][1]))) {
+                //Close & restart
                 $this->close($idx);
+                $this->createProc($idx);
                 break;
             }
 
