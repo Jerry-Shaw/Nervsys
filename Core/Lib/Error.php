@@ -169,8 +169,9 @@ class Error extends Factory
      *
      * @param \Throwable $throwable
      * @param bool       $stop_on_error
+     * @param bool       $display_errors
      */
-    public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true): void
+    public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $display_errors = true): void
     {
         //Get exception name
         $exception = get_class($throwable);
@@ -205,14 +206,13 @@ class Error extends Factory
             'Peak'     => round(memory_get_peak_usage() / 1048576, 4) . 'MB',
             'Memory'   => round(memory_get_usage() / 1048576, 4) . 'MB',
             'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
-
             //Params & trace
             'Param'    => ['ip' => $app->client_ip, 'cmd' => $io_unit->src_cmd, 'data' => $io_unit->src_input, 'argv' => $io_unit->src_argv],
             'Trace'    => $this->getTraceHist($throwable->getTrace())
         ];
 
-        //Show & Save logs
-        $logger->show($err_lv, $message, $context);
+        //Display & Save logs
+        $display_errors && $app->core_debug && $logger->show($err_lv, $message, $context);
         $logger->$err_lv($message, $context);
 
         //Exit on error
@@ -221,7 +221,7 @@ class Error extends Factory
             exit();
         }
 
-        unset($throwable, $stop_on_error, $exception, $err_code, $err_lv, $app, $io_unit, $logger, $message, $context);
+        unset($throwable, $stop_on_error, $display_errors, $exception, $err_code, $err_lv, $app, $io_unit, $logger, $message, $context);
     }
 
     /**
