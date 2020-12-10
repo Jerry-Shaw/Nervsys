@@ -210,7 +210,7 @@ class libSocket extends Factory
             }
         } catch (\Throwable $throwable) {
             fclose($this->clients[$sock_id]);
-            unset($this->clients[$sock_id], $sock_id, $msg, $throwable);
+            unset($this->clients[$sock_id], $throwable, $sock_id, $msg);
             return '';
         }
 
@@ -586,13 +586,5 @@ class libSocket extends Factory
         }
 
         unset($write, $except, $client_status);
-    }
-
-    /**
-     * UDP server
-     */
-    private function onUdp(): void
-    {
-
     }
 }
