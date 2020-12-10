@@ -364,7 +364,7 @@ class libMPC extends Factory
                 }
             }
         } catch (\Throwable $throwable) {
-            $this->error->exceptionHandler($throwable, false);
+            $this->error->exceptionHandler($throwable, false, false);
             unset($throwable);
         }
 
