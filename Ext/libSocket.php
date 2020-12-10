@@ -200,14 +200,18 @@ class libSocket extends Factory
      */
     protected function readMsg(string $sock_id): string
     {
-        if (false === ($msg = fread($this->clients[$sock_id], 1024))) {
-            fclose($this->clients[$sock_id]);
-            unset($this->clients[$sock_id], $sock_id, $msg);
-            return '';
-        }
+        try {
+            if (false === ($msg = fread($this->clients[$sock_id], 1024))) {
+                throw new \Exception('Read message failed!', E_USER_NOTICE);
+            }
 
-        while ('' !== ($buff = fread($this->clients[$sock_id], 4096))) {
-            $msg .= $buff;
+            while ('' !== ($buff = fread($this->clients[$sock_id], 4096))) {
+                $msg .= $buff;
+            }
+        } catch (\Throwable $throwable) {
+            fclose($this->clients[$sock_id]);
+            unset($this->clients[$sock_id], $sock_id, $msg, $throwable);
+            return '';
         }
 
         unset($sock_id, $buff);
