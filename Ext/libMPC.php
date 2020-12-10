@@ -134,11 +134,6 @@ class libMPC extends Factory
      */
     public function addJob(string $c, array $data = []): string
     {
-        //Check proc status
-        if (!(proc_get_status($this->proc_list[$this->proc_idx])['running'])) {
-            $this->createProc($this->proc_idx);
-        }
-
         //Get current job count and increase
         $job_count = ++$this->job_count[$this->proc_idx];
 
@@ -188,6 +183,40 @@ class libMPC extends Factory
 
         unset($this->job_result[$ticket], $ticket, $idx, $tk_data);
         return $result;
+    }
+
+    /**
+     * Create process
+     *
+     * @param int $pid
+     *
+     * @return bool
+     */
+    public function createProc(int $pid): bool
+    {
+        //Create process
+        $proc = proc_open(
+            $this->php_path . ' ' . $this->proc_cmd,
+            [
+                ['pipe', 'r'],
+                ['pipe', 'w'],
+                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-' . (string)$pid . '.log', 'ab+']
+            ],
+            $pipes
+        );
+
+        if (!is_resource($proc)) {
+            return false;
+        }
+
+        //Save process properties
+        $this->job_mtk[$pid]   = 0;
+        $this->job_count[$pid] = 0;
+        $this->proc_list[$pid] = $proc;
+        $this->pipe_list[$pid] = $pipes;
+
+        unset($pid, $proc, $pipes);
+        return true;
     }
 
     /**
@@ -241,8 +270,10 @@ class libMPC extends Factory
      * Close one process
      *
      * @param int $idx
+     *
+     * @return $this
      */
-    public function close(int $idx): void
+    public function close(int $idx): self
     {
         $status = proc_get_status($this->proc_list[$idx]);
 
@@ -262,18 +293,22 @@ class libMPC extends Factory
         $this->job_count[$idx] = 0;
 
         unset($this->proc_list[$idx], $this->pipe_list[$idx], $idx, $status, $key, $pipe);
+        return $this;
     }
 
     /**
      * Close All process
+     *
+     * @return $this
      */
-    public function closeAll(): void
+    public function closeAll(): self
     {
         foreach ($this->proc_list as $idx => $proc) {
             $this->close($idx);
         }
 
         unset($idx, $proc);
+        return $this;
     }
 
     /**
@@ -282,40 +317,6 @@ class libMPC extends Factory
     public function __destruct()
     {
         $this->closeAll();
-    }
-
-    /**
-     * Create process
-     *
-     * @param int $pid
-     *
-     * @return bool
-     */
-    private function createProc(int $pid): bool
-    {
-        //Create process
-        $proc = proc_open(
-            $this->php_path . ' ' . $this->proc_cmd,
-            [
-                ['pipe', 'r'],
-                ['pipe', 'w'],
-                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-' . (string)$pid . '.log', 'ab+']
-            ],
-            $pipes
-        );
-
-        if (!is_resource($proc)) {
-            return false;
-        }
-
-        //Save process properties
-        $this->job_mtk[$pid]   = 0;
-        $this->job_count[$pid] = 0;
-        $this->proc_list[$pid] = $proc;
-        $this->pipe_list[$pid] = $pipes;
-
-        unset($pid, $proc, $pipes);
-        return true;
     }
 
     /**
@@ -383,7 +384,6 @@ class libMPC extends Factory
         while (0 <= --$count && 0 <= --$this->job_count[$idx]) {
             //Read from pipe STDOUT
             if (false === ($stdout = fgets($this->pipe_list[$idx][1]))) {
-                //Close & restart
                 $this->close($idx);
                 $this->createProc($idx);
                 break;
