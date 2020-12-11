@@ -353,19 +353,19 @@ class libSocket extends Factory
             return '';
         }
 
-        $proto_line = '';
         $proto_pos  += 24;
         $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
         $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['sid' => $sid, 'proto' => $proto_val]));
 
-        if (true === json_decode($proto_pass, true)) {
-            if (false !== ($val_pos = strrpos($proto_val, ','))) {
-                $proto_val = substr($proto_val, $val_pos + 2);
-            }
+        //Reject handshake
+        if (true !== json_decode($proto_pass, true)) {
+            unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass);
+            return '';
+        }
 
-            //Build Sec-WebSocket-Protocol response
-            $proto_line = 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n";
-            unset($val_pos);
+        //Only response the last protocol value
+        if (false !== ($val_pos = strrpos($proto_val, ','))) {
+            $proto_val = substr($proto_val, $val_pos + 2);
         }
 
         //Get WebSocket key & rehash
@@ -378,9 +378,9 @@ class libSocket extends Factory
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
             . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n"
-            . $proto_line . "\r\n";
+            . 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n\r\n";
 
-        unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_line, $proto_val, $proto_pass, $key_val);
+        unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass, $val_pos, $key_val);
         return $response;
     }
 
