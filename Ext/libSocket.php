@@ -228,7 +228,7 @@ class libSocket extends Factory
         }
 
         unset($sock_id, $buff);
-        return trim($msg);
+        return $msg;
     }
 
     /**
