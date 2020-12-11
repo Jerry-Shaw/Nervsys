@@ -49,10 +49,11 @@ class libSocket extends Factory
      * Registered handler class
      *
      * Methods:
-     * onConnect(string sid)
-     * onMessage(string msg)
-     * onSend(array data, string to_sid, bool online)
-     * onClose(string sid)
+     * onConnect(string sid): array
+     * onHandshake(string proto): bool
+     * onMessage(string msg): array
+     * onSend(array data, string to_sid, bool online): array
+     * onClose(string sid): void
      *
      * @var string handler class name
      */
@@ -333,30 +334,50 @@ class libSocket extends Factory
      */
     protected function wsHandshake(string $header): string
     {
-        //WebSocket key name & key mask
+        //WebSocket key name and position
         $key_name = 'Sec-WebSocket-Key';
-        $key_mask = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+        $key_pos  = strpos($header, $key_name);
 
-        //Get key position
-        if (false === $key_pos = strpos($header, $key_name)) {
+        if (false === $key_pos) {
+            unset($header, $key_name, $key_pos);
             return '';
         }
 
-        //Move key offset
-        $key_pos += strlen($key_name) + 2;
+        //Process Sec-WebSocket-Protocol
+        $proto_pass = false;
+        $proto_name = 'Sec-WebSocket-Protocol';
+        $proto_pos  = strpos($header, $proto_name);
+
+        if (false !== $proto_pos) {
+            $proto_pos  += 24;
+            $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
+            $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['proto' => $proto_val]));
+
+            //Handshake denied
+            if (!$proto_pass) {
+                unset($header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass);
+                return '';
+            }
+        }
 
         //Get WebSocket key & rehash
-        $key = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
-        $key = hash('sha1', $key . $key_mask, true);
+        $key_pos += 19;
+        $key_val = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
+        $key_val = hash('sha1', $key_val . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true);
 
         //Generate response
         $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
-            . 'Sec-WebSocket-Accept: ' . base64_encode($key) . "\r\n\r\n";
+            . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n";
 
-        unset($header, $key_name, $key_mask, $key_pos, $key);
-        return $response;
+        //Add Sec-WebSocket-Protocol on passed
+        if ($proto_pass) {
+            $response .= 'Sec-WebSocket-Protocol: Protocol Passed!' . "\r\n";
+        }
+
+        unset($header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass, $key_val);
+        return $response . "\r\n";
     }
 
     /**
