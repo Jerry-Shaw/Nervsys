@@ -44,6 +44,18 @@ class libSocket extends Factory
     public array $clients = [];
 
     public string $master_id;
+
+    /**
+     * Registered handler class
+     *
+     * Methods:
+     * onConnect(string sid)
+     * onMessage(string msg)
+     * onSend(array data, string to_sid, bool online)
+     * onClose(string sid)
+     *
+     * @var string handler class name
+     */
     public string $handler_class;
 
     /** @var \Ext\libMPC $lib_mpc */
@@ -209,8 +221,8 @@ class libSocket extends Factory
                 $msg .= $buff;
             }
         } catch (\Throwable $throwable) {
-            fclose($this->clients[$sock_id]);
-            unset($this->clients[$sock_id], $throwable, $sock_id, $msg);
+            $this->close($sock_id);
+            unset($throwable, $sock_id, $msg);
             return '';
         }
 
@@ -235,26 +247,25 @@ class libSocket extends Factory
             }
 
             if (!is_array($msg_data = json_decode($msg, true))) {
-                fclose($this->clients[$sock_id]);
-                unset($this->clients[$sock_id]);
+                $this->close($sock_id);
                 continue;
             }
 
             $to_sid = (string)($msg_data['to_sid'] ?? '');
-            $sid_ol = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
+            $online = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
 
             //Send to onSend logic via MPC
             $stk = $this->addMpc('onSend', [
                 'data'   => $msg_data,
                 'to_sid' => $to_sid,
-                'sid_ol' => $sid_ol
+                'online' => $online
             ]);
 
             //Save stk to send_tk or drop offline data
-            $sid_ol ? $send_tk[$to_sid] = $stk : $this->lib_mpc->fetch($stk);
+            $online ? $send_tk[$to_sid] = $stk : $this->lib_mpc->fetch($stk);
         }
 
-        unset($msg_tk, $sock_id, $mtk, $msg, $msg_data, $to_sid, $sid_ol, $stk);
+        unset($msg_tk, $sock_id, $mtk, $msg, $msg_data, $to_sid, $online, $stk);
         return $send_tk;
     }
 
@@ -271,13 +282,30 @@ class libSocket extends Factory
         try {
             $byte = fwrite($this->clients[$sock_id], $msg);
         } catch (\Throwable $throwable) {
-            fclose($this->clients[$sock_id]);
-            unset($this->clients[$sock_id], $sock_id, $msg, $byte, $throwable);
+            $this->close($sock_id);
+            unset($throwable, $sock_id, $msg, $byte);
             return 0;
         }
 
         unset($sock_id, $msg);
         return $byte;
+    }
+
+    /**
+     * Close connection
+     *
+     * @param string $sock_id
+     */
+    protected function close(string $sock_id): void
+    {
+        try {
+            fclose($this->clients[$sock_id]);
+        } catch (\Throwable $throwable) {
+            unset($throwable);
+        }
+
+        $this->lib_mpc->fetch($this->addMpc('onClose', ['sid' => $sock_id]));
+        unset($this->clients[$sock_id], $sock_id);
     }
 
     /**
@@ -340,7 +368,10 @@ class libSocket extends Factory
      */
     protected function wsDecode(string $buff): string
     {
-        switch (ord($buff[1]) & 0x7F) {
+        //Get payload length
+        $payload_len = (ord($buff[1]) & 0x7F);
+
+        switch ($payload_len) {
             case 126:
                 $mask = substr($buff, 4, 4);
                 $data = substr($buff, 8);
@@ -364,7 +395,7 @@ class libSocket extends Factory
             $msg .= $data[$i] ^ $mask[$i % 4];
         }
 
-        unset($buff, $mask, $data, $len, $i);
+        unset($buff, $payload_len, $mask, $data, $len, $i);
         return $msg;
     }
 
@@ -538,8 +569,8 @@ class libSocket extends Factory
 
                         //Check opcode (connection closed: 8)
                         if (0x8 === $codes['opcode']) {
-                            unset($this->clients[$sock_id], $client_status[$sock_id]);
-                            fclose($client);
+                            unset($client_status[$sock_id]);
+                            $this->close($sock_id);
                             break;
                         }
 
@@ -581,6 +612,9 @@ class libSocket extends Factory
             foreach ($send_tk as $sock_id => $stk) {
                 $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($stk)));
             }
+
+            //Sync status list with client list
+            $client_status = array_intersect_key($client_status, $this->clients);
 
             unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $codes, $accept, $accept_id, $send_tk, $stk);
         }
