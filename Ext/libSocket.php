@@ -354,7 +354,7 @@ class libSocket extends Factory
             $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
             $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['proto' => $proto_val]));
 
-            if ($proto_pass) {
+            if (true === json_decode($proto_pass, true)) {
                 //Add Sec-WebSocket-Protocol value
                 if (false !== ($val_pos = strrpos($proto_val, ','))) {
                     $proto_val = substr($proto_val, $val_pos + 2);
@@ -378,15 +378,11 @@ class libSocket extends Factory
         $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
-            . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n";
+            . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n"
+            . $proto_head . "\r\n";
 
-        //Add Sec-WebSocket-Protocol on passed
-        if ($proto_pass) {
-            $response .= $proto_head;
-        }
-
-        unset($header, $key_name, $key_pos, $proto_head, $proto_pass, $proto_name, $proto_pos, $proto_val, $proto_pass, $key_val);
-        return $response . "\r\n";
+        unset($header, $key_name, $key_pos, $proto_head, $proto_pass, $proto_name, $proto_pos, $proto_val, $key_val);
+        return $response;
     }
 
     /**
