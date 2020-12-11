@@ -569,6 +569,7 @@ class libSocket extends Factory
                     case 1:
                         //Read all client message (json)
                         if ('' === ($socket_msg = $this->readMsg($sock_id))) {
+                            unset($socket_msg);
                             break;
                         }
 
@@ -577,36 +578,51 @@ class libSocket extends Factory
 
                         //Respond to ping frame (ping:0x9)
                         if (0x9 === $codes['opcode']) {
+                            unset($socket_msg, $codes);
                             $this->wsPong($sock_id);
                             break;
                         }
 
                         //Accept pong frame (pong:0xA)
                         if (0xA === $codes['opcode']) {
+                            unset($socket_msg, $codes);
                             break;
                         }
 
                         //Drop non-masked frames
                         if (1 !== $codes['mask']) {
+                            unset($socket_msg, $codes);
                             break;
                         }
 
                         //Check opcode (connection closed: 8)
                         if (0x8 === $codes['opcode']) {
-                            unset($client_status[$sock_id]);
+                            unset($client_status[$sock_id], $socket_msg, $codes);
                             $this->close($sock_id);
                             break;
                         }
 
                         //Send to onMessage logic via MPC
                         $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->wsDecode($socket_msg)]);
+                        unset($socket_msg, $codes);
                         break;
 
                     case 2:
                         //Send handshake and sid info
                         $client_status[$sock_id] = 1;
-                        $this->sendMsg($sock_id, $this->wsHandshake($this->readMsg($sock_id)));
+
+                        //Close connection (protocol error)
+                        if ('' === ($response = $this->wsHandshake($this->readMsg($sock_id)))) {
+                            unset($client_status[$sock_id], $response);
+                            $this->close($sock_id);
+                            break;
+                        }
+
+                        //Send handshake and connection
+                        $this->sendMsg($sock_id, $response);
                         $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
+
+                        unset($response);
                         break;
 
                     default:
@@ -619,12 +635,14 @@ class libSocket extends Factory
                             stream_set_blocking($accept, false);
                             $accept_id = $this->genId();
                         } catch (\Throwable $throwable) {
-                            unset($throwable);
+                            unset($throwable, $accept, $accept_id);
                             break;
                         }
 
                         $this->clients[$accept_id] = $accept;
                         $client_status[$accept_id] = 2;
+
+                        unset($accept, $accept_id);
                         break;
                 }
             }
@@ -639,8 +657,7 @@ class libSocket extends Factory
 
             //Sync status list with client list
             $client_status = array_intersect_key($client_status, $this->clients);
-
-            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $codes, $accept, $accept_id, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $send_tk, $stk);
         }
 
         unset($write, $except, $client_status);
