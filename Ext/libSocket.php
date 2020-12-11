@@ -344,6 +344,7 @@ class libSocket extends Factory
         }
 
         //Process Sec-WebSocket-Protocol
+        $proto_head = '';
         $proto_pass = false;
         $proto_name = 'Sec-WebSocket-Protocol';
         $proto_pos  = strpos($header, $proto_name);
@@ -353,9 +354,17 @@ class libSocket extends Factory
             $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
             $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['proto' => $proto_val]));
 
-            //Handshake denied
-            if (!$proto_pass) {
-                unset($header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass);
+            if ($proto_pass) {
+                //Add Sec-WebSocket-Protocol value
+                if (false !== ($val_pos = strrpos($proto_val, ','))) {
+                    $proto_val = substr($proto_val, $val_pos + 2);
+                }
+
+                $proto_head = 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n";
+                unset($val_pos);
+            } else {
+                //Handshake denied
+                unset($header, $key_name, $key_pos, $proto_head, $proto_pass, $proto_name, $proto_pos, $proto_val);
                 return '';
             }
         }
@@ -373,10 +382,10 @@ class libSocket extends Factory
 
         //Add Sec-WebSocket-Protocol on passed
         if ($proto_pass) {
-            $response .= 'Sec-WebSocket-Protocol: Protocol Passed!' . "\r\n";
+            $response .= $proto_head;
         }
 
-        unset($header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass, $key_val);
+        unset($header, $key_name, $key_pos, $proto_head, $proto_pass, $proto_name, $proto_pos, $proto_val, $proto_pass, $key_val);
         return $response . "\r\n";
     }
 
