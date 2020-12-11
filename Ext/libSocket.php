@@ -182,7 +182,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    protected function genId(): string
+    public function genId(): string
     {
         $uid = substr(hash('md5', uniqid(microtime() . (string)mt_rand(), true)), 8, 16);
         return !isset($this->clients[$uid]) ? $uid : $this->genId();
@@ -196,7 +196,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    protected function addMpc(string $method, array $data): string
+    public function addMpc(string $method, array $data): string
     {
         $tk = $this->lib_mpc->addJob($this->handler_class . '/' . $method, $data);
 
@@ -211,7 +211,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    protected function readMsg(string $sock_id): string
+    public function readMsg(string $sock_id): string
     {
         try {
             if (false === ($msg = fread($this->clients[$sock_id], 1024))) {
@@ -238,7 +238,7 @@ class libSocket extends Factory
      *
      * @return array
      */
-    protected function prepMsg(array $msg_tk): array
+    public function prepMsg(array $msg_tk): array
     {
         $send_tk = [];
 
@@ -278,7 +278,7 @@ class libSocket extends Factory
      *
      * @return int
      */
-    protected function sendMsg(string $sock_id, string $msg): int
+    public function sendMsg(string $sock_id, string $msg): int
     {
         try {
             $byte = fwrite($this->clients[$sock_id], $msg);
@@ -297,7 +297,7 @@ class libSocket extends Factory
      *
      * @param string $sock_id
      */
-    protected function close(string $sock_id): void
+    public function close(string $sock_id): void
     {
         try {
             fclose($this->clients[$sock_id]);
@@ -316,7 +316,7 @@ class libSocket extends Factory
      *
      * @return int[]
      */
-    protected function wsGetCodes(string $buff): array
+    public function wsGetCodes(string $buff): array
     {
         $char = ord($buff[0]);
         $code = ['fin' => $char >> 7, 'opcode' => $char & 0x0F, 'mask' => ord($buff[1]) >> 7];
@@ -332,9 +332,9 @@ class libSocket extends Factory
      *
      * @return string
      */
-    protected function wsHandshake(string $header): string
+    public function wsHandshake(string $header): string
     {
-        //WebSocket key name and position
+        //Validate Sec-WebSocket-Key
         $key_name = 'Sec-WebSocket-Key';
         $key_pos  = strpos($header, $key_name);
 
@@ -343,30 +343,28 @@ class libSocket extends Factory
             return '';
         }
 
-        //Process Sec-WebSocket-Protocol
-        $proto_head = '';
-        $proto_pass = false;
+        //Validate Sec-WebSocket-Protocol
         $proto_name = 'Sec-WebSocket-Protocol';
         $proto_pos  = strpos($header, $proto_name);
 
-        if (false !== $proto_pos) {
-            $proto_pos  += 24;
-            $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
-            $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['proto' => $proto_val]));
+        if (false === $proto_pos) {
+            unset($header, $key_name, $key_pos, $proto_name, $proto_pos);
+            return '';
+        }
 
-            if (true === json_decode($proto_pass, true)) {
-                //Add Sec-WebSocket-Protocol value
-                if (false !== ($val_pos = strrpos($proto_val, ','))) {
-                    $proto_val = substr($proto_val, $val_pos + 2);
-                }
+        $proto_line = '';
+        $proto_pos  += 24;
+        $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
+        $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['proto' => $proto_val]));
 
-                $proto_head = 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n";
-                unset($val_pos);
-            } else {
-                //Handshake denied
-                unset($header, $key_name, $key_pos, $proto_head, $proto_pass, $proto_name, $proto_pos, $proto_val);
-                return '';
+        if (true === json_decode($proto_pass, true)) {
+            if (false !== ($val_pos = strrpos($proto_val, ','))) {
+                $proto_val = substr($proto_val, $val_pos + 2);
             }
+
+            //Build Sec-WebSocket-Protocol response
+            $proto_line = 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n";
+            unset($val_pos);
         }
 
         //Get WebSocket key & rehash
@@ -379,9 +377,9 @@ class libSocket extends Factory
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
             . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n"
-            . $proto_head . "\r\n";
+            . $proto_line . "\r\n";
 
-        unset($header, $key_name, $key_pos, $proto_head, $proto_pass, $proto_name, $proto_pos, $proto_val, $key_val);
+        unset($header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_line, $proto_val, $proto_pass, $key_val);
         return $response;
     }
 
@@ -392,7 +390,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    protected function wsDecode(string $buff): string
+    public function wsDecode(string $buff): string
     {
         //Get payload length
         $payload_len = (ord($buff[1]) & 0x7F);
@@ -432,7 +430,7 @@ class libSocket extends Factory
      *
      * @return string
      */
-    protected function wsEncode(string $msg): string
+    public function wsEncode(string $msg): string
     {
         $msg_len = strlen($msg);
 
@@ -453,7 +451,7 @@ class libSocket extends Factory
      *
      * @param string $sock_id
      */
-    protected function wsPing(string $sock_id): void
+    public function wsPing(string $sock_id): void
     {
         $this->sendMsg($sock_id, chr(0x89) . chr(0));
         unset($sock_id);
@@ -464,7 +462,7 @@ class libSocket extends Factory
      *
      * @param string $sock_id
      */
-    protected function wsPong(string $sock_id): void
+    public function wsPong(string $sock_id): void
     {
         $this->sendMsg($sock_id, chr(0x8A) . chr(0));
         unset($sock_id);
