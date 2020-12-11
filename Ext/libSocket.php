@@ -50,7 +50,7 @@ class libSocket extends Factory
      *
      * Methods:
      * onConnect(string sid): array
-     * onHandshake(string proto): bool
+     * onHandshake(string sid, string proto): bool
      * onMessage(string msg): array
      * onSend(array data, string to_sid, bool online): array
      * onClose(string sid): void
@@ -328,18 +328,19 @@ class libSocket extends Factory
     /**
      * WebSocket generate handshake response
      *
+     * @param string $sid
      * @param string $header
      *
      * @return string
      */
-    public function wsHandshake(string $header): string
+    public function wsHandshake(string $sid, string $header): string
     {
         //Validate Sec-WebSocket-Key
         $key_name = 'Sec-WebSocket-Key';
         $key_pos  = strpos($header, $key_name);
 
         if (false === $key_pos) {
-            unset($header, $key_name, $key_pos);
+            unset($sid, $header, $key_name, $key_pos);
             return '';
         }
 
@@ -348,14 +349,14 @@ class libSocket extends Factory
         $proto_pos  = strpos($header, $proto_name);
 
         if (false === $proto_pos) {
-            unset($header, $key_name, $key_pos, $proto_name, $proto_pos);
+            unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos);
             return '';
         }
 
         $proto_line = '';
         $proto_pos  += 24;
         $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
-        $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['proto' => $proto_val]));
+        $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['sid' => $sid, 'proto' => $proto_val]));
 
         if (true === json_decode($proto_pass, true)) {
             if (false !== ($val_pos = strrpos($proto_val, ','))) {
@@ -379,7 +380,7 @@ class libSocket extends Factory
             . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n"
             . $proto_line . "\r\n";
 
-        unset($header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_line, $proto_val, $proto_pass, $key_val);
+        unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_line, $proto_val, $proto_pass, $key_val);
         return $response;
     }
 
@@ -612,7 +613,7 @@ class libSocket extends Factory
                         $client_status[$sock_id] = 1;
 
                         //Close connection (protocol error)
-                        if ('' === ($response = $this->wsHandshake($this->readMsg($sock_id)))) {
+                        if ('' === ($response = $this->wsHandshake($sock_id, $this->readMsg($sock_id)))) {
                             unset($client_status[$sock_id], $response);
                             $this->close($sock_id);
                             break;
