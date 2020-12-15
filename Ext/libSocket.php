@@ -515,12 +515,12 @@ class libSocket extends Factory
         while (true) {
             $read = $this->clients;
 
-            if (false === ($changes = stream_select($read, $write, $except, 60))) {
+            if (false === ($changes = stream_select($read, $write, $except, 30))) {
                 throw new \Exception('Socket server ERROR!', E_USER_ERROR);
             }
 
             //On status changes or time arrived
-            $this->debug($changes . ' clients changed or 60s passed.');
+            $this->debug($changes . ' clients changed in 30s.');
 
             if (0 === $changes) {
                 continue;
@@ -597,12 +597,12 @@ class libSocket extends Factory
         while (true) {
             $read = $this->clients;
 
-            if (false === ($changes = stream_select($read, $write, $except, 60))) {
+            if (false === ($changes = stream_select($read, $write, $except, 30))) {
                 throw new \Exception('Socket server ERROR!', E_USER_ERROR);
             }
 
             //On status changes or time arrived
-            $this->debug($changes . ' clients changed or 60s passed.');
+            $this->debug($changes . ' clients changed in 30s.');
 
             if (0 === $changes) {
                 continue;
