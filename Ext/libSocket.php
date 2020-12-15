@@ -222,7 +222,7 @@ class libSocket extends Factory
         }
 
         //On status changes or time arrived
-        $this->debug($changes . ' changed among ' . count($this->clients) . ' clients.');
+        $this->debug('Monitor: ' . $changes . ' out of ' . count($this->clients) . ' changed.');
 
         unset($write, $except, $changes);
         return $read;
