@@ -222,7 +222,7 @@ class libSocket extends Factory
         }
 
         //On status changes or time arrived
-        $this->debug($changes . ' changed out of ' . count($this->clients) . ' clients.');
+        $this->debug($changes . ' changed among ' . count($this->clients) . ' clients.');
 
         unset($write, $except, $changes);
         return $read;
@@ -348,7 +348,7 @@ class libSocket extends Factory
         $this->lib_mpc->fetch($this->addMpc('onClose', ['sid' => $sock_id]));
 
         //On client exit
-        $this->debug('Exit: "' . $sock_id . '" left from ' . count($this->clients) . ' clients.');
+        $this->debug('Exit: "' . $sock_id . '" left. Still ' . count($this->clients) . ' online.');
 
         unset($this->clients[$sock_id], $sock_id);
     }
@@ -361,7 +361,7 @@ class libSocket extends Factory
     public function debug(string $debug_msg): void
     {
         if ($this->sock_debug) {
-            echo strtr($debug_msg, "\r\n", '\r\n') . PHP_EOL;
+            echo strtr($debug_msg, ["\r" => '\r', "\n" => '\n']) . PHP_EOL;
         }
 
         unset($debug_msg);
