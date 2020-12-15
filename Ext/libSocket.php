@@ -664,8 +664,11 @@ class libSocket extends Factory
 
                         $this->clients[($accept_id = $this->genId())] = $accept;
 
-                        //Close connection (protocol error)
-                        if ('' === ($socket_msg = $this->readMsg($accept_id)) || '' === ($response = $this->wsHandshake($accept_id, $socket_msg))) {
+                        //Read handshake message
+                        $socket_msg = $this->readMsg($accept_id);
+
+                        //Error on handshake
+                        if ('' === ($response = $this->wsHandshake($accept_id, $socket_msg))) {
                             $this->close($accept_id);
                             unset($accept, $accept_id, $response);
                             break;
