@@ -346,6 +346,10 @@ class libSocket extends Factory
         }
 
         $this->lib_mpc->fetch($this->addMpc('onClose', ['sid' => $sock_id]));
+
+        //On client exit
+        $this->debug('Exit: "' . $sock_id . '" left from ' . count($this->clients) . ' clients.');
+
         unset($this->clients[$sock_id], $sock_id);
     }
 
