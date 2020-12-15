@@ -567,16 +567,17 @@ class libSocket extends Factory
                         }
 
                         stream_set_blocking($accept, false);
+
+                        $this->clients[($accept_id = $this->genId())] = $accept;
+                        $this->sendMsg($accept_id, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id])));
                     } catch (\Throwable $throwable) {
-                        unset($throwable);
+                        unset($throwable, $accept, $accept_id);
                         continue;
                     }
 
-                    $this->clients[$accept_id = $this->genId()] = $accept;
-                    $this->sendMsg($accept_id, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id])));
-
                     //On new client connected
                     $this->debug('Assigned: "' . $accept_id . '" to new connection.');
+                    unset($accept, $accept_id);
                 }
             }
 
@@ -591,7 +592,7 @@ class libSocket extends Factory
                 $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
             }
 
-            unset($read, $msg_tk, $sock_id, $client, $socket_msg, $accept, $accept_id, $send_tk, $stk);
+            unset($read, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
         }
     }
 
@@ -605,9 +606,6 @@ class libSocket extends Factory
         //Copy master to clients
         $this->clients = $this->master;
 
-        //Add master status
-        $client_status[$this->master_id] = 0;
-
         while (true) {
             $read = $this->watch($this->clients);
 
@@ -619,95 +617,71 @@ class libSocket extends Factory
 
             //Read from socket and send to MPC
             foreach ($read as $sock_id => $client) {
-                switch ($client_status[$sock_id]) {
-                    case 1:
-                        //Read all client message (json)
-                        if ('' === ($socket_msg = $this->readMsg($sock_id))) {
-                            unset($socket_msg);
-                            break;
-                        }
-
-                        //Get header codes
-                        $codes = $this->wsGetCodes($socket_msg);
-
-                        //Respond to ping frame (ping:0x9)
-                        if (0x9 === $codes['opcode']) {
-                            unset($socket_msg, $codes);
-                            $this->wsPong($sock_id);
-                            break;
-                        }
-
-                        //Accept pong frame (pong:0xA)
-                        if (0xA === $codes['opcode']) {
-                            unset($socket_msg, $codes);
-                            break;
-                        }
-
-                        //Drop non-masked frames
-                        if (1 !== $codes['mask']) {
-                            unset($socket_msg, $codes);
-                            break;
-                        }
-
-                        //Check opcode (connection closed: 8)
-                        if (0x8 === $codes['opcode']) {
-                            unset($client_status[$sock_id], $socket_msg, $codes);
-                            $this->close($sock_id);
-                            break;
-                        }
-
-                        //Send to onMessage logic via MPC
-                        $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
-
-                        //On received message from client
-                        $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
-
-                        unset($codes);
+                if ($sock_id !== $this->master_id) {
+                    //Read all client message (WebSocket)
+                    if ('' === ($socket_msg = $this->readMsg($sock_id))) {
                         break;
+                    }
 
-                    case 2:
-                        //Send handshake and sid info
-                        $client_status[$sock_id] = 1;
+                    //Get wWebSocket codes
+                    $ws_codes = $this->wsGetCodes($socket_msg);
+
+                    //Accept pong frame (pong:0xA), drop non-masked frames
+                    if (0xA === $ws_codes['opcode'] || 1 !== $ws_codes['mask']) {
+                        unset($ws_codes);
+                        break;
+                    }
+
+                    //Respond to ping frame (ping:0x9)
+                    if (0x9 === $ws_codes['opcode']) {
+                        $this->wsPong($sock_id);
+                        unset($ws_codes);
+                        break;
+                    }
+
+                    //Check opcode (connection closed: 8)
+                    if (0x8 === $ws_codes['opcode']) {
+                        $this->close($sock_id);
+                        unset($ws_codes);
+                        break;
+                    }
+
+                    //Send to onMessage logic via MPC
+                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
+
+                    //On received message from client
+                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
+                    unset($ws_codes);
+                } else {
+                    //Accept new connection
+                    try {
+                        if (false === ($accept = stream_socket_accept($client))) {
+                            unset($accept);
+                            break;
+                        }
+
+                        stream_set_blocking($accept, false);
+
+                        $this->clients[($accept_id = $this->genId())] = $accept;
 
                         //Close connection (protocol error)
-                        if ('' === ($response = $this->wsHandshake($sock_id, $this->readMsg($sock_id)))) {
-                            unset($client_status[$sock_id], $response);
-                            $this->close($sock_id);
+                        if ('' === ($socket_msg = $this->readMsg($accept_id)) || '' === ($response = $this->wsHandshake($accept_id, $socket_msg))) {
+                            $this->close($accept_id);
+                            unset($accept, $accept_id, $response);
                             break;
                         }
 
                         //Send handshake and connection
-                        $this->sendMsg($sock_id, $response);
-                        $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
-
-                        //On handshake
-                        $this->debug('Handshake: reply "' . $response . '" to "' . $sock_id . '"');
-
-                        unset($response);
+                        $this->sendMsg($accept_id, $response);
+                        $this->sendMsg($accept_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id]))));
+                    } catch (\Throwable $throwable) {
+                        unset($throwable, $accept, $accept_id, $response);
                         break;
+                    }
 
-                    default:
-                        //Accept new connection
-                        try {
-                            if (false === ($accept = stream_socket_accept($client))) {
-                                break;
-                            }
-
-                            stream_set_blocking($accept, false);
-                            $accept_id = $this->genId();
-                        } catch (\Throwable $throwable) {
-                            unset($throwable, $accept, $accept_id);
-                            break;
-                        }
-
-                        $this->clients[$accept_id] = $accept;
-                        $client_status[$accept_id] = 2;
-
-                        //On new client connected
-                        $this->debug('Assigned: "' . $accept_id . '" to new connection.');
-
-                        unset($accept, $accept_id);
-                        break;
+                    //On handshake to new connection
+                    $this->debug('Handshake: respond "' . $response . '" to "' . $accept_id . '"');
+                    unset($accept, $accept_id, $response);
                 }
             }
 
@@ -722,11 +696,7 @@ class libSocket extends Factory
                 $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
             }
 
-            //Sync status list with client list
-            $client_status = array_intersect_key($client_status, $this->clients);
             unset($read, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
         }
-
-        unset($client_status);
     }
 }
