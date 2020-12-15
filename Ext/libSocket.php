@@ -30,15 +30,17 @@ use Core\OSUnit;
  */
 class libSocket extends Factory
 {
-    public string $addr  = '0.0.0.0';
     public int    $port  = 2468;
+    public string $addr  = '0.0.0.0';
     public string $type  = 'tcp';
     public string $proto = 'tcp';
 
-    public string $local_pk    = '';
-    public string $local_cert  = '';
-    public string $passphrase  = '';
-    public bool   $self_signed = false;
+    public string $local_pk   = '';
+    public string $local_cert = '';
+    public string $passphrase = '';
+
+    public bool $sock_debug  = false;
+    public bool $self_signed = false;
 
     public array $master  = [];
     public array $clients = [];
@@ -129,6 +131,21 @@ class libSocket extends Factory
         $this->handler_class = '/' . ltrim(strtr($handler_class, '\\', '/'), '/');
 
         unset($handler_class);
+        return $this;
+    }
+
+    /**
+     * Set socket debug mode
+     *
+     * @param bool $sock_debug
+     *
+     * @return $this
+     */
+    public function setSockDebug(bool $sock_debug): self
+    {
+        $this->sock_debug = &$sock_debug;
+
+        unset($sock_debug);
         return $this;
     }
 
@@ -310,6 +327,20 @@ class libSocket extends Factory
     }
 
     /**
+     * 输出 debug 信息
+     *
+     * @param string $debug_msg
+     */
+    public function debug(string $debug_msg): void
+    {
+        if ($this->sock_debug) {
+            echo strtr($debug_msg, "\r\n", '\r\n') . PHP_EOL;
+        }
+
+        unset($debug_msg);
+    }
+
+    /**
      * Get WebSocket header codes (fin, opcode, mask)
      *
      * @param string $buff
@@ -488,6 +519,9 @@ class libSocket extends Factory
                 throw new \Exception('Socket server ERROR!', E_USER_ERROR);
             }
 
+            //On status changes or time arrived
+            $this->debug($changes . ' clients changed or 60s passed.');
+
             if (0 === $changes) {
                 continue;
             }
@@ -504,6 +538,9 @@ class libSocket extends Factory
 
                     //Send to onMessage logic via MPC
                     $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
+
+                    //On received message from client
+                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
                 } else {
                     //Accept new connection
                     try {
@@ -517,8 +554,11 @@ class libSocket extends Factory
                         continue;
                     }
 
-                    $this->clients[$sid = $this->genId()] = $accept;
-                    $this->sendMsg($sid, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sid])));
+                    $this->clients[$accept_id = $this->genId()] = $accept;
+                    $this->sendMsg($accept_id, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id])));
+
+                    //On new client connected
+                    $this->debug('Assigned: "' . $accept_id . '" to new connection.');
                 }
             }
 
@@ -527,10 +567,13 @@ class libSocket extends Factory
 
             //Send message
             foreach ($send_tk as $sock_id => $stk) {
-                $this->sendMsg($sock_id, $this->lib_mpc->fetch($stk));
+                $this->sendMsg($sock_id, $socket_msg = $this->lib_mpc->fetch($stk));
+
+                //On send message to client
+                $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $accept, $sid, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $accept, $accept_id, $send_tk, $stk);
         }
 
         unset($write, $except);
@@ -557,6 +600,9 @@ class libSocket extends Factory
             if (false === ($changes = stream_select($read, $write, $except, 60))) {
                 throw new \Exception('Socket server ERROR!', E_USER_ERROR);
             }
+
+            //On status changes or time arrived
+            $this->debug($changes . ' clients changed or 60s passed.');
 
             if (0 === $changes) {
                 continue;
@@ -604,8 +650,12 @@ class libSocket extends Factory
                         }
 
                         //Send to onMessage logic via MPC
-                        $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $this->wsDecode($socket_msg)]);
-                        unset($socket_msg, $codes);
+                        $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
+
+                        //On received message from client
+                        $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
+
+                        unset($codes);
                         break;
 
                     case 2:
@@ -622,6 +672,9 @@ class libSocket extends Factory
                         //Send handshake and connection
                         $this->sendMsg($sock_id, $response);
                         $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
+
+                        //On handshake
+                        $this->debug('Handshake: reply "' . $response . '" to "' . $sock_id . '"');
 
                         unset($response);
                         break;
@@ -643,6 +696,9 @@ class libSocket extends Factory
                         $this->clients[$accept_id] = $accept;
                         $client_status[$accept_id] = 2;
 
+                        //On new client connected
+                        $this->debug('Assigned: "' . $accept_id . '" to new connection.');
+
                         unset($accept, $accept_id);
                         break;
                 }
@@ -653,12 +709,15 @@ class libSocket extends Factory
 
             //Send message
             foreach ($send_tk as $sock_id => $stk) {
-                $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($stk)));
+                $this->sendMsg($sock_id, $this->wsEncode(($socket_msg = $this->lib_mpc->fetch($stk))));
+
+                //On send message to client
+                $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
             }
 
             //Sync status list with client list
             $client_status = array_intersect_key($client_status, $this->clients);
-            unset($read, $changes, $msg_tk, $sock_id, $client, $send_tk, $stk);
+            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
         }
 
         unset($write, $except, $client_status);
