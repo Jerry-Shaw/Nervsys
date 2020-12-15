@@ -206,6 +206,29 @@ class libSocket extends Factory
     }
 
     /**
+     * Watch for read clients
+     *
+     * @param array $read
+     *
+     * @return array
+     */
+    public function watch(array $read): array
+    {
+        $write = $except = [];
+
+        //Watch read streams
+        if (0 === ($changes = (int)stream_select($read, $write, $except, 30))) {
+            $read = [];
+        }
+
+        //On status changes or time arrived
+        $this->debug($changes . ' changed out of ' . count($this->clients) . ' clients.');
+
+        unset($write, $except, $changes);
+        return $read;
+    }
+
+    /**
      * Add MPC job
      *
      * @param string $method
@@ -507,22 +530,13 @@ class libSocket extends Factory
      */
     private function onTcp(): void
     {
-        $write = $except = [];
-
         //Copy master to clients
         $this->clients = $this->master;
 
         while (true) {
-            $read = $this->clients;
+            $read = $this->watch($this->clients);
 
-            if (false === ($changes = stream_select($read, $write, $except, 30))) {
-                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
-            }
-
-            //On status changes or time arrived
-            $this->debug($changes . ' clients changed in 30s.');
-
-            if (0 === $changes) {
+            if (empty($read)) {
                 continue;
             }
 
@@ -573,10 +587,8 @@ class libSocket extends Factory
                 $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
             }
 
-            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $accept, $accept_id, $send_tk, $stk);
+            unset($read, $msg_tk, $sock_id, $client, $socket_msg, $accept, $accept_id, $send_tk, $stk);
         }
-
-        unset($write, $except);
     }
 
     /**
@@ -586,8 +598,6 @@ class libSocket extends Factory
      */
     private function onWs(): void
     {
-        $write = $except = [];
-
         //Copy master to clients
         $this->clients = $this->master;
 
@@ -595,16 +605,9 @@ class libSocket extends Factory
         $client_status[$this->master_id] = 0;
 
         while (true) {
-            $read = $this->clients;
+            $read = $this->watch($this->clients);
 
-            if (false === ($changes = stream_select($read, $write, $except, 30))) {
-                throw new \Exception('Socket server ERROR!', E_USER_ERROR);
-            }
-
-            //On status changes or time arrived
-            $this->debug($changes . ' clients changed in 30s.');
-
-            if (0 === $changes) {
+            if (empty($read)) {
                 continue;
             }
 
@@ -717,9 +720,9 @@ class libSocket extends Factory
 
             //Sync status list with client list
             $client_status = array_intersect_key($client_status, $this->clients);
-            unset($read, $changes, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
+            unset($read, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
         }
 
-        unset($write, $except, $client_status);
+        unset($client_status);
     }
 }
