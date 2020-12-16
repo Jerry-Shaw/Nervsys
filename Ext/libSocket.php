@@ -54,7 +54,7 @@ class libSocket extends Factory
      * onConnect(string sid): array
      * onHandshake(string sid, string proto): bool
      * onMessage(string msg): array
-     * onSend(array data, string to_sid, bool online): array
+     * onSend(array data, bool online): array
      * onClose(string sid): void
      *
      * @var string handler class name
@@ -283,30 +283,55 @@ class libSocket extends Factory
         $send_tk = [];
 
         foreach ($msg_tk as $sock_id => $mtk) {
-            if ('' === ($msg = trim($this->lib_mpc->fetch($mtk)))) {
-                continue;
-            }
+            //Fetch msg from onMessage logic
+            $msg = trim($this->lib_mpc->fetch($mtk));
 
             if (!is_array($msg_data = json_decode($msg, true))) {
                 $this->close($sock_id);
                 continue;
             }
 
-            $to_sid = (string)($msg_data['to_sid'] ?? '');
-            $online = '' !== $to_sid ? isset($this->clients[$to_sid]) : false;
+            //Get receiver online status
+            $recv_ol = isset($msg_data['to_sid']) ? isset($this->clients[$msg_data['to_sid']]) : false;
 
-            //Send to onSend logic via MPC
-            $stk = $this->addMpc('onSend', [
-                'data'   => $msg_data,
-                'to_sid' => $to_sid,
-                'online' => $online
-            ]);
-
-            //Save stk to send_tk or drop offline data
-            $online ? $send_tk[$to_sid] = $stk : $this->lib_mpc->fetch($stk);
+            //Build send_tk data
+            $send_tk[] = [
+                'to'  => $recv_ol ? $msg_data['to_sid'] : '',
+                'stk' => $this->addMpc('onSend', [
+                    'data'   => $msg_data,
+                    'online' => $recv_ol
+                ])
+            ];
         }
 
-        unset($msg_tk, $sock_id, $mtk, $msg, $msg_data, $to_sid, $online, $stk);
+        unset($msg_tk, $sock_id, $mtk, $recv_ol);
+
+        foreach ($send_tk as $key => &$item) {
+            //Fetch msg from onSend logic
+            $msg = $this->lib_mpc->fetch($item['stk']);
+
+            if (!is_array($msg_data = json_decode($msg, true))) {
+                unset($send_tk[$key]);
+                continue;
+            }
+
+            //Overwrite to_sid from onSend logic
+            if (isset($msg_data['to_sid'])) {
+                $item['to'] = $msg_data['to_sid'];
+            }
+
+            //Drop msg without "to"
+            if ('' === $item['to']) {
+                unset($send_tk[$key]);
+                continue;
+            }
+
+            //Clean up data
+            unset($item['stk']);
+            $item['msg'] = $msg;
+        }
+
+        unset($msg, $msg_data, $key, $item);
         return $send_tk;
     }
 
@@ -559,6 +584,7 @@ class libSocket extends Factory
 
                     //On received message from client
                     $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
+                    unset($socket_msg);
                 } else {
                     //Accept new connection
                     try {
@@ -587,14 +613,14 @@ class libSocket extends Factory
             $send_tk = $this->prepMsg($msg_tk);
 
             //Send message
-            foreach ($send_tk as $sock_id => $stk) {
-                $this->sendMsg($sock_id, $socket_msg = $this->lib_mpc->fetch($stk));
+            foreach ($send_tk as $item) {
+                $this->sendMsg($item['to'], $item['msg']);
 
                 //On send message to client
-                $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
+                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '"');
             }
 
-            unset($read, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
+            unset($read, $msg_tk, $sock_id, $client, $send_tk);
         }
     }
 
@@ -681,7 +707,7 @@ class libSocket extends Factory
 
                     //On received message from client
                     $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
-                    unset($ws_codes);
+                    unset($socket_msg, $ws_codes);
                 } else {
                     //Accept new connection
                     try {
@@ -711,14 +737,14 @@ class libSocket extends Factory
             $send_tk = $this->prepMsg($msg_tk);
 
             //Send message
-            foreach ($send_tk as $sock_id => $stk) {
-                $this->sendMsg($sock_id, $this->wsEncode(($socket_msg = $this->lib_mpc->fetch($stk))));
+            foreach ($send_tk as $item) {
+                $this->sendMsg($item['to'], $this->wsEncode($item['msg']));
 
                 //On send message to client
-                $this->debug('Send: "' . $socket_msg . '" to "' . $sock_id . '"');
+                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '"');
             }
 
-            unset($read, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
+            unset($read, $msg_tk, $sock_id, $client, $send_tk);
         }
 
         unset($accept_clients);
