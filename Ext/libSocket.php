@@ -222,7 +222,7 @@ class libSocket extends Factory
         }
 
         //On status changes or time arrived
-        $this->debug('Monitor: ' . $changes . ' out of ' . count($this->clients) . ' changed.');
+        $this->debug('Monitor: ' . $changes . ' out of ' . count($this->clients) . ' in queue.');
 
         unset($write, $except, $changes);
         return $read;
@@ -568,7 +568,9 @@ class libSocket extends Factory
 
                         stream_set_blocking($accept, false);
 
-                        $this->clients[($accept_id = $this->genId())] = $accept;
+                        $accept_id = $this->genId();
+
+                        $this->clients[$accept_id] = $accept;
                         $this->sendMsg($accept_id, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id])));
                     } catch (\Throwable $throwable) {
                         unset($throwable, $accept, $accept_id);
@@ -603,6 +605,9 @@ class libSocket extends Factory
      */
     private function onWs(): void
     {
+        //New accepted clients
+        $accept_clients = [];
+
         //Copy master to clients
         $this->clients = $this->master;
 
@@ -620,6 +625,31 @@ class libSocket extends Factory
                 if ($sock_id !== $this->master_id) {
                     //Read all client message (WebSocket)
                     if ('' === ($socket_msg = $this->readMsg($sock_id))) {
+                        continue;
+                    }
+
+                    //Check handshake
+                    if (isset($accept_clients[$sock_id])) {
+                        //Get handshake response
+                        $response = $this->wsHandshake($sock_id, $socket_msg);
+
+                        if ('' !== $response) {
+                            //Send handshake and connection
+                            $this->sendMsg($sock_id, $response);
+                            $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
+
+                            //On handshake to new connection
+                            $this->debug('Handshake: respond "' . $response . '" to "' . $sock_id . '"');
+                        } else {
+                            //Error on handshake
+                            http_response_code(404);
+                            $this->close($sock_id);
+
+                            //On handshake to new connection
+                            $this->debug('Handshake: reject "' . $sock_id . '" to connect.');
+                        }
+
+                        unset($accept_clients[$sock_id], $response);
                         continue;
                     }
 
@@ -662,29 +692,18 @@ class libSocket extends Factory
 
                         stream_set_blocking($accept, false);
 
-                        $this->clients[($accept_id = $this->genId())] = $accept;
+                        $accept_id = $this->genId();
 
-                        //Read handshake message
-                        $socket_msg = $this->readMsg($accept_id);
-
-                        //Error on handshake
-                        if ('' === ($response = $this->wsHandshake($accept_id, $socket_msg))) {
-                            $this->close($accept_id);
-                            unset($accept, $accept_id, $response);
-                            continue;
-                        }
-
-                        //Send handshake and connection
-                        $this->sendMsg($accept_id, $response);
-                        $this->sendMsg($accept_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id]))));
+                        $this->clients[$accept_id]  = $accept;
+                        $accept_clients[$accept_id] = 1;
                     } catch (\Throwable $throwable) {
-                        unset($throwable, $accept, $accept_id, $response);
+                        unset($throwable, $accept, $accept_id);
                         continue;
                     }
 
-                    //On handshake to new connection
-                    $this->debug('Handshake: respond "' . $response . '" to "' . $accept_id . '"');
-                    unset($accept, $accept_id, $response);
+                    //On new client connected
+                    $this->debug('Assigned: "' . $accept_id . '" to new connection.');
+                    unset($accept, $accept_id);
                 }
             }
 
@@ -701,5 +720,7 @@ class libSocket extends Factory
 
             unset($read, $msg_tk, $sock_id, $client, $socket_msg, $send_tk, $stk);
         }
+
+        unset($accept_clients);
     }
 }
