@@ -69,7 +69,7 @@ class libSocket extends Factory
      *
      * @param string $address
      * @param int    $port
-     * @param string $protocol (tcp/udp/ssl/tlsv1.2/tlsv1.3/...)
+     * @param string $protocol (tcp/udp/ssl/tls)
      *
      * @return $this
      */
@@ -431,27 +431,28 @@ class libSocket extends Factory
         }
 
         //Validate Sec-WebSocket-Protocol
-        $proto_name = 'Sec-WebSocket-Protocol';
-        $proto_pos  = strpos($header, $proto_name);
+        $ws_protocol = '';
+        $proto_name  = 'Sec-WebSocket-Protocol';
+        $proto_pos   = strpos($header, $proto_name);
 
-        if (false === $proto_pos) {
-            unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos);
-            return '';
-        }
+        if (false !== $proto_pos) {
+            $proto_pos  += 24;
+            $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
+            $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['sid' => $sid, 'proto' => $proto_val]));
 
-        $proto_pos  += 24;
-        $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
-        $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['sid' => $sid, 'proto' => $proto_val]));
+            //Reject handshake
+            if (true !== json_decode($proto_pass, true)) {
+                unset($sid, $header, $key_name, $key_pos, $ws_protocol, $proto_name, $proto_pos, $proto_val, $proto_pass);
+                return '';
+            }
 
-        //Reject handshake
-        if (true !== json_decode($proto_pass, true)) {
-            unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass);
-            return '';
-        }
+            //Only response the last protocol value
+            if (false !== ($val_pos = strrpos($proto_val, ','))) {
+                $proto_val = substr($proto_val, $val_pos + 2);
+            }
 
-        //Only response the last protocol value
-        if (false !== ($val_pos = strrpos($proto_val, ','))) {
-            $proto_val = substr($proto_val, $val_pos + 2);
+            $ws_protocol = 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n";;
+            unset($proto_val, $proto_pass, $val_pos);
         }
 
         //Get WebSocket key & rehash
@@ -464,9 +465,9 @@ class libSocket extends Factory
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
             . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n"
-            . 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n\r\n";
+            . $ws_protocol . "\r\n";
 
-        unset($sid, $header, $key_name, $key_pos, $proto_name, $proto_pos, $proto_val, $proto_pass, $val_pos, $key_val);
+        unset($sid, $header, $key_name, $key_pos, $ws_protocol, $proto_name, $proto_pos, $key_val);
         return $response;
     }
 
