@@ -184,9 +184,12 @@ class libSocket extends Factory
             throw new \Exception($errno . ': ' . $errstr, E_USER_ERROR);
         }
 
+        stream_set_blocking($socket, false);
+
         $this->master_id = $this->genId();
         $this->master    = [$this->master_id => &$socket];
-        $this->lib_mpc   = libMPC::new()
+
+        $this->lib_mpc = libMPC::new()
             ->setProcNum($mpc_cnt)
             ->setPhpPath(OSUnit::new()->getPhpPath())
             ->start();
