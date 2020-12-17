@@ -167,7 +167,7 @@ class libSocket extends Factory
             '' !== $this->passphrase && stream_context_set_option($context, 'ssl', 'passphrase', $this->passphrase);
 
             stream_context_set_option($context, 'ssl', 'allow_self_signed', $this->self_signed);
-            stream_context_set_option($context, 'ssl', 'ssltransport', 'tlsv1.3');
+            stream_context_set_option($context, 'ssl', 'ssltransport', $this->proto);
             stream_context_set_option($context, 'ssl', 'verify_peer', false);
             stream_context_set_option($context, 'ssl', 'disable_compression', true);
         }
@@ -183,8 +183,6 @@ class libSocket extends Factory
         if (false === $socket) {
             throw new \Exception($errno . ': ' . $errstr, E_USER_ERROR);
         }
-
-        stream_set_blocking($socket, false);
 
         $this->master_id = $this->genId();
         $this->master    = [$this->master_id => &$socket];
@@ -675,7 +673,6 @@ class libSocket extends Factory
                             $this->debug('Handshake: respond "' . $response . '" to "' . $sock_id . '"');
                         } else {
                             //Error on handshake
-                            http_response_code(404);
                             $this->close($sock_id);
 
                             //On reject handshake to new connection
