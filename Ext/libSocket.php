@@ -659,6 +659,9 @@ class libSocket extends Factory
 
                     //Check handshake
                     if (isset($accept_clients[$sock_id])) {
+                        //On received handshake header from client
+                        $this->debug('Handshake: receive "' . $socket_msg . '" from "' . $sock_id . '"');
+
                         //Get handshake response
                         $response = $this->wsHandshake($sock_id, $socket_msg);
 
@@ -667,14 +670,14 @@ class libSocket extends Factory
                             $this->sendMsg($sock_id, $response);
                             $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
 
-                            //On handshake to new connection
+                            //On respond handshake to new connection
                             $this->debug('Handshake: respond "' . $response . '" to "' . $sock_id . '"');
                         } else {
                             //Error on handshake
                             http_response_code(404);
                             $this->close($sock_id);
 
-                            //On handshake to new connection
+                            //On reject handshake to new connection
                             $this->debug('Handshake: reject "' . $sock_id . '" to connect.');
                         }
 
