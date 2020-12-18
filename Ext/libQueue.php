@@ -590,10 +590,6 @@ class libQueue extends Factory
         //Detect ENV (only support CLI)
         $this->app = App::new();
 
-        if (!$this->app->is_cli) {
-            throw new \Exception('Only in CLI!', E_USER_ERROR);
-        }
-
         /** @var \Core\Lib\IOUnit io_unit */
         $this->io_unit = IOUnit::new();
 
