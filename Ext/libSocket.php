@@ -30,6 +30,7 @@ use Core\OSUnit;
  */
 class libSocket extends Factory
 {
+    public int    $wait  = -1;
     public int    $port  = 2468;
     public string $addr  = '0.0.0.0';
     public string $type  = 'tcp';
@@ -80,6 +81,21 @@ class libSocket extends Factory
         $this->proto = &$protocol;
 
         unset($address, $port, $protocol);
+        return $this;
+    }
+
+    /**
+     * Set tv_sec for upper timeout
+     *
+     * @param int $tv_sec
+     *
+     * @return $this
+     */
+    public function setWaitSec(int $tv_sec): self
+    {
+        $this->wait = &$tv_sec;
+
+        unset($tv_sec);
         return $this;
     }
 
@@ -218,7 +234,7 @@ class libSocket extends Factory
         $write = $except = [];
 
         //Watch read streams
-        if (0 === ($changes = (int)stream_select($read, $write, $except, 30))) {
+        if (0 === ($changes = (int)stream_select($read, $write, $except, 0 <= $this->wait ? $this->wait : null))) {
             $read = [];
         }
 
