@@ -371,12 +371,12 @@ class libSocket extends Factory
             unset($throwable);
         }
 
+        unset($this->clients[$sock_id]);
         $this->lib_mpc->fetch($this->addMpc('onClose', ['sid' => $sock_id]));
 
         //On client exit
         $this->debug('Exit: "' . $sock_id . '" left. Still ' . count($this->clients) . ' online.');
-
-        unset($this->clients[$sock_id], $sock_id);
+        unset($sock_id);
     }
 
     /**
