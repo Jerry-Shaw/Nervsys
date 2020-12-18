@@ -594,6 +594,7 @@ class libSocket extends Factory
                 if ($sock_id !== $this->master_id) {
                     //Read all client message (binary|string)
                     if ('' === ($socket_msg = $this->readMsg($sock_id))) {
+                        $this->close($sock_id);
                         continue;
                     }
 
@@ -669,6 +670,7 @@ class libSocket extends Factory
                 if ($sock_id !== $this->master_id) {
                     //Read all client message (WebSocket)
                     if ('' === ($socket_msg = $this->readMsg($sock_id))) {
+                        $this->close($sock_id);
                         continue;
                     }
 
