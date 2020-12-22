@@ -627,10 +627,9 @@ class libSocket extends Factory
         while (true) {
             $read = $this->watch($this->clients);
 
-            //Heartbeat handler
-            $this->heartbeat();
-
             if (empty($read)) {
+                //Call heartbeat handler
+                $this->heartbeat();
                 continue;
             }
 
@@ -691,6 +690,9 @@ class libSocket extends Factory
                 $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '".');
             }
 
+            //Call heartbeat handler
+            $this->heartbeat();
+
             unset($read, $msg_tk, $sock_id, $client, $send_tk);
         }
     }
@@ -711,10 +713,9 @@ class libSocket extends Factory
         while (true) {
             $read = $this->watch($this->clients);
 
-            //Heartbeat handler
-            $this->heartbeat();
-
             if (empty($read)) {
+                //Call heartbeat handler
+                $this->heartbeat();
                 continue;
             }
 
@@ -827,6 +828,9 @@ class libSocket extends Factory
                 //On send message to client
                 $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '".');
             }
+
+            //Call heartbeat handler
+            $this->heartbeat();
 
             unset($read, $msg_tk, $sock_id, $client, $send_tk);
         }
