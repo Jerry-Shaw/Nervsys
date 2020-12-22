@@ -30,8 +30,9 @@ use Core\OSUnit;
  */
 class libSocket extends Factory
 {
-    public int    $wait  = -1;
+    public int    $wait  = 30;
     public int    $port  = 2468;
+    public string $ping  = '';
     public string $addr  = '0.0.0.0';
     public string $type  = 'tcp';
     public string $proto = 'tcp';
@@ -45,6 +46,7 @@ class libSocket extends Factory
 
     public array $master  = [];
     public array $clients = [];
+    public array $actives = [];
 
     public string $master_id;
 
@@ -81,6 +83,21 @@ class libSocket extends Factory
         $this->proto = &$protocol;
 
         unset($address, $port, $protocol);
+        return $this;
+    }
+
+    /**
+     * Set ping value for heartbeat
+     *
+     * @param int $ping_value
+     *
+     * @return $this
+     */
+    public function setPingVal(int $ping_value): self
+    {
+        $this->ping = &$ping_value;
+
+        unset($ping_value);
         return $this;
     }
 
@@ -387,7 +404,7 @@ class libSocket extends Factory
             unset($throwable);
         }
 
-        unset($this->clients[$sock_id]);
+        unset($this->clients[$sock_id], $this->actives[$sock_id]);
         $this->lib_mpc->fetch($this->addMpc('onClose', ['sid' => $sock_id]));
 
         //On client exit
@@ -407,6 +424,31 @@ class libSocket extends Factory
         }
 
         unset($debug_msg);
+    }
+
+    /**
+     * Heartbeat logic
+     */
+    public function heartbeat(): void
+    {
+        //Set check time
+        $chk_time = time();
+
+        //Check active clients
+        foreach ($this->actives as $sock_id => $active_time) {
+            //Calculate time duration
+            $duration = $chk_time - $active_time;
+
+            if (60 < $duration) {
+                //Close offline client
+                $this->close($sock_id);
+            } elseif (30 < $duration && '' !== $this->ping) {
+                //Send ping message to client
+                $this->sendMsg($sock_id, $this->ping);
+            }
+        }
+
+        unset($chk_time, $sock_id, $active_time, $duration);
     }
 
     /**
@@ -583,6 +625,9 @@ class libSocket extends Factory
         while (true) {
             $read = $this->watch($this->clients);
 
+            //Heartbeat handler
+            $this->heartbeat();
+
             if (empty($read)) {
                 continue;
             }
@@ -597,6 +642,9 @@ class libSocket extends Factory
                         $this->close($sock_id);
                         continue;
                     }
+
+                    //Update active time
+                    $this->actives[$sock_id] = time();
 
                     //Send to onMessage logic via MPC
                     $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
@@ -616,6 +664,8 @@ class libSocket extends Factory
                         $accept_id = $this->genId();
 
                         $this->clients[$accept_id] = $accept;
+                        $this->actives[$accept_id] = time();
+
                         $this->sendMsg($accept_id, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id])));
                     } catch (\Throwable $throwable) {
                         unset($throwable, $accept, $accept_id);
@@ -659,6 +709,9 @@ class libSocket extends Factory
         while (true) {
             $read = $this->watch($this->clients);
 
+            //Heartbeat handler
+            $this->heartbeat();
+
             if (empty($read)) {
                 continue;
             }
@@ -673,6 +726,9 @@ class libSocket extends Factory
                         $this->close($sock_id);
                         continue;
                     }
+
+                    //Update active time
+                    $this->actives[$sock_id] = time();
 
                     //Check handshake
                     if (isset($accept_clients[$sock_id])) {
@@ -742,7 +798,9 @@ class libSocket extends Factory
 
                         $accept_id = $this->genId();
 
-                        $this->clients[$accept_id]  = $accept;
+                        $this->clients[$accept_id] = $accept;
+                        $this->actives[$accept_id] = time();
+
                         $accept_clients[$accept_id] = 1;
                     } catch (\Throwable $throwable) {
                         unset($throwable, $accept, $accept_id);
