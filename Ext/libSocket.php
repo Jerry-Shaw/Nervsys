@@ -89,15 +89,15 @@ class libSocket extends Factory
     /**
      * Set ping value for heartbeat
      *
-     * @param int $ping_value
+     * @param string $value
      *
      * @return $this
      */
-    public function setPingVal(int $ping_value): self
+    public function setPingVal(string $value): self
     {
-        $this->ping = &$ping_value;
+        $this->ping = &$value;
 
-        unset($ping_value);
+        unset($value);
         return $this;
     }
 
