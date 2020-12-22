@@ -445,6 +445,8 @@ class libSocket extends Factory
             } elseif (30 < $duration && '' !== $this->ping) {
                 //Send ping message to client
                 $this->sendMsg($sock_id, $this->ping);
+                //On send heartbeat frame message
+                $this->debug('Heartbeat: send "' . $this->ping . '" to "' . $sock_id . '".');
             }
         }
 
@@ -650,7 +652,7 @@ class libSocket extends Factory
                     $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
 
                     //On received message from client
-                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
+                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '".');
                     unset($socket_msg);
                 } else {
                     //Accept new connection
@@ -686,7 +688,7 @@ class libSocket extends Factory
                 $this->sendMsg($item['to'], $item['msg']);
 
                 //On send message to client
-                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '"');
+                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '".');
             }
 
             unset($read, $msg_tk, $sock_id, $client, $send_tk);
@@ -733,7 +735,7 @@ class libSocket extends Factory
                     //Check handshake
                     if (isset($accept_clients[$sock_id])) {
                         //On received handshake header from client
-                        $this->debug('Handshake: receive "' . $socket_msg . '" from "' . $sock_id . '"');
+                        $this->debug('Handshake: receive "' . $socket_msg . '" from "' . $sock_id . '".');
 
                         //Get handshake response
                         $response = $this->wsHandshake($sock_id, $socket_msg);
@@ -744,7 +746,7 @@ class libSocket extends Factory
                             $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
 
                             //On respond handshake to new connection
-                            $this->debug('Handshake: respond "' . $response . '" to "' . $sock_id . '"');
+                            $this->debug('Handshake: respond "' . $response . '" to "' . $sock_id . '".');
                         } else {
                             //Error on handshake
                             $this->close($sock_id);
@@ -762,6 +764,8 @@ class libSocket extends Factory
 
                     //Accept pong frame (pong:0xA), drop non-masked frames
                     if (0xA === $ws_codes['opcode'] || 1 !== $ws_codes['mask']) {
+                        //On receive pong frame (pong:0xA), or, non-masked frames
+                        $this->debug('Heartbeat: receive OpCode="' . $ws_codes['opcode'] . '", MASK="' . $ws_codes['mask'] . '".');
                         unset($ws_codes);
                         continue;
                     }
@@ -784,7 +788,7 @@ class libSocket extends Factory
                     $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
 
                     //On received message from client
-                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '"');
+                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '".');
                     unset($socket_msg, $ws_codes);
                 } else {
                     //Accept new connection
@@ -821,7 +825,7 @@ class libSocket extends Factory
                 $this->sendMsg($item['to'], $this->wsEncode($item['msg']));
 
                 //On send message to client
-                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '"');
+                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '".');
             }
 
             unset($read, $msg_tk, $sock_id, $client, $send_tk);
