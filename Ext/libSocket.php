@@ -682,7 +682,7 @@ class libSocket extends Factory
                     }
 
                     //On new client connected
-                    $this->debug('Assigned: "' . $accept_id . '" to new connection.');
+                    $this->debug('Assigned: "' . $accept_id . '" to new client.');
                     unset($accept, $accept_id);
                 }
             }
@@ -822,7 +822,7 @@ class libSocket extends Factory
                     }
 
                     //On new client connected
-                    $this->debug('Assigned: "' . $accept_id . '" to new connection.');
+                    $this->debug('Assigned: "' . $accept_id . '" to new client.');
                     unset($accept, $accept_id);
                 }
             }
