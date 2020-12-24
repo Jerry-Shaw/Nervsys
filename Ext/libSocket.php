@@ -314,81 +314,89 @@ class libSocket extends Factory
      */
     public function prepMsg(array $msg_tk): array
     {
-        $send_tk = [];
+        $send_data = [];
 
         foreach ($msg_tk as $sock_id => $mtk) {
             //Fetch msg from onMessage logic
-            $msg = trim($this->lib_mpc->fetch($mtk));
-
-            if (!is_array($msg_data = json_decode($msg, true))) {
+            if (!is_array($msg_data = json_decode(trim($this->lib_mpc->fetch($mtk)), true))) {
                 $this->close($sock_id);
                 continue;
             }
 
-            //Get receiver online status
-            $recv_ol = isset($msg_data['to_sid']) ? isset($this->clients[$msg_data['to_sid']]) : false;
-
             //Build send_tk data
-            $send_tk[] = [
-                'to'  => $recv_ol ? $msg_data['to_sid'] : '',
+            $send_data[$sock_id] = [
                 'stk' => $this->addMpc('onSend', [
                     'data'   => $msg_data,
-                    'online' => $recv_ol
+                    'online' => isset($msg_data['to_sid']) ? isset($this->clients[$msg_data['to_sid']]) : false
                 ])
             ];
         }
 
-        unset($msg_tk, $sock_id, $mtk, $recv_ol);
+        unset($msg_tk, $mtk);
 
-        foreach ($send_tk as $key => &$item) {
+        foreach ($send_data as $sock_id => &$item) {
             //Fetch msg from onSend logic
-            $msg = $this->lib_mpc->fetch($item['stk']);
-
-            if (!is_array($msg_data = json_decode($msg, true))) {
-                unset($send_tk[$key]);
+            if (!is_array($msg_data = json_decode(trim($this->lib_mpc->fetch($item['stk'])), true))) {
+                unset($send_data[$sock_id]);
+                $this->close($sock_id);
                 continue;
             }
 
-            //Overwrite to_sid from onSend logic
-            if (isset($msg_data['to_sid'])) {
-                $item['to'] = $msg_data['to_sid'];
-            }
-
-            //Drop msg without "to"
-            if ('' === $item['to']) {
-                unset($send_tk[$key]);
+            //Drop message without receiver
+            if (!isset($msg_data['to_sid'])) {
+                unset($send_data[$sock_id]);
                 continue;
             }
+
+            //Copy to_sid value to array
+            $item['to'] = !is_array($msg_data['to_sid']) ? [$msg_data['to_sid']] : $msg_data['to_sid'];
 
             //Clean up data
-            unset($item['stk']);
-            $item['msg'] = $msg;
+            unset($msg_data['to_sid'], $item['stk']);
+
+            //Rebuild message data
+            $item['msg'] = json_encode($msg_data, JSON_FORMAT);
         }
 
-        unset($msg, $msg_data, $key, $item);
-        return $send_tk;
+        unset($sock_id, $msg_data, $item);
+        return $send_data;
     }
 
     /**
      * Send message to a client
      *
      * @param string $sock_id
-     * @param string $msg
+     * @param string $message
      *
      * @return int
      */
-    public function sendMsg(string $sock_id, string $msg): int
+    public function sendMsg(string $sock_id, string $message): int
     {
         try {
-            $byte = fwrite($this->clients[$sock_id], $msg);
+            $byte = fwrite($this->clients[$sock_id], $message);
         } catch (\Throwable $throwable) {
             $this->close($sock_id);
-            unset($throwable, $sock_id, $msg, $byte);
+            unset($throwable, $sock_id, $message, $byte);
             return 0;
         }
 
-        unset($sock_id, $msg);
+        unset($sock_id, $message);
         return $byte;
+    }
+
+    /**
+     * Push message to clients
+     *
+     * @param array  $clients
+     * @param string $message
+     */
+    public function pushMsg(array $clients, string $message): void
+    {
+        foreach ($clients as $sock_id) {
+            $this->sendMsg($sock_id, $message);
+        }
+
+        unset($clients, $message, $sock_id);
     }
 
     /**
@@ -684,16 +692,17 @@ class libSocket extends Factory
 
             //Send message
             foreach ($send_tk as $item) {
-                $this->sendMsg($item['to'], $item['msg']);
+                //Push message to clients
+                $this->pushMsg($item['to'], $item['msg']);
 
                 //On send message to client
-                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '".');
+                $this->debug('Send: "' . $item['msg'] . '" to "' . implode(', ', $item['to']) . '".');
             }
 
             //Call heartbeat handler
             $this->heartbeat();
 
-            unset($read, $msg_tk, $sock_id, $client, $send_tk);
+            unset($read, $msg_tk, $sock_id, $client, $send_tk, $item);
         }
     }
 
@@ -823,16 +832,17 @@ class libSocket extends Factory
 
             //Send message
             foreach ($send_tk as $item) {
-                $this->sendMsg($item['to'], $this->wsEncode($item['msg']));
+                //Push message to clients
+                $this->pushMsg($item['to'], $this->wsEncode($item['msg']));
 
                 //On send message to client
-                $this->debug('Send: "' . $item['msg'] . '" to "' . $item['to'] . '".');
+                $this->debug('Send: "' . $item['msg'] . '" to "' . implode(', ', $item['to']) . '".');
             }
 
             //Call heartbeat handler
             $this->heartbeat();
 
-            unset($read, $msg_tk, $sock_id, $client, $send_tk);
+            unset($read, $msg_tk, $sock_id, $client, $send_tk, $item);
         }
 
         unset($accept_clients);
