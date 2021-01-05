@@ -22,6 +22,7 @@
 namespace Ext;
 
 use Core\Factory;
+use Core\Lib\IOUnit;
 
 /**
  * Class libMySQL
@@ -33,20 +34,19 @@ class libMySQL extends Factory
     /** @var \PDO $pdo */
     public \PDO $pdo;
 
-    //Affected rows
-    protected int $rows = 0;
+    public int $affected_rows = 0;
 
-    //Table name
-    protected string $table = '';
+    public string $last_sql     = '';
+    public string $table_name   = '';
+    public string $table_prefix = '';
 
-    //Table prefix
-    protected string $prefix = '';
+    //Runtime data container
+    public array $runtime = [];
 
-    //Last SQL
-    protected string $last_sql = '';
+    public int   $explain_type  = 0; //0: disable; 1: output; 2: save log; 3: both
+    public array $explain_keeps = [];
 
-    //Runtime data
-    protected array $runtime = [];
+    const EXPLAIN_LEVEL = ['ALL', 'index', 'range', 'ref', 'eq_ref', 'const', 'system', 'NULL'];
 
     /**
      * Bind to PDO connection
@@ -64,44 +64,66 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set table prefix
+     * Set SQL explain action
      *
-     * @param string $prefix
+     * @param int    $explain_type
+     * @param string $explain_level
      *
      * @return $this
      */
-    public function setPrefix(string $prefix): self
+    public function setSqlExplain(int $explain_type, string $explain_level): self
     {
-        $this->prefix = &$prefix;
+        $keep_level = array_search($explain_level, self::EXPLAIN_LEVEL, true);
 
-        unset($prefix);
+        $this->explain_keeps = false !== $keep_level
+            ? array_slice(self::EXPLAIN_LEVEL, 0, $keep_level + 1)
+            : self::EXPLAIN_LEVEL;
+
+        $this->explain_type = &$explain_type;
+
+        unset($explain_type, $explain_level, $keep_level);
+        return $this;
+    }
+
+    /**
+     * Set table prefix
+     *
+     * @param string $table_prefix
+     *
+     * @return $this
+     */
+    public function setTablePrefix(string $table_prefix): self
+    {
+        $this->table_prefix = &$table_prefix;
+
+        unset($table_prefix);
         return $this;
     }
 
     /**
      * Set table name using prefix
      *
-     * @param string $table
+     * @param string $table_name
      *
      * @return $this
      */
-    public function setTable(string $table = ''): self
+    public function setTableName(string $table_name = ''): self
     {
-        if ('' === $table) {
-            if ('' !== $this->table) {
+        if ('' === $table_name) {
+            if ('' !== $this->table_name) {
                 return $this;
             }
 
-            $table = get_class($this);
+            $table_name = get_class($this);
         }
 
-        if (false !== $pos = strrpos($table, '\\')) {
-            $table = substr($table, $pos + 1);
+        if (false !== $pos = strrpos($table_name, '\\')) {
+            $table_name = substr($table_name, $pos + 1);
         }
 
-        $this->table = $this->prefix . $table;
+        $this->table_name = $this->table_prefix . $table_name;
 
-        unset($table, $pos);
+        unset($table_name, $pos);
         return $this;
     }
 
@@ -135,8 +157,8 @@ class libMySQL extends Factory
         try {
             $stmt->execute($this->runtime['bind'] ?? []);
 
-            $this->rows    = $stmt->rowCount();
-            $this->runtime = [];
+            $this->affected_rows = $stmt->rowCount();
+            $this->runtime       = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
@@ -165,8 +187,8 @@ class libMySQL extends Factory
         try {
             $stmt->execute($this->runtime['bind'] ?? []);
 
-            $this->rows    = $stmt->rowCount();
-            $this->runtime = [];
+            $this->affected_rows = $stmt->rowCount();
+            $this->runtime       = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
@@ -210,7 +232,7 @@ class libMySQL extends Factory
      */
     public function getAffectedRows(): int
     {
-        return $this->rows;
+        return $this->affected_rows;
     }
 
     /**
@@ -313,7 +335,7 @@ class libMySQL extends Factory
      */
     public function to(string $table): self
     {
-        $this->runtime['table'] = $this->prefix . $table;
+        $this->runtime['table'] = $this->table_prefix . $table;
 
         unset($table);
         return $this;
@@ -328,7 +350,7 @@ class libMySQL extends Factory
      */
     public function from(string $table): self
     {
-        $this->runtime['table'] = $this->prefix . $table;
+        $this->runtime['table'] = $this->table_prefix . $table;
 
         unset($table);
         return $this;
@@ -347,7 +369,7 @@ class libMySQL extends Factory
         $this->runtime['on']     = [];
         $this->runtime['join']   ??= [];
         $this->runtime['stage']  = 'join';
-        $this->runtime['join'][] = $type . ' JOIN ' . $this->prefix . $table;
+        $this->runtime['join'][] = $type . ' JOIN ' . $this->table_prefix . $table;
 
         unset($table, $type);
         return $this;
@@ -554,15 +576,15 @@ class libMySQL extends Factory
         try {
             $this->last_sql = &$sql;
 
-            if (false === $this->rows = $this->pdo->exec($sql)) {
-                $this->rows = -1;
+            if (false === $this->affected_rows = $this->pdo->exec($sql)) {
+                $this->affected_rows = -1;
             }
         } catch (\Throwable $throwable) {
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
         unset($sql);
-        return $this->rows;
+        return $this->affected_rows;
     }
 
     /**
@@ -586,7 +608,7 @@ class libMySQL extends Factory
 
             $stmt = $this->pdo->query(...$sql_param);
 
-            $this->rows = $stmt->rowCount();
+            $this->affected_rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
@@ -607,8 +629,8 @@ class libMySQL extends Factory
         try {
             $result = $stmt->execute($this->runtime['bind'] ?? []);
 
-            $this->rows    = $stmt->rowCount();
-            $this->runtime = [];
+            $this->affected_rows = $stmt->rowCount();
+            $this->runtime       = [];
         } catch (\Throwable $throwable) {
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
@@ -657,7 +679,41 @@ class libMySQL extends Factory
         $runtime_sql    = $this->{'build' . ucfirst($this->runtime['action'])}();
         $this->last_sql = $this->buildReadableSql($runtime_sql, $this->runtime['bind'] ?? []);
 
+        0 < $this->explain_type && 'select' === $this->runtime['action'] && $this->explainSql($this->last_sql);
+
         return $runtime_sql;
+    }
+
+    /**
+     * Explain SQL
+     *
+     * @param string $sql
+     */
+    public function explainSql(string $sql): void
+    {
+        $explain = $this->query('EXPLAIN ' . $sql)->fetchAll(\PDO::FETCH_ASSOC);
+
+        //Keep needed types
+        foreach ($explain as $key => $item) {
+            if (!in_array($item['type'], $this->explain_keeps, true)) {
+                unset($explain[$key]);
+            }
+        }
+
+        //Build result
+        $result = ['sql' => &$sql, 'res' => &$explain];
+
+        //Output result
+        if (1 === (1 & $this->explain_type)) {
+            IOUnit::new()->appendMsgData('SQL_EXPLAIN', $result);
+        }
+
+        //Save result
+        if (2 === (2 & $this->explain_type)) {
+            libLog::new('SQL_EXPLAIN')->add($result)->save();
+        }
+
+        unset($sql, $explain, $key, $item, $result);
     }
 
     /**
@@ -667,7 +723,7 @@ class libMySQL extends Factory
      */
     protected function buildInsert(): string
     {
-        $sql = 'INSERT INTO ' . ($this->runtime['table'] ?? $this->table);
+        $sql = 'INSERT INTO ' . ($this->runtime['table'] ?? $this->table_name);
         $sql .= ' (' . implode(',', $this->runtime['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime['bind']), '?')) . ')';
 
@@ -682,7 +738,7 @@ class libMySQL extends Factory
     protected function buildSelect(): string
     {
         $sql = 'SELECT ' . ($this->runtime['cols'] ?? '*');
-        $sql .= ' FROM ' . ($this->runtime['table'] ?? $this->table);
+        $sql .= ' FROM ' . ($this->runtime['table'] ?? $this->table_name);
 
         return $this->appendCond($sql);
     }
@@ -694,7 +750,7 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . ($this->runtime['table'] ?? $this->table) . ' SET';
+        $sql = 'UPDATE ' . ($this->runtime['table'] ?? $this->table_name) . ' SET';
 
         $data = [];
         foreach ($this->runtime['value'] as $col => $val) {
@@ -727,7 +783,7 @@ class libMySQL extends Factory
      */
     protected function buildDelete(): string
     {
-        return $this->appendCond('DELETE FROM ' . ($this->runtime['table'] ?? $this->table));
+        return $this->appendCond('DELETE FROM ' . ($this->runtime['table'] ?? $this->table_name));
     }
 
     /**
