@@ -100,9 +100,7 @@ class libErrno extends Factory
      */
     public function set(int $code, int $errno = 0, string $message = ''): void
     {
-        $error = $this->get($code, $errno, $message);
-        IOUnit::new()->setErrorData($error['code'], $error['errno'], $error['message']);
-
-        unset($code, $errno, $message, $error);
+        IOUnit::new()->setMsgCode(...$this->get($code, $errno, $message));
+        unset($code, $errno, $message);
     }
 }

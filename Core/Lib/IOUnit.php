@@ -40,7 +40,7 @@ class IOUnit extends Factory
     public string $src_cmd  = '';
     public string $src_argv = '';
 
-    public array $src_error  = [];
+    public array $src_msg    = [];
     public array $src_input  = [];
     public array $src_output = [];
 
@@ -151,7 +151,7 @@ class IOUnit extends Factory
     }
 
     /**
-     * Set error code, NO & Msg
+     * Set message code data (code, errno, message)
      *
      * @param int    $code
      * @param int    $err_no
@@ -159,28 +159,29 @@ class IOUnit extends Factory
      *
      * @return $this
      */
-    public function setErrorData(int $code, int $err_no, string $err_msg): self
+    public function setMsgCode(int $code, int $err_no, string $err_msg): self
     {
-        $this->src_error['code']    = &$code;
-        $this->src_error['errno']   = &$err_no;
-        $this->src_error['message'] = &$err_msg;
+        $this->src_msg['code']    = &$code;
+        $this->src_msg['errno']   = &$err_no;
+        $this->src_msg['message'] = &$err_msg;
 
         unset($code, $err_no, $err_msg);
         return $this;
     }
 
     /**
-     * Append error info
+     * Append message data
      *
-     * @param array $err_info
+     * @param string $msg_key
+     * @param array  $msg_data
      *
      * @return $this
      */
-    public function appendErrorInfo(array $err_info): self
+    public function appendMsgData(string $msg_key, array $msg_data): self
     {
-        $this->src_error += $err_info;
+        $this->src_msg[$msg_key] = &$msg_data;
 
-        unset($err_info);
+        unset($msg_key, $msg_data);
         return $this;
     }
 
@@ -378,8 +379,8 @@ class IOUnit extends Factory
             $data = (object)[];
         }
 
-        if (!empty($io_unit->src_error)) {
-            $data = $io_unit->src_error + ['data' => $data];
+        if (!empty($io_unit->src_msg)) {
+            $data = $io_unit->src_msg + ['data' => $data];
         }
 
         switch ($io_unit->content_type) {

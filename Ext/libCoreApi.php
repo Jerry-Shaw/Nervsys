@@ -258,7 +258,7 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Set error code, NO & Msg
+     * Set message code data (code, errno, message)
      *
      * @param int    $code
      * @param int    $err_no
@@ -266,26 +266,27 @@ class libCoreApi extends Factory
      *
      * @return $this
      */
-    public function setErrorData(int $code, int $err_no, string $err_msg): self
+    public function setMsgCode(int $code, int $err_no, string $err_msg): self
     {
-        IOUnit::new()->setErrorData($code, $err_no, $err_msg);
+        IOUnit::new()->setMsgCode($code, $err_no, $err_msg);
 
         unset($code, $err_no, $err_msg);
         return $this;
     }
 
     /**
-     * Append error info
+     * Append message data
      *
-     * @param array $err_info
+     * @param string $msg_key
+     * @param array  $msg_data
      *
      * @return $this
      */
-    public function appendErrorInfo(array $err_info): self
+    public function appendMsgData(string $msg_key, array $msg_data): self
     {
-        IOUnit::new()->appendErrorInfo($err_info);
+        IOUnit::new()->appendMsgData($msg_key, $msg_data);
 
-        unset($err_info);
+        unset($msg_key, $msg_data);
         return $this;
     }
 
