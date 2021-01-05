@@ -48,7 +48,7 @@ class Error extends Factory
      * 16384: E_USER_DEPRECATED
      * 32767: E_ALL
      */
-    const LEVEL = [
+    const ERROR_LEVEL = [
         //Error level
         E_ERROR             => 'error',
         E_PARSE             => 'error',
@@ -157,7 +157,7 @@ class Error extends Factory
     {
         $error = error_get_last();
 
-        if (is_null($error) || 'error' !== self::LEVEL[$error['type']]) {
+        if (is_null($error) || 'error' !== self::ERROR_LEVEL[$error['type']]) {
             return;
         }
 
@@ -180,8 +180,8 @@ class Error extends Factory
         $err_code = $throwable->getCode();
 
         //Get error level
-        if (isset(self::LEVEL[$err_code])) {
-            $err_lv = self::LEVEL[$err_code];
+        if (isset(self::ERROR_LEVEL[$err_code])) {
+            $err_lv = self::ERROR_LEVEL[$err_code];
         } elseif (false !== stripos($exception, 'error')) {
             $err_lv   = 'error';
             $err_code = E_USER_ERROR;
