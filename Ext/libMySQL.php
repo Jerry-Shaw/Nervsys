@@ -46,7 +46,7 @@ class libMySQL extends Factory
     public int   $explain_type  = 0;
     public array $explain_keeps = [];
 
-    const EXPLAIN_LEVEL = ['ALL', 'index', 'range', 'ref', 'eq_ref', 'const', 'system', 'NULL'];
+    const EXPLAIN_LEVEL = ['NULL', 'system', 'const', 'eq_ref', 'ref', 'range', 'index', 'ALL'];
 
     /**
      * Bind to PDO connection
@@ -64,19 +64,19 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set SQL explain action
+     * Set SQL explain mode
      *
      * @param int    $explain_type  (0: disable; 1: output; 2: save log; 3: both)
-     * @param string $explain_level (ALL, index, range, ref, eq_ref, const, system, NULL)
+     * @param string $explain_level (NULL, system, const, eq_ref, ref, range, index, ALL)
      *
      * @return $this
      */
-    public function setSqlExplain(int $explain_type, string $explain_level = 'ALL'): self
+    public function setExplainMode(int $explain_type, string $explain_level = 'range'): self
     {
         $keep_level = array_search($explain_level, self::EXPLAIN_LEVEL, true);
 
         $this->explain_keeps = false !== $keep_level
-            ? array_slice(self::EXPLAIN_LEVEL, 0, $keep_level + 1)
+            ? array_slice(self::EXPLAIN_LEVEL, $keep_level)
             : self::EXPLAIN_LEVEL;
 
         $this->explain_type = &$explain_type;
