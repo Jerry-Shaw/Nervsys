@@ -700,17 +700,19 @@ class libMySQL extends Factory
             }
         }
 
-        //Build result
-        $result = ['sql' => &$sql, 'res' => &$explain];
+        if (!empty($explain)) {
+            //Build result
+            $result = ['sql' => &$sql, 'res' => &$explain];
 
-        //Output result
-        if (1 === (1 & $this->explain_type)) {
-            IOUnit::new()->appendMsgData('SQL_EXPLAIN', $result);
-        }
+            //Output result
+            if (1 === (1 & $this->explain_type)) {
+                IOUnit::new()->appendMsgData('SQL_EXPLAIN', $result);
+            }
 
-        //Save result
-        if (2 === (2 & $this->explain_type)) {
-            libLog::new('SQL_EXPLAIN')->add($result)->save();
+            //Save result
+            if (2 === (2 & $this->explain_type)) {
+                libLog::new('SQL_EXPLAIN')->add($result)->save();
+            }
         }
 
         unset($sql, $explain, $key, $item, $result);
