@@ -43,7 +43,7 @@ class libMySQL extends Factory
     //Runtime data container
     public array $runtime = [];
 
-    public int   $explain_type  = 0; //0: disable; 1: output; 2: save log; 3: both
+    public int   $explain_type  = 0;
     public array $explain_keeps = [];
 
     const EXPLAIN_LEVEL = ['ALL', 'index', 'range', 'ref', 'eq_ref', 'const', 'system', 'NULL'];
@@ -66,12 +66,12 @@ class libMySQL extends Factory
     /**
      * Set SQL explain action
      *
-     * @param int    $explain_type
-     * @param string $explain_level
+     * @param int    $explain_type  (0: disable; 1: output; 2: save log; 3: both)
+     * @param string $explain_level (ALL, index, range, ref, eq_ref, const, system, NULL)
      *
      * @return $this
      */
-    public function setSqlExplain(int $explain_type, string $explain_level): self
+    public function setSqlExplain(int $explain_type, string $explain_level = 'ALL'): self
     {
         $keep_level = array_search($explain_level, self::EXPLAIN_LEVEL, true);
 
