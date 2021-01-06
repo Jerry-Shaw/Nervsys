@@ -50,15 +50,19 @@ class libLog extends Factory
     /**
      * Add logs
      *
-     * @param $logs
-     *
      * @return $this
      */
-    public function add($logs): self
+    public function add(): self
     {
-        $this->log_pool[] = is_array($logs) || is_object($logs) ? json_encode($logs, JSON_PRETTY) : (string)$logs;
+        $params = func_get_args();
 
-        unset($logs);
+        foreach ($params as $param) {
+            $this->log_pool[] = (is_array($param) || is_object($param))
+                ? json_encode($param, JSON_PRETTY)
+                : (string)$param;
+        }
+
+        unset($params, $param);
         return $this;
     }
 
