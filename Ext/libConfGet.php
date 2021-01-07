@@ -79,14 +79,14 @@ class libConfGet extends Factory
     }
 
     /**
-     * Get conf by name
+     * Use loaded conf data by section name
      *
-     * @param string $name
+     * @param string $section
      *
      * @return array
      */
-    public function __get(string $name): array
+    public function use(string $section): array
     {
-        return $this->pool[$name] ?? [];
+        return $this->pool[$section] ?? [];
     }
 }
