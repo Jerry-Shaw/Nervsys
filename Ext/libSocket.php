@@ -53,11 +53,11 @@ class libSocket extends Factory
     /**
      * Registered handler class
      *
-     * Methods:
+     * MUST expose methods:
      * onConnect(string sid): array
      * onHandshake(string sid, string proto): bool
-     * onMessage(string msg): array
-     * onSend(array data, bool online): array
+     * onMessage(string sid, string msg): array
+     * onSend(string sid, array data, bool online): array
      * onClose(string sid): void
      *
      * @var string handler class name
@@ -221,8 +221,8 @@ class libSocket extends Factory
         $this->master    = [$this->master_id => &$socket];
 
         $this->lib_mpc = libMPC::new()
-            ->setProcNum($mpc_cnt)
             ->setPhpPath(OSUnit::new()->getPhpPath())
+            ->setProcNum($mpc_cnt)
             ->start();
 
         $this->{'on' . ucfirst($this->type)}();
@@ -236,6 +236,7 @@ class libSocket extends Factory
     public function genId(): string
     {
         $uid = substr(hash('md5', uniqid(microtime() . (string)mt_rand(), true)), 8, 16);
+
         return !isset($this->clients[$uid]) ? $uid : $this->genId();
     }
 
@@ -326,6 +327,7 @@ class libSocket extends Factory
             //Build send_tk data
             $send_data[$sock_id] = [
                 'stk' => $this->addMpc('onSend', [
+                    'sid'    => $sock_id,
                     'data'   => $msg_data,
                     'online' => isset($msg_data['to_sid']) ? isset($this->clients[$msg_data['to_sid']]) : false
                 ])
@@ -445,7 +447,7 @@ class libSocket extends Factory
         //Check active clients
         foreach ($this->actives as $sock_id => $active_time) {
             //Calculate time duration
-            $duration = $chk_time - $active_time;
+            $duration = ($chk_time - $active_time);
 
             if (60 < $duration) {
                 //Close offline client
@@ -656,7 +658,7 @@ class libSocket extends Factory
                     $this->actives[$sock_id] = time();
 
                     //Send to onMessage logic via MPC
-                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => $socket_msg]);
+                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['sid' => $sock_id, 'msg' => $socket_msg]);
 
                     //On received message from client
                     $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '".');
@@ -795,7 +797,7 @@ class libSocket extends Factory
                     }
 
                     //Send to onMessage logic via MPC
-                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
+                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['sid' => $sock_id, 'msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
 
                     //On received message from client
                     $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '".');
