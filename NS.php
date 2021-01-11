@@ -48,39 +48,21 @@ define('NS_ROOT', __DIR__);
 define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
 define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 
-//Detect extension support
-define('SPT_OPC', extension_loaded('Zend OPcache'));
-
 //Autoload function
 function autoload(string $class_name, string $root_path = NS_ROOT): void
 {
     //Get relative path of class file
     $file_name = strtr($class_name, '\\', DIRECTORY_SEPARATOR) . '.php';
 
-    //Load script file from include path
     if (false === strpos($class_name, '\\')) {
+        //Load script file from include path
         require $file_name;
-        return;
-    }
-
-    //Skip non-existent class file
-    if (!is_file($class_file = $root_path . DIRECTORY_SEPARATOR . $file_name)) {
-        return;
-    }
-
-    $file_compiled = false;
-
-    //Compile class file
-    if (SPT_OPC && 0 === strpos($class_file, NS_ROOT)) {
-        $file_compiled = opcache_compile_file($class_file);
-    }
-
-    //Require class file
-    if (!$file_compiled) {
+    } elseif (is_file($class_file = $root_path . DIRECTORY_SEPARATOR . $file_name)) {
+        //Require class file
         require $class_file;
     }
 
-    unset($class_name, $root_path, $file_name, $class_file, $file_compiled);
+    unset($class_name, $root_path, $file_name, $class_file);
 }
 
 //Compile/require Factory module
