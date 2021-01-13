@@ -215,9 +215,11 @@ class Error extends Factory
         $display_errors && $app->core_debug && $logger->show($err_lv, $message, $context);
         $logger->$err_lv($message, $context);
 
+        //Response HTTP 500
+        http_response_code(500);
+
         //Exit on error
         if ($stop_on_error && 'error' === $err_lv) {
-            http_response_code(500);
             exit();
         }
 
