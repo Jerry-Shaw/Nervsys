@@ -799,7 +799,7 @@ class libMySQL extends Factory
     protected function buildReadableSql(string $sql, array $params): string
     {
         foreach ($params as &$param) {
-            if (!is_numeric($param)) {
+            if (is_string($param)) {
                 $param = '"' . $param . '"';
             }
         }
