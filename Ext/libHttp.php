@@ -55,10 +55,10 @@ class libHttp extends Factory
     public int $max_follow    = 0;
     public int $response_code = 0;
 
-    public string $http_ver   = 'HTTP/2';                                               //HTTP Version
-    public string $method     = 'GET';                                                  //Request method
-    public string $user_agent = 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')';     //User Agent string
-    public string $connection = 'keep-alive';                                           //Connection type
+    public string $http_ver    = 'HTTP/2';                                               //HTTP Version
+    public string $http_method = 'GET';                                                  //Request method
+    public string $user_agent  = 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')';     //User Agent string
+    public string $connection  = 'keep-alive';                                           //Connection type
 
     public string $content_type    = self::CONTENT_TYPE_URL_ENCODED;    //Content type
     public string $accept_charset  = 'UTF-8,*;q=0';                     //Accept charset
@@ -170,15 +170,15 @@ class libHttp extends Factory
     /**
      * Set method
      *
-     * @param string $method
+     * @param string $http_method
      *
      * @return $this
      */
-    public function setMethod(string $method = 'POST'): self
+    public function setHttpMethod(string $http_method = 'POST'): self
     {
-        $this->method = strtoupper($method);
+        $this->http_method = strtoupper($http_method);
 
-        unset($method);
+        unset($http_method);
         return $this;
     }
 
@@ -326,7 +326,7 @@ class libHttp extends Factory
         }
 
         //Uppercase HTTP method
-        $this->method = strtoupper($this->method);
+        $this->http_method = strtoupper($this->http_method);
 
         //Get URL units
         $url_unit = $this->getUrlUnit($this->url);
@@ -360,8 +360,8 @@ class libHttp extends Factory
         }
 
         if (!empty($this->data)) {
-            if ('GET' === $this->method) {
-                $this->method = 'POST';
+            if ('GET' === $this->http_method) {
+                $this->http_method = 'POST';
             }
 
             switch ($this->content_type) {
@@ -395,8 +395,8 @@ class libHttp extends Factory
         $opt[CURLOPT_HTTPHEADER]     = &$header;
         $opt[CURLOPT_ENCODING]       = $this->accept_encoding;
         $opt[CURLOPT_USERAGENT]      = $this->user_agent;
-        $opt[CURLOPT_CUSTOMREQUEST]  = $this->method;
-        $opt[CURLOPT_POST]           = ('POST' === $this->method);
+        $opt[CURLOPT_CUSTOMREQUEST]  = $this->http_method;
+        $opt[CURLOPT_POST]           = ('POST' === $this->http_method);
         $opt[CURLOPT_NOBODY]         = !$with_body;
         $opt[CURLOPT_HEADER]         = &$with_header;
 
@@ -510,7 +510,7 @@ class libHttp extends Factory
             'Connection'      => $this->connection
         ];
 
-        $headers = [$this->method . ' ' . $url_unit['path'] . $url_unit['query'] . ' ' . $this->http_ver];
+        $headers = [$this->http_method . ' ' . $url_unit['path'] . $url_unit['query'] . ' ' . $this->http_ver];
 
         foreach ($header_list as $key => $val) {
             $headers[] = $key . ': ' . $val;
