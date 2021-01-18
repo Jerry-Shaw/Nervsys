@@ -157,7 +157,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function addOption(array ...$curl_opt): self
+    public function addOptions(array ...$curl_opt): self
     {
         foreach ($curl_opt as $option) {
             $this->options += $option;
@@ -325,13 +325,8 @@ class libHttp extends Factory
             $this->content_type = self::CONTENT_TYPE_FORM_DATA;
         }
 
-        //Make request method uppercase
+        //Uppercase HTTP method
         $this->method = strtoupper($this->method);
-
-        //Set method to POST when data is in body
-        if (!empty($this->data) && 'GET' === $this->method) {
-            $this->method = 'POST';
-        }
 
         //Get URL units
         $url_unit = $this->getUrlUnit($this->url);
@@ -342,24 +337,6 @@ class libHttp extends Factory
         //Initialize
         $opt  = [];
         $curl = curl_init();
-
-        //Build options
-        $opt[CURLOPT_URL]            = $this->url;
-        $opt[CURLOPT_PORT]           = &$url_unit['port'];
-        $opt[CURLOPT_TIMEOUT]        = 60;
-        $opt[CURLOPT_NOSIGNAL]       = true;
-        $opt[CURLOPT_AUTOREFERER]    = true;
-        $opt[CURLOPT_COOKIESESSION]  = true;
-        $opt[CURLOPT_RETURNTRANSFER] = true;
-        $opt[CURLOPT_SSL_VERIFYHOST] = 2;
-        $opt[CURLOPT_SSL_VERIFYPEER] = false;
-        $opt[CURLOPT_HTTPHEADER]     = &$header;
-        $opt[CURLOPT_ENCODING]       = $this->accept_encoding;
-        $opt[CURLOPT_USERAGENT]      = $this->user_agent;
-        $opt[CURLOPT_CUSTOMREQUEST]  = $this->method;
-        $opt[CURLOPT_POST]           = ('POST' === $this->method);
-        $opt[CURLOPT_NOBODY]         = !$with_body;
-        $opt[CURLOPT_HEADER]         = &$with_header;
 
         if ('' !== $this->cookie) {
             $opt[CURLOPT_COOKIE] = $this->cookie;
@@ -383,6 +360,10 @@ class libHttp extends Factory
         }
 
         if (!empty($this->data)) {
+            if ('GET' === $this->method) {
+                $this->method = 'POST';
+            }
+
             switch ($this->content_type) {
                 case self::CONTENT_TYPE_JSON:
                     $opt[CURLOPT_POSTFIELDS] = json_encode($this->data);
@@ -402,8 +383,25 @@ class libHttp extends Factory
             }
         }
 
+        $opt[CURLOPT_URL]            = $this->url;
+        $opt[CURLOPT_PORT]           = &$url_unit['port'];
+        $opt[CURLOPT_TIMEOUT]        = 60;
+        $opt[CURLOPT_NOSIGNAL]       = true;
+        $opt[CURLOPT_AUTOREFERER]    = true;
+        $opt[CURLOPT_COOKIESESSION]  = true;
+        $opt[CURLOPT_RETURNTRANSFER] = true;
+        $opt[CURLOPT_SSL_VERIFYHOST] = 2;
+        $opt[CURLOPT_SSL_VERIFYPEER] = false;
+        $opt[CURLOPT_HTTPHEADER]     = &$header;
+        $opt[CURLOPT_ENCODING]       = $this->accept_encoding;
+        $opt[CURLOPT_USERAGENT]      = $this->user_agent;
+        $opt[CURLOPT_CUSTOMREQUEST]  = $this->method;
+        $opt[CURLOPT_POST]           = ('POST' === $this->method);
+        $opt[CURLOPT_NOBODY]         = !$with_body;
+        $opt[CURLOPT_HEADER]         = &$with_header;
+
         //Merge user defined cURL options
-        $opt += $this->options;
+        $opt = array_merge($opt, $this->options);
 
         //Set cURL options
         curl_setopt_array($curl, $opt);
