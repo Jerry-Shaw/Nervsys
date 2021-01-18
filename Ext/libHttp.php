@@ -307,8 +307,11 @@ class libHttp extends Factory
             $this->content_type = self::CONTENT_TYPE_FORM_DATA;
         }
 
-        //Set method
-        if (!empty($this->data)) {
+        //Make request method uppercase
+        $this->method = strtoupper($this->method);
+
+        //Set method to POST when data is in body
+        if (!empty($this->data) && 'GET' === $this->method) {
             $this->method = 'POST';
         }
 
@@ -335,7 +338,7 @@ class libHttp extends Factory
         $opt[CURLOPT_HTTPHEADER]     = &$header;
         $opt[CURLOPT_ENCODING]       = $this->accept_encoding;
         $opt[CURLOPT_USERAGENT]      = $this->user_agent;
-        $opt[CURLOPT_CUSTOMREQUEST]  = strtoupper($this->method);
+        $opt[CURLOPT_CUSTOMREQUEST]  = $this->method;
         $opt[CURLOPT_POST]           = ('POST' === $this->method);
         $opt[CURLOPT_NOBODY]         = !$with_body;
         $opt[CURLOPT_HEADER]         = &$with_header;
