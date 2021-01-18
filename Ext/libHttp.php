@@ -37,9 +37,10 @@ class libHttp extends Factory
     const CONTENT_TYPE_URL_ENCODED = 'application/x-www-form-urlencoded';
 
     //Job info
-    public array $data   = [];
-    public array $file   = [];
-    public array $header = [];
+    public array $data    = [];
+    public array $file    = [];
+    public array $header  = [];
+    public array $options = [];
 
     public string $url        = '';
     public string $etag       = '';
@@ -146,6 +147,23 @@ class libHttp extends Factory
         }
 
         unset($cookie, $key, $val);
+        return $this;
+    }
+
+    /**
+     * Add custom cURL options
+     *
+     * @param array ...$curl_opt
+     *
+     * @return $this
+     */
+    public function addOption(array ...$curl_opt): self
+    {
+        foreach ($curl_opt as $option) {
+            $this->options += $option;
+        }
+
+        unset($curl_opt, $option);
         return $this;
     }
 
@@ -383,6 +401,9 @@ class libHttp extends Factory
                     break;
             }
         }
+
+        //Merge user defined cURL options
+        $opt += $this->options;
 
         //Set cURL options
         curl_setopt_array($curl, $opt);
