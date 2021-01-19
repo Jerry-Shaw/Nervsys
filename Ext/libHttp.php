@@ -174,7 +174,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setHttpMethod(string $http_method = 'POST'): self
+    public function setHttpMethod(string $http_method): self
     {
         $this->http_method = strtoupper($http_method);
 
@@ -189,7 +189,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setContentType(string $content_type = self::CONTENT_TYPE_URL_ENCODED): self
+    public function setContentType(string $content_type): self
     {
         $this->content_type = &$content_type;
 
@@ -409,15 +409,18 @@ class libHttp extends Factory
         //Get response
         $response = curl_exec($curl);
 
-        //Collect HTTP CODE or ERROR
-        false !== $response
-            ? $this->response_code = curl_getinfo($curl, CURLINFO_RESPONSE_CODE)
-            : $this->curl_error = curl_error($curl);
+        //Collect cURL error
+        if (false === $response) {
+            $this->curl_error = curl_error($curl);
+        }
+
+        //Collect HTTP CODE
+        $this->response_code = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
 
         //Close cURL handle
         curl_close($curl);
 
-        unset($opt, $curl, $key, $val);
+        unset($opt, $curl);
         return (string)$response;
     }
 
