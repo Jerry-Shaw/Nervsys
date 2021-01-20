@@ -168,7 +168,7 @@ class libHttp extends Factory
     }
 
     /**
-     * Set method
+     * Set HTTP method
      *
      * @param string $http_method
      *
