@@ -400,11 +400,8 @@ class libHttp extends Factory
         $opt[CURLOPT_NOBODY]         = !$with_body;
         $opt[CURLOPT_HEADER]         = &$with_header;
 
-        //Merge user defined cURL options
-        $opt = array_merge($opt, $this->options);
-
         //Set cURL options
-        curl_setopt_array($curl, $opt);
+        curl_setopt_array($curl, $this->options + $opt);
 
         //Get response
         $response = curl_exec($curl);
