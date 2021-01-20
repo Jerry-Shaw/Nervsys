@@ -41,7 +41,7 @@ class libMySQL extends Factory
     public string $table_prefix = '';
 
     //Runtime data container
-    public array $runtime = [];
+    public array $runtime_data = [];
 
     public int   $explain_type  = 0;
     public array $explain_keeps = [];
@@ -136,11 +136,11 @@ class libMySQL extends Factory
      */
     public function setAsRaw(string $value): string
     {
-        if (!isset($this->runtime['raw'])) {
-            $this->runtime['raw'] = hash('crc32b', uniqid(microtime() . mt_rand(), true)) . ':';
+        if (!isset($this->runtime_data['raw'])) {
+            $this->runtime_data['raw'] = hash('crc32b', uniqid(microtime() . mt_rand(), true)) . ':';
         }
 
-        return $this->runtime['raw'] . $value;
+        return $this->runtime_data['raw'] . $value;
     }
 
     /**
@@ -152,24 +152,13 @@ class libMySQL extends Factory
      */
     public function getRow(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $stmt = $this->getStmt();
-
-        try {
-            $stmt->execute($this->runtime['bind'] ?? []);
-
-            $this->affected_rows = $stmt->rowCount();
-            $this->runtime       = [];
-        } catch (\Throwable $throwable) {
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
-        }
-
-        $data = $stmt->fetch($fetch_style);
+        $data = ($this->execStmt()['stmt'])->fetch($fetch_style);
 
         if (!is_array($data)) {
             $data = false !== $data ? [$data] : [];
         }
 
-        unset($fetch_style, $stmt);
+        unset($fetch_style);
         return $data;
     }
 
@@ -182,37 +171,10 @@ class libMySQL extends Factory
      */
     public function getAll(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $stmt = $this->getStmt();
+        $data = ($this->execStmt()['stmt'])->fetchAll($fetch_style);
 
-        try {
-            $stmt->execute($this->runtime['bind'] ?? []);
-
-            $this->affected_rows = $stmt->rowCount();
-            $this->runtime       = [];
-        } catch (\Throwable $throwable) {
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
-        }
-
-        $data = $stmt->fetchAll($fetch_style);
-
-        unset($fetch_style, $stmt);
+        unset($fetch_style);
         return $data;
-    }
-
-    /**
-     * Get current PDOStatement
-     *
-     * @return \PDOStatement
-     */
-    public function getStmt(): \PDOStatement
-    {
-        try {
-            $stmt = $this->pdo->prepare($this->buildSql());
-        } catch (\Throwable $throwable) {
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
-        }
-
-        return $stmt;
     }
 
     /**
@@ -264,10 +226,10 @@ class libMySQL extends Factory
             $param += $value;
         }
 
-        $this->runtime['action'] = 'insert';
+        $this->runtime_data['action'] = 'insert';
 
-        $this->runtime['cols'] = array_keys($param);
-        $this->runtime['bind'] = array_values($param);
+        $this->runtime_data['cols'] = array_keys($param);
+        $this->runtime_data['bind'] = array_values($param);
 
         unset($data, $param, $value);
         return $this;
@@ -284,11 +246,11 @@ class libMySQL extends Factory
     {
         $this->isReady();
 
-        $this->runtime['value']  = [];
-        $this->runtime['action'] = 'update';
+        $this->runtime_data['value']  = [];
+        $this->runtime_data['action'] = 'update';
 
         foreach ($data as $value) {
-            $this->runtime['value'] += $value;
+            $this->runtime_data['value'] += $value;
         }
 
         unset($data, $value);
@@ -305,9 +267,9 @@ class libMySQL extends Factory
     public function select(string ...$column): self
     {
         $this->isReady();
-        $this->runtime['action'] = 'select';
 
-        $this->runtime['cols'] = !empty($column) ? implode(',', $column) : '*';
+        $this->runtime_data['action'] = 'select';
+        $this->runtime_data['cols']   = !empty($column) ? implode(',', $column) : '*';
 
         unset($data);
         return $this;
@@ -321,7 +283,7 @@ class libMySQL extends Factory
     public function delete(): self
     {
         $this->isReady();
-        $this->runtime['action'] = 'delete';
+        $this->runtime_data['action'] = 'delete';
 
         return $this;
     }
@@ -335,7 +297,7 @@ class libMySQL extends Factory
      */
     public function to(string $table): self
     {
-        $this->runtime['table'] = $this->table_prefix . $table;
+        $this->runtime_data['table'] = $this->table_prefix . $table;
 
         unset($table);
         return $this;
@@ -350,7 +312,7 @@ class libMySQL extends Factory
      */
     public function from(string $table): self
     {
-        $this->runtime['table'] = $this->table_prefix . $table;
+        $this->runtime_data['table'] = $this->table_prefix . $table;
 
         unset($table);
         return $this;
@@ -366,10 +328,10 @@ class libMySQL extends Factory
      */
     public function join(string $table, string $type = 'INNER'): self
     {
-        $this->runtime['on']     = [];
-        $this->runtime['join']   ??= [];
-        $this->runtime['stage']  = 'join';
-        $this->runtime['join'][] = $type . ' JOIN ' . $this->table_prefix . $table;
+        $this->runtime_data['on']     = [];
+        $this->runtime_data['join']   ??= [];
+        $this->runtime_data['stage']  = 'join';
+        $this->runtime_data['join'][] = $type . ' JOIN ' . $this->table_prefix . $table;
 
         unset($table, $type);
         return $this;
@@ -388,7 +350,7 @@ class libMySQL extends Factory
             return $this;
         }
 
-        $this->runtime['join'] = array_merge($this->runtime['join'], $this->runtime['on'] = $this->parseCond($where, 'on'));
+        $this->runtime_data['join'] = array_merge($this->runtime_data['join'], $this->runtime_data['on'] = $this->parseCond($where, 'on'));
 
         unset($where);
         return $this;
@@ -403,14 +365,14 @@ class libMySQL extends Factory
      */
     public function where(array ...$where): self
     {
-        $this->runtime['where'] ??= [];
-        $this->runtime['stage'] = 'where';
+        $this->runtime_data['where'] ??= [];
+        $this->runtime_data['stage'] = 'where';
 
         if (empty($where)) {
             return $this;
         }
 
-        $this->runtime['where'] = array_merge($this->runtime['where'], $this->parseCond($where, 'where'));
+        $this->runtime_data['where'] = array_merge($this->runtime_data['where'], $this->parseCond($where, 'where'));
 
         unset($where);
         return $this;
@@ -425,14 +387,14 @@ class libMySQL extends Factory
      */
     public function having(array ...$where): self
     {
-        $this->runtime['having'] ??= [];
-        $this->runtime['stage']  = 'having';
+        $this->runtime_data['having'] ??= [];
+        $this->runtime_data['stage']  = 'having';
 
         if (empty($where)) {
             return $this;
         }
 
-        $this->runtime['having'] = array_merge($this->runtime['having'], $this->parseCond($where, 'having'));
+        $this->runtime_data['having'] = array_merge($this->runtime_data['having'], $this->parseCond($where, 'having'));
 
         unset($where);
         return $this;
@@ -453,10 +415,11 @@ class libMySQL extends Factory
 
         $cond = $this->parseCond($where, 'and');
 
-        array_unshift($cond, !empty($this->runtime[$this->runtime['stage']]) ? 'AND (' : '(');
+        array_unshift($cond, !empty($this->runtime_data[$this->runtime_data['stage']]) ? 'AND (' : '(');
+
         $cond[] = ')';
 
-        $this->runtime[$this->runtime['stage']] = array_merge($this->runtime[$this->runtime['stage']], $cond);
+        $this->runtime_data[$this->runtime_data['stage']] = array_merge($this->runtime_data[$this->runtime_data['stage']], $cond);
 
         unset($where, $cond);
         return $this;
@@ -477,10 +440,11 @@ class libMySQL extends Factory
 
         $cond = $this->parseCond($where, 'or');
 
-        array_unshift($cond, !empty($this->runtime[$this->runtime['stage']]) ? 'OR (' : '(');
+        array_unshift($cond, !empty($this->runtime_data[$this->runtime_data['stage']]) ? 'OR (' : '(');
+
         $cond[] = ')';
 
-        $this->runtime[$this->runtime['stage']] = array_merge($this->runtime[$this->runtime['stage']], $cond);
+        $this->runtime_data[$this->runtime_data['stage']] = array_merge($this->runtime_data[$this->runtime_data['stage']], $cond);
 
         unset($where, $cond);
         return $this;
@@ -499,7 +463,7 @@ class libMySQL extends Factory
             $this->isRaw($field);
         }
 
-        $this->runtime['group'] = implode(',', $fields);
+        $this->runtime_data['group'] = implode(',', $fields);
         unset($fields, $field);
         return $this;
     }
@@ -524,7 +488,7 @@ class libMySQL extends Factory
             $order[] = $col . ' ' . strtoupper($val);
         }
 
-        $this->runtime['order'] = implode(',', $order);
+        $this->runtime_data['order'] = implode(',', $order);
 
         unset($orders, $param, $order, $col, $val);
         return $this;
@@ -540,7 +504,7 @@ class libMySQL extends Factory
      */
     public function limit(int $offset, int $length = 0): self
     {
-        $this->runtime['limit'] = 0 < $length
+        $this->runtime_data['limit'] = 0 < $length
             ? (string)$offset . ', ' . (string)$length
             : (string)$offset;
 
@@ -558,7 +522,7 @@ class libMySQL extends Factory
      */
     public function lock(string ...$modes): self
     {
-        $this->runtime['lock'] = implode(' ', $modes);
+        $this->runtime_data['lock'] = implode(' ', $modes);
 
         unset($modes);
         return $this;
@@ -624,19 +588,7 @@ class libMySQL extends Factory
      */
     public function execute(): bool
     {
-        $stmt = $this->getStmt();
-
-        try {
-            $result = $stmt->execute($this->runtime['bind'] ?? []);
-
-            $this->affected_rows = $stmt->rowCount();
-            $this->runtime       = [];
-        } catch (\Throwable $throwable) {
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
-        }
-
-        unset($stmt);
-        return $result;
+        return $this->execStmt()['exec'];
     }
 
     /**
@@ -676,10 +628,10 @@ class libMySQL extends Factory
      */
     public function buildSql(): string
     {
-        $runtime_sql    = $this->{'build' . ucfirst($this->runtime['action'])}();
-        $this->last_sql = $this->buildReadableSql($runtime_sql, $this->runtime['bind'] ?? []);
+        $runtime_sql    = $this->{'build' . ucfirst($this->runtime_data['action'])}();
+        $this->last_sql = $this->buildReadableSql($runtime_sql, $this->runtime_data['bind'] ?? []);
 
-        0 < $this->explain_type && 'select' === $this->runtime['action'] && $this->explainSql($this->last_sql);
+        0 < $this->explain_type && 'select' === $this->runtime_data['action'] && $this->explainSql($this->last_sql);
 
         return $runtime_sql;
     }
@@ -719,15 +671,37 @@ class libMySQL extends Factory
     }
 
     /**
+     * Execute prepared PDOStatement
+     *
+     * @return array
+     */
+    protected function execStmt(): array
+    {
+        $result = [];
+
+        try {
+            $result['stmt'] = $this->pdo->prepare($this->buildSql());
+            $result['exec'] = $result['stmt']->execute($this->runtime_data['bind'] ?? []);
+
+            $this->affected_rows = $result['stmt']->rowCount();
+            $this->runtime_data  = [];
+        } catch (\Throwable $throwable) {
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+        }
+
+        return $result;
+    }
+
+    /**
      * Build SQL for INSERT
      *
      * @return string
      */
     protected function buildInsert(): string
     {
-        $sql = 'INSERT INTO ' . ($this->runtime['table'] ?? $this->table_name);
-        $sql .= ' (' . implode(',', $this->runtime['cols']) . ')';
-        $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime['bind']), '?')) . ')';
+        $sql = 'INSERT INTO ' . ($this->runtime_data['table'] ?? $this->table_name);
+        $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
+        $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
         return $sql;
     }
@@ -739,8 +713,8 @@ class libMySQL extends Factory
      */
     protected function buildSelect(): string
     {
-        $sql = 'SELECT ' . ($this->runtime['cols'] ?? '*');
-        $sql .= ' FROM ' . ($this->runtime['table'] ?? $this->table_name);
+        $sql = 'SELECT ' . ($this->runtime_data['cols'] ?? '*');
+        $sql .= ' FROM ' . ($this->runtime_data['table'] ?? $this->table_name);
 
         return $this->appendCond($sql);
     }
@@ -752,10 +726,10 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . ($this->runtime['table'] ?? $this->table_name) . ' SET';
+        $sql = 'UPDATE ' . ($this->runtime_data['table'] ?? $this->table_name) . ' SET';
 
         $data = [];
-        foreach ($this->runtime['value'] as $col => $val) {
+        foreach ($this->runtime_data['value'] as $col => $val) {
             if (0 === strpos($val, $col)) {
                 $raw = str_replace(' ', '', $val);
                 $opt = substr($raw, $pos = strlen($col), 1);
@@ -769,7 +743,7 @@ class libMySQL extends Factory
 
             $data[] = $col . '=?';
 
-            $this->runtime['bind'][] = $val;
+            $this->runtime_data['bind'][] = $val;
         }
 
         $sql .= ' ' . implode(',', $data);
@@ -785,7 +759,7 @@ class libMySQL extends Factory
      */
     protected function buildDelete(): string
     {
-        return $this->appendCond('DELETE FROM ' . ($this->runtime['table'] ?? $this->table_name));
+        return $this->appendCond('DELETE FROM ' . ($this->runtime_data['table'] ?? $this->table_name));
     }
 
     /**
@@ -800,7 +774,7 @@ class libMySQL extends Factory
     {
         foreach ($params as &$param) {
             if (is_string($param)) {
-                $param = '"' . $param . '"';
+                $param = '"' . addslashes($param) . '"';
             }
         }
 
@@ -820,15 +794,15 @@ class libMySQL extends Factory
      */
     protected function isRaw(string &$raw_sql): bool
     {
-        if (!isset($this->runtime['raw'])) {
+        if (!isset($this->runtime_data['raw'])) {
             return false;
         }
 
-        if (0 !== strpos($raw_sql, $this->runtime['raw'])) {
+        if (0 !== strpos($raw_sql, $this->runtime_data['raw'])) {
             return false;
         }
 
-        $raw_sql = substr($raw_sql, strlen($this->runtime['raw']));
+        $raw_sql = substr($raw_sql, strlen($this->runtime_data['raw']));
         return true;
     }
 
@@ -837,8 +811,12 @@ class libMySQL extends Factory
      */
     protected function isReady(): void
     {
-        if (isset($this->runtime['action'])) {
-            throw new \PDOException('"' . $this->runtime['action'] . '" action is NOT executed!' . PHP_EOL . 'SQL: ' . $this->buildReadableSql($this->{'build' . ucfirst($this->runtime['action'])}(), $this->runtime['bind']), E_USER_ERROR);
+        if (isset($this->runtime_data['action'])) {
+            throw new \PDOException(
+                '"' . $this->runtime_data['action'] . '" is NOT executed!' . PHP_EOL
+                . 'SQL: ' . $this->buildReadableSql($this->{'build' . ucfirst($this->runtime_data['action'])}(), $this->runtime_data['bind']),
+                E_USER_ERROR
+            );
         }
     }
 
@@ -854,14 +832,14 @@ class libMySQL extends Factory
     {
         $cond_list  = [];
         $in_group   = false;
-        $bind_stage = 'bind_' . $this->runtime['stage'];
+        $bind_stage = 'bind_' . $this->runtime_data['stage'];
 
-        $this->runtime[$bind_stage] ??= [];
+        $this->runtime_data[$bind_stage] ??= [];
 
         //option
         if (in_array($option, ['on', 'where', 'having'], true)) {
             $in_group    = true;
-            $cond_list[] = (empty($this->runtime[$option]) ? strtoupper($option) : 'AND') . ' (';
+            $cond_list[] = (empty($this->runtime_data[$option]) ? strtoupper($option) : 'AND') . ' (';
         }
 
         foreach ($where as $value) {
@@ -912,10 +890,10 @@ class libMySQL extends Factory
                     continue;
                 }
 
-                if ('join' !== $this->runtime['stage']) {
+                if ('join' !== $this->runtime_data['stage']) {
                     $cond_list[] = '?';
 
-                    $this->runtime[$bind_stage][] = $data;
+                    $this->runtime_data[$bind_stage][] = $data;
                 } else {
                     $cond_list[] = $data;
                 }
@@ -923,7 +901,7 @@ class libMySQL extends Factory
                 $data = array_values($data);
 
                 if ('BETWEEN' !== end($cond_list)) {
-                    if ('join' !== $this->runtime['stage']) {
+                    if ('join' !== $this->runtime_data['stage']) {
                         $param = '';
                         $count = count($data) - 1;
 
@@ -931,9 +909,9 @@ class libMySQL extends Factory
                             $param .= $key < $count ? '?,' : '?';
 
                             if (is_int($item) || is_float($item) || is_numeric($item)) {
-                                $this->runtime[$bind_stage][] = $item;
+                                $this->runtime_data[$bind_stage][] = $item;
                             } else {
-                                $this->runtime[$bind_stage][] = '"' . $item . '"';
+                                $this->runtime_data[$bind_stage][] = '"' . $item . '"';
                             }
                         }
                     } else {
@@ -942,11 +920,11 @@ class libMySQL extends Factory
 
                     $cond_list[] = '(' . $param . ')';
                 } else {
-                    if ('join' !== $this->runtime['stage']) {
+                    if ('join' !== $this->runtime_data['stage']) {
                         $cond_list[] = '? AND ?';
 
-                        $this->runtime[$bind_stage][] = $data[0];
-                        $this->runtime[$bind_stage][] = $data[1];
+                        $this->runtime_data[$bind_stage][] = $data[0];
+                        $this->runtime_data[$bind_stage][] = $data[1];
                     } else {
                         $cond_list[] = $data[0] . ' AND ' . $data[1];
                     }
@@ -971,38 +949,38 @@ class libMySQL extends Factory
      */
     protected function appendCond(string $sql): string
     {
-        if (isset($this->runtime['join'])) {
-            $sql .= ' ' . implode(' ', $this->runtime['join']);
+        if (isset($this->runtime_data['join'])) {
+            $sql .= ' ' . implode(' ', $this->runtime_data['join']);
         }
 
-        if (isset($this->runtime['where'])) {
-            $this->runtime['bind'] = array_merge($this->runtime['bind'] ?? [], $this->runtime['bind_where'] ?? []);
+        if (isset($this->runtime_data['where'])) {
+            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'] ?? [], $this->runtime_data['bind_where'] ?? []);
 
-            $sql .= ' ' . implode(' ', $this->runtime['where']);
-            unset($this->runtime['where'], $this->runtime['bind_where']);
+            $sql .= ' ' . implode(' ', $this->runtime_data['where']);
+            unset($this->runtime_data['where'], $this->runtime_data['bind_where']);
         }
 
-        if (isset($this->runtime['group'])) {
-            $sql .= ' GROUP BY ' . $this->runtime['group'];
+        if (isset($this->runtime_data['group'])) {
+            $sql .= ' GROUP BY ' . $this->runtime_data['group'];
         }
 
-        if (isset($this->runtime['having'])) {
-            $this->runtime['bind'] = array_merge($this->runtime['bind'] ?? [], $this->runtime['bind_having'] ?? []);
+        if (isset($this->runtime_data['having'])) {
+            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'] ?? [], $this->runtime_data['bind_having'] ?? []);
 
-            $sql .= ' ' . implode(' ', $this->runtime['having']);
-            unset($this->runtime['having'], $this->runtime['bind_having']);
+            $sql .= ' ' . implode(' ', $this->runtime_data['having']);
+            unset($this->runtime_data['having'], $this->runtime_data['bind_having']);
         }
 
-        if (isset($this->runtime['order'])) {
-            $sql .= ' ORDER BY ' . $this->runtime['order'];
+        if (isset($this->runtime_data['order'])) {
+            $sql .= ' ORDER BY ' . $this->runtime_data['order'];
         }
 
-        if (isset($this->runtime['limit'])) {
-            $sql .= ' LIMIT ' . $this->runtime['limit'];
+        if (isset($this->runtime_data['limit'])) {
+            $sql .= ' LIMIT ' . $this->runtime_data['limit'];
         }
 
-        if (isset($this->runtime['lock'])) {
-            $sql .= ' FOR ' . $this->runtime['lock'];
+        if (isset($this->runtime_data['lock'])) {
+            $sql .= ' FOR ' . $this->runtime_data['lock'];
         }
 
         return $sql;
