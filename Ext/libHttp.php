@@ -655,12 +655,12 @@ class libHttp extends Factory
                 continue;
             }
 
-            $key = substr($value, 0, $pos);
+            $key = strtolower(substr($value, 0, $pos));
             $val = substr($value, $pos + 2);
 
             $this->http_header[$key] = $val;
 
-            if ('set-cookie' === strtolower($key)) {
+            if ('set-cookie' === $key) {
                 if ('' !== $this->raw_cookie) {
                     $this->raw_cookie .= '; ';
                 }
