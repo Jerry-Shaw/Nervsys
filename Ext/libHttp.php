@@ -576,7 +576,7 @@ class libHttp extends Factory
         $curl_opt[CURLOPT_CUSTOMREQUEST]  = &$runtime_data['http_method'];
         $curl_opt[CURLOPT_POST]           = ('POST' === $runtime_data['http_method']);
         $curl_opt[CURLOPT_NOBODY]         = !$runtime_data['with_body'];
-        $curl_opt[CURLOPT_HEADER]         = $runtime_data['with_header'] ?? true;
+        $curl_opt[CURLOPT_HEADER]         = true;
 
         unset($runtime_data);
         return $curl_opt;
