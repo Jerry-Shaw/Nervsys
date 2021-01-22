@@ -310,7 +310,7 @@ class libHttp extends Factory
     }
 
     /**
-     * Fetch response from URL
+     * Fetch response body from URL
      *
      * @param string $url
      *
