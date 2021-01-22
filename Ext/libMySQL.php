@@ -4,7 +4,7 @@
  * MySQL Extension
  *
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
- * Copyright 2019-2020 秋水之冰 <27206617@qq.com>
+ * Copyright 2019-2021 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
