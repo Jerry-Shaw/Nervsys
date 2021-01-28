@@ -502,7 +502,7 @@ class IOUnit extends Factory
         //Decode data in XML
         libxml_use_internal_errors(true);
         $xml  = simplexml_load_string($input, 'SimpleXMLElement', LIBXML_NOCDATA);
-        $data = false !== $xml ? (array)$xml : [];
+        $data = false !== $xml ? json_decode(json_encode($xml), true) : [];
         libxml_clear_errors();
 
         unset($input, $xml);
