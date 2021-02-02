@@ -329,7 +329,7 @@ class libSocket extends Factory
                 'stk' => $this->addMpc('onSend', [
                     'sid'    => $sock_id,
                     'data'   => $msg_data,
-                    'online' => isset($msg_data['to_sid']) ? isset($this->clients[$msg_data['to_sid']]) : false
+                    'online' => (isset($msg_data['to_sid']) && is_string($msg_data['to_sid'])) ? isset($this->clients[$msg_data['to_sid']]) : false
                 ])
             ];
         }
