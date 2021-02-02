@@ -344,14 +344,18 @@ class libSocket extends Factory
                 continue;
             }
 
-            //Drop message without receiver
-            if (!isset($msg_data['to_sid'])) {
+            //Remove invalid "to_sid" data
+            $msg_data['to_sid'] ??= [];
+            $msg_data['to_sid'] = array_filter(is_array($msg_data['to_sid']) ? $msg_data['to_sid'] : [$msg_data['to_sid']]);
+
+            //Drop message without receivers
+            if (empty($msg_data['to_sid'])) {
                 unset($send_data[$sock_id]);
                 continue;
             }
 
-            //Copy to_sid value to array
-            $item['to'] = !is_array($msg_data['to_sid']) ? [$msg_data['to_sid']] : $msg_data['to_sid'];
+            //Copy "to_sid" value to receivers
+            $item['to'] = $msg_data['to_sid'];
 
             //Clean up data
             unset($msg_data['to_sid'], $item['stk']);
