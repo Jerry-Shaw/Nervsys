@@ -886,10 +886,6 @@ class libMySQL extends Factory
 
             //Data
             if (!is_array($data = current($value))) {
-                if ('' === $data) {
-                    continue;
-                }
-
                 if ('join' !== $this->runtime_data['stage']) {
                     $cond_list[] = '?';
 
