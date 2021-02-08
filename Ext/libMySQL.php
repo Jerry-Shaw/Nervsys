@@ -368,7 +368,7 @@ class libMySQL extends Factory
         $this->runtime_data['where'] ??= [];
         $this->runtime_data['stage'] = 'where';
 
-        if (empty($where)) {
+        if (empty($where = array_filter($where))) {
             return $this;
         }
 
@@ -390,7 +390,7 @@ class libMySQL extends Factory
         $this->runtime_data['having'] ??= [];
         $this->runtime_data['stage']  = 'having';
 
-        if (empty($where)) {
+        if (empty($where = array_filter($where))) {
             return $this;
         }
 
@@ -409,7 +409,7 @@ class libMySQL extends Factory
      */
     public function and(array ...$where): self
     {
-        if (empty($where)) {
+        if (empty($where = array_filter($where))) {
             return $this;
         }
 
@@ -434,7 +434,7 @@ class libMySQL extends Factory
      */
     public function or(array ...$where): self
     {
-        if (empty($where)) {
+        if (empty($where = array_filter($where))) {
             return $this;
         }
 
