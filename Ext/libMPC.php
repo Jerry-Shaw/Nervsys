@@ -138,7 +138,7 @@ class libMPC extends Factory
         $job_count = ++$this->job_count[$this->proc_idx];
 
         //Generate increased job ticket
-        $ticket = base_convert($this->job_mtk[$this->proc_idx]++, 10, 36);
+        $ticket = base_convert($this->job_mtk[$this->proc_idx], 10, 36);
 
         //Add "c" & "mtk" into data
         $data['c']   = &$c;
@@ -153,7 +153,12 @@ class libMPC extends Factory
         //Get current job mtk
         $mtk = (string)$this->proc_idx . ':' . $ticket;
 
-        //Move/Reset idx
+        //Move/Reset job_mtk
+        if ((++$this->job_mtk[$this->proc_idx]) >= PHP_INT_MAX) {
+            $this->job_mtk[$this->proc_idx] = 0;
+        }
+
+        //Move/Reset proc_idx
         if ((++$this->proc_idx) >= $this->proc_cnt) {
             $this->proc_idx = 0;
         }
@@ -280,6 +285,7 @@ class libMPC extends Factory
         if ($status['running']) {
             foreach ($this->pipe_list[$idx] as $key => $pipe) {
                 if (0 === $key) {
+                    //Send "exit" signal to child STDIN
                     fwrite($pipe, 'exit' . PHP_EOL);
                 }
 
