@@ -222,13 +222,13 @@ class IOUnit extends Factory
      *
      * c: CMD (required)
      * d: Data package (required)
-     * t: Return type (json/xml/plain, default: none, optional)
+     * r: Return type (json/xml/plain, default: none, optional)
      * ... Other CLI params (optional)
      */
     public function cliReader(): void
     {
         //Read opt data
-        $opt = getopt('c:d:t::', [], $optind);
+        $opt = getopt('c:d:r::', [], $optind);
 
         //Read argv data
         $argv = array_slice($_SERVER['argv'], $optind);
@@ -247,12 +247,12 @@ class IOUnit extends Factory
         $this->cli_data_type = 'none';
         $this->content_type  = 'application/json';
 
-        if (isset($opt['t'])) {
-            $this->cli_data_type = in_array($opt['t'], ['json', 'text', 'xml'], true) ? $opt['t'] : $opt['t'] = 'text';
+        if (isset($opt['r'])) {
+            $this->cli_data_type = in_array($opt['r'], ['json', 'text', 'xml'], true) ? $opt['r'] : $opt['r'] = 'text';
 
             //Find correct content type
             foreach ($this->response_types as $type) {
-                if (false !== strpos($type, $opt['t'])) {
+                if (false !== strpos($type, $opt['r'])) {
                     $this->content_type = &$type;
                     break;
                 }
