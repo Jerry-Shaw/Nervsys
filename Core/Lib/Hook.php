@@ -32,44 +32,56 @@ use Core\Reflect;
  */
 class Hook extends Factory
 {
-    public array $prepend = [];
-    public array $append  = [];
+    public array $before = [];
+    public array $after  = [];
 
     /**
-     * Register hook function to c
+     * Add hook functions before input_c
      *
      * @param string $input_c
      * @param string $hook_class
      * @param string $hook_method
-     * @param bool   $prepend
      *
      * @return $this
      */
-    public function register(string $input_c, string $hook_class, string $hook_method, bool $prepend = true): self
+    public function addBefore(string $input_c, string $hook_class, string $hook_method): self
     {
-        if ($prepend) {
-            $this->prepend[$input_c] ??= [];
-            array_unshift($this->prepend[$input_c], [$hook_class, $hook_method]);
-        } else {
-            $this->append[$input_c][] = [$hook_class, $hook_method];
-        }
+        $this->before[$input_c] ??= [];
+        array_unshift($this->before[$input_c], [$hook_class, $hook_method]);
 
-        unset($input_c, $hook_class, $hook_method, $prepend);
+        unset($input_c, $hook_class, $hook_method);
         return $this;
     }
 
     /**
-     * Run prepend hook functions
+     * Add hook functions after input_c
      *
-     * @param \Core\Execute $execute
-     * @param \Core\Reflect $reflect
-     * @param string        $input_c
+     * @param string $input_c
+     * @param string $hook_class
+     * @param string $hook_method
+     *
+     * @return $this
+     */
+    public function addAfter(string $input_c, string $hook_class, string $hook_method): self
+    {
+        $this->after[$input_c][] = [$hook_class, $hook_method];
+
+        unset($input_c, $hook_class, $hook_method);
+        return $this;
+    }
+
+    /**
+     * Run before hook functions
+     *
+     * @param Execute $execute
+     * @param Reflect $reflect
+     * @param string  $input_c
      *
      * @return bool
      */
-    public function passPrepend(Execute $execute, Reflect $reflect, string $input_c): bool
+    public function passBeforeCmd(Execute $execute, Reflect $reflect, string $input_c): bool
     {
-        $fn_list = $this->getFn($input_c, $this->prepend);
+        $fn_list = $this->getFn($input_c, $this->before);
 
         foreach ($fn_list as $hook_fn) {
             if (!$this->callFn($execute, $reflect, $hook_fn)) {
@@ -83,17 +95,17 @@ class Hook extends Factory
     }
 
     /**
-     * Run append hook functions
+     * Run after hook functions
      *
-     * @param \Core\Execute $execute
-     * @param \Core\Reflect $reflect
-     * @param string        $input_c
+     * @param Execute $execute
+     * @param Reflect $reflect
+     * @param string  $input_c
      *
      * @return bool
      */
-    public function passAppend(Execute $execute, Reflect $reflect, string $input_c): bool
+    public function passAfterCmd(Execute $execute, Reflect $reflect, string $input_c): bool
     {
-        $fn_list = $this->getFn($input_c, $this->append);
+        $fn_list = $this->getFn($input_c, $this->after);
 
         foreach ($fn_list as $hook_fn) {
             if (!$this->callFn($execute, $reflect, $hook_fn)) {
@@ -107,7 +119,7 @@ class Hook extends Factory
     }
 
     /**
-     * Get function list for input_c
+     * Get function list from input_c
      *
      * @param string $input_c
      * @param array  $h_list
@@ -136,9 +148,9 @@ class Hook extends Factory
     /**
      * Call hook function
      *
-     * @param \Core\Execute $execute
-     * @param \Core\Reflect $reflect
-     * @param array         $hook_fn
+     * @param Execute $execute
+     * @param Reflect $reflect
+     * @param array   $hook_fn
      *
      * @return bool
      */

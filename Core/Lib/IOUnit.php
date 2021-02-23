@@ -160,14 +160,14 @@ class IOUnit extends Factory
     }
 
     /**
-     * Append message data
+     * Add message data
      *
      * @param string $msg_key
      * @param array  $msg_data
      *
      * @return $this
      */
-    public function appendMsgData(string $msg_key, array $msg_data): self
+    public function addMsgData(string $msg_key, array $msg_data): self
     {
         $this->src_msg[$msg_key] = array_merge($this->src_msg[$msg_key] ?? [], $msg_data);
 

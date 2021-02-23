@@ -658,7 +658,7 @@ class libMySQL extends Factory
 
             //Output result
             if (1 === (1 & $this->explain_type)) {
-                IOUnit::new()->appendMsgData('SQL_EXPLAIN', $result);
+                IOUnit::new()->addMsgData('SQL_EXPLAIN', $result);
             }
 
             //Save result

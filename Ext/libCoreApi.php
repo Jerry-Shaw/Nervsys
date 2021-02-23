@@ -75,6 +75,7 @@ class libCoreApi extends Factory
         $start  = 0;
         $codes  = [];
         $length = [8, 4, 4, 4, 12];
+
         $string = hash('md5', $string);
 
         foreach ($length as $len) {
@@ -275,16 +276,16 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Append message data
+     * Add message data
      *
      * @param string $msg_key
      * @param array  $msg_data
      *
      * @return $this
      */
-    public function appendMsgData(string $msg_key, array $msg_data): self
+    public function addMsgData(string $msg_key, array $msg_data): self
     {
-        IOUnit::new()->appendMsgData($msg_key, $msg_data);
+        IOUnit::new()->addMsgData($msg_key, $msg_data);
 
         unset($msg_key, $msg_data);
         return $this;
@@ -398,8 +399,7 @@ class libCoreApi extends Factory
      */
     public function hookBefore(string $input_c, string $hook_class, string $hook_method): self
     {
-        Hook::new()->prepend[$input_c] ??= [];
-        array_unshift(Hook::new()->prepend[$input_c], [$hook_class, $hook_method]);
+        Hook::new()->addBefore($input_c, $hook_class, $hook_method);
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
@@ -416,7 +416,7 @@ class libCoreApi extends Factory
      */
     public function hookAfter(string $input_c, string $hook_class, string $hook_method): self
     {
-        Hook::new()->append[$input_c][] = [$hook_class, $hook_method];
+        Hook::new()->addAfter($input_c, $hook_class, $hook_method);
 
         unset($input_c, $hook_class, $hook_method);
         return $this;

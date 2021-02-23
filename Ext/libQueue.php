@@ -50,13 +50,13 @@ class libQueue extends Factory
     /** @var \Redis $redis */
     public \Redis $redis;
 
-    /** @var \Core\Lib\App $app */
+    /** @var App $app */
     private App $app;
 
-    /** @var \Core\Lib\IOUnit $io_unit */
+    /** @var IOUnit $io_unit */
     private IOUnit $io_unit;
 
-    /** @var \Core\OSUnit $os_unit */
+    /** @var OSUnit $os_unit */
     private OSUnit $os_unit;
 
     //Process properties
@@ -590,10 +590,10 @@ class libQueue extends Factory
         //Detect ENV (only support CLI)
         $this->app = App::new();
 
-        /** @var \Core\Lib\IOUnit io_unit */
+        /** @var IOUnit io_unit */
         $this->io_unit = IOUnit::new();
 
-        /** @var \Core\OSUnit os_unit */
+        /** @var OSUnit os_unit */
         $this->os_unit = OSUnit::new();
     }
 
@@ -811,10 +811,10 @@ class libQueue extends Factory
     /**
      * Execute job
      *
-     * @param string           $data
-     * @param \Core\Lib\Router $router
-     * @param \Core\Reflect    $reflect
-     * @param \Core\Execute    $execute
+     * @param string  $data
+     * @param Router  $router
+     * @param Reflect $reflect
+     * @param Execute $execute
      */
     private function execJob(string $data, Router $router, Reflect $reflect, Execute $execute): void
     {
@@ -859,9 +859,9 @@ class libQueue extends Factory
     /**
      * Call CGI command
      *
-     * @param array         $cmd_group
-     * @param \Core\Reflect $reflect
-     * @param \Core\Execute $execute
+     * @param array   $cmd_group
+     * @param Reflect $reflect
+     * @param Execute $execute
      *
      * @throws \ReflectionException
      */
@@ -883,8 +883,8 @@ class libQueue extends Factory
     /**
      * Call CLI command
      *
-     * @param array         $cmd_group
-     * @param \Core\Execute $execute
+     * @param array   $cmd_group
+     * @param Execute $execute
      *
      * @throws \Exception
      */

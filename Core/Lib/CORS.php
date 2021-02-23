@@ -57,7 +57,7 @@ class CORS extends Factory
     /**
      * Check CORS permission
      *
-     * @param \Core\Lib\App $app
+     * @param App $app
      */
     public function checkPerm(App $app): void
     {

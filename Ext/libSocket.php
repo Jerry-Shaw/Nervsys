@@ -64,7 +64,7 @@ class libSocket extends Factory
      */
     public string $handler_class;
 
-    /** @var \Ext\libMPC $lib_mpc */
+    /** @var libMPC $lib_mpc */
     public libMPC $lib_mpc;
 
     /**

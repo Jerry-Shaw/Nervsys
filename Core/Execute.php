@@ -85,7 +85,7 @@ class Execute extends Factory
             $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
 
             //Run prepend hooks
-            if (!$hook->passPrepend($this, $reflect, $input_name)) {
+            if (!$hook->passBeforeCmd($this, $reflect, $input_name)) {
                 break;
             }
 
@@ -99,7 +99,7 @@ class Execute extends Factory
             }
 
             //Run append hooks
-            if (!$hook->passAppend($this, $reflect, $input_name)) {
+            if (!$hook->passAfterCmd($this, $reflect, $input_name)) {
                 break;
             }
         }
