@@ -140,7 +140,7 @@ class Hook extends Factory
             unset($execute, $reflect, $hook_fn);
             return (empty($result) || true === current($result));
         } catch (\Throwable $throwable) {
-            $this->app->showDebug($throwable, true);
+            App::new()->showDebug($throwable, true);
             unset($execute, $reflect, $hook_fn, $throwable);
             return false;
         }
