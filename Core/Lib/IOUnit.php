@@ -30,9 +30,9 @@ use Core\Factory;
  */
 class IOUnit extends Factory
 {
-    public array $cgi_reader;
-    public array $cli_reader;
-    public array $output_handler;
+    public array $cgi_handler    = [];
+    public array $cli_handler    = [];
+    public array $output_handler = [];
 
     public array $header_keys = [];
     public array $cookie_keys = [];
@@ -50,16 +50,6 @@ class IOUnit extends Factory
 
     protected string $base64_marker  = 'data:text/argv;base64,';
     protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html'];
-
-    /**
-     * IOUnit constructor.
-     */
-    public function __construct()
-    {
-        $this->cgi_reader     = [$this, 'cgiReader'];
-        $this->cli_reader     = [$this, 'cliReader'];
-        $this->output_handler = [$this, 'outputHandler'];
-    }
 
     /**
      * Set custom ContentType
@@ -103,32 +93,32 @@ class IOUnit extends Factory
     }
 
     /**
-     * Set custom CgiHandler
+     * Set custom CgiReaderHandler
      *
      * @param object $handler_object
      * @param string $handler_method
      *
      * @return $this
      */
-    public function setCgiReader(object $handler_object, string $handler_method): self
+    public function setCgiReaderHandler(object $handler_object, string $handler_method): self
     {
-        $this->cgi_reader = [$handler_object, $handler_method];
+        $this->cgi_handler = [$handler_object, $handler_method];
 
         unset($handler_object, $handler_method);
         return $this;
     }
 
     /**
-     * Set custom CliHandler
+     * Set custom CliReaderHandler
      *
      * @param object $handler_object
      * @param string $handler_method
      *
      * @return $this
      */
-    public function setCliReader(object $handler_object, string $handler_method): self
+    public function setCliReaderHandler(object $handler_object, string $handler_method): self
     {
-        $this->cli_reader = [$handler_object, $handler_method];
+        $this->cli_handler = [$handler_object, $handler_method];
 
         unset($handler_object, $handler_method);
         return $this;
@@ -188,7 +178,7 @@ class IOUnit extends Factory
     /**
      * Read input data (CGI)
      */
-    public function cgiReader(): void
+    public function readCgi(): void
     {
         //Read accept type
         $this->readAccept();
@@ -215,6 +205,11 @@ class IOUnit extends Factory
             $this->src_cmd = $this->src_input['c'];
             unset($this->src_input['c']);
         }
+
+        //Call user registered handler for post process
+        if (!empty($this->cgi_handler)) {
+            call_user_func($this->cgi_handler, $this);
+        }
     }
 
     /**
@@ -225,7 +220,7 @@ class IOUnit extends Factory
      * r: Return type (json/xml/plain, default: none, optional)
      * ... Other CLI params (optional)
      */
-    public function cliReader(): void
+    public function readCli(): void
     {
         //Read opt data
         $opt = getopt('c:d:r::', [], $optind);
@@ -276,6 +271,65 @@ class IOUnit extends Factory
         }
 
         unset($opt, $optind, $argv);
+
+        //Call user registered handler for post process
+        if (!empty($this->cli_handler)) {
+            call_user_func($this->cli_handler, $this);
+        }
+    }
+
+    /**
+     * Output data source
+     */
+    public function output(): void
+    {
+        if (!empty($this->output_handler)) {
+            call_user_func($this->output_handler, $this);
+        }
+
+        !headers_sent() && header('Content-Type: ' . $this->content_type . '; charset=utf-8');
+
+        $data = 1 === count($this->src_output) ? current($this->src_output) : $this->src_output;
+
+        if (empty($this->src_output) && in_array('object', $this->return_type, true)) {
+            $data = (object)[];
+        }
+
+        if (!empty($this->src_msg)) {
+            $data = $this->src_msg + ['data' => $data];
+        }
+
+        switch ($this->content_type) {
+            case 'application/json':
+                echo json_encode($data, JSON_FORMAT);
+                break;
+
+            case 'application/xml':
+                echo $this->toXml((array)$data);
+                break;
+
+            case 'text/plain':
+                echo is_array($data) ? $this->toString($data) : (string)$data;
+                break;
+
+            case 'text/html':
+                if (is_string($data) || is_numeric($data)) {
+                    echo $data;
+                } elseif (isset($data['data']) && is_string($data['data'])) {
+                    echo $data['data'];
+                } elseif (is_array($data) && is_string($res = current($data))) {
+                    echo $res;
+                } else {
+                    echo 'Invalid HTML Page!';
+                }
+                break;
+
+            default:
+                echo '"' . $this->content_type . '" NOT support!';
+                break;
+        }
+
+        unset($data, $res);
     }
 
     /**
@@ -363,57 +417,6 @@ class IOUnit extends Factory
 
         unset($array, $key, $value);
         return $string;
-    }
-
-    /**
-     * Output data source
-     *
-     * @param \Core\Lib\IOUnit $io_unit
-     */
-    public function outputHandler(IOUnit $io_unit): void
-    {
-        !headers_sent() && header('Content-Type: ' . $io_unit->content_type . '; charset=utf-8');
-        $data = 1 === count($io_unit->src_output) ? current($io_unit->src_output) : $io_unit->src_output;
-
-        if (empty($io_unit->src_output) && in_array('object', $io_unit->return_type, true)) {
-            $data = (object)[];
-        }
-
-        if (!empty($io_unit->src_msg)) {
-            $data = $io_unit->src_msg + ['data' => $data];
-        }
-
-        switch ($io_unit->content_type) {
-            case 'application/json':
-                echo json_encode($data, JSON_FORMAT);
-                break;
-
-            case 'application/xml':
-                echo $this->toXml((array)$data);
-                break;
-
-            case 'text/plain':
-                echo is_array($data) ? $this->toString($data) : (string)$data;
-                break;
-
-            case 'text/html':
-                if (is_string($data) || is_numeric($data)) {
-                    echo $data;
-                } elseif (isset($data['data']) && is_string($data['data'])) {
-                    echo $data['data'];
-                } elseif (is_array($data) && is_string($res = current($data))) {
-                    echo $res;
-                } else {
-                    echo 'Invalid HTML Page!';
-                }
-                break;
-
-            default:
-                echo '"' . $io_unit->content_type . '" NOT support!';
-                break;
-        }
-
-        unset($io_unit, $data, $res);
     }
 
     /**

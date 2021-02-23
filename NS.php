@@ -120,7 +120,7 @@ class NS extends Factory
         $io_unit = IOUnit::new();
 
         //Call data reader
-        call_user_func(!$app->is_cli ? $io_unit->cgi_reader : $io_unit->cli_reader);
+        !$app->is_cli ? $io_unit->readCgi() : $io_unit->readCli();
 
         //Init Execute Module
         $execute = Execute::new();
@@ -133,6 +133,6 @@ class NS extends Factory
         $io_unit->src_output += $execute->callCli();
 
         //Output results
-        call_user_func($io_unit->output_handler, $io_unit);
+        $io_unit->output();
     }
 }

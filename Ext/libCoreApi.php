@@ -210,32 +210,32 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Set custom CgiHandler
+     * Set custom CgiReaderHandler
      *
      * @param object $handler_object
      * @param string $handler_method
      *
      * @return $this
      */
-    public function setCgiReader(object $handler_object, string $handler_method): self
+    public function setCgiReaderHandler(object $handler_object, string $handler_method): self
     {
-        IOUnit::new()->setCgiReader($handler_object, $handler_method);
+        IOUnit::new()->setCgiReaderHandler($handler_object, $handler_method);
 
         unset($handler_object, $handler_method);
         return $this;
     }
 
     /**
-     * Set custom CliHandler
+     * Set custom CliReaderHandler
      *
      * @param object $handler_object
      * @param string $handler_method
      *
      * @return $this
      */
-    public function setCliReader(object $handler_object, string $handler_method): self
+    public function setCliReaderHandler(object $handler_object, string $handler_method): self
     {
-        IOUnit::new()->setCliReader($handler_object, $handler_method);
+        IOUnit::new()->setCliReaderHandler($handler_object, $handler_method);
 
         unset($handler_object, $handler_method);
         return $this;
