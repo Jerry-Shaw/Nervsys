@@ -35,8 +35,8 @@ class Execute extends Factory
     public App    $app;
     public IOUnit $io_unit;
 
-    public array $cmd_cgi;
-    public array $cmd_cli;
+    public array $cmd_cgi = [];
+    public array $cmd_cli = [];
 
     /**
      * Execute constructor.
@@ -48,18 +48,18 @@ class Execute extends Factory
     }
 
     /**
-     * Set commands
+     * Set cmd to stack
      *
-     * @param array $cmd_group
+     * @param string $cmd_stack
+     * @param array  $cmd_value
      *
      * @return $this
      */
-    public function setCmd(array $cmd_group): self
+    public function setCmd(string $cmd_stack, array $cmd_value): self
     {
-        $this->cmd_cgi = &$cmd_group['cgi'];
-        $this->cmd_cli = &$cmd_group['cli'];
+        $this->$cmd_stack = &$cmd_value;
 
-        unset($cmd_group);
+        unset($cmd_stack, $cmd_value);
         return $this;
     }
 
@@ -147,10 +147,10 @@ class Execute extends Factory
     /**
      * Run script method
      *
-     * @param \Core\Reflect $reflect
-     * @param string        $cmd_class
-     * @param string        $cmd_method
-     * @param string        $input_name
+     * @param Reflect $reflect
+     * @param string  $cmd_class
+     * @param string  $cmd_method
+     * @param string  $input_name
      *
      * @return array
      * @throws \ReflectionException
@@ -187,9 +187,9 @@ class Execute extends Factory
     /**
      * Run external program
      *
-     * @param \Core\OSUnit $os_unit
-     * @param string       $cmd_name
-     * @param string       $exe_path
+     * @param OSUnit $os_unit
+     * @param string $cmd_name
+     * @param string $exe_path
      *
      * @return array
      * @throws \Exception
@@ -250,11 +250,11 @@ class Execute extends Factory
     /**
      * Fetch matched args from inputs
      *
-     * @param \Core\Reflect $reflect
-     * @param string        $class
-     * @param string        $method
-     * @param array         $inputs
-     * @param string        $name
+     * @param Reflect $reflect
+     * @param string  $class
+     * @param string  $method
+     * @param array   $inputs
+     * @param string  $name
      *
      * @return array
      * @throws \Exception

@@ -372,16 +372,16 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Add executable path mapping
+     * Add CLI path map
      *
      * @param string $name
      * @param string $path
      *
      * @return $this
      */
-    public function addCliMapping(string $name, string $path): self
+    public function addCliMap(string $name, string $path): self
     {
-        Router::new()->addMapping($name, $path);
+        Router::new()->addCliMap($name, $path);
 
         unset($name, $path);
         return $this;

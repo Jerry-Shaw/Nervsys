@@ -35,7 +35,7 @@ class Router extends Factory
 
     public array $cgi_stack;
     public array $cli_stack;
-    public array $cli_mapping = [];
+    public array $cli_path_map = [];
 
     /**
      * Router constructor.
@@ -44,8 +44,8 @@ class Router extends Factory
     {
         $this->app = App::new();
 
-        $this->cgi_stack[] = [$this, 'cgiRouter'];
-        $this->cli_stack[] = [$this, 'cliRouter'];
+        $this->cgi_stack[] = [$this, 'cgiParser'];
+        $this->cli_stack[] = [$this, 'cliParser'];
     }
 
     /**
@@ -66,16 +66,16 @@ class Router extends Factory
     }
 
     /**
-     * Add executable path mapping
+     * Add CLI path map
      *
      * @param string $name
      * @param string $path
      *
      * @return $this
      */
-    public function addMapping(string $name, string $path): self
+    public function addCliMap(string $name, string $path): self
     {
-        $this->cli_mapping[$name] = &$path;
+        $this->cli_path_map[$name] = &$path;
 
         unset($name, $path);
         return $this;
@@ -85,63 +85,28 @@ class Router extends Factory
      * Parse CMD
      *
      * @param string $c
+     * @param array  $rt_stack
      *
-     * @return array
+     * @return array|array[]
      */
-    public function parse(string $c): array
+    public function parse(string $c, array $rt_stack): array
     {
-        $cmd_list = ['cli' => [], 'cgi' => []];
-
-        //CMD NOT found
         if ('' === ($c = trim($c))) {
-            return $cmd_list;
+            unset($c, $rt_stack);
+            return [];
         }
 
-        //CLI router caller
-        if ($this->app->is_cli) {
-            foreach ($this->cli_stack as $rt) {
-                if (!empty($cmd = $this->callRouter($rt, $c))) {
-                    $cmd_list['cli'] = $cmd;
-                    break;
-                }
-            }
-        }
+        $cmd_list = [];
 
-        //CGI router caller
-        foreach ($this->cgi_stack as $rt) {
-            if (!empty($cmd = $this->callRouter($rt, $c))) {
-                $cmd_list['cgi'] = $cmd;
+        foreach ($rt_stack as $rt) {
+            if (!empty($cmd = $this->callParser($rt, $c))) {
+                $cmd_list = $cmd;
                 break;
             }
         }
 
-        unset($c, $rt, $cmd);
+        unset($c, $rt_stack, $rt, $cmd);
         return $cmd_list;
-    }
-
-    /**
-     * Call router
-     *
-     * @param array  $rt
-     * @param string $c
-     *
-     * @return array
-     */
-    private function callRouter(array $rt, string $c): array
-    {
-        $c_list = call_user_func($rt, $c);
-
-        if (!is_array($c_list)) {
-            unset($rt, $c, $c_list);
-            return [];
-        }
-
-        if (!empty($c_list) && count($c_list) === count($c_list, COUNT_RECURSIVE)) {
-            $c_list = [$c_list];
-        }
-
-        unset($rt, $c);
-        return $c_list;
     }
 
     /**
@@ -152,7 +117,7 @@ class Router extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function cgiRouter(string $c): array
+    public function cgiParser(string $c): array
     {
         $fn_list  = [];
         $cmd_list = $this->getList($c);
@@ -209,21 +174,44 @@ class Router extends Factory
      *
      * @return array
      */
-    public function cliRouter(string $c): array
+    public function cliParser(string $c): array
     {
         $ex_list  = [];
         $cmd_list = $this->getList($c);
 
         foreach ($cmd_list as $cmd) {
-            if (!isset($this->cli_mapping[$cmd])) {
-                continue;
+            if (isset($this->cli_path_map[$cmd])) {
+                $ex_list[] = [$cmd, $this->cli_path_map[$cmd]];
             }
-
-            $ex_list[] = [$cmd, $this->cli_mapping[$cmd]];
         }
 
         unset($c, $cmd_list, $cmd);
         return $ex_list;
+    }
+
+    /**
+     * Call router parser
+     *
+     * @param array  $rt
+     * @param string $c
+     *
+     * @return array
+     */
+    private function callParser(array $rt, string $c): array
+    {
+        $c_list = call_user_func($rt, $c);
+
+        if (!is_array($c_list)) {
+            unset($rt, $c, $c_list);
+            return [];
+        }
+
+        if (!empty($c_list) && count($c_list) === count($c_list, COUNT_RECURSIVE)) {
+            $c_list = [$c_list];
+        }
+
+        unset($rt, $c);
+        return $c_list;
     }
 
     /**

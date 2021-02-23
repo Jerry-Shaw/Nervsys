@@ -99,7 +99,7 @@ class NS extends Factory
      */
     public function __construct()
     {
-        //Init App
+        //Init App library
         $app = App::new();
 
         //Set default timezone
@@ -116,21 +116,31 @@ class NS extends Factory
         //Check CORS Permission
         CORS::new()->checkPerm($app);
 
-        //Input date parser
+        //Init IOUnit library
         $io_unit = IOUnit::new();
 
-        //Call data reader
-        !$app->is_cli ? $io_unit->readCgi() : $io_unit->readCli();
+        //Init Router library
+        $router = Router::new();
 
         //Init Execute Module
         $execute = Execute::new();
 
-        //Set commands
-        $execute->setCmd(Router::new()->parse($io_unit->src_cmd));
+        if (!$app->is_cli) {
+            //Read CGI input data
+            $io_unit->readCgi();
+        } else {
+            //Read CLI argv data
+            $io_unit->readCli();
 
-        //Fetch results
-        $io_unit->src_output += $execute->callCgi();
-        $io_unit->src_output += $execute->callCli();
+            //Parse CLI cmd value
+            if (!empty($cmd_cli = $router->parse($io_unit->src_cmd, $router->cli_stack))) {
+                //Execute CLI process & fetch results
+                $io_unit->src_output += $execute->setCmd('cmd_cli', $cmd_cli)->callCli();
+            }
+        }
+
+        //Execute CGI handler & fetch results
+        $io_unit->src_output += $execute->setCmd('cmd_cgi', $router->parse($io_unit->src_cmd, $router->cgi_stack))->callCgi();
 
         //Output results
         $io_unit->output();
