@@ -36,7 +36,7 @@ class Hook extends Factory
     public array $after  = [];
 
     /**
-     * Add hook functions before input_c
+     * Add hook fn before input_c
      *
      * @param string $input_c
      * @param string $hook_class
@@ -54,7 +54,7 @@ class Hook extends Factory
     }
 
     /**
-     * Add hook functions after input_c
+     * Add hook fn after input_c
      *
      * @param string $input_c
      * @param string $hook_class
@@ -71,50 +71,27 @@ class Hook extends Factory
     }
 
     /**
-     * Run before hook functions
+     * Check hook fn pass status
      *
      * @param Execute $execute
      * @param Reflect $reflect
      * @param string  $input_c
+     * @param array   $hook_list
      *
      * @return bool
      */
-    public function passBeforeCmd(Execute $execute, Reflect $reflect, string $input_c): bool
+    public function checkPass(Execute $execute, Reflect $reflect, string $input_c, array $hook_list): bool
     {
-        $fn_list = $this->getFn($input_c, $this->before);
+        $fn_list = $this->getFn($input_c, $hook_list);
 
         foreach ($fn_list as $hook_fn) {
             if (!$this->callFn($execute, $reflect, $hook_fn)) {
-                unset($execute, $reflect, $input_c, $fn_list, $hook_fn);
+                unset($execute, $reflect, $input_c, $hook_list, $fn_list, $hook_fn);
                 return false;
             }
         }
 
-        unset($execute, $reflect, $input_c, $fn_list, $hook_fn);
-        return true;
-    }
-
-    /**
-     * Run after hook functions
-     *
-     * @param Execute $execute
-     * @param Reflect $reflect
-     * @param string  $input_c
-     *
-     * @return bool
-     */
-    public function passAfterCmd(Execute $execute, Reflect $reflect, string $input_c): bool
-    {
-        $fn_list = $this->getFn($input_c, $this->after);
-
-        foreach ($fn_list as $hook_fn) {
-            if (!$this->callFn($execute, $reflect, $hook_fn)) {
-                unset($execute, $reflect, $input_c, $fn_list, $hook_fn);
-                return false;
-            }
-        }
-
-        unset($execute, $reflect, $input_c, $fn_list, $hook_fn);
+        unset($execute, $reflect, $input_c, $hook_list, $fn_list, $hook_fn);
         return true;
     }
 
@@ -130,7 +107,8 @@ class Hook extends Factory
     {
         $fn_list = [];
         $c_list  = [];
-        $c_part  = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
+
+        $c_part = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
 
         foreach ($c_part as $value) {
             $c_list[] = $value;

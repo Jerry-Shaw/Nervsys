@@ -84,8 +84,8 @@ class Execute extends Factory
             //Get CMD input name
             $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
 
-            //Run prepend hooks
-            if (!$hook->passBeforeCmd($this, $reflect, $input_name)) {
+            //Check hooks before CMD
+            if (!$hook->checkPass($this, $reflect, $input_name, $hook->before)) {
                 break;
             }
 
@@ -98,8 +98,8 @@ class Execute extends Factory
                 continue;
             }
 
-            //Run append hooks
-            if (!$hook->passAfterCmd($this, $reflect, $input_name)) {
+            //Check hooks after CMD
+            if (!$hook->checkPass($this, $reflect, $input_name, $hook->after)) {
                 break;
             }
         }
