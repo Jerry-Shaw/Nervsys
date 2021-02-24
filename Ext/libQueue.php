@@ -831,7 +831,7 @@ class libQueue extends Factory
 
         try {
             //Parse CMD
-            $cmd_group = $router->parse($input_data['c']);
+            $cmd_group = $router->parse($input_data['c'], $router->cgi_stack);
 
             //Call CGI
             if (!empty($cmd_group['cgi'])) {
