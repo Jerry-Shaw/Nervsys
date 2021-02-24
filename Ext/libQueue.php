@@ -830,30 +830,27 @@ class libQueue extends Factory
         }
 
         try {
-            //Parse CMD
-            $cmd_group = $router->parse($input_data['c'], $router->cgi_stack);
-
             //Call CGI
-            if (!empty($cmd_group['cgi'])) {
+            if (!empty($cmd_cgi = $router->parse($input_data['c'], $router->cgi_stack))) {
                 //Remap input data
                 $this->io_unit->src_input = $input_data;
                 //Execute CGI command
-                $this->callCgi($cmd_group['cgi'], $reflect, $execute);
+                $this->callCgi($cmd_cgi, $reflect, $execute);
             }
 
             //Call CLI
-            if (!empty($cmd_group['cli'])) {
+            if (!empty($cmd_cli = $router->parse($input_data['c'], $router->cli_stack))) {
                 //Remap argv data
                 $this->io_unit->src_argv = $input_data['argv'] ?? '';
                 //Execute CLI command
-                $this->callCli($cmd_group['cli'], $execute);
+                $this->callCli($cmd_cli, $execute);
             }
         } catch (\Throwable $throwable) {
             $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$input_data, 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
         }
 
-        unset($data, $router, $reflect, $execute, $input_data, $cmd_group);
+        unset($data, $router, $reflect, $execute, $input_data, $cmd_cgi, $cmd_cli);
     }
 
     /**
