@@ -136,14 +136,14 @@ class libDoc extends Factory
     {
         $router = Router::new();
 
-        if (empty($cmd_cgi = $router->parse($c, $router->cgi_stack))) {
+        if (empty($cmd_list = $router->parse($c, $router->cgi_stack))) {
             return '';
         }
 
-        $cmd_cgi = current($cmd_cgi);
-        $comment   = $this->getDoc(new \ReflectionMethod($cmd_cgi[0], $cmd_cgi[1]));
+        $cmd_list = current($cmd_list);
+        $comment  = $this->getDoc(new \ReflectionMethod($cmd_list[0], $cmd_list[1]));
 
-        unset($c, $router, $cmd_cgi);
+        unset($c, $router, $cmd_list);
         return $comment;
     }
 
