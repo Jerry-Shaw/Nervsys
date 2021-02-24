@@ -16,6 +16,25 @@
     "framework"
   ],
   "require": {
-    "php": "7.4.0"
+    "php": "^7.4",
+    "ext-curl": "*",
+    "ext-fileinfo": "*",
+    "ext-gd": "*",
+    "ext-gettext": "*",
+    "ext-libxml": "*",
+    "ext-json": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-redis": "*",
+    "ext-simplexml": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Core\\": "./Core",
+      "Ext\\": "./Ext"
+    }
+  },
+  "config": {
+    "sort-packages": true
   }
 }
