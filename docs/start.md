@@ -1,66 +1,65 @@
-# 入门
+# Start
 
-## 安装
+## Install
 
-### 要求
+### Requirements
 
 - PHP >= 7.4.0
-- php-ext-xml
 
-### 创建项目
+### Create project
 
-首先我们先预先设置几个目录。
+Let's create folders firstly.  
 
-- NervSys代码存放的目录是 `/data/code/ns`.
-- 开发项目存储的目录是 `/data/code/hello`.
+- NervSys location: `/data/code/ns`.
+- Project location: `/data/code/hello`.
 
-首先我们先拉取最新代码到NervSys项目到 `/data/code/ns`.
+Firstly, clone Nervsys source code to `/data/code/ns`.
 
 ```bash
 git clone https://github.com/Jerry-Shaw/NervSys.git /data/code/ns
 ```
 
-接下来就是创建业务环境了，我们接下来的操作都是在 `/data/code/hello`项目下进行操作了。
+Let's do some work to build our project environment. All the job we do is under the main project folder `/data/code/hello`. 
 
-首先我们执行以下命令创建项目目录：
+Do the following command to create project directory.  
 
 ```bash
-mkdir -p /data/code/hello/public/
+mkdir -p /data/code/hello/public/  
 ```
 
-接下来我们创建访问入口文件：
+Then, create a entry file using following command:  
 
 ```bash
 cat <<EOF >  /data/code/hello/public/index.php
 <?php
 require '/data/code/ns/NS.php';
 
-//可选，如果需要的话，请参阅"Ext/libCoreApi.php"
+//Optional. If needed, please review "Ext/libCoreApi.php"
 \Ext\libCoreApi::new()
-    //打开核心调试模式 (错误信息会随着结果显示出来)
+    //Open core debug mode (all error info will be output with results)
     ->setCoreDebug(true)
-    //打开全局跨域许可 (默认请求头)
+    //Open CORS for all requests (with defaule request headers)
     ->addCorsRecord('*')
-    //设置输出格式为"application/json; charset=utf-8"
+    //Set output content type to "application/json; charset=utf-8"
     ->setContentType('application/json');
 
 NS::new();
 EOF
 ```
 
-### 运行项目
+### Run project
 
-在 `/data/code/hello/public/` 目录执行以下命令：
+Run command under `/data/code/hello/public/`:
 
 ```bash
 php -S localhost:8000 
 ```
 
-会看到响应值：`[]`。这样就表示我们的项目已经搭建成功了。
+When `[]` is shown, project runs successfully.  
 
-## 创建第一个接口
+## Ceare the first API function.
 
-首先我们创建一个 class 在 `api` 目录。 文件名为 `user.php`。
+Create a class file under `api` folder named `user.php`.
 
 ```php
 <?php
@@ -79,13 +78,13 @@ class user
 }
 ```
 
-然后访问 `http://localhost/?c=user/login`。
+Open browser and go to `http://localhost/?c=user/login`.
 
-得到响应值：`{"a":1}`.
+We'll get `{"a":1}` in response.
 
-## CLI 访问
+## Via CLI
 
-首先我们创建一个 class 在 `app` 目录。 文件名为 `command.php`。
+Create a class file under `api` folder named `command.php`.
 
 ```php
 <?php
@@ -102,7 +101,7 @@ class command
 }
 ```
 
-最后执行以下命令获取结果值：
+Run the command to get response:  
 
 ```bash
 $ php public/index.php -r /app/command/demo
