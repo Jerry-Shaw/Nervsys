@@ -249,6 +249,12 @@ class libQueue extends Factory
      */
     public function rollback(string $job_json): int
     {
+        //Decode job data
+        if (is_null($job_data = json_decode($job_json, true))) {
+            unset($job_json, $job_data);
+            return 0;
+        }
+
         //Get failed list key
         $failed_key = $this->getLogKey('failed');
 
@@ -258,17 +264,29 @@ class libQueue extends Factory
             return 0;
         }
 
-        //Decode job data
-        if (is_null($job_data = json_decode($job_json, true))) {
-            unset($job_json, $failed_key, $job_data);
-            return 0;
-        }
-
         //Add job as realtime job in rollback group
         $result = $this->addRealtime('rollback', json_encode($job_data['data'], JSON_FORMAT));
 
         unset($job_json, $failed_key, $job_data);
         return $result;
+    }
+
+    /**
+     * Remove a log
+     *
+     * @param string $type
+     * @param string $job_json
+     *
+     * @return int
+     * @throws \Exception
+     */
+    public function delLog(string $type, string $job_json): int
+    {
+        //Remove from log list
+        $removed = (int)($this->redis->lRem($this->getLogKey($type), $job_json, 1));
+
+        unset($type, $job_json);
+        return $removed;
     }
 
     /**
@@ -777,6 +795,7 @@ class libQueue extends Factory
         //Count running processes
         $runs = count($this->getKeys($this->key_slot['watch']));
 
+        //Calculate left jobs
         if (0 >= ($left = $this->max_fork - $runs + 1)) {
             return;
         }
