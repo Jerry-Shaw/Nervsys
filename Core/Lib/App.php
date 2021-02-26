@@ -50,31 +50,6 @@ class App extends Factory
      */
     public function __construct()
     {
-        //Get script file path
-        $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-
-        //Get absolute path of entry script
-        if (DIRECTORY_SEPARATOR !== $this->script_path[0] && ':' !== $this->script_path[1]) {
-            $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
-        }
-
-        //Get entry path
-        $this->entry_path = dirname($this->script_path);
-
-        //Goto parent path
-        $parent_path = dirname($this->entry_path);
-
-        //Looking for api directory to get correct root path
-        $this->root_path = is_dir($parent_path . DIRECTORY_SEPARATOR . $this->api_path)
-            ? $parent_path
-            : $this->entry_path;
-
-        //Create global log path
-        $this->createLogPath($this->root_path);
-
-        //Set default include path
-        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $this->inc_path);
-
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
@@ -103,7 +78,51 @@ class App extends Factory
             }
         }
 
-        unset($parent_path, $ip_rec, $ip_list, $value, $addr);
+        unset($ip_rec, $ip_list, $value, $addr);
+    }
+
+    /**
+     * Set project environment
+     *
+     * @return $this
+     */
+    public function setEnv(): self
+    {
+        //Get script file path
+        $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+
+        //Get absolute path of entry script
+        if (DIRECTORY_SEPARATOR !== $this->script_path[0] && ':' !== $this->script_path[1]) {
+            $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
+        }
+
+        //Get entry path
+        $this->entry_path = dirname($this->script_path);
+
+        //Goto parent path
+        $parent_path = dirname($this->entry_path);
+
+        //Looking for api directory to get correct root path
+        $this->root_path = is_dir($parent_path . DIRECTORY_SEPARATOR . $this->api_path)
+            ? $parent_path
+            : $this->entry_path;
+
+        //Register autoload ($this->root_path based)
+        spl_autoload_register(
+            static function (string $class_name): void
+            {
+                autoload($class_name, $this->root_path);
+                unset($class_name);
+            }
+        );
+
+        unset($parent_path);
+
+        //Create global log path
+        $this->createLogPath($this->root_path);
+
+        //Set default include path
+        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $this->inc_path);
     }
 
     /**

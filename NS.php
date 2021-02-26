@@ -77,18 +77,6 @@ spl_autoload_register(
     }
 );
 
-//Init App ENV
-$app = App::new();
-
-//Register autoload ($app->root_path based)
-spl_autoload_register(
-    static function (string $class_name) use ($app): void
-    {
-        autoload($class_name, $app->root_path);
-        unset($class_name, $app);
-    }
-);
-
 /**
  * Class NS
  */
@@ -99,8 +87,8 @@ class NS extends Factory
      */
     public function __construct()
     {
-        //Init App library
-        $app = App::new();
+        //Init App library with environment
+        $app = App::new()->setEnv();
 
         //Set default timezone
         date_default_timezone_set($app->timezone);
