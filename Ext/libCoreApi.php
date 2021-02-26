@@ -348,19 +348,34 @@ class libCoreApi extends Factory
     }
 
     /**
-     * Add custom router
+     * Add custom router to CGI stack
      *
      * @param object $router_object
      * @param string $router_method
-     * @param string $target_stack
      *
      * @return $this
      */
-    public function addRouterStack(object $router_object, string $router_method, string $target_stack = 'cgi'): self
+    public function addCgiRouter(object $router_object, string $router_method): self
     {
-        Router::new()->addStack($router_object, $router_method, $target_stack);
+        Router::new()->addCgiStack($router_object, $router_method);
 
-        unset($router_object, $router_method, $target_stack);
+        unset($router_object, $router_method);
+        return $this;
+    }
+
+    /**
+     * Add custom router to CLI stack
+     *
+     * @param object $router_object
+     * @param string $router_method
+     *
+     * @return $this
+     */
+    public function addCliRouter(object $router_object, string $router_method): self
+    {
+        Router::new()->addCliStack($router_object, $router_method);
+
+        unset($router_object, $router_method);
         return $this;
     }
 
