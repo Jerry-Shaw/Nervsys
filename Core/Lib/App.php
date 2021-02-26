@@ -103,26 +103,30 @@ class App extends Factory
         $parent_path = dirname($this->entry_path);
 
         //Looking for api directory to get correct root path
-        $this->root_path = is_dir($parent_path . DIRECTORY_SEPARATOR . $this->api_path)
+        $root_path = is_dir($parent_path . DIRECTORY_SEPARATOR . $this->api_path)
             ? $parent_path
             : $this->entry_path;
 
+        //Copy root_path to $this->root_path
+        $this->root_path = &$root_path;
+
         //Register autoload ($this->root_path based)
         spl_autoload_register(
-            static function (string $class_name): void
+            static function (string $class_name) use ($root_path): void
             {
-                autoload($class_name, $this->root_path);
-                unset($class_name);
+                autoload($class_name, $root_path);
+                unset($class_name, $root_path);
             }
         );
 
-        unset($parent_path);
+        //Set default include path
+        set_include_path($root_path . DIRECTORY_SEPARATOR . $this->inc_path);
 
         //Create global log path
-        $this->createLogPath($this->root_path);
+        $this->createLogPath($root_path);
 
-        //Set default include path
-        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $this->inc_path);
+        unset($parent_path, $root_path);
+        return $this;
     }
 
     /**
