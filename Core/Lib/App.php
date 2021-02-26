@@ -33,6 +33,7 @@ class App extends Factory
     public string $log_path    = '';
     public string $root_path   = '';
     public string $entry_path  = '';
+    public string $parent_path = '';
     public string $script_path = '';
 
     public string $api_path = 'api';
@@ -50,6 +51,18 @@ class App extends Factory
      */
     public function __construct()
     {
+        //Get script path
+        $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+
+        //Correct script path
+        if (DIRECTORY_SEPARATOR !== $this->script_path[0] && ':' !== $this->script_path[1]) {
+            $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
+        }
+
+        //Get entry path & parent path
+        $this->entry_path  = dirname($this->script_path);
+        $this->parent_path = dirname($this->entry_path);
+
         //Skip in CLI mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
@@ -88,23 +101,9 @@ class App extends Factory
      */
     public function setEnv(): self
     {
-        //Get script file path
-        $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-
-        //Get absolute path of entry script
-        if (DIRECTORY_SEPARATOR !== $this->script_path[0] && ':' !== $this->script_path[1]) {
-            $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
-        }
-
-        //Get entry path
-        $this->entry_path = dirname($this->script_path);
-
-        //Goto parent path
-        $parent_path = dirname($this->entry_path);
-
         //Looking for api directory to get correct root path
-        $root_path = is_dir($parent_path . DIRECTORY_SEPARATOR . $this->api_path)
-            ? $parent_path
+        $root_path = is_dir($this->parent_path . DIRECTORY_SEPARATOR . $this->api_path)
+            ? $this->parent_path
             : $this->entry_path;
 
         //Copy root_path to $this->root_path
@@ -125,7 +124,7 @@ class App extends Factory
         //Create global log path
         $this->createLogPath($root_path);
 
-        unset($parent_path, $root_path);
+        unset($root_path);
         return $this;
     }
 
