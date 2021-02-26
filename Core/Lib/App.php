@@ -36,9 +36,7 @@ class App extends Factory
     public string $parent_path = '';
     public string $script_path = '';
 
-    public string $api_path = 'api';
-    public string $inc_path = 'inc';
-
+    public string $api_path  = 'api';
     public string $client_ip = '0.0.0.0';
     public string $timezone  = 'Asia/Shanghai';
 
@@ -117,9 +115,6 @@ class App extends Factory
                 unset($class_name, $root_path);
             }
         );
-
-        //Set default include path
-        set_include_path($root_path . DIRECTORY_SEPARATOR . $this->inc_path);
 
         //Create global log path
         $this->createLogPath($root_path);
