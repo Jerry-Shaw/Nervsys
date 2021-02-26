@@ -45,7 +45,13 @@ class libCoreApi extends Factory
      */
     public function autoload(string $pathname): self
     {
-        $path = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
+        $app = App::new();
+
+        if ('' === $app->root_path) {
+            $app->setEnv();
+        }
+
+        $path = $app->root_path . DIRECTORY_SEPARATOR . $pathname;
 
         spl_autoload_register(
             static function (string $class_name) use ($path): void
@@ -55,7 +61,7 @@ class libCoreApi extends Factory
             }
         );
 
-        unset($pathname, $path);
+        unset($pathname, $app, $path);
         return $this;
     }
 
@@ -143,9 +149,15 @@ class libCoreApi extends Factory
      */
     public function addIncPath(string $pathname): self
     {
-        App::new()->addIncPath($pathname);
+        $app = App::new();
 
-        unset($pathname);
+        if ('' === $app->root_path) {
+            $app->setEnv();
+        }
+
+        $app->addIncPath($pathname);
+
+        unset($pathname, $app);
         return $this;
     }
 
