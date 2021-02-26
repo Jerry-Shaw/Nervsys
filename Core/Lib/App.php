@@ -42,7 +42,11 @@ class App extends Factory
 
     public bool $is_cli     = false;
     public bool $is_tls     = false;
+    public bool $is_ready   = false;
     public bool $core_debug = false;
+
+    public array $include_list  = [];
+    public array $autoload_list = [];
 
     /**
      * App constructor.
@@ -93,7 +97,7 @@ class App extends Factory
     }
 
     /**
-     * Set project environment
+     * Set App environment
      *
      * @return $this
      */
@@ -116,10 +120,39 @@ class App extends Factory
             }
         );
 
+        //Set autoload path in list
+        if (!empty($this->autoload_list)) {
+            foreach ($this->autoload_list as $pathname) {
+                $path = $root_path . DIRECTORY_SEPARATOR . $pathname;
+
+                spl_autoload_register(
+                    static function (string $class_name) use ($path): void
+                    {
+                        autoload($class_name, $path);
+                        unset($class_name, $path);
+                    }
+                );
+            }
+        }
+
+        //Set include path in list
+        if (!empty($this->include_list)) {
+            $path = '';
+
+            foreach ($this->include_list as $pathname) {
+                $path .= $root_path . DIRECTORY_SEPARATOR . $pathname . PATH_SEPARATOR;
+            }
+
+            set_include_path(substr($path, 0, -1));
+        }
+
         //Create global log path
         $this->createLogPath($root_path);
 
-        unset($root_path);
+        //All is ready
+        $this->is_ready = true;
+
+        unset($root_path, $pathname, $path);
         return $this;
     }
 
@@ -169,6 +202,35 @@ class App extends Factory
     }
 
     /**
+     * Add autoload pathname (root_path related)
+     *
+     * @param string $pathname
+     *
+     * @return $this
+     */
+    public function addAutoload(string $pathname): self
+    {
+        if (!$this->is_ready) {
+            $this->autoload_list[] = $pathname;
+        } else {
+            $path = $this->root_path . DIRECTORY_SEPARATOR . $pathname;
+
+            spl_autoload_register(
+                static function (string $class_name) use ($path): void
+                {
+                    autoload($class_name, $path);
+                    unset($class_name, $path);
+                }
+            );
+
+            unset($path);
+        }
+
+        unset($pathname);
+        return $this;
+    }
+
+    /**
      * Add include pathname (root_path related)
      *
      * @param string $pathname
@@ -177,7 +239,9 @@ class App extends Factory
      */
     public function addIncPath(string $pathname): self
     {
-        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $pathname . PATH_SEPARATOR . get_include_path());
+        !$this->is_ready
+            ? $this->include_list[] = $pathname
+            : set_include_path($this->root_path . DIRECTORY_SEPARATOR . $pathname . PATH_SEPARATOR . get_include_path());
 
         unset($pathname);
         return $this;

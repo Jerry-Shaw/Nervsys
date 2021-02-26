@@ -37,35 +37,6 @@ use Core\Lib\Router;
 class libCoreApi extends Factory
 {
     /**
-     * Set autoload to target pathname under root_path
-     *
-     * @param string $pathname
-     *
-     * @return $this
-     */
-    public function autoload(string $pathname): self
-    {
-        $app = App::new();
-
-        if ('' === $app->root_path) {
-            $app->setEnv();
-        }
-
-        $path = $app->root_path . DIRECTORY_SEPARATOR . $pathname;
-
-        spl_autoload_register(
-            static function (string $class_name) use ($path): void
-            {
-                autoload($class_name, $path);
-                unset($class_name, $path);
-            }
-        );
-
-        unset($pathname, $app, $path);
-        return $this;
-    }
-
-    /**
      * Generate UUID (string hash based)
      *
      * @param string $string
@@ -93,6 +64,21 @@ class libCoreApi extends Factory
 
         unset($string, $start, $codes, $length, $len);
         return $uuid;
+    }
+
+    /**
+     * Add autoload pathname (root_path related)
+     *
+     * @param string $pathname
+     *
+     * @return $this
+     */
+    public function autoload(string $pathname): self
+    {
+        App::new()->addAutoload($pathname);
+
+        unset($pathname);
+        return $this;
     }
 
     /**
@@ -149,15 +135,9 @@ class libCoreApi extends Factory
      */
     public function addIncPath(string $pathname): self
     {
-        $app = App::new();
+        App::new()->addIncPath($pathname);
 
-        if ('' === $app->root_path) {
-            $app->setEnv();
-        }
-
-        $app->addIncPath($pathname);
-
-        unset($pathname, $app);
+        unset($pathname);
         return $this;
     }
 
