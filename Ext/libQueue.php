@@ -830,46 +830,48 @@ class libQueue extends Factory
     /**
      * Execute job
      *
-     * @param string  $data
+     * @param string  $json
      * @param Router  $router
      * @param Reflect $reflect
      * @param Execute $execute
      */
-    private function execJob(string $data, Router $router, Reflect $reflect, Execute $execute): void
+    private function execJob(string $json, Router $router, Reflect $reflect, Execute $execute): void
     {
-        //Decode data in JSON
-        $input_data = json_decode($data, true);
+        //Decode data from JSON
+        $data = json_decode($json, true);
 
         //Source data parse failed
-        if (!is_array($input_data)) {
-            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$data, 'return' => 'Data ERROR!'], JSON_FORMAT));
-
-            unset($data, $router, $reflect, $execute, $input_data);
+        if (!is_array($data)) {
+            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$json, 'return' => 'Data ERROR!'], JSON_FORMAT));
+            unset($json, $router, $reflect, $execute, $data);
             return;
         }
 
         try {
+            //Parse CMD
+            $router->parse($data['c']);
+
             //Call CGI
-            if (!empty($cmd_list = $router->parse($input_data['c'], $router->cgi_stack))) {
+            if (!empty($router->cgi_cmd)) {
                 //Remap input data
-                $this->io_unit->src_input = $input_data;
+                $this->io_unit->src_input = $data;
                 //Execute CGI command
-                $this->callCgi($cmd_list, $reflect, $execute);
+                $this->callCgi($router->cgi_cmd, $reflect, $execute);
             }
 
             //Call CLI
-            if (!empty($cmd_list = $router->parse($input_data['c'], $router->cli_stack))) {
+            if (!empty($router->cli_cmd)) {
                 //Remap argv data
-                $this->io_unit->src_argv = $input_data['argv'] ?? '';
+                $this->io_unit->src_argv = $data['argv'] ?? '';
                 //Execute CLI command
-                $this->callCli($cmd_list, $execute);
+                $this->callCli($router->cli_cmd, $execute);
             }
         } catch (\Throwable $throwable) {
-            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$input_data, 'return' => $throwable->getMessage()], JSON_FORMAT));
+            $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
         }
 
-        unset($data, $router, $reflect, $execute, $input_data, $cmd_list);
+        unset($json, $router, $reflect, $execute, $data);
     }
 
     /**

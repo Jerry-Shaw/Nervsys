@@ -107,28 +107,20 @@ class NS extends Factory
         //Init IOUnit library
         $io_unit = IOUnit::new();
 
-        //Init Router library
-        $router = Router::new();
+        //Read input data
+        !$app->is_cli ? $io_unit->readCgi() : $io_unit->readCli();
 
-        //Init Execute Module
-        $execute = Execute::new();
+        if ('' !== ($io_unit->src_cmd = trim($io_unit->src_cmd))) {
+            //Init Router library
+            $router = Router::new()->parse($io_unit->src_cmd);
 
-        if (!$app->is_cli) {
-            //Read CGI input data
-            $io_unit->readCgi();
-        } else {
-            //Read CLI argv data
-            $io_unit->readCli();
+            //Init Execute Module
+            $execute = Execute::new()->copyCmd($router);
 
-            //Parse CLI cmd value
-            if (!empty($cmd_cli = $router->parse($io_unit->src_cmd, $router->cli_stack))) {
-                //Execute CLI process & fetch results
-                $io_unit->src_output += $execute->setCmd('cmd_cli', $cmd_cli)->callCli();
-            }
+            //Execute process & fetch results
+            $io_unit->src_output += $execute->callCli();
+            $io_unit->src_output += $execute->callCgi();
         }
-
-        //Execute CGI handler & fetch results
-        $io_unit->src_output += $execute->setCmd('cmd_cgi', $router->parse($io_unit->src_cmd, $router->cgi_stack))->callCgi();
 
         //Output results
         $io_unit->output();

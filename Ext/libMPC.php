@@ -337,13 +337,16 @@ class libMPC extends Factory
         $result = [];
 
         try {
+            //Parse CMD
+            $this->router->parse($data['c']);
+
             //Call CGI
-            if (!empty($cmd_list = $this->router->parse($data['c'], $this->router->cgi_stack))) {
+            if (!empty($this->router->cgi_cmd)) {
                 //Remap input data
                 $this->io_unit->src_input = $data;
 
                 //Process CGI command
-                while (is_array($cmd_pair = array_shift($cmd_list))) {
+                while (is_array($cmd_pair = array_shift($this->router->cgi_cmd))) {
                     //Extract CMD contents
                     [$cmd_class, $cmd_method] = $cmd_pair;
                     //Run script method
@@ -352,12 +355,12 @@ class libMPC extends Factory
             }
 
             //Call CLI
-            if (!empty($cmd_list = $this->router->parse($data['c'], $this->router->cli_stack))) {
+            if (!empty($this->router->cli_cmd)) {
                 //Remap argv data
                 $this->io_unit->src_argv = $data['argv'] ?? '';
 
                 //Process CLI command
-                while (is_array($cmd_pair = array_shift($cmd_list))) {
+                while (is_array($cmd_pair = array_shift($this->router->cli_cmd))) {
                     //Extract CMD contents
                     [$cmd_name, $exe_path] = $cmd_pair;
 
@@ -372,7 +375,7 @@ class libMPC extends Factory
             unset($throwable);
         }
 
-        unset($data, $cmd_list, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
+        unset($data, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
         return $result;
     }
 

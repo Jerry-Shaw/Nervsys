@@ -24,6 +24,7 @@ namespace Core;
 use Core\Lib\App;
 use Core\Lib\Hook;
 use Core\Lib\IOUnit;
+use Core\Lib\Router;
 
 /**
  * Class Execute
@@ -48,18 +49,18 @@ class Execute extends Factory
     }
 
     /**
-     * Set cmd to stack
+     * Copy cmd from router stack
      *
-     * @param string $cmd_stack
-     * @param array  $cmd_value
+     * @param Router $router
      *
      * @return $this
      */
-    public function setCmd(string $cmd_stack, array $cmd_value): self
+    public function copyCmd(Router $router): self
     {
-        $this->$cmd_stack = &$cmd_value;
+        $this->cgi_cmd = $router->cgi_cmd;
+        $this->cli_cmd = $router->cli_cmd;
 
-        unset($cmd_stack, $cmd_value);
+        unset($router);
         return $this;
     }
 

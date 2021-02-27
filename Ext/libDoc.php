@@ -134,16 +134,14 @@ class libDoc extends Factory
      */
     public function getComment(string $c): string
     {
-        $router = Router::new();
-
-        if (empty($cmd_list = $router->parse($c, $router->cgi_stack))) {
+        if (empty($cmd_list = Router::new()->parse($c)->cgi_cmd)) {
             return '';
         }
 
         $cmd_list = current($cmd_list);
         $comment  = $this->getDoc(new \ReflectionMethod($cmd_list[0], $cmd_list[1]));
 
-        unset($c, $router, $cmd_list);
+        unset($c, $cmd_list);
         return $comment;
     }
 

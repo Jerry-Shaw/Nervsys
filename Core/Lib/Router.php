@@ -33,8 +33,11 @@ class Router extends Factory
 {
     public App $app;
 
-    public array $cgi_stack;
-    public array $cli_stack;
+    public array $cgi_cmd   = [];
+    public array $cgi_stack = [];
+
+    public array $cli_cmd      = [];
+    public array $cli_stack    = [];
     public array $cli_path_map = [];
 
     /**
@@ -100,29 +103,32 @@ class Router extends Factory
      * Parse CMD
      *
      * @param string $c
-     * @param array  $rt_stack
      *
-     * @return array|array[]
+     * @return $this
      */
-    public function parse(string $c, array $rt_stack): array
+    public function parse(string $c): self
     {
-        if ('' === ($c = trim($c))) {
-            unset($c, $rt_stack);
-            return [];
-        }
-
-        $cmd_list = [];
-
-        //Find correct parser
-        foreach ($rt_stack as $rt) {
+        foreach ($this->cgi_stack as $rt) {
             if (!empty($cmd = $this->callParser($rt, $c))) {
-                $cmd_list = &$cmd;
+                $this->cgi_cmd = $cmd;
                 break;
             }
         }
 
-        unset($c, $rt_stack, $rt, $cmd);
-        return $cmd_list;
+        if (!$this->app->is_cli) {
+            unset($c, $rt, $cmd);
+            return $this;
+        }
+
+        foreach ($this->cli_stack as $rt) {
+            if (!empty($cmd = $this->callParser($rt, $c))) {
+                $this->cli_cmd = $cmd;
+                break;
+            }
+        }
+
+        unset($c, $rt, $cmd);
+        return $this;
     }
 
     /**
@@ -215,7 +221,6 @@ class Router extends Factory
      */
     private function callParser(array $rt, string $c): array
     {
-        //Call router parser
         $c_list = call_user_func($rt, $c);
 
         if (!is_array($c_list)) {
