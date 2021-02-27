@@ -338,7 +338,7 @@ class libMPC extends Factory
 
         try {
             //Call CGI
-            if (!empty($cmd_list = $this->router->parse($input_data['c'], $router->cgi_stack))) {
+            if (!empty($cmd_list = $this->router->parse($input_data['c'], $this->router->cgi_stack))) {
                 //Remap input data
                 $this->io_unit->src_input = $data;
 
@@ -352,7 +352,7 @@ class libMPC extends Factory
             }
 
             //Call CLI
-            if (!empty($cmd_list = $this->router->parse($input_data['c'], $router->cli_stack))) {
+            if (!empty($cmd_list = $this->router->parse($input_data['c'], $this->router->cli_stack))) {
                 //Remap argv data
                 $this->io_unit->src_argv = $data['argv'] ?? '';
 
