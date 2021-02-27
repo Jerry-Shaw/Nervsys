@@ -35,8 +35,8 @@ class Execute extends Factory
     public App    $app;
     public IOUnit $io_unit;
 
-    public array $cmd_cgi = [];
-    public array $cmd_cli = [];
+    public array $cgi_cmd = [];
+    public array $cli_cmd = [];
 
     /**
      * Execute constructor.
@@ -77,7 +77,7 @@ class Execute extends Factory
         $reflect = Reflect::new();
 
         //Process CGI command
-        while (is_array($cmd_pair = array_shift($this->cmd_cgi))) {
+        while (is_array($cmd_pair = array_shift($this->cgi_cmd))) {
             //Extract CMD contents
             [$cmd_class, $cmd_method] = $cmd_pair;
 
@@ -121,7 +121,7 @@ class Execute extends Factory
         $os_unit = OSUnit::new();
 
         //Process CLI command
-        while (is_array($cmd_pair = array_shift($this->cmd_cli))) {
+        while (is_array($cmd_pair = array_shift($this->cli_cmd))) {
             //Extract CMD contents
             [$cmd_name, $exe_path] = $cmd_pair;
 
