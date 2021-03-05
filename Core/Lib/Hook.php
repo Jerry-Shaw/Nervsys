@@ -31,8 +31,18 @@ use Core\Factory;
  */
 class Hook extends Factory
 {
+    public App $app;
+
     public array $before = [];
     public array $after  = [];
+
+    /**
+     * Hook constructor.
+     */
+    public function __construct()
+    {
+        $this->app = App::new();
+    }
 
     /**
      * Add hook fn before input_c
@@ -45,8 +55,7 @@ class Hook extends Factory
      */
     public function addBefore(string $input_c, string $hook_class, string $hook_method): self
     {
-        $this->before[$input_c] ??= [];
-        array_unshift($this->before[$input_c], [$hook_class, $hook_method]);
+        $this->before[$this->getPath($input_c)][] = [$hook_class, $hook_method];
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
@@ -63,7 +72,7 @@ class Hook extends Factory
      */
     public function addAfter(string $input_c, string $hook_class, string $hook_method): self
     {
-        $this->after[$input_c][] = [$hook_class, $hook_method];
+        $this->after[$this->getPath($input_c)][] = [$hook_class, $hook_method];
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
@@ -91,6 +100,20 @@ class Hook extends Factory
 
         unset($execute, $input_c, $hook_list, $fn_list, $hook_fn);
         return true;
+    }
+
+    /**
+     * Get full CMD path
+     *
+     * @param string $input_c
+     *
+     * @return string
+     */
+    private function getPath(string $input_c): string
+    {
+        return '/' !== $input_c[0] && 0 !== strpos($input_c, $this->app->api_path)
+            ? $this->app->api_path . '/' . trim($input_c, '/')
+            : trim($input_c, '/');
     }
 
     /**
@@ -137,7 +160,7 @@ class Hook extends Factory
             unset($execute, $hook_fn);
             return (empty($result) || true === current($result));
         } catch (\Throwable $throwable) {
-            App::new()->showDebug($throwable, true);
+            $this->app->showDebug($throwable, true);
             unset($execute, $hook_fn, $throwable);
             return false;
         }
