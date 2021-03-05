@@ -166,17 +166,17 @@ class Execute extends Factory
             //Extract CMD contents
             [$cmd_class, $cmd_method] = $cmd_pair;
 
-            //Get CMD input name
-            $input_name = $cmd_pair[2] ?? implode('/', $cmd_pair);
+            //Get target CMD path
+            $cmd_path = strtr(trim($cmd_class, '\\'), '\\', '/') . '/' . $cmd_method;
 
             //Check hooks before CMD
-            if (!$hook->checkPass($this, $input_name, $hook->before)) {
+            if (!$hook->checkPass($this, $cmd_path, $hook->before)) {
                 break;
             }
 
             try {
                 //Run script method
-                $result += $this->runScript($cmd_class, $cmd_method, $input_name);
+                $result += $this->runScript($cmd_class, $cmd_method, $cmd_pair[2] ?? $cmd_path);
             } catch (\Throwable $throwable) {
                 $this->app->showDebug($throwable, true);
                 unset($throwable);
@@ -184,12 +184,12 @@ class Execute extends Factory
             }
 
             //Check hooks after CMD
-            if (!$hook->checkPass($this, $input_name, $hook->after)) {
+            if (!$hook->checkPass($this, $cmd_path, $hook->after)) {
                 break;
             }
         }
 
-        unset($hook, $cmd_pair, $cmd_class, $cmd_method, $input_name);
+        unset($hook, $cmd_pair, $cmd_class, $cmd_method, $cmd_path);
         return $result;
     }
 
