@@ -27,7 +27,6 @@ use Core\Lib\Error;
 use Core\Lib\IOUnit;
 use Core\Lib\Router;
 use Core\OSUnit;
-use Core\Reflect;
 
 /**
  * Class libMPC
@@ -39,7 +38,6 @@ class libMPC extends Factory
     private App     $app;
     private Error   $error;
     private Router  $router;
-    private Reflect $reflect;
     private Execute $execute;
     private IOUnit  $io_unit;
     private OSUnit  $os_unit;
@@ -232,7 +230,6 @@ class libMPC extends Factory
         //Init modules & libraries
         $this->error   = Error::new();
         $this->router  = Router::new();
-        $this->reflect = Reflect::new();
         $this->execute = Execute::new();
         $this->io_unit = IOUnit::new();
         $this->os_unit = OSUnit::new();
@@ -350,7 +347,7 @@ class libMPC extends Factory
                     //Extract CMD contents
                     [$cmd_class, $cmd_method] = $cmd_pair;
                     //Run script method
-                    $result += $this->execute->runScript($this->reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
+                    $result += $this->execute->runScript($cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
                 }
             }
 

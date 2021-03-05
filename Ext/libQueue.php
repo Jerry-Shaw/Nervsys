@@ -26,7 +26,6 @@ use Core\Lib\App;
 use Core\Lib\IOUnit;
 use Core\Lib\Router;
 use Core\OSUnit;
-use Core\Reflect;
 
 /**
  * Class libQueue
@@ -545,9 +544,8 @@ class libQueue extends Factory
                 break;
 
             default:
-                //Init Router, Reflect, Execute
+                //Init Router, Execute
                 $router  = Router::new();
-                $reflect = Reflect::new();
                 $execute = Execute::new();
 
                 //Build unit hash and key
@@ -584,14 +582,14 @@ class libQueue extends Factory
 
                     //Execute job
                     if (!empty($job = $this->getJob($job_key, $idle_time))) {
-                        $this->execJob($job[1], $router, $reflect, $execute);
+                        $this->execJob($job[1], $router, $execute);
                     }
                 } while (0 < $this->redis->exists($unit_key) && $this->redis->expire($unit_key, self::WAIT_SCAN) && ++$exec_count < $this->max_exec);
 
                 //On exit
                 $kill_unit($unit_hash);
 
-                unset($router, $reflect, $execute, $unit_hash, $unit_key, $kill_unit, $idle_time, $job_key, $job);
+                unset($router, $execute, $unit_hash, $unit_key, $kill_unit, $idle_time, $job_key, $job);
                 break;
         }
 
@@ -832,10 +830,9 @@ class libQueue extends Factory
      *
      * @param string  $json
      * @param Router  $router
-     * @param Reflect $reflect
      * @param Execute $execute
      */
-    private function execJob(string $json, Router $router, Reflect $reflect, Execute $execute): void
+    private function execJob(string $json, Router $router, Execute $execute): void
     {
         //Decode data from JSON
         $data = json_decode($json, true);
@@ -843,7 +840,7 @@ class libQueue extends Factory
         //Source data parse failed
         if (!is_array($data)) {
             $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$json, 'return' => 'Data ERROR!'], JSON_FORMAT));
-            unset($json, $router, $reflect, $execute, $data);
+            unset($json, $router, $execute, $data);
             return;
         }
 
@@ -856,7 +853,7 @@ class libQueue extends Factory
                 //Remap input data
                 $this->io_unit->src_input = $data;
                 //Execute CGI command
-                $this->callCgi($router->cgi_cmd, $reflect, $execute);
+                $this->callCgi($router->cgi_cmd, $execute);
             }
 
             //Call CLI
@@ -871,31 +868,30 @@ class libQueue extends Factory
             unset($throwable);
         }
 
-        unset($json, $router, $reflect, $execute, $data);
+        unset($json, $router, $execute, $data);
     }
 
     /**
      * Call CGI command
      *
      * @param array   $cmd_group
-     * @param Reflect $reflect
      * @param Execute $execute
      *
      * @throws \ReflectionException
      */
-    private function callCgi(array $cmd_group, Reflect $reflect, Execute $execute): void
+    private function callCgi(array $cmd_group, Execute $execute): void
     {
         //Process CGI command
         while (is_array($cmd_pair = array_shift($cmd_group))) {
             //Extract CMD contents
             [$cmd_class, $cmd_method] = $cmd_pair;
             //Run script method
-            $result = $execute->runScript($reflect, $cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
+            $result = $execute->runScript($cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
             //Check result
             !empty($result) && $this->checkJob($result);
         }
 
-        unset($cmd_group, $reflect, $execute, $cmd_pair, $cmd_class, $cmd_method, $result);
+        unset($cmd_group, $execute, $cmd_pair, $cmd_class, $cmd_method, $result);
     }
 
     /**

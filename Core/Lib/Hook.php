@@ -23,7 +23,6 @@ namespace Core\Lib;
 
 use Core\Execute;
 use Core\Factory;
-use Core\Reflect;
 
 /**
  * Class Hook
@@ -74,24 +73,23 @@ class Hook extends Factory
      * Check hook fn pass status
      *
      * @param Execute $execute
-     * @param Reflect $reflect
      * @param string  $input_c
      * @param array   $hook_list
      *
      * @return bool
      */
-    public function checkPass(Execute $execute, Reflect $reflect, string $input_c, array $hook_list): bool
+    public function checkPass(Execute $execute, string $input_c, array $hook_list): bool
     {
         $fn_list = $this->getFn($input_c, $hook_list);
 
         foreach ($fn_list as $hook_fn) {
-            if (!$this->callFn($execute, $reflect, $hook_fn)) {
-                unset($execute, $reflect, $input_c, $hook_list, $fn_list, $hook_fn);
+            if (!$this->callFn($execute, $hook_fn)) {
+                unset($execute, $input_c, $hook_list, $fn_list, $hook_fn);
                 return false;
             }
         }
 
-        unset($execute, $reflect, $input_c, $hook_list, $fn_list, $hook_fn);
+        unset($execute, $input_c, $hook_list, $fn_list, $hook_fn);
         return true;
     }
 
@@ -127,21 +125,20 @@ class Hook extends Factory
      * Call hook function
      *
      * @param Execute $execute
-     * @param Reflect $reflect
      * @param array   $hook_fn
      *
      * @return bool
      */
-    private function callFn(Execute $execute, Reflect $reflect, array $hook_fn): bool
+    private function callFn(Execute $execute, array $hook_fn): bool
     {
         try {
-            $result = $execute->runScript($reflect, $hook_fn[0], $hook_fn[1], implode('/', $hook_fn));
+            $result = $execute->runScript($hook_fn[0], $hook_fn[1], implode('/', $hook_fn));
 
-            unset($execute, $reflect, $hook_fn);
+            unset($execute, $hook_fn);
             return (empty($result) || true === current($result));
         } catch (\Throwable $throwable) {
             App::new()->showDebug($throwable, true);
-            unset($execute, $reflect, $hook_fn, $throwable);
+            unset($execute, $hook_fn, $throwable);
             return false;
         }
     }
