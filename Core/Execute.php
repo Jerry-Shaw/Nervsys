@@ -52,7 +52,7 @@ class Execute extends Factory
     }
 
     /**
-     * Add matched args for a method
+     * Add args for a method
      *
      * @param string $class
      * @param string $method
@@ -69,31 +69,7 @@ class Execute extends Factory
     }
 
     /**
-     * Build matched args for target method
-     *
-     * @param string $class
-     * @param string $method
-     * @param array  $inputs
-     *
-     * @return array
-     * @throws \Exception
-     * @throws \ReflectionException
-     */
-    public function buildArgs(string $class, string $method, array $inputs): array
-    {
-        $args = $this->reflect->buildParams($class, $method, $inputs);
-
-        if (!empty($args['diff'])) {
-            $msg = '[' . implode(', ', $args['diff']) . '] in ' . '"' . $class . '::' . $method . '"';
-            throw new \Exception('Argument error or missing: ' . $msg, E_USER_NOTICE);
-        }
-
-        unset($class, $method, $inputs, $args['diff']);
-        return $args['param'];
-    }
-
-    /**
-     * Fetch args from pool
+     * Fetch args for a method
      *
      * @param string $class
      * @param string $method
@@ -106,12 +82,23 @@ class Execute extends Factory
     {
         $key = $class . ':' . $method;
 
-        if (!isset($this->arg_pool[$key])) {
-            $this->arg_pool[$key] = $this->buildArgs($class, $method, $inputs);
+        if (isset($this->arg_pool[$key])) {
+            $args = &$this->arg_pool[$key];
+            unset($this->arg_pool[$key]);
+        } else {
+            $params = $this->reflect->getArgs($class, $method, $inputs);
+
+            if (!empty($params['diff'])) {
+                $msg = '[' . implode(', ', $params['diff']) . '] in ' . '"' . $class . '::' . $method . '"';
+                throw new \Exception('Argument error or missing: ' . $msg, E_USER_NOTICE);
+            }
+
+            $args = &$params['args'];
+            unset($params);
         }
 
-        unset($class, $method, $inputs);
-        return $this->arg_pool[$key];
+        unset($class, $method, $inputs, $key);
+        return $args;
     }
 
     /**
