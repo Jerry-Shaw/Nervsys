@@ -21,6 +21,7 @@
 
 namespace Ext;
 
+use Core\Execute;
 use Core\Factory;
 use Core\Lib\App;
 use Core\Lib\CORS;
@@ -426,6 +427,23 @@ class libCoreApi extends Factory
         Hook::new()->addAfter($input_c, $hook_class, $hook_method);
 
         unset($input_c, $hook_class, $hook_method);
+        return $this;
+    }
+
+    /**
+     * Add args for a method
+     *
+     * @param string $class
+     * @param string $method
+     * @param array  $args
+     *
+     * @return $this
+     */
+    public function addArgs(string $class, string $method, array $args): self
+    {
+        Execute::new()->addArgs($class, $method, $args);
+
+        unset($class, $method, $args);
         return $this;
     }
 }
