@@ -454,6 +454,7 @@ class libHttp extends Factory
             $url_unit['path'] = '/';
         }
 
+        //Build query string
         $url_unit['query'] = isset($url_unit['query']) ? '?' . $url_unit['query'] : '';
 
         if (!isset($url_unit['port'])) {
@@ -574,7 +575,6 @@ class libHttp extends Factory
         $curl_opt[CURLOPT_ENCODING]       = &$runtime_data['accept_encoding'];
         $curl_opt[CURLOPT_USERAGENT]      = &$runtime_data['user_agent'];
         $curl_opt[CURLOPT_CUSTOMREQUEST]  = &$runtime_data['http_method'];
-        $curl_opt[CURLOPT_POST]           = ('POST' === $runtime_data['http_method']);
         $curl_opt[CURLOPT_NOBODY]         = !$runtime_data['with_body'];
         $curl_opt[CURLOPT_HEADER]         = true;
 
