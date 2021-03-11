@@ -111,7 +111,7 @@ class Hook extends Factory
      */
     private function getPath(string $input_c): string
     {
-        return '/' !== $input_c[0] && 0 !== strpos($input_c, $this->app->api_path)
+        return '/' !== $input_c[0] && 0 !== strpos($input_c, $this->app->api_path . '/')
             ? $this->app->api_path . '/' . trim($input_c, '/')
             : trim($input_c, '/');
     }
