@@ -156,8 +156,8 @@ class Router extends Factory
 
             //Validate & redirect CMD
             $cmd_val = !$this->app->is_cli
-                ? (0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd)
-                : ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path) ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd);
+                ? (0 !== strpos($cmd, $this->app->api_path . '/') ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd)
+                : ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path . '/') ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd);
 
             //Get class & method from CMD
             $cmd_val = trim($cmd_val, '/');
