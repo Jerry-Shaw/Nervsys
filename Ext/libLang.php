@@ -26,7 +26,7 @@ use Core\Lib\IOUnit;
 
 /**
  * Class libLang
- * Language file should be located in "ROOT/$pathname/$lang/LC_MESSAGES/filename.mo"
+ * Language file should be located in "root_path/$file_path/$lang_name/LC_MESSAGES/$file_name.mo"
  *
  * @package Ext
  */
@@ -36,22 +36,20 @@ class libLang extends Factory
 
     /**
      * libLang constructor.
-     *
-     * @param string $pathname
      */
-    public function __construct(string $pathname)
+    public function __construct()
     {
-        $this->path = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
-        unset($pathname);
+        $this->path = App::new()->root_path;
     }
 
     /**
-     * Load language file
+     * Load language file (root_path based)
      *
+     * @param string $file_path
      * @param string $file_name
      * @param string $lang_name
      */
-    public function load(string $file_name, string $lang_name = ''): void
+    public function load(string $file_path, string $file_name, string $lang_name = ''): void
     {
         if ('' === $lang_name) {
             $lang_name = self::detect();
@@ -60,10 +58,10 @@ class libLang extends Factory
         putenv('LANG=' . $lang_name);
         setlocale(LC_ALL, $lang_name);
 
-        bindtextdomain($file_name, $this->path . DIRECTORY_SEPARATOR);
+        bindtextdomain($file_name, $this->path . DIRECTORY_SEPARATOR . $file_path . DIRECTORY_SEPARATOR);
         textdomain($file_name);
 
-        unset($file_name, $lang_name);
+        unset($file_path, $file_name, $lang_name);
     }
 
     /**
