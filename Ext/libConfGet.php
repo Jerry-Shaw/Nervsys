@@ -30,15 +30,16 @@ use Core\Lib\App;
  */
 class libConfGet extends Factory
 {
-    public string $path;
-    public array  $pool = [];
+    public App $app;
+
+    public array $conf_pool = [];
 
     /**
      * libConfGet constructor.
      */
     public function __construct()
     {
-        $this->path = App::new()->root_path;
+        $this->app = App::new();
     }
 
     /**
@@ -51,28 +52,13 @@ class libConfGet extends Factory
      */
     public function load(string $file_name): self
     {
-        if (!is_file($file_path = $this->path . DIRECTORY_SEPARATOR . $file_name)) {
+        if (!is_file($file_path = $this->app->root_path . DIRECTORY_SEPARATOR . $file_name)) {
             throw new \Exception('"' . $file_path . '" NOT found!');
         }
 
-        $conf = file_get_contents($file_path);
-        $data = json_decode($conf, true);
+        $this->conf_pool = array_replace_recursive($this->conf_pool, $this->app->parseConf($file_path));
 
-        if (is_null($data)) {
-            try {
-                $data = parse_ini_string($conf, true, INI_SCANNER_TYPED);
-            } catch (\Throwable $throwable) {
-                throw new \Exception('Failed to parse "' . $file_path . '"!');
-            }
-        }
-
-        if (!is_array($data)) {
-            throw new \Exception('"' . $file_path . '" NOT support!');
-        }
-
-        $this->pool = array_replace_recursive($this->pool, $data);
-
-        unset($file_name, $file_path, $conf, $data);
+        unset($file_name, $file_path);
         return $this;
     }
 
@@ -85,6 +71,6 @@ class libConfGet extends Factory
      */
     public function use(string $section): array
     {
-        return $this->pool[$section] ?? [];
+        return $this->conf_pool[$section] ?? [];
     }
 }

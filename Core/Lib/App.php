@@ -248,6 +248,36 @@ class App extends Factory
     }
 
     /**
+     * Parse conf file in JSON/INI
+     *
+     * @param string $file_path
+     * @param bool   $sections
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public function parseConf(string $file_path, bool $sections): array
+    {
+        $config = file_get_contents($file_path);
+
+        if (is_null($data = json_decode($config, true))) {
+            try {
+                $data = parse_ini_string($config, $sections, INI_SCANNER_TYPED);
+            } catch (\Throwable $throwable) {
+                unset($throwable);
+                throw new \Exception('Failed to parse "' . $file_path . '"!');
+            }
+        }
+
+        if (!is_array($data)) {
+            throw new \Exception('"' . $file_path . '" NOT support!');
+        }
+
+        unset($file_path, $sections, $config);
+        return $data;
+    }
+
+    /**
      * Show debug message and continue
      *
      * @param \Throwable $throwable
