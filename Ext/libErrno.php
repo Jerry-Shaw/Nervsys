@@ -65,7 +65,7 @@ class libErrno extends Factory
             throw new \Exception('"' . $file_path . '" NOT found!');
         }
 
-        $this->msg_pool = array_replace_recursive($this->msg_pool, $this->app->parseConf($file_path));
+        $this->msg_pool = array_replace_recursive($this->msg_pool, $this->app->parseConf($file_path, false));
 
         unset($file_name, $file_path);
         return $this;

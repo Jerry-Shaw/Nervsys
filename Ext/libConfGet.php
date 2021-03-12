@@ -56,7 +56,7 @@ class libConfGet extends Factory
             throw new \Exception('"' . $file_path . '" NOT found!');
         }
 
-        $this->conf_pool = array_replace_recursive($this->conf_pool, $this->app->parseConf($file_path));
+        $this->conf_pool = array_replace_recursive($this->conf_pool, $this->app->parseConf($file_path, true));
 
         unset($file_name, $file_path);
         return $this;
