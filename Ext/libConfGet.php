@@ -35,26 +35,23 @@ class libConfGet extends Factory
 
     /**
      * libConfGet constructor.
-     *
-     * @param string $pathname
      */
-    public function __construct(string $pathname)
+    public function __construct()
     {
-        $this->path = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
-        unset($pathname);
+        $this->path = App::new()->root_path;
     }
 
     /**
-     * Load config file (no extension)
+     * Load config file (root_path based)
      *
-     * @param string $filename
+     * @param string $file_name
      *
      * @return $this
      * @throws \Exception
      */
-    public function load(string $filename): self
+    public function load(string $file_name): self
     {
-        if (!is_file($file_path = $this->path . DIRECTORY_SEPARATOR . $filename . '.conf')) {
+        if (!is_file($file_path = $this->path . DIRECTORY_SEPARATOR . $file_name)) {
             throw new \Exception('"' . $file_path . '" NOT found!');
         }
 
@@ -69,12 +66,12 @@ class libConfGet extends Factory
         }
 
         if (!is_array($data)) {
-            throw new \Exception('Type of "' . $filename . '.conf" NOT support!');
+            throw new \Exception('"' . $file_path . '" NOT support!');
         }
 
         $this->pool = array_replace_recursive($this->pool, $data);
 
-        unset($filename, $file_path, $config, $data);
+        unset($file_name, $file_path, $config, $data);
         return $this;
     }
 

@@ -39,19 +39,18 @@ class libErrno extends Factory
     /**
      * libErrno constructor.
      *
-     * @param string $pathname
-     * @param bool   $multi_lang
+     * @param bool $multi_lang
      */
-    public function __construct(string $pathname, bool $multi_lang = false)
+    public function __construct(bool $multi_lang = false)
     {
-        $this->path       = App::new()->root_path . DIRECTORY_SEPARATOR . $pathname;
+        $this->path       = App::new()->root_path;
         $this->multi_lang = &$multi_lang;
 
-        unset($pathname, $multi_lang);
+        unset($multi_lang);
     }
 
     /**
-     * Load error file
+     * Load error file (root_path based)
      *
      * @param string $file_name
      *
@@ -59,7 +58,7 @@ class libErrno extends Factory
      */
     public function load(string $file_name): self
     {
-        $msg_file = $this->path . DIRECTORY_SEPARATOR . $file_name . '.ini';
+        $msg_file = $this->path . DIRECTORY_SEPARATOR . $file_name;
 
         if (is_file($msg_file) && is_array($data = parse_ini_file($msg_file, false, INI_SCANNER_TYPED))) {
             $this->msg_pool = array_replace($this->msg_pool, $data);
