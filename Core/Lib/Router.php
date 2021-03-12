@@ -132,6 +132,34 @@ class Router extends Factory
     }
 
     /**
+     * Get API based CMD
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public function getApiCmd(string $cmd): string
+    {
+        return 0 !== strpos($cmd, $this->app->api_path . '/')
+            ? $this->app->api_path . '/' . trim($cmd, '/')
+            : trim($cmd, '/');
+    }
+
+    /**
+     * Get path based CMD
+     *
+     * @param string $cmd
+     *
+     * @return string
+     */
+    public function getPathCmd(string $cmd): string
+    {
+        return '/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path . '/')
+            ? $this->app->api_path . '/' . trim($cmd, '/')
+            : trim($cmd, '/');
+    }
+
+    /**
      * CGI router parser
      *
      * @param string $c
@@ -154,16 +182,13 @@ class Router extends Factory
                 continue;
             }
 
-            //Validate & redirect CMD
-            $cmd_val = !$this->app->is_cli
-                ? (0 !== strpos($cmd, $this->app->api_path . '/') ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd)
-                : ('/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path . '/') ? $this->app->api_path . '/' . ltrim($cmd, '/') : $cmd);
+            //Get full CMD value
+            $cmd_val = !$this->app->is_cli ? $this->getApiCmd($cmd) : $this->getPathCmd($cmd);
 
             //Get class & method from CMD
-            $cmd_val = trim($cmd_val, '/');
-            $fn_pos  = strrpos($cmd_val, '/');
-            $class   = '\\' . strtr(substr($cmd_val, 0, $fn_pos), '/', '\\');
-            $method  = substr($cmd_val, $fn_pos + 1);
+            $fn_pos = strrpos($cmd_val, '/');
+            $class  = '\\' . strtr(substr($cmd_val, 0, $fn_pos), '/', '\\');
+            $method = substr($cmd_val, $fn_pos + 1);
 
             //Skip non-exist class
             if (!class_exists($class)) {

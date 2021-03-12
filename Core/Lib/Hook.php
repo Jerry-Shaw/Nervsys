@@ -31,7 +31,8 @@ use Core\Factory;
  */
 class Hook extends Factory
 {
-    public App $app;
+    public App    $app;
+    public Router $router;
 
     public array $before = [];
     public array $after  = [];
@@ -41,7 +42,8 @@ class Hook extends Factory
      */
     public function __construct()
     {
-        $this->app = App::new();
+        $this->app    = App::new();
+        $this->router = Router::new();
     }
 
     /**
@@ -55,7 +57,7 @@ class Hook extends Factory
      */
     public function addBefore(string $input_c, string $hook_class, string $hook_method): self
     {
-        $this->before[$this->getPath($input_c)][] = [$hook_class, $hook_method];
+        $this->before[$this->router->getPathCmd($input_c)][] = [$hook_class, $hook_method];
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
@@ -72,7 +74,7 @@ class Hook extends Factory
      */
     public function addAfter(string $input_c, string $hook_class, string $hook_method): self
     {
-        $this->after[$this->getPath($input_c)][] = [$hook_class, $hook_method];
+        $this->after[$this->router->getPathCmd($input_c)][] = [$hook_class, $hook_method];
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
@@ -100,20 +102,6 @@ class Hook extends Factory
 
         unset($execute, $input_c, $hook_list, $fn_list, $hook_fn);
         return true;
-    }
-
-    /**
-     * Get full CMD path
-     *
-     * @param string $input_c
-     *
-     * @return string
-     */
-    private function getPath(string $input_c): string
-    {
-        return '/' !== $input_c[0] && 0 !== strpos($input_c, $this->app->api_path . '/')
-            ? $this->app->api_path . '/' . trim($input_c, '/')
-            : trim($input_c, '/');
     }
 
     /**
