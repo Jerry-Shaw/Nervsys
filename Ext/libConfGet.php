@@ -55,11 +55,12 @@ class libConfGet extends Factory
             throw new \Exception('"' . $file_path . '" NOT found!');
         }
 
-        $config = file_get_contents($file_path);
+        $conf = file_get_contents($file_path);
+        $data = json_decode($conf, true);
 
-        if (is_null($data = json_decode($config, true))) {
+        if (is_null($data)) {
             try {
-                $data = parse_ini_string($config, true, INI_SCANNER_TYPED);
+                $data = parse_ini_string($conf, true, INI_SCANNER_TYPED);
             } catch (\Throwable $throwable) {
                 throw new \Exception('Failed to parse "' . $file_path . '"!');
             }
@@ -71,7 +72,7 @@ class libConfGet extends Factory
 
         $this->pool = array_replace_recursive($this->pool, $data);
 
-        unset($file_name, $file_path, $config, $data);
+        unset($file_name, $file_path, $conf, $data);
         return $this;
     }
 
