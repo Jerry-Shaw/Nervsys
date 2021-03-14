@@ -77,8 +77,8 @@ spl_autoload_register(
     }
 );
 
-//Init App library
-App::new();
+//Init App library with environment
+$app = App::new()->setEnv();
 
 /**
  * Class NS
@@ -90,12 +90,6 @@ class NS extends Factory
      */
     public function __construct()
     {
-        //Set env for App library
-        $app = App::new()->setEnv();
-
-        //Set default timezone
-        date_default_timezone_set($app->timezone);
-
         //Init Error library
         $error = Error::new();
 
@@ -104,8 +98,14 @@ class NS extends Factory
         set_exception_handler($error->exception_handler);
         set_error_handler($error->error_handler);
 
+        //Init App library
+        $app = App::new();
+
+        //Set default timezone
+        date_default_timezone_set($app->timezone);
+
         //Check CORS Permission
-        CORS::new()->checkPerm($app);
+        CORS::new()->checkPerm($app->is_cli, $app->is_tls);
 
         //Init IOUnit library
         $io_unit = IOUnit::new();
@@ -121,8 +121,7 @@ class NS extends Factory
             $execute = Execute::new()->copyCmd($router);
 
             //Execute process & fetch results
-            $io_unit->src_output += $execute->callCli();
-            $io_unit->src_output += $execute->callCgi();
+            $io_unit->src_output = $execute->callCli() + $execute->callCgi();
         }
 
         //Output results

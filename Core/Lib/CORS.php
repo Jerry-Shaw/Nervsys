@@ -30,8 +30,7 @@ use Core\Factory;
  */
 class CORS extends Factory
 {
-    private array $allowed_list = [];
-
+    private array  $allowed_list  = [];
     private string $allow_headers = 'X-Requested-With, Content-Type, Content-Length';
 
     /**
@@ -57,14 +56,15 @@ class CORS extends Factory
     /**
      * Check CORS permission
      *
-     * @param App $app
+     * @param bool $is_cli
+     * @param bool $is_tls
      */
-    public function checkPerm(App $app): void
+    public function checkPerm(bool $is_cli, bool $is_tls): void
     {
         //Server ENV passed
-        if ($app->is_cli
+        if ($is_cli
             || !isset($_SERVER['HTTP_ORIGIN'])
-            || $_SERVER['HTTP_ORIGIN'] === ($app->is_tls ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+            || $_SERVER['HTTP_ORIGIN'] === ($is_tls ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
@@ -85,6 +85,6 @@ class CORS extends Factory
             exit();
         }
 
-        unset($allow_headers);
+        unset($is_cli, $is_tls, $allow_headers);
     }
 }
