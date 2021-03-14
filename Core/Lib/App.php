@@ -251,46 +251,40 @@ class App extends Factory
      * Parse conf file in JSON/INI
      *
      * @param string $file_path
-     * @param bool   $sections
+     * @param bool   $ini_secs
      *
      * @return array
      * @throws \Exception
      */
-    public function parseConf(string $file_path, bool $sections): array
+    public function parseConf(string $file_path, bool $ini_secs): array
     {
-        $content   = file_get_contents($file_path);
-        $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+        $file_data = file_get_contents($file_path);
+        $file_ext  = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
 
-        switch ($extension) {
-            case 'json':
-                $data = json_decode($content, true);
-                break;
+        try {
+            switch ($file_ext) {
+                case 'ini':
+                    $config = parse_ini_string($file_data, $ini_secs, INI_SCANNER_TYPED);
+                    break;
 
-            case 'ini':
-                try {
-                    $data = parse_ini_string($content, $sections, INI_SCANNER_TYPED);
-                } catch (\Throwable $throwable) {
-                    throw new \Exception('Failed to parse "' . $file_path . '"!');
-                }
-                break;
+                case 'json':
+                    $config = json_decode($file_data, true);
+                    break;
 
-            default:
-                if (is_null($data = json_decode($content, true))) {
-                    try {
-                        $data = parse_ini_string($content, $sections, INI_SCANNER_TYPED);
-                    } catch (\Throwable $throwable) {
-                        throw new \Exception('Failed to parse "' . $file_path . '"!');
-                    }
-                }
-                break;
+                default:
+                    $config = json_decode($file_data, true) ?? parse_ini_string($file_data, $ini_secs, INI_SCANNER_TYPED);
+                    break;
+            }
+
+            if (!is_array($config)) {
+                throw new \Exception('Configuration ERROR!');
+            }
+        } catch (\Throwable $throwable) {
+            throw new \Exception('Failed to parse "' . $file_path . '": ' . $throwable->getMessage());
         }
 
-        if (!is_array($data)) {
-            throw new \Exception('"' . $file_path . '" NOT support!');
-        }
-
-        unset($file_path, $sections, $content, $extension);
-        return $data;
+        unset($file_path, $ini_secs, $file_data, $file_ext);
+        return $config;
     }
 
     /**
