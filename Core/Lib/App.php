@@ -65,7 +65,7 @@ class App extends Factory
         $this->entry_path  = dirname($this->script_path);
         $this->parent_path = dirname($this->entry_path);
 
-        //Autoload parent path and entry path
+        //Autoload both parent path and entry path
         foreach ([$this->parent_path, $this->entry_path] as $path) {
             spl_autoload_register(
                 static function (string $class_name) use ($path): void

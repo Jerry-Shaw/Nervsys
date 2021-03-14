@@ -77,6 +77,9 @@ spl_autoload_register(
     }
 );
 
+//Init App library
+App::new();
+
 /**
  * Class NS
  */
@@ -87,7 +90,7 @@ class NS extends Factory
      */
     public function __construct()
     {
-        //Init App library with environment
+        //Set env for App library
         $app = App::new()->setEnv();
 
         //Set default timezone
