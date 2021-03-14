@@ -258,22 +258,38 @@ class App extends Factory
      */
     public function parseConf(string $file_path, bool $sections): array
     {
-        $config = file_get_contents($file_path);
+        $content   = file_get_contents($file_path);
+        $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
 
-        if (is_null($data = json_decode($config, true))) {
-            try {
-                $data = parse_ini_string($config, $sections, INI_SCANNER_TYPED);
-            } catch (\Throwable $throwable) {
-                unset($throwable);
-                throw new \Exception('Failed to parse "' . $file_path . '"!');
-            }
+        switch ($extension) {
+            case 'json':
+                $data = json_decode($content, true);
+                break;
+
+            case 'ini':
+                try {
+                    $data = parse_ini_string($content, $sections, INI_SCANNER_TYPED);
+                } catch (\Throwable $throwable) {
+                    throw new \Exception('Failed to parse "' . $file_path . '"!');
+                }
+                break;
+
+            default:
+                if (is_null($data = json_decode($content, true))) {
+                    try {
+                        $data = parse_ini_string($content, $sections, INI_SCANNER_TYPED);
+                    } catch (\Throwable $throwable) {
+                        throw new \Exception('Failed to parse "' . $file_path . '"!');
+                    }
+                }
+                break;
         }
 
         if (!is_array($data)) {
             throw new \Exception('"' . $file_path . '" NOT support!');
         }
 
-        unset($file_path, $sections, $config);
+        unset($file_path, $sections, $content, $extension);
         return $data;
     }
 
