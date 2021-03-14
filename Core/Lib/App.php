@@ -65,7 +65,18 @@ class App extends Factory
         $this->entry_path  = dirname($this->script_path);
         $this->parent_path = dirname($this->entry_path);
 
-        //Skip in CLI mode
+        //Autoload parent path and entry path
+        foreach ([$this->parent_path, $this->entry_path] as $path) {
+            spl_autoload_register(
+                static function (string $class_name) use ($path): void
+                {
+                    autoload($class_name, $path);
+                    unset($class_name, $path);
+                }
+            );
+        }
+
+        //Check CLI/CGI
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
             return;
@@ -93,7 +104,7 @@ class App extends Factory
             }
         }
 
-        unset($ip_rec, $ip_list, $value, $addr);
+        unset($path, $ip_rec, $ip_list, $value, $addr);
     }
 
     /**
@@ -110,15 +121,6 @@ class App extends Factory
 
         //Copy root_path to $this->root_path
         $this->root_path = &$root_path;
-
-        //Register autoload ($this->root_path based)
-        spl_autoload_register(
-            static function (string $class_name) use ($root_path): void
-            {
-                autoload($class_name, $root_path);
-                unset($class_name, $root_path);
-            }
-        );
 
         //Set autoload path in list
         if (!empty($this->autoload_list)) {
