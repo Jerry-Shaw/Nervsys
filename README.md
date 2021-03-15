@@ -41,9 +41,11 @@ README: [English](README.md) | [简体中文](README_zh-CN.md)
 
 ## Usage
 
-###### Notice: All demo usage is under default system settings.
+###### All demo usage is under default system settings.
 
 #### 1. Suggested project structure
+
+###### Notice: App root path will be set to the parent directory of the entry php script.
 
 ```text
 Root/
@@ -57,8 +59,8 @@ Root/
     │       └─...                     other conf files
     ├─message/                        suggested message file path (use "Ext/libErrno.php" to process)
     │        └─msg.ini                custom message ini file
-    └─home/                           default home path
-          └─index.php                 main entry script
+    └─www/                            default home path
+         └─index.php                  main entry script
 ```
 
 #### 2. NS integration
