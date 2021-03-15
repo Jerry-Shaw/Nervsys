@@ -76,46 +76,10 @@ class App extends Factory
             chmod($this->log_path, 0777);
         }
 
+        //Set App environment
+        $this->setEnv();
+
         unset($root_path);
-    }
-
-    /**
-     * Set App environment
-     *
-     * @return $this
-     */
-    public function setEnv(): self
-    {
-        //Check running mode
-        if ($this->is_cli = ('cli' === PHP_SAPI)) {
-            $this->client_ip = 'Local CLI';
-            return $this;
-        }
-
-        //Get TLS mode
-        $this->is_tls = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
-
-        //Get IP rec
-        $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
-            ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
-            : $_SERVER['REMOTE_ADDR'];
-
-        //Get IP list
-        $ip_list = false !== strpos($ip_rec, ', ')
-            ? explode(', ', $ip_rec)
-            : [$ip_rec];
-
-        //Get client IP
-        foreach ($ip_list as $value) {
-            if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
-                $this->client_ip = &$addr;
-                break;
-            }
-        }
-
-        unset($ip_rec, $ip_list, $value, $addr);
-        return $this;
     }
 
     /**
@@ -254,5 +218,41 @@ class App extends Factory
         }
 
         unset($throwable, $show_on_cli);
+    }
+
+    /**
+     * Set App environment
+     */
+    private function setEnv(): void
+    {
+        //Check running mode
+        if ($this->is_cli = ('cli' === PHP_SAPI)) {
+            $this->client_ip = 'Local CLI';
+            return;
+        }
+
+        //Get TLS mode
+        $this->is_tls = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+
+        //Get IP rec
+        $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+            ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
+            : $_SERVER['REMOTE_ADDR'];
+
+        //Get IP list
+        $ip_list = false !== strpos($ip_rec, ', ')
+            ? explode(', ', $ip_rec)
+            : [$ip_rec];
+
+        //Get client IP
+        foreach ($ip_list as $value) {
+            if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
+                $this->client_ip = &$addr;
+                break;
+            }
+        }
+
+        unset($ip_rec, $ip_list, $value, $addr);
     }
 }

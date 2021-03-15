@@ -65,9 +65,6 @@ function autoload(string $class_name, string $root_path = NS_ROOT): void
     unset($class_name, $root_path, $file_name, $class_file);
 }
 
-//Compile/require Factory module
-autoload(Factory::class);
-
 //Register autoload (NS_ROOT based)
 spl_autoload_register(
     static function (string $class_name): void
@@ -77,8 +74,8 @@ spl_autoload_register(
     }
 );
 
-//Init App library with environment
-$app = App::new()->setEnv();
+//Init App library
+App::new();
 
 /**
  * Class NS
@@ -121,7 +118,8 @@ class NS extends Factory
             $execute = Execute::new()->copyCmd($router);
 
             //Execute process & fetch results
-            $io_unit->src_output = $execute->callCli() + $execute->callCgi();
+            $io_unit->src_output += $execute->callCli();
+            $io_unit->src_output += $execute->callCgi();
         }
 
         //Output results
