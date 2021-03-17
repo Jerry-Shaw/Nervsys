@@ -192,12 +192,14 @@ class IOUnit extends Factory
 
         //Merge header data
         if (!empty($this->header_keys)) {
-            $this->src_input['HttpHeader'] = $this->readHeader();
+            $this->src_input = array_diff_key($this->src_input, array_flip($this->header_keys));
+            $this->src_input += $this->readHeader();
         }
 
         //Merge cookie data
         if (!empty($this->cookie_keys)) {
-            $this->src_input['HttpCookie'] = $this->readCookie();
+            $this->src_input = array_diff_key($this->src_input, array_flip($this->cookie_keys));
+            $this->src_input += $this->readCookie();
         }
 
         //Fix getting CMD from data
