@@ -213,10 +213,7 @@ class App extends Factory
      */
     public function showDebug(\Throwable $throwable, bool $show_on_cli = false): void
     {
-        if ($this->core_debug && ($show_on_cli ? true : !$this->is_cli)) {
-            Error::new()->exceptionHandler($throwable, false);
-        }
-
+        Error::new()->exceptionHandler($throwable, false, $this->core_debug && ($show_on_cli ? true : !$this->is_cli));
         unset($throwable, $show_on_cli);
     }
 
