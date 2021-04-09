@@ -774,6 +774,7 @@ class libMySQL extends Factory
     {
         foreach ($params as &$param) {
             if (is_string($param)) {
+                $this->isRaw($param);
                 $param = '"' . addslashes($param) . '"';
             }
         }
