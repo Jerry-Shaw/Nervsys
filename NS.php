@@ -39,14 +39,14 @@ if (version_compare(PHP_VERSION, '7.4.0', '<')) {
 }
 
 //Define NervSys version
-define('NS_VER', '8.0.1');
+const NS_VER = '8.0.1';
 
 //Define SYSTEM ROOT path
-define('NS_ROOT', __DIR__);
+const NS_ROOT = __DIR__;
 
 //Define JSON formats
-define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
-define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
+const JSON_FORMAT = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS;
+const JSON_PRETTY = JSON_FORMAT | JSON_PRETTY_PRINT;
 
 //Autoload function
 function autoload(string $class_name, string $root_path = NS_ROOT): void
