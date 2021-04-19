@@ -31,10 +31,10 @@ use Core\Lib\IOUnit;
 class libHttp extends Factory
 {
     //Pre-defined content types
-    const CONTENT_TYPE_XML         = 'application/xml; charset=UTF-8';
-    const CONTENT_TYPE_JSON        = 'application/json; charset=UTF-8';
+    const CONTENT_TYPE_XML         = 'application/xml;charset=utf-8';
+    const CONTENT_TYPE_JSON        = 'application/json;charset=utf-8';
     const CONTENT_TYPE_FORM_DATA   = 'multipart/form-data';
-    const CONTENT_TYPE_URL_ENCODED = 'application/x-www-form-urlencoded';
+    const CONTENT_TYPE_URL_ENCODED = 'application/x-www-form-urlencoded;charset=utf-8';
 
     //cURL default data container
     const CURL_DEFAULT = [
