@@ -79,9 +79,9 @@ class CORS extends Factory
         header('Access-Control-Allow-Headers: ' . $allow_headers);
         header('Access-Control-Allow-Credentials: true');
 
-        //Exit on OPTION request
+        //Response 204 to OPTION request
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            http_response_code(200);
+            http_response_code(204);
             exit();
         }
 
