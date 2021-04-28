@@ -869,7 +869,7 @@ class libMySQL extends Factory
             if (2 === count($value)) {
                 $item = strtoupper(array_shift($value));
 
-                if (!in_array($item, ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                if (!in_array($item, ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
                     throw new \PDOException('Invalid operator: "' . $item . '"!', E_USER_ERROR);
                 }
 
