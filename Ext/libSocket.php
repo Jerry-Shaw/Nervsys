@@ -164,11 +164,13 @@ class libSocket extends Factory
     }
 
     /**
-     * Run server
+     * Run server/client
+     *
+     * @param bool $as_client
      *
      * @return bool
      */
-    public function runServer(): bool
+    public function run(bool $as_client = false): bool
     {
         $context = stream_context_create();
 
@@ -185,13 +187,22 @@ class libSocket extends Factory
 
         $address = $this->sock_proto . '://' . $this->sock_addr . ':' . $this->sock_port;
 
-        $socket = stream_socket_server(
-            $address,
-            $errno,
-            $errstr,
-            'udp' != $this->sock_proto ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND,
-            $context
-        );
+        $socket = !$as_client
+            ? stream_socket_server(
+                $address,
+                $errno,
+                $errstr,
+                'udp' != $this->sock_proto ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND,
+                $context
+            )
+            : stream_socket_client(
+                $address,
+                $errno,
+                $errstr,
+                $this->watch_sec,
+                'udp' != $this->sock_proto ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT : STREAM_CLIENT_CONNECT,
+                $context
+            );
 
         unset($context);
 
@@ -200,12 +211,13 @@ class libSocket extends Factory
             return false;
         }
 
-        $this->master_id     = $this->genId();
-        $this->socket_master = [$this->master_id => &$socket];
+        $this->master_id      = $this->genId();
+        $this->socket_master  = [$this->master_id => &$socket];
+        $this->socket_clients = [$this->master_id => &$socket];
 
-        $this->showLog('start', 'Server on "' . $address . '"');
+        $this->showLog('start', 'Socket ' . (!$as_client ? 'server' : 'client') . ' on "' . $address . '"');
 
-        unset($address, $socket, $errno, $errstr);
+        unset($as_client, $address, $socket, $errno, $errstr);
         return true;
     }
 
