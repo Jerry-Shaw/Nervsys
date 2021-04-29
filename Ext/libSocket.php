@@ -281,14 +281,13 @@ class libSocket extends Factory
      * Read message from client
      *
      * @param string $sock_id
-     * @param bool   $ws_decode
      *
      * @return array
      */
-    public function readMsg(string $sock_id, bool $ws_decode = false): array
+    public function readMsg(string $sock_id): array
     {
         try {
-            if (false === ($msg = fread($this->socket_clients[$sock_id], 1024))) {
+            if (false === ($msg = fread($this->socket_clients[$sock_id], 6))) {
                 throw new \Exception('"' . $sock_id . '" read ERROR!', E_USER_NOTICE);
             }
 
@@ -296,23 +295,18 @@ class libSocket extends Factory
                 $msg .= $buff;
             }
 
-            if ($ws_decode) {
-                $msg = $this->wsDecode($msg);
-            }
-
             $this->socket_actives[$sock_id] = time();
-            $this->showLog('read', $sock_id . ': ' . $msg);
 
             $result = ['len' => strlen($msg), 'msg' => &$msg];
         } catch (\Throwable $throwable) {
             $this->showLog('exit', $throwable->getMessage());
             $this->close($sock_id);
 
-            unset($throwable, $sock_id, $ws_decode, $msg);
+            unset($throwable, $sock_id, $msg);
             $result = ['len' => -1, 'msg' => ''];
         }
 
-        unset($sock_id, $ws_decode, $msg, $buff);
+        unset($sock_id, $msg, $buff);
         return $result;
     }
 
