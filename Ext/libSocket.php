@@ -157,7 +157,7 @@ class libSocket extends Factory
     public function showLog(string $log_level, string $log_msg): void
     {
         if (false !== stripos($this->log_levels, $log_level)) {
-            echo date('Y-m-d H:i:s') . ' [' . ucfirst($log_level) . '] ' . strtr($log_msg, ["\r" => ' ', "\n" => ' ']) . PHP_EOL;
+            echo date('Y-m-d H:i:s') . ' [' . ucfirst($log_level) . '] ' . strtr($log_msg, ["\r" => '\\r', "\n" => '\\n']) . PHP_EOL;
         }
 
         unset($log_level, $log_msg);
@@ -212,14 +212,14 @@ class libSocket extends Factory
     /**
      * Accept new client
      *
-     * @return bool
+     * @return string
      */
-    public function accept(): bool
+    public function accept(): string
     {
         try {
             if (false === ($accept = stream_socket_accept($this->socket_clients[$this->master_id]))) {
                 unset($accept);
-                return false;
+                return '';
             }
 
             stream_set_blocking($accept, false);
@@ -230,13 +230,13 @@ class libSocket extends Factory
             $this->socket_actives[$accept_id] = time();
         } catch (\Throwable $throwable) {
             unset($throwable, $accept, $accept_id);
-            return false;
+            return '';
         }
 
         $this->showLog('connect', '"' . $accept_id . '" connected.');
 
-        unset($accept, $accept_id);
-        return true;
+        unset($accept);
+        return $accept_id;
     }
 
     /**
