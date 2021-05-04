@@ -122,7 +122,7 @@ class libSocket extends Factory
     }
 
     /**
-     * Set socket log levels (Error, Start, Monitor, Connect, Handshake, Heartbeat, Receive, Send, Close, Exit)
+     * Set socket log levels (Error, Start, Listen, Connect, Handshake, Heartbeat, Receive, Send, Close, Exit)
      *
      * @param string $levels
      *
@@ -266,7 +266,7 @@ class libSocket extends Factory
             $clients = [];
         }
 
-        $this->showLog('monitor', $changes . ' clients to read.');
+        $this->showLog('listen', $changes . ' clients to read.');
 
         unset($write, $except, $changes);
         return $clients;
