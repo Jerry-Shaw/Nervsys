@@ -44,7 +44,7 @@ class libMPC extends Factory
 
     public int    $proc_idx = 0;
     public int    $proc_cnt = 10;
-    public int    $buf_size = 4096;
+    public int    $buf_size = 2048;
     public string $php_path = '';
     public string $proc_cmd = '';
 
@@ -56,7 +56,7 @@ class libMPC extends Factory
     public array $job_result = [];
 
     /**
-     * Set pipe buffer size (default 4096 bytes, block when overflow, set carefully)
+     * Set pipe buffer size (system default 4096 bytes, block when overflow, set carefully)
      *
      * @param int $buf_size
      *
