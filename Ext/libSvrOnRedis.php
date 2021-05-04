@@ -57,24 +57,16 @@ class libSvrOnRedis extends libSocket
     /**
      * libSvrOnRedis constructor.
      *
-     * @param int    $mpc_cnt
-     * @param string $mem_limit
-     *
-     * @throws \Exception
+     * @param string $address
+     * @param string $port
+     * @param string $protocol
      */
-    public function __construct(int $mpc_cnt = 10, string $mem_limit = '1G')
+    public function __construct(string $address, string $port, string $protocol = 'tcp')
     {
-        ini_set('memory_limit', $mem_limit);
+        $this->setAddr($address, $port, $protocol);
 
-        $this->proc_name = $_SERVER['HOSTNAME'] ?? 'worker';
+        $this->proc_name = $protocol . ':' . $port . ':' . ($_SERVER['HOSTNAME'] ?? 'worker');
         $this->proc_key  .= $this->proc_name;
-
-        $this->lib_mpc = libMPC::new()
-            ->setPhpPath(OSUnit::new()->getPhpPath())
-            ->setProcNum($mpc_cnt)
-            ->start();
-
-        unset($mem_limit);
     }
 
     /**
@@ -125,12 +117,16 @@ class libSvrOnRedis extends libSocket
     /**
      * Start server on Redis
      *
-     * @param bool $is_ws
+     * @param int    $mpc_cnt
+     * @param string $mem_limit
+     * @param bool   $is_ws
      *
      * @throws \Exception
      */
-    public function start(bool $is_ws = false): void
+    public function start(int $mpc_cnt = 10, string $mem_limit = '1G', bool $is_ws = false): void
     {
+        ini_set('memory_limit', $mem_limit);
+
         if ($is_ws) {
             $this->is_ws = true;
         }
@@ -149,6 +145,12 @@ class libSvrOnRedis extends libSocket
         } else {
             throw new \Exception('Failed to start!');
         }
+
+        //Call MPC
+        $this->lib_mpc = libMPC::new()
+            ->setPhpPath(OSUnit::new()->getPhpPath())
+            ->setProcNum($mpc_cnt)
+            ->start();
 
         while (true) {
             //Watch all connections
