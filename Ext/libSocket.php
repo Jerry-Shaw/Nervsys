@@ -144,7 +144,6 @@ class libSocket extends Factory
     public function genId(): string
     {
         $sock_id = substr(hash('md5', uniqid(microtime() . (string)mt_rand(), true)), 8, 16);
-
         return !isset($this->clients[$sock_id]) ? $sock_id : $this->genId();
     }
 
@@ -245,8 +244,6 @@ class libSocket extends Factory
             return '';
         }
 
-        $this->showLog('connect', $accept_id . ': Connected.');
-
         unset($accept);
         return $accept_id;
     }
@@ -266,7 +263,7 @@ class libSocket extends Factory
             $clients = [];
         }
 
-        $this->showLog('listen', $changes . ' clients to read.');
+        $this->showLog('listen', $changes . ' to read. ' . (count($this->socket_clients) - 1) . ' online.');
 
         unset($write, $except, $changes);
         return $clients;
@@ -285,8 +282,9 @@ class libSocket extends Factory
             unset($throwable);
         }
 
+        unset($this->socket_clients[$sock_id], $this->socket_actives[$sock_id]);
         $this->showLog('close', $sock_id . ': Closed. ' . (count($this->socket_clients) - 1) . ' online.');
-        unset($this->socket_clients[$sock_id], $this->socket_actives[$sock_id], $sock_id);
+        unset($sock_id);
     }
 
     /**
@@ -354,7 +352,7 @@ class libSocket extends Factory
     public function heartbeat(): void
     {
         $chk_time = time();
-        $max_wait = $this->heartbeat_sec * 1.5;
+        $max_wait = $this->heartbeat_sec * 2;
 
         foreach ($this->socket_actives as $sock_id => $active_time) {
             //Calculate idle time
@@ -456,10 +454,10 @@ class libSocket extends Factory
                 $ws_proto = substr($ws_proto, $proto_pos + 2);
             }
 
-            unset($proto_pos);
-
             //Set Sec-WebSocket-Protocol response value
             $ws_protocol = 'Sec-WebSocket-Protocol: ' . $ws_proto . "\r\n";
+
+            unset($proto_pos);
         }
 
         //Generate handshake response
@@ -469,7 +467,7 @@ class libSocket extends Factory
             . 'Sec-WebSocket-Accept: ' . $ws_key . "\r\n"
             . $ws_protocol . "\r\n";
 
-        $this->showLog('handshake', $response);
+        $this->showLog('handshake', 'Build response: ' . $response);
 
         unset($ws_key, $ws_proto, $ws_protocol);
         return $response;
