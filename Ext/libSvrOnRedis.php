@@ -291,16 +291,16 @@ class libSvrOnRedis extends libSocket
 
             //Respond to ping frame (ping:0x9)
             if (0x9 === $ws_codes['opcode']) {
+                $this->showLog('heartbeat', $sock_id . ': Response OpCode="' . $ws_codes['opcode'] . '".');
                 $this->wsPong($sock_id);
-                $this->showLog('heartbeat', $sock_id . ': Response OpCode="' . 0xA . '".');
                 unset($sock_id, $msg, $ws_codes);
                 return '';
             }
 
             //Check opcode (connection closed: 8)
             if (0x8 === $ws_codes['opcode']) {
+                $this->showLog('exit', $sock_id . ': Exit with OpCode="' . $ws_codes['opcode'] . '".');
                 $this->close($sock_id);
-                $this->showLog('close', $sock_id . ' Closed (OpCode="' . $ws_codes['opcode'] . '").');
                 unset($sock_id, $msg, $ws_codes);
                 return '';
             }
