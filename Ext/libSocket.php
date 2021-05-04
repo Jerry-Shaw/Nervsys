@@ -245,7 +245,7 @@ class libSocket extends Factory
             return '';
         }
 
-        $this->showLog('connect', '"' . $accept_id . '" connected.');
+        $this->showLog('connect', $accept_id . ': Connected.');
 
         unset($accept);
         return $accept_id;
@@ -285,7 +285,7 @@ class libSocket extends Factory
             unset($throwable);
         }
 
-        $this->showLog('close', 'Close "' . $sock_id . '". ' . (count($this->socket_clients) - 1) . ' online.');
+        $this->showLog('close', $sock_id . ': Closed. ' . (count($this->socket_clients) - 1) . ' online.');
         unset($this->socket_clients[$sock_id], $this->socket_actives[$sock_id], $sock_id);
     }
 
@@ -300,7 +300,7 @@ class libSocket extends Factory
     {
         try {
             if (false === ($msg = fread($this->socket_clients[$sock_id], 6))) {
-                throw new \Exception('"' . $sock_id . '" read ERROR!', E_USER_NOTICE);
+                throw new \Exception($sock_id . ': Read ERROR!', E_USER_NOTICE);
             }
 
             while ('' !== ($buff = fread($this->socket_clients[$sock_id], 4096))) {
@@ -337,7 +337,7 @@ class libSocket extends Factory
             $byte = fwrite($this->socket_clients[$sock_id], $ws_encode ? $this->wsEncode($message) : $message);
             $this->showLog('send', $sock_id . ': ' . $message);
         } catch (\Throwable $throwable) {
-            $this->showLog('exit', '"' . $sock_id . '" send ERROR!');
+            $this->showLog('exit', $sock_id . ': Send ERROR!');
             $this->close($sock_id);
 
             unset($throwable, $sock_id, $message, $ws_encode, $byte);
@@ -362,11 +362,11 @@ class libSocket extends Factory
 
             if ($max_wait < $idle) {
                 //Heartbeat lost, close client
-                $this->showLog('exit', '"' . $sock_id . '" lost heartbeat.');
+                $this->showLog('exit', $sock_id . ': Lost heartbeat.');
                 $this->close($sock_id);
             } elseif ($this->heartbeat_sec <= $idle && '' !== $this->heartbeat_val) {
                 //Send heartbeat message to client
-                $this->showLog('heartbeat', 'Send heartbeat to "' . $sock_id . '".');
+                $this->showLog('heartbeat', $sock_id . ': Heartbeat sent.');
                 $this->sendMsg($sock_id, $this->heartbeat_val);
             }
         }
