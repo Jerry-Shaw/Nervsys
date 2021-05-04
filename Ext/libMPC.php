@@ -139,7 +139,7 @@ class libMPC extends Factory
         $ticket = base_convert($this->job_mtk[$this->proc_idx], 10, 36);
 
         //Add "c" & "mtk" into data
-        $data['c']   = &$c;
+        $data['c']   = strtr($c, '\\', '/');
         $data['mtk'] = &$ticket;
 
         //Communicate via STDIN
