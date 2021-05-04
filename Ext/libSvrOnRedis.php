@@ -208,7 +208,7 @@ class libSvrOnRedis extends libSocket
                 }
 
                 //Send connection info via MPC
-                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$sock_id, 'socket' => $this->proc_name]);
+                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'socket' => $this->proc_name]);
 
                 //Response handshake to WebSocket connection
                 if ($this->is_ws && !$this->sendHandshake($accept_id)) {
