@@ -44,6 +44,7 @@ class libSvrOnRedis extends libSocket
      * Registered handler class
      *
      * MUST expose methods:
+     * onConnect(string sid, string socket): void
      * onHandshake(string sid, string proto): bool
      * onMessage(string sid, string msg): void
      * onSend(string key): array (contains "to" & "msg")
@@ -177,7 +178,7 @@ class libSvrOnRedis extends libSocket
      */
     public function close(string $sock_id): void
     {
-        //Send close status via MPC (NO returned)
+        //Send close status via MPC
         $this->lib_mpc->addJob($this->handler_class . '/onClose', ['sid' => &$sock_id]);
         parent::close($sock_id);
         unset($sock_id);
@@ -205,6 +206,9 @@ class libSvrOnRedis extends libSocket
                 if ('' === ($accept_id = $this->accept())) {
                     continue;
                 }
+
+                //Send connection info via MPC
+                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$sock_id, 'socket' => $this->proc_name]);
 
                 //Response handshake to WebSocket connection
                 if ($this->is_ws && !$this->sendHandshake($accept_id)) {
