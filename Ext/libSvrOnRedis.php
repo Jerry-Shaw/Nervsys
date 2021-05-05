@@ -50,7 +50,6 @@ class libSvrOnRedis extends libSocket
      * onConnect(string sid, string proc): void
      * onHandshake(string sid, string proto): bool
      * onMessage(string sid, string msg): void (push to Redis)
-     * onSend(string key): array (read from Redis, contains "to" & "msg")
      * onClose(string sid): void
      *
      * @var string handler class name
@@ -251,33 +250,31 @@ class libSvrOnRedis extends libSocket
      */
     public function pushMsg(): void
     {
-        $job_tk   = [];
+        $proc_job = 0;
         $proc_key = $this->list_msg_key . $this->proc_name;
 
-        for ($i = 0; $i < $this->batch_size; ++$i) {
-            //Get 200 messages via MPC by worker process key
-            $job_tk[] = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['key' => &$proc_key]);
-        }
-
-        foreach ($job_tk as $tk) {
-            //Fetch message data via MPC by job_tk
-            $msg = json_decode($this->lib_mpc->fetch($tk), true);
+        while ($proc_job < $this->batch_size && false !== ($msg_pack = $this->redis->rPop($proc_key))) {
+            //Decode message data
+            $msg_data = json_decode($msg_pack, true);
 
             //Message data ERROR
-            if (!is_array($msg) || !isset($msg['to']) || !isset($msg['msg'])) {
+            if (!is_array($msg_data) || !isset($msg_data['to']) || !isset($msg_data['msg'])) {
                 continue;
             }
 
             //Client offline
-            if (!isset($this->socket_clients[$msg['to']])) {
+            if (!isset($this->socket_clients[$msg_data['to']])) {
                 continue;
             }
 
             //Send message
-            $this->sendMsg($msg['to'], $msg['msg'], $this->is_ws);
+            $this->sendMsg($msg_data['to'], $msg_data['msg'], $this->is_ws);
+
+            //Add proc_job count
+            ++$proc_job;
         }
 
-        unset($job_tk, $proc_key, $i, $tk, $msg);
+        unset($proc_job, $proc_key, $msg_pack, $msg_data);
     }
 
     /**
