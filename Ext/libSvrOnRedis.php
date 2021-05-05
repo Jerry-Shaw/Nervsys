@@ -20,6 +20,7 @@
 
 namespace Ext;
 
+use Core\Lib\App;
 use Core\OSUnit;
 
 /**
@@ -36,9 +37,11 @@ class libSvrOnRedis extends libSocket
 
     public int $batch_size = 200;
 
-    public string $proc_ol   = 'socket:online';
-    public string $proc_key  = 'socket:job:';
     public string $proc_name = 'worker';
+
+    public string $hash_sock_ol = 'socket:map';
+    public string $hash_proc_ol = 'socket:proc';
+    public string $list_msg_key = 'socket:msg:';
 
     /**
      * Registered handler class
@@ -46,8 +49,8 @@ class libSvrOnRedis extends libSocket
      * MUST expose methods:
      * onConnect(string sid, string socket): void
      * onHandshake(string sid, string proto): bool
-     * onMessage(string sid, string msg): void
-     * onSend(string key): array (contains "to" & "msg")
+     * onMessage(string sid, string msg): void (push to Redis)
+     * onSend(string key): array (read from Redis, contains "to" & "msg")
      * onClose(string sid): void
      *
      * @var string handler class name
@@ -64,9 +67,7 @@ class libSvrOnRedis extends libSocket
     public function __construct(string $address, string $port, string $protocol = 'tcp')
     {
         $this->setAddr($address, $port, $protocol);
-
-        $this->proc_name = $protocol . ':' . $port . ':' . ($_SERVER['HOSTNAME'] ?? 'worker');
-        $this->proc_key  .= $this->proc_name;
+        $this->proc_name = $protocol . ':' . $port . ':' . App::new()->hostname;
     }
 
     /**
@@ -136,12 +137,12 @@ class libSvrOnRedis extends libSocket
                 function ()
                 {
                     //Remove worker registry
-                    $this->redis->hDel($this->proc_ol, $this->proc_name);
+                    $this->redis->hDel($this->hash_proc_ol, $this->proc_name);
                 }
             );
 
             //Add worker registry
-            $this->redis->hSet($this->proc_ol, $this->proc_name, time());
+            $this->redis->hSet($this->hash_proc_ol, $this->proc_name, time());
         } else {
             throw new \Exception('Failed to start!');
         }
@@ -174,7 +175,7 @@ class libSvrOnRedis extends libSocket
     }
 
     /**
-     * Close client
+     * Close connection
      *
      * @param string $sock_id
      */
@@ -182,48 +183,44 @@ class libSvrOnRedis extends libSocket
     {
         //Send close status via MPC
         $this->lib_mpc->addJob($this->handler_class . '/onClose', ['sid' => &$sock_id, 'nohup' => true]);
+        $this->redis->hDel($this->hash_sock_ol, $sock_id);
         parent::close($sock_id);
         unset($sock_id);
     }
 
     /**
-     * Read clients
+     * Find hostname of SID (online: proc_name; offline: empty string)
      *
-     * @param array $clients
+     * @param string $sock_id
+     *
+     * @return string
      */
-    public function readClients(array $clients): void
+    public function findSid(string $sock_id): string
     {
-        foreach ($clients as $sock_id => $client) {
-            if ($sock_id !== $this->master_id) {
-                //Read
-                if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
-                    continue;
-                }
+        return (string)$this->redis->hGet($this->hash_sock_ol, $sock_id);
+    }
 
-                //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
-                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
-                unset($socket_msg);
-            } else {
-                //Accept
-                if ('' === ($accept_id = $this->accept())) {
-                    continue;
-                }
+    /**
+     * Transfer message to process online
+     *
+     * @param string $sock_id
+     * @param string $msg
+     *
+     * @return bool
+     */
+    public function transMsg(string $sock_id, string $msg): bool
+    {
+        $proc_name = $this->findSid($sock_id);
 
-                //Send connection info via MPC
-                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'socket' => $this->proc_name, 'nohup' => true]);
-
-                //Response handshake to WebSocket connection
-                if ($this->is_ws && !$this->sendHandshake($accept_id)) {
-                    $this->close($accept_id);
-                    continue;
-                }
-
-                $this->showLog('connect', $accept_id . ': Connected!');
-                unset($accept_id);
-            }
+        if ('' === $proc_name) {
+            unset($sock_id, $msg, $proc_name);
+            return false;
         }
 
-        unset($clients, $sock_id, $client);
+        $len = $this->redis->lPush($this->list_msg_key . $proc_name, $msg);
+
+        unset($sock_id, $msg, $proc_name);
+        return is_int($len);
     }
 
     /**
@@ -231,11 +228,12 @@ class libSvrOnRedis extends libSocket
      */
     public function pushMsg(): void
     {
-        $job_tk = [];
+        $job_tk   = [];
+        $proc_key = $this->list_msg_key . $this->proc_name;
 
         for ($i = 0; $i < $this->batch_size; ++$i) {
             //Get 200 messages via MPC by worker process key
-            $job_tk[] = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['key' => $this->proc_key]);
+            $job_tk[] = $this->lib_mpc->addJob($this->handler_class . '/onSend', ['key' => &$proc_key]);
         }
 
         foreach ($job_tk as $tk) {
@@ -256,7 +254,7 @@ class libSvrOnRedis extends libSocket
             $this->sendMsg($msg['to'], $msg['msg'], $this->is_ws);
         }
 
-        unset($job_tk, $i, $tk, $msg);
+        unset($job_tk, $proc_key, $i, $tk, $msg);
     }
 
     /**
@@ -320,6 +318,48 @@ class libSvrOnRedis extends libSocket
 
         unset($sock_id);
         return $msg;
+    }
+
+    /**
+     * Read clients
+     *
+     * @param array $clients
+     */
+    public function readClients(array $clients): void
+    {
+        foreach ($clients as $sock_id => $client) {
+            if ($sock_id !== $this->master_id) {
+                //Read
+                if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
+                    continue;
+                }
+
+                //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
+                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
+                unset($socket_msg);
+            } else {
+                //Accept
+                if ('' === ($accept_id = $this->accept())) {
+                    continue;
+                }
+
+                //Send connection info via MPC
+                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'socket' => $this->proc_name, 'nohup' => true]);
+
+                //Response handshake to WebSocket connection
+                if ($this->is_ws && !$this->sendHandshake($accept_id)) {
+                    $this->close($accept_id);
+                    continue;
+                }
+
+                $this->redis->hSet($this->hash_sock_ol, $accept_id, $this->proc_name);
+                $this->showLog('connect', $accept_id . ': Connected!');
+
+                unset($accept_id);
+            }
+        }
+
+        unset($clients, $sock_id, $client);
     }
 
     /**

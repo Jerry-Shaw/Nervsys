@@ -270,7 +270,7 @@ class libSocket extends Factory
     }
 
     /**
-     * Close client
+     * Close connection
      *
      * @param string $sock_id
      */
