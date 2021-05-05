@@ -212,7 +212,7 @@ class libSvrOnRedis extends libSocket
     {
         $proc_name = $this->findSid($sock_id);
 
-        if ('' === $proc_name) {
+        if ('' === $proc_name || !$this->redis->hExists($this->hash_proc_ol, $proc_name)) {
             unset($sock_id, $msg, $proc_name);
             return false;
         }
