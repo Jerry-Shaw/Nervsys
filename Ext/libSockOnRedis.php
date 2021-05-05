@@ -1,7 +1,7 @@
 <?php
 
 /**
- * SvrOnRedis Extension
+ * Socket server on Redis Extension
  *
  * Copyright 2021 秋水之冰 <27206617@qq.com>
  *
@@ -24,11 +24,11 @@ use Core\Lib\App;
 use Core\OSUnit;
 
 /**
- * Class libSvrOnRedis
+ * Class libSockOnRedis
  *
  * @package Ext
  */
-class libSvrOnRedis extends libSocket
+class libSockOnRedis extends libSocket
 {
     public \Redis $redis;
     public libMPC $lib_mpc;
