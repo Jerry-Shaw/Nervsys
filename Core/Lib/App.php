@@ -36,6 +36,7 @@ class App extends Factory
 
     public string $api_path  = 'api';
     public string $client_ip = '0.0.0.0';
+    public string $hostname  = 'localhost';
     public string $timezone  = 'Asia/Shanghai';
 
     public bool $is_cli     = false;
@@ -222,6 +223,15 @@ class App extends Factory
      */
     private function setEnv(): void
     {
+        //Get hostname
+        $hostname = gethostname();
+
+        if (is_string($hostname)) {
+            $this->hostname = &$hostname;
+        }
+
+        unset($hostname);
+
         //Check running mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
