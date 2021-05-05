@@ -181,7 +181,7 @@ class libSvrOnRedis extends libSocket
     public function close(string $sock_id): void
     {
         //Send close status via MPC
-        $this->lib_mpc->addJob($this->handler_class . '/onClose', ['sid' => &$sock_id]);
+        $this->lib_mpc->addJob($this->handler_class . '/onClose', ['sid' => &$sock_id, 'nohup' => true]);
         parent::close($sock_id);
         unset($sock_id);
     }
@@ -201,7 +201,7 @@ class libSvrOnRedis extends libSocket
                 }
 
                 //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
-                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg]);
+                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
                 unset($socket_msg);
             } else {
                 //Accept
@@ -210,7 +210,7 @@ class libSvrOnRedis extends libSocket
                 }
 
                 //Send connection info via MPC
-                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'socket' => $this->proc_name]);
+                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'socket' => $this->proc_name, 'nohup' => true]);
 
                 //Response handshake to WebSocket connection
                 if ($this->is_ws && !$this->sendHandshake($accept_id)) {
