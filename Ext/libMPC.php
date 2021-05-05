@@ -261,7 +261,7 @@ class libMPC extends Factory
             $result = $this->execJob($data);
 
             //Output via STDOUT
-            echo json_encode([$data['mtk'], 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
+            echo json_encode([$data['mtk'], $data['nohup'] ?? false, 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
 
             //Free memory
             unset($stdin, $data, $result);
@@ -397,7 +397,7 @@ class libMPC extends Factory
             }
 
             //Save to result block
-            $this->job_result += [(string)$idx . ':' . $job_data[0] => $job_data[1]];
+            !$job_data[1] && $this->job_result += [(string)$idx . ':' . $job_data[0] => $job_data[2]];
         }
 
         unset($idx, $count, $stdout, $job_data);
