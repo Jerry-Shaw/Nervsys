@@ -153,6 +153,9 @@ class libSvrOnRedis extends libSocket
             ->setProcNum($mpc_cnt)
             ->start();
 
+        //Cleanup socket records
+        $this->cleanup();
+
         while (true) {
             //Watch all connections
             $read = $this->watch($this->socket_clients);
@@ -172,6 +175,26 @@ class libSvrOnRedis extends libSocket
             //Call heartbeat handler
             $this->heartbeat();
         }
+    }
+
+    /**
+     * Cleanup socket records
+     */
+    public function cleanup(): void
+    {
+        $iterator = null;
+
+        $this->redis->setOption(\Redis::OPT_SCAN, \Redis::SCAN_RETRY);
+
+        while (0 !== $iterator && !empty($socket = $this->redis->hScan($this->hash_sock_ol, $iterator))) {
+            foreach ($socket as $sock_id => $proc_name) {
+                if ($proc_name === $this->proc_name) {
+                    $this->redis->hDel($this->hash_sock_ol, $sock_id);
+                }
+            }
+        }
+
+        unset($iterator, $socket, $sock_id, $proc_name);
     }
 
     /**
