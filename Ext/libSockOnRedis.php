@@ -292,6 +292,7 @@ class libSockOnRedis extends libSocket
      */
     public function recvMsg(string $sock_id): string
     {
+        //Read Message
         $socket_msg = $this->readMsg($sock_id);
 
         if (0 >= $socket_msg['len']) {
@@ -430,7 +431,6 @@ class libSockOnRedis extends libSocket
             //Close when protocol invalid
             $this->sendMsg($sock_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
             $this->showLog('exit', $sock_id . ': Protocol NOT Allowed!');
-            $this->close($sock_id);
 
             unset($sock_id, $ws_key, $ws_proto, $handshake_status);
             return false;
