@@ -217,6 +217,17 @@ class libSockOnRedis extends libSocket
     }
 
     /**
+     * Generate online socket ID
+     *
+     * @return string
+     */
+    public function genId(): string
+    {
+        $sock_id = parent::genId();
+        return !$this->redis->hExists($this->hash_sock_ol, $sock_id) ? $sock_id : $this->genId();
+    }
+
+    /**
      * Find hostname of SID (online: proc_name; offline: empty string)
      *
      * @param string $sock_id
