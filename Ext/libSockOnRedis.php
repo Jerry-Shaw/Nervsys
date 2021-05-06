@@ -30,6 +30,7 @@ use Core\OSUnit;
  */
 class libSockOnRedis extends libSocket
 {
+    public App    $app;
     public \Redis $redis;
     public libMPC $lib_mpc;
 
@@ -53,8 +54,10 @@ class libSockOnRedis extends libSocket
      * onClose(string sid): void
      *
      * @var string handler class name
+     * @var object handler class object
      */
-    public string $handler_class = '';
+    public string $handler_class;
+    public object $handler_object;
 
     /**
      * libSvrOnRedis constructor.
@@ -65,8 +68,10 @@ class libSockOnRedis extends libSocket
      */
     public function __construct(string $address, string $port, string $protocol = 'tcp')
     {
+        $this->app = App::new();
+
         $this->setAddr($address, $port, $protocol);
-        $this->proc_name = $protocol . ':' . $port . ':' . App::new()->hostname;
+        $this->proc_name = $protocol . ':' . $port . ':' . $this->app->hostname;
     }
 
     /**
@@ -100,17 +105,18 @@ class libSockOnRedis extends libSocket
     }
 
     /**
-     * Set handler class by name
+     * Set handler class
      *
-     * @param string $class_name
+     * @param object $handler_object
      *
      * @return $this
      */
-    public function setHandlerClass(string $class_name): self
+    public function setHandlerClass(object $handler_object): self
     {
-        $this->handler_class = &$class_name;
+        $this->handler_object = &$handler_object;
+        $this->handler_class  = get_class($handler_object);
 
-        unset($class_name);
+        unset($handler_object);
         return $this;
     }
 
@@ -391,6 +397,7 @@ class libSockOnRedis extends libSocket
      */
     public function sendHandshake(string $sock_id): bool
     {
+        //Read Message
         $socket_msg = $this->readMsg($sock_id);
 
         if (0 === $socket_msg['len']) {
@@ -409,24 +416,30 @@ class libSockOnRedis extends libSocket
 
         unset($socket_msg);
 
-        //Check protocol via MPC
-        $tk_handshake   = $this->lib_mpc->addJob($this->handler_class . '/onHandshake', ['sid' => &$sock_id, 'proto' => &$ws_proto]);
-        $pass_handshake = $this->lib_mpc->fetch($tk_handshake);
+        try {
+            //Call registered onHandshake
+            $handshake_status = true === $this->handler_object->onHandshake($sock_id, $ws_proto) ? 1 : 0;
+        } catch (\Throwable $throwable) {
+            //Catch onHandshake Exception
+            $this->app->showDebug($throwable, true);
+            $handshake_status = -1;
+            unset($throwable);
+        }
 
-        if (true !== json_decode($pass_handshake, true)) {
+        if (1 !== $handshake_status) {
             //Close when protocol invalid
             $this->sendMsg($sock_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
-            $this->showLog('exit', $sock_id . ': Protocol data ERROR!');
+            $this->showLog('exit', $sock_id . ': Protocol NOT Allowed!');
             $this->close($sock_id);
 
-            unset($sock_id, $ws_key, $ws_proto, $tk_handshake, $pass_handshake);
+            unset($sock_id, $ws_key, $ws_proto, $handshake_status);
             return false;
         }
 
         //Send handshake response
         $this->sendMsg($sock_id, $this->wsGetHandshake($ws_key, $ws_proto));
 
-        unset($sock_id, $ws_key, $ws_proto, $tk_handshake, $pass_handshake);
+        unset($sock_id, $ws_key, $ws_proto, $handshake_status);
         return true;
     }
 }
