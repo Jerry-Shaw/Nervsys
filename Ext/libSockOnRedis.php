@@ -114,7 +114,7 @@ class libSockOnRedis extends libSocket
     public function setHandlerClass(object $handler_object): self
     {
         $this->handler_object = &$handler_object;
-        $this->handler_class  = get_class($handler_object);
+        $this->handler_class  = '/' . get_class($handler_object);
 
         unset($handler_object);
         return $this;
