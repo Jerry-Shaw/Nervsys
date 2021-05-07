@@ -29,7 +29,7 @@ use Core\Factory;
  */
 class libSocket extends Factory
 {
-    public int    $watch_sec  = 10;
+    public int    $watch_sec  = 5;
     public string $sock_proto = 'tcp';
     public string $sock_addr  = '0.0.0.0';
     public string $sock_port  = '2468';
