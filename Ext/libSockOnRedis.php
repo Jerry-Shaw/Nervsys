@@ -256,7 +256,7 @@ class libSockOnRedis extends libSocket
             return false;
         }
 
-        $len = $this->redis->lPush($this->list_msg_key . $proc_name, $msg);
+        $len = $this->redis->lPush($this->list_msg_key . $proc_name, json_encode(['to' => &$sock_id, 'msg' => &$msg], JSON_FORMAT));
 
         unset($sock_id, $msg, $proc_name);
         return is_int($len);
