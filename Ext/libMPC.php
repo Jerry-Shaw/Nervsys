@@ -56,6 +56,16 @@ class libMPC extends Factory
     public array $job_result = [];
 
     /**
+     * libMPC constructor.
+     */
+    public function __construct()
+    {
+        $this->app     = App::new();
+        $this->io_unit = IOUnit::new();
+        $this->os_unit = OSUnit::new();
+    }
+
+    /**
      * Set pipe buffer size (system default 4096 bytes, block when overflow, set carefully)
      *
      * @param int $buf_size
@@ -101,13 +111,46 @@ class libMPC extends Factory
     }
 
     /**
+     * Call API async
+     *
+     * @param string $c
+     * @param array  $data
+     *
+     * @return bool
+     */
+    public function callAsync(string $c, array $data = []): bool
+    {
+        $proc_cmd = $this->php_path . ' "' . $this->app->script_path . '"';
+        $proc_cmd .= ' -c"' . strtr($c, '\\', '/') . '"';
+
+        if (!empty($data)) {
+            $proc_cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+        }
+
+        //Create process
+        $proc = proc_open(
+            $this->os_unit->setCmd($proc_cmd)->setAsBg()->setEnvPath()->fetchCmd(),
+            [
+                ['pipe', 'r'],
+                ['pipe', 'w'],
+                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-Async.log', 'ab+']
+            ],
+            $pipes
+        );
+
+        $result = is_resource($proc);
+
+        unset($c, $data, $proc_cmd, $proc, $pipes);
+        return $result;
+    }
+
+    /**
      * Start MPC
      *
      * @return $this
      */
     public function start(): self
     {
-        $this->app      = App::new();
         $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
 
         //Create process
@@ -231,8 +274,6 @@ class libMPC extends Factory
         $this->error   = Error::new();
         $this->router  = Router::new();
         $this->execute = Execute::new();
-        $this->io_unit = IOUnit::new();
-        $this->os_unit = OSUnit::new();
 
         while (true) {
             //Pipe broken
