@@ -44,6 +44,8 @@ class libSockOnRedis extends libSocket
     public string $hash_proc_ol = 'socket:proc';
     public string $list_msg_key = 'socket:msg:';
 
+    public array $ws_handshake = [];
+
     /**
      * Registered handler class
      *
@@ -376,8 +378,26 @@ class libSockOnRedis extends libSocket
                     continue;
                 }
 
+                //Process ws_handshake
+                if (isset($this->ws_handshake[$sock_id])) {
+                    //Remove from ws_handshake list
+                    unset($this->ws_handshake[$sock_id]);
+
+                    //Response handshake to WebSocket connection
+                    if (!$this->sendHandshake($sock_id)) {
+                        $this->close($sock_id);
+                        continue;
+                    }
+
+                    $this->redis->hSet($this->hash_sock_ol, $sock_id, $this->proc_name);
+                    $this->showLog('handshake', $sock_id . ': is online!');
+
+                    continue;
+                }
+
                 //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
                 $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
+
                 unset($socket_msg);
             } else {
                 //Accept
@@ -385,16 +405,11 @@ class libSockOnRedis extends libSocket
                     continue;
                 }
 
+                //Add to ws_handshake list
+                $this->is_ws && $this->ws_handshake[$accept_id] = time();
+
                 //Send connection info via MPC
                 $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'proc' => $this->proc_name, 'nohup' => true]);
-
-                //Response handshake to WebSocket connection
-                if ($this->is_ws && !$this->sendHandshake($accept_id)) {
-                    $this->close($accept_id);
-                    continue;
-                }
-
-                $this->redis->hSet($this->hash_sock_ol, $accept_id, $this->proc_name);
                 $this->showLog('connect', $accept_id . ': Connected!');
 
                 unset($accept_id);
