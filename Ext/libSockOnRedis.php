@@ -391,21 +391,21 @@ class libSockOnRedis extends libSocket
                 unset($this->ws_handshake[$sock_id]);
 
                 //Read Message
-                $socket_msg = $this->readMsg($sock_id);
+                $msg_data = $this->readMsg($sock_id);
 
-                if (0 === $socket_msg['len']) {
+                if (0 === $msg_data['len']) {
                     $this->showLog('exit', $sock_id . ': Handshake data ERROR!');
                     $this->close($sock_id);
-                    unset($socket_msg);
+                    unset($msg_data);
                     continue;
                 }
 
-                $this->showLog('handshake', $sock_id . ': ' . $socket_msg['msg']);
+                $this->showLog('handshake', $sock_id . ': ' . $msg_data['msg']);
 
                 //Response handshake to WebSocket connection
-                if (!$this->sendHandshake($sock_id, $socket_msg['msg'])) {
+                if (!$this->sendHandshake($sock_id, $msg_data['msg'])) {
                     $this->close($sock_id);
-                    unset($socket_msg);
+                    unset($msg_data);
                     continue;
                 }
 
@@ -413,7 +413,7 @@ class libSockOnRedis extends libSocket
                 $this->redis->hSet($this->hash_sock_ol, $sock_id, $this->proc_name);
                 $this->showLog('handshake', $sock_id . ': is online!');
 
-                unset($socket_msg);
+                unset($msg_data);
             } else {
                 //Read
                 if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
