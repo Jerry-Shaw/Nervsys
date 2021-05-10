@@ -200,7 +200,7 @@ hook related functions, etc...
 - [x] Custom error handler module support
 - [x] Custom data reader/output module support
 - [x] Path based hook registration function support
-- [ ] Socket related functions
+- [x] Socket related functions
 - [ ] ML/AI based internal router
 - [ ] More detailed documents and demos
 

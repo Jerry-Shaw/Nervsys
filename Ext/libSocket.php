@@ -21,7 +21,6 @@
 namespace Ext;
 
 use Core\Factory;
-use Core\OSUnit;
 
 /**
  * Class libSocket
@@ -30,94 +29,62 @@ use Core\OSUnit;
  */
 class libSocket extends Factory
 {
-    public int    $wait  = 30;
-    public int    $port  = 2468;
-    public string $ping  = '';
-    public string $addr  = '0.0.0.0';
-    public string $type  = 'tcp';
-    public string $proto = 'tcp';
+    public int    $watch_sec  = 5;
+    public string $sock_proto = 'tcp';
+    public string $sock_addr  = '0.0.0.0';
+    public string $sock_port  = '2468';
 
-    public string $local_pk   = '';
-    public string $local_cert = '';
-    public string $passphrase = '';
+    public string $local_pk    = '';
+    public string $local_cert  = '';
+    public string $passphrase  = '';
+    public bool   $self_signed = false;
 
-    public bool $sock_debug  = false;
-    public bool $self_signed = false;
+    public int    $heartbeat_sec = 10;
+    public string $heartbeat_val = '';
 
-    public array $master  = [];
-    public array $clients = [];
-    public array $actives = [];
+    public array $socket_master  = [];
+    public array $socket_clients = [];
+    public array $socket_actives = [];
 
-    public string $master_id;
-
-    /**
-     * Registered handler class
-     *
-     * MUST expose methods:
-     * onConnect(string sid): array
-     * onHandshake(string sid, string proto): bool
-     * onMessage(string sid, string msg): array
-     * onSend(string sid, array data, bool online): array
-     * onClose(string sid): void
-     *
-     * @var string handler class name
-     */
-    public string $handler_class;
-
-    /** @var libMPC $lib_mpc */
-    public libMPC $lib_mpc;
+    public string $master_id  = '';
+    public string $log_levels = 'error, start';
 
     /**
-     * Listen to bind address
+     * Set socket addr options (protocol, address, port)
      *
      * @param string $address
-     * @param int    $port
-     * @param string $protocol (tcp/udp/ssl/tls)
+     * @param string $port
+     * @param string $protocol
      *
      * @return $this
      */
-    public function listenTo(string $address, int $port, string $protocol = 'tcp'): self
+    public function setAddr(string $address, string $port, string $protocol = 'tcp'): self
     {
-        $this->addr  = &$address;
-        $this->port  = &$port;
-        $this->proto = &$protocol;
+        $this->sock_addr  = &$address;
+        $this->sock_port  = &$port;
+        $this->sock_proto = &$protocol;
 
         unset($address, $port, $protocol);
         return $this;
     }
 
     /**
-     * Set ping value for heartbeat
+     * Set socket watch wait seconds
      *
-     * @param string $value
+     * @param int $watch_sec
      *
      * @return $this
      */
-    public function setPingVal(string $value): self
+    public function setWatchSec(int $watch_sec): self
     {
-        $this->ping = &$value;
+        $this->watch_sec = &$watch_sec;
 
-        unset($value);
+        unset($watch_sec);
         return $this;
     }
 
     /**
-     * Set tv_sec for upper timeout
-     *
-     * @param int $tv_sec
-     *
-     * @return $this
-     */
-    public function setWaitSec(int $tv_sec): self
-    {
-        $this->wait = &$tv_sec;
-
-        unset($tv_sec);
-        return $this;
-    }
-
-    /**
-     * Set SSL options
+     * Set SSL certificate options
      *
      * @param string $local_cert
      * @param string $local_pk
@@ -126,7 +93,7 @@ class libSocket extends Factory
      *
      * @return $this
      */
-    public function setSslOption(string $local_cert, string $local_pk = '', string $passphrase = '', bool $self_signed = false): self
+    public function setCert(string $local_cert, string $local_pk = '', string $passphrase = '', bool $self_signed = false): self
     {
         $this->local_cert  = &$local_cert;
         $this->local_pk    = &$local_pk;
@@ -138,275 +105,168 @@ class libSocket extends Factory
     }
 
     /**
-     * Set server type (tcp/udp/ws)
+     * Set heartbeat options (heartbeat_val, heartbeat_sec)
      *
-     * @param string $type
+     * @param string $heartbeat_val
+     * @param int    $heartbeat_sec
      *
      * @return $this
      */
-    public function setServerType(string $type): self
+    public function setHeartbeat(string $heartbeat_val, int $heartbeat_sec = 10): self
     {
-        $this->type = &$type;
+        $this->heartbeat_val = &$heartbeat_val;
+        $this->heartbeat_sec = &$heartbeat_sec;
 
-        unset($type);
+        unset($heartbeat_val, $heartbeat_sec);
         return $this;
     }
 
     /**
-     * Set custom data handler classname
+     * Set socket log levels (Error, Start, Listen, Connect, Handshake, Heartbeat, Receive, Send, Close, Exit)
      *
-     * @param string $handler_class
+     * @param string $levels
      *
      * @return $this
      */
-    public function setHandlerClass(string $handler_class): self
+    public function setLogLevels(string $levels): self
     {
-        $this->handler_class = '/' . ltrim(strtr($handler_class, '\\', '/'), '/');
+        $this->log_levels = &$levels;
 
-        unset($handler_class);
+        unset($levels);
         return $this;
     }
 
     /**
-     * Set socket debug mode
-     *
-     * @param bool $sock_debug
-     *
-     * @return $this
-     */
-    public function setSockDebug(bool $sock_debug): self
-    {
-        $this->sock_debug = &$sock_debug;
-
-        unset($sock_debug);
-        return $this;
-    }
-
-    /**
-     * Run socket server
-     *
-     * @param int $mpc_cnt
-     *
-     * @throws \Exception
-     */
-    public function run(int $mpc_cnt = 10): void
-    {
-        $context = stream_context_create();
-
-        if ('' !== $this->local_cert) {
-            stream_context_set_option($context, 'ssl', 'local_cert', $this->local_cert);
-
-            '' !== $this->local_pk && stream_context_set_option($context, 'ssl', 'local_pk', $this->local_pk);
-            '' !== $this->passphrase && stream_context_set_option($context, 'ssl', 'passphrase', $this->passphrase);
-
-            stream_context_set_option($context, 'ssl', 'allow_self_signed', $this->self_signed);
-            stream_context_set_option($context, 'ssl', 'ssltransport', $this->proto);
-            stream_context_set_option($context, 'ssl', 'verify_peer', false);
-            stream_context_set_option($context, 'ssl', 'disable_compression', true);
-        }
-
-        $socket = stream_socket_server(
-            $this->proto . '://' . $this->addr . ':' . (string)$this->port,
-            $errno,
-            $errstr,
-            'udp' != $this->proto ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND,
-            $context
-        );
-
-        if (false === $socket) {
-            throw new \Exception($errno . ': ' . $errstr, E_USER_ERROR);
-        }
-
-        $this->master_id = $this->genId();
-        $this->master    = [$this->master_id => &$socket];
-
-        $this->lib_mpc = libMPC::new()
-            ->setPhpPath(OSUnit::new()->getPhpPath())
-            ->setProcNum($mpc_cnt)
-            ->start();
-
-        $this->{'on' . ucfirst($this->type)}();
-    }
-
-    /**
-     * Generate online ID
+     * Generate online socket ID
      *
      * @return string
      */
     public function genId(): string
     {
-        $uid = substr(hash('md5', uniqid(microtime() . (string)mt_rand(), true)), 8, 16);
-
-        return !isset($this->clients[$uid]) ? $uid : $this->genId();
+        $sock_id = substr(hash('md5', uniqid(microtime() . (string)mt_rand(), true)), 8, 16);
+        return !isset($this->clients[$sock_id]) ? $sock_id : $this->genId();
     }
 
     /**
-     * Watch for read clients
+     * Show socket logs
      *
-     * @param array $read
-     *
-     * @return array
+     * @param string $log_level
+     * @param string $log_msg
      */
-    public function watch(array $read): array
+    public function showLog(string $log_level, string $log_msg): void
     {
-        $write = $except = [];
-
-        //Watch read streams
-        if (0 === ($changes = (int)stream_select($read, $write, $except, 0 <= $this->wait ? $this->wait : null))) {
-            $read = [];
+        if (false !== stripos($this->log_levels, $log_level)) {
+            echo date('Y-m-d H:i:s') . ' [' . ucfirst($log_level) . '] ' . strtr($log_msg, ["\r" => '\\r', "\n" => '\\n']) . PHP_EOL;
         }
 
-        //On status changes or time arrived
-        $this->debug('Monitor: ' . $changes . ' out of ' . count($this->clients) . ' in queue.');
-
-        unset($write, $except, $changes);
-        return $read;
+        unset($log_level, $log_msg);
     }
 
     /**
-     * Add MPC job
+     * Run server/client
      *
-     * @param string $method
-     * @param array  $data
+     * @param bool $as_client
      *
-     * @return string
+     * @return bool
      */
-    public function addMpc(string $method, array $data): string
+    public function run(bool $as_client = false): bool
     {
-        $tk = $this->lib_mpc->addJob($this->handler_class . '/' . $method, $data);
+        $context = stream_context_create();
 
-        unset($method, $data);
-        return $tk;
+        if ('' !== $this->local_cert) {
+            stream_context_set_option($context, 'ssl', 'local_cert', $this->local_cert);
+            stream_context_set_option($context, 'ssl', 'ssltransport', $this->sock_proto);
+            stream_context_set_option($context, 'ssl', 'allow_self_signed', $this->self_signed);
+            stream_context_set_option($context, 'ssl', 'verify_peer', false);
+            stream_context_set_option($context, 'ssl', 'disable_compression', true);
+
+            '' !== $this->local_pk && stream_context_set_option($context, 'ssl', 'local_pk', $this->local_pk);
+            '' !== $this->passphrase && stream_context_set_option($context, 'ssl', 'passphrase', $this->passphrase);
+        }
+
+        $address = $this->sock_proto . '://' . $this->sock_addr . ':' . $this->sock_port;
+
+        $socket = !$as_client
+            ? stream_socket_server(
+                $address,
+                $errno,
+                $errstr,
+                'udp' != $this->sock_proto ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND,
+                $context
+            )
+            : stream_socket_client(
+                $address,
+                $errno,
+                $errstr,
+                $this->watch_sec,
+                'udp' != $this->sock_proto ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT : STREAM_CLIENT_CONNECT,
+                $context
+            );
+
+        unset($context);
+
+        if (false === $socket) {
+            $this->showLog('error', $errno . ': ' . $errstr);
+            return false;
+        }
+
+        $this->master_id      = $this->genId();
+        $this->socket_master  = [$this->master_id => &$socket];
+        $this->socket_clients = [$this->master_id => &$socket];
+
+        $this->showLog('start', 'Socket ' . (!$as_client ? 'server' : 'client') . ' on "' . $address . '"');
+
+        unset($as_client, $address, $socket, $errno, $errstr);
+        return true;
     }
 
     /**
-     * Read full message from client
-     *
-     * @param string $sock_id
+     * Accept new client
      *
      * @return string
      */
-    public function readMsg(string $sock_id): string
+    public function accept(): string
     {
         try {
-            if (false === ($msg = fread($this->clients[$sock_id], 1024))) {
-                throw new \Exception('Read message failed!', E_USER_NOTICE);
+            if (false === ($accept = stream_socket_accept($this->socket_clients[$this->master_id]))) {
+                unset($accept);
+                return '';
             }
 
-            while ('' !== ($buff = fread($this->clients[$sock_id], 4096))) {
-                $msg .= $buff;
-            }
+            stream_set_blocking($accept, false);
+
+            $accept_id = $this->genId();
+
+            $this->socket_clients[$accept_id] = &$accept;
+            $this->socket_actives[$accept_id] = time();
         } catch (\Throwable $throwable) {
-            $this->debug('Close: exception caught [' . $throwable->getMessage() . '] from "' . $sock_id . '".');
-            $this->close($sock_id);
-            unset($throwable, $sock_id, $msg);
+            unset($throwable, $accept, $accept_id);
             return '';
         }
 
-        unset($sock_id, $buff);
-        return $msg;
+        unset($accept);
+        return $accept_id;
     }
 
     /**
-     * Prepare send message
+     * Watch readable clients
      *
-     * @param array $msg_tk
+     * @param array $clients
      *
      * @return array
      */
-    public function prepMsg(array $msg_tk): array
+    public function watch(array $clients): array
     {
-        $send_data = [];
+        $write = $except = [];
 
-        foreach ($msg_tk as $sock_id => $mtk) {
-            //Fetch msg from onMessage logic
-            if (!is_array($msg_data = json_decode(trim($this->lib_mpc->fetch($mtk)), true))) {
-                $this->debug('Close: message data error read from "' . $sock_id . '".');
-                $this->close($sock_id);
-                continue;
-            }
-
-            //Build send_tk data
-            $send_data[$sock_id] = [
-                'stk' => $this->addMpc('onSend', [
-                    'sid'    => $sock_id,
-                    'data'   => $msg_data,
-                    'online' => (isset($msg_data['to_sid']) && is_string($msg_data['to_sid'])) ? isset($this->clients[$msg_data['to_sid']]) : false
-                ])
-            ];
+        if (0 === ($changes = (int)stream_select($clients, $write, $except, 0 <= $this->watch_sec ? $this->watch_sec : null))) {
+            $clients = [];
         }
 
-        unset($msg_tk, $mtk);
+        $this->showLog('listen', $changes . ' to read. ' . (count($this->socket_clients) - 1) . ' online.');
 
-        foreach ($send_data as $sock_id => &$item) {
-            //Fetch msg from onSend logic
-            if (!is_array($msg_data = json_decode(trim($this->lib_mpc->fetch($item['stk'])), true))) {
-                $this->debug('Close: message data error send to "' . $sock_id . '".');
-                unset($send_data[$sock_id]);
-                $this->close($sock_id);
-                continue;
-            }
-
-            //Remove invalid "to_sid" data
-            $msg_data['to_sid'] ??= [];
-            $msg_data['to_sid'] = array_filter(is_array($msg_data['to_sid']) ? $msg_data['to_sid'] : [$msg_data['to_sid']]);
-
-            //Drop message without receivers
-            if (empty($msg_data['to_sid'])) {
-                unset($send_data[$sock_id]);
-                continue;
-            }
-
-            //Copy "to_sid" value to receivers
-            $item['to'] = $msg_data['to_sid'];
-
-            //Clean up data
-            unset($msg_data['to_sid'], $item['stk']);
-
-            //Rebuild message data
-            $item['msg'] = json_encode($msg_data, JSON_FORMAT);
-        }
-
-        unset($sock_id, $msg_data, $item);
-        return $send_data;
-    }
-
-    /**
-     * Send message to a client
-     *
-     * @param string $sock_id
-     * @param string $message
-     *
-     * @return int
-     */
-    public function sendMsg(string $sock_id, string $message): int
-    {
-        try {
-            $byte = fwrite($this->clients[$sock_id], $message);
-        } catch (\Throwable $throwable) {
-            $this->debug('Close: message failed to send to "' . $sock_id . '".');
-            $this->close($sock_id);
-            unset($throwable, $sock_id, $message, $byte);
-            return 0;
-        }
-
-        unset($sock_id, $message);
-        return $byte;
-    }
-
-    /**
-     * Push message to clients
-     *
-     * @param array  $clients
-     * @param string $message
-     */
-    public function pushMsg(array $clients, string $message): void
-    {
-        foreach ($clients as $sock_id) {
-            $this->sendMsg($sock_id, $message);
-        }
-
-        unset($clients, $message, $sock_id);
+        unset($write, $except, $changes);
+        return $clients;
     }
 
     /**
@@ -417,31 +277,73 @@ class libSocket extends Factory
     public function close(string $sock_id): void
     {
         try {
-            fclose($this->clients[$sock_id]);
+            fclose($this->socket_clients[$sock_id]);
         } catch (\Throwable $throwable) {
             unset($throwable);
         }
 
-        unset($this->clients[$sock_id], $this->actives[$sock_id]);
-        $this->lib_mpc->fetch($this->addMpc('onClose', ['sid' => $sock_id]));
-
-        //On client exit
-        $this->debug('Exit: "' . $sock_id . '" left. ' . (count($this->clients) - 1) . ' clients online.');
+        unset($this->socket_clients[$sock_id], $this->socket_actives[$sock_id]);
+        $this->showLog('close', $sock_id . ': Closed. ' . (count($this->socket_clients) - 1) . ' online.');
         unset($sock_id);
     }
 
     /**
-     * 输出 debug 信息
+     * Read message from client
      *
-     * @param string $debug_msg
+     * @param string $sock_id
+     *
+     * @return array
      */
-    public function debug(string $debug_msg): void
+    public function readMsg(string $sock_id): array
     {
-        if ($this->sock_debug) {
-            echo strtr($debug_msg, ["\r" => '\r', "\n" => '\n']) . PHP_EOL;
+        try {
+            if (false === ($msg = fread($this->socket_clients[$sock_id], 6))) {
+                throw new \Exception($sock_id . ': Read ERROR!', E_USER_NOTICE);
+            }
+
+            while ('' !== ($buff = fread($this->socket_clients[$sock_id], 4096))) {
+                $msg .= $buff;
+            }
+
+            $this->socket_actives[$sock_id] = time();
+
+            $result = ['len' => strlen($msg), 'msg' => &$msg];
+        } catch (\Throwable $throwable) {
+            $this->showLog('exit', $throwable->getMessage());
+            $this->close($sock_id);
+
+            unset($throwable, $sock_id, $msg);
+            $result = ['len' => -1, 'msg' => ''];
         }
 
-        unset($debug_msg);
+        unset($sock_id, $msg, $buff);
+        return $result;
+    }
+
+    /**
+     * Send message to a client
+     *
+     * @param string $sock_id
+     * @param string $message
+     * @param bool   $ws_encode
+     *
+     * @return int
+     */
+    public function sendMsg(string $sock_id, string $message, bool $ws_encode = false): int
+    {
+        try {
+            $byte = fwrite($this->socket_clients[$sock_id], $ws_encode ? $this->wsEncode($message) : $message);
+            $this->showLog('send', $sock_id . ': ' . $message);
+        } catch (\Throwable $throwable) {
+            $this->showLog('exit', $sock_id . ': Send ERROR!');
+            $this->close($sock_id);
+
+            unset($throwable, $sock_id, $message, $ws_encode, $byte);
+            return -1;
+        }
+
+        unset($sock_id, $message, $ws_encode);
+        return $byte;
     }
 
     /**
@@ -449,32 +351,29 @@ class libSocket extends Factory
      */
     public function heartbeat(): void
     {
-        //Set check time
         $chk_time = time();
+        $max_wait = $this->heartbeat_sec * 2;
 
-        //Check active clients
-        foreach ($this->actives as $sock_id => $active_time) {
-            //Calculate time duration
-            $duration = ($chk_time - $active_time);
+        foreach ($this->socket_actives as $sock_id => $active_time) {
+            //Calculate idle time
+            $idle = $chk_time - $active_time;
 
-            if (60 < $duration) {
-                //On heartbeat interrupted
-                $this->debug('Close: heartbeat interrupted from "' . $sock_id . '".');
-                //Close offline client
+            if ($max_wait < $idle) {
+                //Heartbeat lost, close client
+                $this->showLog('exit', $sock_id . ': Lost heartbeat.');
                 $this->close($sock_id);
-            } elseif (30 < $duration && '' !== $this->ping) {
-                //On send heartbeat frame message
-                $this->debug('Heartbeat: send "' . $this->ping . '" to "' . $sock_id . '".');
-                //Send ping message to client
-                $this->sendMsg($sock_id, $this->ping);
+            } elseif ($this->heartbeat_sec <= $idle && '' !== $this->heartbeat_val) {
+                //Send heartbeat message to client
+                $this->showLog('heartbeat', $sock_id . ': Heartbeat sent.');
+                $this->sendMsg($sock_id, $this->heartbeat_val);
             }
         }
 
-        unset($chk_time, $sock_id, $active_time, $duration);
+        unset($chk_time, $max_wait, $sock_id, $active_time, $idle);
     }
 
     /**
-     * Get WebSocket header codes (fin, opcode, mask)
+     * WebSocket: Get header codes (fin, opcode, mask)
      *
      * @param string $buff
      *
@@ -490,67 +389,92 @@ class libSocket extends Factory
     }
 
     /**
-     * WebSocket generate handshake response
+     * WebSocket: Get Sec-WebSocket-Key
      *
-     * @param string $sid
      * @param string $header
      *
      * @return string
      */
-    public function wsHandshake(string $sid, string $header): string
+    public function wsGetKey(string $header): string
     {
         //Validate Sec-WebSocket-Key
-        $key_name = 'Sec-WebSocket-Key';
-        $key_pos  = strpos($header, $key_name);
-
-        if (false === $key_pos) {
-            unset($sid, $header, $key_name, $key_pos);
+        if (false === ($key_pos = strpos($header, 'Sec-WebSocket-Key'))) {
+            unset($header, $key_pos);
             return '';
-        }
-
-        //Validate Sec-WebSocket-Protocol
-        $ws_protocol = '';
-        $proto_name  = 'Sec-WebSocket-Protocol';
-        $proto_pos   = strpos($header, $proto_name);
-
-        if (false !== $proto_pos) {
-            $proto_pos  += 24;
-            $proto_val  = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
-            $proto_pass = $this->lib_mpc->fetch($this->addMpc('onHandshake', ['sid' => $sid, 'proto' => $proto_val]));
-
-            //Reject handshake
-            if (true !== json_decode($proto_pass, true)) {
-                unset($sid, $header, $key_name, $key_pos, $ws_protocol, $proto_name, $proto_pos, $proto_val, $proto_pass);
-                return '';
-            }
-
-            //Only response the last protocol value
-            if (false !== ($val_pos = strrpos($proto_val, ','))) {
-                $proto_val = substr($proto_val, $val_pos + 2);
-            }
-
-            $ws_protocol = 'Sec-WebSocket-Protocol: ' . $proto_val . "\r\n";;
-            unset($proto_val, $proto_pass, $val_pos);
         }
 
         //Get WebSocket key & rehash
         $key_pos += 19;
         $key_val = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
-        $key_val = hash('sha1', $key_val . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true);
+        $key_val = base64_encode(hash('sha1', $key_val . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true));
 
-        //Generate response
+        unset($header, $key_pos);
+        return $key_val;
+    }
+
+    /**
+     * WebSocket: Get Sec-WebSocket-Protocol
+     *
+     * @param string $header
+     *
+     * @return string
+     */
+    public function wsGetProto(string $header): string
+    {
+        //Validate Sec-WebSocket-Protocol
+        if (false === ($proto_pos = strpos($header, 'Sec-WebSocket-Protocol'))) {
+            unset($header, $proto_pos);
+            return '';
+        }
+
+        //Get Sec-WebSocket-Protocol
+        $proto_pos += 24;
+        $proto_val = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
+
+        unset($header, $proto_pos);
+        return $proto_val;
+    }
+
+    /**
+     * WebSocket: Get Handshake response
+     *
+     * @param string $ws_key
+     * @param string $ws_proto
+     *
+     * @return string
+     */
+    public function wsGetHandshake(string $ws_key, string $ws_proto = ''): string
+    {
+        //Set default protocol
+        $ws_protocol = '';
+
+        if ('' !== $ws_proto) {
+            //Only response the last protocol value
+            if (false !== ($proto_pos = strrpos($ws_proto, ','))) {
+                $ws_proto = substr($ws_proto, $proto_pos + 2);
+            }
+
+            //Set Sec-WebSocket-Protocol response value
+            $ws_protocol = 'Sec-WebSocket-Protocol: ' . $ws_proto . "\r\n";
+
+            unset($proto_pos);
+        }
+
+        //Generate handshake response
         $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
-            . 'Sec-WebSocket-Accept: ' . base64_encode($key_val) . "\r\n"
+            . 'Sec-WebSocket-Accept: ' . $ws_key . "\r\n"
             . $ws_protocol . "\r\n";
 
-        unset($sid, $header, $key_name, $key_pos, $ws_protocol, $proto_name, $proto_pos, $key_val);
+        $this->showLog('handshake', 'Build response: ' . $response);
+
+        unset($ws_key, $ws_proto, $ws_protocol);
         return $response;
     }
 
     /**
-     * WebSocket decode message
+     * WebSocket: Decode message
      *
      * @param string $buff
      *
@@ -590,7 +514,7 @@ class libSocket extends Factory
     }
 
     /**
-     * WebSocket encode message
+     * WebSocket: Encode message
      *
      * @param string $msg
      *
@@ -613,7 +537,7 @@ class libSocket extends Factory
     }
 
     /**
-     * Send WebSocket Ping frame
+     * WebSocket: Send Ping frame
      *
      * @param string $sock_id
      */
@@ -624,7 +548,7 @@ class libSocket extends Factory
     }
 
     /**
-     * Send WebSocket Pong frame
+     * WebSocket: Send Pong frame
      *
      * @param string $sock_id
      */
@@ -632,233 +556,5 @@ class libSocket extends Factory
     {
         $this->sendMsg($sock_id, chr(0x8A) . chr(0));
         unset($sock_id);
-    }
-
-    /**
-     * Tcp server
-     *
-     * @throws \Exception
-     */
-    private function onTcp(): void
-    {
-        //Copy master to clients
-        $this->clients = $this->master;
-
-        while (true) {
-            $read = $this->watch($this->clients);
-
-            if (empty($read)) {
-                //Call heartbeat handler
-                $this->heartbeat();
-                continue;
-            }
-
-            $msg_tk = [];
-
-            //Read from socket and send to MPC
-            foreach ($read as $sock_id => $client) {
-                if ($sock_id !== $this->master_id) {
-                    //Read all client message (binary|string)
-                    if ('' === ($socket_msg = $this->readMsg($sock_id))) {
-                        $this->debug('Close: receive empty message from "' . $sock_id . '".');
-                        $this->close($sock_id);
-                        continue;
-                    }
-
-                    //Update active time
-                    $this->actives[$sock_id] = time();
-
-                    //Send to onMessage logic via MPC
-                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['sid' => $sock_id, 'msg' => $socket_msg]);
-
-                    //On received message from client
-                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '".');
-                    unset($socket_msg);
-                } else {
-                    //Accept new connection
-                    try {
-                        if (false === ($accept = stream_socket_accept($client))) {
-                            continue;
-                        }
-
-                        stream_set_blocking($accept, false);
-
-                        $accept_id = $this->genId();
-
-                        $this->clients[$accept_id] = $accept;
-                        $this->actives[$accept_id] = time();
-
-                        $this->sendMsg($accept_id, $this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $accept_id])));
-                    } catch (\Throwable $throwable) {
-                        unset($throwable, $accept, $accept_id);
-                        continue;
-                    }
-
-                    //On new client connected
-                    $this->debug('Assigned: "' . $accept_id . '" to new client.');
-                    unset($accept, $accept_id);
-                }
-            }
-
-            //Process message
-            $send_tk = $this->prepMsg($msg_tk);
-
-            //Send message
-            foreach ($send_tk as $item) {
-                //Push message to clients
-                $this->pushMsg($item['to'], $item['msg']);
-
-                //On send message to client
-                $this->debug('Send: "' . $item['msg'] . '" to "' . implode(', ', $item['to']) . '".');
-            }
-
-            //Call heartbeat handler
-            $this->heartbeat();
-
-            unset($read, $msg_tk, $sock_id, $client, $send_tk, $item);
-        }
-    }
-
-    /**
-     * SebSocket server
-     *
-     * @throws \Exception
-     */
-    private function onWs(): void
-    {
-        //New accepted clients
-        $accept_clients = [];
-
-        //Copy master to clients
-        $this->clients = $this->master;
-
-        while (true) {
-            $read = $this->watch($this->clients);
-
-            if (empty($read)) {
-                //Call heartbeat handler
-                $this->heartbeat();
-                continue;
-            }
-
-            $msg_tk = [];
-
-            //Read from socket and send to MPC
-            foreach ($read as $sock_id => $client) {
-                if ($sock_id !== $this->master_id) {
-                    //Read all client message (WebSocket)
-                    if ('' === ($socket_msg = $this->readMsg($sock_id))) {
-                        $this->debug('Close: receive empty message from "' . $sock_id . '".');
-                        $this->close($sock_id);
-                        continue;
-                    }
-
-                    //Update active time
-                    $this->actives[$sock_id] = time();
-
-                    //Check handshake
-                    if (isset($accept_clients[$sock_id])) {
-                        //On received handshake header from client
-                        $this->debug('Handshake: receive "' . $socket_msg . '" from "' . $sock_id . '".');
-
-                        //Get handshake response
-                        $response = $this->wsHandshake($sock_id, $socket_msg);
-
-                        if ('' !== $response) {
-                            //Send handshake and connection
-                            $this->sendMsg($sock_id, $response);
-                            $this->sendMsg($sock_id, $this->wsEncode($this->lib_mpc->fetch($this->addMpc('onConnect', ['sid' => $sock_id]))));
-
-                            //On respond handshake to new connection
-                            $this->debug('Handshake: respond "' . $response . '" to "' . $sock_id . '".');
-                        } else {
-                            //On reject handshake to new connection
-                            $this->debug('Handshake: reject "' . $sock_id . '" to connect.');
-                            //Error on handshake
-                            $this->close($sock_id);
-                        }
-
-                        unset($accept_clients[$sock_id], $response);
-                        continue;
-                    }
-
-                    //Get wWebSocket codes
-                    $ws_codes = $this->wsGetCodes($socket_msg);
-
-                    //Accept pong frame (pong:0xA), drop non-masked frames
-                    if (0xA === $ws_codes['opcode'] || 1 !== $ws_codes['mask']) {
-                        //On receive pong frame (pong:0xA), or, non-masked frames
-                        $this->debug('Heartbeat: receive OpCode="' . $ws_codes['opcode'] . '", MASK="' . $ws_codes['mask'] . '".');
-                        unset($ws_codes);
-                        continue;
-                    }
-
-                    //Respond to ping frame (ping:0x9)
-                    if (0x9 === $ws_codes['opcode']) {
-                        $this->wsPong($sock_id);
-                        unset($ws_codes);
-                        continue;
-                    }
-
-                    //Check opcode (connection closed: 8)
-                    if (0x8 === $ws_codes['opcode']) {
-                        $this->debug('Close: receive Opcode of "socket closed" from "' . $sock_id . '".');
-                        $this->close($sock_id);
-                        unset($ws_codes);
-                        continue;
-                    }
-
-                    //Send to onMessage logic via MPC
-                    $msg_tk[$sock_id] = $this->addMpc('onMessage', ['sid' => $sock_id, 'msg' => ($socket_msg = $this->wsDecode($socket_msg))]);
-
-                    //On received message from client
-                    $this->debug('Receive: "' . $socket_msg . '" from "' . $sock_id . '".');
-                    unset($socket_msg, $ws_codes);
-                } else {
-                    //Accept new connection
-                    try {
-                        if (false === ($accept = stream_socket_accept($client))) {
-                            unset($accept);
-                            continue;
-                        }
-
-                        stream_set_blocking($accept, false);
-
-                        $accept_id = $this->genId();
-
-                        $this->clients[$accept_id] = $accept;
-                        $this->actives[$accept_id] = time();
-
-                        $accept_clients[$accept_id] = 1;
-                    } catch (\Throwable $throwable) {
-                        unset($throwable, $accept, $accept_id);
-                        continue;
-                    }
-
-                    //On new client connected
-                    $this->debug('Assigned: "' . $accept_id . '" to new client.');
-                    unset($accept, $accept_id);
-                }
-            }
-
-            //Process message
-            $send_tk = $this->prepMsg($msg_tk);
-
-            //Send message
-            foreach ($send_tk as $item) {
-                //Push message to clients
-                $this->pushMsg($item['to'], $this->wsEncode($item['msg']));
-
-                //On send message to client
-                $this->debug('Send: "' . $item['msg'] . '" to "' . implode(', ', $item['to']) . '".');
-            }
-
-            //Call heartbeat handler
-            $this->heartbeat();
-
-            unset($read, $msg_tk, $sock_id, $client, $send_tk, $item);
-        }
-
-        unset($accept_clients);
     }
 }

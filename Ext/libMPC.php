@@ -44,7 +44,7 @@ class libMPC extends Factory
 
     public int    $proc_idx = 0;
     public int    $proc_cnt = 10;
-    public int    $buf_size = 4096;
+    public int    $buf_size = 2048;
     public string $php_path = '';
     public string $proc_cmd = '';
 
@@ -56,7 +56,17 @@ class libMPC extends Factory
     public array $job_result = [];
 
     /**
-     * Set pipe buffer size (default 4096 bytes, block when overflow, set carefully)
+     * libMPC constructor.
+     */
+    public function __construct()
+    {
+        $this->app     = App::new();
+        $this->io_unit = IOUnit::new();
+        $this->os_unit = OSUnit::new();
+    }
+
+    /**
+     * Set pipe buffer size (system default 4096 bytes, block when overflow, set carefully)
      *
      * @param int $buf_size
      *
@@ -101,13 +111,46 @@ class libMPC extends Factory
     }
 
     /**
+     * Call API async
+     *
+     * @param string $c
+     * @param array  $data
+     *
+     * @return bool
+     */
+    public function callAsync(string $c, array $data = []): bool
+    {
+        $proc_cmd = $this->php_path . ' "' . $this->app->script_path . '"';
+        $proc_cmd .= ' -c"' . strtr($c, '\\', '/') . '"';
+
+        if (!empty($data)) {
+            $proc_cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+        }
+
+        //Create process
+        $proc = proc_open(
+            $this->os_unit->setCmd($proc_cmd)->setAsBg()->setEnvPath()->fetchCmd(),
+            [
+                ['pipe', 'r'],
+                ['pipe', 'w'],
+                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-Async.log', 'ab+']
+            ],
+            $pipes
+        );
+
+        $result = is_resource($proc);
+
+        unset($c, $data, $proc_cmd, $proc, $pipes);
+        return $result;
+    }
+
+    /**
      * Start MPC
      *
      * @return $this
      */
     public function start(): self
     {
-        $this->app      = App::new();
         $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
 
         //Create process
@@ -139,7 +182,7 @@ class libMPC extends Factory
         $ticket = base_convert($this->job_mtk[$this->proc_idx], 10, 36);
 
         //Add "c" & "mtk" into data
-        $data['c']   = &$c;
+        $data['c']   = strtr($c, '\\', '/');
         $data['mtk'] = &$ticket;
 
         //Communicate via STDIN
@@ -231,8 +274,6 @@ class libMPC extends Factory
         $this->error   = Error::new();
         $this->router  = Router::new();
         $this->execute = Execute::new();
-        $this->io_unit = IOUnit::new();
-        $this->os_unit = OSUnit::new();
 
         while (true) {
             //Pipe broken
@@ -261,7 +302,7 @@ class libMPC extends Factory
             $result = $this->execJob($data);
 
             //Output via STDOUT
-            echo json_encode([$data['mtk'], 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
+            echo json_encode([$data['mtk'], $data['nohup'] ?? false, 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
 
             //Free memory
             unset($stdin, $data, $result);
@@ -397,7 +438,7 @@ class libMPC extends Factory
             }
 
             //Save to result block
-            $this->job_result += [(string)$idx . ':' . $job_data[0] => $job_data[1]];
+            !$job_data[1] && $this->job_result += [(string)$idx . ':' . $job_data[0] => $job_data[2]];
         }
 
         unset($idx, $count, $stdout, $job_data);

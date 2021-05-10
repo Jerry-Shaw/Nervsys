@@ -415,7 +415,7 @@ class libQueue extends Factory
 
         //Build master hash and key
         $master_hash = hash('crc32b', uniqid(mt_rand(), true));
-        $master_key  = $this->key_slot['worker'] . ($_SERVER['HOSTNAME'] ?? 'master');
+        $master_key  = $this->key_slot['worker'] . $this->app->hostname;
 
         //Exit when master process exists
         if (!$this->redis->setnx($master_key, $master_hash)) {
@@ -633,7 +633,7 @@ class libQueue extends Factory
         }
 
         //Fill watch key slot
-        $this->key_slot['watch'] .= $_SERVER['HOSTNAME'] ?? 'worker';
+        $this->key_slot['watch'] .= $this->app->hostname;
         unset($prefix, $key, $value);
     }
 

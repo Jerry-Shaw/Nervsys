@@ -36,6 +36,7 @@ class App extends Factory
 
     public string $api_path  = 'api';
     public string $client_ip = '0.0.0.0';
+    public string $hostname  = 'localhost';
     public string $timezone  = 'Asia/Shanghai';
 
     public bool $is_cli     = false;
@@ -213,7 +214,7 @@ class App extends Factory
      */
     public function showDebug(\Throwable $throwable, bool $show_on_cli = false): void
     {
-        Error::new()->exceptionHandler($throwable, false, $this->core_debug && ($show_on_cli ? true : !$this->is_cli));
+        Error::new()->exceptionHandler($throwable, false, $this->core_debug && ($show_on_cli || !$this->is_cli));
         unset($throwable, $show_on_cli);
     }
 
@@ -222,6 +223,15 @@ class App extends Factory
      */
     private function setEnv(): void
     {
+        //Get hostname
+        $hostname = gethostname();
+
+        if (is_string($hostname)) {
+            $this->hostname = &$hostname;
+        }
+
+        unset($hostname);
+
         //Check running mode
         if ($this->is_cli = ('cli' === PHP_SAPI)) {
             $this->client_ip = 'Local CLI';
