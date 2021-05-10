@@ -90,6 +90,15 @@ class libQueue extends Factory
     private array $unit_handler = [];
 
     /**
+     * libQueue constructor.
+     */
+    public function __construct()
+    {
+        //Init App
+        $this->app = App::new();
+    }
+
+    /**
      * Bind to Redis connection
      *
      * @param \Redis $redis
@@ -603,9 +612,6 @@ class libQueue extends Factory
      */
     private function initProc(): void
     {
-        //Detect ENV (only support CLI)
-        $this->app = App::new();
-
         /** @var IOUnit io_unit */
         $this->io_unit = IOUnit::new();
 
