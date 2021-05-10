@@ -373,11 +373,6 @@ class libSockOnRedis extends libSocket
     {
         foreach ($clients as $sock_id => $client) {
             if ($sock_id !== $this->master_id) {
-                //Read
-                if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
-                    continue;
-                }
-
                 //Process ws_handshake
                 if (isset($this->ws_handshake[$sock_id])) {
                     //Remove from ws_handshake list
@@ -392,6 +387,11 @@ class libSockOnRedis extends libSocket
                     $this->redis->hSet($this->hash_sock_ol, $sock_id, $this->proc_name);
                     $this->showLog('handshake', $sock_id . ': is online!');
 
+                    continue;
+                }
+
+                //Read
+                if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
                     continue;
                 }
 
