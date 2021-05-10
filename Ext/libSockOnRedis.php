@@ -372,34 +372,7 @@ class libSockOnRedis extends libSocket
     public function readClients(array $clients): void
     {
         foreach ($clients as $sock_id => $client) {
-            if ($sock_id !== $this->master_id) {
-                //Process ws_handshake
-                if (isset($this->ws_handshake[$sock_id])) {
-                    //Remove from ws_handshake list
-                    unset($this->ws_handshake[$sock_id]);
-
-                    //Response handshake to WebSocket connection
-                    if (!$this->sendHandshake($sock_id)) {
-                        $this->close($sock_id);
-                        continue;
-                    }
-
-                    $this->redis->hSet($this->hash_sock_ol, $sock_id, $this->proc_name);
-                    $this->showLog('handshake', $sock_id . ': is online!');
-
-                    continue;
-                }
-
-                //Read
-                if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
-                    continue;
-                }
-
-                //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
-                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
-
-                unset($socket_msg);
-            } else {
+            if ($sock_id === $this->master_id) {
                 //Accept
                 if ('' === ($accept_id = $this->accept())) {
                     continue;
@@ -413,6 +386,44 @@ class libSockOnRedis extends libSocket
                 $this->showLog('connect', $accept_id . ': Connected!');
 
                 unset($accept_id);
+            } elseif (isset($this->ws_handshake[$sock_id])) {
+                //Handshake
+                unset($this->ws_handshake[$sock_id]);
+
+                //Read Message
+                $socket_msg = $this->readMsg($sock_id);
+
+                if (0 === $socket_msg['len']) {
+                    $this->showLog('exit', $sock_id . ': Handshake data ERROR!');
+                    $this->close($sock_id);
+                    unset($socket_msg);
+                    continue;
+                }
+
+                $this->showLog('handshake', $sock_id . ': ' . $socket_msg['msg']);
+
+                //Response handshake to WebSocket connection
+                if (!$this->sendHandshake($sock_id, $socket_msg['msg'])) {
+                    $this->close($sock_id);
+                    unset($socket_msg);
+                    continue;
+                }
+
+                //Add to sock online list
+                $this->redis->hSet($this->hash_sock_ol, $sock_id, $this->proc_name);
+                $this->showLog('handshake', $sock_id . ': is online!');
+
+                unset($socket_msg);
+            } else {
+                //Read
+                if ('' === ($socket_msg = $this->recvMsg($sock_id))) {
+                    continue;
+                }
+
+                //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
+                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
+
+                unset($socket_msg);
             }
         }
 
@@ -423,29 +434,15 @@ class libSockOnRedis extends libSocket
      * Send handshake response
      *
      * @param string $sock_id
+     * @param string $socket_msg
      *
      * @return bool
      */
-    public function sendHandshake(string $sock_id): bool
+    public function sendHandshake(string $sock_id, string $socket_msg): bool
     {
-        //Read Message
-        $socket_msg = $this->readMsg($sock_id);
-
-        if (0 === $socket_msg['len']) {
-            $this->showLog('exit', $sock_id . ': Handshake data ERROR!');
-            $this->close($sock_id);
-
-            unset($sock_id, $socket_msg);
-            return false;
-        }
-
-        $this->showLog('handshake', $sock_id . ': ' . $socket_msg['msg']);
-
         //Get WebSocket Key & Protocol
-        $ws_key   = $this->wsGetKey($socket_msg['msg']);
-        $ws_proto = $this->wsGetProto($socket_msg['msg']);
-
-        unset($socket_msg);
+        $ws_key   = $this->wsGetKey($socket_msg);
+        $ws_proto = $this->wsGetProto($socket_msg);
 
         try {
             //Call registered onHandshake
@@ -453,8 +450,8 @@ class libSockOnRedis extends libSocket
         } catch (\Throwable $throwable) {
             //Catch onHandshake Exception
             $this->app->showDebug($throwable, true);
+            unset($throwable, $socket_msg);
             $handshake_status = -1;
-            unset($throwable);
         }
 
         if (1 !== $handshake_status) {
@@ -462,14 +459,14 @@ class libSockOnRedis extends libSocket
             $this->sendMsg($sock_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
             $this->showLog('exit', $sock_id . ': Protocol NOT Allowed!');
 
-            unset($sock_id, $ws_key, $ws_proto, $handshake_status);
+            unset($sock_id, $socket_msg, $ws_key, $ws_proto, $handshake_status);
             return false;
         }
 
         //Send handshake response
         $this->sendMsg($sock_id, $this->wsGetHandshake($ws_key, $ws_proto));
 
-        unset($sock_id, $ws_key, $ws_proto, $handshake_status);
+        unset($sock_id, $socket_msg, $ws_key, $ws_proto, $handshake_status);
         return true;
     }
 }
