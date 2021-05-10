@@ -39,7 +39,7 @@ if (version_compare(PHP_VERSION, '7.4.0', '<')) {
 }
 
 //Define NervSys version
-const NS_VER = '8.0.1';
+const NS_VER = '8.0.2';
 
 //Define SYSTEM ROOT path
 const NS_ROOT = __DIR__;
