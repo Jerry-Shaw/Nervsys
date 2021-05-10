@@ -306,6 +306,10 @@ class libSockOnRedis extends libSocket
         //Read Message
         $socket_msg = $this->readMsg($sock_id);
 
+        if (0 === $socket_msg['len']) {
+            $this->wsPing($sock_id);
+        }
+
         if (0 >= $socket_msg['len']) {
             unset($sock_id, $socket_msg);
             return '';
