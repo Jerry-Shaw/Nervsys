@@ -176,6 +176,9 @@ class libSockOnRedis extends libSocket
             //Read clients
             $this->readClients($read);
 
+            //Call heartbeat handler
+            $this->heartbeat();
+
             //Push messages
             $this->pushMsg();
         }
@@ -208,7 +211,6 @@ class libSockOnRedis extends libSocket
      */
     public function close(string $sock_id): void
     {
-        //Send close status via MPC
         $this->lib_mpc->addJob($this->handler_class . '/onClose', ['sid' => &$sock_id, 'nohup' => true]);
         $this->redis->hDel($this->hash_sock_ol, $sock_id);
         parent::close($sock_id);
@@ -314,14 +316,12 @@ class libSockOnRedis extends libSocket
             return '';
         }
 
-        //Update active time
         $this->socket_actives[$sock_id] = time();
 
-        //Copy message
         $msg = &$socket_msg['msg'];
+
         unset($socket_msg);
 
-        //Process WebSocket message
         if ($this->is_ws) {
             //Get WebSocket codes
             $ws_codes = $this->wsGetCodes($msg);
