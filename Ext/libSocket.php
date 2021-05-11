@@ -228,7 +228,7 @@ class libSocket extends Factory
     public function accept(): string
     {
         try {
-            if (false === ($accept = stream_socket_accept($this->socket_clients[$this->master_id]))) {
+            if (false === ($accept = stream_socket_accept($this->socket_master[$this->master_id]))) {
                 unset($accept);
                 return '';
             }
