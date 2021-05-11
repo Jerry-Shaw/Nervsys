@@ -122,7 +122,7 @@ class libSocket extends Factory
     }
 
     /**
-     * Set socket log levels (Error, Start, Listen, Connect, Handshake, Heartbeat, Receive, Send, Close, Exit)
+     * Set socket log levels (Error, Start, Listen, Accept, Connect, Handshake, Heartbeat, Receive, Send, Close, Exit)
      *
      * @param string $levels
      *
@@ -228,18 +228,24 @@ class libSocket extends Factory
     public function accept(): string
     {
         try {
-            if (false === ($accept = stream_socket_accept($this->socket_master[$this->master_id]))) {
+            $this->showLog('accept', 'Incoming connection!');
+
+            if (false === ($accept = stream_socket_accept($this->socket_master[$this->master_id], 3))) {
                 unset($accept);
                 return '';
             }
 
-            stream_set_blocking($accept, false);
-
             $accept_id = $this->genId();
+
+            stream_set_timeout($accept, 3);
+            stream_set_blocking($accept, false);
 
             $this->socket_clients[$accept_id] = &$accept;
             $this->socket_actives[$accept_id] = time();
+
+            $this->showLog('accept', $accept_id . ': Connection accepted!');
         } catch (\Throwable $throwable) {
+            $this->showLog('error', 'Accept ERROR: ' . $throwable->getMessage());
             unset($throwable, $accept, $accept_id);
             return '';
         }

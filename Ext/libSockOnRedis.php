@@ -178,9 +178,6 @@ class libSockOnRedis extends libSocket
 
             //Push messages
             $this->pushMsg();
-
-            //Call heartbeat handler
-            $this->heartbeat();
         }
     }
 
@@ -383,7 +380,6 @@ class libSockOnRedis extends libSocket
 
                 //Send connection info via MPC
                 $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'proc' => $this->proc_name, 'nohup' => true]);
-                $this->showLog('connect', $accept_id . ': Connected!');
 
                 unset($accept_id);
             } elseif (isset($this->ws_handshake[$sock_id])) {
