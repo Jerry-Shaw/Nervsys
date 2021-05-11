@@ -29,7 +29,9 @@ use Core\Factory;
  */
 class libSocket extends Factory
 {
-    public int    $watch_sec  = 5;
+    public int $timeout   = 3;
+    public int $watch_sec = 5;
+
     public string $sock_proto = 'tcp';
     public string $sock_addr  = '0.0.0.0';
     public string $sock_port  = '2468';
@@ -65,6 +67,21 @@ class libSocket extends Factory
         $this->sock_proto = &$protocol;
 
         unset($address, $port, $protocol);
+        return $this;
+    }
+
+    /**
+     * Set socket stream timeout seconds
+     *
+     * @param int $timeout_sec
+     *
+     * @return $this
+     */
+    public function setTimeout(int $timeout_sec): self
+    {
+        $this->timeout = &$timeout_sec;
+
+        unset($timeout_sec);
         return $this;
     }
 
@@ -178,6 +195,7 @@ class libSocket extends Factory
             stream_context_set_option($context, 'ssl', 'ssltransport', $this->sock_proto);
             stream_context_set_option($context, 'ssl', 'allow_self_signed', $this->self_signed);
             stream_context_set_option($context, 'ssl', 'verify_peer', false);
+            stream_context_set_option($context, 'ssl', 'verify_peer_name', false);
             stream_context_set_option($context, 'ssl', 'disable_compression', true);
 
             '' !== $this->local_pk && stream_context_set_option($context, 'ssl', 'local_pk', $this->local_pk);
@@ -210,6 +228,8 @@ class libSocket extends Factory
             return false;
         }
 
+        stream_set_timeout($socket, $this->timeout);
+
         $this->master_id      = $this->genId();
         $this->socket_master  = [$this->master_id => &$socket];
         $this->socket_clients = [$this->master_id => &$socket];
@@ -230,7 +250,7 @@ class libSocket extends Factory
         try {
             $this->showLog('accept', 'Incoming connection!');
 
-            if (false === ($accept = stream_socket_accept($this->socket_master[$this->master_id], 3))) {
+            if (false === ($accept = stream_socket_accept($this->socket_master[$this->master_id], 0))) {
                 unset($accept);
                 return '';
             }
