@@ -257,7 +257,7 @@ class libSocket extends Factory
 
             $accept_id = $this->genId();
 
-            stream_set_timeout($accept, 3);
+            stream_set_timeout($accept, $this->timeout);
             stream_set_blocking($accept, false);
 
             $this->socket_clients[$accept_id] = &$accept;
