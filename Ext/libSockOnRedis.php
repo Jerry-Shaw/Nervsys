@@ -91,6 +91,21 @@ class libSockOnRedis extends libSocket
     }
 
     /**
+     * Bind Queue instance
+     *
+     * @param libQueue $queue
+     *
+     * @return $this
+     */
+    public function bindQueue(libQueue $queue): self
+    {
+        $this->lib_queue = &$queue;
+
+        unset($queue);
+        return $this;
+    }
+
+    /**
      * Set push message batch size
      *
      * @param int $batch_size
