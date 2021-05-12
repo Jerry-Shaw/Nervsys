@@ -21,7 +21,6 @@
 namespace Ext;
 
 use Core\Lib\App;
-use Core\OSUnit;
 
 /**
  * Class libSockOnRedis
@@ -30,9 +29,9 @@ use Core\OSUnit;
  */
 class libSockOnRedis extends libSocket
 {
-    public App    $app;
-    public \Redis $redis;
-    public libMPC $lib_mpc;
+    public App      $app;
+    public \Redis   $redis;
+    public libQueue $lib_queue;
 
     public bool $is_ws = false;
 
@@ -116,7 +115,7 @@ class libSockOnRedis extends libSocket
     public function setHandlerClass(object $handler_object): self
     {
         $this->handler_object = &$handler_object;
-        $this->handler_class  = '/' . get_class($handler_object);
+        $this->handler_class  = '/' . strtr(get_class($handler_object), '\\', '/');
 
         unset($handler_object);
         return $this;
@@ -125,13 +124,12 @@ class libSockOnRedis extends libSocket
     /**
      * Start server on Redis
      *
-     * @param int    $mpc_cnt
      * @param string $mem_limit
      * @param bool   $is_ws
      *
      * @throws \Exception
      */
-    public function start(int $mpc_cnt = 10, string $mem_limit = '1G', bool $is_ws = false): void
+    public function start(string $mem_limit = '1G', bool $is_ws = false): void
     {
         ini_set('memory_limit', $mem_limit);
 
@@ -153,12 +151,6 @@ class libSockOnRedis extends libSocket
         } else {
             throw new \Exception('Failed to start!');
         }
-
-        //Call MPC
-        $this->lib_mpc = libMPC::new()
-            ->setPhpPath(OSUnit::new()->getPhpPath())
-            ->setProcNum($mpc_cnt)
-            ->start();
 
         //Cleanup socket records
         $this->cleanup();
@@ -208,10 +200,12 @@ class libSockOnRedis extends libSocket
      * Close connection
      *
      * @param string $sock_id
+     *
+     * @throws \Exception
      */
     public function close(string $sock_id): void
     {
-        $this->lib_mpc->addJob($this->handler_class . '/onClose', ['sid' => &$sock_id, 'nohup' => true]);
+        $this->lib_queue->add($this->handler_class . '/onClose', ['sid' => &$sock_id], 'socket');
         $this->redis->hDel($this->hash_sock_ol, $sock_id);
         parent::close($sock_id);
         unset($sock_id);
@@ -365,6 +359,8 @@ class libSockOnRedis extends libSocket
      * Read clients
      *
      * @param array $clients
+     *
+     * @throws \Exception
      */
     public function readClients(array $clients): void
     {
@@ -378,8 +374,8 @@ class libSockOnRedis extends libSocket
                 //Add to ws_handshake list
                 $this->is_ws && $this->ws_handshake[$accept_id] = time();
 
-                //Send connection info via MPC
-                $this->lib_mpc->addJob($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'proc' => $this->proc_name, 'nohup' => true]);
+                //Send connection info via Queue
+                $this->lib_queue->add($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'proc' => $this->proc_name], 'socket');
 
                 unset($accept_id);
             } elseif (isset($this->ws_handshake[$sock_id])) {
@@ -416,8 +412,8 @@ class libSockOnRedis extends libSocket
                     continue;
                 }
 
-                //Send socket message via MPC (MUST push to worker job list in Redis, NO returned)
-                $this->lib_mpc->addJob($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg, 'nohup' => true]);
+                //Send socket message via Queue (MUST push to worker job list in Redis)
+                $this->lib_queue->add($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg], 'socket');
 
                 unset($socket_msg);
             }
