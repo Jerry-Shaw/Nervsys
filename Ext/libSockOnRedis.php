@@ -174,12 +174,6 @@ class libSockOnRedis extends libSocket
             //Watch all connections
             $read = $this->watch($this->socket_clients);
 
-            if (empty($read)) {
-                //Call heartbeat handler
-                $this->heartbeat();
-                continue;
-            }
-
             //Read clients
             $this->readClients($read);
 
