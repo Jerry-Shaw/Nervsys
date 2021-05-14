@@ -171,13 +171,10 @@ class libSockOnRedis extends libSocket
         $this->cleanup();
 
         while (true) {
-            //Watch all connections
-            $read = $this->watch($this->socket_clients);
+            //Watch & read clients
+            $this->readClients($this->watch($this->socket_clients));
 
-            //Read clients
-            $this->readClients($read);
-
-            //Call heartbeat handler
+            //Check heartbeat
             $this->heartbeat();
 
             //Push messages
