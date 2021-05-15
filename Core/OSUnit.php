@@ -43,7 +43,6 @@ class OSUnit extends Factory
      * Get hardware hash
      *
      * @return string
-     * @throws \Exception
      */
     public function getHwHash(): string
     {
@@ -54,7 +53,6 @@ class OSUnit extends Factory
      * Get PHP executable path
      *
      * @return string
-     * @throws \Exception
      */
     public function getPhpPath(): string
     {
