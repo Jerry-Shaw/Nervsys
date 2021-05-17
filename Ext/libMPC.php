@@ -42,18 +42,15 @@ class libMPC extends Factory
     private IOUnit  $io_unit;
     private OSUnit  $os_unit;
 
-    public int    $proc_idx = 0;
-    public int    $proc_cnt = 10;
-    public int    $buf_size = 2048;
+    public int $proc_idx = 0;
+    public int $max_fork = 10;
+    public int $max_exec = 1000;
+
     public string $php_path = '';
     public string $proc_cmd = '';
 
     public array $proc_list = [];
-    public array $pipe_list = [];
-
-    public array $job_mtk    = [];
-    public array $job_count  = [];
-    public array $job_result = [];
+    public array $proc_exec = [];
 
     /**
      * libMPC constructor.
@@ -63,21 +60,6 @@ class libMPC extends Factory
         $this->app     = App::new();
         $this->io_unit = IOUnit::new();
         $this->os_unit = OSUnit::new();
-    }
-
-    /**
-     * Set pipe buffer size (system default 4096 bytes, block when overflow, set carefully)
-     *
-     * @param int $buf_size
-     *
-     * @return $this
-     */
-    public function setBufSize(int $buf_size): self
-    {
-        $this->buf_size = &$buf_size;
-
-        unset($buf_size);
-        return $this;
     }
 
     /**
@@ -96,179 +78,126 @@ class libMPC extends Factory
     }
 
     /**
-     * Set number of process
-     *
-     * @param int $proc_count
-     *
-     * @return $this
-     */
-    public function setProcNum(int $proc_count): self
-    {
-        $this->proc_cnt = &$proc_count;
-
-        unset($proc_count);
-        return $this;
-    }
-
-    /**
-     * Call API async
+     * Exec cmd async
      *
      * @param string $c
      * @param array  $data
      *
      * @return bool
      */
-    public function callAsync(string $c, array $data = []): bool
+    public function execAsync(string $c, array $data = []): bool
     {
-        $proc_cmd = $this->php_path . ' "' . $this->app->script_path . '"';
-        $proc_cmd .= ' -c"' . strtr($c, '\\', '/') . '"';
+        $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
+        $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
 
         if (!empty($data)) {
-            $proc_cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
         }
 
-        //Create process
-        $proc = proc_open(
-            $this->os_unit->setCmd($proc_cmd)->setAsBg()->setEnvPath()->fetchCmd(),
-            [
-                ['pipe', 'r'],
-                ['pipe', 'w'],
-                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-Async.log', 'ab+']
-            ],
-            $pipes
-        );
+        if (isset($data['argv'])) {
+            $cmd .= ' ' . $data['argv'];
+        }
 
-        $result = is_resource($proc);
+        $proc = popen($this->os_unit->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb');
 
-        unset($c, $data, $proc_cmd, $proc, $pipes);
+        if (is_resource($proc)) {
+            $result = true;
+            pclose($proc);
+        } else {
+            $result = false;
+        }
+
+        unset($c, $data, $cmd, $proc);
         return $result;
     }
 
     /**
      * Start MPC
      *
+     * @param int $max_fork
+     * @param int $max_exec
+     *
      * @return $this
      */
-    public function start(): self
+    public function start(int $max_fork = 10, int $max_exec = 1000): self
     {
-        $this->proc_cmd = '"' . $this->app->script_path . '" -c"/' . strtr(__CLASS__, '\\', '/') . '/daemonProc"';
+        $this->max_fork = &$max_fork;
+        $this->max_exec = &$max_exec;
 
-        //Create process
-        for ($i = 0; $i < $this->proc_cnt; ++$i) {
-            $this->createProc($i);
+        $this->proc_cmd = $this->php_path . ' "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit"';
+
+        //Initialize proc_exec data
+        for ($i = 0; $i < $this->max_fork; ++$i) {
+            $this->proc_exec[$i] = 0;
         }
 
         //Register MPC closeAll function
         register_shutdown_function([$this, 'closeAll']);
 
-        unset($i);
+        unset($max_fork, $max_exec, $i);
         return $this;
     }
 
     /**
      * Add MPC job
      *
-     * @param string $c
+     * @param string $cmd
      * @param array  $data
      *
-     * @return string
+     * @return int
      */
-    public function addJob(string $c, array $data = []): string
+    public function add(string $cmd, array $data = []): int
     {
-        //Get current job count and increase
-        $job_count = ++$this->job_count[$this->proc_idx];
-
-        //Generate increased job ticket
-        $ticket = base_convert($this->job_mtk[$this->proc_idx], 10, 36);
-
-        //Add "c" & "mtk" into data
-        $data['c']   = strtr($c, '\\', '/');
-        $data['mtk'] = &$ticket;
-
-        //Communicate via STDIN
-        fwrite($this->pipe_list[$this->proc_idx][0], json_encode($data, JSON_FORMAT) . PHP_EOL);
-
-        //Check & read from STDOUT
-        $this->buf_size < (fstat($this->pipe_list[$this->proc_idx][1]))['size'] && $this->readPipe($this->proc_idx, $job_count);
-
-        //Get current job mtk
-        $mtk = (string)$this->proc_idx . ':' . $ticket;
-
-        //Move/Reset job_mtk
-        if ((++$this->job_mtk[$this->proc_idx]) >= PHP_INT_MAX) {
-            $this->job_mtk[$this->proc_idx] = 0;
+        //Check max executes
+        if ((++$this->proc_exec[$this->proc_idx]) >= $this->max_exec) {
+            $this->closeProc($this->proc_idx);
         }
 
+        //Create process
+        if (!isset($this->proc_list[$this->proc_idx]) && !$this->createProc($this->proc_idx)) {
+            return 0;
+        }
+
+        //Push data via STDIN
+        fwrite($this->proc_list[$this->proc_idx], json_encode(['c' => &$cmd] + $data, JSON_FORMAT) . PHP_EOL);
+
         //Move/Reset proc_idx
-        if ((++$this->proc_idx) >= $this->proc_cnt) {
+        if ((++$this->proc_idx) >= $this->max_fork) {
             $this->proc_idx = 0;
         }
 
-        unset($c, $data, $job_count, $ticket);
-        return $mtk;
-    }
-
-    /**
-     * Fetch data by ticket (json|string)
-     *
-     * @param string $ticket
-     *
-     * @return string
-     */
-    public function fetch(string $ticket): string
-    {
-        //Get idx
-        $idx = (int)substr($ticket, 0, strpos($ticket, ':'));
-
-        //Read STDOUT data
-        $this->readPipe($idx, $this->job_count[$idx]);
-
-        //Fetch result by ticket
-        $tk_data = $this->job_result[$ticket] ?? '';
-        $result  = is_string($tk_data) ? $tk_data : json_encode($tk_data, JSON_FORMAT);
-
-        unset($this->job_result[$ticket], $ticket, $idx, $tk_data);
-        return $result;
+        unset($cmd, $data);
+        return 1;
     }
 
     /**
      * Create process
      *
-     * @param int $pid
+     * @param int $idx
      *
      * @return bool
      */
-    public function createProc(int $pid): bool
+    public function createProc(int $idx): bool
     {
         //Create process
-        $proc = proc_open(
-            $this->php_path . ' ' . $this->proc_cmd,
-            [
-                ['pipe', 'r'],
-                ['pipe', 'w'],
-                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-MPC-' . (string)$pid . '.log', 'ab+']
-            ],
-            $pipes
-        );
+        $proc = popen($this->os_unit->setCmd($this->proc_cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'wb');
 
         if (!is_resource($proc)) {
             return false;
         }
 
         //Save process properties
-        $this->job_mtk[$pid]   = 0;
-        $this->job_count[$pid] = 0;
-        $this->proc_list[$pid] = $proc;
-        $this->pipe_list[$pid] = $pipes;
+        $this->proc_exec[$idx] = 0;
+        $this->proc_list[$idx] = &$proc;
 
-        unset($pid, $proc, $pipes);
+        unset($idx, $proc);
         return true;
     }
 
     /**
-     * Daemon process
+     * Daemon process unit
      */
-    public function daemonProc(): void
+    public function procUnit(): void
     {
         //Init modules & libraries
         $this->error   = Error::new();
@@ -288,75 +217,46 @@ class libMPC extends Factory
 
             //Parse data
             if ('' === $stdin || !is_array($data = json_decode($stdin, true))) {
-                echo PHP_EOL;
-                continue;
-            }
-
-            //Check "c" & "mtk"
-            if (!isset($data['c']) || !isset($data['mtk'])) {
-                echo PHP_EOL;
                 continue;
             }
 
             //Fetch job data
-            $result = $this->execJob($data);
-
-            //Output via STDOUT
-            echo json_encode([$data['mtk'], $data['nohup'] ?? false, 1 === count($result) ? current($result) : $result], JSON_FORMAT) . PHP_EOL;
+            $this->execJob($data);
 
             //Free memory
-            unset($stdin, $data, $result);
+            unset($stdin, $data);
         }
     }
 
     /**
-     * Close one process
+     * Close a process
      *
      * @param int $idx
-     *
-     * @return $this
      */
-    public function close(int $idx): self
+    public function closeProc(int $idx): void
     {
-        $status = proc_get_status($this->proc_list[$idx]);
-
-        if ($status['running']) {
-            foreach ($this->pipe_list[$idx] as $key => $pipe) {
-                if (0 === $key) {
-                    //Send "exit" signal to child STDIN
-                    fwrite($pipe, 'exit' . PHP_EOL);
-                }
-
-                fclose($pipe);
-            }
-
-            proc_close($this->proc_list[$idx]);
+        if (is_resource($this->proc_list[$idx])) {
+            fwrite($this->proc_list[$idx], 'exit' . PHP_EOL);
+            pclose($this->proc_list[$idx]);
         }
 
-        $this->job_mtk[$idx]   = 0;
-        $this->job_count[$idx] = 0;
-
-        unset($this->proc_list[$idx], $this->pipe_list[$idx], $idx, $status, $key, $pipe);
-        return $this;
+        unset($this->proc_list[$idx], $idx);
     }
 
     /**
-     * Close All process
-     *
-     * @return $this
+     * Close All processes
      */
-    public function closeAll(): self
+    public function closeAll(): void
     {
         foreach ($this->proc_list as $idx => $proc) {
-            $this->close($idx);
+            $this->closeProc($idx);
         }
 
         unset($idx, $proc);
-        return $this;
     }
 
     /**
-     * Close in the end
+     * Close all in the end
      */
     public function __destruct()
     {
@@ -368,12 +268,10 @@ class libMPC extends Factory
      *
      * @param array $data
      *
-     * @return array
+     * @return void
      */
-    private function execJob(array $data): array
+    private function execJob(array $data): void
     {
-        $result = [];
-
         try {
             //Parse CMD
             $this->router->parse($data['c']);
@@ -388,7 +286,7 @@ class libMPC extends Factory
                     //Extract CMD contents
                     [$cmd_class, $cmd_method] = $cmd_pair;
                     //Run script method
-                    $result += $this->execute->runScript($cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
+                    $this->execute->runScript($cmd_class, $cmd_method, $cmd_pair[2] ?? implode('/', $cmd_pair));
                 }
             }
 
@@ -414,33 +312,5 @@ class libMPC extends Factory
         }
 
         unset($data, $cmd_pair, $cmd_class, $cmd_method, $cmd_name, $exe_path);
-        return $result;
-    }
-
-    /**
-     * Read data from pipe
-     *
-     * @param int $idx
-     * @param int $count
-     */
-    private function readPipe(int $idx, int $count): void
-    {
-        while (0 <= --$count && 0 <= --$this->job_count[$idx]) {
-            //Read from pipe STDOUT
-            if (false === ($stdout = fgets($this->pipe_list[$idx][1]))) {
-                $this->close($idx);
-                $this->createProc($idx);
-                break;
-            }
-
-            if ('' === ($stdout = trim($stdout)) || !is_array($job_data = json_decode($stdout, true))) {
-                continue;
-            }
-
-            //Save to result block
-            !$job_data[1] && $this->job_result += [(string)$idx . ':' . $job_data[0] => $job_data[2]];
-        }
-
-        unset($idx, $count, $stdout, $job_data);
     }
 }
