@@ -154,7 +154,7 @@ class Execute extends Factory
             [$cmd_class, $cmd_method] = $cmd_pair;
 
             //Get target CMD path
-            $cmd_path = strtr(trim($cmd_class, '\\'), '\\', '/') . '/' . $cmd_method;
+            $cmd_path = strtr($cmd_class, '\\', '/') . '/' . $cmd_method;
 
             //Check hooks before CMD
             if (!$hook->checkPass($this, $cmd_path, $hook->before)) {
