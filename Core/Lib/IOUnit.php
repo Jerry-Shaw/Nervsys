@@ -44,7 +44,6 @@ class IOUnit extends Factory
     public array $src_input  = [];
     public array $src_output = [];
 
-    public array  $return_type   = [];
     public string $content_type  = '';
     public string $cli_data_type = '';
 
@@ -292,10 +291,6 @@ class IOUnit extends Factory
         !headers_sent() && header('Content-Type: ' . $this->content_type . '; charset=utf-8');
 
         $data = 1 === count($this->src_output) ? current($this->src_output) : $this->src_output;
-
-        if (empty($this->src_output) && in_array('object', $this->return_type, true)) {
-            $data = (object)[];
-        }
 
         if (!empty($this->src_msg)) {
             $data = $this->src_msg + ['data' => $data];

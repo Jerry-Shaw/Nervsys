@@ -132,31 +132,29 @@ class Router extends Factory
     }
 
     /**
-     * Get API based CMD
+     * Get full cmd from input value
      *
-     * @param string $cmd
+     * @param string $cmd_val
+     * @param bool   $root_exec
      *
      * @return string
      */
-    public function getApiCmd(string $cmd): string
+    public function getCmd(string $cmd_val, bool $root_exec = false): string
     {
-        return 0 !== strpos($cmd, $this->app->api_path . '/')
-            ? $this->app->api_path . '/' . trim($cmd, '/')
-            : trim($cmd, '/');
-    }
+        $api_dir = $this->app->api_path . '/';
+        $cmd_val = strtr($cmd_val, '\\', '/');
 
-    /**
-     * Get path based CMD
-     *
-     * @param string $cmd
-     *
-     * @return string
-     */
-    public function getPathCmd(string $cmd): string
-    {
-        return '/' !== $cmd[0] && 0 !== strpos($cmd, $this->app->api_path . '/')
-            ? $this->app->api_path . '/' . trim($cmd, '/')
-            : trim($cmd, '/');
+        $path_match = !$root_exec
+            ? 0 === strpos($cmd_val, $api_dir)
+            : 0 === strpos($cmd_val, '/') || 0 === strpos($cmd_val, $api_dir);
+
+        $cmd_val = trim($cmd_val, '/');
+
+        $cmd = '/';
+        $cmd .= $path_match ? $cmd_val : $api_dir . $cmd_val;
+
+        unset($cmd_val, $root_exec, $api_dir, $path_match);
+        return $cmd;
     }
 
     /**
@@ -165,7 +163,6 @@ class Router extends Factory
      * @param string $c
      *
      * @return array
-     * @throws \ReflectionException
      */
     public function cgiParser(string $c): array
     {
@@ -176,41 +173,37 @@ class Router extends Factory
         $io_unit = IOUnit::new();
         $reflect = Reflect::new();
 
-        foreach ($cmd_list as $cmd) {
+        foreach ($cmd_list as $cmd_val) {
+            //Get full CMD value
+            $cmd = $this->getCmd($cmd_val, $this->app->is_cli);
+
             //Skip invalid CMD
             if (false === strpos($cmd, '/', 1)) {
+                $this->app->showDebug(new \Exception('"' . $cmd . '" invalid!', E_USER_NOTICE), false);
                 continue;
             }
 
-            //Get full CMD value
-            $cmd_val = !$this->app->is_cli ? $this->getApiCmd($cmd) : $this->getPathCmd($cmd);
-
             //Get class & method from CMD
-            $fn_pos = strrpos($cmd_val, '/');
-            $class  = '\\' . strtr(substr($cmd_val, 0, $fn_pos), '/', '\\');
-            $method = substr($cmd_val, $fn_pos + 1);
+            $fn_pos = strrpos($cmd, '/');
+            $class  = strtr(substr($cmd, 0, $fn_pos), '/', '\\');
+            $method = substr($cmd, $fn_pos + 1);
 
             //Skip non-exist class
             if (!class_exists($class)) {
-                $this->app->showDebug(new \Exception('"' . substr($cmd, 0, strrpos($cmd, '/')) . '" NOT found!', E_USER_NOTICE), false);
+                $this->app->showDebug(new \Exception('"' . substr($cmd_val, 0, strrpos($cmd_val, '/')) . '" NOT found!', E_USER_NOTICE), false);
                 continue;
             }
 
             //Skip non-exist method
             if (!method_exists($class, $method)) {
-                $this->app->showDebug(new \Exception('"' . $cmd . '" NOT found!', E_USER_NOTICE), false);
+                $this->app->showDebug(new \Exception('"' . $cmd_val . '" NOT found!', E_USER_NOTICE), false);
                 continue;
             }
 
-            //Save method return type
-            if ('' !== ($return_type = $reflect->getReturnType($class, $method))) {
-                $io_unit->return_type[$cmd] = $return_type;
-            }
-
-            $fn_list[] = [$class, $method, $cmd];
+            $fn_list[] = [$class, $method, $cmd_val];
         }
 
-        unset($c, $cmd_list, $io_unit, $reflect, $cmd, $cmd_val, $fn_pos, $class, $method, $return_type);
+        unset($c, $cmd_list, $io_unit, $reflect, $cmd_val, $cmd, $fn_pos, $class, $method);
         return $fn_list;
     }
 

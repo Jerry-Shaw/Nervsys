@@ -57,7 +57,7 @@ class Hook extends Factory
      */
     public function addBefore(string $input_c, string $hook_class, string $hook_method): self
     {
-        $this->before[$this->router->getPathCmd($input_c)][] = [$hook_class, $hook_method];
+        $this->before[$this->router->getCmd($input_c, true)][] = [$hook_class, $hook_method];
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
@@ -74,7 +74,7 @@ class Hook extends Factory
      */
     public function addAfter(string $input_c, string $hook_class, string $hook_method): self
     {
-        $this->after[$this->router->getPathCmd($input_c)][] = [$hook_class, $hook_method];
+        $this->after[$this->router->getCmd($input_c, true)][] = [$hook_class, $hook_method];
 
         unset($input_c, $hook_class, $hook_method);
         return $this;
