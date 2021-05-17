@@ -81,7 +81,7 @@ class Hook extends Factory
     }
 
     /**
-     * Check hook fn pass status
+     * Check hook pass status
      *
      * @param Execute $execute
      * @param string  $input_c
@@ -91,10 +91,10 @@ class Hook extends Factory
      */
     public function checkPass(Execute $execute, string $input_c, array $hook_list): bool
     {
-        $fn_list = $this->getFn($input_c, $hook_list);
+        $fn_list = $this->getHook($input_c, $hook_list);
 
         foreach ($fn_list as $hook_fn) {
-            if (!$this->callFn($execute, $hook_fn)) {
+            if (!$this->callHook($execute, $hook_fn)) {
                 unset($execute, $input_c, $hook_list, $fn_list, $hook_fn);
                 return false;
             }
@@ -105,30 +105,26 @@ class Hook extends Factory
     }
 
     /**
-     * Get function list from input_c
+     * Get hook list for input_c
      *
      * @param string $input_c
      * @param array  $h_list
      *
      * @return array
      */
-    private function getFn(string $input_c, array $h_list): array
+    private function getHook(string $input_c, array $h_list): array
     {
         $fn_list = [];
-        $c_list  = [];
 
-        $c_part = false !== strpos($input_c, '/') ? explode('/', $input_c) : [$input_c];
+        ksort($h_list);
 
-        foreach ($c_part as $value) {
-            $c_list[] = $value;
-            $c_string = implode('/', $c_list);
-
-            if (isset($h_list[$c_string])) {
-                $fn_list = array_merge($fn_list, $h_list[$c_string]);
+        foreach ($h_list as $c_path => $c_hooks) {
+            if (0 === strpos($input_c, $c_path)) {
+                $fn_list = array_merge($fn_list, $c_hooks);
             }
         }
 
-        unset($input_c, $h_list, $c_list, $c_part, $value, $c_string);
+        unset($input_c, $h_list, $c_path, $c_hooks);
         return $fn_list;
     }
 
@@ -140,7 +136,7 @@ class Hook extends Factory
      *
      * @return bool
      */
-    private function callFn(Execute $execute, array $hook_fn): bool
+    private function callHook(Execute $execute, array $hook_fn): bool
     {
         try {
             $result = $execute->runScript($hook_fn[0], $hook_fn[1], implode('/', $hook_fn));
