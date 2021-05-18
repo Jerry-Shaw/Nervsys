@@ -143,10 +143,11 @@ class libMPC extends Factory
      *
      * @param string $cmd
      * @param array  $data
+     * @param int    $retry
      *
      * @return int
      */
-    public function add(string $cmd, array $data = []): int
+    public function add(string $cmd, array $data = [], int $retry = 0): int
     {
         //Check max executes
         if ((++$this->proc_exec[$this->proc_idx]) >= $this->max_exec) {
@@ -155,18 +156,29 @@ class libMPC extends Factory
 
         //Create process
         if (!isset($this->proc_list[$this->proc_idx]) && !$this->createProc($this->proc_idx)) {
+            unset($cmd, $data, $retry);
             return 0;
         }
 
-        //Push data via STDIN
-        fwrite($this->proc_list[$this->proc_idx], json_encode(['c' => &$cmd] + $data, JSON_FORMAT) . PHP_EOL);
+        try {
+            //Push data via STDIN
+            fwrite($this->proc_list[$this->proc_idx], json_encode(['c' => &$cmd] + $data, JSON_FORMAT) . PHP_EOL);
+        } catch (\Throwable $throwable) {
+            //Retry 3 times
+            if (3 > ++$retry) {
+                $this->add($cmd, $data, $retry);
+            } else {
+                unset($cmd, $data, $retry, $throwable);
+                return 0;
+            }
+        }
 
         //Move/Reset proc_idx
         if ((++$this->proc_idx) >= $this->max_fork) {
             $this->proc_idx = 0;
         }
 
-        unset($cmd, $data);
+        unset($cmd, $data, $retry);
         return 1;
     }
 
@@ -180,7 +192,7 @@ class libMPC extends Factory
     public function createProc(int $idx): bool
     {
         //Create process
-        $proc = popen($this->os_unit->setCmd($this->proc_cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'wb');
+        $proc = popen($this->os_unit->setCmd($this->proc_cmd)->setEnvPath()->fetchCmd(), 'wb');
 
         if (!is_resource($proc)) {
             return false;
@@ -210,11 +222,6 @@ class libMPC extends Factory
                 return;
             }
 
-            //On exit code
-            if ('exit' === ($stdin = trim($stdin))) {
-                return;
-            }
-
             //Parse data
             if ('' === $stdin || !is_array($data = json_decode($stdin, true))) {
                 continue;
@@ -236,7 +243,6 @@ class libMPC extends Factory
     public function closeProc(int $idx): void
     {
         if (is_resource($this->proc_list[$idx])) {
-            fwrite($this->proc_list[$idx], 'exit' . PHP_EOL);
             pclose($this->proc_list[$idx]);
         }
 
