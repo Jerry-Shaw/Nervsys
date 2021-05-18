@@ -36,6 +36,9 @@ class libSockOnRedis extends libSocket
 
     public bool $is_ws = false;
 
+    public int $mpc_fork = 10;
+    public int $mpc_exec = 1000;
+
     public int $batch_size = 200;
 
     public string $proc_name = 'worker';
@@ -88,6 +91,23 @@ class libSockOnRedis extends libSocket
         $this->redis = &$redis;
 
         unset($redis);
+        return $this;
+    }
+
+    /**
+     * Set libMPC properties
+     *
+     * @param int $max_fork
+     * @param int $max_exec
+     *
+     * @return $this
+     */
+    public function setMpcProp(int $max_fork, int $max_exec): self
+    {
+        $this->mpc_fork = &$max_fork;
+        $this->mpc_exec = &$max_exec;
+
+        unset($max_fork, $max_exec);
         return $this;
     }
 
@@ -157,7 +177,7 @@ class libSockOnRedis extends libSocket
         $this->cleanup();
 
         //Start libMPC
-        $this->lib_mpc = libMPC::new()->setPhpPath(OSUnit::new()->getPhpPath())->start();
+        $this->lib_mpc = libMPC::new()->setPhpPath(OSUnit::new()->getPhpPath())->start($this->mpc_fork, $this->mpc_exec);
 
         while (true) {
             //Watch & read clients
