@@ -361,7 +361,6 @@ class libQueue extends Factory
      */
     public function getQueueList(): array
     {
-        //Build process keys
         $this->buildKeys();
 
         return $this->redis->sMembers($this->key_slot['listen']);
@@ -374,7 +373,6 @@ class libQueue extends Factory
      */
     public function getProcList(): array
     {
-        //Build process keys
         $this->buildKeys();
 
         return $this->getKeys($this->key_slot['watch']);
@@ -385,6 +383,8 @@ class libQueue extends Factory
      *
      * @param int $max_fork
      * @param int $max_exec
+     *
+     * @throws \Exception
      */
     public function start(int $max_fork = 10, int $max_exec = 1000): void
     {
@@ -394,9 +394,9 @@ class libQueue extends Factory
         //Build process keys
         $this->buildKeys();
 
-        //Set default unitHandler
+        //Check unitHandler register
         if (empty($this->unit_handler)) {
-            $this->unit_handler = [__CLASS__, 'unitHandler'];
+            throw new \Exception('UnitHandler NOT set!');
         }
 
         //Set max forks
