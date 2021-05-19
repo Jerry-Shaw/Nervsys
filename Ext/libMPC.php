@@ -149,18 +149,13 @@ class libMPC extends Factory
      */
     public function add(string $cmd, array $data = [], int $retry = 0): int
     {
-        //Check max executes
-        if ((++$this->proc_exec[$this->proc_idx]) >= $this->max_exec) {
-            $this->closeProc($this->proc_idx);
-        }
-
-        //Create process
-        if (!isset($this->proc_list[$this->proc_idx]) && !$this->createProc($this->proc_idx)) {
-            unset($cmd, $data, $retry);
-            return 0;
-        }
-
         try {
+            //Create process
+            if ((!isset($this->proc_list[$this->proc_idx]) || !is_resource($this->proc_list[$this->proc_idx])) && !$this->createProc($this->proc_idx)) {
+                unset($cmd, $data, $retry);
+                return 0;
+            }
+
             //Push data via STDIN
             fwrite($this->proc_list[$this->proc_idx], json_encode(['c' => &$cmd] + $data, JSON_FORMAT) . PHP_EOL);
         } catch (\Throwable $throwable) {
@@ -171,6 +166,11 @@ class libMPC extends Factory
                 unset($cmd, $data, $retry, $throwable);
                 return 0;
             }
+        }
+
+        //Check max executes
+        if ((++$this->proc_exec[$this->proc_idx]) >= $this->max_exec) {
+            $this->closeProc($this->proc_idx);
         }
 
         //Move/Reset proc_idx
