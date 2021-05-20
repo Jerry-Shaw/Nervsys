@@ -32,24 +32,15 @@ use Core\Lib\IOUnit;
  */
 class libLang extends Factory
 {
-    public string $path;
-
-    /**
-     * libLang constructor.
-     */
-    public function __construct()
-    {
-        $this->path = App::new()->root_path;
-    }
-
     /**
      * Load language file (root_path based)
      *
      * @param string $file_path
      * @param string $file_name
      * @param string $lang_name
+     * @param string $root_path
      */
-    public function load(string $file_path, string $file_name, string $lang_name = ''): void
+    public function load(string $file_path, string $file_name, string $lang_name = '', string $root_path = ''): void
     {
         if ('' === $lang_name) {
             $lang_name = self::detect();
@@ -57,11 +48,10 @@ class libLang extends Factory
 
         putenv('LANG=' . $lang_name);
         setlocale(LC_ALL, $lang_name);
-
-        bindtextdomain($file_name, $this->path . DIRECTORY_SEPARATOR . $file_path . DIRECTORY_SEPARATOR);
+        bindtextdomain($file_name, App::new()->getRootPath($root_path) . DIRECTORY_SEPARATOR . $file_path . DIRECTORY_SEPARATOR);
         textdomain($file_name);
 
-        unset($file_path, $file_name, $lang_name);
+        unset($file_path, $file_name, $lang_name, $root_path);
     }
 
     /**
