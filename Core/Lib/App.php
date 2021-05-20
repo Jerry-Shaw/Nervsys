@@ -129,15 +129,16 @@ class App extends Factory
     }
 
     /**
-     * Add autoload pathname (root_path related)
+     * Add autoload pathname (root related)
      *
      * @param string $pathname
+     * @param string $root
      *
      * @return $this
      */
-    public function addAutoload(string $pathname): self
+    public function addAutoload(string $pathname, string $root = ''): self
     {
-        $path = $this->root_path . DIRECTORY_SEPARATOR . $pathname;
+        $path = ('' === $root ? $this->root_path : $root) . DIRECTORY_SEPARATOR . $pathname;
 
         spl_autoload_register(
             static function (string $class_name) use ($path): void
@@ -147,7 +148,7 @@ class App extends Factory
             }
         );
 
-        unset($pathname, $path);
+        unset($pathname, $root, $path);
         return $this;
     }
 
