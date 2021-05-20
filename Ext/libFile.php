@@ -48,7 +48,7 @@ class libFile extends Factory
     }
 
     /**
-     * Check & create directory ($root based)
+     * Check & create directory (root based)
      *
      * @param string $path
      * @param string $root
@@ -58,9 +58,7 @@ class libFile extends Factory
     public function getPath(string $path, string $root = ''): string
     {
         //Define root
-        if ('' === $root) {
-            $root = App::new()->root_path;
-        }
+        $root = App::new()->getRootPath($root);
 
         //Parent directory is not allowed
         if (false !== strpos($path, '..')) {
