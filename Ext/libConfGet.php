@@ -30,35 +30,24 @@ use Core\Lib\App;
  */
 class libConfGet extends Factory
 {
-    public App $app;
-
     public array $conf_pool = [];
 
     /**
-     * libConfGet constructor.
-     */
-    public function __construct()
-    {
-        $this->app = App::new();
-    }
-
-    /**
-     * Load config file (root_path based)
+     * Load config file (root based)
      *
      * @param string $file_name
+     * @param string $root_path
      *
      * @return $this
      * @throws \Exception
      */
-    public function load(string $file_name): self
+    public function load(string $file_name, string $root_path = ''): self
     {
-        if (!is_file($file_path = $this->app->root_path . DIRECTORY_SEPARATOR . $file_name)) {
-            throw new \Exception('"' . $file_path . '" NOT found!');
-        }
+        $app = App::new();
 
-        $this->conf_pool = array_replace_recursive($this->conf_pool, $this->app->parseConf($file_path, true));
+        $this->conf_pool = array_replace_recursive($this->conf_pool, $app->parseConf($app->getConfPath($file_name, $root_path), true));
 
-        unset($file_name, $file_path);
+        unset($file_name, $root_path, $app);
         return $this;
     }
 

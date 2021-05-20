@@ -32,8 +32,6 @@ use Core\Lib\IOUnit;
  */
 class libErrno extends Factory
 {
-    public App $app;
-
     private array $msg_pool   = [];
     private bool  $multi_lang = false;
 
@@ -44,30 +42,26 @@ class libErrno extends Factory
      */
     public function __construct(bool $multi_lang = false)
     {
-        $this->app = App::new();
-
         $this->multi_lang = &$multi_lang;
-
         unset($multi_lang);
     }
 
     /**
-     * Load error file (root_path based)
+     * Load error file (root based)
      *
      * @param string $file_name
+     * @param string $root_path
      *
      * @return $this
      * @throws \Exception
      */
-    public function load(string $file_name): self
+    public function load(string $file_name, string $root_path = ''): self
     {
-        if (!is_file($file_path = $this->app->root_path . DIRECTORY_SEPARATOR . $file_name)) {
-            throw new \Exception('"' . $file_path . '" NOT found!');
-        }
+        $app = App::new();
 
-        $this->msg_pool = array_replace_recursive($this->msg_pool, $this->app->parseConf($file_path, false));
+        $this->msg_pool = array_replace_recursive($this->msg_pool, $app->parseConf($app->getConfPath($file_name, $root_path), false));
 
-        unset($file_name, $file_path);
+        unset($file_name, $root_path, $app);
         return $this;
     }
 

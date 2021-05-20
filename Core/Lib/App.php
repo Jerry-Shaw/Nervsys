@@ -138,7 +138,7 @@ class App extends Factory
      */
     public function addAutoload(string $pathname, string $root = ''): self
     {
-        $path = ('' === $root ? $this->root_path : $root) . DIRECTORY_SEPARATOR . $pathname;
+        $path = $this->getRootPath($root) . DIRECTORY_SEPARATOR . $pathname;
 
         spl_autoload_register(
             static function (string $class_name) use ($path): void
@@ -153,22 +153,54 @@ class App extends Factory
     }
 
     /**
-     * Add include pathname (root_path related)
+     * Add include pathname (root related)
      *
      * @param string $pathname
+     * @param string $root
      *
      * @return $this
      */
-    public function addIncPath(string $pathname): self
+    public function addIncPath(string $pathname, string $root = ''): self
     {
-        set_include_path($this->root_path . DIRECTORY_SEPARATOR . $pathname . PATH_SEPARATOR . get_include_path());
+        set_include_path($this->getRootPath($root) . DIRECTORY_SEPARATOR . $pathname . PATH_SEPARATOR . get_include_path());
 
-        unset($pathname);
+        unset($pathname, $root);
         return $this;
     }
 
     /**
-     * Parse conf file in JSON/INI
+     * Get root path (definable)
+     *
+     * @param string $root
+     *
+     * @return string
+     */
+    public function getRootPath(string $root = ''): string
+    {
+        return '' === $root ? $this->root_path : $root;
+    }
+
+    /**
+     * Get config file path (root based)
+     *
+     * @param string $filename
+     * @param string $root
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public function getConfPath(string $filename, string $root = ''): string
+    {
+        if (!is_file($file_path = $this->getRootPath($root) . DIRECTORY_SEPARATOR . $filename)) {
+            throw new \Exception('"' . $file_path . '" NOT found!');
+        }
+
+        unset($filename, $root);
+        return $file_path;
+    }
+
+    /**
+     * Parse config file in JSON/INI
      *
      * @param string $file_path
      * @param bool   $ini_secs
