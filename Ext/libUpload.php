@@ -21,6 +21,7 @@
 namespace Ext;
 
 use Core\Factory;
+use Core\Lib\App;
 use Core\Lib\IOUnit;
 
 /**
@@ -90,7 +91,7 @@ class libUpload extends Factory
     ];
 
     public IOUnit $io_unit;
-    public string $upload_root;
+    public string $upload_path;
 
     public array $ext  = [];
     public int   $perm = 0666;
@@ -100,13 +101,26 @@ class libUpload extends Factory
 
     /**
      * libUpload constructor.
-     *
-     * @param string $upload_root
      */
-    public function __construct(string $upload_root)
+    public function __construct()
     {
         $this->io_unit     = IOUnit::new();
-        $this->upload_root = &$upload_root;
+        $this->upload_path = App::new()->root_path;
+    }
+
+    /**
+     * Set upload root path
+     *
+     * @param string $upload_path
+     *
+     * @return $this
+     */
+    public function setUploadPath(string $upload_path): self
+    {
+        $this->upload_path = &$upload_path;
+
+        unset($upload_path);
+        return $this;
     }
 
     /**
@@ -216,7 +230,7 @@ class libUpload extends Factory
         }
 
         //Create save path
-        if ('' === $save_path = $lib_file->getPath($to, $this->upload_root)) {
+        if ('' === $save_path = $lib_file->getPath($to, $this->upload_path)) {
             return $this->getUploadError(UPLOAD_ERR_NO_TMP_DIR);
         }
 
@@ -228,7 +242,7 @@ class libUpload extends Factory
         //Build save properties
         $file_name = $as . '.' . $ext;
         $url_path  = ltrim($save_path, '\\/') . $file_name;
-        $file_path = rtrim($this->upload_root, '\\/') . DIRECTORY_SEPARATOR . $url_path;
+        $file_path = rtrim($this->upload_path, '\\/') . DIRECTORY_SEPARATOR . $url_path;
 
         //Delete existing file
         is_file($file_path) && unlink($file_path);
