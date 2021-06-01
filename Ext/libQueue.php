@@ -120,7 +120,7 @@ class libQueue extends Factory
      *
      * @return $this
      */
-    public function cloneAs(string $name): object
+    public function cloneAs(string $name): self
     {
         $object = clone $this;
 

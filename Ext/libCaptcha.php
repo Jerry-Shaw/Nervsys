@@ -48,8 +48,8 @@ class libCaptcha extends Factory
         self::TYPE_CALC,
     ];
 
-    /** @var \ext\libCrypt $lib_crypt */
-    public object $lib_crypt;
+    /** @var libCrypt $lib_crypt */
+    public libCrypt $lib_crypt;
 
     /** @var \Redis $redis */
     public \Redis $redis;
@@ -70,11 +70,11 @@ class libCaptcha extends Factory
     /**
      * Bind to Crypt object
      *
-     * @param object $lib_crypt
+     * @param libCrypt $lib_crypt
      *
      * @return $this
      */
-    public function bindCrypt(object $lib_crypt): self
+    public function bindCrypt(libCrypt $lib_crypt): self
     {
         $this->lib_crypt = &$lib_crypt;
 
