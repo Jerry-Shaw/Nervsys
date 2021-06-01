@@ -73,7 +73,7 @@ class libCryptGen extends Factory
         foreach ($unit as $k => $v) {
             $unit_key = $v[0];
 
-            if (self::getKvMode($k, $unit_key)) {
+            if ($this->getKvMode($k, $unit_key)) {
                 $v = strrev($v);
             }
 
@@ -100,7 +100,7 @@ class libCryptGen extends Factory
         foreach ($unit as $k => $v) {
             $unit_key  = substr($v, -1, 1);
             $unit_item = substr($v, 0, 4);
-            $unit[$k]  = self::getKvMode($k, $unit_key) ? strrev($unit_item) : $unit_item;
+            $unit[$k]  = $this->getKvMode($k, $unit_key) ? strrev($unit_item) : $unit_item;
         }
 
         $key = implode($unit);
