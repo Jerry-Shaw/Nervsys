@@ -683,9 +683,11 @@ class libMySQL extends Factory
             $result['stmt'] = $this->pdo->prepare($this->buildSql());
             $result['exec'] = $result['stmt']->execute($this->runtime_data['bind'] ?? []);
 
-            $this->affected_rows = $result['stmt']->rowCount();
             $this->runtime_data  = [];
+            $this->affected_rows = $result['stmt']->rowCount();
         } catch (\Throwable $throwable) {
+            $this->runtime_data = [];
+
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -813,11 +815,12 @@ class libMySQL extends Factory
     protected function isReady(): void
     {
         if (isset($this->runtime_data['action'])) {
-            throw new \PDOException(
-                '"' . $this->runtime_data['action'] . '" is NOT executed!' . PHP_EOL
-                . 'SQL: ' . $this->buildReadableSql($this->{'build' . ucfirst($this->runtime_data['action'])}(), $this->runtime_data['bind']),
-                E_USER_ERROR
-            );
+            //Get blocked SQL
+            $blocked_sql = $this->buildReadableSql($this->{'build' . ucfirst($this->runtime_data['action'])}(), $this->runtime_data['bind']);
+            //Reset runtime data
+            $this->runtime_data = [];
+            //Throw PDOException
+            throw new \PDOException($blocked_sql . ' NOT execute!', E_USER_ERROR);
         }
     }
 
