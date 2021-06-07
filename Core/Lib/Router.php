@@ -33,9 +33,8 @@ class Router extends Factory
 {
     public App $app;
 
-    public array $cgi_cmd   = [];
-    public array $cgi_stack = [];
-
+    public array $cgi_cmd      = [];
+    public array $cgi_stack    = [];
     public array $cli_cmd      = [];
     public array $cli_stack    = [];
     public array $cli_path_map = [];
@@ -150,8 +149,7 @@ class Router extends Factory
 
         $cmd_val = trim($cmd_val, '/');
 
-        $cmd = '/';
-        $cmd .= $path_match ? $cmd_val : $api_dir . $cmd_val;
+        $cmd = '/' . ($path_match ? $cmd_val : $api_dir . $cmd_val);
 
         unset($cmd_val, $root_exec, $api_dir, $path_match);
         return $cmd;
@@ -174,33 +172,35 @@ class Router extends Factory
         $reflect = Reflect::new();
 
         foreach ($cmd_list as $cmd_val) {
-            //Get full CMD value
-            $cmd = $this->getCmd($cmd_val, $this->app->is_cli);
+            try {
+                //Skip invalid CMD
+                if (false === strpos(($cmd_val = strtr($cmd_val, '\\', '/')), '/', 1)) {
+                    throw new \Exception('"' . $cmd_val . '" invalid!', E_USER_NOTICE);
+                }
 
-            //Skip invalid CMD
-            if (false === strpos($cmd, '/', 1)) {
-                $this->app->showDebug(new \Exception('"' . $cmd . '" invalid!', E_USER_NOTICE), false);
-                continue;
+                //Get full CMD value
+                $cmd = $this->getCmd($cmd_val, $this->app->is_cli);
+
+                //Get class & method from CMD
+                $fn_pos = strrpos($cmd, '/');
+                $class  = strtr(substr($cmd, 0, $fn_pos), '/', '\\');
+                $method = substr($cmd, $fn_pos + 1);
+
+                //Skip non-exist class
+                if (!class_exists($class)) {
+                    throw new \Exception('"' . substr($cmd_val, 0, strrpos($cmd_val, '/')) . '" NOT found!', E_USER_NOTICE);
+                }
+
+                //Skip non-exist method
+                if (!method_exists($class, $method)) {
+                    throw new \Exception('"' . $cmd_val . '" NOT found!', E_USER_NOTICE);
+                }
+
+                $fn_list[] = [$class, $method, $cmd_val];
+            } catch (\Throwable $throwable) {
+                $this->app->showDebug($throwable, false);
+                unset($throwable);
             }
-
-            //Get class & method from CMD
-            $fn_pos = strrpos($cmd, '/');
-            $class  = strtr(substr($cmd, 0, $fn_pos), '/', '\\');
-            $method = substr($cmd, $fn_pos + 1);
-
-            //Skip non-exist class
-            if (!class_exists($class)) {
-                $this->app->showDebug(new \Exception('"' . substr($cmd_val, 0, strrpos($cmd_val, '/')) . '" NOT found!', E_USER_NOTICE), false);
-                continue;
-            }
-
-            //Skip non-exist method
-            if (!method_exists($class, $method)) {
-                $this->app->showDebug(new \Exception('"' . $cmd_val . '" NOT found!', E_USER_NOTICE), false);
-                continue;
-            }
-
-            $fn_list[] = [$class, $method, $cmd_val];
         }
 
         unset($c, $cmd_list, $io_unit, $reflect, $cmd_val, $cmd, $fn_pos, $class, $method);
