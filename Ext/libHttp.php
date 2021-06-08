@@ -38,7 +38,7 @@ class libHttp extends Factory
 
     //cURL default data container
     const CURL_DEFAULT = [
-        'http_ver'          => 'HTTP/2',
+        'http_ver'          => 'HTTP/1.1',
         'http_method'       => 'GET',
         'http_connection'   => 'keep-alive',
         'http_content_type' => self::CONTENT_TYPE_URL_ENCODED,
@@ -542,7 +542,7 @@ class libHttp extends Factory
         if (isset($this->runtime_data['file'])) {
             $this->runtime_data['data'] ??= [];
             $this->runtime_data['data'] += $this->runtime_data['file'];
-
+            //Set content type to multipart/form-data
             $this->runtime_data['http_content_type'] = self::CONTENT_TYPE_FORM_DATA;
         }
 
@@ -558,7 +558,7 @@ class libHttp extends Factory
         //Merge with header data
         $runtime_data = $this->mergeHttpHeader($url_unit, $this->runtime_data);
 
-        //Reset runtime data
+        //Reset runtime data property
         $this->runtime_data = [];
 
         unset($url_unit);
@@ -602,22 +602,14 @@ class libHttp extends Factory
                 $runtime_data['http_method'] = 'POST';
             }
 
-            switch ($runtime_data['http_content_type']) {
-                case self::CONTENT_TYPE_JSON:
-                    $curl_opt[CURLOPT_POSTFIELDS] = json_encode($runtime_data['data'], JSON_FORMAT);
-                    break;
-
-                case self::CONTENT_TYPE_XML:
-                    $curl_opt[CURLOPT_POSTFIELDS] = IOUnit::new()->toXml($runtime_data['data']);
-                    break;
-
-                case self::CONTENT_TYPE_URL_ENCODED:
-                    $curl_opt[CURLOPT_POSTFIELDS] = http_build_query($runtime_data['data']);
-                    break;
-
-                default:
-                    $curl_opt[CURLOPT_POSTFIELDS] = &$runtime_data['data'];
-                    break;
+            if (false !== stripos($runtime_data['http_content_type'], 'urlencoded')) {
+                $curl_opt[CURLOPT_POSTFIELDS] = http_build_query($runtime_data['data']);
+            } elseif (false !== stripos($runtime_data['http_content_type'], 'json')) {
+                $curl_opt[CURLOPT_POSTFIELDS] = json_encode($runtime_data['data'], JSON_FORMAT);
+            } elseif (false !== stripos($runtime_data['http_content_type'], 'xml')) {
+                $curl_opt[CURLOPT_POSTFIELDS] = IOUnit::new()->toXml($runtime_data['data']);
+            } else {
+                $curl_opt[CURLOPT_POSTFIELDS] = &$runtime_data['data'];
             }
         }
 
@@ -697,20 +689,17 @@ class libHttp extends Factory
      */
     private function parseHttpResponse(string $response): void
     {
-        [$header_data, $body_data] = explode("\r\n\r\n", $response, 2);
-
-        //Copy HTTP raw values
-        $this->raw_header = &$header_data;
-        $this->http_body  = &$body_data;
-
         //Reset appendable variables
         $this->raw_cookie  = '';
         $this->http_header = [];
         $this->http_cookie = [];
 
-        $data_list = explode("\r\n", $header_data);
+        //Get raw data of header and body
+        [$this->raw_header, $this->http_body] = explode("\r\n\r\n", $response, 2);
 
         //Parse Header
+        $data_list = explode("\r\n", $this->raw_header);
+
         foreach ($data_list as $value) {
             if (false === ($pos = strpos($value, ':'))) {
                 continue;
@@ -730,9 +719,9 @@ class libHttp extends Factory
             }
         }
 
+        //Parse Cookie
         $data_list = explode('; ', $this->raw_cookie);
 
-        //Parse Cookie
         foreach ($data_list as $value) {
             if (false === ($pos = strpos($value, '='))) {
                 continue;
@@ -744,6 +733,6 @@ class libHttp extends Factory
             $this->http_cookie[$key] = $val;
         }
 
-        unset($response, $header_data, $body_data, $data_list, $value, $pos, $key, $val);
+        unset($response, $data_list, $value, $pos, $key, $val);
     }
 }
