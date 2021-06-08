@@ -188,6 +188,21 @@ class libHttp extends Factory
     }
 
     /**
+     * Set cURL timeout value (seconds)
+     *
+     * @param int $timeout
+     *
+     * @return $this
+     */
+    public function setTimeout(int $timeout): self
+    {
+        $this->runtime_data['timeout'] = &$timeout;
+
+        unset($timeout);
+        return $this;
+    }
+
+    /**
      * Set referer URL
      *
      * @param string $referer
@@ -457,6 +472,7 @@ class libHttp extends Factory
         //Build query string
         $url_unit['query'] = isset($url_unit['query']) ? '?' . $url_unit['query'] : '';
 
+        //Add URL port
         if (!isset($url_unit['port'])) {
             $url_unit['port'] = 'https' === $url_unit['scheme'] ? 443 : 80;
         }
@@ -639,6 +655,7 @@ class libHttp extends Factory
     {
         [$header_data, $body_data] = explode("\r\n\r\n", $response, 2);
 
+        //Copy HTTP raw values
         $this->raw_header = &$header_data;
         $this->http_body  = &$body_data;
 
