@@ -42,12 +42,15 @@ class libHttp extends Factory
         'http_method'       => 'GET',
         'http_connection'   => 'keep-alive',
         'http_content_type' => self::CONTENT_TYPE_URL_ENCODED,
+        'ssl_verifyhost'    => 2,
+        'ssl_verifypeer'    => false,
         'accept_charset'    => 'UTF-8,*;q=0',
         'accept_encoding'   => 'gzip,deflate,identity,*;q=0',
         'accept_language'   => 'en-US,en,zh-CN,zh,*;q=0',
         'accept_type'       => 'application/json;q=0.9,application/xml;q=0.8,text/plain;q=0.7,text/html;q=0.6,*/*;q=0.5',
         'user_agent'        => 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')',
-        'with_body'         => true
+        'with_body'         => true,
+        'timeout'           => 60
     ];
 
     //Raw data
@@ -188,6 +191,21 @@ class libHttp extends Factory
     }
 
     /**
+     * Set Accept Encoding
+     *
+     * @param string $accept_encoding
+     *
+     * @return $this
+     */
+    public function setAcceptEncoding(string $accept_encoding): self
+    {
+        $this->runtime_data['accept_encoding'] = &$accept_encoding;
+
+        unset($accept_encoding);
+        return $this;
+    }
+
+    /**
      * Set cURL timeout value (seconds)
      *
      * @param int $timeout
@@ -289,6 +307,36 @@ class libHttp extends Factory
         $this->runtime_data['last_modified'] = &$last_modified;
 
         unset($last_modified);
+        return $this;
+    }
+
+    /**
+     * Set ssl_verifyhost value
+     *
+     * @param int $ssl_verifyhost
+     *
+     * @return $this
+     */
+    public function setSslVerifyHost(int $ssl_verifyhost): self
+    {
+        $this->runtime_data['ssl_verifyhost'] = &$ssl_verifyhost;
+
+        unset($ssl_verifyhost);
+        return $this;
+    }
+
+    /**
+     * Set ssl_verifypeer value
+     *
+     * @param bool $ssl_verifypeer
+     *
+     * @return $this
+     */
+    public function setSslVerifyPeer(bool $ssl_verifypeer): self
+    {
+        $this->runtime_data['ssl_verifypeer'] = &$ssl_verifypeer;
+
+        unset($ssl_verifypeer);
         return $this;
     }
 
@@ -490,12 +538,6 @@ class libHttp extends Factory
      */
     private function buildRuntimeData(array $url_unit): array
     {
-        //Merge custom options
-        if (isset($this->runtime_data['options'])) {
-            $this->runtime_data = $this->runtime_data['options'] + $this->runtime_data;
-            unset($this->runtime_data['options']);
-        }
-
         //Merge upload file data
         if (isset($this->runtime_data['file'])) {
             $this->runtime_data['data'] ??= [];
@@ -532,7 +574,7 @@ class libHttp extends Factory
      */
     private function buildCurlOptions(array $runtime_data): array
     {
-        $curl_opt = [];
+        $curl_opt = $this->runtime_data['options'] ?? [];
 
         if (isset($runtime_data['cookie'])) {
             $curl_opt[CURLOPT_COOKIE] = &$runtime_data['cookie'];
@@ -579,20 +621,22 @@ class libHttp extends Factory
             }
         }
 
-        $curl_opt[CURLOPT_PORT]           = &$runtime_data['url_unit']['port'];
-        $curl_opt[CURLOPT_TIMEOUT]        = $runtime_data['timeout'] ?? 60;
+        $curl_opt[CURLOPT_HEADER]         = true;
         $curl_opt[CURLOPT_NOSIGNAL]       = true;
         $curl_opt[CURLOPT_AUTOREFERER]    = true;
         $curl_opt[CURLOPT_COOKIESESSION]  = true;
         $curl_opt[CURLOPT_RETURNTRANSFER] = true;
-        $curl_opt[CURLOPT_SSL_VERIFYHOST] = $runtime_data['ssl_verifyhost'] ?? 2;
-        $curl_opt[CURLOPT_SSL_VERIFYPEER] = $runtime_data['ssl_verifypeer'] ?? false;
-        $curl_opt[CURLOPT_HTTPHEADER]     = &$runtime_data['header'];
+
+        $curl_opt[CURLOPT_NOBODY] = !$runtime_data['with_body'];
+
+        $curl_opt[CURLOPT_PORT]           = &$runtime_data['url_unit']['port'];
+        $curl_opt[CURLOPT_TIMEOUT]        = &$runtime_data['timeout'];
         $curl_opt[CURLOPT_ENCODING]       = &$runtime_data['accept_encoding'];
         $curl_opt[CURLOPT_USERAGENT]      = &$runtime_data['user_agent'];
+        $curl_opt[CURLOPT_HTTPHEADER]     = &$runtime_data['header'];
         $curl_opt[CURLOPT_CUSTOMREQUEST]  = &$runtime_data['http_method'];
-        $curl_opt[CURLOPT_NOBODY]         = !$runtime_data['with_body'];
-        $curl_opt[CURLOPT_HEADER]         = true;
+        $curl_opt[CURLOPT_SSL_VERIFYHOST] = &$runtime_data['ssl_verifyhost'];
+        $curl_opt[CURLOPT_SSL_VERIFYPEER] = &$runtime_data['ssl_verifypeer'];
 
         unset($runtime_data);
         return $curl_opt;
