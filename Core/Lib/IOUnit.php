@@ -437,7 +437,7 @@ class IOUnit extends Factory
         $match_pos  = strlen($_SERVER['HTTP_ACCEPT']);
 
         foreach ($this->response_types as $type) {
-            if (false === $pos = stripos($_SERVER['HTTP_ACCEPT'], $type)) {
+            if (false === ($pos = stripos($_SERVER['HTTP_ACCEPT'], $type))) {
                 continue;
             }
 
