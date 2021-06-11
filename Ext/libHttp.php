@@ -520,11 +520,6 @@ class libHttp extends Factory
         //Build query string
         $url_unit['query'] = isset($url_unit['query']) ? '?' . $url_unit['query'] : '';
 
-        //Add URL port
-        if (!isset($url_unit['port'])) {
-            $url_unit['port'] = 'https' === $url_unit['scheme'] ? 443 : 80;
-        }
-
         unset($url);
         return $url_unit;
     }
@@ -621,7 +616,9 @@ class libHttp extends Factory
 
         $curl_opt[CURLOPT_NOBODY] = !$runtime_data['with_body'];
 
-        $curl_opt[CURLOPT_PORT]           = &$runtime_data['url_unit']['port'];
+        //Using standard port number when no specific port is assigned in URL
+        $curl_opt[CURLOPT_PORT] = $runtime_data['url_unit']['port'] ?? ('https' === $runtime_data['url_unit']['scheme'] ? 443 : 80);
+
         $curl_opt[CURLOPT_TIMEOUT]        = &$runtime_data['timeout'];
         $curl_opt[CURLOPT_ENCODING]       = &$runtime_data['accept_encoding'];
         $curl_opt[CURLOPT_USERAGENT]      = &$runtime_data['user_agent'];
@@ -644,7 +641,8 @@ class libHttp extends Factory
      */
     private function mergeHttpHeader(array $url_unit, array $runtime_data): array
     {
-        $header_unit = ['Host' => $url_unit['host'] . ':' . $url_unit['port']];
+        //Append port number when non-standard port is using
+        $header_unit = ['Host' => $url_unit['host'] . (isset($url_unit['port']) ? ':' . $url_unit['port'] : '')];
 
         if (isset($runtime_data['header'])) {
             $header_unit += $runtime_data['header'];
