@@ -5,6 +5,7 @@
  *
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
  * Copyright 2019-2021 秋水之冰 <27206617@qq.com>
+ * Copyright 2021 wwj <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -907,12 +908,7 @@ class libMySQL extends Factory
 
                         foreach ($data as $key => $item) {
                             $param .= $key < $count ? '?,' : '?';
-
-                            if (is_int($item) || is_float($item) || is_numeric($item)) {
-                                $this->runtime_data[$bind_stage][] = $item;
-                            } else {
-                                $this->runtime_data[$bind_stage][] = '"' . $item . '"';
-                            }
+                            $this->runtime_data[$bind_stage][] = $item;
                         }
                     } else {
                         $param = implode(',', $data);
