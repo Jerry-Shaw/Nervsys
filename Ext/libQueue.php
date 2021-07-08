@@ -248,6 +248,25 @@ class libQueue extends Factory
     }
 
     /**
+     * Remove a job by decreasing idx counter
+     *
+     * @param string $job_idx
+     *
+     * @return int left job idx counter (n <= 0 means removed)
+     */
+    public function remove(string $job_idx): int
+    {
+        $left = $this->redis->hIncrBy($this->key_slot['idx'], $job_idx, -1);
+
+        if (0 >= $left) {
+            $this->redis->hDel($this->key_slot['idx'], $job_idx);
+        }
+
+        unset($job_idx);
+        return $left;
+    }
+
+    /**
      * Rollback a failed job to realtime list
      *
      * @param string $job_json
@@ -827,6 +846,21 @@ class libQueue extends Factory
             $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$json, 'return' => 'Data ERROR!'], JSON_FORMAT));
             unset($json, $router, $execute, $data);
             return;
+        }
+
+        //Check job QID
+        if (isset($data['QID'])) {
+            $left = $this->redis->hIncrBy($this->key_slot['idx'], $data['QID'], -1);
+
+            //Remove useless QID
+            if (0 >= $left) {
+                $this->redis->hDel($this->key_slot['idx'], $data['QID']);
+            }
+
+            //Skip job
+            if (0 > $left) {
+                return;
+            }
         }
 
         try {
