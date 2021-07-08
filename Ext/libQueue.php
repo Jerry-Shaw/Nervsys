@@ -226,30 +226,30 @@ class libQueue extends Factory
     /**
      * Kill worker process
      *
-     * @param string $proc_hash
+     * @param string $worker_key
      *
      * @return int
      */
-    public function kill(string $proc_hash = ''): int
+    public function kill(string $worker_key = ''): int
     {
         //Build process keys
         $this->buildKeys();
 
         //Get process list
-        $proc_list = '' === $proc_hash ? array_keys($this->getKeys($this->key_slot['watch'])) : [$this->key_slot['worker'] . $proc_hash];
+        $worker_list = '' === $worker_key ? array_keys($this->getKeys($this->key_slot['watch'])) : [$this->key_slot['worker'] . $worker_key];
 
-        if (empty($proc_list)) {
+        if (empty($worker_list)) {
             return 0;
         }
 
         //Remove worker from process list
-        $result = call_user_func_array([$this->redis, 'del'], $proc_list);
+        $result = call_user_func_array([$this->redis, 'del'], $worker_list);
 
         //Remove worker keys
-        array_unshift($proc_list, $this->key_slot['watch']);
-        call_user_func_array([$this->redis, 'hDel'], $proc_list);
+        array_unshift($worker_list, $this->key_slot['watch']);
+        call_user_func_array([$this->redis, 'hDel'], $worker_list);
 
-        unset($proc_hash, $proc_list);
+        unset($worker_key, $worker_list);
         return $result;
     }
 
@@ -367,11 +367,11 @@ class libQueue extends Factory
     }
 
     /**
-     * Get process list
+     * Get worker process list
      *
      * @return array
      */
-    public function getProcList(): array
+    public function getWorkerList(): array
     {
         $this->buildKeys();
 
@@ -430,19 +430,19 @@ class libQueue extends Factory
         //Create kill_all function
         $kill_all = function (): void
         {
-            //Get process list
-            if (empty($proc_list = array_keys($this->getKeys($this->key_slot['watch'])))) {
+            //Get worker process list
+            if (empty($worker_list = array_keys($this->getKeys($this->key_slot['watch'])))) {
                 return;
             }
 
             //Remove worker from process list
-            call_user_func_array([$this->redis, 'del'], $proc_list);
+            call_user_func_array([$this->redis, 'del'], $worker_list);
 
             //Remove worker from watch list
-            array_unshift($proc_list, $this->key_slot['watch']);
-            call_user_func_array([$this->redis, 'hDel'], $proc_list);
+            array_unshift($worker_list, $this->key_slot['watch']);
+            call_user_func_array([$this->redis, 'hDel'], $worker_list);
 
-            unset($proc_list);
+            unset($worker_list);
         };
 
         //Close on shutdown
