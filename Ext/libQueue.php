@@ -72,6 +72,7 @@ class libQueue extends Factory
     //Default key list
     private array $key_list = [
         //Process keys
+        'idx'        => 'idx',
         'listen'     => 'listen',
         'failed'     => 'failed',
         'success'    => 'success',
@@ -204,12 +205,12 @@ class libQueue extends Factory
 
         //Add realtime job
         if (($type_mask & self::TYPE_REALTIME) === self::TYPE_REALTIME) {
-            $this->addRealtime($group, $job_data);
+            $this->addRealtime($group, $job_data) && $this->redis->hIncrBy($this->key_slot['idx'], $job_idx, 1);
         }
 
         //Add delay job
         if (($type_mask & self::TYPE_DELAY) === self::TYPE_DELAY) {
-            $this->addDelay($group, $job_data, $time_wait);
+            $this->addDelay($group, $job_data, $time_wait) && $this->redis->hIncrBy($this->key_slot['idx'], $job_idx, 1);
         }
 
         unset($cmd, $data, $group, $type_mask, $time_wait, $job_data);
@@ -250,13 +251,15 @@ class libQueue extends Factory
      * Rollback a failed job to realtime list
      *
      * @param string $job_json
+     *
+     * @return bool
      */
-    public function rollback(string $job_json): void
+    public function rollback(string $job_json): bool
     {
         //Decode job data
         if (is_null($job_data = json_decode($job_json, true))) {
             unset($job_json, $job_data);
-            return;
+            return false;
         }
 
         //Get failed list key
@@ -265,12 +268,14 @@ class libQueue extends Factory
         //Remove from failed list
         if (0 === (int)($this->redis->lRem($failed_key, $job_json, 1))) {
             unset($job_json, $job_data, $failed_key);
-            return;
+            return false;
         }
 
         //Add job as realtime job in rollback group
-        $this->addRealtime('rollback', json_encode($job_data['data'], JSON_FORMAT));
+        $result = $this->addRealtime('rollback', json_encode($job_data['data'], JSON_FORMAT));
+
         unset($job_json, $job_data, $failed_key);
+        return $result;
     }
 
     /**
@@ -521,7 +526,7 @@ class libQueue extends Factory
 
                         $job_data = json_decode($delay_job, true);
 
-                        //Add realtime job
+                        //Add as realtime job
                         $this->addRealtime($job_data['group'], $job_data['job']);
                     } while (false !== $delay_job && $exec_count < $this->max_exec);
 
@@ -621,15 +626,19 @@ class libQueue extends Factory
      *
      * @param string $group
      * @param string $data
+     *
+     * @return bool
      */
-    private function addRealtime(string $group, string $data): void
+    private function addRealtime(string $group, string $data): bool
     {
         //Add listen list
         $this->redis->sAdd($this->key_slot['listen'], $key = $this->key_slot['jobs'] . $group);
 
         //Add job
-        $this->redis->lPush($key, $data);
+        $result = $this->redis->lPush($key, $data);
+
         unset($group, $data, $key);
+        return is_int($result) && 0 < $result;
     }
 
     /**
@@ -638,8 +647,10 @@ class libQueue extends Factory
      * @param string $group
      * @param string $data
      * @param int    $time
+     *
+     * @return bool
      */
-    private function addDelay(string $group, string $data, int $time): void
+    private function addDelay(string $group, string $data, int $time): bool
     {
         //Calculate delay time
         $delay = time() + $time;
@@ -651,7 +662,7 @@ class libQueue extends Factory
         }
 
         //Add delay job
-        $this->redis->lPush(
+        $result = $this->redis->lPush(
             $this->key_slot['delay_jobs'] . (string)$delay,
             json_encode([
                 'group' => &$group,
@@ -659,6 +670,7 @@ class libQueue extends Factory
             ], JSON_FORMAT));
 
         unset($group, $data, $time, $delay);
+        return is_int($result) && 0 < $result;
     }
 
     /**
