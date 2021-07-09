@@ -200,7 +200,7 @@ class libQueue extends Factory
         }
 
         //Pack job data in JSON
-        $job_idx  = uniqid(microtime() . getmypid() . mt_rand(), true);
+        $job_idx  = hash('md5', uniqid(microtime() . getmypid() . mt_rand(), true));
         $job_data = json_encode($data + ['QID' => &$job_idx], JSON_FORMAT);
 
         //Add realtime job
