@@ -99,4 +99,15 @@ class libErrno extends Factory
         IOUnit::new()->setMsgCode(...array_values($this->get($code, $errno, $message)));
         unset($code, $errno, $message);
     }
+
+    /**
+     * Set standard output error in array format
+     *
+     * @param array $error_info
+     */
+    public function setArray(array $error_info): void
+    {
+        IOUnit::new()->setMsgCode(...$error_info);
+        unset($error_info);
+    }
 }
