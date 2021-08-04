@@ -260,6 +260,7 @@ class libUpload extends Factory
 
         //Collect upload data
         $result['url']  = strtr($url_path, '\\', '/');
+        $result['path'] = &$file_path;
         $result['name'] = &$file_name;
         $result['size'] = $this->runtime['size'];
 
@@ -321,6 +322,7 @@ class libUpload extends Factory
         //Deep detect base64 type
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_buffer($finfo, $data, FILEINFO_MIME_TYPE);
+
         finfo_close($finfo);
 
         //Correct file type
