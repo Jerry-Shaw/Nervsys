@@ -57,12 +57,12 @@ class libPDO extends Factory
     public function __construct(
         string $type = 'mysql',
         string $host = '127.0.0.1',
-        int $port = 3306,
+        int    $port = 3306,
         string $user = 'root',
         string $pwd = '',
         string $db = '',
-        int $timeout = 10,
-        bool $persist = true,
+        int    $timeout = 10,
+        bool   $persist = true,
         string $charset = 'utf8mb4'
     )
     {
@@ -84,7 +84,7 @@ class libPDO extends Factory
      */
     public function connect(): \PDO
     {
-        return parent::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
+        return new \PDO($this->dsn, $this->usr, $this->pwd, $this->opt);
     }
 
     /**
@@ -103,12 +103,12 @@ class libPDO extends Factory
     private function buildDsn(
         string $type,
         string $host,
-        int $port,
+        int    $port,
         string $user,
         string $pwd,
         string $db,
-        int $timeout,
-        bool $persist,
+        int    $timeout,
+        bool   $persist,
         string $charset
     ): void
     {

@@ -52,12 +52,12 @@ class libRedis extends Factory
      */
     public function __construct(
         string $host = '127.0.0.1',
-        int $port = 6379,
+        int    $port = 6379,
         string $auth = '',
-        int $db = 0,
+        int    $db = 0,
         string $prefix = '',
-        int $timeout = 10,
-        bool $persist = true,
+        int    $timeout = 10,
+        bool   $persist = true,
         string $persist_id = ''
     )
     {
@@ -86,8 +86,8 @@ class libRedis extends Factory
      */
     public function connect(): \Redis
     {
-        //Build Redis instance
-        $redis = parent::getObj(\Redis::class);
+        //Get Redis instance
+        $redis = new \Redis();
 
         //Connect Redis
         if (!$redis->{$this->method}(...$this->props)) {
