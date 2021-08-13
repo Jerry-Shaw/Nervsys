@@ -709,7 +709,7 @@ class libMySQL extends Factory
             $this->runtime_data  = [];
             $this->affected_rows = $result['stmt']->rowCount();
         } catch (\Throwable $throwable) {
-            if (!in_array($result['stmt']->errorCode(), ['2006', '2013'], true) || $i >= $this->retry_times) {
+            if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $i >= $this->retry_times) {
                 $this->runtime_data = [];
                 throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
             }
@@ -717,7 +717,7 @@ class libMySQL extends Factory
             //Reconnect to PDO server
             $this->pdo = $this->lib_pdo->connect();
 
-            //Retry execute PDOStatement
+            //Retry executing PDOStatement
             return $this->execStmt(++$i);
         }
 
