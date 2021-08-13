@@ -35,6 +35,10 @@ class libMySQL extends Factory
     /** @var \PDO $pdo */
     public \PDO $pdo;
 
+    /** @var libPDO $lib_pdo */
+    public libPDO $lib_pdo;
+
+    public int $retry_times   = 3;
     public int $affected_rows = 0;
 
     public string $last_sql     = '';
@@ -61,6 +65,22 @@ class libMySQL extends Factory
         $this->pdo = &$pdo;
 
         unset($pdo);
+        return $this;
+    }
+
+    /**
+     * Bind libPDO object
+     *
+     * @param libPDO $lib_pdo
+     *
+     * @return $this
+     */
+    public function bindLibPdo(libPDO $lib_pdo): self
+    {
+        $this->lib_pdo = &$lib_pdo;
+        $this->pdo     = $lib_pdo->connect();
+
+        unset($lib_pdo);
         return $this;
     }
 
@@ -674,9 +694,11 @@ class libMySQL extends Factory
     /**
      * Execute prepared PDOStatement
      *
+     * @param int $i
+     *
      * @return array
      */
-    protected function execStmt(): array
+    protected function execStmt(int $i = 1): array
     {
         $result = [];
 
@@ -687,9 +709,16 @@ class libMySQL extends Factory
             $this->runtime_data  = [];
             $this->affected_rows = $result['stmt']->rowCount();
         } catch (\Throwable $throwable) {
-            $this->runtime_data = [];
+            if (!in_array($result['stmt']->errorCode(), ['2006', '2013'], true) || $i >= $this->retry_times) {
+                $this->runtime_data = [];
+                throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+            }
 
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+            //Reconnect to PDO server
+            $this->pdo = $this->lib_pdo->connect();
+
+            //Retry execute PDOStatement
+            return $this->execStmt(++$i);
         }
 
         return $result;
@@ -890,7 +919,7 @@ class libMySQL extends Factory
             }
 
             //Data
-            if (!is_array($data = current($value))) {
+            if (!is_array($data = array_shift($value))) {
                 if ('join' !== $this->runtime_data['stage']) {
                     $cond_list[] = '?';
 
@@ -908,6 +937,7 @@ class libMySQL extends Factory
 
                         foreach ($data as $key => $item) {
                             $param .= $key < $count ? '?,' : '?';
+
                             $this->runtime_data[$bind_stage][] = $item;
                         }
                     } else {
