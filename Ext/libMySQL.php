@@ -85,6 +85,27 @@ class libMySQL extends Factory
     }
 
     /**
+     * Set clean mode
+     *
+     * @return $this
+     */
+    public function setCleanMode(): self
+    {
+        register_shutdown_function(
+            function ()
+            {
+                //Clear runtime data
+                $this->runtime_data = [];
+
+                //Rollback unfinished transaction
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+            }
+        );
+    }
+
+    /**
      * Set SQL explain mode
      *
      * @param int    $explain_type  (0: disable; 1: output; 2: save log; 3: both)
