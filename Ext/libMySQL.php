@@ -85,24 +85,29 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set clean mode
+     * Set auto cleanup on shutdown
      *
      * @return $this
      */
-    public function setCleanMode(): self
+    public function autoCleanup(): self
     {
-        register_shutdown_function(
-            function ()
-            {
-                //Clear runtime data
-                $this->runtime_data = [];
+        register_shutdown_function([$this, 'cleanup']);
 
-                //Rollback unfinished transaction
-                if ($this->pdo->inTransaction()) {
-                    $this->pdo->rollBack();
-                }
-            }
-        );
+        return $this;
+    }
+
+    /**
+     * Cleanup runtime data and unfinished transaction
+     */
+    public function cleanup(): void
+    {
+        //Clear runtime data
+        $this->runtime_data = [];
+
+        //Rollback unfinished transaction
+        if ($this->pdo->inTransaction()) {
+            $this->pdo->rollBack();
+        }
     }
 
     /**
@@ -586,6 +591,7 @@ class libMySQL extends Factory
                 $this->affected_rows = -1;
             }
         } catch (\Throwable $throwable) {
+            $this->cleanup();
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -616,6 +622,7 @@ class libMySQL extends Factory
 
             $this->affected_rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
+            $this->cleanup();
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -731,7 +738,7 @@ class libMySQL extends Factory
             $this->affected_rows = $result['stmt']->rowCount();
         } catch (\Throwable $throwable) {
             if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $i >= $this->retry_times) {
-                $this->runtime_data = [];
+                $this->cleanup();
                 throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
             }
 
