@@ -591,7 +591,7 @@ class libMySQL extends Factory
                 $this->affected_rows = -1;
             }
         } catch (\Throwable $throwable) {
-            $this->cleanup();
+            $this->runtime_data = [];
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -622,7 +622,7 @@ class libMySQL extends Factory
 
             $this->affected_rows = $stmt->rowCount();
         } catch (\Throwable $throwable) {
-            $this->cleanup();
+            $this->runtime_data = [];
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -738,7 +738,7 @@ class libMySQL extends Factory
             $this->affected_rows = $result['stmt']->rowCount();
         } catch (\Throwable $throwable) {
             if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $i >= $this->retry_times) {
-                $this->cleanup();
+                $this->runtime_data = [];
                 throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
             }
 
