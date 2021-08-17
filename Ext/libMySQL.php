@@ -54,21 +54,6 @@ class libMySQL extends Factory
     const EXPLAIN_LEVEL = ['NULL', 'system', 'const', 'eq_ref', 'ref', 'range', 'index', 'ALL'];
 
     /**
-     * Bind to PDO connection
-     *
-     * @param \PDO $pdo
-     *
-     * @return $this
-     */
-    public function bindPdo(\PDO $pdo): self
-    {
-        $this->pdo = &$pdo;
-
-        unset($pdo);
-        return $this;
-    }
-
-    /**
      * Bind libPDO object
      *
      * @param libPDO $lib_pdo
@@ -741,6 +726,9 @@ class libMySQL extends Factory
                 $this->runtime_data = [];
                 throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
             }
+
+            //Destroy PDO from Factory
+            $this->destroy($this->pdo);
 
             //Reconnect to PDO server
             $this->pdo = $this->lib_pdo->connect();
