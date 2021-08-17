@@ -86,8 +86,8 @@ class libRedis extends Factory
      */
     public function connect(): \Redis
     {
-        //Get Redis instance
-        $redis = new \Redis();
+        //Build Redis instance
+        $redis = parent::getObj(\Redis::class);
 
         //Connect Redis
         if (!$redis->{$this->method}(...$this->props)) {
