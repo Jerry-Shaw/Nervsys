@@ -87,16 +87,18 @@ class Factory
     }
 
     /**
-     * Destroy from Factory
+     * Destroy object from Factory
+     *
+     * @param object $object
      */
-    public function destroy(): void
+    public function destroy(object $object): void
     {
-        if (empty($keys = array_keys(self::$obj_list, $this, true))) {
-            return;
-        }
+        $keys = array_keys(self::$obj_list, $object, true);
 
         foreach ($keys as $key) {
             unset(self::$obj_list[$key]);
         }
+
+        unset($object, $keys, $key);
     }
 }
