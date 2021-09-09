@@ -87,21 +87,7 @@ class libMPC extends Factory
      */
     public function execAsync(string $c, array $data = []): bool
     {
-        $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
-        $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
-
-        if (!empty($data)) {
-            $argv = '';
-
-            if (isset($data['argv'])) {
-                $argv = ' ' . $data['argv'];
-                unset($data['argv']);
-            }
-
-            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
-            $cmd .= $argv;
-        }
-
+        $cmd  = $this->buildCmd($c, $data);
         $proc = popen($this->os_unit->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb');
 
         if (is_resource($proc)) {
@@ -271,6 +257,37 @@ class libMPC extends Factory
     public function __destruct()
     {
         $this->closeAll();
+    }
+
+    /**
+     * Build full command
+     *
+     * @param string $c
+     * @param array  $data
+     *
+     * @return string
+     */
+    private function buildCmd(string $c, array $data): string
+    {
+        $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
+        $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
+
+        if (!empty($data)) {
+            $argv = '';
+
+            if (isset($data['argv'])) {
+                $argv = ' ' . $data['argv'];
+                unset($data['argv']);
+            }
+
+            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+            $cmd .= $argv;
+
+            unset($argv);
+        }
+
+        unset($c, $data);
+        return $cmd;
     }
 
     /**
