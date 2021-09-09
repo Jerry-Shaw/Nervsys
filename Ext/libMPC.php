@@ -91,11 +91,15 @@ class libMPC extends Factory
         $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
 
         if (!empty($data)) {
-            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
-        }
+            $argv = '';
 
-        if (isset($data['argv'])) {
-            $cmd .= ' ' . $data['argv'];
+            if (isset($data['argv'])) {
+                $argv = ' ' . $data['argv'];
+                unset($data['argv']);
+            }
+
+            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+            $cmd .= $argv;
         }
 
         $proc = popen($this->os_unit->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb');
