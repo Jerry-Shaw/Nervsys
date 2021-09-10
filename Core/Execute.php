@@ -273,15 +273,7 @@ class Execute extends Factory
         }
 
         //Create process
-        $process = proc_open(
-            $os_unit->setEnvPath()->fetchCmd(),
-            [
-                ['pipe', 'r'],
-                ['pipe', 'w'],
-                ['file', $this->app->log_path . DIRECTORY_SEPARATOR . date('Ymd') . '-CLI' . '.log', 'ab+']
-            ],
-            $pipes
-        );
+        $process = popen($os_unit->setEnvPath()->fetchCmd(), 'rb');
 
         //Create process failed
         if (!is_resource($process)) {
@@ -293,23 +285,18 @@ class Execute extends Factory
             $data = '';
 
             //Read from pipe
-            while (!feof($pipes[1])) {
-                $data .= fread($pipes[1], 8192);
+            while (!feof($process)) {
+                $data .= fread($process, 8192);
             }
 
             $result[$cmd_name] = &$data;
             unset($data);
         }
 
-        //Close pipes
-        foreach ($pipes as $pipe) {
-            fclose($pipe);
-        }
-
         //Close process
-        proc_close($process);
+        pclose($process);
 
-        unset($os_unit, $cmd_name, $exe_path, $process, $pipes, $pipe);
+        unset($os_unit, $cmd_name, $exe_path, $process);
         return $result;
     }
 }
