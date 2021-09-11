@@ -113,10 +113,15 @@ class libMPC extends Factory
     public function execSync(string $c, array $data = []): array
     {
         $std_path  = $this->app->log_path . DIRECTORY_SEPARATOR . 'std' . DIRECTORY_SEPARATOR . date('Ymd') . DIRECTORY_SEPARATOR;
-        $file_name = str_replace(' ', '', microtime()) . (string)mt_rand(1000, 9999) . '.log';
+        $file_name = str_replace('.', '', (string)microtime(true) . (string)getmypid());
 
-        $out_path = $std_path . 'out_' . $file_name;
-        $err_path = $std_path . 'err_' . $file_name;
+        if (!is_dir($std_path)) {
+            mkdir($std_path, 0777, true);
+            chmod($std_path, 0777);
+        }
+
+        $out_path = $std_path . $file_name . '_stdout.log';
+        $err_path = $std_path . $file_name . '_stderr.log';
 
         $result = [$out_path, $err_path];
 
@@ -124,8 +129,8 @@ class libMPC extends Factory
             $this->os_unit->setCmd($this->buildCmd($c, $data))->setEnvPath()->fetchCmd(),
             [
                 ['pipe', 'r'],
-                ['file', $out_path, 'ab+'],
-                ['file', $err_path, 'ab+']
+                ['file', $out_path, 'wb'],
+                ['file', $err_path, 'wb']
             ],
             $pipes
         );
@@ -315,21 +320,20 @@ class libMPC extends Factory
         $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
         $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
 
-        if (!empty($data)) {
-            $argv = '';
+        $argv = '';
 
-            if (isset($data['argv'])) {
-                $argv = ' ' . $data['argv'];
-                unset($data['argv']);
-            }
-
-            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
-            $cmd .= $argv;
-
-            unset($argv);
+        if (isset($data['argv'])) {
+            $argv = ' ' . $data['argv'];
+            unset($data['argv']);
         }
 
-        unset($c, $data);
+        if (!empty($data)) {
+            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+        }
+
+        $cmd .= $argv;
+
+        unset($c, $data, $argv);
         return $cmd;
     }
 
