@@ -46,8 +46,8 @@ class libMPC extends Factory
     public int $max_fork = 10;
     public int $max_exec = 1000;
 
-    public string $php_path = '';
-    public string $proc_cmd = '';
+    public string $php_path;
+    public string $proc_cmd;
 
     public array $proc_list = [];
     public array $proc_exec = [];
@@ -78,16 +78,49 @@ class libMPC extends Factory
     }
 
     /**
-     * Exec cmd async
+     * Build full command for NS API
      *
      * @param string $c
      * @param array  $data
      *
+     * @return string
+     */
+    public function buildCmd(string $c, array $data): string
+    {
+        $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
+        $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
+
+        $argv = '';
+
+        if (isset($data['argv'])) {
+            $argv = ' -- ' . $data['argv'];
+            unset($data['argv']);
+        }
+
+        if (isset($data['return'])) {
+            $cmd .= ' -r"' . $data['return'] . '"';
+            unset($data['return']);
+        }
+
+        if (!empty($data)) {
+            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+        }
+
+        $cmd .= $argv;
+
+        unset($c, $data, $argv);
+        return $cmd;
+    }
+
+    /**
+     * Exec raw cmd async
+     *
+     * @param string $cmd
+     *
      * @return bool
      */
-    public function execAsync(string $c, array $data = []): bool
+    public function execAsync(string $cmd): bool
     {
-        $cmd  = $this->buildCmd($c, $data);
         $proc = popen($this->os_unit->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb');
 
         if (is_resource($proc)) {
@@ -97,20 +130,19 @@ class libMPC extends Factory
             $result = false;
         }
 
-        unset($c, $data, $cmd, $proc);
+        unset($cmd, $proc);
         return $result;
     }
 
     /**
-     * Exec cmd sync
+     * Exec raw cmd sync
      *
-     * @param string $c
-     * @param array  $data
+     * @param string $cmd
      *
      * @return string[]
      * @throws \Exception
      */
-    public function execSync(string $c, array $data = []): array
+    public function execSync(string $cmd): array
     {
         $std_path  = $this->app->log_path . DIRECTORY_SEPARATOR . 'std' . DIRECTORY_SEPARATOR . date('Ymd') . DIRECTORY_SEPARATOR;
         $file_name = str_replace('.', '', (string)microtime(true) . (string)getmypid());
@@ -120,17 +152,15 @@ class libMPC extends Factory
             chmod($std_path, 0777);
         }
 
-        $out_path = $std_path . $file_name . '_stdout.log';
-        $err_path = $std_path . $file_name . '_stderr.log';
-
-        $result = [$out_path, $err_path];
+        $stdout_path = $std_path . $file_name . '_stdout.log';
+        $stderr_path = $std_path . $file_name . '_stderr.log';
 
         $proc = proc_open(
-            $this->os_unit->setCmd($this->buildCmd($c, $data))->setEnvPath()->fetchCmd(),
+            $this->os_unit->setCmd($cmd)->setEnvPath()->fetchCmd(),
             [
                 ['pipe', 'r'],
-                ['file', $out_path, 'wb'],
-                ['file', $err_path, 'wb']
+                ['file', $stdout_path, 'wb'],
+                ['file', $stderr_path, 'wb']
             ],
             $pipes
         );
@@ -145,8 +175,8 @@ class libMPC extends Factory
 
         proc_close($proc);
 
-        unset($c, $data, $std_path, $file_name, $out_path, $err_path, $proc, $pipes, $pipe);
-        return $result;
+        unset($cmd, $std_path, $file_name, $proc, $pipes, $pipe);
+        return [$stdout_path, $stderr_path];
     }
 
     /**
@@ -305,36 +335,6 @@ class libMPC extends Factory
     public function __destruct()
     {
         $this->closeAll();
-    }
-
-    /**
-     * Build full command
-     *
-     * @param string $c
-     * @param array  $data
-     *
-     * @return string
-     */
-    private function buildCmd(string $c, array $data): string
-    {
-        $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
-        $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
-
-        $argv = '';
-
-        if (isset($data['argv'])) {
-            $argv = ' ' . $data['argv'];
-            unset($data['argv']);
-        }
-
-        if (!empty($data)) {
-            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
-        }
-
-        $cmd .= $argv;
-
-        unset($c, $data, $argv);
-        return $cmd;
     }
 
     /**
