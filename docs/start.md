@@ -8,7 +8,7 @@
 
 ### Create project
 
-Let's create folders firstly.  
+Let's create folders firstly.
 
 - NervSys location: `/data/code/ns`.
 - Project location: `/data/code/hello`.
@@ -19,15 +19,16 @@ Firstly, clone Nervsys source code to `/data/code/ns`.
 git clone https://github.com/Jerry-Shaw/NervSys.git /data/code/ns
 ```
 
-Let's do some work to build our project environment. All the job we do is under the main project folder `/data/code/hello`. 
+Let's do some work to build our project environment. All the job we do is under the main project
+folder `/data/code/hello`.
 
-Do the following command to create project directory.  
+Do the following command to create project directory.
 
 ```bash
 mkdir -p /data/code/hello/public/  
 ```
 
-Then, create a entry file using following command:  
+Then, create a entry file using following command:
 
 ```bash
 cat <<EOF >  /data/code/hello/public/index.php
@@ -55,7 +56,7 @@ Run command under `/data/code/hello/public/`:
 php -S localhost:8000 
 ```
 
-When `[]` is shown, project runs successfully.  
+When `[]` is shown, project runs successfully.
 
 ## Ceare the first API function.
 
@@ -101,7 +102,7 @@ class command
 }
 ```
 
-Run the command to get response:  
+Run the command to get response:
 
 ```bash
 $ php public/index.php -r /app/command/demo

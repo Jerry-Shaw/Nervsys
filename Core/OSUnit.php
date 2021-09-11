@@ -28,7 +28,7 @@ namespace Core;
  */
 class OSUnit extends Factory
 {
-    /** @var object $os_obj */
+    /** @var \Core\Lib\OS\Linux|\Core\Lib\OS\WINNT|\Core\Lib\OS\Darwin $os_obj */
     protected object $os_obj;
 
     /**
@@ -43,6 +43,7 @@ class OSUnit extends Factory
      * Get hardware hash
      *
      * @return string
+     * @throws \Exception
      */
     public function getHwHash(): string
     {
@@ -53,6 +54,7 @@ class OSUnit extends Factory
      * Get PHP executable path
      *
      * @return string
+     * @throws \Exception
      */
     public function getPhpPath(): string
     {

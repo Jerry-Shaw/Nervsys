@@ -99,8 +99,9 @@ In HTTP request, NS fetch and parse data in the following steps:
 6. find and isolate "c" data from data source, and pass it to Router library as request command.
 ```
 
-In CLI mode, NS takes "c" from "-c" parameter, or the first argument if not found. String parameter "-d" will be taken to
-decode to get CGI data source. "-r" forces output returned data format. Other arguments will be considered as CLI argv.
+In CLI mode, NS takes "c" from "-c" parameter, or the first argument if not found. String parameter "-d" will be taken
+to decode to get CGI data source. "-r" forces output returned data format. Other arguments will be considered as CLI
+argv.
 
 #### 4. About key "c"
 
