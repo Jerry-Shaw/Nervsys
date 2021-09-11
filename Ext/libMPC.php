@@ -102,6 +102,49 @@ class libMPC extends Factory
     }
 
     /**
+     * Exec cmd sync
+     *
+     * @param string $c
+     * @param array  $data
+     *
+     * @return string[]
+     * @throws \Exception
+     */
+    public function execSync(string $c, array $data = []): array
+    {
+        $std_path  = $this->app->log_path . DIRECTORY_SEPARATOR . 'std' . DIRECTORY_SEPARATOR . date('Ymd') . DIRECTORY_SEPARATOR;
+        $file_name = str_replace(' ', '', microtime()) . (string)mt_rand(1000, 9999) . '.log';
+
+        $out_path = $std_path . 'out_' . $file_name;
+        $err_path = $std_path . 'err_' . $file_name;
+
+        $result = [$out_path, $err_path];
+
+        $proc = proc_open(
+            $this->os_unit->setCmd($this->buildCmd($c, $data))->setEnvPath()->fetchCmd(),
+            [
+                ['pipe', 'r'],
+                ['file', $out_path, 'ab+'],
+                ['file', $err_path, 'ab+']
+            ],
+            $pipes
+        );
+
+        if (!is_resource($proc)) {
+            throw new \Exception('Access denied or command ERROR!', E_USER_WARNING);
+        }
+
+        foreach ($pipes as $pipe) {
+            fclose($pipe);
+        }
+
+        proc_close($proc);
+
+        unset($c, $data, $std_path, $file_name, $out_path, $err_path, $proc, $pipes, $pipe);
+        return $result;
+    }
+
+    /**
      * Start MPC
      *
      * @param int $max_fork
