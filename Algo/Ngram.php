@@ -31,8 +31,6 @@ class Ngram
     public int   $src_len;
     public array $src_data;
 
-    public array $dst_grams;
-
     /**
      * @param array $data
      *
