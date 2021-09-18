@@ -35,8 +35,8 @@ class libMySQL extends Factory
     /** @var \PDO $pdo */
     public \PDO $pdo;
 
-    /** @var libPDO $lib_pdo */
-    public libPDO $lib_pdo;
+    /** @var libPDO $libPDO */
+    public libPDO $libPDO;
 
     public int $retry_times   = 3;
     public int $affected_rows = 0;
@@ -62,8 +62,8 @@ class libMySQL extends Factory
      */
     public function bindLibPdo(libPDO $lib_pdo): self
     {
-        $this->lib_pdo = &$lib_pdo;
-        $this->pdo     = $lib_pdo->connect();
+        $this->libPDO = &$lib_pdo;
+        $this->pdo    = $lib_pdo->connect();
 
         unset($lib_pdo);
         return $this;
@@ -731,7 +731,7 @@ class libMySQL extends Factory
             $this->destroy($this->pdo);
 
             //Reconnect to PDO server
-            $this->pdo = $this->lib_pdo->connect();
+            $this->pdo = $this->libPDO->connect();
 
             //Retry executing PDOStatement
             return $this->execStmt(++$i);

@@ -52,11 +52,11 @@ class libQueue extends Factory
     /** @var App $app */
     private App $app;
 
-    /** @var IOUnit $io_unit */
-    private IOUnit $io_unit;
+    /** @var IOUnit $IOUnit */
+    private IOUnit $IOUnit;
 
-    /** @var OSUnit $os_unit */
-    private OSUnit $os_unit;
+    /** @var OSUnit $OSUnit */
+    private OSUnit $OSUnit;
 
     //Process properties
     private int $max_fork = 10;
@@ -462,14 +462,14 @@ class libQueue extends Factory
         register_shutdown_function($kill_all);
 
         //Build unit command
-        $unit_cmd = '"' . $this->os_unit->getPhpPath() . '" "' . $this->app->script_path . '" -t"json" ';
-        $unit_cmd .= '-c"' . $this->io_unit->encodeData('/' . $this->unit_handler[0] . '/' . $this->unit_handler[1]) . '" ';
+        $unit_cmd = '"' . $this->OSUnit->getPhpPath() . '" "' . $this->app->script_path . '" -t"json" ';
+        $unit_cmd .= '-c"' . $this->IOUnit->encodeData('/' . $this->unit_handler[0] . '/' . $this->unit_handler[1]) . '" ';
 
         //Build delay command
-        $cmd_delay = $this->os_unit->setCmd($unit_cmd . '-d"' . $this->io_unit->encodeData(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_delay = $this->OSUnit->setCmd($unit_cmd . '-d"' . $this->IOUnit->encodeData(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
 
         //Build realtime command
-        $cmd_realtime = $this->os_unit->setCmd($unit_cmd . '-d"' . $this->io_unit->encodeData(json_encode(['type' => 'realtime', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_realtime = $this->OSUnit->setCmd($unit_cmd . '-d"' . $this->IOUnit->encodeData(json_encode(['type' => 'realtime', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
 
         do {
             //Call delay unit
@@ -614,10 +614,10 @@ class libQueue extends Factory
     private function initEnv(): void
     {
         /** @var IOUnit io_unit */
-        $this->io_unit = IOUnit::new();
+        $this->IOUnit = IOUnit::new();
 
         /** @var OSUnit os_unit */
-        $this->os_unit = OSUnit::new();
+        $this->OSUnit = OSUnit::new();
     }
 
     /**
@@ -870,7 +870,7 @@ class libQueue extends Factory
             //Call CGI
             if (!empty($router->cgi_cmd)) {
                 //Remap input data
-                $this->io_unit->src_input = $data;
+                $this->IOUnit->src_input = $data;
                 //Execute CGI command
                 $this->callCgi($router->cgi_cmd, $execute);
             }
@@ -878,7 +878,7 @@ class libQueue extends Factory
             //Call CLI
             if (!empty($router->cli_cmd)) {
                 //Remap argv data
-                $this->io_unit->src_argv = $data['argv'] ?? '';
+                $this->IOUnit->src_argv = $data['argv'] ?? '';
                 //Execute CLI command
                 $this->callCli($router->cli_cmd, $execute);
             }
@@ -930,7 +930,7 @@ class libQueue extends Factory
 
             if ('' !== ($exe_path = trim($exe_path))) {
                 //Run external program
-                $execute->runProgram($this->os_unit, $cmd_name, $exe_path);
+                $execute->runProgram($this->OSUnit, $cmd_name, $exe_path);
             }
         }
 
@@ -982,7 +982,7 @@ class libQueue extends Factory
         $return = current($result);
 
         //Build queue log
-        $log = json_encode(['time' => date('Y-m-d H:i:s'), 'data' => $this->io_unit->src_input, 'return' => &$return], JSON_FORMAT);
+        $log = json_encode(['time' => date('Y-m-d H:i:s'), 'data' => $this->IOUnit->src_input, 'return' => &$return], JSON_FORMAT);
 
         //Save to queue history
         true !== $return

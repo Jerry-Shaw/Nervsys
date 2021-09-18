@@ -90,7 +90,7 @@ class libUpload extends Factory
         UPLOAD_ERR_EXTENSION  => 'Extension blocked.',
     ];
 
-    public IOUnit $io_unit;
+    public IOUnit $IOUnit;
     public string $upload_path;
 
     public array $ext  = [];
@@ -104,7 +104,7 @@ class libUpload extends Factory
      */
     public function __construct()
     {
-        $this->io_unit     = IOUnit::new();
+        $this->IOUnit      = IOUnit::new();
         $this->upload_path = App::new()->root_path;
     }
 
@@ -178,7 +178,7 @@ class libUpload extends Factory
     public function fetch(string $filename): self
     {
         //Check file
-        if (!isset($this->io_unit->src_input[$filename])) {
+        if (!isset($this->IOUnit->src_input[$filename])) {
             $this->runtime['error'] = UPLOAD_ERR_NO_FILE;
             return $this;
         }
@@ -187,9 +187,9 @@ class libUpload extends Factory
         $this->runtime = [];
 
         //Receive file/base64
-        is_array($this->io_unit->src_input[$filename])
-            ? $this->recvFile($this->io_unit->src_input[$filename])
-            : $this->recvBase64($this->io_unit->src_input[$filename]);
+        is_array($this->IOUnit->src_input[$filename])
+            ? $this->recvFile($this->IOUnit->src_input[$filename])
+            : $this->recvBase64($this->IOUnit->src_input[$filename]);
 
         unset($filename, $as, $unit_pool);
         return $this;

@@ -29,8 +29,8 @@ use Core\Factory;
  */
 class libCrypt extends Factory
 {
-    /** @var libCryptGen $crypt_gen */
-    public libCryptGen $crypt_gen;
+    /** @var libCryptGen $libCryptGen */
+    public libCryptGen $libCryptGen;
 
     //Crypt method
     public string $method = 'AES-256-CTR';
@@ -47,7 +47,7 @@ class libCrypt extends Factory
      */
     public function bindCryptGen(libCryptGen $crypt_gen): self
     {
-        $this->crypt_gen = &$crypt_gen;
+        $this->libCryptGen = &$crypt_gen;
 
         unset($crypt_gen);
         return $this;
@@ -90,7 +90,7 @@ class libCrypt extends Factory
      */
     public function getKey(): string
     {
-        return $this->crypt_gen->create();
+        return $this->libCryptGen->create();
     }
 
     /**
@@ -260,8 +260,8 @@ class libCrypt extends Factory
     public function sign(string $string, string $rsa_key = ''): string
     {
         //Prepare key
-        $key = $this->crypt_gen->create();
-        $mix = $this->crypt_gen->obscure($key);
+        $key = $this->libCryptGen->create();
+        $mix = $this->libCryptGen->obscure($key);
 
         //Encrypt signature
         $mix = '' === $rsa_key ? $this->base64UrlEncode($mix) : $this->rsaEncrypt($mix, $rsa_key);
@@ -291,7 +291,7 @@ class libCrypt extends Factory
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? $this->base64UrlDecode($mix) : $this->rsaDecrypt($mix, $rsa_key);
-        $key = $this->crypt_gen->rebuild($mix);
+        $key = $this->libCryptGen->rebuild($mix);
 
         //Decrypt signature
         $sig = $this->decrypt($enc, $key);
@@ -313,7 +313,7 @@ class libCrypt extends Factory
         $iv_len = openssl_cipher_iv_length($this->method);
 
         //Parse keys from key string
-        $keys = $this->crypt_gen->extract($key);
+        $keys = $this->libCryptGen->extract($key);
 
         //Correct iv when length not match
         switch ($iv_len <=> strlen($keys['iv'])) {

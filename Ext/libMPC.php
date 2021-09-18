@@ -39,8 +39,8 @@ class libMPC extends Factory
     private Error   $error;
     private Router  $router;
     private Execute $execute;
-    private IOUnit  $io_unit;
-    private OSUnit  $os_unit;
+    private IOUnit  $IOUnit;
+    private OSUnit  $OSUnit;
 
     public int $proc_idx = 0;
     public int $max_fork = 10;
@@ -57,9 +57,9 @@ class libMPC extends Factory
      */
     public function __construct()
     {
-        $this->app     = App::new();
-        $this->io_unit = IOUnit::new();
-        $this->os_unit = OSUnit::new();
+        $this->app    = App::new();
+        $this->IOUnit = IOUnit::new();
+        $this->OSUnit = OSUnit::new();
     }
 
     /**
@@ -88,7 +88,7 @@ class libMPC extends Factory
     public function buildCmd(string $c, array $data): string
     {
         $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
-        $cmd .= ' -c"' . $this->io_unit->encodeData($c) . '"';
+        $cmd .= ' -c"' . $this->IOUnit->encodeData($c) . '"';
 
         $argv = '';
 
@@ -103,7 +103,7 @@ class libMPC extends Factory
         }
 
         if (!empty($data)) {
-            $cmd .= ' -d"' . $this->io_unit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
+            $cmd .= ' -d"' . $this->IOUnit->encodeData(json_encode($data, JSON_FORMAT)) . '"';
         }
 
         $cmd .= $argv;
@@ -121,7 +121,7 @@ class libMPC extends Factory
      */
     public function execAsync(string $cmd): bool
     {
-        $proc = popen($this->os_unit->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb');
+        $proc = popen($this->OSUnit->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb');
 
         if (is_resource($proc)) {
             $result = true;
@@ -156,7 +156,7 @@ class libMPC extends Factory
         $stderr_path = $std_path . $file_name . '_stderr.log';
 
         $proc = proc_open(
-            $this->os_unit->setCmd($cmd)->setEnvPath()->fetchCmd(),
+            $this->OSUnit->setCmd($cmd)->setEnvPath()->fetchCmd(),
             [
                 ['pipe', 'r'],
                 ['file', $stdout_path, 'wb'],
@@ -260,7 +260,7 @@ class libMPC extends Factory
     public function createProc(int $idx): bool
     {
         //Create process
-        $proc = popen($this->os_unit->setCmd($this->proc_cmd)->setEnvPath()->fetchCmd(), 'wb');
+        $proc = popen($this->OSUnit->setCmd($this->proc_cmd)->setEnvPath()->fetchCmd(), 'wb');
 
         if (!is_resource($proc)) {
             return false;
@@ -353,7 +353,7 @@ class libMPC extends Factory
             //Call CGI
             if (!empty($this->router->cgi_cmd)) {
                 //Remap input data
-                $this->io_unit->src_input = $data;
+                $this->IOUnit->src_input = $data;
 
                 //Process CGI command
                 while (is_array($cmd_pair = array_shift($this->router->cgi_cmd))) {
@@ -367,7 +367,7 @@ class libMPC extends Factory
             //Call CLI
             if (!empty($this->router->cli_cmd)) {
                 //Remap argv data
-                $this->io_unit->src_argv = $data['argv'] ?? '';
+                $this->IOUnit->src_argv = $data['argv'] ?? '';
 
                 //Process CLI command
                 while (is_array($cmd_pair = array_shift($this->router->cli_cmd))) {
@@ -376,7 +376,7 @@ class libMPC extends Factory
 
                     if ('' !== ($exe_path = trim($exe_path))) {
                         //Run external program
-                        $this->execute->runProgram($this->os_unit, $cmd_name, $exe_path);
+                        $this->execute->runProgram($this->OSUnit, $cmd_name, $exe_path);
                     }
                 }
             }

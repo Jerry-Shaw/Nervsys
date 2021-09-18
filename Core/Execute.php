@@ -34,7 +34,7 @@ use Core\Lib\Router;
 class Execute extends Factory
 {
     public App     $app;
-    public IOUnit  $io_unit;
+    public IOUnit  $IOUnit;
     public Reflect $reflect;
 
     public array $cgi_cmd  = [];
@@ -47,7 +47,7 @@ class Execute extends Factory
     public function __construct()
     {
         $this->app     = App::new();
-        $this->io_unit = IOUnit::new();
+        $this->IOUnit  = IOUnit::new();
         $this->reflect = Reflect::new();
     }
 
@@ -234,11 +234,11 @@ class Execute extends Factory
         $fn_result = call_user_func(
             [
                 !$this->reflect->getMethod($cmd_class, $cmd_method)->isStatic()
-                    ? $this->fetchObj($cmd_class, $this->io_unit->src_input)
+                    ? $this->fetchObj($cmd_class, $this->IOUnit->src_input)
                     : $cmd_class,
                 $cmd_method
             ],
-            ...$this->fetchArgs($cmd_class, $cmd_method, $this->io_unit->src_input)
+            ...$this->fetchArgs($cmd_class, $cmd_method, $this->IOUnit->src_input)
         );
 
         //Collect result
@@ -265,10 +265,10 @@ class Execute extends Factory
         $result = [];
 
         //Build CLI command
-        $os_unit->setCmd('"' . $exe_path . '" ' . $this->io_unit->src_argv);
+        $os_unit->setCmd('"' . $exe_path . '" ' . $this->IOUnit->src_argv);
 
         //Check for BG command
-        if ('none' === $this->io_unit->cli_data_type) {
+        if ('none' === $this->IOUnit->cli_data_type) {
             $os_unit->setAsBg();
         }
 
@@ -281,7 +281,7 @@ class Execute extends Factory
         }
 
         //Collect result
-        if ('none' !== $this->io_unit->cli_data_type) {
+        if ('none' !== $this->IOUnit->cli_data_type) {
             $data = '';
 
             //Read from pipe

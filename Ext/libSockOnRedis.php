@@ -32,7 +32,7 @@ class libSockOnRedis extends libSocket
 {
     public App    $app;
     public \Redis $redis;
-    public libMPC $lib_mpc;
+    public libMPC $libMPC;
 
     public bool $is_ws = false;
 
@@ -177,7 +177,7 @@ class libSockOnRedis extends libSocket
         $this->cleanup();
 
         //Start libMPC
-        $this->lib_mpc = libMPC::new()->setPhpPath(OSUnit::new()->getPhpPath())->start($this->mpc_fork, $this->mpc_exec);
+        $this->libMPC = libMPC::new()->setPhpPath(OSUnit::new()->getPhpPath())->start($this->mpc_fork, $this->mpc_exec);
 
         while (true) {
             //Watch & read clients
@@ -220,7 +220,7 @@ class libSockOnRedis extends libSocket
      */
     public function close(string $sock_id): void
     {
-        $this->lib_mpc->add($this->handler_class . '/onClose', ['sid' => &$sock_id]);
+        $this->libMPC->add($this->handler_class . '/onClose', ['sid' => &$sock_id]);
         $this->redis->hDel($this->hash_sock_ol, $sock_id);
         parent::close($sock_id);
         unset($sock_id);
@@ -391,7 +391,7 @@ class libSockOnRedis extends libSocket
                 $this->is_ws && $this->ws_handshake[$accept_id] = time();
 
                 //Send connection info via Queue
-                $this->lib_mpc->add($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'proc' => $this->proc_name]);
+                $this->libMPC->add($this->handler_class . '/onConnect', ['sid' => &$accept_id, 'proc' => $this->proc_name]);
 
                 unset($accept_id);
             } elseif (isset($this->ws_handshake[$sock_id])) {
@@ -429,7 +429,7 @@ class libSockOnRedis extends libSocket
                 }
 
                 //Send socket message via Queue (MUST push to worker job list in Redis)
-                $this->lib_mpc->add($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg]);
+                $this->libMPC->add($this->handler_class . '/onMessage', ['sid' => &$sock_id, 'msg' => &$socket_msg]);
 
                 unset($socket_msg);
             }
