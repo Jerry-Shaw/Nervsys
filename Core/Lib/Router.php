@@ -168,7 +168,7 @@ class Router extends Factory
         $cmd_list = $this->getList($c);
 
         //Init IOUnit & Reflect
-        $io_unit = IOUnit::new();
+        $IOUnit  = IOUnit::new();
         $reflect = Reflect::new();
 
         foreach ($cmd_list as $cmd_val) {
@@ -203,7 +203,7 @@ class Router extends Factory
             }
         }
 
-        unset($c, $cmd_list, $io_unit, $reflect, $cmd_val, $cmd, $fn_pos, $class, $method);
+        unset($c, $cmd_list, $IOUnit, $reflect, $cmd_val, $cmd, $fn_pos, $class, $method);
         return $fn_list;
     }
 

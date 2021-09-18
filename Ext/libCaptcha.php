@@ -70,15 +70,15 @@ class libCaptcha extends Factory
     /**
      * Bind to Crypt object
      *
-     * @param libCrypt $lib_crypt
+     * @param libCrypt $libCrypt
      *
      * @return $this
      */
-    public function bindCrypt(libCrypt $lib_crypt): self
+    public function bindCrypt(libCrypt $libCrypt): self
     {
-        $this->libCrypt = &$lib_crypt;
+        $this->libCrypt = &$libCrypt;
 
-        unset($lib_crypt);
+        unset($libCrypt);
         return $this;
     }
 

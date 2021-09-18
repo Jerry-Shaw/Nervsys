@@ -56,16 +56,16 @@ class libMySQL extends Factory
     /**
      * Bind libPDO object
      *
-     * @param libPDO $lib_pdo
+     * @param libPDO $libPDO
      *
      * @return $this
      */
-    public function bindLibPdo(libPDO $lib_pdo): self
+    public function bindLibPdo(libPDO $libPDO): self
     {
-        $this->libPDO = &$lib_pdo;
-        $this->pdo    = $lib_pdo->connect();
+        $this->libPDO = &$libPDO;
+        $this->pdo    = $libPDO->connect();
 
-        unset($lib_pdo);
+        unset($libPDO);
         return $this;
     }
 

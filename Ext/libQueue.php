@@ -613,10 +613,10 @@ class libQueue extends Factory
      */
     private function initEnv(): void
     {
-        /** @var IOUnit io_unit */
+        /** @var IOUnit IOUnit */
         $this->IOUnit = IOUnit::new();
 
-        /** @var OSUnit os_unit */
+        /** @var OSUnit OSUnit */
         $this->OSUnit = OSUnit::new();
     }
 

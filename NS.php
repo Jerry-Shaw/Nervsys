@@ -105,24 +105,24 @@ class NS extends Factory
         CORS::new()->checkPerm($app->is_cli, $app->is_tls);
 
         //Init IOUnit library
-        $io_unit = IOUnit::new();
+        $IOUnit = IOUnit::new();
 
         //Read input data
-        !$app->is_cli ? $io_unit->readCgi() : $io_unit->readCli();
+        !$app->is_cli ? $IOUnit->readCgi() : $IOUnit->readCli();
 
-        if ('' !== ($io_unit->src_cmd = trim($io_unit->src_cmd))) {
+        if ('' !== ($IOUnit->src_cmd = trim($IOUnit->src_cmd))) {
             //Init Router library
-            $router = Router::new()->parse($io_unit->src_cmd);
+            $router = Router::new()->parse($IOUnit->src_cmd);
 
             //Init Execute Module
             $execute = Execute::new()->copyCmd($router);
 
             //Execute process & fetch results
-            $io_unit->src_output += $execute->callCli();
-            $io_unit->src_output += $execute->callCgi();
+            $IOUnit->src_output += $execute->callCli();
+            $IOUnit->src_output += $execute->callCgi();
         }
 
         //Output results
-        $io_unit->output();
+        $IOUnit->output();
     }
 }

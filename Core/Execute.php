@@ -190,7 +190,7 @@ class Execute extends Factory
         $result = [];
 
         //Init OSUnit
-        $os_unit = OSUnit::new();
+        $OSUnit = OSUnit::new();
 
         //Process CLI command
         while (is_array($cmd_pair = array_shift($this->cli_cmd))) {
@@ -205,14 +205,14 @@ class Execute extends Factory
 
             try {
                 //Run external program
-                $result += $this->runProgram($os_unit, $cmd_name, $exe_path);
+                $result += $this->runProgram($OSUnit, $cmd_name, $exe_path);
             } catch (\Throwable $throwable) {
                 $this->app->showDebug($throwable, true);
                 unset($throwable);
             }
         }
 
-        unset($os_unit, $cmd_pair, $cmd_name, $exe_path);
+        unset($OSUnit, $cmd_pair, $cmd_name, $exe_path);
         return $result;
     }
 
@@ -253,27 +253,27 @@ class Execute extends Factory
     /**
      * Run external program
      *
-     * @param OSUnit $os_unit
+     * @param OSUnit $OSUnit
      * @param string $cmd_name
      * @param string $exe_path
      *
      * @return array
      * @throws \Exception
      */
-    public function runProgram(OSUnit $os_unit, string $cmd_name, string $exe_path): array
+    public function runProgram(OSUnit $OSUnit, string $cmd_name, string $exe_path): array
     {
         $result = [];
 
         //Build CLI command
-        $os_unit->setCmd('"' . $exe_path . '" ' . $this->IOUnit->src_argv);
+        $OSUnit->setCmd('"' . $exe_path . '" ' . $this->IOUnit->src_argv);
 
         //Check for BG command
         if ('none' === $this->IOUnit->cli_data_type) {
-            $os_unit->setAsBg();
+            $OSUnit->setAsBg();
         }
 
         //Create process
-        $process = popen($os_unit->setEnvPath()->fetchCmd(), 'rb');
+        $process = popen($OSUnit->setEnvPath()->fetchCmd(), 'rb');
 
         //Create process failed
         if (!is_resource($process)) {
@@ -296,7 +296,7 @@ class Execute extends Factory
         //Close process
         pclose($process);
 
-        unset($os_unit, $cmd_name, $exe_path, $process);
+        unset($OSUnit, $cmd_name, $exe_path, $process);
         return $result;
     }
 }

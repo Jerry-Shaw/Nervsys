@@ -216,13 +216,13 @@ class libUpload extends Factory
         }
 
         //Init libFile
-        $lib_file = libFile::new();
+        $libFile = libFile::new();
 
         //Check file extension
         $ext = array_search($this->runtime['type'], self::MIME, true);
 
         if (false === $ext && 'saveFile' === $this->runtime['fn']) {
-            $ext = $lib_file->getExt($this->runtime['name']);
+            $ext = $libFile->getExt($this->runtime['name']);
         }
 
         if ((empty($this->ext) && !isset(self::MIME[(string)$ext])) || (!empty($this->ext) && !in_array($ext, $this->ext, true))) {
@@ -230,7 +230,7 @@ class libUpload extends Factory
         }
 
         //Create save path
-        if ('' === $save_path = $lib_file->getPath($to, $this->upload_path)) {
+        if ('' === $save_path = $libFile->getPath($to, $this->upload_path)) {
             return $this->getUploadError(UPLOAD_ERR_NO_TMP_DIR);
         }
 
