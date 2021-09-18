@@ -21,18 +21,20 @@
 
 namespace Algo;
 
+use Core\Factory;
+
 /**
  * Class Ngram
  *
  * @package Algo
  */
-class Ngram
+class Ngram extends Factory
 {
     public int   $src_len;
     public array $src_data;
 
     /**
-     * @param array $data
+     * @param array $data Min-cut data list
      *
      * @return $this
      */
