@@ -34,13 +34,13 @@ class Ngram extends Factory
     public array $src_data;
 
     /**
-     * Set data list cut in minimal char length
+     * Set data list cut in minimal length
      *
      * @param array $data
      *
      * @return $this
      */
-    public function setData(array $data): self
+    public function setDataList(array $data): self
     {
         $this->src_data = &$data;
         $this->src_len  = count($this->src_data);
