@@ -97,7 +97,7 @@ class TfIdf extends Factory
         $count = 0;
 
         foreach ($this->src_docs as $doc) {
-            if (false !== mb_strpos($doc, $gram, 0, 'UTF-8')) {
+            if (false !== strpos($doc, $gram)) {
                 ++$count;
             }
         }
