@@ -24,11 +24,11 @@ namespace Algo;
 use Core\Factory;
 
 /**
- * Class Ngram
+ * Class NGram
  *
  * @package Algo
  */
-class Ngram extends Factory
+class NGram extends Factory
 {
     public int   $src_len;
     public array $src_data;

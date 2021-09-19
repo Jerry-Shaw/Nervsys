@@ -21,12 +21,14 @@
 
 namespace Algo;
 
+use Core\Factory;
+
 /**
  * Class TfIdf
  *
  * @package Algo
  */
-class TfIdf
+class TfIdf extends Factory
 {
     public array $src_docs = [];
     public int   $src_len  = 0;
