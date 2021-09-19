@@ -35,21 +35,21 @@ class Vsm extends Factory
      *
      * @param array $src
      * @param array $dst
-     * @param array $vct
+     * @param array $vct_val
      *
      * @return float
      */
-    private static function getDist(array $src, array $dst, array $vct = []): float
+    private static function getDist(array $src, array $dst, array $vct_val = []): float
     {
-        //Extract factors
-        $factor = array_unique(array_merge($src, $dst));
+        //Merge all factor elements
+        $elements = array_unique(array_merge($src, $dst));
 
         //Calculate vectors
         $res_vct = $res_src = $res_dst = 0;
 
-        foreach ($factor as $item) {
-            $vct_src = in_array($item, $src, true) ? ($vct[$item] ?? 1) : 0;
-            $vct_dst = in_array($item, $dst, true) ? ($vct[$item] ?? 1) : 0;
+        foreach ($elements as $item) {
+            $vct_src = in_array($item, $src, true) ? ($vct_val[$item] ?? 1) : 0;
+            $vct_dst = in_array($item, $dst, true) ? ($vct_val[$item] ?? 1) : 0;
 
             $res_src += $vct_src ** 2;
             $res_dst += $vct_dst ** 2;
@@ -59,7 +59,7 @@ class Vsm extends Factory
         //Calculate space vector distance
         $vsm = cos($res_vct / (sqrt($res_src * $res_dst)));
 
-        unset($src, $dst, $vct, $factor, $res_vct, $res_src, $res_dst, $item, $vct_src, $vct_dst);
+        unset($src, $dst, $vct_val, $elements, $res_vct, $res_src, $res_dst, $item, $vct_src, $vct_dst);
         return $vsm;
     }
 }

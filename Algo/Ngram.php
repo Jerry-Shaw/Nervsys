@@ -34,7 +34,9 @@ class Ngram extends Factory
     public array $src_data;
 
     /**
-     * @param array $data Min-cut data list
+     * Set data list cut in minimal char length
+     *
+     * @param array $data
      *
      * @return $this
      */
@@ -48,7 +50,7 @@ class Ngram extends Factory
     }
 
     /**
-     * Get N Gram list
+     * Get N-Gram list (with/without empty elements filled at beginning and end)
      *
      * @param int  $n
      * @param bool $fill_empty
