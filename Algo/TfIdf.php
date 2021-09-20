@@ -30,12 +30,12 @@ use Core\Factory;
  */
 class TfIdf extends Factory
 {
-    public array $src_docs = [];
-    public int   $src_len  = 0;
+    public array $src_grams = [];
+    public array $src_docs  = [];
+    public int   $src_len   = 0;
 
     public array $dst_tf  = [];
     public array $dst_idf = [];
-    public int   $dst_len = 0;
 
     /**
      * Set source data (exp: N-Gram result, source documents in list)
@@ -47,11 +47,9 @@ class TfIdf extends Factory
      */
     public function setSrcData(array $gram_list, array $doc_list): self
     {
-        $this->dst_tf  = array_count_values($gram_list);
-        $this->dst_len = count($this->dst_tf);
-
-        $this->src_docs = &$doc_list;
-        $this->src_len  = count($doc_list);
+        $this->src_grams = &$gram_list;
+        $this->src_docs  = &$doc_list;
+        $this->src_len   = count($doc_list);
 
         unset($gram_list, $doc_list);
         return $this;
@@ -66,6 +64,10 @@ class TfIdf extends Factory
      */
     public function getTf(string $gram): int
     {
+        if (empty($this->dst_tf)) {
+            $this->dst_tf = array_count_values($this->src_grams);
+        }
+
         return $this->dst_tf[$gram] ?? 0;
     }
 
