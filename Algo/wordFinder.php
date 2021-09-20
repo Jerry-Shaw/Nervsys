@@ -32,7 +32,7 @@ class wordFinder extends Factory
 {
     public int   $min_tf   = 2;
     public int   $step_len = 8;
-    public float $min_diff = 0.8;
+    public float $min_diff = 0.5;
 
     public int    $src_len  = 0;
     public string $src_text = '';
@@ -81,20 +81,25 @@ class wordFinder extends Factory
      */
     public function getWords(): array
     {
-        $i = 0;
-        $j = $this->step_len;
+        $i = $this->src_len - $this->step_len;
+        $j = $this->src_len;
 
         $last_wd = '';
         $last_tf = 1;
 
         $words = [];
 
-        while ($j > $i && $i < $this->src_len) {
-            $read_text = trim(mb_substr($this->src_text, $i, $j - $i, 'UTF-8'));
+        while ($j > 1) {
+            if (0 > $i) {
+                $i = 0;
+            }
+
+            $read_len  = $j - $i;
+            $read_text = trim(mb_substr($this->src_text, $i, $read_len, 'UTF-8'));
 
             if ('' === $read_text || $read_text === $last_wd) {
-                $i = $j;
-                $j = $i + $this->step_len;
+                $j = $i;
+                $i = $j - $this->step_len;
 
                 $last_wd = '';
                 $last_tf = 1;
@@ -102,35 +107,51 @@ class wordFinder extends Factory
                 continue;
             }
 
-            if (1 === ($j - $i)) {
+            $now_tf = $this->getTf($read_text);
+
+            if (1 === $read_len) {
+                --$j;
+                $i = $j - $this->step_len;
+
                 $words[] = $read_text;
-
-                $i = $j;
-                $j = $i + $this->step_len;
-
                 $last_wd = '';
                 $last_tf = 1;
 
                 continue;
             }
 
-            if (!isset($this->word_tf[$read_text])) {
-                $this->word_tf[$read_text] = substr_count($this->src_text, $read_text);
-            }
+            $tf_diff = ($now_tf - $last_tf) / $now_tf;
 
-            if ($this->word_tf[$read_text] >= $last_tf * (1 + $this->min_diff) && $this->word_tf[$read_text] >= $this->min_tf) {
-                ++$i;
-
+            if ($tf_diff >= $this->min_diff) {
                 $words[] = $read_text;
                 $last_wd = $read_text;
-                $last_tf = $this->word_tf[$read_text];
+                $last_tf = $now_tf;
+
+                --$j;
+                $i = $j - $this->step_len;
 
                 continue;
             }
 
-            --$j;
+            ++$i;
         }
 
         return $words;
+    }
+
+    /**
+     * Get TF value from source text
+     *
+     * @param string $gram
+     *
+     * @return int
+     */
+    private function getTf(string $gram): int
+    {
+        if (!isset($this->word_tf[$gram])) {
+            $this->word_tf[$gram] = substr_count($this->src_text, $gram);
+        }
+
+        return $this->word_tf[$gram];
     }
 }
