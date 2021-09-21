@@ -38,7 +38,7 @@ class TfIdf extends Factory
     public array $dst_idf = [];
 
     /**
-     * Set source data (exp: N-Gram result, source documents in list)
+     * Set source data (exp: N-Gram/wordFinder results, source documents in list)
      *
      * @param array $gram_list
      * @param array $doc_list
