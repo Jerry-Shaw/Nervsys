@@ -34,24 +34,23 @@ class wordFinder extends Factory
     public int   $step_len = 8;
     public float $min_diff = 0.8;
 
-    public int    $src_len  = 0;
-    public string $src_text = '';
-
-    public array $word_tf = [];
+    public array $chunk_list = [];
+    public array $word_tf    = [];
+    public array $words      = [];
 
     /**
-     * Set source document list
+     * Set source document text and chunk size
      *
-     * @param array $doc_list
+     * @param string $doc_text
+     * @param int    $chunk_size
      *
      * @return $this
      */
-    public function setDocs(array $doc_list): self
+    public function setDocText(string $doc_text, int $chunk_size = 10000): self
     {
-        $this->src_text = implode(' ', $doc_list);
-        $this->src_len  = mb_strlen($this->src_text, 'UTF-8');
+        $this->chunk_list = mb_str_split($doc_text, $chunk_size, 'UTF-8');
 
-        unset($doc_list);
+        unset($doc_text, $chunk_size);
         return $this;
     }
 
@@ -81,13 +80,28 @@ class wordFinder extends Factory
      */
     public function getWords(): array
     {
-        $words = [];
+        foreach ($this->chunk_list as $text) {
+            $this->word_tf = [];
+            $this->find($text, mb_strlen($text, 'UTF-8'));
+        }
 
-        $last_wd = '';
+        unset($text);
+        return $this->words;
+    }
+
+    /**
+     * Find all possible words
+     *
+     * @param string $text
+     * @param int    $length
+     */
+    public function find(string $text, int $length): void
+    {
         $last_tf = 1;
+        $last_wd = '';
 
-        $j = $this->src_len;
-        $i = $this->src_len - $this->step_len;
+        $j = $length;
+        $i = $length - $this->step_len;
 
         while ($j > 1) {
             if (0 > $i) {
@@ -95,66 +109,67 @@ class wordFinder extends Factory
             }
 
             $read_len  = $j - $i;
-            $read_text = trim(mb_substr($this->src_text, $i, $read_len, 'UTF-8'));
+            $read_text = trim(mb_substr($text, $i, $read_len, 'UTF-8'));
 
             if ('' === $read_text || $read_text === $last_wd) {
-                $last_wd = '';
                 $last_tf = 1;
+                $last_wd = '';
 
                 $j = $i;
                 $i = $j - $this->step_len;
                 continue;
             }
-
-            $now_tf = $this->getTf($read_text);
 
             if (1 === $read_len) {
-                $words[] = $read_text;
+                $this->words[] = $read_text;
 
-                $last_wd = '';
                 $last_tf = 1;
+                $last_wd = '';
 
                 $j = $i;
                 $i = $j - $this->step_len;
                 continue;
             }
+
+            $now_tf = $this->getTf($text, $read_text);
 
             $tf_diff = ($now_tf - $last_tf) / $now_tf;
 
             if ($tf_diff >= $this->min_diff) {
-                $words[] = $read_text;
+                $this->words[] = $read_text;
 
-                $last_wd = '';
                 $last_tf = 1;
+                $last_wd = '';
 
                 $j = $i;
                 $i = $j - $this->step_len;
                 continue;
             }
 
-            $last_wd = $read_text;
             $last_tf = $now_tf;
+            $last_wd = $read_text;
 
             ++$i;
         }
 
-        unset($last_wd, $last_tf, $j, $i, $read_len, $read_text, $now_tf, $tf_diff);
-        return $words;
+        unset($text, $length, $last_tf, $last_wd, $j, $i, $read_len, $read_text, $now_tf, $tf_diff);
     }
 
     /**
      * Get TF value from source text
      *
+     * @param string $text
      * @param string $gram
      *
      * @return int
      */
-    private function getTf(string $gram): int
+    private function getTf(string $text, string $gram): int
     {
         if (!isset($this->word_tf[$gram])) {
-            $this->word_tf[$gram] = substr_count($this->src_text, $gram);
+            $this->word_tf[$gram] = substr_count($text, $gram);
         }
 
+        unset($text);
         return $this->word_tf[$gram];
     }
 }
