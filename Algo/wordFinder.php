@@ -32,7 +32,7 @@ class wordFinder extends Factory
 {
     public int   $min_tf   = 2;
     public int   $step_len = 8;
-    public float $min_diff = 0.5;
+    public float $min_diff = 0.8;
 
     public int    $src_len  = 0;
     public string $src_text = '';
@@ -81,13 +81,13 @@ class wordFinder extends Factory
      */
     public function getWords(): array
     {
-        $i = $this->src_len - $this->step_len;
-        $j = $this->src_len;
+        $words = [];
 
         $last_wd = '';
         $last_tf = 1;
 
-        $words = [];
+        $j = $this->src_len;
+        $i = $this->src_len - $this->step_len;
 
         while ($j > 1) {
             if (0 > $i) {
@@ -98,25 +98,24 @@ class wordFinder extends Factory
             $read_text = trim(mb_substr($this->src_text, $i, $read_len, 'UTF-8'));
 
             if ('' === $read_text || $read_text === $last_wd) {
-                $j = $i;
-                $i = $j - $this->step_len;
-
                 $last_wd = '';
                 $last_tf = 1;
 
+                $j = $i;
+                $i = $j - $this->step_len;
                 continue;
             }
 
             $now_tf = $this->getTf($read_text);
 
             if (1 === $read_len) {
-                --$j;
-                $i = $j - $this->step_len;
-
                 $words[] = $read_text;
+
                 $last_wd = '';
                 $last_tf = 1;
 
+                $j = $i;
+                $i = $j - $this->step_len;
                 continue;
             }
 
@@ -124,18 +123,22 @@ class wordFinder extends Factory
 
             if ($tf_diff >= $this->min_diff) {
                 $words[] = $read_text;
-                $last_wd = $read_text;
-                $last_tf = $now_tf;
 
-                --$j;
+                $last_wd = '';
+                $last_tf = 1;
+
+                $j = $i;
                 $i = $j - $this->step_len;
-
                 continue;
             }
+
+            $last_wd = $read_text;
+            $last_tf = $now_tf;
 
             ++$i;
         }
 
+        unset($last_wd, $last_tf, $j, $i, $read_len, $read_text, $now_tf, $tf_diff);
         return $words;
     }
 
