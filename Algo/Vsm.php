@@ -39,7 +39,7 @@ class Vsm extends Factory
      *
      * @return float
      */
-    private static function getDist(array $src, array $dst, array $vct_val = []): float
+    public function getDistance(array $src, array $dst, array $vct_val = []): float
     {
         //Merge all factor elements
         $elements = array_unique(array_merge($src, $dst));
