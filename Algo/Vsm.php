@@ -57,7 +57,7 @@ class Vsm extends Factory
         }
 
         //Calculate space vector distance
-        $vsm = cos($res_vct / (sqrt($res_src * $res_dst)));
+        $vsm = acos($res_vct / (sqrt($res_src * $res_dst)));
 
         unset($src, $dst, $vct_val, $elements, $res_vct, $res_src, $res_dst, $item, $vct_src, $vct_dst);
         return $vsm;
