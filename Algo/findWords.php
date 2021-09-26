@@ -24,11 +24,11 @@ namespace Algo;
 use Core\Factory;
 
 /**
- * Class wordFinder
+ * Class findWords
  *
  * @package Algo
  */
-class wordFinder extends Factory
+class findWords extends Factory
 {
     public int   $min_tf   = 2;
     public int   $step_len = 8;
