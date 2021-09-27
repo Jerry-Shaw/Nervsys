@@ -688,7 +688,7 @@ class libMySQL extends Factory
 
         if (!empty($explain)) {
             //Build result
-            $result = ['sql' => &$sql, 'res' => &$explain];
+            $result = ['SQL' => &$sql, 'EXPLAIN' => &$explain];
 
             //Output result
             if (1 === (1 & $this->explain_type)) {

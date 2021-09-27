@@ -274,15 +274,14 @@ class libCoreApi extends Factory
      * Add message data
      *
      * @param string $msg_key
-     * @param array  $msg_data
      *
      * @return $this
      */
-    public function addMsgData(string $msg_key, array $msg_data): self
+    public function addMsgData(string $msg_key): self
     {
-        IOUnit::new()->addMsgData($msg_key, $msg_data);
+        IOUnit::new()->addMsgData($msg_key, ...array_slice(func_get_args(), 1, null, true));
 
-        unset($msg_key, $msg_data);
+        unset($msg_key);
         return $this;
     }
 

@@ -162,15 +162,14 @@ class IOUnit extends Factory
      * Add message data
      *
      * @param string $msg_key
-     * @param array  $msg_data
      *
      * @return $this
      */
-    public function addMsgData(string $msg_key, array $msg_data): self
+    public function addMsgData(string $msg_key): self
     {
-        $this->src_msg[$msg_key] = array_merge($this->src_msg[$msg_key] ?? [], $msg_data);
+        $this->src_msg[$msg_key] = array_merge($this->src_msg[$msg_key] ?? [], array_slice(func_get_args(), 1, null, true));
 
-        unset($msg_key, $msg_data);
+        unset($msg_key);
         return $this;
     }
 
