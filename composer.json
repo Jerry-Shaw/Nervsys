@@ -26,7 +26,8 @@
     "ext-openssl": "*",
     "ext-pdo": "*",
     "ext-redis": "*",
-    "ext-simplexml": "*"
+    "ext-simplexml": "*",
+    "ext-mbstring": "*"
   },
   "autoload": {
     "psr-4": {
