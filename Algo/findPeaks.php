@@ -57,21 +57,21 @@ class findPeaks extends Factory
     }
 
     /**
-     * Get high peak points
+     * Find high peak points
      *
      * @return array
      */
-    public function getHighPeaks(): array
+    public function findHighPeaks(): array
     {
         return $this->fetchPoints(-2);
     }
 
     /**
-     * Get low peak points
+     * Find low peak points
      *
      * @return array
      */
-    public function getLowPeaks(): array
+    public function findLowPeaks(): array
     {
         return $this->fetchPoints(2);
     }
