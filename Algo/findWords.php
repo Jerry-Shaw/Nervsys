@@ -32,7 +32,7 @@ class findWords extends Factory
 {
     public int   $min_tf   = 2;
     public int   $step_len = 8;
-    public float $min_diff = 0.8;
+    public float $min_diff = 0.4;
 
     public array $chunk_list = [];
     public array $word_tf    = [];
@@ -98,7 +98,6 @@ class findWords extends Factory
     public function find(string $text, int $length): void
     {
         $last_tf = 1;
-        $last_wd = '';
 
         $j = $length;
         $i = $length - $this->step_len;
@@ -111,9 +110,8 @@ class findWords extends Factory
             $read_len  = $j - $i;
             $read_text = trim(mb_substr($text, $i, $read_len, 'UTF-8'));
 
-            if ('' === $read_text || $read_text === $last_wd) {
+            if ('' === $read_text) {
                 $last_tf = 1;
-                $last_wd = '';
 
                 $j = $i;
                 $i = $j - $this->step_len;
@@ -124,7 +122,6 @@ class findWords extends Factory
                 $this->words[] = $read_text;
 
                 $last_tf = 1;
-                $last_wd = '';
 
                 $j = $i;
                 $i = $j - $this->step_len;
@@ -139,7 +136,6 @@ class findWords extends Factory
                 $this->words[] = $read_text;
 
                 $last_tf = 1;
-                $last_wd = '';
 
                 $j = $i;
                 $i = $j - $this->step_len;
@@ -147,12 +143,11 @@ class findWords extends Factory
             }
 
             $last_tf = $now_tf;
-            $last_wd = $read_text;
 
             ++$i;
         }
 
-        unset($text, $length, $last_tf, $last_wd, $j, $i, $read_len, $read_text, $now_tf, $tf_diff);
+        unset($text, $length, $last_tf, $j, $i, $read_len, $read_text, $now_tf, $tf_diff);
     }
 
     /**
