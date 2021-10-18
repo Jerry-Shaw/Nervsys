@@ -62,14 +62,18 @@ class NGram extends Factory
         $grams = [];
 
         if ($fill_empty && $n > 1) {
-            $this->fillEmpty($n - 1);
+            $fill_len = $n - 1;
+            $this->fillEmpty($fill_len);
+            $this->src_len += $fill_len * 2;
         }
 
         for ($i = 0; $i < $this->src_len; ++$i) {
             $grams[] = array_slice($this->src_data, $i, $n, true);
         }
 
-        unset($n, $fill_empty, $i);
+        $grams = array_slice($grams, 0, count($grams) - $n + 1);
+
+        unset($n, $fill_empty, $fill_len, $i);
         return $grams;
     }
 
