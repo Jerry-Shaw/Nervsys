@@ -82,6 +82,10 @@ class TfIdf extends Factory
     {
         if (!isset($this->dst_idf[$gram])) {
             $this->dst_idf[$gram] = log($this->src_len / ($this->findContains($gram) + 1));
+
+            if (0 > $this->dst_idf[$gram]) {
+                $this->dst_idf[$gram] = 0;
+            }
         }
 
         return $this->dst_idf[$gram] ?? 0;
