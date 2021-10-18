@@ -102,7 +102,7 @@ class findWords extends Factory
         $j = $length;
         $i = $length - $this->step_len;
 
-        while ($j > 1) {
+        while ($j > 0) {
             if (0 > $i) {
                 $i = 0;
             }
