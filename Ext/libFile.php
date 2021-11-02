@@ -123,4 +123,45 @@ class libFile extends Factory
         unset($path, $pattern, $recursive, $path_name, $dir_list, $dir);
         return $file_list;
     }
+
+    /**
+     * Delete dir by path
+     *
+     * @param string $path
+     *
+     * @return int
+     */
+    public function delDir(string $path): int
+    {
+        $removed = 0;
+
+        if (!is_dir($path) || false === ($dir = opendir($path))) {
+            return -1;
+        }
+
+        while (false !== ($file = readdir($dir))) {
+            if (in_array($file, ['.', '..'], true)) {
+                continue;
+            }
+
+            $file_path = $path . DIRECTORY_SEPARATOR . $file;
+
+            if (is_dir($file_path)) {
+                $removed += $this->delDir($file_path);
+                continue;
+            }
+
+            if (unlink($file_path)) {
+                ++$removed;
+            } else {
+                return -1;
+            }
+        }
+
+        closedir($dir);
+        rmdir($path);
+
+        unset($path, $dir, $file, $file_path);
+        return $removed;
+    }
 }
