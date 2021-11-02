@@ -125,6 +125,50 @@ class libFile extends Factory
     }
 
     /**
+     * Copy dir to path
+     *
+     * @param string $src
+     * @param string $dst
+     *
+     * @return int
+     */
+    public function copyDir(string $src, string $dst): int
+    {
+        $copied = 0;
+
+        if (!is_dir($src) || false === ($dir = opendir($src))) {
+            return -1;
+        }
+
+        if (!is_dir($dst)) {
+            mkdir($dst, 0777, true);
+        }
+
+        while (false !== ($file = readdir($dir))) {
+            if (in_array($file, ['.', '..'], true)) {
+                continue;
+            }
+
+            $src_path = $src . DIRECTORY_SEPARATOR . $file;
+            $dst_path = $dst . DIRECTORY_SEPARATOR . $file;
+
+            if (is_dir($src_path)) {
+                $copied += $this->copyDir($src_path, $dst_path);
+                continue;
+            }
+
+            if (copy($src_path, $dst_path)) {
+                ++$copied;
+            } else {
+                return -1;
+            }
+        }
+
+        unset($src, $dst, $dir, $file, $src_path, $dst_path);
+        return $copied;
+    }
+
+    /**
      * Delete dir by path
      *
      * @param string $path
