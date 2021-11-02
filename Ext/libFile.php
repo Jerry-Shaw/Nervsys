@@ -55,7 +55,7 @@ class libFile extends Factory
      *
      * @return string
      */
-    public function getPath(string $path, string $root = ''): string
+    public function mkPath(string $path, string $root = ''): string
     {
         //Define root
         $root = App::new()->getRootPath($root);
@@ -142,6 +142,7 @@ class libFile extends Factory
 
         if (!is_dir($dst)) {
             mkdir($dst, 0777, true);
+            chmod($dir, 0777);
         }
 
         while (false !== ($file = readdir($dir))) {

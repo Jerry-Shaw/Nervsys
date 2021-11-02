@@ -230,7 +230,7 @@ class libUpload extends Factory
         }
 
         //Create save path
-        if ('' === $save_path = $libFile->getPath($to, $this->upload_path)) {
+        if ('' === $save_path = $libFile->mkPath($to, $this->upload_path)) {
             return $this->getUploadError(UPLOAD_ERR_NO_TMP_DIR);
         }
 
