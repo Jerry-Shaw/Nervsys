@@ -87,7 +87,7 @@ class libUpload extends Factory
         UPLOAD_ERR_NO_FILE    => 'No file uploaded.',
         UPLOAD_ERR_NO_TMP_DIR => 'Path NOT exist.',
         UPLOAD_ERR_CANT_WRITE => 'Failed to write.',
-        UPLOAD_ERR_EXTENSION  => 'Extension blocked.',
+        UPLOAD_ERR_EXTENSION  => 'Extension blocked.'
     ];
 
     public IOUnit $IOUnit;
@@ -207,12 +207,12 @@ class libUpload extends Factory
     {
         //Check upload error
         if (isset($this->runtime['error'])) {
-            return $this->getUploadError($this->runtime['error']);
+            return $this->getError($this->runtime['error']);
         }
 
         //Check file size
         if (0 < $this->size && $this->runtime['size'] > $this->size) {
-            return $this->getUploadError(UPLOAD_ERR_FORM_SIZE);
+            return $this->getError(UPLOAD_ERR_FORM_SIZE);
         }
 
         //Init libFile
@@ -226,12 +226,12 @@ class libUpload extends Factory
         }
 
         if ((empty($this->ext) && !isset(self::MIME[(string)$ext])) || (!empty($this->ext) && !in_array($ext, $this->ext, true))) {
-            return $this->getUploadError(UPLOAD_ERR_EXTENSION);
+            return $this->getError(UPLOAD_ERR_EXTENSION);
         }
 
         //Create save path
         if ('' === $save_path = $libFile->mkPath($to, $this->upload_path)) {
-            return $this->getUploadError(UPLOAD_ERR_NO_TMP_DIR);
+            return $this->getError(UPLOAD_ERR_NO_TMP_DIR);
         }
 
         //Correct filename
@@ -249,14 +249,14 @@ class libUpload extends Factory
 
         //Save file/base64
         if (!$this->{$this->runtime['fn']}($file_path)) {
-            return $this->getUploadError(UPLOAD_ERR_CANT_WRITE);
+            return $this->getError(UPLOAD_ERR_CANT_WRITE);
         }
 
         //Set permissions
         chmod($file_path, $this->perm);
 
         //Build upload result
-        $result = $this->getUploadError(UPLOAD_ERR_OK);
+        $result = $this->getError(UPLOAD_ERR_OK);
 
         //Collect upload data
         $result['url']  = strtr($url_path, '\\', '/');
@@ -374,7 +374,7 @@ class libUpload extends Factory
      *
      * @return array
      */
-    private function getUploadError(int $errno): array
+    private function getError(int $errno): array
     {
         return [
             'errno'   => &$errno,
