@@ -57,7 +57,7 @@ class App extends Factory
         }
 
         //Make parent path as root_path
-        $root_path = dirname(dirname($this->script_path));
+        $root_path = dirname($this->script_path, 2);
 
         //Copy root_path to App->root_path
         $this->root_path = &$root_path;
