@@ -101,6 +101,7 @@ class libZip extends Factory
 
         $zip_path = $this->store_path . DIRECTORY_SEPARATOR . $filename . '.zip';
 
+        $target_files = $this->target_file;
         try {
             $errno = $this->zipArchive->open($zip_path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
@@ -108,7 +109,7 @@ class libZip extends Factory
                 throw new \Exception('Zip failed!', $errno);
             }
 
-            foreach ($this->target_file as $path) {
+            foreach ($target_files as $path) {
                 $base_path = basename($path);
                 is_dir($path) ? $this->zipDir($path, $base_path) : $this->zipFile($path, $base_path);
             }
