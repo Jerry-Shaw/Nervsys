@@ -60,11 +60,6 @@ class libFile extends Factory
         //Define root
         $root = App::new()->getRootPath($root);
 
-        //Parent directory is not allowed
-        if (false !== strpos($path, '..')) {
-            $path = str_replace('..', '', $path);
-        }
-
         //Get clean path
         $path = strtr($path, '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
         $path = trim($path, DIRECTORY_SEPARATOR);
@@ -76,9 +71,7 @@ class libFile extends Factory
 
         //Create directories
         if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
-            //Create directory recursively
             mkdir($dir, 0777, true);
-            //Set permissions to path
             chmod($dir, 0777);
         }
 
