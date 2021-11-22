@@ -57,25 +57,20 @@ class libFile extends Factory
      */
     public function mkPath(string $path, string $root = ''): string
     {
-        //Define root
         $root = App::new()->getRootPath($root);
 
-        //Get clean path
         $path = strtr($path, '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
         $path = trim($path, DIRECTORY_SEPARATOR);
 
-        //Return root path
         if ('' === $path) {
             return $root . DIRECTORY_SEPARATOR;
         }
 
-        //Create directories
         if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
             mkdir($dir, 0777, true);
             chmod($dir, 0777);
         }
 
-        //Check path property
         $path = (is_readable($dir) ? $path : $root) . DIRECTORY_SEPARATOR;
 
         unset($root, $dir);
@@ -83,7 +78,43 @@ class libFile extends Factory
     }
 
     /**
-     * Get a list of files in a directory or recursively
+     * Get file list in a directory or recursively
+     *
+     * @param string $path
+     * @param bool   $recursive
+     *
+     * @return array|int
+     */
+    public function getFiles(string $path, bool $recursive = false): array
+    {
+        if (!is_dir($path) || false === ($dir = opendir($path))) {
+            return [];
+        }
+
+        $file_list = [];
+
+        while (false !== ($file = readdir($dir))) {
+            if (in_array($file, ['.', '..'], true)) {
+                continue;
+            }
+
+            $file_path = $path . DIRECTORY_SEPARATOR . $file;
+
+            if (is_file($file_path)) {
+                $file_list[] = $file_path;
+            } elseif ($recursive && is_dir($file_path)) {
+                $file_list = array_merge($file_list, $this->getFiles($file_path, $recursive));
+            }
+        }
+
+        closedir($dir);
+
+        unset($path, $recursive, $dir, $file, $file_path);
+        return $file_list;
+    }
+
+    /**
+     * Find files by pattern in a directory or recursively
      *
      * @param string $path
      * @param string $pattern
@@ -91,7 +122,7 @@ class libFile extends Factory
      *
      * @return array
      */
-    public function getList(string $path, string $pattern = '*', bool $recursive = false): array
+    public function findFiles(string $path, string $pattern = '*', bool $recursive = false): array
     {
         if (false === $path_name = realpath($path)) {
             return [];
@@ -100,7 +131,6 @@ class libFile extends Factory
         $path_name .= DIRECTORY_SEPARATOR;
         $file_list = glob($path_name . $pattern, GLOB_NOSORT | GLOB_BRACE);
 
-        //Return list on non-recursive
         if (!$recursive) {
             unset($path, $pattern, $recursive, $path_name);
             return $file_list;
@@ -108,9 +138,8 @@ class libFile extends Factory
 
         $dir_list = glob($path_name . '*', GLOB_NOSORT | GLOB_ONLYDIR);
 
-        //Get file list recursively
         foreach ($dir_list as $dir) {
-            $file_list = array_merge($file_list, $this->getList($dir, $pattern, true));
+            $file_list = array_merge($file_list, $this->findFiles($dir, $pattern, true));
         }
 
         unset($path, $pattern, $recursive, $path_name, $dir_list, $dir);
