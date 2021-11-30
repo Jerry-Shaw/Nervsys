@@ -40,8 +40,8 @@ class WINNT
     {
         $queries = [
             'wmic cpu get Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType, Revision /format:value',
-            'wmic nic get AdapterType, MACAddress, Manufacturer, Name, PNPDeviceID /format:value',
             'wmic baseboard get Manufacturer, Product, SerialNumber, Version /format:value',
+            'wmic nic where netconnectionid!=NULL get macaddress /format:value',
             'wmic memorychip get BankLabel, Capacity /format:value',
             'wmic bios get SerialNumber /format:value'
         ];
