@@ -162,7 +162,10 @@ class libMPC extends Factory
                 ['file', $stdout_path, 'wb'],
                 ['file', $stderr_path, 'wb']
             ],
-            $pipes
+            $pipes,
+            null,
+            null,
+            ['bypass_shell' => true]
         );
 
         if (!is_resource($proc)) {
