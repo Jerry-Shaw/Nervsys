@@ -194,7 +194,6 @@ class libMPC extends Factory
     {
         $this->max_fork = &$max_fork;
         $this->max_exec = &$max_exec;
-
         $this->proc_cmd = $this->php_path . ' "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit"';
 
         //Initialize proc_exec data
@@ -227,8 +226,8 @@ class libMPC extends Factory
                 return 0;
             }
 
-            //Push data via STDIN
-            fwrite($this->proc_list[$this->proc_idx], json_encode(['c' => &$cmd] + $data, JSON_FORMAT) . PHP_EOL);
+            //Push encoded data via STDIN
+            fwrite($this->proc_list[$this->proc_idx], base64_encode(json_encode(['c' => &$cmd] + $data, JSON_FORMAT)) . "\n");
         } catch (\Throwable $throwable) {
             //Retry 3 times
             if (3 > ++$retry) {
@@ -294,7 +293,7 @@ class libMPC extends Factory
             }
 
             //Parse data
-            if ('' === $stdin || !is_array($data = json_decode($stdin, true))) {
+            if ('' === $stdin || !is_array($data = json_decode(base64_decode($stdin, true), true))) {
                 continue;
             }
 
