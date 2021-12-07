@@ -21,7 +21,6 @@
 namespace Ext;
 
 use Core\Factory;
-use Core\OSUnit;
 
 /**
  * Class libExeC
@@ -36,9 +35,9 @@ class libExeC extends Factory
     /** @var \Redis $redis */
     public \Redis $redis;
 
-    public int $idle_time   = 3;
-    public int $max_hist    = 1000;
-    public int $status_life = 86400;
+    public int $idle_time = 3;
+    public int $key_life  = 180;
+    public int $max_hist  = 1000;
 
     public string $stop_cmd = 'PROC-STOP';
 
@@ -91,49 +90,47 @@ class libExeC extends Factory
     /**
      * Set process status
      *
-     * @param string $cmd
-     *
      * @return bool
      */
-    public function setStatus(string $cmd): bool
+    public function setStatus(): bool
     {
-        if (!$this->redis->hSetNx($this->key_status, 'cmd', $cmd)) {
+        if (!$this->redis->hSetNx($this->key_status, 'start', time())) {
             return false;
         }
 
         $msg = 'Command started at ' . date('Y-m-d H:i:s');
 
         $this->redis->lPush($this->key_logs, $msg);
-        $this->redis->hMSet($this->key_status, ['start' => time(), 'msg' => $msg]);
-        $this->redis->expire($this->key_status, $this->status_life);
+        $this->redis->hSet($this->key_status, 'msg', $msg);
+        $this->redis->expire($this->key_status, $this->key_life);
 
-        unset($cmd, $msg);
+        unset($msg);
         return true;
     }
 
     /**
      * Start a process
      *
-     * @param string      $cmd
-     * @param string|null $cwd
+     * @param array       $cmd_params
+     * @param string|null $cwd_path
      *
      * @return void
      */
-    public function start(string $cmd, string $cwd = null): void
+    public function start(array $cmd_params, string $cwd_path = null): void
     {
-        if (!$this->setStatus($cmd)) {
+        if (!$this->setStatus()) {
             return;
         }
 
         $proc = proc_open(
-            OSUnit::new()->setCmd($cmd)->setEnvPath()->fetchCmd(),
+            $cmd_params,
             [
                 ['pipe', 'rb'],
                 ['socket', 'wb'],
                 ['socket', 'wb']
             ],
             $pipes,
-            $cwd
+            $cwd_path
         );
 
         if (!is_resource($proc)) {
@@ -143,8 +140,12 @@ class libExeC extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
-        while (true) {
+        $this->redis->hSet($this->key_status, 'cmd', stream_get_meta_data($proc)['command']);
+
+        while (stream_get_meta_data($proc)['running']) {
             $this->saveLogs([$pipes[1], $pipes[2]]);
+
+            $this->redis->expire($this->key_status, $this->key_life);
 
             $command = $this->redis->brPop($this->key_command, $this->idle_time);
 
@@ -155,20 +156,21 @@ class libExeC extends Factory
             $input = trim($command[1]);
 
             if ($input === $this->stop_cmd) {
-                foreach ($pipes as $pipe) {
-                    fclose($pipe);
-                }
+                fclose($pipes[0]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
 
+                proc_terminate($proc);
                 proc_close($proc);
-                $this->cleanup();
 
+                $this->cleanup();
                 break;
             }
 
             fwrite($pipes[0], $input . "\n");
         }
 
-        unset($cmd, $cwd, $proc, $pipes, $command, $input, $pipe);
+        unset($cmd_params, $cwd_path, $proc, $pipes, $command, $input);
     }
 
     /**
