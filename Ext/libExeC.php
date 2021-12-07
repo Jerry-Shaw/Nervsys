@@ -144,7 +144,6 @@ class libExeC extends Factory
 
         while (proc_get_status($proc)['running']) {
             $this->saveLogs([$pipes[1], $pipes[2]]);
-
             $this->redis->expire($this->key_status, $this->key_life);
 
             $command = $this->redis->brPop($this->key_command, $this->idle_time);
@@ -156,19 +155,18 @@ class libExeC extends Factory
             $input = trim($command[1]);
 
             if ($input === $this->stop_cmd) {
-                fclose($pipes[0]);
-                fclose($pipes[1]);
-                fclose($pipes[2]);
-
-                proc_terminate($proc);
-                proc_close($proc);
-
-                $this->cleanup();
                 break;
             }
 
             fwrite($pipes[0], $input . "\n");
         }
+
+        fclose($pipes[0]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_terminate($proc);
+        proc_close($proc);
+        $this->cleanup();
 
         unset($cmd_params, $cwd_path, $proc, $pipes, $command, $input);
     }
