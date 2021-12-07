@@ -123,11 +123,12 @@ class libExeC extends Factory
     /**
      * Start a process
      *
-     * @param string $cmd
+     * @param string      $cmd
+     * @param string|null $cwd
      *
      * @return void
      */
-    public function start(string $cmd): void
+    public function start(string $cmd, string $cwd = null): void
     {
         if (!$this->setStatus($cmd)) {
             return;
@@ -141,22 +142,26 @@ class libExeC extends Factory
                 ['file', $this->log_file_path, 'wb']
             ],
             $pipes,
-            null,
-            null,
-            ['bypass_shell' => true]
+            $cwd
         );
 
-        if (false === $proc) {
+        if (!is_resource($proc)) {
             return;
         }
 
-        $log_fp = fopen($this->log_file_path, 'rb');
+        $offset = 0;
 
         while (true) {
+            $log_fp = fopen($this->log_file_path, 'rb');
+            fseek($log_fp, $offset);
+
             while (!feof($log_fp)) {
                 $this->redis->lPush($this->key_logs, trim(fgets($log_fp)));
                 $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
             }
+
+            $offset += ftell($log_fp);
+            fclose($log_fp);
 
             if (0 === $this->redis->lLen($this->key_command)) {
                 continue;
@@ -171,7 +176,6 @@ class libExeC extends Factory
             $input = trim($command[1]);
 
             if ($input === $this->stop_cmd) {
-                fclose($log_fp);
                 fclose($pipes[0]);
                 proc_close($proc);
 
@@ -182,7 +186,7 @@ class libExeC extends Factory
             fwrite($pipes[0], $input . "\n");
         }
 
-        unset($cmd, $proc, $pipes, $log_fp, $command, $input);
+        unset($cmd, $cwd, $proc, $pipes, $offset, $log_fp, $command, $input);
     }
 
     /**
