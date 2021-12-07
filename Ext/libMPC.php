@@ -87,9 +87,8 @@ class libMPC extends Factory
      */
     public function buildCmd(string $c, array $data): string
     {
-        $cmd = $this->php_path . ' "' . $this->app->script_path . '"';
-        $cmd .= ' -c"' . $this->IOUnit->encodeData($c) . '"';
-
+        $cmd  = $this->php_path . ' "' . $this->app->script_path . '"';
+        $cmd  .= ' -c"' . $this->IOUnit->encodeData($c) . '"';
         $argv = '';
 
         if (isset($data['argv'])) {
@@ -137,12 +136,13 @@ class libMPC extends Factory
     /**
      * Exec raw cmd sync
      *
-     * @param string $cmd
+     * @param string      $cmd
+     * @param string|null $cwd
      *
      * @return string[]
      * @throws \Exception
      */
-    public function execSync(string $cmd): array
+    public function execSync(string $cmd, string $cwd = null): array
     {
         $std_path  = $this->app->log_path . DIRECTORY_SEPARATOR . 'std' . DIRECTORY_SEPARATOR . date('Ymd') . DIRECTORY_SEPARATOR;
         $file_name = str_replace('.', '', (string)microtime(true) . (string)getmypid());
@@ -163,9 +163,7 @@ class libMPC extends Factory
                 ['file', $stderr_path, 'wb']
             ],
             $pipes,
-            null,
-            null,
-            ['bypass_shell' => true]
+            $cwd
         );
 
         if (!is_resource($proc)) {
