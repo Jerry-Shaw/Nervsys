@@ -134,53 +134,6 @@ class libMPC extends Factory
     }
 
     /**
-     * Exec raw cmd sync
-     *
-     * @param string      $cmd
-     * @param string|null $cwd
-     *
-     * @return string[]
-     * @throws \Exception
-     */
-    public function execSync(string $cmd, string $cwd = null): array
-    {
-        $std_path  = $this->app->log_path . DIRECTORY_SEPARATOR . 'std' . DIRECTORY_SEPARATOR . date('Ymd') . DIRECTORY_SEPARATOR;
-        $file_name = str_replace('.', '', (string)microtime(true) . (string)getmypid());
-
-        if (!is_dir($std_path)) {
-            mkdir($std_path, 0777, true);
-            chmod($std_path, 0777);
-        }
-
-        $stdout_path = $std_path . $file_name . '_stdout.log';
-        $stderr_path = $std_path . $file_name . '_stderr.log';
-
-        $proc = proc_open(
-            $this->OSUnit->setCmd($cmd)->setEnvPath()->fetchCmd(),
-            [
-                ['pipe', 'r'],
-                ['file', $stdout_path, 'wb'],
-                ['file', $stderr_path, 'wb']
-            ],
-            $pipes,
-            $cwd
-        );
-
-        if (!is_resource($proc)) {
-            throw new \Exception('Access denied or command ERROR!', E_USER_WARNING);
-        }
-
-        foreach ($pipes as $pipe) {
-            fclose($pipe);
-        }
-
-        proc_close($proc);
-
-        unset($cmd, $std_path, $file_name, $proc, $pipes, $pipe);
-        return [$stdout_path, $stderr_path];
-    }
-
-    /**
      * Start MPC
      *
      * @param int $max_fork
@@ -192,6 +145,7 @@ class libMPC extends Factory
     {
         $this->max_fork = &$max_fork;
         $this->max_exec = &$max_exec;
+
         $this->proc_cmd = $this->php_path . ' "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit"';
 
         //Initialize proc_exec data
