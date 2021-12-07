@@ -140,9 +140,9 @@ class libExeC extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
-        $this->redis->hSet($this->key_status, 'cmd', stream_get_meta_data($proc)['command']);
+        $this->redis->hSet($this->key_status, 'cmd', proc_get_status($proc)['command']);
 
-        while (stream_get_meta_data($proc)['running']) {
+        while (proc_get_status($proc)['running']) {
             $this->saveLogs([$pipes[1], $pipes[2]]);
 
             $this->redis->expire($this->key_status, $this->key_life);
