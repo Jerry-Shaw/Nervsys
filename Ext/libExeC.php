@@ -21,7 +21,6 @@
 namespace Ext;
 
 use Core\Factory;
-use Core\Lib\App;
 use Core\OSUnit;
 
 /**
@@ -47,7 +46,6 @@ class libExeC extends Factory
     public string $key_logs;
     public string $key_status;
     public string $key_command;
-    public string $log_file_path;
 
     /**
      * libExeC constructor.
@@ -62,17 +60,7 @@ class libExeC extends Factory
         $this->key_status  = self::PREFIX . $cmd_id . ':S';
         $this->key_command = self::PREFIX . $cmd_id . ':C';
 
-        $log_path = App::new()->log_path . DIRECTORY_SEPARATOR . 'exec';
-
-        try {
-            !is_dir($log_path) && mkdir($log_path, 0777, true);
-        } catch (\Throwable $throwable) {
-            unset($throwable);
-        }
-
-        $this->log_file_path = $log_path . DIRECTORY_SEPARATOR . $this->cmd_id . '.log';
-
-        unset($cmd_id, $log_path);
+        unset($cmd_id);
     }
 
     /**
@@ -113,10 +101,13 @@ class libExeC extends Factory
             return false;
         }
 
-        $this->redis->hMSet($this->key_status, ['start' => time(), 'last_msg' => 'Command starts!']);
+        $msg = 'Command started at ' . date('Y-m-d H:i:s');
+
+        $this->redis->lPush($this->key_logs, $msg);
+        $this->redis->hMSet($this->key_status, ['start' => time(), 'last_msg' => $msg]);
         $this->redis->expire($this->key_status, $this->status_life);
 
-        unset($cmd);
+        unset($cmd, $msg);
         return true;
     }
 
@@ -137,9 +128,9 @@ class libExeC extends Factory
         $proc = proc_open(
             OSUnit::new()->setCmd($cmd)->setEnvPath()->fetchCmd(),
             [
-                ['pipe', 'r'],
-                ['file', $this->log_file_path, 'wb'],
-                ['file', $this->log_file_path, 'wb']
+                ['pipe', 'rb'],
+                ['pipe', 'wb'],
+                ['pipe', 'wb']
             ],
             $pipes,
             $cwd
@@ -149,19 +140,11 @@ class libExeC extends Factory
             return;
         }
 
-        $offset = 0;
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
 
         while (true) {
-            $log_fp = fopen($this->log_file_path, 'rb');
-            fseek($log_fp, $offset);
-
-            while (!feof($log_fp)) {
-                $this->redis->lPush($this->key_logs, trim(fgets($log_fp)));
-                $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
-            }
-
-            $offset += ftell($log_fp);
-            fclose($log_fp);
+            $this->saveLogs([$pipes[1], $pipes[2]]);
 
             if (0 === $this->redis->lLen($this->key_command)) {
                 continue;
@@ -176,35 +159,20 @@ class libExeC extends Factory
             $input = trim($command[1]);
 
             if ($input === $this->stop_cmd) {
-                fclose($pipes[0]);
-                proc_close($proc);
+                foreach ($pipes as $pipe) {
+                    fclose($pipe);
+                }
 
+                proc_close($proc);
                 $this->cleanup();
+
                 break;
             }
 
             fwrite($pipes[0], $input . "\n");
         }
 
-        unset($cmd, $cwd, $proc, $pipes, $offset, $log_fp, $command, $input);
-    }
-
-    /**
-     * Cleanup process records
-     *
-     * @return void
-     */
-    private function cleanup(): void
-    {
-        $this->redis->lPush($this->key_logs, 'User stopped at ' . date('Y-m-d H:i:s'));
-        $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
-
-        $this->redis->del($this->key_status);
-        $this->redis->del($this->key_command);
-
-        if (is_file($this->log_file_path)) {
-            unlink($this->log_file_path);
-        }
+        unset($cmd, $cwd, $proc, $pipes, $command, $input, $pipe);
     }
 
     /**
@@ -230,5 +198,45 @@ class libExeC extends Factory
     public function stop(): void
     {
         $this->redis->lPush($this->key_command, $this->stop_cmd);
+    }
+
+    /**
+     * Cleanup process records
+     *
+     * @return void
+     */
+    private function cleanup(): void
+    {
+        $this->redis->lPush($this->key_logs, 'User stopped at ' . date('Y-m-d H:i:s'));
+        $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
+
+        $this->redis->del($this->key_status);
+        $this->redis->del($this->key_command);
+    }
+
+    /**
+     * Save output/error pipe logs
+     *
+     * @param array $pipes
+     *
+     * @return void
+     */
+    private function saveLogs(array $pipes): void
+    {
+        foreach ($pipes as $pipe) {
+            while (!feof($pipe)) {
+                $msg = fgets($pipe);
+
+                if (false === $msg || '' === trim($msg)) {
+                    continue;
+                }
+
+                $this->redis->lPush($this->key_logs, $msg);
+                $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
+                $this->redis->hSet($this->key_status, 'last_msg', $msg);
+            }
+        }
+
+        unset($pipes, $pipe, $msg);
     }
 }
