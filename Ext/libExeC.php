@@ -36,11 +36,11 @@ class libExeC extends Factory
     /** @var \Redis $redis */
     public \Redis $redis;
 
-    public int $idle_time   = 10;
+    public int $idle_time   = 3;
     public int $max_hist    = 1000;
     public int $status_life = 86400;
 
-    public string $stop_cmd = 'STOP';
+    public string $stop_cmd = 'PROC-STOP';
 
     public string $cmd_id;
     public string $key_logs;
@@ -104,7 +104,7 @@ class libExeC extends Factory
         $msg = 'Command started at ' . date('Y-m-d H:i:s');
 
         $this->redis->lPush($this->key_logs, $msg);
-        $this->redis->hMSet($this->key_status, ['start' => time(), 'last_msg' => $msg]);
+        $this->redis->hMSet($this->key_status, ['start' => time(), 'msg' => $msg]);
         $this->redis->expire($this->key_status, $this->status_life);
 
         unset($cmd, $msg);
@@ -129,8 +129,8 @@ class libExeC extends Factory
             OSUnit::new()->setCmd($cmd)->setEnvPath()->fetchCmd(),
             [
                 ['pipe', 'rb'],
-                ['pipe', 'wb'],
-                ['pipe', 'wb']
+                ['socket', 'wb'],
+                ['socket', 'wb']
             ],
             $pipes,
             $cwd
@@ -145,10 +145,6 @@ class libExeC extends Factory
 
         while (true) {
             $this->saveLogs([$pipes[1], $pipes[2]]);
-
-            if (0 === $this->redis->lLen($this->key_command)) {
-                continue;
-            }
 
             $command = $this->redis->brPop($this->key_command, $this->idle_time);
 
@@ -223,20 +219,30 @@ class libExeC extends Factory
      */
     private function saveLogs(array $pipes): void
     {
+        $write = $except = [];
+
+        if (0 === (int)stream_select($pipes, $write, $except, $this->idle_time)) {
+            return;
+        }
+
         foreach ($pipes as $pipe) {
             while (!feof($pipe)) {
                 $msg = fgets($pipe);
 
-                if (false === $msg || '' === trim($msg)) {
+                if (false === $msg) {
+                    break;
+                }
+
+                if ('' === ($msg = trim($msg))) {
                     continue;
                 }
 
                 $this->redis->lPush($this->key_logs, $msg);
                 $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
-                $this->redis->hSet($this->key_status, 'last_msg', $msg);
+                $this->redis->hSet($this->key_status, 'msg', $msg);
             }
         }
 
-        unset($pipes, $pipe, $msg);
+        unset($pipes, $write, $except, $pipe, $msg);
     }
 }
