@@ -87,7 +87,7 @@ class libMPC extends Factory
      */
     public function buildCmd(string $c, array $data): string
     {
-        $cmd  = $this->php_path . ' "' . $this->app->script_path . '"';
+        $cmd  = '"' . $this->php_path . '" "' . $this->app->script_path . '"';
         $cmd  .= ' -c"' . $this->IOUnit->encodeData($c) . '"';
         $argv = '';
 
