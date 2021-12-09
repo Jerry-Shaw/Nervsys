@@ -140,7 +140,9 @@ class libExeC extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
-        $this->redis->hSet($this->key_status, 'cmd', proc_get_status($proc)['command']);
+        $proc_status = proc_get_status($proc);
+
+        $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => $proc_status['command']]);
 
         while (proc_get_status($proc)['running']) {
             $this->saveLogs([$pipes[1], $pipes[2]]);
@@ -168,7 +170,7 @@ class libExeC extends Factory
         proc_close($proc);
         $this->cleanup();
 
-        unset($cmd_params, $cwd_path, $proc, $pipes, $command, $input);
+        unset($cmd_params, $cwd_path, $proc, $pipes, $proc_status, $command, $input);
     }
 
     /**
