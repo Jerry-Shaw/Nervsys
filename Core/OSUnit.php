@@ -58,7 +58,15 @@ class OSUnit extends Factory
      */
     public function getPhpPath(): string
     {
-        return $this->os_obj->getPhpPath();
+        $php_path = $this->os_obj->getPhpPath();
+        $encoding = mb_detect_encoding($php_path);
+
+        if ('UTF-8' !== $encoding) {
+            $php_path = iconv($encoding, 'UTF-8//IGNORE', $php_path);
+        }
+
+        unset($encoding);
+        return $php_path;
     }
 
     /**
