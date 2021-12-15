@@ -52,8 +52,9 @@ class WINNT
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        $output  = array_filter($output);
-        $output  = array_unique($output);
+        $output = array_filter($output);
+        $output = array_unique($output);
+
         $hw_hash = hash('md5', json_encode($output));
 
         unset($queries, $output, $query, $status);
@@ -68,18 +69,17 @@ class WINNT
      */
     public function getPhpPath(): string
     {
-        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath /format:value', $output, $status);
+        exec('wmic process where ProcessId="' . getmypid() . '" get ExecutablePath', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        //Parse result as ini
-        if (false === ($output = parse_ini_string(implode($output)))) {
+        if (!isset($output[1]) || '' === $output[1]) {
             throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
         }
 
-        $php_path = &$output['ExecutablePath'];
+        $php_path = &$output[1];
 
         unset($output, $status);
         return $php_path;
