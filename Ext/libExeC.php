@@ -112,12 +112,13 @@ class libExeC extends Factory
     /**
      * Start a process
      *
-     * @param array       $cmd_params
-     * @param string|null $cwd_path
+     * @param array         $cmd_params
+     * @param string|null   $cwd_path
+     * @param callable|null $func
      *
      * @return void
      */
-    public function start(array $cmd_params, string $cwd_path = null): void
+    public function start(array $cmd_params, string $cwd_path = null, callable $func = null): void
     {
         if (!$this->setStatus()) {
             return;
@@ -147,6 +148,10 @@ class libExeC extends Factory
         $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => $proc_status['command']]);
 
         while (proc_get_status($proc)['running']) {
+            if (is_callable($func)) {
+                call_user_func($func, $this);
+            }
+
             $this->saveLogs([$pipes[1], $pipes[2]]);
             $this->redis->expire($this->key_status, $this->key_life);
 
@@ -168,11 +173,12 @@ class libExeC extends Factory
         fclose($pipes[0]);
         fclose($pipes[1]);
         fclose($pipes[2]);
+
         proc_terminate($proc);
         proc_close($proc);
         $this->cleanup();
 
-        unset($cmd_params, $cwd_path, $proc, $pipes, $proc_status, $command, $input);
+        unset($cmd_params, $cwd_path, $func, $proc, $pipes, $proc_status, $command, $input);
     }
 
     /**
