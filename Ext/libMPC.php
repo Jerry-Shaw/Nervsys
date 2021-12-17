@@ -88,7 +88,7 @@ class libMPC extends Factory
     public function buildCmd(string $c, array $data): string
     {
         $cmd  = '"' . $this->php_path . '" "' . $this->app->script_path . '"';
-        $cmd  .= ' -c"' . $this->IOUnit->encodeData($c) . '"';
+        $cmd  .= ' -c"' . $this->IOUnit->encodeData($c) . '" -r"none"';
         $argv = '';
 
         if (isset($data['argv'])) {
@@ -146,7 +146,7 @@ class libMPC extends Factory
         $this->max_fork = &$max_fork;
         $this->max_exec = &$max_exec;
 
-        $this->proc_cmd = '"' . $this->php_path . '" "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit"';
+        $this->proc_cmd = '"' . $this->php_path . '" "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit" -r"none"';
 
         //Initialize proc_exec data
         for ($i = 0; $i < $this->max_fork; ++$i) {

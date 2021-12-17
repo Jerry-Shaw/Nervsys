@@ -463,7 +463,7 @@ class libQueue extends Factory
 
         //Build unit command
         $unit_cmd = '"' . $this->OSUnit->getPhpPath() . '" "' . $this->app->script_path . '" -t"json" ';
-        $unit_cmd .= '-c"' . $this->IOUnit->encodeData('/' . $this->unit_handler[0] . '/' . $this->unit_handler[1]) . '" ';
+        $unit_cmd .= '-c"' . $this->IOUnit->encodeData('/' . $this->unit_handler[0] . '/' . $this->unit_handler[1]) . '" -r"none" ';
 
         //Build delay command
         $cmd_delay = $this->OSUnit->setCmd($unit_cmd . '-d"' . $this->IOUnit->encodeData(json_encode(['type' => 'delay', 'name' => $this->key_name], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
