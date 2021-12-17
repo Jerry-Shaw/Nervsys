@@ -81,7 +81,7 @@ class libDoc extends Factory
     public function getEntryList(string $path_name = ''): array
     {
         $scan_path = '' !== $path_name ? $this->api_path . DIRECTORY_SEPARATOR . $path_name : $this->api_path;
-        $file_list = libFile::new()->getList($scan_path, '*.php', true);
+        $file_list = libFile::new()->findFiles($scan_path, '*.php', true);
 
         $root_len = strlen($this->api_path . DIRECTORY_SEPARATOR);
 
