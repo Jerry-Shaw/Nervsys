@@ -48,7 +48,7 @@ class IOUnit extends Factory
     public string $cli_data_type = '';
 
     protected string $base64_marker  = 'data:text/argv;base64,';
-    protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html'];
+    protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html', 'text/none'];
 
     /**
      * Set custom ContentType
@@ -243,7 +243,12 @@ class IOUnit extends Factory
         $this->content_type  = 'application/json';
 
         if (isset($opt['r'])) {
-            $this->cli_data_type = in_array($opt['r'], ['json', 'text', 'xml'], true) ? $opt['r'] : $opt['r'] = 'text';
+            if (!in_array($opt['r'], ['json', 'text', 'none', 'xml'], true)) {
+                $opt['r'] = 'text';
+            }
+
+            //Set CLI data type
+            $this->cli_data_type = &$opt['r'];
 
             //Find correct content type
             foreach ($this->response_types as $type) {
@@ -318,6 +323,9 @@ class IOUnit extends Factory
                 } else {
                     echo 'Invalid HTML Page!';
                 }
+                break;
+
+            case 'text/none':
                 break;
 
             default:
