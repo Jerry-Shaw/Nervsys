@@ -31,6 +31,7 @@ class libExeC extends Factory
 {
     //ExeC key prefix
     const PREFIX = 'EXEC:';
+    const WORKER = self::PREFIX . 'W';
 
     /** @var \Redis $redis */
     public \Redis $redis;
@@ -142,6 +143,7 @@ class libExeC extends Factory
 
         $proc_status = proc_get_status($proc);
 
+        $this->redis->hSet(self::WORKER, $this->cmd_id, time());
         $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => $proc_status['command']]);
 
         while (proc_get_status($proc)['running']) {
@@ -207,6 +209,8 @@ class libExeC extends Factory
     {
         $this->redis->lPush($this->key_logs, 'User stopped at ' . date('Y-m-d H:i:s'));
         $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
+
+        $this->redis->hDel(self::WORKER, $this->cmd_id);
 
         $this->redis->del($this->key_status);
         $this->redis->del($this->key_command);
