@@ -30,17 +30,15 @@ use Core\Factory;
 class libExeC extends Factory
 {
     //ExeC key prefix
-    const PREFIX = 'EXEC:';
-    const WORKER = self::PREFIX . 'W';
+    const PREFIX   = 'EXEC:';
+    const WORKER   = self::PREFIX . 'W';
+    const STOP_CMD = 'ExecStop';
 
     /** @var \Redis $redis */
     public \Redis $redis;
 
     public int $idle_time = 3;
-    public int $key_life  = 180;
     public int $max_hist  = 1000;
-
-    public string $stop_cmd = 'PROC-STOP';
 
     public string $cmd_id;
     public string $key_logs;
@@ -103,7 +101,7 @@ class libExeC extends Factory
 
         $this->redis->lPush($this->key_logs, $msg);
         $this->redis->hSet($this->key_status, 'msg', $msg);
-        $this->redis->expire($this->key_status, $this->key_life);
+        $this->redis->expire($this->key_status, $this->idle_time * 3);
 
         unset($msg);
         return true;
@@ -153,7 +151,7 @@ class libExeC extends Factory
             }
 
             $this->saveLogs([$pipes[1], $pipes[2]]);
-            $this->redis->expire($this->key_status, $this->key_life);
+            $this->redis->expire($this->key_status, $this->idle_time * 3);
 
             $command = $this->redis->brPop($this->key_command, $this->idle_time);
 
@@ -163,7 +161,7 @@ class libExeC extends Factory
 
             $input = trim($command[1]);
 
-            if ($input === $this->stop_cmd) {
+            if ($input === self::STOP_CMD) {
                 break;
             }
 
@@ -190,7 +188,9 @@ class libExeC extends Factory
      */
     public function run(string $command): self
     {
-        $this->redis->lPush($this->key_command, $command);
+        if (!empty($this->getStatus())) {
+            $this->redis->lPush($this->key_command, $command);
+        }
 
         unset($command);
         return $this;
@@ -203,7 +203,9 @@ class libExeC extends Factory
      */
     public function stop(): void
     {
-        $this->redis->lPush($this->key_command, $this->stop_cmd);
+        if (!empty($this->getStatus())) {
+            $this->redis->lPush($this->key_command, self::STOP_CMD);
+        }
     }
 
     /**
