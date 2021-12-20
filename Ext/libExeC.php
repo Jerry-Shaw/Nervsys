@@ -161,6 +161,8 @@ class libExeC extends Factory
         $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => $proc_status['command']]);
         $this->redis->hSet(self::WORKER, $this->cmd_id, time());
 
+        register_shutdown_function([$this, 'cleanup']);
+
         while (proc_get_status($proc)['running']) {
             $this->redis->expire($this->key_status, $this->lifetime);
 
