@@ -38,6 +38,7 @@ class libExeC extends Factory
     public \Redis $redis;
 
     public int $idle_time = 3;
+    public int $lifetime  = 30;
     public int $max_hist  = 1000;
 
     public string $cmd_id;
@@ -77,6 +78,21 @@ class libExeC extends Factory
     }
 
     /**
+     * Set lifetime for status key
+     *
+     * @param int $lifetime
+     *
+     * @return $this
+     */
+    public function setLifetime(int $lifetime): self
+    {
+        $this->lifetime = &$lifetime;
+
+        unset($lifetime);
+        return $this;
+    }
+
+    /**
      * Get process status
      *
      * @return array
@@ -101,7 +117,7 @@ class libExeC extends Factory
 
         $this->redis->lPush($this->key_logs, $msg);
         $this->redis->hSet($this->key_status, 'msg', $msg);
-        $this->redis->expire($this->key_status, $this->idle_time * 3);
+        $this->redis->expire($this->key_status, $this->lifetime);
 
         unset($msg);
         return true;
@@ -142,22 +158,25 @@ class libExeC extends Factory
 
         $proc_status = proc_get_status($proc);
 
-        $this->redis->hSet(self::WORKER, $this->cmd_id, time());
         $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => $proc_status['command']]);
+        $this->redis->hSet(self::WORKER, $this->cmd_id, time());
 
         while (proc_get_status($proc)['running']) {
+            $this->redis->expire($this->key_status, $this->lifetime);
+
             if (is_callable($func)) {
                 call_user_func($func, $this);
             }
 
             $this->saveLogs([$pipes[1], $pipes[2]]);
-            $this->redis->expire($this->key_status, $this->idle_time * 3);
 
             $command = $this->redis->brPop($this->key_command, $this->idle_time);
 
             if (empty($command)) {
                 continue;
             }
+
+            $this->redis->expire($this->key_status, $this->lifetime);
 
             $input = trim($command[1]);
 
@@ -174,6 +193,7 @@ class libExeC extends Factory
 
         proc_terminate($proc);
         proc_close($proc);
+
         $this->cleanup();
 
         unset($cmd_params, $cwd_path, $func, $proc, $pipes, $proc_status, $command, $input);
@@ -213,7 +233,7 @@ class libExeC extends Factory
      *
      * @return void
      */
-    private function cleanup(): void
+    public function cleanup(): void
     {
         $this->redis->lPush($this->key_logs, 'User stopped at ' . date('Y-m-d H:i:s'));
         $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
