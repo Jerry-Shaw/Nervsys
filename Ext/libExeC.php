@@ -93,13 +93,18 @@ class libExeC extends Factory
     }
 
     /**
-     * Get process status
+     * Set the maximum number of success logs
      *
-     * @return array
+     * @param int $number
+     *
+     * @return $this
      */
-    public function getStatus(): array
+    public function setMaxHistory(int $number): self
     {
-        return $this->redis->hGetAll($this->key_status);
+        $this->max_hist = &$number;
+
+        unset($number);
+        return $this;
     }
 
     /**
@@ -124,15 +129,46 @@ class libExeC extends Factory
     }
 
     /**
+     * Get process status
+     *
+     * @return array
+     */
+    public function getStatus(): array
+    {
+        return $this->redis->hGetAll($this->key_status);
+    }
+
+    /**
+     * Get process logs
+     *
+     * @param int $start
+     * @param int $end
+     *
+     * @return array
+     */
+    public function getLogs(int $start = 0, int $end = -1): array
+    {
+        $list = [
+            'key'  => $this->key_logs,
+            'len'  => $this->redis->lLen($this->key_logs),
+            'data' => $this->redis->lRange($this->key_logs, $start, $end)
+        ];
+
+        unset($start, $end);
+        return $list;
+    }
+
+    /**
      * Start a process
      *
      * @param array         $cmd_params
      * @param string|null   $cwd_path
-     * @param callable|null $func
+     * @param callable|null $proc_fn
+     * @param callable|null $exit_fn
      *
      * @return void
      */
-    public function start(array $cmd_params, string $cwd_path = null, callable $func = null): void
+    public function start(array $cmd_params, string $cwd_path = null, callable $proc_fn = null, callable $exit_fn = null): void
     {
         if (!$this->setStatus()) {
             return;
@@ -166,8 +202,8 @@ class libExeC extends Factory
         while (proc_get_status($proc)['running']) {
             $this->redis->expire($this->key_status, $this->lifetime);
 
-            if (is_callable($func)) {
-                call_user_func($func, $this);
+            if (is_callable($proc_fn)) {
+                call_user_func($proc_fn, $this);
             }
 
             $this->saveLogs([$pipes[1], $pipes[2]]);
@@ -189,6 +225,10 @@ class libExeC extends Factory
             fwrite($pipes[0], $input . "\n");
         }
 
+        if (is_callable($exit_fn)) {
+            call_user_func($exit_fn, $this);
+        }
+
         fclose($pipes[0]);
         fclose($pipes[1]);
         fclose($pipes[2]);
@@ -198,7 +238,7 @@ class libExeC extends Factory
 
         $this->cleanup();
 
-        unset($cmd_params, $cwd_path, $func, $proc, $pipes, $proc_status, $command, $input);
+        unset($cmd_params, $cwd_path, $proc_fn, $exit_fn, $proc, $pipes, $proc_status, $command, $input);
     }
 
     /**
