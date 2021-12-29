@@ -28,15 +28,19 @@ namespace Core;
  */
 class OSUnit extends Factory
 {
-    /** @var \Core\Lib\OS\Linux|\Core\Lib\OS\WINNT|\Core\Lib\OS\Darwin $os_obj */
-    protected object $os_obj;
+    //OS name
+    public string $php_os;
+
+    /** @var \Core\Lib\OS\Linux|\Core\Lib\OS\WINNT|\Core\Lib\OS\Darwin $lib_os */
+    protected object $lib_os;
 
     /**
      * OSUnit constructor.
      */
     public function __construct()
     {
-        $this->os_obj = parent::getObj('\\Core\\Lib\\OS\\' . PHP_OS);
+        $this->php_os = PHP_OS;
+        $this->lib_os = parent::getObj('\\Core\\Lib\\OS\\' . $this->php_os);
     }
 
     /**
@@ -47,7 +51,7 @@ class OSUnit extends Factory
      */
     public function getHwHash(): string
     {
-        return $this->os_obj->getHwHash();
+        return $this->lib_os->getHwHash();
     }
 
     /**
@@ -58,7 +62,7 @@ class OSUnit extends Factory
      */
     public function getPhpPath(): string
     {
-        return $this->os_obj->getPhpPath();
+        return $this->lib_os->getPhpPath();
     }
 
     /**
@@ -70,7 +74,7 @@ class OSUnit extends Factory
      */
     public function setCmd(string $cmd): self
     {
-        $this->os_obj->os_cmd = &$cmd;
+        $this->lib_os->os_cmd = &$cmd;
 
         unset($cmd);
         return $this;
@@ -83,7 +87,7 @@ class OSUnit extends Factory
      */
     public function fetchCmd(): string
     {
-        return $this->os_obj->os_cmd;
+        return $this->lib_os->os_cmd;
     }
 
     /**
@@ -95,7 +99,7 @@ class OSUnit extends Factory
      */
     public function execCmd(int &$return_var = 0): array
     {
-        exec($this->os_obj->os_cmd, $output, $return_var);
+        exec($this->lib_os->os_cmd, $output, $return_var);
 
         return $output;
     }
@@ -107,7 +111,7 @@ class OSUnit extends Factory
      */
     public function setAsBg(): self
     {
-        $this->os_obj->setAsBg();
+        $this->lib_os->setAsBg();
 
         return $this;
     }
@@ -119,7 +123,7 @@ class OSUnit extends Factory
      */
     public function setEnvPath(): self
     {
-        $this->os_obj->setEnvPath();
+        $this->lib_os->setEnvPath();
 
         return $this;
     }
