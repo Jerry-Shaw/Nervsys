@@ -39,11 +39,9 @@ class Linux
     public function getHwHash(): string
     {
         $queries = [
-            'cat /proc/cpuinfo | grep -E "processor|vendor|family|model|microcode|MHz|cache|physical|address"',
             'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
+            'lspci -nn | grep -E "Host|PCI|VGA|ISA|Serial|Network|Ethernet|Audio"',
             'ip link show | grep link/ether',
-            'dmidecode -t 2 | grep Serial',
-            'dmidecode -t memory'
         ];
 
         exec(implode(' && ', $queries), $output, $status);
