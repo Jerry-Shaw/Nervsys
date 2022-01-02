@@ -207,7 +207,7 @@ class IOUnit extends Factory
         }
 
         //Call user registered handler for post process
-        if (!empty($this->cgi_handler)) {
+        if (is_callable($this->cgi_handler)) {
             call_user_func($this->cgi_handler, $this);
         }
     }
@@ -278,7 +278,7 @@ class IOUnit extends Factory
         unset($opt, $optind, $argv);
 
         //Call user registered handler for post process
-        if (!empty($this->cli_handler)) {
+        if (is_callable($this->cli_handler)) {
             call_user_func($this->cli_handler, $this);
         }
     }
@@ -288,7 +288,7 @@ class IOUnit extends Factory
      */
     public function output(): void
     {
-        if (!empty($this->output_handler)) {
+        if (is_callable($this->output_handler)) {
             call_user_func($this->output_handler, $this);
         }
 

@@ -53,32 +53,30 @@ class Router extends Factory
     /**
      * Add custom router to CGI stack
      *
-     * @param object $router_object
-     * @param string $router_method
+     * @param callable $cgi_router
      *
      * @return $this
      */
-    public function addCgiStack(object $router_object, string $router_method): self
+    public function addCgiStack(callable $cgi_router): self
     {
-        array_unshift($this->cgi_stack, [$router_object, $router_method]);
+        array_unshift($this->cgi_stack, $cgi_router);
 
-        unset($router_object, $router_method);
+        unset($cgi_router);
         return $this;
     }
 
     /**
      * Add custom router to CLI stack
      *
-     * @param object $router_object
-     * @param string $router_method
+     * @param callable $cli_router
      *
      * @return $this
      */
-    public function addCliStack(object $router_object, string $router_method): self
+    public function addCliStack(callable $cli_router): self
     {
-        array_unshift($this->cli_stack, [$router_object, $router_method]);
+        array_unshift($this->cli_stack, $cli_router);
 
-        unset($router_object, $router_method);
+        unset($cli_router);
         return $this;
     }
 
@@ -232,12 +230,12 @@ class Router extends Factory
     /**
      * Call router parser
      *
-     * @param array  $rt
-     * @param string $c
+     * @param callable $rt
+     * @param string   $c
      *
-     * @return array
+     * @return array|array[]
      */
-    private function callParser(array $rt, string $c): array
+    private function callParser(callable $rt, string $c): array
     {
         $c_list = call_user_func($rt, $c);
 
