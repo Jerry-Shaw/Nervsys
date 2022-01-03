@@ -236,8 +236,6 @@ class libExeC extends Factory
         proc_terminate($proc);
         proc_close($proc);
 
-        $this->cleanup();
-
         unset($cmd_params, $cwd_path, $proc_fn, $exit_fn, $proc, $pipes, $proc_status, $command, $input);
     }
 
