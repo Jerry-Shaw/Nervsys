@@ -39,7 +39,9 @@ class libExeC extends Factory
 
     public int $idle_time = 3;
     public int $lifetime  = 30;
-    public int $max_hist  = 1000;
+
+    public int $log_keep_days = 3;
+    public int $log_max_hist  = 1000;
 
     public string $cmd_id;
     public string $key_logs;
@@ -101,7 +103,7 @@ class libExeC extends Factory
      */
     public function setMaxHistory(int $number): self
     {
-        $this->max_hist = &$number;
+        $this->log_max_hist = &$number;
 
         unset($number);
         return $this;
@@ -120,9 +122,11 @@ class libExeC extends Factory
 
         $msg = 'Command started at ' . date('Y-m-d H:i:s');
 
-        $this->redis->lPush($this->key_logs, $msg);
         $this->redis->hSet($this->key_status, 'msg', $msg);
         $this->redis->expire($this->key_status, $this->lifetime);
+
+        $this->redis->lPush($this->key_logs, $msg);
+        $this->redis->expire($this->key_logs, $this->log_keep_days * 86400);
 
         unset($msg);
         return true;
@@ -276,7 +280,8 @@ class libExeC extends Factory
     public function cleanup(): void
     {
         $this->redis->lPush($this->key_logs, 'User stopped at ' . date('Y-m-d H:i:s'));
-        $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
+        $this->redis->lTrim($this->key_logs, 0, $this->log_max_hist - 1);
+        $this->redis->expire($this->key_logs, $this->log_keep_days * 86400);
 
         $this->redis->hDel(self::WORKER, $this->cmd_id);
 
@@ -312,7 +317,8 @@ class libExeC extends Factory
                 }
 
                 $this->redis->lPush($this->key_logs, $msg);
-                $this->redis->lTrim($this->key_logs, 0, $this->max_hist - 1);
+                $this->redis->lTrim($this->key_logs, 0, $this->log_max_hist - 1);
+
                 $this->redis->hSet($this->key_status, 'msg', $msg);
             }
         }
