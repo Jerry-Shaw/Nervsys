@@ -302,6 +302,10 @@ class IOUnit extends Factory
 
         switch ($this->content_type) {
             case 'application/json':
+                if (is_array($data) && empty($data)) {
+                    $data = (object)$data;
+                }
+
                 echo json_encode($data, JSON_FORMAT);
                 break;
 
