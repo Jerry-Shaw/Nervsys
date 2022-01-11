@@ -120,7 +120,7 @@ class libExeC extends Factory
             return false;
         }
 
-        $msg = 'Command started at ' . date('Y-m-d H:i:s');
+        $msg = 'Process started at ' . date('Y-m-d H:i:s');
 
         $this->redis->hSet($this->key_status, 'msg', $msg);
         $this->redis->expire($this->key_status, $this->lifetime);
@@ -169,10 +169,11 @@ class libExeC extends Factory
      * @param string|null   $cwd_path
      * @param callable|null $proc_fn
      * @param callable|null $exit_fn
+     * @param callable|null $log_fn
      *
      * @return void
      */
-    public function start(array $cmd_params, string $cwd_path = null, callable $proc_fn = null, callable $exit_fn = null): void
+    public function start(array $cmd_params, string $cwd_path = null, callable $proc_fn = null, callable $exit_fn = null, callable $log_fn = null): void
     {
         if (!$this->setStatus()) {
             return;
@@ -210,7 +211,7 @@ class libExeC extends Factory
                 call_user_func($proc_fn, $this);
             }
 
-            $this->saveLogs([$pipes[1], $pipes[2]]);
+            $this->saveLogs([$pipes[1], $pipes[2]], $log_fn);
 
             $command = $this->redis->brPop($this->key_command, $this->idle_time);
 
@@ -240,7 +241,7 @@ class libExeC extends Factory
         proc_terminate($proc);
         proc_close($proc);
 
-        unset($cmd_params, $cwd_path, $proc_fn, $exit_fn, $proc, $pipes, $proc_status, $command, $input);
+        unset($cmd_params, $cwd_path, $proc_fn, $exit_fn, $log_fn, $proc, $pipes, $proc_status, $command, $input);
     }
 
     /**
@@ -279,7 +280,7 @@ class libExeC extends Factory
      */
     public function cleanup(): void
     {
-        $this->redis->lPush($this->key_logs, 'User stopped at ' . date('Y-m-d H:i:s'));
+        $this->redis->lPush($this->key_logs, 'Process stopped at ' . date('Y-m-d H:i:s'));
         $this->redis->lTrim($this->key_logs, 0, $this->log_max_hist - 1);
         $this->redis->expire($this->key_logs, $this->log_keep_days * 86400);
 
@@ -292,11 +293,12 @@ class libExeC extends Factory
     /**
      * Save output/error pipe logs
      *
-     * @param array $pipes
+     * @param array         $pipes
+     * @param callable|null $log_fn
      *
      * @return void
      */
-    private function saveLogs(array $pipes): void
+    private function saveLogs(array $pipes, callable $log_fn = null): void
     {
         $write = $except = [];
 
@@ -316,6 +318,10 @@ class libExeC extends Factory
                     continue;
                 }
 
+                if (is_callable($log_fn)) {
+                    call_user_func($log_fn, $msg);
+                }
+
                 $this->redis->lPush($this->key_logs, $msg);
                 $this->redis->lTrim($this->key_logs, 0, $this->log_max_hist - 1);
 
@@ -323,6 +329,6 @@ class libExeC extends Factory
             }
         }
 
-        unset($pipes, $write, $except, $pipe, $msg);
+        unset($pipes, $log_fn, $write, $except, $pipe, $msg);
     }
 }
