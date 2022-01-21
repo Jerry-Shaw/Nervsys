@@ -236,12 +236,11 @@ class libUpload extends Factory
 
         //Correct filename
         if ('' === $as) {
-            $as = 'saveFile' === $this->runtime['fn'] ? md5_file($this->runtime['tmp_name']) : hash('md5', $this->runtime['data']);
+            $as = ('saveFile' === $this->runtime['fn'] ? md5_file($this->runtime['tmp_name']) : hash('md5', $this->runtime['data'])) . $ext;
         }
 
         //Build save properties
-        $file_name = $as . '.' . $ext;
-        $url_path  = ltrim($save_path, '\\/') . $file_name;
+        $url_path  = trim($to, '\\/') . DIRECTORY_SEPARATOR . $as;
         $file_path = rtrim($this->upload_path, '\\/') . DIRECTORY_SEPARATOR . $url_path;
 
         //Delete existing file
@@ -258,13 +257,12 @@ class libUpload extends Factory
         //Build upload result
         $result = $this->getError(UPLOAD_ERR_OK);
 
-        //Collect upload data
-        $result['url']  = strtr($url_path, '\\', '/');
+        $result['url']  = &$url_path;
         $result['path'] = &$file_path;
-        $result['name'] = &$file_name;
+        $result['name'] = &$as;
         $result['size'] = $this->runtime['size'];
 
-        unset($to, $ext, $save_path, $file_name, $url_path, $file_path);
+        unset($to, $as, $libFile, $ext, $save_path, $url_path, $file_path);
         return $result;
     }
 
