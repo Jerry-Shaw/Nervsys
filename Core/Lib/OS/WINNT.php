@@ -40,11 +40,11 @@ class WINNT
     public function getHwHash(): string
     {
         $ps_cmd = 'powershell -Command "';
-        $ps_cmd .= 'Get-CimInstance -class Win32_Processor | select Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType;';
-        $ps_cmd .= 'Get-CimInstance -class Win32_NetworkAdapter -Filter "netconnectionid!=NULL" | select macaddress;';
-        $ps_cmd .= 'Get-CimInstance -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version;';
-        $ps_cmd .= 'Get-CimInstance -class Win32_PhysicalMemory | select Capacity;';
-        $ps_cmd .= 'Get-CimInstance -class Win32_BIOS | select SerialNumber';
+        $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_NetworkAdapter -Filter "netconnectionid!=NULL" | select macaddress;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_PhysicalMemory | select Capacity;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select SerialNumber';
         $ps_cmd .= '"';
 
         exec($ps_cmd, $output, $status);
@@ -67,7 +67,7 @@ class WINNT
      */
     public function getPhpPath(): string
     {
-        $ps_cmd = 'powershell -Command "Get-CimInstance -class Win32_process -Filter "ProcessId=' . getmypid() . '" | select ExecutablePath | Format-List"';
+        $ps_cmd = 'powershell -Command "Get-WMIObject -class Win32_process -Filter "ProcessId=' . getmypid() . '" | select ExecutablePath | Format-List"';
 
         exec($ps_cmd, $output, $status);
 
