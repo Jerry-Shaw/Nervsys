@@ -225,7 +225,10 @@ class libUpload extends Factory
             $ext = $libFile->getExt($this->runtime['name']);
         }
 
-        if ((empty($this->ext) && !isset(self::MIME[(string)$ext])) || (!empty($this->ext) && !in_array($ext, $this->ext, true))) {
+        if (
+            (empty($this->ext) && !isset(self::MIME[(string)$ext]))
+            || (!empty($this->ext) && !in_array($ext, $this->ext, true) && !in_array('*', $this->ext, true))
+        ) {
             return $this->getError(UPLOAD_ERR_EXTENSION);
         }
 
