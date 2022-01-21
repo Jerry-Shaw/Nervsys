@@ -75,19 +75,25 @@ class WINNT
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        $process_info = current(array_filter($output));
+        $php_path = '';
+        $output   = array_filter($output);
 
-        if (false === $process_info || false === ($mark_pos = strpos($process_info, ':'))) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
+        foreach ($output as $value) {
+            if (0 < ($mark_pos = strpos($value, ':'))) {
+                $php_path = trim(substr($value, $mark_pos + 2));
+                break;
+            }
         }
 
-        $php_path = trim(substr($process_info, $mark_pos + 2));
+        if ('' === $php_path) {
+            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
+        }
 
         if (!is_file($php_path)) {
             throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
         }
 
-        unset($ps_cmd, $output, $status, $process_info, $mark_pos);
+        unset($ps_cmd, $output, $status, $value, $mark_pos);
         return $php_path;
     }
 
