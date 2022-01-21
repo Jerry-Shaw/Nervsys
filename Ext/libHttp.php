@@ -373,13 +373,14 @@ class libHttp extends Factory
     }
 
     /**
-     * Fetch response body from URL
+     * Fetch response body from URL (return or save)
      *
      * @param string $url
+     * @param string $to_file
      *
      * @return string
      */
-    public function fetch(string $url): string
+    public function fetch(string $url, string $to_file = ''): string
     {
         //Get URL units
         $url_unit = $this->buildUrlUnit($url);
@@ -393,6 +394,12 @@ class libHttp extends Factory
         //Initial cURL
         $curl_handle = curl_init($url);
 
+        //Save to file
+        if ('' !== $to_file) {
+            $file_handle                = fopen($to_file, 'wb');
+            $curl_options[CURLOPT_FILE] = &$file_handle;
+        }
+
         //Set cURL options
         curl_setopt_array($curl_handle, $curl_options);
 
@@ -403,8 +410,15 @@ class libHttp extends Factory
         $this->curl_info  = curl_getinfo($curl_handle);
         $this->curl_error = curl_error($curl_handle);
 
-        //Close cURL handle
+        //Close cURL handling
         curl_close($curl_handle);
+
+        //Close file handling
+        if ('' !== $to_file) {
+            fflush($file_handle);
+            fclose($file_handle);
+            unset($file_handle);
+        }
 
         //Parse HTTP response
         if (false !== $response) {
@@ -412,7 +426,7 @@ class libHttp extends Factory
         }
 
         unset($url, $url_unit, $runtime_data, $curl_options, $curl_handle, $response);
-        return $this->http_body;
+        return '' === $to_file ? $this->http_body : $to_file;
     }
 
     /**
