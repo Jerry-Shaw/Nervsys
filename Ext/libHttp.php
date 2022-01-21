@@ -389,7 +389,7 @@ class libHttp extends Factory
         $runtime_data = $this->buildRuntimeData($url_unit);
 
         //Build cURL options
-        $curl_options = $this->buildCurlOptions($runtime_data);
+        $curl_options = $this->buildCurlOptions($runtime_data, '' === $to_file);
 
         //Initial cURL
         $curl_handle = curl_init($url);
@@ -403,7 +403,7 @@ class libHttp extends Factory
         //Set cURL options
         curl_setopt_array($curl_handle, $curl_options);
 
-        //Get raw response
+        //Get raw response, return bool when save to file
         $response = curl_exec($curl_handle);
 
         //Get cURL info
@@ -421,7 +421,7 @@ class libHttp extends Factory
         }
 
         //Parse HTTP response
-        if (false !== $response) {
+        if (is_string($response)) {
             $this->parseHttpResponse($response);
         }
 
@@ -547,11 +547,10 @@ class libHttp extends Factory
      */
     private function buildRuntimeData(array $url_unit): array
     {
-        //Merge upload file data
+        //Merge upload file data, set content-type to multipart/form-data
         if (isset($this->runtime_data['file'])) {
-            $this->runtime_data['data'] ??= [];
-            $this->runtime_data['data'] += $this->runtime_data['file'];
-            //Set content type to multipart/form-data
+            $this->runtime_data['data']              ??= [];
+            $this->runtime_data['data']              += $this->runtime_data['file'];
             $this->runtime_data['http_content_type'] = self::CONTENT_TYPE_FORM_DATA;
         }
 
@@ -578,10 +577,11 @@ class libHttp extends Factory
      * Build cURL options
      *
      * @param array $runtime_data
+     * @param bool  $with_header
      *
      * @return array
      */
-    private function buildCurlOptions(array $runtime_data): array
+    private function buildCurlOptions(array $runtime_data, bool $with_header = true): array
     {
         $curl_opt = $this->runtime_data['options'] ?? [];
 
@@ -622,7 +622,6 @@ class libHttp extends Factory
             }
         }
 
-        $curl_opt[CURLOPT_HEADER]         = true;
         $curl_opt[CURLOPT_NOSIGNAL]       = true;
         $curl_opt[CURLOPT_AUTOREFERER]    = true;
         $curl_opt[CURLOPT_COOKIESESSION]  = true;
@@ -633,6 +632,7 @@ class libHttp extends Factory
         //Using standard port number when no specific port is assigned in URL
         $curl_opt[CURLOPT_PORT] = $runtime_data['url_unit']['port'] ?? ('https' === $runtime_data['url_unit']['scheme'] ? 443 : 80);
 
+        $curl_opt[CURLOPT_HEADER]         = &$with_header;
         $curl_opt[CURLOPT_TIMEOUT]        = &$runtime_data['timeout'];
         $curl_opt[CURLOPT_ENCODING]       = &$runtime_data['accept_encoding'];
         $curl_opt[CURLOPT_USERAGENT]      = &$runtime_data['user_agent'];
@@ -641,7 +641,7 @@ class libHttp extends Factory
         $curl_opt[CURLOPT_SSL_VERIFYHOST] = &$runtime_data['ssl_verifyhost'];
         $curl_opt[CURLOPT_SSL_VERIFYPEER] = &$runtime_data['ssl_verifypeer'];
 
-        unset($runtime_data);
+        unset($runtime_data, $with_header);
         return $curl_opt;
     }
 
