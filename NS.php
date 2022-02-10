@@ -24,9 +24,9 @@ namespace Nervsys;
 class NS
 {
     /**
-     * NS constructor
+     * @return static
      */
-    public function __construct()
+    public static function new(): self
     {
         set_time_limit(0);
         ignore_user_abort(true);
@@ -38,23 +38,22 @@ class NS
         define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 
         spl_autoload_register(
-            function (string $class): void
+            static function (string $class): void
             {
-                $preloaded = false;
                 $file_path = __DIR__ . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php';
 
-                if (function_exists('opcache_compile_file')) {
-                    $preloaded = opcache_compile_file($file_path);
-                }
-
-                if (!$preloaded && is_file($file_path)) {
+                if (is_file($file_path)) {
                     require $file_path;
                 }
 
-                unset($class, $preloaded, $file_path);
+                unset($class, $file_path);
             },
             true,
             true
         );
+
+        return new self();
     }
+
+
 }
