@@ -21,9 +21,9 @@
 
 namespace Nervsys\Lib;
 
-class Reflect extends Factory
+class Reflect
 {
-    private array $pool = [];
+    private static array $reflects = [];
 
     /**
      * @param string $class
@@ -31,13 +31,13 @@ class Reflect extends Factory
      * @return \ReflectionClass
      * @throws \ReflectionException
      */
-    public function getClass(string $class): \ReflectionClass
+    public static function getClass(string $class): \ReflectionClass
     {
-        if (!isset($this->pool[$class])) {
-            $this->pool[$class] = new \ReflectionClass($class);
+        if (!isset(self::$reflects[$class])) {
+            self::$reflects[$class] = new \ReflectionClass($class);
         }
 
-        return $this->pool[$class];
+        return self::$reflects[$class];
     }
 
     /**
@@ -47,16 +47,16 @@ class Reflect extends Factory
      * @return \ReflectionMethod
      * @throws \ReflectionException
      */
-    public function getMethod(string $class, string $method): \ReflectionMethod
+    public static function getMethod(string $class, string $method): \ReflectionMethod
     {
         $key = $class . ':' . $method;
 
-        if (!isset($this->pool[$key])) {
-            $this->pool[$key] = $this->getClass($class)->getMethod($method);
+        if (!isset(self::$reflects[$key])) {
+            self::$reflects[$key] = self::getClass($class)->getMethod($method);
         }
 
         unset($class, $method);
-        return $this->pool[$key];
+        return self::$reflects[$key];
     }
 
     /**
@@ -66,16 +66,16 @@ class Reflect extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getParams(string $class, string $method): array
+    public static function getParams(string $class, string $method): array
     {
         $key = $class . '::' . $method;
 
-        if (!isset($this->pool[$key])) {
-            $this->pool[$key] = $this->getMethod($class, $method)->getParameters();
+        if (!isset(self::$reflects[$key])) {
+            self::$reflects[$key] = self::getMethod($class, $method)->getParameters();
         }
 
         unset($class, $method);
-        return $this->pool[$key];
+        return self::$reflects[$key];
     }
 
     /**
@@ -85,9 +85,9 @@ class Reflect extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getMethods(string $class, int $filter): array
+    public static function getMethods(string $class, int $filter): array
     {
-        return $this->getClass($class)->getMethods($filter);
+        return self::getClass($class)->getMethods($filter);
     }
 
     /**
@@ -96,7 +96,7 @@ class Reflect extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getParamInfo(\ReflectionParameter $parameter): array
+    public static function getParamInfo(\ReflectionParameter $parameter): array
     {
         $info = [];
 
