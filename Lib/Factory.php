@@ -97,40 +97,22 @@ class Factory extends Reflect
                 continue;
             }
 
-            switch ($param_info['type']) {
-                case 'int':
-                    is_numeric($data[$param_info['name']])
-                        ? $result['args'][] = (int)$data[$param_info['name']]
-                        : $result['diff'][] = '"' . $param_info['name'] . '" int expected, but got "' . $data[$param_info['name']] . '"';
-                    break;
-                case 'bool':
-                    is_bool($data[$param_info['name']])
-                        ? $result['args'][] = (bool)$data[$param_info['name']]
-                        : $result['diff'][] = '"' . $param_info['name'] . '" boolean expected, but got "' . $data[$param_info['name']] . '"';
-                    break;
-                case 'float':
-                    is_numeric($data[$param_info['name']])
-                        ? $result['args'][] = (float)$data[$param_info['name']]
-                        : $result['diff'][] = '"' . $param_info['name'] . '" float expected, but got "' . $data[$param_info['name']] . '"';
-                    break;
-                case 'array':
-                    is_array($data[$param_info['name']]) || is_object($data[$param_info['name']])
-                        ? $result['args'][] = (array)$data[$param_info['name']]
-                        : $result['diff'][] = '"' . $param_info['name'] . '" array expected, but got "' . $data[$param_info['name']] . '"';
-                    break;
-                case 'string':
-                    is_string($data[$param_info['name']]) || is_numeric($data[$param_info['name']])
-                        ? $result['args'][] = trim((string)$data[$param_info['name']])
-                        : $result['diff'][] = '"' . $param_info['name'] . '" string expected, but got "' . $data[$param_info['name']] . '"';
-                    break;
-                case 'object':
-                    is_object($data[$param_info['name']]) || is_array($data[$param_info['name']])
-                        ? $result['args'][] = (object)$data[$param_info['name']]
-                        : $result['diff'][] = '"' . $param_info['name'] . '" object expected, but got "' . $data[$param_info['name']] . '"';
-                    break;
-                default:
-                    $result['args'][] = $data[$param_info['name']];
-                    break;
+            if ('int' === $param_info['type'] && is_numeric($data[$param_info['name']])) {
+                $result['args'][] = (int)$data[$param_info['name']];
+            } elseif ('float' === $param_info['type'] && is_numeric($data[$param_info['name']])) {
+                $result['args'][] = (float)$data[$param_info['name']];
+            } elseif ('string' === $param_info['type'] && (is_string($data[$param_info['name']]) || is_numeric($data[$param_info['name']]))) {
+                $result['args'][] = trim((string)$data[$param_info['name']]);
+            } elseif ('array' === $param_info['type'] && is_array($data[$param_info['name']])) {
+                $result['args'][] = $data[$param_info['name']];
+            } elseif ('bool' === $param_info['type'] && is_bool($data[$param_info['name']])) {
+                $result['args'][] = $data[$param_info['name']];
+            } elseif ('object' === $param_info['type'] && is_object($data[$param_info['name']])) {
+                $result['args'][] = $data[$param_info['name']];
+            } elseif (is_null($param_info['type'])) {
+                $result['args'][] = $data[$param_info['name']];
+            } else {
+                $result['diff'][] = '"' . $param_info['name'] . '": ' . $param_info['type'] . ' expected, but got "' . $data[$param_info['name']] . '"';
             }
         }
 
