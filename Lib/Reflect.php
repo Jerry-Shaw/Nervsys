@@ -21,7 +21,7 @@
 
 namespace Nervsys\Lib;
 
-class Reflect
+class Reflect extends Factory
 {
     private array $pool = [];
 
