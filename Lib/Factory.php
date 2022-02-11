@@ -21,7 +21,7 @@
 
 namespace Nervsys\Lib;
 
-class Factory extends Reflect
+class Factory
 {
     protected static array $objects = [];
 
@@ -80,10 +80,10 @@ class Factory extends Reflect
     public static function getArgs(string $class, string $method, array $data): array
     {
         $result = ['args' => [], 'diff' => []];
-        $params = self::getParams($class, $method);
+        $params = Reflect::getParams($class, $method);
 
         foreach ($params as $param_reflect) {
-            $param_info = self::getParamInfo($param_reflect);
+            $param_info = Reflect::getParamInfo($param_reflect);
 
             if (!$param_info['build_in']) {
                 $result['args'][] = self::getObj($param_info['type'], $data);
