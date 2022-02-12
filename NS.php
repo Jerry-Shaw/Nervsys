@@ -93,22 +93,8 @@ class NS
 
         define('HOSTNAME', is_string($hostname) ? $hostname : 'localhost');
 
-        spl_autoload_register(
-            static function (string $class): void
-            {
-                $file_path = ROOT_PATH . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
-
-                if (is_file($file_path)) {
-                    require $file_path;
-                }
-
-                unset($class, $file_path);
-            },
-            true,
-            true
-        );
-
         $this->system = System::new();
+        $this->system->addAutoloadPath(ROOT_PATH, true);
 
         unset($script_path, $hostname);
     }
