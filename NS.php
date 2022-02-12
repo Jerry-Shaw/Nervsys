@@ -134,24 +134,12 @@ class NS
      */
     public function go(): void
     {
+        date_default_timezone_set($this->app->timezone);
         $this->CORS->checkPermission(IS_CLI, IS_TLS);
 
 
     }
 
-
-    /**
-     * @param string $timezone
-     *
-     * @return $this
-     */
-    public function setTimezone(string $timezone): self
-    {
-        date_default_timezone_set($timezone);
-
-        unset($timezone);
-        return $this;
-    }
 
     /**
      * @param string $autoload_path
@@ -204,6 +192,19 @@ class NS
         $this->app->setApiPath($pathname);
 
         unset($pathname);
+        return $this;
+    }
+
+    /**
+     * @param string $timezone
+     *
+     * @return $this
+     */
+    public function AppSetTimezone(string $timezone): self
+    {
+        $this->app->setTimezone($timezone);
+
+        unset($timezone);
         return $this;
     }
 

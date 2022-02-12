@@ -25,9 +25,11 @@ use Nervsys\LC\Factory;
 
 class App extends Factory
 {
-    public string $api_path   = 'api';
-    public string $client_ip  = '0.0.0.0';
-    public bool   $core_debug = false;
+    public string $api_path  = 'api';
+    public string $client_ip = '0.0.0.0';
+    public string $timezone  = 'Asia/Shanghai';
+
+    public bool $core_debug = false;
 
     /**
      * App constructor
@@ -62,6 +64,19 @@ class App extends Factory
         $this->api_path = &$pathname;
 
         unset($pathname);
+        return $this;
+    }
+
+    /**
+     * @param string $timezone
+     *
+     * @return $this
+     */
+    public function setTimezone(string $timezone): self
+    {
+        $this->timezone = &$timezone;
+
+        unset($timezone);
         return $this;
     }
 
