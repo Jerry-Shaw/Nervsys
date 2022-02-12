@@ -68,17 +68,38 @@ class NS
         $this->system->addAutoloadPath($this->system->app->root_path, true);
     }
 
-
     /**
      * @return void
      */
     public function go(): void
     {
         date_default_timezone_set($this->system->app->timezone);
+
         $this->system->CORS->checkPermission($this->system->app->is_cli, $this->system->app->is_tls);
 
+        !$this->system->app->is_cli
+            ? $this->system->IOData->readCgi()
+            : $this->system->IOData->readCli();
 
+        if ('' !== $this->system->IOData->src_cmd) {
+            if ($this->system->app->is_cli) {
+                $cli_cmd = $this->system->router->parseCli($this->system->IOData->src_cmd);
+
+                if (!empty($cli_cmd)) {
+
+                }
+
+
+            }
+
+            $cgi_cmd = $this->system->router->parseCgi($this->system->IOData->src_cmd);
+
+            if (!empty($cgi_cmd)) {
+
+            }
+        }
+
+
+        $this->system->IOData->output();
     }
-
-
 }
