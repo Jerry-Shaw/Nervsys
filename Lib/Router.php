@@ -151,6 +151,29 @@ class Router extends Factory
     }
 
     /**
+     * @param string $cmd_val
+     * @param bool   $cli_exec
+     *
+     * @return string
+     */
+    public function getFullCgiCmd(string $cmd_val, bool $cli_exec = false): string
+    {
+        $api_dir = $this->app->api_path . '/';
+        $cmd_val = strtr($cmd_val, '\\', '/');
+
+        $path_match = !$cli_exec
+            ? str_starts_with($cmd_val, $api_dir)
+            : str_starts_with($cmd_val, '/') || str_starts_with($cmd_val, $api_dir);
+
+        $cmd_val = trim($cmd_val, '/');
+
+        $cmd = '/' . ($path_match ? $cmd_val : $api_dir . $cmd_val);
+
+        unset($cmd_val, $cli_exec, $api_dir, $path_match);
+        return $cmd;
+    }
+
+    /**
      * @param callable $rt
      * @param string   $c
      *
@@ -181,28 +204,5 @@ class Router extends Factory
     private function getCmdList(string $c): array
     {
         return str_contains($c, '|') ? explode('|', $c) : [$c];
-    }
-
-    /**
-     * @param string $cmd_val
-     * @param bool   $cli_exec
-     *
-     * @return string
-     */
-    private function getFullCgiCmd(string $cmd_val, bool $cli_exec = false): string
-    {
-        $api_dir = $this->app->api_path . '/';
-        $cmd_val = strtr($cmd_val, '\\', '/');
-
-        $path_match = !$cli_exec
-            ? str_starts_with($cmd_val, $api_dir)
-            : str_starts_with($cmd_val, '/') || str_starts_with($cmd_val, $api_dir);
-
-        $cmd_val = trim($cmd_val, '/');
-
-        $cmd = '/' . ($path_match ? $cmd_val : $api_dir . $cmd_val);
-
-        unset($cmd_val, $cli_exec, $api_dir, $path_match);
-        return $cmd;
     }
 }
