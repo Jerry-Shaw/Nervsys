@@ -91,7 +91,7 @@ class System extends Factory
      */
     public function AppSetApiPath(string $pathname): self
     {
-        $this->app->setApiPath($pathname);
+        $this->app->api_path = &$pathname;
 
         unset($pathname);
         return $this;
@@ -104,7 +104,7 @@ class System extends Factory
      */
     public function AppSetTimezone(string $timezone): self
     {
-        $this->app->setTimezone($timezone);
+        $this->app->timezone = &$timezone;
 
         unset($timezone);
         return $this;
@@ -117,7 +117,7 @@ class System extends Factory
      */
     public function AppSetCoreDebug(bool $core_debug_mode): self
     {
-        $this->app->setCoreDebug($core_debug_mode);
+        $this->app->core_debug = &$core_debug_mode;
 
         unset($core_debug_mode);
         return $this;

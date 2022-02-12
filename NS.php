@@ -47,13 +47,7 @@ class NS
         define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
         define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 
-        define('IS_CLI', 'cli' === PHP_SAPI);
-        define('IS_TLS', !IS_CLI
-            && (
-                (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
-                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO'])
-            )
-        );
+        define('HOSTNAME', gethostname() ?: 'localhost');
 
         spl_autoload_register(
             static function (string $class): void
@@ -70,33 +64,8 @@ class NS
             true
         );
 
-        $script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-
-        if (!is_file($script_path)) {
-            $script_path = getcwd() . DIRECTORY_SEPARATOR . $script_path;
-
-            if (!is_file($script_path)) {
-                throw new \Exception('Script path NOT detected!', E_USER_ERROR);
-            }
-        }
-
-        define('SCRIPT_PATH', $script_path);
-        define('ROOT_PATH', dirname($script_path, 2));
-        define('LOG_PATH', ROOT_PATH . DIRECTORY_SEPARATOR . 'logs');
-
-        if (!is_dir(LOG_PATH)) {
-            mkdir(LOG_PATH, 0777, true);
-            chmod(LOG_PATH, 0777);
-        }
-
-        $hostname = gethostname();
-
-        define('HOSTNAME', is_string($hostname) ? $hostname : 'localhost');
-
         $this->system = System::new();
-        $this->system->addAutoloadPath(ROOT_PATH, true);
-
-        unset($script_path, $hostname);
+        $this->system->addAutoloadPath($this->system->app->root_path, true);
     }
 
 
@@ -106,7 +75,7 @@ class NS
     public function go(): void
     {
         date_default_timezone_set($this->system->app->timezone);
-        $this->system->CORS->checkPermission(IS_CLI, IS_TLS);
+        $this->system->CORS->checkPermission($this->system->app->is_cli, $this->system->app->is_tls);
 
 
     }

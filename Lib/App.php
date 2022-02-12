@@ -25,17 +25,61 @@ use Nervsys\LC\Factory;
 
 class App extends Factory
 {
-    public string $api_path  = 'api';
+    public string $api_path;
+    public string $log_path;
+    public string $root_path;
+    public string $script_path;
+
     public string $client_ip = '0.0.0.0';
     public string $timezone  = 'Asia/Shanghai';
+
+    public bool $is_cli = false;
+    public bool $is_tls = false;
 
     public bool $core_debug = false;
 
     /**
      * App constructor
+     *
+     * @throws \Exception
      */
     public function __construct()
     {
+        $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+
+        if (!is_file($this->script_path)) {
+            $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
+
+            if (!is_file($this->script_path)) {
+                throw new \Exception('Script path NOT detected!', E_USER_ERROR);
+            }
+        }
+
+        $this->root_path = dirname($this->script_path, 2);
+        $this->log_path  = $this->script_path . DIRECTORY_SEPARATOR . 'logs';
+        $this->api_path  = 'api';
+
+        if (!is_dir($this->log_path)) {
+            mkdir($this->log_path, 0777, true);
+            chmod($this->log_path, 0777);
+        }
+
+        $this->setAppEnv();
+    }
+
+    /**
+     * @return void
+     */
+    private function setAppEnv(): void
+    {
+        $this->is_cli = 'cli' === PHP_SAPI;
+
+        if ($this->is_cli) {
+            return;
+        }
+
+        $this->is_tls = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+
         $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
             ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
             : $_SERVER['REMOTE_ADDR'];
@@ -52,44 +96,5 @@ class App extends Factory
         }
 
         unset($ip_rec, $ip_list, $value, $addr);
-    }
-
-    /**
-     * @param string $pathname
-     *
-     * @return $this
-     */
-    public function setApiPath(string $pathname): self
-    {
-        $this->api_path = &$pathname;
-
-        unset($pathname);
-        return $this;
-    }
-
-    /**
-     * @param string $timezone
-     *
-     * @return $this
-     */
-    public function setTimezone(string $timezone): self
-    {
-        $this->timezone = &$timezone;
-
-        unset($timezone);
-        return $this;
-    }
-
-    /**
-     * @param bool $core_debug_mode
-     *
-     * @return $this
-     */
-    public function setCoreDebug(bool $core_debug_mode): self
-    {
-        $this->core_debug = &$core_debug_mode;
-
-        unset($core_debug_mode);
-        return $this;
     }
 }
