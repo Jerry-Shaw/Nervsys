@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Nervsys main script
+ * Nervsys main class
  *
  * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
@@ -21,10 +21,18 @@
 
 namespace Nervsys;
 
+use Nervsys\Lib\CORS;
+use Nervsys\Lib\Error;
+
+if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+    exit('Nervsys 8.1+ needs PHP 8.1.0 or higher!');
+}
+
 class NS
 {
     /**
      * @return static
+     * @throws \Exception
      */
     public static function new(): self
     {
@@ -37,10 +45,18 @@ class NS
         define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
         define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 
+        define('IS_CLI', 'cli' === PHP_SAPI);
+        define('IS_TLS', !IS_CLI
+            && (
+                (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS'])
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO'])
+            )
+        );
+
         spl_autoload_register(
             static function (string $class): void
             {
-                $file_path = __DIR__ . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php';
+                $file_path = __DIR__ . DIRECTORY_SEPARATOR . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php';
 
                 if (is_file($file_path)) {
                     require $file_path;
@@ -52,6 +68,47 @@ class NS
             true
         );
 
+        $script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+
+        if (!is_file($script_path)) {
+            $script_path = getcwd() . DIRECTORY_SEPARATOR . $script_path;
+
+            if (!is_file($script_path)) {
+                throw new \Exception('Script path NOT detected!', E_USER_ERROR);
+            }
+        }
+
+        define('SCRIPT_PATH', $script_path);
+        define('ROOT_PATH', dirname($script_path, 2));
+        define('LOG_PATH', ROOT_PATH . DIRECTORY_SEPARATOR . 'logs');
+
+        if (!is_dir(LOG_PATH)) {
+            mkdir(LOG_PATH, 0777, true);
+            chmod(LOG_PATH, 0777);
+        }
+
+        Error::new();
+
+        $hostname = gethostname();
+
+        define('HOSTNAME', is_string($hostname) ? $hostname : 'localhost');
+
+        spl_autoload_register(
+            static function (string $class): void
+            {
+                $file_path = ROOT_PATH . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+
+                if (is_file($file_path)) {
+                    require $file_path;
+                }
+
+                unset($class, $file_path);
+            },
+            true,
+            true
+        );
+
+        unset($script_path, $hostname);
         return new self();
     }
 
