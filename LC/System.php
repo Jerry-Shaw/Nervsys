@@ -23,13 +23,13 @@ namespace Nervsys\LC;
 
 use Nervsys\Lib\App;
 use Nervsys\Lib\CORS;
-use Nervsys\Lib\Error;
+use Nervsys\Lib\IOParser;
 
 class System extends Factory
 {
-    public App   $app;
-    public CORS  $CORS;
-    public Error $error;
+    public App      $app;
+    public CORS     $CORS;
+    public IOParser $IOParser;
 
     /**
      * System constructor
@@ -38,9 +38,11 @@ class System extends Factory
      */
     public function __construct()
     {
-        $this->app   = App::new();
-        $this->CORS  = CORS::new();
-        $this->error = Error::new();
+        Error::new();
+
+        $this->app      = App::new();
+        $this->CORS     = CORS::new();
+        $this->IOParser = IOParser::new();
     }
 
     /**
@@ -120,6 +122,114 @@ class System extends Factory
         $this->app->core_debug = &$core_debug_mode;
 
         unset($core_debug_mode);
+        return $this;
+    }
+
+    /**
+     * @param string $content_type
+     *
+     * @return $this
+     */
+    public function IOParserSetContentType(string $content_type): self
+    {
+        $this->IOParser->content_type = &$content_type;
+
+        unset($content_type);
+        return $this;
+    }
+
+    /**
+     * @param string ...$keys
+     *
+     * @return $this
+     */
+    public function IOParserReadHeaderKeys(string ...$keys): self
+    {
+        $this->IOParser->header_keys = &$keys;
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
+     * @param string ...$keys
+     *
+     * @return $this
+     */
+    public function IOParserReadCookieKeys(string ...$keys): self
+    {
+        $this->IOParser->cookie_keys = &$keys;
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
+     * @param callable $cgi_handler
+     *
+     * @return $this
+     */
+    public function IOParserAddCgiHandler(callable $cgi_handler): self
+    {
+        $this->IOParser->cgi_handler[] = $cgi_handler;
+
+        unset($cgi_handler);
+        return $this;
+    }
+
+    /**
+     * @param callable $cli_handler
+     *
+     * @return $this
+     */
+    public function IOParserAddCliHandler(callable $cli_handler): self
+    {
+        $this->IOParser->cli_handler[] = $cli_handler;
+
+        unset($cli_handler);
+        return $this;
+    }
+
+    /**
+     * @param callable $output_handler
+     *
+     * @return $this
+     */
+    public function IOParserSetOutputHandler(callable $output_handler): self
+    {
+        $this->IOParser->output_handler = [$output_handler];
+
+        unset($output_handler);
+        return $this;
+    }
+
+    /**
+     * @param int    $code
+     * @param string $msg
+     *
+     * @return $this
+     */
+    public function IOParserSetCodeMsg(int $code, string $msg): self
+    {
+        $this->IOParser->src_msg['code'] = &$code;
+        $this->IOParser->src_msg['msg']  = &$msg;
+
+        unset($code, $msg);
+        return $this;
+    }
+
+    /**
+     * Add message data
+     *
+     * @param string $msg_key
+     *
+     * @return $this
+     */
+    public function IOParserAddMsgData(string $msg_key): self
+    {
+        $this->IOParser->src_msg[$msg_key] = array_merge($this->IOParser->src_msg[$msg_key] ?? [], array_slice(func_get_args(), 1, null, true));
+
+        unset($msg_key);
         return $this;
     }
 }
