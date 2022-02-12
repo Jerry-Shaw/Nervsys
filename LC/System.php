@@ -222,8 +222,6 @@ class System extends Factory
     }
 
     /**
-     * Add message data
-     *
      * @param string $msg_key
      *
      * @return $this
@@ -233,6 +231,46 @@ class System extends Factory
         $this->IOData->src_msg[$msg_key] = array_merge($this->IOData->src_msg[$msg_key] ?? [], array_slice(func_get_args(), 1, null, true));
 
         unset($msg_key);
+        return $this;
+    }
+
+    /**
+     * @param callable $cgi_router
+     *
+     * @return $this
+     */
+    public function RouterAddCgi(callable $cgi_router): self
+    {
+        array_unshift($this->router->cgi_router_stack, $cgi_router);
+
+        unset($cgi_router);
+        return $this;
+    }
+
+    /**
+     * @param callable $cli_router
+     *
+     * @return $this
+     */
+    public function RouterAddCli(callable $cli_router): self
+    {
+        array_unshift($this->router->cli_router_stack, $cli_router);
+
+        unset($cli_router);
+        return $this;
+    }
+
+    /**
+     * @param string $exe_name
+     * @param string $exe_path
+     *
+     * @return $this
+     */
+    public function RouterAddPathMap(string $exe_name, string $exe_path): self
+    {
+        $this->router->cli_exe_path_map[$exe_name] = &$exe_path;
+
+        unset($exe_name, $exe_path);
         return $this;
     }
 }
