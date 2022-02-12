@@ -23,13 +23,15 @@ namespace Nervsys\LC;
 
 use Nervsys\Lib\App;
 use Nervsys\Lib\CORS;
-use Nervsys\Lib\IOParser;
+use Nervsys\Lib\IOData;
+use Nervsys\Lib\Router;
 
 class System extends Factory
 {
-    public App      $app;
-    public CORS     $CORS;
-    public IOParser $IOParser;
+    public App    $app;
+    public CORS   $CORS;
+    public IOData $IOData;
+    public Router $router;
 
     /**
      * System constructor
@@ -40,9 +42,10 @@ class System extends Factory
     {
         Error::new();
 
-        $this->app      = App::new();
-        $this->CORS     = CORS::new();
-        $this->IOParser = IOParser::new();
+        $this->app    = App::new();
+        $this->CORS   = CORS::new();
+        $this->IOData = IOData::new();
+        $this->router = Router::new();
     }
 
     /**
@@ -130,9 +133,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserSetContentType(string $content_type): self
+    public function IODataSetContentType(string $content_type): self
     {
-        $this->IOParser->content_type = &$content_type;
+        $this->IOData->content_type = &$content_type;
 
         unset($content_type);
         return $this;
@@ -143,9 +146,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserReadHeaderKeys(string ...$keys): self
+    public function IODataReadHeaderKeys(string ...$keys): self
     {
-        $this->IOParser->header_keys = &$keys;
+        $this->IOData->header_keys = &$keys;
 
         unset($keys);
         return $this;
@@ -156,9 +159,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserReadCookieKeys(string ...$keys): self
+    public function IODataReadCookieKeys(string ...$keys): self
     {
-        $this->IOParser->cookie_keys = &$keys;
+        $this->IOData->cookie_keys = &$keys;
 
         unset($keys);
         return $this;
@@ -169,9 +172,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserAddCgiHandler(callable $cgi_handler): self
+    public function IODataAddCgiHandler(callable $cgi_handler): self
     {
-        $this->IOParser->cgi_handler[] = $cgi_handler;
+        $this->IOData->cgi_handler[] = $cgi_handler;
 
         unset($cgi_handler);
         return $this;
@@ -182,9 +185,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserAddCliHandler(callable $cli_handler): self
+    public function IODataAddCliHandler(callable $cli_handler): self
     {
-        $this->IOParser->cli_handler[] = $cli_handler;
+        $this->IOData->cli_handler[] = $cli_handler;
 
         unset($cli_handler);
         return $this;
@@ -195,9 +198,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserSetOutputHandler(callable $output_handler): self
+    public function IODataSetOutputHandler(callable $output_handler): self
     {
-        $this->IOParser->output_handler = [$output_handler];
+        $this->IOData->output_handler = [$output_handler];
 
         unset($output_handler);
         return $this;
@@ -209,10 +212,10 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserSetCodeMsg(int $code, string $msg): self
+    public function IODataSetCodeMsg(int $code, string $msg): self
     {
-        $this->IOParser->src_msg['code'] = &$code;
-        $this->IOParser->src_msg['msg']  = &$msg;
+        $this->IOData->src_msg['code'] = &$code;
+        $this->IOData->src_msg['msg']  = &$msg;
 
         unset($code, $msg);
         return $this;
@@ -225,9 +228,9 @@ class System extends Factory
      *
      * @return $this
      */
-    public function IOParserAddMsgData(string $msg_key): self
+    public function IODataAddMsgData(string $msg_key): self
     {
-        $this->IOParser->src_msg[$msg_key] = array_merge($this->IOParser->src_msg[$msg_key] ?? [], array_slice(func_get_args(), 1, null, true));
+        $this->IOData->src_msg[$msg_key] = array_merge($this->IOData->src_msg[$msg_key] ?? [], array_slice(func_get_args(), 1, null, true));
 
         unset($msg_key);
         return $this;

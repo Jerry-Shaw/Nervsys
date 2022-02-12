@@ -23,7 +23,7 @@ namespace Nervsys\Lib;
 
 use Nervsys\LC\Factory;
 
-class IOParser extends Factory
+class IOData extends Factory
 {
     public array $cgi_handler    = [];
     public array $cli_handler    = [];
