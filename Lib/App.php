@@ -19,23 +19,28 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\Lib;
+
+use Nervsys\LC\Factory;
 
 class App extends Factory
 {
-    public string $api_path  = 'api';
-    public string $client_ip = '0.0.0.0';
-    public string $timezone  = 'Asia/Shanghai';
-
-    public bool $core_debug = false;
+    public string $api_path   = 'api';
+    public string $client_ip  = '0.0.0.0';
+    public bool   $core_debug = false;
 
     /**
      * App constructor
      */
     public function __construct()
     {
-        $ip_rec  = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR'] : $_SERVER['REMOTE_ADDR'];
-        $ip_list = str_contains($ip_rec, ', ') ? explode(', ', $ip_rec) : [$ip_rec];
+        $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+            ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
+            : $_SERVER['REMOTE_ADDR'];
+
+        $ip_list = str_contains($ip_rec, ', ')
+            ? explode(', ', $ip_rec)
+            : [$ip_rec];
 
         foreach ($ip_list as $value) {
             if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
@@ -61,19 +66,6 @@ class App extends Factory
     }
 
     /**
-     * @param string $timezone
-     *
-     * @return $this
-     */
-    public function setTimezone(string $timezone): self
-    {
-        $this->timezone = &$timezone;
-
-        unset($timezone);
-        return $this;
-    }
-
-    /**
      * @param bool $core_debug_mode
      *
      * @return $this
@@ -83,33 +75,6 @@ class App extends Factory
         $this->core_debug = &$core_debug_mode;
 
         unset($core_debug_mode);
-        return $this;
-    }
-
-    /**
-     * @param string $autoload_path
-     * @param bool   $autoload_prepend
-     *
-     * @return $this
-     */
-    public function addAutoloadPath(string $autoload_path, bool $autoload_prepend = false): self
-    {
-        spl_autoload_register(
-            static function (string $class) use ($autoload_path): void
-            {
-                $file_path = $autoload_path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
-
-                if (is_file($file_path)) {
-                    require $file_path;
-                }
-
-                unset($class, $autoload_path, $file_path);
-            },
-            true,
-            $autoload_prepend
-        );
-
-        unset($autoload_path);
         return $this;
     }
 }
