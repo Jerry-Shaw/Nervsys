@@ -52,7 +52,7 @@ class IOParser extends Factory
     {
         $this->readAccept();
 
-        $this->src_cmd = $this->readUrl();
+        $this->src_cmd = trim($this->readUrl());
 
         $this->src_input = $this->readHttp();
         $this->src_input += $this->readInput(file_get_contents('php://input'));
@@ -68,7 +68,7 @@ class IOParser extends Factory
         }
 
         if ('' === $this->src_cmd && isset($this->src_input['c'])) {
-            $this->src_cmd = $this->src_input['c'];
+            $this->src_cmd = trim($this->src_input['c']);
             unset($this->src_input['c']);
         }
 
@@ -121,7 +121,7 @@ class IOParser extends Factory
         }
 
         if (isset($opt['c'])) {
-            $this->src_cmd = $this->decodeData($opt['c']);
+            $this->src_cmd = trim($this->decodeData($opt['c']));
         }
 
         if (isset($opt['d'])) {
