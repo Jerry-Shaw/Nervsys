@@ -21,9 +21,7 @@
 
 namespace Nervsys;
 
-use Nervsys\Lib\App;
-use Nervsys\Lib\CORS;
-use Nervsys\Lib\Error;
+use Nervsys\LC\System;
 
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
     exit('Nervsys 8.1+ needs PHP 8.1.0 or higher!');
@@ -31,9 +29,7 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
 
 class NS
 {
-    public Error $error;
-    public CORS  $CORS;
-    public App   $app;
+    public System $system;
 
     /**
      * NS constructor
@@ -112,20 +108,9 @@ class NS
             true
         );
 
-        $this->initLib();
+        $this->system = System::new();
 
         unset($script_path, $hostname);
-    }
-
-    /**
-     * @return void
-     * @throws \ReflectionException
-     */
-    private function initLib(): void
-    {
-        $this->app   = App::new();
-        $this->CORS  = CORS::new();
-        $this->error = Error::new();
     }
 
 
@@ -134,91 +119,11 @@ class NS
      */
     public function go(): void
     {
-        date_default_timezone_set($this->app->timezone);
-        $this->CORS->checkPermission(IS_CLI, IS_TLS);
+        date_default_timezone_set($this->system->app->timezone);
+        $this->system->CORS->checkPermission(IS_CLI, IS_TLS);
 
 
     }
 
-
-    /**
-     * @param string $autoload_path
-     * @param bool   $autoload_prepend
-     *
-     * @return $this
-     */
-    public function addAutoloadPath(string $autoload_path, bool $autoload_prepend = false): self
-    {
-        spl_autoload_register(
-            static function (string $class) use ($autoload_path): void
-            {
-                $file_path = $autoload_path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
-
-                if (is_file($file_path)) {
-                    require $file_path;
-                }
-
-                unset($class, $autoload_path, $file_path);
-            },
-            true,
-            $autoload_prepend
-        );
-
-        unset($autoload_path, $autoload_prepend);
-        return $this;
-    }
-
-    /**
-     * @param string $allow_origin
-     * @param string $allow_headers
-     *
-     * @return $this
-     */
-    public function CorsAddRecord(string $allow_origin, string $allow_headers = ''): self
-    {
-        $this->CORS->addRecord($allow_origin, $allow_headers);
-
-        unset($allow_origin, $allow_headers);
-        return $this;
-    }
-
-    /**
-     * @param string $pathname
-     *
-     * @return $this
-     */
-    public function AppSetApiPath(string $pathname): self
-    {
-        $this->app->setApiPath($pathname);
-
-        unset($pathname);
-        return $this;
-    }
-
-    /**
-     * @param string $timezone
-     *
-     * @return $this
-     */
-    public function AppSetTimezone(string $timezone): self
-    {
-        $this->app->setTimezone($timezone);
-
-        unset($timezone);
-        return $this;
-    }
-
-    /**
-     * @param bool $core_debug_mode
-     *
-     * @return $this
-     */
-    public function AppSetCoreDebug(bool $core_debug_mode): self
-    {
-        $this->app->setCoreDebug($core_debug_mode);
-
-        unset($core_debug_mode);
-        return $this;
-    }
 
 }
