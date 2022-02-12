@@ -21,6 +21,7 @@
 
 namespace Nervsys;
 
+use Nervsys\LC\App;
 use Nervsys\Lib\CORS;
 use Nervsys\Lib\Error;
 
@@ -30,11 +31,16 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
 
 class NS
 {
+    public Error $error;
+    public CORS  $CORS;
+    public App   $app;
+
     /**
-     * @return static
+     * NS constructor
+     *
      * @throws \Exception
      */
-    public static function new(): self
+    public function __construct()
     {
         set_time_limit(0);
         ignore_user_abort(true);
@@ -87,8 +93,6 @@ class NS
             chmod(LOG_PATH, 0777);
         }
 
-        Error::new();
-
         $hostname = gethostname();
 
         define('HOSTNAME', is_string($hostname) ? $hostname : 'localhost');
@@ -108,9 +112,38 @@ class NS
             true
         );
 
+        $this->initLib();
+
         unset($script_path, $hostname);
         return new self();
     }
+
+    /**
+     * @return void
+     * @throws \ReflectionException
+     */
+    private function initLib(): void
+    {
+        $this->app   = App::new();
+        $this->CORS  = CORS::new();
+        $this->error = Error::new();
+    }
+
+
+    /**
+     * @return void
+     */
+    public function go(): void
+    {
+        $this->CORS->checkPermission(IS_CLI, IS_TLS);
+
+
+    }
+
+
+
+
+
 
 
 }
