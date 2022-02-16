@@ -148,7 +148,7 @@ class Error extends Factory
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
-        $display_errors && $app->core_debug && $logger->show($error_level, $message, $context);
+        $app->core_debug && $display_errors && $logger->show($error_level, $message, $context);
         $logger->$error_level($message, $context);
 
         if ($stop_on_error) {
