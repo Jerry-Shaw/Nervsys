@@ -30,6 +30,7 @@ class System extends Factory
 {
     public App    $app;
     public CORS   $CORS;
+    public Caller $caller;
     public IOData $IOData;
     public Router $router;
 
@@ -44,6 +45,7 @@ class System extends Factory
 
         $this->app    = App::new();
         $this->CORS   = CORS::new();
+        $this->caller = Caller::new();
         $this->IOData = IOData::new();
         $this->router = Router::new();
     }

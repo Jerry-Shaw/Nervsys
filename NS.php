@@ -70,6 +70,7 @@ class NS
 
     /**
      * @return void
+     * @throws \ReflectionException
      */
     public function go(): void
     {
@@ -88,17 +89,25 @@ class NS
 
                 if (!empty($cli_cmd)) {
 
+
                 }
             }
 
             $cgi_cmd = $this->system->router->parseCgi($this->system->IOData->src_cmd);
 
             if (!empty($cgi_cmd)) {
+                while (is_array($cmd_data = array_shift($cgi_cmd))) {
+                    $params = $this->system::getArgs($cmd_data[0], $cmd_data[1], $this->system->IOData->src_input);
 
+                    if (!empty($params['diff'])) {
+                        //todo args not match
+                        continue;
+                    }
 
+                    $this->system->IOData->src_output += $this->system->caller->runCgi($cmd_data, $params['args']);
+                }
             }
         }
-
 
         $this->system->IOData->output();
     }
