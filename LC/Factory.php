@@ -93,7 +93,7 @@ class Factory
             if (!isset($data[$param_info['name']])) {
                 $param_info['has_default']
                     ? $result['args'][] = $param_info['default_value']
-                    : $result['diff'][] = '"' . $param_info['name'] . '" not found';
+                    : $result['diff'][] = '$' . $param_info['name'] . ' not found';
                 continue;
             }
 
@@ -112,7 +112,7 @@ class Factory
             } elseif (is_null($param_info['type'])) {
                 $result['args'][] = $data[$param_info['name']];
             } else {
-                $result['diff'][] = '"' . $param_info['name'] . '": ' . $param_info['type'] . ' expected, but got "' . $data[$param_info['name']] . '"';
+                $result['diff'][] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but was \'' . $data[$param_info['name']] . '\'';
             }
         }
 

@@ -100,7 +100,10 @@ class NS
                     $params = $this->system::getArgs($cmd_data[0], $cmd_data[1], $this->system->IOData->src_input);
 
                     if (!empty($params['diff'])) {
-                        //todo args not match
+                        if ($this->system->app->core_debug) {
+                            $this->system->IODataAddMsgData('ArgumentError', $params['diff']);
+                        }
+
                         continue;
                     }
 
