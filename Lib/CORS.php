@@ -25,8 +25,7 @@ use Nervsys\LC\Factory;
 
 class CORS extends Factory
 {
-    private array $allowed_list = [];
-
+    private array  $allowed_list  = [];
     private string $allow_headers = 'X-Requested-With, Content-Type, Content-Length';
 
     /**
@@ -50,14 +49,13 @@ class CORS extends Factory
     }
 
     /**
-     * @param bool $is_cli
      * @param bool $is_tls
      *
      * @return void
      */
-    public function checkPermission(bool $is_cli, bool $is_tls): void
+    public function checkPermission(bool $is_tls): void
     {
-        if ($is_cli || !isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === ($is_tls ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === ($is_tls ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
