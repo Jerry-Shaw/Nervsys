@@ -121,7 +121,7 @@ class Router extends Factory
 
                 $fn_list[] = [$class, $method, $cmd_val];
             } catch (\Throwable $throwable) {
-                Error::new()->exceptionHandler($throwable, false, $this->app->core_debug || !$this->app->is_cli);
+                Error::new()->exceptionHandler($throwable, false);
                 unset($throwable);
             }
         }
