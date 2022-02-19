@@ -45,18 +45,18 @@ class App extends Factory
      */
     public function __construct()
     {
-        $this->script_path = strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+        $this->script_path = realpath(strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR));
 
-        if (!is_file($this->script_path)) {
-            $this->script_path = getcwd() . DIRECTORY_SEPARATOR . $this->script_path;
+        if (false === $this->script_path) {
+            $this->script_path = realpath(getcwd() . DIRECTORY_SEPARATOR . $this->script_path);
 
-            if (!is_file($this->script_path)) {
+            if (false === $this->script_path) {
                 throw new \Exception('Script path NOT detected!', E_USER_ERROR);
             }
         }
 
         $this->root_path = dirname($this->script_path, 2);
-        $this->log_path  = $this->script_path . DIRECTORY_SEPARATOR . 'logs';
+        $this->log_path  = $this->root_path . DIRECTORY_SEPARATOR . 'logs';
         $this->api_path  = 'api';
 
         if (!is_dir($this->log_path)) {
