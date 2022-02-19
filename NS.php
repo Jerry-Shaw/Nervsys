@@ -75,11 +75,12 @@ class NS
     {
         date_default_timezone_set($this->system->app->timezone);
 
-        $this->system->CORS->checkPermission($this->system->app->is_cli, $this->system->app->is_tls);
-
-        !$this->system->app->is_cli
-            ? $this->system->IOData->readCgi()
-            : $this->system->IOData->readCli();
+        if (!$this->system->app->is_cli) {
+            $this->system->CORS->checkPermission($this->system->app->is_tls);
+            $this->system->IOData->readCgi();
+        } else {
+            $this->system->IOData->readCli();
+        }
 
         if ('' !== $this->system->IOData->src_cmd) {
             if ($this->system->app->is_cli) {
@@ -88,13 +89,12 @@ class NS
                 if (!empty($cli_cmd)) {
 
                 }
-
-
             }
 
             $cgi_cmd = $this->system->router->parseCgi($this->system->IOData->src_cmd);
 
             if (!empty($cgi_cmd)) {
+
 
             }
         }
