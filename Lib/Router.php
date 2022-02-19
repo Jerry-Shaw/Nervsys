@@ -41,8 +41,8 @@ class Router extends Factory
     {
         $this->app = App::new();
 
-        $this->cgi_router_stack[] = [$this, 'cgiUnit'];
-        $this->cli_router_stack[] = [$this, 'cliUnit'];
+        $this->cgi_router_stack[] = [$this, 'callCgiUnit'];
+        $this->cli_router_stack[] = [$this, 'callCliUnit'];
     }
 
     /**
@@ -93,7 +93,7 @@ class Router extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function cgiUnit(string $c): array
+    public function callCgiUnit(string $c): array
     {
         $fn_list  = [];
         $cmd_list = $this->getCmdList($c);
@@ -135,7 +135,7 @@ class Router extends Factory
      *
      * @return array
      */
-    public function cliUnit(string $c): array
+    public function callCliUnit(string $c): array
     {
         $exe_list = [];
         $cmd_list = $this->getCmdList($c);
