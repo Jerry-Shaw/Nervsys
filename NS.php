@@ -88,8 +88,14 @@ class NS
                 $cli_cmd = $this->system->router->parseCli($this->system->IOData->src_cmd);
 
                 if (!empty($cli_cmd)) {
-
-
+                    while (is_array($cmd_data = array_shift($cli_cmd))) {
+                        $this->system->IOData->src_output += $this->system->caller->runCli(
+                            $cmd_data,
+                            $this->system->IOData->src_argv,
+                            $this->system->IOData->cwd_path,
+                            $this->system->app->core_debug
+                        );
+                    }
                 }
             }
 
