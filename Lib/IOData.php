@@ -33,7 +33,8 @@ class IOData extends Factory
     public array $cookie_keys = [];
 
     public string $src_cmd  = '';
-    public string $src_argv = '';
+    public string $cwd_path = '';
+    public array  $src_argv = [];
 
     public array $src_msg    = [];
     public array $src_input  = [];
@@ -82,14 +83,15 @@ class IOData extends Factory
     /**
      * Read arguments (CLI)
      *
-     * c: CMD (required)
-     * d: Data package (required)
+     * c: Command
+     * w: Working dir
+     * d: Data package
      * r: Return type (json/xml/plain, default: none, optional)
      * ... Other CLI params (optional)
      */
     public function readCli(): void
     {
-        $opt  = getopt('c:d:r::', [], $optind);
+        $opt  = getopt('c:w:d:r::', [], $optind);
         $argv = array_slice($_SERVER['argv'], $optind);
 
         if (!isset($opt['c']) && !empty($argv)) {
@@ -97,7 +99,7 @@ class IOData extends Factory
         }
 
         if (!empty($argv)) {
-            $this->src_argv = implode(' ', $argv);
+            $this->src_argv = &$argv;
         }
 
         $this->cli_data_type = 'none';
@@ -122,6 +124,10 @@ class IOData extends Factory
 
         if (isset($opt['c'])) {
             $this->src_cmd = trim($this->decodeData($opt['c']));
+        }
+
+        if (isset($opt['w'])) {
+            $this->cwd_path = trim($this->decodeData($opt['w']));
         }
 
         if (isset($opt['d'])) {
