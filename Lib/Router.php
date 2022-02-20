@@ -98,9 +98,9 @@ class Router extends Factory
         $fn_list  = [];
         $cmd_list = $this->getCmdList($c);
 
-        foreach ($cmd_list as $cmd_val) {
+        foreach ($cmd_list as $cmd_raw) {
             try {
-                $cmd_val = strtr($cmd_val, '\\', '/');
+                $cmd_val = strtr($cmd_raw, '\\', '/');
 
                 if (false === strpos($cmd_val, '/', 1)) {
                     throw new \Exception('"' . $cmd_val . '" NOT valid!', E_USER_NOTICE);
@@ -119,14 +119,14 @@ class Router extends Factory
                     throw new \Exception('"' . $cmd_val . '" NOT found!', E_USER_NOTICE);
                 }
 
-                $fn_list[] = [$class, $method, $cmd_val];
+                $fn_list[] = [$class, $method, $cmd_raw];
             } catch (\Throwable $throwable) {
                 Error::new()->exceptionHandler($throwable, false);
                 unset($throwable);
             }
         }
 
-        unset($c, $cmd_list, $cmd_val, $full_cmd, $fn_pos, $class, $method);
+        unset($c, $cmd_list, $cmd_raw, $cmd_val, $full_cmd, $fn_pos, $class, $method);
         return $fn_list;
     }
 
