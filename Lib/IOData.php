@@ -40,8 +40,7 @@ class IOData extends Factory
     public array $src_input  = [];
     public array $src_output = [];
 
-    public string $content_type  = '';
-    public string $cli_data_type = '';
+    public string $content_type = '';
 
     protected string $base64_marker  = 'data:text/argv;base64,';
     protected array  $response_types = ['application/json', 'application/xml', 'text/plain', 'text/html', 'text/none'];
@@ -102,15 +101,12 @@ class IOData extends Factory
             $this->src_argv = &$argv;
         }
 
-        $this->cli_data_type = 'none';
-        $this->content_type  = 'application/json';
+        $this->content_type = 'text/plain';
 
         if (isset($opt['r'])) {
             if (!in_array($opt['r'], ['json', 'text', 'none', 'xml'], true)) {
                 $opt['r'] = 'text';
             }
-
-            $this->cli_data_type = &$opt['r'];
 
             foreach ($this->response_types as $type) {
                 if (str_contains($type, $opt['r'])) {
