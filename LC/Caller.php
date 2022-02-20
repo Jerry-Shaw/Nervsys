@@ -122,8 +122,6 @@ class Caller extends Factory
                             break;
                         }
 
-                        $msg = trim($msg) . PHP_EOL;
-
                         if ($realtime_debug) {
                             echo $msg;
                         }
