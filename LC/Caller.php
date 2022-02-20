@@ -34,29 +34,29 @@ class Caller extends Factory
     }
 
     /**
-     * @param array $cmd_list
+     * @param array $cmd_data
      * @param array $input_data
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function runCgi(array $cmd_list, array $input_data): array
+    public function runCgi(array $cmd_data, array $input_data): array
     {
         $result = [];
 
         try {
             $fn_result = call_user_func_array(
                 [
-                    !Reflect::getMethod($cmd_list[0], $cmd_list[1])->isStatic()
-                        ? self::getObj($cmd_list[0], $input_data)
-                        : $cmd_list[0],
-                    $cmd_list[1]
+                    !Reflect::getMethod($cmd_data[0], $cmd_data[1])->isStatic()
+                        ? self::getObj($cmd_data[0], $input_data)
+                        : $cmd_data[0],
+                    $cmd_data[1]
                 ],
                 $input_data
             );
 
             if (!is_null($fn_result)) {
-                $result[$cmd_list[2] ?? strtr($cmd_list[0], '\\', '/') . '/' . $cmd_list[1]] = &$fn_result;
+                $result[$cmd_data[2] ?? strtr($cmd_data[0], '\\', '/') . '/' . $cmd_data[1]] = &$fn_result;
             }
 
             unset($fn_result);
@@ -65,15 +65,86 @@ class Caller extends Factory
             unset($throwable);
         }
 
-        unset($cmd_list, $input_data);
+        unset($cmd_data, $input_data);
         return $result;
     }
 
-
-    public function runCli(): array
+    /**
+     * @param array  $cmd_pair
+     * @param array  $cmd_argv
+     * @param string $cwd_path
+     * @param bool   $realtime_debug
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function runCli(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false): array
     {
+        $result = [];
 
+        try {
+            array_unshift($cmd_argv, $cmd_pair[1]);
+
+            $proc = proc_open(
+                $cmd_argv,
+                [
+                    ['pipe', 'rb'],
+                    ['socket', 'wb'],
+                    ['socket', 'wb']
+                ],
+                $pipes,
+                '' !== $cwd_path ? $cwd_path : null
+            );
+
+            if (!is_resource($proc)) {
+                return [];
+            }
+
+            $write = $except = [];
+
+            $result[$cmd_pair[0]] = '';
+
+            stream_set_blocking($pipes[1], false);
+            stream_set_blocking($pipes[2], false);
+
+            while (proc_get_status($proc)['running']) {
+                $read = [$pipes[1], $pipes[2]];
+
+                if (0 === (int)stream_select($read, $write, $except, 1)) {
+                    continue;
+                }
+
+                foreach ($read as $pipe) {
+                    while (!feof($pipe)) {
+                        $msg = fgets($pipe);
+
+                        if (false === $msg) {
+                            break;
+                        }
+
+                        $msg = trim($msg) . PHP_EOL;
+
+                        if ($realtime_debug) {
+                            echo $msg;
+                        }
+
+                        $result[$cmd_pair[0]] .= $msg;
+                    }
+                }
+            }
+
+            fclose($pipes[0]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+
+            proc_terminate($proc);
+            proc_close($proc);
+        } catch (\Throwable $throwable) {
+            $this->error->exceptionHandler($throwable, false);
+            unset($throwable);
+        }
+
+        unset($cmd_pair, $cmd_argv, $cwd_path, $realtime_debug, $proc, $pipes, $write, $except, $read, $pipe, $msg);
+        return $result;
     }
-
-
 }
