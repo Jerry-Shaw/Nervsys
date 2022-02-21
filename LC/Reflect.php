@@ -33,6 +33,8 @@ class Reflect
      */
     public static function getClass(string $class): \ReflectionClass
     {
+        $class = trim($class, '\\');
+
         if (!isset(self::$reflects[$class])) {
             self::$reflects[$class] = new \ReflectionClass($class);
         }
@@ -49,10 +51,10 @@ class Reflect
      */
     public static function getMethod(string $class, string $method): \ReflectionMethod
     {
-        $key = $class . ':' . $method;
+        $key = trim($class . '::' . $method, '\\');
 
         if (!isset(self::$reflects[$key])) {
-            self::$reflects[$key] = self::getClass($class)->getMethod($method);
+            self::$reflects[$key] = new \ReflectionMethod($class, $method);
         }
 
         unset($class, $method);
@@ -60,22 +62,38 @@ class Reflect
     }
 
     /**
-     * @param string $class
-     * @param string $method
+     * @param callable $callable
      *
-     * @return array
+     * @return \ReflectionFunction|\ReflectionMethod
      * @throws \ReflectionException
      */
-    public static function getParameters(string $class, string $method): array
+    public static function getCallable(callable $callable): \ReflectionFunction|\ReflectionMethod
     {
-        $key = $class . '::' . $method;
+        if (is_array($callable)) {
+            $key = trim((is_object($callable[0]) ? $callable[0]::class : $callable[0]) . '::' . $callable[1], '\\');
 
-        if (!isset(self::$reflects[$key])) {
-            self::$reflects[$key] = self::getMethod($class, $method)->getParameters();
+            if (!isset(self::$reflects[$key])) {
+                self::$reflects[$key] = new \ReflectionMethod($callable);
+            }
+
+            $reflect = self::$reflects[$key];
+            unset($key);
+        } elseif (is_string($callable)) {
+            $callable = trim($callable, '\\');
+
+            if (!isset(self::$reflects[$callable])) {
+                self::$reflects[$callable] = str_contains($callable, '::')
+                    ? new \ReflectionMethod($callable)
+                    : new \ReflectionFunction($callable);
+            }
+
+            $reflect = self::$reflects[$callable];
+        } else {
+            $reflect = new \ReflectionFunction($callable);
         }
 
-        unset($class, $method);
-        return self::$reflects[$key];
+        unset($callable);
+        return $reflect;
     }
 
     /**
