@@ -73,7 +73,7 @@ class Reflect
             $key = trim((is_object($callable[0]) ? $callable[0]::class : $callable[0]) . '::' . $callable[1], '\\');
 
             if (!isset(self::$reflects[$key])) {
-                self::$reflects[$key] = new \ReflectionMethod($callable);
+                self::$reflects[$key] = new \ReflectionMethod(...$callable);
             }
 
             $reflect = self::$reflects[$key];
