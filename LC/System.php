@@ -23,6 +23,7 @@ namespace Nervsys\LC;
 
 use Nervsys\Lib\App;
 use Nervsys\Lib\CORS;
+use Nervsys\Lib\Hook;
 use Nervsys\Lib\IOData;
 use Nervsys\Lib\Router;
 
@@ -30,6 +31,7 @@ class System extends Factory
 {
     public App    $app;
     public CORS   $CORS;
+    public Hook   $hook;
     public Caller $caller;
     public IOData $IOData;
     public Router $router;
@@ -45,6 +47,7 @@ class System extends Factory
 
         $this->app    = App::new();
         $this->CORS   = CORS::new();
+        $this->hook   = Hook::new();
         $this->caller = Caller::new();
         $this->IOData = IOData::new();
         $this->router = Router::new();
@@ -74,20 +77,6 @@ class System extends Factory
         );
 
         unset($autoload_path, $autoload_prepend);
-        return $this;
-    }
-
-    /**
-     * @param string $allow_origin
-     * @param string $allow_headers
-     *
-     * @return $this
-     */
-    public function CorsAddRecord(string $allow_origin, string $allow_headers = ''): self
-    {
-        $this->CORS->addRecord($allow_origin, $allow_headers);
-
-        unset($allow_origin, $allow_headers);
         return $this;
     }
 
@@ -127,6 +116,48 @@ class System extends Factory
         $this->app->core_debug = &$core_debug_mode;
 
         unset($core_debug_mode);
+        return $this;
+    }
+
+    /**
+     * @param string $allow_origin
+     * @param string $allow_headers
+     *
+     * @return $this
+     */
+    public function CorsAddRecord(string $allow_origin, string $allow_headers = ''): self
+    {
+        $this->CORS->addRecord($allow_origin, $allow_headers);
+
+        unset($allow_origin, $allow_headers);
+        return $this;
+    }
+
+    /**
+     * @param string   $cmd_path
+     * @param callable $hook_fn
+     *
+     * @return $this
+     */
+    public function HookAddBefore(string $cmd_path, callable $hook_fn): self
+    {
+        $this->hook->stack_before[$this->router->getFullCgiCmd($cmd_path, true)][] = &$hook_fn;
+
+        unset($cmd_path, $hook_fn);
+        return $this;
+    }
+
+    /**
+     * @param string   $cmd_path
+     * @param callable $hook_fn
+     *
+     * @return $this
+     */
+    public function HookAddAfter(string $cmd_path, callable $hook_fn): self
+    {
+        $this->hook->stack_after[$this->router->getFullCgiCmd($cmd_path, true)][] = &$hook_fn;
+
+        unset($cmd_path, $hook_fn);
         return $this;
     }
 

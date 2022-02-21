@@ -33,39 +33,13 @@ class Hook extends Factory
     public array $stack_after  = [];
 
     /**
+     * Hook constructor
+     *
      * @throws \ReflectionException
      */
     public function __construct()
     {
         $this->system = System::new();
-    }
-
-    /**
-     * @param string   $cmd_path
-     * @param callable $hook_fn
-     *
-     * @return $this
-     */
-    public function before(string $cmd_path, callable $hook_fn): self
-    {
-        $this->stack_before[$this->system->router->getFullCgiCmd($cmd_path, true)][] = &$hook_fn;
-
-        unset($cmd_path, $hook_fn);
-        return $this;
-    }
-
-    /**
-     * @param string   $cmd_path
-     * @param callable $hook_fn
-     *
-     * @return $this
-     */
-    public function after(string $cmd_path, callable $hook_fn): self
-    {
-        $this->stack_after[$this->system->router->getFullCgiCmd($cmd_path, true)][] = &$hook_fn;
-
-        unset($cmd_path, $hook_fn);
-        return $this;
     }
 
     /**
@@ -143,10 +117,7 @@ class Hook extends Factory
      */
     private function passFn(callable $fn): bool
     {
-        $params = self::buildArgs(
-            Reflect::getCallable($fn)->getParameters(),
-            $this->system->IOData->src_input
-        );
+        $params = self::buildArgs(Reflect::getCallable($fn)->getParameters(), $this->system->IOData->src_input);
 
         if (!empty($params['diff'])) {
             if ($this->system->app->core_debug) {
