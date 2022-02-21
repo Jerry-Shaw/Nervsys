@@ -80,7 +80,7 @@ class Factory
     public static function getArgs(string $class, string $method, array $data): array
     {
         $result = ['args' => [], 'diff' => []];
-        $params = Reflect::getParameters($class, $method);
+        $params = Reflect::getMethod($class, $method)->getParameters();
 
         foreach ($params as $param_reflect) {
             $param_info = Reflect::getParameterInfo($param_reflect);
