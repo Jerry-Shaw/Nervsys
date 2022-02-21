@@ -56,7 +56,7 @@ class Factory
                 $pass_params = current($class_params);
 
                 if (is_array($pass_params) && !array_is_list($pass_params)) {
-                    $class_params = self::getArgs($class_name, '__construct', $pass_params);
+                    $class_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $pass_params);
                 }
 
                 unset($pass_params);
@@ -70,53 +70,51 @@ class Factory
     }
 
     /**
-     * @param string $class
-     * @param string $method
-     * @param array  $data
+     * @param array $param_reflects
+     * @param array $data_package
      *
      * @return array
      * @throws \ReflectionException
      */
-    public static function getArgs(string $class, string $method, array $data): array
+    public static function buildArgs(array $param_reflects, array $data_package): array
     {
         $result = ['args' => [], 'diff' => []];
-        $params = Reflect::getMethod($class, $method)->getParameters();
 
-        foreach ($params as $param_reflect) {
+        foreach ($param_reflects as $param_reflect) {
             $param_info = Reflect::getParameterInfo($param_reflect);
 
             if (!$param_info['build_in']) {
-                $result['args'][] = self::getObj($param_info['type'], $data);
+                $result['args'][] = self::getObj($param_info['type'], $data_package);
                 continue;
             }
 
-            if (!isset($data[$param_info['name']])) {
+            if (!isset($data_package[$param_info['name']])) {
                 $param_info['has_default']
                     ? $result['args'][] = $param_info['default_value']
                     : $result['diff'][] = '$' . $param_info['name'] . ' not found';
                 continue;
             }
 
-            if ('int' === $param_info['type'] && is_numeric($data[$param_info['name']])) {
-                $result['args'][] = (int)$data[$param_info['name']];
-            } elseif ('float' === $param_info['type'] && is_numeric($data[$param_info['name']])) {
-                $result['args'][] = (float)$data[$param_info['name']];
-            } elseif ('string' === $param_info['type'] && (is_string($data[$param_info['name']]) || is_numeric($data[$param_info['name']]))) {
-                $result['args'][] = trim((string)$data[$param_info['name']]);
-            } elseif ('array' === $param_info['type'] && is_array($data[$param_info['name']])) {
-                $result['args'][] = $data[$param_info['name']];
-            } elseif ('bool' === $param_info['type'] && is_bool($data[$param_info['name']])) {
-                $result['args'][] = $data[$param_info['name']];
-            } elseif ('object' === $param_info['type'] && is_object($data[$param_info['name']])) {
-                $result['args'][] = $data[$param_info['name']];
+            if ('int' === $param_info['type'] && is_numeric($data_package[$param_info['name']])) {
+                $result['args'][] = (int)$data_package[$param_info['name']];
+            } elseif ('float' === $param_info['type'] && is_numeric($data_package[$param_info['name']])) {
+                $result['args'][] = (float)$data_package[$param_info['name']];
+            } elseif ('string' === $param_info['type'] && (is_string($data_package[$param_info['name']]) || is_numeric($data_package[$param_info['name']]))) {
+                $result['args'][] = trim((string)$data_package[$param_info['name']]);
+            } elseif ('array' === $param_info['type'] && is_array($data_package[$param_info['name']])) {
+                $result['args'][] = $data_package[$param_info['name']];
+            } elseif ('bool' === $param_info['type'] && is_bool($data_package[$param_info['name']])) {
+                $result['args'][] = $data_package[$param_info['name']];
+            } elseif ('object' === $param_info['type'] && is_object($data_package[$param_info['name']])) {
+                $result['args'][] = $data_package[$param_info['name']];
             } elseif (is_null($param_info['type'])) {
-                $result['args'][] = $data[$param_info['name']];
+                $result['args'][] = $data_package[$param_info['name']];
             } else {
-                $result['diff'][] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but was \'' . $data[$param_info['name']] . '\'';
+                $result['diff'][] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but was \'' . $data_package[$param_info['name']] . '\'';
             }
         }
 
-        unset($class, $method, $data, $params, $param_reflect, $param_info);
+        unset($param_reflects, $data_package, $param_reflect, $param_info);
         return $result;
     }
 
