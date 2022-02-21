@@ -118,7 +118,10 @@ class Hook extends Factory
      */
     private function passFn(callable $fn): bool
     {
-        $params = self::buildArgs(Reflect::getCallable($fn)->getParameters(), $this->IOData->src_input);
+        $params = self::buildArgs(
+            Reflect::getCallable($fn)->getParameters(),
+            $this->IOData->src_input
+        );
 
         if (!empty($params['diff'])) {
             if ($this->app->core_debug) {
