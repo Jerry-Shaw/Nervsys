@@ -21,6 +21,8 @@
 
 namespace Nervsys;
 
+use Nervsys\LC\Factory;
+use Nervsys\LC\Reflect;
 use Nervsys\LC\System;
 
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
@@ -103,7 +105,10 @@ class NS
 
             if (!empty($cgi_cmd)) {
                 while (is_array($cmd_data = array_shift($cgi_cmd))) {
-                    $params = $this->system::getArgs($cmd_data[0], $cmd_data[1], $this->system->IOData->src_input);
+                    $params = Factory::buildArgs(
+                        Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
+                        $this->system->IOData->src_input
+                    );
 
                     if (!empty($params['diff'])) {
                         if ($this->system->app->core_debug) {
