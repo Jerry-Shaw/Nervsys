@@ -105,6 +105,12 @@ class NS
 
             if (!empty($cgi_cmd)) {
                 while (is_array($cmd_data = array_shift($cgi_cmd))) {
+                    $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
+
+                    if (!$this->system->hook->runBefore($full_cmd)) {
+                        continue;
+                    }
+
                     $params = Factory::buildArgs(
                         Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
                         $this->system->IOData->src_input
@@ -119,6 +125,10 @@ class NS
                     }
 
                     $this->system->IOData->src_output += $this->system->caller->runCgi($cmd_data, $params['args']);
+
+                    if (!$this->system->hook->runAfter($full_cmd)) {
+                        break;
+                    }
                 }
             }
         }
