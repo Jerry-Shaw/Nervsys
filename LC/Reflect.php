@@ -66,7 +66,7 @@ class Reflect
      * @return array
      * @throws \ReflectionException
      */
-    public static function getParams(string $class, string $method): array
+    public static function getParameters(string $class, string $method): array
     {
         $key = $class . '::' . $method;
 
@@ -79,24 +79,12 @@ class Reflect
     }
 
     /**
-     * @param string $class
-     * @param int    $filter
-     *
-     * @return array
-     * @throws \ReflectionException
-     */
-    public static function getMethods(string $class, int $filter): array
-    {
-        return self::getClass($class)->getMethods($filter);
-    }
-
-    /**
      * @param \ReflectionParameter $parameter
      *
      * @return array
      * @throws \ReflectionException
      */
-    public static function getParamInfo(\ReflectionParameter $parameter): array
+    public static function getParameterInfo(\ReflectionParameter $parameter): array
     {
         $info = [];
 

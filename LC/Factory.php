@@ -80,10 +80,10 @@ class Factory
     public static function getArgs(string $class, string $method, array $data): array
     {
         $result = ['args' => [], 'diff' => []];
-        $params = Reflect::getParams($class, $method);
+        $params = Reflect::getParameters($class, $method);
 
         foreach ($params as $param_reflect) {
-            $param_info = Reflect::getParamInfo($param_reflect);
+            $param_info = Reflect::getParameterInfo($param_reflect);
 
             if (!$param_info['build_in']) {
                 $result['args'][] = self::getObj($param_info['type'], $data);
