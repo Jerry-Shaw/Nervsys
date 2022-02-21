@@ -23,11 +23,11 @@ namespace Nervsys\Lib;
 
 use Nervsys\LC\Factory;
 use Nervsys\LC\Reflect;
-use Nervsys\LC\System;
 
 class Hook extends Factory
 {
-    public System $system;
+    public App    $app;
+    public IOData $IOData;
 
     public array $stack_before = [];
     public array $stack_after  = [];
@@ -39,7 +39,8 @@ class Hook extends Factory
      */
     public function __construct()
     {
-        $this->system = System::new();
+        $this->app    = App::new();
+        $this->IOData = IOData::new();
     }
 
     /**
@@ -117,11 +118,11 @@ class Hook extends Factory
      */
     private function passFn(callable $fn): bool
     {
-        $params = self::buildArgs(Reflect::getCallable($fn)->getParameters(), $this->system->IOData->src_input);
+        $params = self::buildArgs(Reflect::getCallable($fn)->getParameters(), $this->IOData->src_input);
 
         if (!empty($params['diff'])) {
-            if ($this->system->app->core_debug) {
-                $this->system->IODataAddMsgData('ArgumentError', $params['diff']);
+            if ($this->app->core_debug) {
+                $this->IOData->src_msg['HookArgumentError'] = $params['diff'];
             }
 
             unset($fn, $params);
