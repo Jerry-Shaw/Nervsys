@@ -48,7 +48,7 @@ class Caller extends Factory
             $fn_result = call_user_func_array(
                 [
                     !Reflect::getMethod($cmd_data[0], $cmd_data[1])->isStatic()
-                        ? self::getObj($cmd_data[0], $input_data)
+                        ? parent::getObj($cmd_data[0], $input_data)
                         : $cmd_data[0],
                     $cmd_data[1]
                 ],
