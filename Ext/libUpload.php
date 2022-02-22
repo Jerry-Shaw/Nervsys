@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-namespace Ext;
+namespace Nervsys\Ext;
 
 use Nervsys\LC\Factory;
 use Nervsys\Lib\App;
@@ -214,7 +214,7 @@ class libUpload extends Factory
         }
 
         //Init libFile
-        $libFile = libFile::new();
+        $libFile = libFileIO::new();
 
         //Check file extension
         $ext = array_search($this->runtime['type'], self::MIME, true);

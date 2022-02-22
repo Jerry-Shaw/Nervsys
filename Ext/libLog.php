@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-namespace Ext;
+namespace Nervsys\Ext;
 
 use Nervsys\LC\Factory;
 use Nervsys\Lib\App;
