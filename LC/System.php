@@ -247,8 +247,8 @@ class System extends Factory
      */
     public function IODataSetCodeMsg(int $code, string $msg): self
     {
-        $this->IOData->src_msg['code'] = &$code;
-        $this->IOData->src_msg['msg']  = &$msg;
+        $this->IOData->src_msg['code']    = &$code;
+        $this->IOData->src_msg['message'] = &$msg;
 
         unset($code, $msg);
         return $this;
