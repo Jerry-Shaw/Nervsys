@@ -18,12 +18,12 @@
  * limitations under the License.
  */
 
-namespace Ext;
+namespace Nervsys\Ext;
 
 use Nervsys\LC\Factory;
 use Nervsys\Lib\App;
 
-class libFile extends Factory
+class libFileIO extends Factory
 {
     /**
      * Get file extension (in lowercase)
