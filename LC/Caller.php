@@ -145,4 +145,16 @@ class Caller extends Factory
         unset($cmd_pair, $cmd_argv, $cwd_path, $realtime_debug, $proc, $pipes, $write, $except, $read, $pipe, $msg);
         return $result;
     }
+
+    /**
+     * @param string $cmd
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function runAsync(string $cmd): void
+    {
+        pclose(popen(OSUnit::new()->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb'));
+        unset($cmd);
+    }
 }
