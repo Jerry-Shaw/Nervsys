@@ -78,6 +78,7 @@ class Darwin
     public function setAsBg(): self
     {
         $this->os_cmd = 'screen ' . $this->os_cmd . ' > /dev/null 2>&1 &';
+
         return $this;
     }
 
@@ -87,6 +88,7 @@ class Darwin
     public function setEnvPath(): self
     {
         $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
+
         return $this;
     }
 }
