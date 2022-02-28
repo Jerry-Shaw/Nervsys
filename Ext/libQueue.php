@@ -688,7 +688,7 @@ class libQueue extends Factory
             $need = &$left;
         }
 
-        //Call unit processes
+        //Call child processes
         for ($i = 0; $i < $need; ++$i) {
             pclose(popen($cmd, 'rb'));
         }
