@@ -95,7 +95,7 @@ class WINNT
      */
     public function setAsBg(): self
     {
-        $this->os_cmd = 'start "" / B ' . $this->os_cmd . ' > nul 2>&1';
+        $this->os_cmd = 'start "" /B ' . $this->os_cmd . ' > nul 2>&1';
 
         return $this;
     }
