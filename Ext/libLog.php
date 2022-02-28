@@ -55,8 +55,8 @@ class libLog extends Factory
 
         foreach ($params as $param) {
             $logs .= (is_array($param) || is_object($param))
-                ? json_encode($param, JSON_PRETTY)
-                : (string)$param;
+                ? json_encode($param, JSON_PRETTY) . PHP_EOL
+                : (string)$param . PHP_EOL;
         }
 
         $this->save($logs);
