@@ -300,8 +300,6 @@ class libMPC extends Factory
     private function read(array $read): void
     {
         foreach ($read as $idx => $pipe) {
-            $this->proc_busy[$idx] = 0;
-
             while (!feof($pipe)) {
                 $msg = fgets($pipe);
 
@@ -312,6 +310,8 @@ class libMPC extends Factory
                 $data = json_decode($msg, true);
 
                 if (is_array($data)) {
+                    $this->proc_busy[$idx] = 0;
+
                     $this->proc_data[$data['mid']] = 1 === count($data['data'])
                         ? current($data['data'])
                         : $data['data'];
