@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Execute module
+ * Caller library
  *
  * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
@@ -36,11 +36,13 @@ class Caller extends Factory
     /**
      * @param array $cmd_data
      * @param array $input_data
+     * @param bool  $throw_exception
      *
      * @return array
      * @throws \ReflectionException
+     * @throws \Throwable
      */
-    public function runCgi(array $cmd_data, array $input_data): array
+    public function runCgi(array $cmd_data, array $input_data, bool $throw_exception = false): array
     {
         $result = [];
 
@@ -61,11 +63,16 @@ class Caller extends Factory
 
             unset($fn_result);
         } catch (\Throwable $throwable) {
-            $this->error->exceptionHandler($throwable, false);
+            if ($throw_exception) {
+                throw $throwable;
+            } else {
+                $this->error->exceptionHandler($throwable, false);
+            }
+
             unset($throwable);
         }
 
-        unset($cmd_data, $input_data);
+        unset($cmd_data, $input_data, $throw_exception);
         return $result;
     }
 
@@ -74,11 +81,13 @@ class Caller extends Factory
      * @param array  $cmd_argv
      * @param string $cwd_path
      * @param bool   $realtime_debug
+     * @param bool   $throw_exception
      *
      * @return array
      * @throws \ReflectionException
+     * @throws \Throwable
      */
-    public function runCli(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false): array
+    public function runCli(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false, bool $throw_exception = false): array
     {
         $result = [];
 
@@ -138,11 +147,16 @@ class Caller extends Factory
             proc_terminate($proc);
             proc_close($proc);
         } catch (\Throwable $throwable) {
-            $this->error->exceptionHandler($throwable, false);
+            if ($throw_exception) {
+                throw $throwable;
+            } else {
+                $this->error->exceptionHandler($throwable, false);
+            }
+
             unset($throwable);
         }
 
-        unset($cmd_pair, $cmd_argv, $cwd_path, $realtime_debug, $proc, $pipes, $write, $except, $read, $pipe, $msg);
+        unset($cmd_pair, $cmd_argv, $cwd_path, $realtime_debug, $throw_exception, $proc, $pipes, $write, $except, $read, $pipe, $msg);
         return $result;
     }
 
