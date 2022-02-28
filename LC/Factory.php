@@ -40,6 +40,7 @@ class Factory
      *
      * @return object
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public static function getObj(string $class_name, array $class_params = []): object
     {
@@ -56,10 +57,16 @@ class Factory
                 $pass_params = current($class_params);
 
                 if (is_array($pass_params) && !array_is_list($pass_params)) {
-                    $class_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $pass_params);
+                    $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $pass_params);
+
+                    if (!empty($prep_params['diff'])) {
+                        throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
+                    }
+
+                    $class_params = &$prep_params['args'];
                 }
 
-                unset($pass_params);
+                unset($pass_params, $prep_params);
             }
 
             self::$objects[$hash_key] = new ('\\' . trim($class_name, '\\'))(...$class_params);
@@ -110,7 +117,7 @@ class Factory
             } elseif (is_null($param_info['type'])) {
                 $result['args'][] = $data_package[$param_info['name']];
             } else {
-                $result['diff'][] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but was \'' . $data_package[$param_info['name']] . '\'';
+                $result['diff'][] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but got \'' . $data_package[$param_info['name']] . '\'';
             }
         }
 
