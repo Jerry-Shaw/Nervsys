@@ -39,7 +39,7 @@ class libQueue extends Factory
     const TYPE_DELAY    = 4;
 
     //Key lifetime (in seconds)
-    const LIFETIME = 60;
+    const LIFETIME = 30;
 
     //Wait properties (in microseconds)
     const WAIT_TIME = 10000;
@@ -566,7 +566,8 @@ class libQueue extends Factory
             json_encode([
                 'group' => &$group,
                 'job'   => &$data
-            ], JSON_FORMAT));
+            ], JSON_FORMAT)
+        );
 
         unset($group, $data, $time, $delay);
         return is_int($result) && 0 < $result;
@@ -742,7 +743,7 @@ class libQueue extends Factory
                         throw new \Exception('ArgumentError: ' . implode(', ', $params['diff']), E_CORE_WARNING);
                     }
 
-                    $result = $this->caller->runCgi($cmd_data, $params['args']);
+                    $result = $this->caller->runCgi($cmd_data, $params['args'], true);
 
                     if (!empty($result)) {
                         //Get return data
@@ -772,7 +773,8 @@ class libQueue extends Factory
                         $cmd_data,
                         $data['argv'] ?? [],
                         $data['cwd'] ?? '',
-                        $this->app->core_debug
+                        $this->app->core_debug,
+                        true
                     );
                 }
             }
