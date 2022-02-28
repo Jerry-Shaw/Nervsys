@@ -411,7 +411,7 @@ class libQueue extends Factory
         $this->redis->hSet($this->key_slot['watch'], $master_key, time());
 
         //Build job processor command
-        $job_proc = '"' . $this->OSUnit->getPhpPath() . '" "' . $this->app->script_path . '" -t"json" ';
+        $job_proc = '"' . $this->OSUnit->getPhpPath() . '" "' . $this->app->script_path . '" ';
         $job_proc .= '-c"' . $this->IOData->encodeData('/' . $this->job_handler[0] . '/' . $this->job_handler[1]) . '" -r"none" ';
 
         //Build delay command
