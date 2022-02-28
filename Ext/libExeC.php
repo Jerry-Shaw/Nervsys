@@ -26,17 +26,17 @@ class libExeC extends Factory
 {
     //ExeC key prefix
     const PREFIX   = 'EXEC:';
-    const WORKER   = self::PREFIX . 'W';
+    const WORKER   = self::PREFIX . 'worker';
     const STOP_CMD = 'ExecStop';
 
     /** @var \Redis $redis */
     public \Redis $redis;
 
-    public int $idle_time = 3;
+    public int $idle_time = 1;
     public int $lifetime  = 30;
 
     public int $log_keep_days = 3;
-    public int $log_max_hist  = 1000;
+    public int $log_max_hist  = 2000;
 
     public string $cmd_id;
     public string $key_logs;
@@ -52,9 +52,9 @@ class libExeC extends Factory
     {
         $this->cmd_id = &$cmd_id;
 
-        $this->key_logs    = self::PREFIX . $cmd_id . ':L';
-        $this->key_status  = self::PREFIX . $cmd_id . ':S';
-        $this->key_command = self::PREFIX . $cmd_id . ':C';
+        $this->key_logs    = self::PREFIX . $cmd_id . ':logs';
+        $this->key_status  = self::PREFIX . $cmd_id . ':status';
+        $this->key_command = self::PREFIX . $cmd_id . ':command';
 
         unset($cmd_id);
     }
@@ -194,7 +194,7 @@ class libExeC extends Factory
 
         $proc_status = proc_get_status($proc);
 
-        $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => $proc_status['command']]);
+        $this->redis->hMSet($this->key_status, ['pid' => $proc_status['pid'], 'cmd' => '"' . implode('" "', $cmd_params) . '"']);
         $this->redis->hSet(self::WORKER, $this->cmd_id, time());
 
         register_shutdown_function([$this, 'cleanup']);
