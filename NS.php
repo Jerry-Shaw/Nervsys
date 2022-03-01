@@ -92,7 +92,7 @@ class NS
 
                 if (!empty($cli_cmd)) {
                     while (is_array($cmd_data = array_shift($cli_cmd))) {
-                        $this->system->IOData->src_output += $this->system->caller->runCli(
+                        $this->system->IOData->src_output += $this->system->caller->runProgram(
                             $cmd_data,
                             $this->system->IOData->src_argv,
                             $this->system->IOData->cwd_path,
@@ -117,7 +117,7 @@ class NS
                         $this->system->IOData->src_input
                     );
 
-                    $this->system->IOData->src_output += $this->system->caller->runCgi($cmd_data, $params);
+                    $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $params);
 
                     if (!$this->system->hook->runAfter($full_cmd)) {
                         break;

@@ -339,7 +339,7 @@ class libMPC extends Factory
         if (!empty($cgi_cmd)) {
             while (is_array($cmd_data = array_shift($cgi_cmd))) {
                 $params = parent::buildArgs(Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(), $data);
-                $result += $this->caller->runCgi($cmd_data, $params);
+                $result += $this->caller->runMethod($cmd_data, $params);
             }
         }
 
@@ -347,7 +347,7 @@ class libMPC extends Factory
 
         if (!empty($cli_cmd)) {
             while (is_array($cmd_data = array_shift($cli_cmd))) {
-                $result += $this->caller->runCli(
+                $result += $this->caller->runProgram(
                     $cmd_data,
                     $data['argv'] ?? [],
                     $data['cwd'] ?? '',

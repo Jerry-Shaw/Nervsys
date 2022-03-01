@@ -42,7 +42,7 @@ class Caller extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function runCgi(array $cmd_data, array $method_params, bool $throw_exception = false): array
+    public function runMethod(array $cmd_data, array $method_params, bool $throw_exception = false): array
     {
         $result = [];
 
@@ -87,7 +87,7 @@ class Caller extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function runCli(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false, bool $throw_exception = false): array
+    public function runProgram(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false, bool $throw_exception = false): array
     {
         $result = [];
 
