@@ -32,6 +32,7 @@ class System extends Factory
     public App    $app;
     public CORS   $CORS;
     public Hook   $hook;
+    public Error  $error;
     public Caller $caller;
     public IOData $IOData;
     public Router $router;
@@ -43,11 +44,10 @@ class System extends Factory
      */
     public function __construct()
     {
-        Error::new();
-
         $this->app    = App::new();
         $this->CORS   = CORS::new();
         $this->hook   = Hook::new();
+        $this->error  = Error::new();
         $this->caller = Caller::new();
         $this->IOData = IOData::new();
         $this->router = Router::new();

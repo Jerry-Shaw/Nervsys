@@ -21,6 +21,7 @@
 namespace Nervsys\Ext;
 
 use Nervsys\LC\Caller;
+use Nervsys\LC\Error;
 use Nervsys\LC\Factory;
 use Nervsys\LC\OSUnit;
 use Nervsys\LC\Reflect;
@@ -30,11 +31,12 @@ use Nervsys\Lib\Router;
 
 class libMPC extends Factory
 {
-    private App    $app;
-    private Router $router;
-    private Caller $caller;
-    private IOData $IOData;
-    private OSUnit $OSUnit;
+    public App    $app;
+    public Error  $error;
+    public Router $router;
+    public Caller $caller;
+    public IOData $IOData;
+    public OSUnit $OSUnit;
 
     public string $php_path;
 
@@ -54,6 +56,7 @@ class libMPC extends Factory
     public function __construct()
     {
         $this->app    = App::new();
+        $this->error  = Error::new();
         $this->caller = Caller::new();
         $this->router = Router::new();
         $this->IOData = IOData::new();
@@ -333,27 +336,32 @@ class libMPC extends Factory
      */
     private function execJob(array $data): array
     {
-        $result  = [];
-        $cgi_cmd = $this->router->parseCgi($data['c']);
+        $result = [];
 
-        if (!empty($cgi_cmd)) {
-            while (is_array($cmd_data = array_shift($cgi_cmd))) {
-                $params = parent::buildArgs(Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(), $data);
-                $result += $this->caller->runMethod($cmd_data, $params);
+        try {
+            $cgi_cmd = $this->router->parseCgi($data['c']);
+
+            if (!empty($cgi_cmd)) {
+                while (is_array($cmd_data = array_shift($cgi_cmd))) {
+                    $params = parent::buildArgs(Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(), $data);
+                    $result += $this->caller->runMethod($cmd_data, $params);
+                }
             }
-        }
 
-        $cli_cmd = $this->router->parseCli($data['c']);
+            $cli_cmd = $this->router->parseCli($data['c']);
 
-        if (!empty($cli_cmd)) {
-            while (is_array($cmd_data = array_shift($cli_cmd))) {
-                $result += $this->caller->runProgram(
-                    $cmd_data,
-                    $data['argv'] ?? [],
-                    $data['cwd'] ?? '',
-                    $this->app->core_debug
-                );
+            if (!empty($cli_cmd)) {
+                while (is_array($cmd_data = array_shift($cli_cmd))) {
+                    $result += $this->caller->runProgram(
+                        $cmd_data,
+                        $data['argv'] ?? [],
+                        $data['cwd'] ?? '',
+                        $this->app->core_debug
+                    );
+                }
             }
+        } catch (\Throwable $throwable) {
+            $this->error->exceptionHandler($throwable, false, false);
         }
 
         unset($data, $cgi_cmd, $cli_cmd, $cmd_data, $params);

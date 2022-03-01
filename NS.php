@@ -92,12 +92,16 @@ class NS
 
                 if (!empty($cli_cmd)) {
                     while (is_array($cmd_data = array_shift($cli_cmd))) {
-                        $this->system->IOData->src_output += $this->system->caller->runProgram(
-                            $cmd_data,
-                            $this->system->IOData->src_argv,
-                            $this->system->IOData->cwd_path,
-                            $this->system->app->core_debug
-                        );
+                        try {
+                            $this->system->IOData->src_output += $this->system->caller->runProgram(
+                                $cmd_data,
+                                $this->system->IOData->src_argv,
+                                $this->system->IOData->cwd_path,
+                                $this->system->app->core_debug
+                            );
+                        } catch (\Throwable $throwable) {
+                            $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
+                        }
                     }
                 }
             }
@@ -106,21 +110,25 @@ class NS
 
             if (!empty($cgi_cmd)) {
                 while (is_array($cmd_data = array_shift($cgi_cmd))) {
-                    $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
+                    try {
+                        $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
 
-                    if (!$this->system->hook->runBefore($full_cmd)) {
-                        continue;
-                    }
+                        if (!$this->system->hook->runBefore($full_cmd)) {
+                            continue;
+                        }
 
-                    $params = Factory::buildArgs(
-                        Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
-                        $this->system->IOData->src_input
-                    );
+                        $params = Factory::buildArgs(
+                            Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
+                            $this->system->IOData->src_input
+                        );
 
-                    $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $params);
+                        $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $params);
 
-                    if (!$this->system->hook->runAfter($full_cmd)) {
-                        break;
+                        if (!$this->system->hook->runAfter($full_cmd)) {
+                            break;
+                        }
+                    } catch (\Throwable $throwable) {
+                        $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
                     }
                 }
             }
