@@ -40,10 +40,10 @@ class libMPC extends Factory
 
     public string $php_path;
 
-    public array $proc_idx  = [];
-    public array $proc_busy = [];
-    public array $proc_data = [];
-    public array $proc_list = [];
+    public array $proc_idx   = [];
+    public array $proc_busy  = [];
+    public array $proc_list  = [];
+    public array $proc_await = [];
 
     public array $pipe_read  = [];
     public array $pipe_write = [];
@@ -173,27 +173,32 @@ class libMPC extends Factory
     /**
      * Add MPC job
      *
-     * @param string $cmd
-     * @param array  $data
+     * @param string        $cmd
+     * @param array         $data
+     * @param callable|null $callable
      *
-     * @return string
+     * @return void
      */
-    public function add(string $cmd, array $data = []): string
+    public function add(string $cmd, array $data = [], callable $callable = null): void
     {
+        $data['c'] = &$cmd;
         $free_proc = $this->getFreeProc();
+        $proc_idx  = array_pop($free_proc);
 
-        $idx = array_pop($free_proc);
-        $mid = $idx . dechex($this->proc_idx[$idx]++);
+        if (is_callable($callable)) {
+            $job_mid     = $proc_idx . dechex($this->proc_idx[$proc_idx]++);
+            $data['mid'] = &$job_mid;
 
-        $data['c']   = &$cmd;
-        $data['mid'] = &$mid;
+            $this->proc_await[$job_mid] = $callable;
 
-        $this->proc_busy[$idx] = 1;
+            unset($job_mid);
+        }
 
-        fwrite($this->pipe_write[$idx], json_encode($data, JSON_FORMAT) . "\n");
+        $this->proc_busy[$proc_idx] = 1;
 
-        unset($cmd, $data, $free_proc, $idx);
-        return $mid;
+        fwrite($this->pipe_write[$proc_idx], json_encode($data, JSON_FORMAT) . "\n");
+
+        unset($cmd, $data, $callable, $free_proc, $proc_idx);
     }
 
     /**
@@ -220,22 +225,6 @@ class libMPC extends Factory
     }
 
     /**
-     * Fetch data by mid
-     *
-     * @param string $mid
-     *
-     * @return mixed
-     */
-    public function fetch(string $mid): mixed
-    {
-        $data = $this->proc_data[$mid] ?? [];
-
-        $this->proc_data[$mid] = null;
-        unset($this->proc_data[$mid], $mid);
-        return $data;
-    }
-
-    /**
      * Close a process
      *
      * @param int $idx
@@ -245,6 +234,7 @@ class libMPC extends Factory
         if (is_resource($this->proc_list[$idx])) {
             fclose($this->pipe_read[$idx]);
             fclose($this->pipe_write[$idx]);
+
             proc_close($this->proc_list[$idx]);
         }
 
@@ -280,16 +270,20 @@ class libMPC extends Factory
                 continue;
             }
 
-            //Fetch job result
+            //Execute job
             try {
-                echo json_encode(['mid' => $data['mid'], 'data' => $this->execJob($data)], JSON_FORMAT);
+                $result = $this->execJob($data);
+
+                if (isset($data['mid'])) {
+                    echo json_encode(['mid' => $data['mid'], 'data' => $result], JSON_FORMAT);
+                }
             } catch (\Throwable $throwable) {
                 unset($throwable);
             }
 
             echo "\n";
 
-            unset($stdin, $data);
+            unset($stdin, $data, $result);
         }
     }
 
@@ -310,14 +304,19 @@ class libMPC extends Factory
                     break;
                 }
 
+                $this->proc_busy[$idx] = 0;
+
+                if ('' === ($msg = trim($msg))) {
+                    continue;
+                }
+
                 $data = json_decode($msg, true);
 
-                if (is_array($data)) {
-                    $this->proc_busy[$idx] = 0;
+                if (is_array($data) && isset($data['mid']) && is_callable($this->proc_await[$data['mid']])) {
+                    call_user_func_array($this->proc_await[$data['mid']], array_values($data['data']));
 
-                    $this->proc_data[$data['mid']] = 1 === count($data['data'])
-                        ? current($data['data'])
-                        : $data['data'];
+                    $this->proc_await[$data['mid']] = null;
+                    unset($this->proc_await[$data['mid']]);
                 }
             }
         }
