@@ -46,29 +46,26 @@ class Factory
     {
         $key = $class_name;
 
-        if (!empty($class_params)) {
+        if (method_exists($class_name, '__construct')) {
+            if (1 === count($class_params) && is_array($class_params[0]) && !array_is_list($class_params[0])) {
+                $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params[0]);
+
+                if (!empty($prep_params['diff'])) {
+                    throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
+                }
+
+                $class_params = &$prep_params['args'];
+                unset($prep_params);
+            }
+
             $key .= json_encode($class_params);
+        } else {
+            $class_params = [];
         }
 
         $hash_key = hash('md5', $key);
 
         if (!isset(self::$objects[$hash_key])) {
-            if (method_exists($class_name, '__construct') && 1 === count($class_params)) {
-                $pass_params = current($class_params);
-
-                if (is_array($pass_params) && !array_is_list($pass_params)) {
-                    $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $pass_params);
-
-                    if (!empty($prep_params['diff'])) {
-                        throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
-                    }
-
-                    $class_params = &$prep_params['args'];
-                }
-
-                unset($pass_params, $prep_params);
-            }
-
             self::$objects[$hash_key] = new ('\\' . trim($class_name, '\\'))(...$class_params);
         }
 
