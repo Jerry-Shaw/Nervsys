@@ -101,6 +101,7 @@ class NS
                             );
                         } catch (\Throwable $throwable) {
                             $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
+                            unset($throwable);
                         }
                     }
                 }
@@ -117,10 +118,19 @@ class NS
                             continue;
                         }
 
-                        $params = Factory::buildArgs(
-                            Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
-                            $this->system->IOData->src_input
-                        );
+                        try {
+                            $params = Factory::buildArgs(
+                                Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
+                                $this->system->IOData->src_input
+                            );
+                        } catch (\Throwable $throwable) {
+                            if ($this->system->app->core_debug) {
+                                $this->system->IODataAddMsgData('ArgumentError', $throwable->getMessage());
+                            }
+
+                            unset($throwable);
+                            continue;
+                        }
 
                         $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $params);
 
@@ -129,6 +139,7 @@ class NS
                         }
                     } catch (\Throwable $throwable) {
                         $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
+                        unset($throwable);
                     }
                 }
             }
