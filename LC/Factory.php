@@ -117,7 +117,7 @@ class Factory
         }
 
         if (!empty($diff)) {
-            throw new \Exception('ArgumentError' . implode(', ', $diff), E_ERROR);
+            throw new \Exception(implode(', ', $diff), E_ERROR);
         }
 
         unset($param_reflects, $data_package, $diff, $param_reflect, $param_info);
