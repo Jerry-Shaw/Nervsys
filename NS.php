@@ -117,15 +117,7 @@ class NS
                         $this->system->IOData->src_input
                     );
 
-                    if (!empty($params['diff'])) {
-                        if ($this->system->app->core_debug) {
-                            $this->system->IODataAddMsgData('ArgumentError', $params['diff']);
-                        }
-
-                        continue;
-                    }
-
-                    $this->system->IOData->src_output += $this->system->caller->runCgi($cmd_data, $params['args']);
+                    $this->system->IOData->src_output += $this->system->caller->runCgi($cmd_data, $params);
 
                     if (!$this->system->hook->runAfter($full_cmd)) {
                         break;

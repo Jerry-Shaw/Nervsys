@@ -123,16 +123,7 @@ class Hook extends Factory
             $this->IOData->src_input
         );
 
-        if (!empty($params['diff'])) {
-            if ($this->app->core_debug) {
-                $this->IOData->src_msg['HookArgumentError'] = $params['diff'];
-            }
-
-            unset($fn, $params);
-            return false;
-        }
-
-        $fn_result = call_user_func_array($fn, $params['args']);
+        $fn_result = call_user_func_array($fn, $params);
 
         unset($fn, $params);
         return is_null($fn_result) || true === $fn_result;

@@ -52,18 +52,10 @@ class Factory
             }
 
             if (!array_is_list($class_params)) {
-                $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params);
-
-                if (!empty($prep_params['diff'])) {
-                    throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
-                }
-
-                $class_params = &$prep_params['args'];
+                $class_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params);
             }
 
             $class_key .= json_encode($class_params);
-
-            unset($prep_params);
         } else {
             $class_params = [];
         }
@@ -84,47 +76,52 @@ class Factory
      *
      * @return array
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public static function buildArgs(array $param_reflects, array $data_package): array
     {
-        $result = ['args' => [], 'diff' => []];
+        $args = $diff = [];
 
         foreach ($param_reflects as $param_reflect) {
             $param_info = Reflect::getParameterInfo($param_reflect);
 
             if (!$param_info['build_in']) {
-                $result['args'][] = self::getObj($param_info['type'], $data_package);
+                $args[] = self::getObj($param_info['type'], $data_package);
                 continue;
             }
 
             if (!isset($data_package[$param_info['name']])) {
                 $param_info['has_default']
-                    ? $result['args'][] = $param_info['default_value']
-                    : $result['diff'][] = '$' . $param_info['name'] . ' not found';
+                    ? $args[] = $param_info['default_value']
+                    : $diff[] = '$' . $param_info['name'] . ' not found';
                 continue;
             }
 
             if ('int' === $param_info['type'] && is_numeric($data_package[$param_info['name']])) {
-                $result['args'][] = (int)$data_package[$param_info['name']];
+                $args[] = (int)$data_package[$param_info['name']];
             } elseif ('float' === $param_info['type'] && is_numeric($data_package[$param_info['name']])) {
-                $result['args'][] = (float)$data_package[$param_info['name']];
+                $args[] = (float)$data_package[$param_info['name']];
             } elseif ('string' === $param_info['type'] && (is_string($data_package[$param_info['name']]) || is_numeric($data_package[$param_info['name']]))) {
-                $result['args'][] = trim((string)$data_package[$param_info['name']]);
+                $args[] = trim((string)$data_package[$param_info['name']]);
             } elseif ('array' === $param_info['type'] && is_array($data_package[$param_info['name']])) {
-                $result['args'][] = $data_package[$param_info['name']];
+                $args[] = $data_package[$param_info['name']];
             } elseif ('bool' === $param_info['type'] && is_bool($data_package[$param_info['name']])) {
-                $result['args'][] = $data_package[$param_info['name']];
+                $args[] = $data_package[$param_info['name']];
             } elseif ('object' === $param_info['type'] && is_object($data_package[$param_info['name']])) {
-                $result['args'][] = $data_package[$param_info['name']];
+                $args[] = $data_package[$param_info['name']];
             } elseif (is_null($param_info['type'])) {
-                $result['args'][] = $data_package[$param_info['name']];
+                $args[] = $data_package[$param_info['name']];
             } else {
-                $result['diff'][] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but got \'' . $data_package[$param_info['name']] . '\'';
+                $diff[] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but got \'' . $data_package[$param_info['name']] . '\'';
             }
         }
 
-        unset($param_reflects, $data_package, $param_reflect, $param_info);
-        return $result;
+        if (!empty($diff)) {
+            throw new \Exception('ArgumentError' . implode(', ', $diff), E_ERROR);
+        }
+
+        unset($param_reflects, $data_package, $diff, $param_reflect, $param_info);
+        return $args;
     }
 
     /**
