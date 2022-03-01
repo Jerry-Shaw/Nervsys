@@ -44,32 +44,34 @@ class Factory
      */
     public static function getObj(string $class_name, array $class_params = []): object
     {
-        $key = $class_name;
+        $class_key = $class_name;
 
         if (method_exists($class_name, '__construct')) {
             if (1 === count($class_params) && is_array($class_params[0]) && !array_is_list($class_params[0])) {
-                $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params[0]);
-
-                if (!empty($prep_params['diff'])) {
-                    throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
-                }
-
-                $class_params = &$prep_params['args'];
-                unset($prep_params);
+                $class_params = $class_params[0];
             }
 
-            $key .= json_encode($class_params);
+            $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params);
+
+            if (!empty($prep_params['diff'])) {
+                throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
+            }
+
+            $class_params = &$prep_params['args'];
+            $class_key    .= json_encode($class_params);
+
+            unset($prep_params);
         } else {
             $class_params = [];
         }
 
-        $hash_key = hash('md5', $key);
+        $hash_key = hash('md5', $class_key);
 
         if (!isset(self::$objects[$hash_key])) {
             self::$objects[$hash_key] = new ('\\' . trim($class_name, '\\'))(...$class_params);
         }
 
-        unset($class_name, $class_params, $key);
+        unset($class_name, $class_params, $class_key);
         return self::$objects[$hash_key];
     }
 
