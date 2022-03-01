@@ -47,18 +47,21 @@ class Factory
         $class_key = $class_name;
 
         if (method_exists($class_name, '__construct')) {
-            if (1 === count($class_params) && is_array($class_params[0]) && !array_is_list($class_params[0])) {
+            if (1 === count($class_params) && is_array($class_params[0])) {
                 $class_params = $class_params[0];
             }
 
-            $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params);
+            if (!array_is_list($class_params)) {
+                $prep_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params);
 
-            if (!empty($prep_params['diff'])) {
-                throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
+                if (!empty($prep_params['diff'])) {
+                    throw new \Exception('ArgumentError' . implode(', ', $prep_params['diff']), E_ERROR);
+                }
+
+                $class_params = &$prep_params['args'];
             }
 
-            $class_params = &$prep_params['args'];
-            $class_key    .= json_encode($class_params);
+            $class_key .= json_encode($class_params);
 
             unset($prep_params);
         } else {
