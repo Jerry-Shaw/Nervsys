@@ -86,7 +86,7 @@ class Factory
             $param_info = Reflect::getParameterInfo($param_reflect);
 
             if (!$param_info['build_in']) {
-                $args[] = self::getObj($param_info['type'], $data_package);
+                $args[] = self::getObj($param_info['type']);
                 continue;
             }
 

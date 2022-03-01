@@ -36,14 +36,13 @@ class Caller extends Factory
     /**
      * @param array $cmd_data
      * @param array $method_params
-     * @param array $class_params
      * @param bool  $throw_exception
      *
      * @return array
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function runCgi(array $cmd_data, array $method_params, array $class_params = [], bool $throw_exception = false): array
+    public function runCgi(array $cmd_data, array $method_params, bool $throw_exception = false): array
     {
         $result = [];
 
@@ -51,7 +50,7 @@ class Caller extends Factory
             $fn_result = call_user_func_array(
                 [
                     !Reflect::getMethod($cmd_data[0], $cmd_data[1])->isStatic()
-                        ? parent::getObj($cmd_data[0], $class_params)
+                        ? parent::getObj($cmd_data[0])
                         : $cmd_data[0],
                     $cmd_data[1]
                 ],
@@ -73,7 +72,7 @@ class Caller extends Factory
             unset($throwable);
         }
 
-        unset($cmd_data, $method_params, $class_params, $throw_exception);
+        unset($cmd_data, $method_params, $throw_exception);
         return $result;
     }
 
