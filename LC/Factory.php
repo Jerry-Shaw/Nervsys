@@ -31,43 +31,43 @@ class Factory
      */
     public static function new(): static
     {
-        return self::getObj(get_called_class(), func_get_args());
+        $class_name = get_called_class();
+        $class_args = func_get_args();
+
+        if (method_exists($class_name, '__construct')) {
+            if (1 === count($class_args) && is_array($class_args[0])) {
+                $class_args = $class_args[0];
+            }
+
+            if (!array_is_list($class_args)) {
+                $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
+            }
+        } else {
+            $class_args = [];
+        }
+
+        $object = self::getObj($class_name, $class_args);
+
+        unset($class_name, $class_args);
+        return $object;
     }
 
     /**
      * @param string $class_name
-     * @param array  $class_params
+     * @param array  $class_args
      *
      * @return object
-     * @throws \ReflectionException
-     * @throws \Exception
      */
-    public static function getObj(string $class_name, array $class_params = []): object
+    public static function getObj(string $class_name, array $class_args = []): object
     {
-        $class_key = $class_name;
+        $class_key = hash('md5', $class_name . json_encode($class_args));
 
-        if (method_exists($class_name, '__construct')) {
-            if (1 === count($class_params) && is_array($class_params[0])) {
-                $class_params = $class_params[0];
-            }
-
-            if (!array_is_list($class_params)) {
-                $class_params = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_params);
-            }
-
-            $class_key .= json_encode($class_params);
-        } else {
-            $class_params = [];
+        if (!isset(self::$objects[$class_key])) {
+            self::$objects[$class_key] = new ('\\' . trim($class_name, '\\'))(...$class_args);
         }
 
-        $hash_key = hash('md5', $class_key);
-
-        if (!isset(self::$objects[$hash_key])) {
-            self::$objects[$hash_key] = new ('\\' . trim($class_name, '\\'))(...$class_params);
-        }
-
-        unset($class_name, $class_params, $class_key);
-        return self::$objects[$hash_key];
+        unset($class_name, $class_args);
+        return self::$objects[$class_key];
     }
 
     /**
