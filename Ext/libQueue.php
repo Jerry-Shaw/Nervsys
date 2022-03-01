@@ -743,7 +743,7 @@ class libQueue extends Factory
                         throw new \Exception('ArgumentError: ' . implode(', ', $params['diff']), E_CORE_WARNING);
                     }
 
-                    $result = $this->caller->runCgi($cmd_data, $params['args'], true);
+                    $result = $this->caller->runCgi($cmd_data, $params['args'], [], true);
 
                     if (!empty($result)) {
                         //Get return data

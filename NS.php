@@ -73,6 +73,7 @@ class NS
     /**
      * @return void
      * @throws \ReflectionException
+     * @throws \Throwable
      */
     public function go(): void
     {
