@@ -734,8 +734,13 @@ class libQueue extends Factory
 
             if (!empty($cgi_cmd)) {
                 while (is_array($cmd_data = array_shift($cgi_cmd))) {
-                    $params = parent::buildArgs(Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(), $data);
-                    $result = $this->caller->runMethod($cmd_data, $params);
+                    $method_args = parent::buildArgs(Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(), $data);
+
+                    $class_args = method_exists($cmd_data[0], '__construct')
+                        ? Factory::buildArgs(Reflect::getMethod($cmd_data[0], '__construct')->getParameters(), $data)
+                        : [];
+
+                    $result = $this->caller->runMethod($cmd_data, $method_args, $class_args);
 
                     if (!empty($result)) {
                         //Get return data
@@ -770,7 +775,7 @@ class libQueue extends Factory
                 }
             }
 
-            unset($cgi_cmd, $cli_cmd, $cmd_data, $params, $result);
+            unset($cgi_cmd, $cli_cmd, $cmd_data, $method_args, $class_args, $result);
         } catch (\Throwable $throwable) {
             $this->redis->lPush($this->key_slot['failed'], json_encode(['time' => date('Y-m-d H:i:s'), 'data' => &$data, 'return' => $throwable->getMessage()], JSON_FORMAT));
             unset($throwable);
