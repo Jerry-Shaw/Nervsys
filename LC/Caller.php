@@ -26,18 +26,19 @@ class Caller extends Factory
     /**
      * @param array $cmd_data
      * @param array $method_args
+     * @param array $class_args
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function runMethod(array $cmd_data, array $method_args): array
+    public function runMethod(array $cmd_data, array $method_args, array $class_args = []): array
     {
         $result = [];
 
         $fn_result = call_user_func_array(
             [
                 !Reflect::getMethod($cmd_data[0], $cmd_data[1])->isStatic()
-                    ? parent::getObj($cmd_data[0])
+                    ? parent::getObj($cmd_data[0], $class_args)
                     : $cmd_data[0],
                 $cmd_data[1]
             ],
@@ -48,7 +49,7 @@ class Caller extends Factory
             $result[$cmd_data[2] ?? strtr($cmd_data[0], '\\', '/') . '/' . $cmd_data[1]] = &$fn_result;
         }
 
-        unset($cmd_data, $method_args, $fn_result);
+        unset($cmd_data, $method_args, $class_args, $fn_result);
         return $result;
     }
 
