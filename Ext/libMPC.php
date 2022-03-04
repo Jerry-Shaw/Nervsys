@@ -79,46 +79,6 @@ class libMPC extends Factory
     }
 
     /**
-     * Build full command for NS API
-     *
-     * @param string $c
-     * @param array  $data
-     *
-     * @return string
-     */
-    public function buildCmd(string $c, array $data): string
-    {
-        $cmd = '"' . $this->php_path . '" "' . $this->app->script_path . '" ';
-        $cmd .= '-c"' . $this->IOData->encodeData($c) . '" ';
-
-        if (isset($data['cwd'])) {
-            $cmd .= '-w"' . $data['cwd'] . '" ';
-            unset($data['cwd']);
-        }
-
-        if (isset($data['return'])) {
-            $cmd .= '-r"' . $data['return'] . '" ';
-            unset($data['return']);
-        }
-
-        $argv = '';
-
-        if (isset($data['argv'])) {
-            $argv = '-- ' . $data['argv'];
-            unset($data['argv']);
-        }
-
-        if (!empty($data)) {
-            $cmd .= '-d"' . $this->IOData->encodeData(json_encode($data, JSON_FORMAT)) . '" ';
-        }
-
-        $cmd .= $argv;
-
-        unset($c, $data, $argv);
-        return $cmd;
-    }
-
-    /**
      * Start MPC
      *
      * @param int $max_fork
