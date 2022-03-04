@@ -42,7 +42,7 @@ class libHttp extends Factory
         'accept_encoding'   => 'gzip,deflate,identity,*;q=0',
         'accept_language'   => 'en-US,en,zh-CN,zh,*;q=0',
         'accept_type'       => 'application/json;q=0.9,application/xml;q=0.8,text/plain;q=0.7,text/html;q=0.6,*/*;q=0.5',
-        'user_agent'        => 'Mozilla/5.0 (Compatible; NervSys/' . NS_VER . ')',
+        'user_agent'        => 'Mozilla/5.0 (Compatible; Nervsys/' . NS_VER . ')',
         'with_body'         => true,
         'timeout'           => 60
     ];
