@@ -240,19 +240,24 @@ class libExeC extends Factory
     }
 
     /**
-     * Send command to process
+     * Send (unique) command to process
      *
      * @param string $command
+     * @param bool   $unique
      *
-     * @return libExeC
+     * @return $this
      */
-    public function run(string $command): self
+    public function run(string $command, bool $unique = false): self
     {
         if (!empty($this->getStatus())) {
+            if ($unique) {
+                $this->redis->lRem($this->key_command, $command, 1);
+            }
+
             $this->redis->lPush($this->key_command, $command);
         }
 
-        unset($command);
+        unset($command, $unique);
         return $this;
     }
 
