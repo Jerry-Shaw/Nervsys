@@ -307,7 +307,9 @@ class libExeC extends Factory
         }
 
         foreach ($pipes as $pipe) {
-            while (!feof($pipe)) {
+            $start = time();
+
+            while (!feof($pipe) && $this->idle_time >= time() - $start) {
                 $msg = fgets($pipe);
 
                 if (false === $msg) {
@@ -328,6 +330,6 @@ class libExeC extends Factory
             }
         }
 
-        unset($pipes, $log_fn, $write, $except, $pipe, $msg);
+        unset($pipes, $log_fn, $write, $except, $pipe, $start, $msg);
     }
 }
