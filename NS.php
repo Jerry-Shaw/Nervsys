@@ -86,65 +86,63 @@ class NS
             $this->system->IOData->readCli();
         }
 
-        if ('' !== $this->system->IOData->src_cmd) {
-            if ($this->system->app->is_cli) {
-                $cli_cmd = $this->system->router->parseCli($this->system->IOData->src_cmd);
+        if ($this->system->app->is_cli) {
+            $cli_cmd = $this->system->router->parseCli($this->system->IOData->src_cmd);
 
-                if (!empty($cli_cmd)) {
-                    while (is_array($cmd_data = array_shift($cli_cmd))) {
-                        try {
-                            $this->system->IOData->src_output += $this->system->caller->runProgram(
-                                $cmd_data,
-                                $this->system->IOData->src_argv,
-                                $this->system->IOData->cwd_path,
-                                $this->system->app->core_debug
-                            );
-                        } catch (\Throwable $throwable) {
-                            $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
-                            unset($throwable);
-                        }
-                    }
-                }
-            }
-
-            $cgi_cmd = $this->system->router->parseCgi($this->system->IOData->src_cmd);
-
-            if (!empty($cgi_cmd)) {
-                while (is_array($cmd_data = array_shift($cgi_cmd))) {
+            if (!empty($cli_cmd)) {
+                while (is_array($cmd_data = array_shift($cli_cmd))) {
                     try {
-                        $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
-
-                        if (!$this->system->hook->runBefore($full_cmd)) {
-                            continue;
-                        }
-
-                        try {
-                            $method_args = Factory::buildArgs(
-                                Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
-                                $this->system->IOData->src_input
-                            );
-
-                            $class_args = method_exists($cmd_data[0], '__construct')
-                                ? Factory::buildArgs(Reflect::getMethod($cmd_data[0], '__construct')->getParameters(), $this->system->IOData->src_input)
-                                : [];
-                        } catch (\Throwable $throwable) {
-                            if ($this->system->app->core_debug) {
-                                $this->system->IODataAddMsgData('ArgumentError', $throwable->getMessage());
-                            }
-
-                            unset($throwable);
-                            continue;
-                        }
-
-                        $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $method_args, $class_args);
-
-                        if (!$this->system->hook->runAfter($full_cmd)) {
-                            break;
-                        }
+                        $this->system->IOData->src_output += $this->system->caller->runProgram(
+                            $cmd_data,
+                            $this->system->IOData->src_argv,
+                            $this->system->IOData->cwd_path,
+                            $this->system->app->core_debug
+                        );
                     } catch (\Throwable $throwable) {
                         $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
                         unset($throwable);
                     }
+                }
+            }
+        }
+
+        $cgi_cmd = $this->system->router->parseCgi($this->system->IOData->src_cmd);
+
+        if (!empty($cgi_cmd)) {
+            while (is_array($cmd_data = array_shift($cgi_cmd))) {
+                try {
+                    $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
+
+                    if (!$this->system->hook->runBefore($full_cmd)) {
+                        continue;
+                    }
+
+                    try {
+                        $method_args = Factory::buildArgs(
+                            Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
+                            $this->system->IOData->src_input
+                        );
+
+                        $class_args = method_exists($cmd_data[0], '__construct')
+                            ? Factory::buildArgs(Reflect::getMethod($cmd_data[0], '__construct')->getParameters(), $this->system->IOData->src_input)
+                            : [];
+                    } catch (\Throwable $throwable) {
+                        if ($this->system->app->core_debug) {
+                            $this->system->IODataAddMsgData('ArgumentError', $throwable->getMessage());
+                        }
+
+                        unset($throwable);
+                        continue;
+                    }
+
+                    $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $method_args, $class_args);
+
+                    if (!$this->system->hook->runAfter($full_cmd)) {
+                        break;
+                    }
+                } catch (\Throwable $throwable) {
+                    $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
+                    unset($throwable);
                 }
             }
         }
