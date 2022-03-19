@@ -203,6 +203,6 @@ class Router extends Factory
      */
     private function getCmdList(string $c): array
     {
-        return str_contains($c, '|') ? explode('|', $c) : [$c];
+        return array_filter(str_contains($c, '|') ? explode('|', $c) : [$c]);
     }
 }
