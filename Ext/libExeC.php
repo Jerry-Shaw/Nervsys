@@ -208,21 +208,22 @@ class libExeC extends Factory
 
             $this->saveLogs([$pipes[1], $pipes[2]], $log_fn);
 
-            $command = $this->redis->brPop($this->key_command, $this->idle_time);
+            $command = $this->redis->rPop($this->key_command);
 
-            if (empty($command)) {
+            if (false === $command) {
+                sleep($this->idle_time);
                 continue;
             }
 
             $this->redis->expire($this->key_status, $this->lifetime);
 
-            $input = trim($command[1]);
+            $command = trim($command);
 
-            if ($input === self::STOP_CMD) {
+            if ($command === self::STOP_CMD) {
                 break;
             }
 
-            fwrite($pipes[0], $input . "\n");
+            fwrite($pipes[0], $command . "\n");
         }
 
         if (is_callable($exit_fn)) {
@@ -236,7 +237,7 @@ class libExeC extends Factory
         proc_terminate($proc);
         proc_close($proc);
 
-        unset($cmd_params, $cwd_path, $proc_fn, $exit_fn, $log_fn, $proc, $pipes, $proc_status, $command, $input);
+        unset($cmd_params, $cwd_path, $proc_fn, $exit_fn, $log_fn, $proc, $pipes, $proc_status, $command);
     }
 
     /**
