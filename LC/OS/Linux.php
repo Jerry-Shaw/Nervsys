@@ -43,12 +43,20 @@ class Linux
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        $output = array_filter($output);
-        $output = array_unique($output);
+        $hw_info = '';
 
-        $hw_hash = hash('md5', json_encode($output));
+        foreach ($output as $value) {
+            $value = str_replace(' ', '', $value);
+            $value = trim($value);
 
-        unset($queries, $output, $query, $status);
+            if ('' !== $value) {
+                $hw_info .= $value;
+            }
+        }
+
+        $hw_hash = hash('md5', $hw_info);
+
+        unset($queries, $output, $status, $hw_info, $value);
         return $hw_hash;
     }
 

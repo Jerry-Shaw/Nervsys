@@ -46,9 +46,20 @@ class WINNT
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        $hw_hash = hash('md5', json_encode(array_filter($output)));
+        $hw_info = '';
 
-        unset($ps_cmd, $output, $status);
+        foreach ($output as $value) {
+            $value = str_replace(' ', '', $value);
+            $value = trim($value);
+
+            if ('' !== $value) {
+                $hw_info .= $value;
+            }
+        }
+
+        $hw_hash = hash('md5', $hw_info);
+
+        unset($ps_cmd, $output, $status, $hw_info, $value);
         return $hw_hash;
     }
 
