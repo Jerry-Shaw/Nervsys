@@ -582,17 +582,16 @@ class libQueue extends Factory
      */
     private function getJob(string $job_key): string
     {
-        $job = $this->redis->brPop($job_key, self::LIFETIME);
+        $job = $this->redis->rPop($job_key);
 
-        if (empty($job)) {
+        if (false === $job) {
             $this->redis->sRem($this->key_slot['listen'], $job_key);
+            usleep(self::WAIT_TIME);
             return '';
         }
 
-        $job_data = trim($job[1]);
-
-        unset($job_key, $job);
-        return $job_data;
+        unset($job_key);
+        return trim($job);
     }
 
     /**
@@ -795,7 +794,6 @@ class libQueue extends Factory
      */
     private function isUnique(string $job_cmd, string $job_hash, int $time_wait): bool
     {
-        //Default result
         $result = true;
 
         //Build job unique key
