@@ -452,7 +452,6 @@ class libQueue extends Factory
      */
     public function jobHandler(string $type = 'realtime'): void
     {
-        //Set init count
         $exec_count = 0;
 
         if ('realtime' === $type) {
@@ -582,16 +581,17 @@ class libQueue extends Factory
      */
     private function getJob(string $job_key): string
     {
-        $job = $this->redis->rPop($job_key);
+        $job = $this->redis->brPop($job_key, self::WAIT_TIME);
 
-        if (false === $job) {
+        if (empty($job)) {
             $this->redis->sRem($this->key_slot['listen'], $job_key);
-            usleep(self::WAIT_TIME);
             return '';
         }
 
-        unset($job_key);
-        return trim($job);
+        $job_json = trim($job[1]);
+
+        unset($job_key, $job);
+        return $job_json;
     }
 
     /**
