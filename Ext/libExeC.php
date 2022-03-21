@@ -24,7 +24,6 @@ use Nervsys\LC\Factory;
 
 class libExeC extends Factory
 {
-    //ExeC key prefix
     const PREFIX   = 'EXEC:';
     const WORKER   = self::PREFIX . 'worker';
     const STOP_CMD = 'ExecStop';
@@ -199,7 +198,7 @@ class libExeC extends Factory
 
         register_shutdown_function([$this, 'cleanup']);
 
-        while (proc_get_status($proc)['running']) {
+        while (proc_get_status($proc)['running'] && $this->redis->exists($this->key_status)) {
             $this->redis->expire($this->key_status, $this->lifetime);
 
             if (is_callable($proc_fn)) {
@@ -208,22 +207,17 @@ class libExeC extends Factory
 
             $this->saveLogs([$pipes[1], $pipes[2]], $log_fn);
 
-            $command = $this->redis->rPop($this->key_command);
+            $command = $this->redis->brPop($this->key_command, $this->idle_time);
 
-            if (false === $command) {
-                sleep($this->idle_time);
+            if (empty($command)) {
                 continue;
             }
 
-            $this->redis->expire($this->key_status, $this->lifetime);
-
-            $command = trim($command);
-
-            if ($command === self::STOP_CMD) {
+            if (self::STOP_CMD === $command[1]) {
                 break;
             }
 
-            fwrite($pipes[0], $command . "\n");
+            fwrite($pipes[0], $command[1] . "\n");
         }
 
         if (is_callable($exit_fn)) {
