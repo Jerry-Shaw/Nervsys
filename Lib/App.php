@@ -60,8 +60,12 @@ class App extends Factory
         $this->api_path  = 'api';
 
         if (!is_dir($this->log_path)) {
-            mkdir($this->log_path, 0777, true);
-            chmod($this->log_path, 0777);
+            try {
+                mkdir($this->log_path, 0777, true);
+                chmod($this->log_path, 0777);
+            } catch (\Throwable) {
+                //Dir already exists
+            }
         }
 
         $this->setAppEnv();

@@ -63,8 +63,12 @@ class libFileIO extends Factory
         }
 
         if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
-            mkdir($dir, 0777, true);
-            chmod($dir, 0777);
+            try {
+                mkdir($dir, 0777, true);
+                chmod($dir, 0777);
+            } catch (\Throwable) {
+                //Dir already exists
+            }
         }
 
         $path = (is_readable($dir) ? $path : $root) . DIRECTORY_SEPARATOR;
@@ -159,8 +163,12 @@ class libFileIO extends Factory
         }
 
         if (!is_dir($dst)) {
-            mkdir($dst, 0777, true);
-            chmod($dir, 0777);
+            try {
+                mkdir($dst, 0777, true);
+                chmod($dir, 0777);
+            } catch (\Throwable) {
+                //Dir already exists
+            }
         }
 
         while (false !== ($file = readdir($dir))) {

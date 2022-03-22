@@ -214,8 +214,12 @@ class libZip extends Factory
     private function mkPath(string $path): void
     {
         if (!is_dir($path)) {
-            mkdir($path, 0777, true);
-            chmod($path, 0777);
+            try {
+                mkdir($path, 0777, true);
+                chmod($path, 0777);
+            } catch (\Throwable) {
+                //Dir already exists
+            }
         }
 
         unset($path);
