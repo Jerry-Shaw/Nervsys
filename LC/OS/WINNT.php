@@ -33,11 +33,11 @@ class WINNT
     public function getHwHash(): string
     {
         $ps_cmd = 'powershell -Command "';
-        $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType | Format-List;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version | Format-List;';
         $ps_cmd .= 'Get-NetAdapter -physical | select InterfaceDescription, MacAddress | Format-List;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_PhysicalMemory | select Capacity;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select SerialNumber"';
+        $ps_cmd .= 'Get-WMIObject -class Win32_PhysicalMemory | select Capacity | Format-List;';
+        $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select SerialNumber | Format-List"';
 
         exec($ps_cmd, $output, $status);
 
@@ -48,15 +48,15 @@ class WINNT
         $hw_info = '';
 
         foreach ($output as $value) {
-            $value = str_replace(' ', '', $value);
-            $value = trim($value);
-
-            if ('' !== $value) {
-                $hw_info .= $value;
+            if (!str_contains($value, ':')) {
+                continue;
             }
+
+            [$k, $v] = explode(':', $value, 2);
+            $hw_info .= trim($k) . ':' . trim($v) . PHP_EOL;
         }
 
-        $hw_hash = hash('md5', $hw_info);
+        $hw_hash = hash('md5', trim($hw_info));
 
         unset($ps_cmd, $output, $status, $hw_info, $value);
         return $hw_hash;
