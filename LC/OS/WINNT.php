@@ -34,11 +34,10 @@ class WINNT
     {
         $ps_cmd = 'powershell -Command "';
         $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_NetworkAdapter -Filter "netconnectionid!=NULL" | select macaddress;';
         $ps_cmd .= 'Get-WMIObject -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version;';
+        $ps_cmd .= 'Get-NetAdapter -physical | select InterfaceDescription, MacAddress | Format-List;';
         $ps_cmd .= 'Get-WMIObject -class Win32_PhysicalMemory | select Capacity;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select SerialNumber';
-        $ps_cmd .= '"';
+        $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select SerialNumber"';
 
         exec($ps_cmd, $output, $status);
 
