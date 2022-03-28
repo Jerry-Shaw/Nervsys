@@ -58,7 +58,7 @@ class WINNT
 
         $hw_hash = hash('md5', trim($hw_info));
 
-        unset($ps_cmd, $output, $status, $hw_info, $value);
+        unset($ps_cmd, $output, $status, $hw_info, $value, $k, $v);
         return $hw_hash;
     }
 

@@ -33,8 +33,8 @@ class Linux
     {
         $queries = [
             'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
-            'lspci -nn | grep -E "Host|PCI|VGA|ISA|Serial|Network|Ethernet|Audio"',
-            'ip link show | grep link/ether',
+            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\'',
+            'lshw -C "memory,cpu,pci,isa,display,ide,bridge"',
         ];
 
         exec(implode(' && ', $queries), $output, $status);
@@ -46,17 +46,17 @@ class Linux
         $hw_info = '';
 
         foreach ($output as $value) {
-            $value = str_replace(' ', '', $value);
-            $value = trim($value);
-
-            if ('' !== $value) {
-                $hw_info .= $value;
+            if (str_contains($value, '*-') || !str_contains($value, ':')) {
+                continue;
             }
+
+            [$k, $v] = explode(':', $value, 2);
+            $hw_info .= trim($k) . ':' . trim($v) . PHP_EOL;
         }
 
-        $hw_hash = hash('md5', $hw_info);
+        $hw_hash = hash('md5', trim($hw_info));
 
-        unset($queries, $output, $status, $hw_info, $value);
+        unset($queries, $output, $status, $hw_info, $value, $k, $v);
         return $hw_hash;
     }
 
