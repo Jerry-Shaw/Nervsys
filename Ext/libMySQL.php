@@ -27,25 +27,21 @@ use Nervsys\Lib\IOData;
 
 class libMySQL extends Factory
 {
-    /** @var \PDO $pdo */
-    public \PDO $pdo;
-
-    /** @var libPDO $libPDO */
+    public \PDO   $pdo;
     public libPDO $libPDO;
 
     public int $retry_times   = 0;
-    public int $transactions  = 0;
     public int $affected_rows = 0;
 
     public string $last_sql     = '';
     public string $table_name   = '';
     public string $table_prefix = '';
 
-    //Runtime data container
-    public array $runtime_data = [];
-
     public int   $explain_type  = 0;
     public array $explain_keeps = [];
+    public array $runtime_data  = [];
+
+    public static int $transactions = 0;
 
     const EXPLAIN_LEVEL = ['NULL', 'system', 'const', 'eq_ref', 'ref', 'range', 'index', 'ALL'];
 
@@ -88,7 +84,7 @@ class libMySQL extends Factory
 
         //Rollback unfinished transaction
         if ($this->pdo->inTransaction()) {
-            $this->transactions = 0;
+            self::$transactions = 0;
             $this->pdo->rollBack();
         }
     }
@@ -649,11 +645,11 @@ class libMySQL extends Factory
      */
     public function begin(): void
     {
-        if (0 === $this->transactions) {
+        if (0 === self::$transactions) {
             $this->pdo->beginTransaction();
         }
 
-        ++$this->transactions;
+        ++self::$transactions;
     }
 
     /**
@@ -663,9 +659,9 @@ class libMySQL extends Factory
      */
     public function commit(): void
     {
-        --$this->transactions;
+        --self::$transactions;
 
-        if (0 === $this->transactions) {
+        if (0 === self::$transactions) {
             $this->pdo->commit();
         }
     }
@@ -677,9 +673,9 @@ class libMySQL extends Factory
      */
     public function rollback(): void
     {
-        --$this->transactions;
+        --self::$transactions;
 
-        if (0 === $this->transactions) {
+        if (0 === self::$transactions) {
             $this->pdo->rollBack();
         }
     }
