@@ -34,6 +34,7 @@ class libMySQL extends Factory
     public libPDO $libPDO;
 
     public int $retry_times   = 0;
+    public int $transactions  = 0;
     public int $affected_rows = 0;
 
     public string $last_sql     = '';
@@ -87,6 +88,7 @@ class libMySQL extends Factory
 
         //Rollback unfinished transaction
         if ($this->pdo->inTransaction()) {
+            $this->transactions = 0;
             $this->pdo->rollBack();
         }
     }
@@ -643,31 +645,43 @@ class libMySQL extends Factory
     /**
      * Begin transaction
      *
-     * @return bool
+     * @return void
      */
-    public function begin(): bool
+    public function begin(): void
     {
-        return $this->pdo->beginTransaction();
+        if (0 === $this->transactions) {
+            $this->pdo->beginTransaction();
+        }
+
+        ++$this->transactions;
     }
 
     /**
      * Commit transaction
      *
-     * @return bool
+     * @return void
      */
-    public function commit(): bool
+    public function commit(): void
     {
-        return $this->pdo->commit();
+        --$this->transactions;
+
+        if (0 === $this->transactions) {
+            $this->pdo->commit();
+        }
     }
 
     /**
      * Rollback transaction
      *
-     * @return bool
+     * @return void
      */
-    public function rollback(): bool
+    public function rollback(): void
     {
-        return $this->pdo->rollBack();
+        --$this->transactions;
+
+        if (0 === $this->transactions) {
+            $this->pdo->rollBack();
+        }
     }
 
     /**
