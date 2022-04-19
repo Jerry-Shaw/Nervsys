@@ -186,7 +186,9 @@ class IOData extends Factory
                 } elseif (is_array($data) && is_string($res = current($data))) {
                     echo $res;
                 } else {
-                    echo 'Invalid HTML Page!';
+                    //Force output data as JSON string
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode($data, JSON_FORMAT);
                 }
                 break;
 
