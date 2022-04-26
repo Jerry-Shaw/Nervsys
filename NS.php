@@ -128,6 +128,7 @@ class NS
                             : [];
                     } catch (\Throwable $throwable) {
                         if ($this->system->app->core_debug) {
+                            http_response_code(500);
                             $this->system->IODataAddMsgData('ArgumentError', $throwable->getMessage());
                         }
 
