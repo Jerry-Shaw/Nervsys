@@ -129,7 +129,7 @@ class Caller extends Factory
      */
     public function runAsync(string $cmd): void
     {
-        pclose(popen(OSUnit::new()->setCmd($cmd)->setAsBg()->setEnvPath()->fetchCmd(), 'rb'));
+        pclose(popen(OSUnit::new()->setCmd($cmd)->setAsBg()->fetchCmd(), 'rb'));
         unset($cmd);
     }
 }
