@@ -53,14 +53,18 @@ class libFileIO extends Factory
      */
     public function mkPath(string $path, string $root = ''): string
     {
-        $root = App::new()->root_path;
+        if ('' === $root) {
+            $root = App::new()->root_path;
+        }
 
-        $path = strtr($path, '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-        $path = trim($path, DIRECTORY_SEPARATOR);
+        $root = rtrim($root, '\\/');
 
         if ('' === $path) {
             return $root . DIRECTORY_SEPARATOR;
         }
+
+        $path = strtr($path, '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
+        $path = trim($path, DIRECTORY_SEPARATOR);
 
         if (!is_dir($dir = $root . DIRECTORY_SEPARATOR . $path)) {
             try {
@@ -71,7 +75,7 @@ class libFileIO extends Factory
             }
         }
 
-        $path = (is_readable($dir) ? $path : $root) . DIRECTORY_SEPARATOR;
+        $path = (is_readable($dir) ? $dir : $root) . DIRECTORY_SEPARATOR;
 
         unset($root, $dir);
         return $path;
