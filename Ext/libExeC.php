@@ -78,14 +78,15 @@ class libExeC extends Factory
      *
      * @param string $locale
      *
-     * @return void
+     * @return $this
      */
-    public function setLocale(string $locale): void
+    public function setLocale(string $locale): self
     {
         setlocale(LC_ALL, $locale);
         putenv('LC_ALL=' . $locale);
 
         unset($locale);
+        return $this;
     }
 
     /**
