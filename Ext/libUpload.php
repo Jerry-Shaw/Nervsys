@@ -242,7 +242,7 @@ class libUpload extends Factory
 
         //Build save properties
         $url_path  = trim($to, '\\/') . DIRECTORY_SEPARATOR . $as;
-        $file_path = rtrim($this->upload_path, '\\/') . DIRECTORY_SEPARATOR . $url_path;
+        $file_path = $save_path . $as;
 
         //Delete existing file
         is_file($file_path) && unlink($file_path);
