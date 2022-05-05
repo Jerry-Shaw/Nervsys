@@ -74,6 +74,21 @@ class libExeC extends Factory
     }
 
     /**
+     * Set process locale env
+     *
+     * @param string $locale
+     *
+     * @return void
+     */
+    public function setLocale(string $locale): void
+    {
+        setlocale(LC_ALL, $locale);
+        putenv('LC_ALL=' . $locale);
+
+        unset($locale);
+    }
+
+    /**
      * Set lifetime for status key
      *
      * @param int $lifetime
