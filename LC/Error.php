@@ -137,7 +137,6 @@ class Error extends Factory
             . ' on line ' . $throwable->getLine() . PHP_EOL
             . 'Message: ' . $throwable->getMessage();
 
-
         $context = [
             //Memory & Duration
             'Peak'     => round(memory_get_peak_usage() / 1048576, 4) . 'MB',
@@ -148,15 +147,15 @@ class Error extends Factory
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
-        $app->core_debug && $display_errors && $logger->show($error_level, $message, $context);
         $logger->$error_level($message, $context);
 
-        if ($stop_on_error) {
+        if ($app->core_debug && $display_errors) {
             http_response_code(500);
+            $logger->show($error_level, $message, $context);
+        }
 
-            if ('error' === $error_level) {
-                exit(1);
-            }
+        if ($stop_on_error || 'error' === $error_level) {
+            exit(1);
         }
 
         unset($throwable, $stop_on_error, $display_errors, $exception, $error_code, $error_level, $app, $IOData, $logger, $message, $context);
