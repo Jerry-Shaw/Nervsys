@@ -21,6 +21,7 @@
 namespace Nervsys\Ext;
 
 use Nervsys\LC\Factory;
+use Nervsys\Lib\IOData;
 
 class libHttp extends Factory
 {
@@ -504,6 +505,33 @@ class libHttp extends Factory
     }
 
     /**
+     * Parse HTTP Cookie string
+     *
+     * @param string $cookie
+     *
+     * @return array
+     */
+    public function parseRawCookie(string $cookie): array
+    {
+        $cookie_data = [];
+        $cookie_list = str_contains($cookie, '; ') ? explode('; ', $cookie) : [$cookie];
+
+        foreach ($cookie_list as $value) {
+            if (false === ($pos = strpos($value, '='))) {
+                continue;
+            }
+
+            $key = substr($value, 0, $pos);
+            $val = substr($value, $pos + 1);
+
+            $cookie_data[$key] = $val;
+        }
+
+        unset($cookie, $cookie_list, $value, $pos, $key, $val);
+        return $cookie_data;
+    }
+
+    /**
      * Build URL units
      *
      * @param string $url
@@ -574,6 +602,7 @@ class libHttp extends Factory
      * @param bool  $with_header
      *
      * @return array
+     * @throws \ReflectionException
      */
     private function buildCurlOptions(array $runtime_data, bool $with_header = true): array
     {
@@ -610,7 +639,7 @@ class libHttp extends Factory
             } elseif (false !== stripos($runtime_data['http_content_type'], 'json')) {
                 $curl_opt[CURLOPT_POSTFIELDS] = json_encode($runtime_data['data'], JSON_FORMAT);
             } elseif (false !== stripos($runtime_data['http_content_type'], 'xml')) {
-                $curl_opt[CURLOPT_POSTFIELDS] = IOUnit::new()->toXml($runtime_data['data']);
+                $curl_opt[CURLOPT_POSTFIELDS] = IOData::new()->toXml($runtime_data['data']);
             } else {
                 $curl_opt[CURLOPT_POSTFIELDS] = &$runtime_data['data'];
             }
@@ -716,29 +745,30 @@ class libHttp extends Factory
 
             $this->http_header[$key] = $val;
 
+            //Parse Cookie
             if ('set-cookie' === $key) {
                 if ('' !== $this->raw_cookie) {
                     $this->raw_cookie .= '; ';
                 }
 
+                $val_pos = strpos($val, '; ');
+
+                if (false !== $val_pos) {
+                    $val = substr($val, 0, $val_pos);
+                }
+
                 $this->raw_cookie .= rtrim($val, ';');
+
+                $kv_pos = strpos($val, '=');
+
+                if (false === ($kv_pos)) {
+                    continue;
+                }
+
+                $this->http_cookie[substr($val, 0, $kv_pos)] = substr($val, $kv_pos + 1);
             }
         }
 
-        //Parse Cookie
-        $data_list = explode('; ', $this->raw_cookie);
-
-        foreach ($data_list as $value) {
-            if (false === ($pos = strpos($value, '='))) {
-                continue;
-            }
-
-            $key = substr($value, 0, $pos);
-            $val = substr($value, $pos + 1);
-
-            $this->http_cookie[$key] = $val;
-        }
-
-        unset($response, $data_list, $value, $pos, $key, $val);
+        unset($response, $data_list, $value, $pos, $key, $val, $val_pos, $kv_pos);
     }
 }
