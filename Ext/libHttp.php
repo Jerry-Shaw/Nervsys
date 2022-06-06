@@ -33,14 +33,14 @@ class libHttp extends Factory
 
     //cURL default data container
     const CURL_DEFAULT = [
-        'http_ver'          => 'HTTP/1.1',
+        'http_ver'          => 'HTTP/2',
         'http_method'       => 'GET',
         'http_connection'   => 'keep-alive',
         'http_content_type' => self::CONTENT_TYPE_URL_ENCODED,
         'ssl_verifyhost'    => 2,
         'ssl_verifypeer'    => false,
         'accept_charset'    => 'UTF-8,*;q=0',
-        'accept_encoding'   => 'gzip, deflate, br',
+        'accept_encoding'   => 'gzip, deflate, identity,*;q=0',
         'accept_language'   => 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
         'accept_type'       => 'application/json;q=0.9,application/xml;q=0.8,text/plain;q=0.7,text/html;q=0.6,*/*;q=0.5',
         'user_agent'        => 'Mozilla/5.0 (Compatible; Nervsys/' . NS_VER . ')',
