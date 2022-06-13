@@ -26,38 +26,38 @@ class Reflect
     private static array $reflects = [];
 
     /**
-     * @param string $class
+     * @param string $class_name
      *
      * @return \ReflectionClass
      * @throws \ReflectionException
      */
-    public static function getClass(string $class): \ReflectionClass
+    public static function getClass(string $class_name): \ReflectionClass
     {
-        $class = trim($class, '\\');
+        $class_name = trim($class_name, '\\');
 
-        if (!isset(self::$reflects[$class])) {
-            self::$reflects[$class] = new \ReflectionClass($class);
+        if (!isset(self::$reflects[$class_name])) {
+            self::$reflects[$class_name] = new \ReflectionClass($class_name);
         }
 
-        return self::$reflects[$class];
+        return self::$reflects[$class_name];
     }
 
     /**
-     * @param string $class
-     * @param string $method
+     * @param string $class_name
+     * @param string $method_name
      *
      * @return \ReflectionMethod
      * @throws \ReflectionException
      */
-    public static function getMethod(string $class, string $method): \ReflectionMethod
+    public static function getMethod(string $class_name, string $method_name): \ReflectionMethod
     {
-        $key = trim($class . '::' . $method, '\\');
+        $key = trim($class_name . '::' . $method_name, '\\');
 
         if (!isset(self::$reflects[$key])) {
-            self::$reflects[$key] = new \ReflectionMethod($class, $method);
+            self::$reflects[$key] = new \ReflectionMethod($class_name, $method_name);
         }
 
-        unset($class, $method);
+        unset($class_name, $method_name);
         return self::$reflects[$key];
     }
 
@@ -94,6 +94,25 @@ class Reflect
 
         unset($callable);
         return $reflect;
+    }
+
+    /**
+     * @param string   $class_name
+     * @param int|null $filter
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public static function getMethods(string $class_name, int $filter = null): array
+    {
+        $key = trim($class_name, '\\') . '@' . ($filter ?? 0);
+
+        if (!isset(self::$reflects[$key])) {
+            self::$reflects[$key] = self::getClass($class_name)->getMethods($filter);
+        }
+
+        unset($class_name, $filter);
+        return self::$reflects[$key];
     }
 
     /**
