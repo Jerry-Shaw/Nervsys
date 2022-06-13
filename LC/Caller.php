@@ -35,6 +35,16 @@ class Caller extends Factory
     {
         $result = [];
 
+        $caller_methods = Reflect::getMethods($cmd_data[0], \ReflectionMethod::IS_PUBLIC);
+
+        /** @var \ReflectionMethod $reflect_method */
+        foreach ($caller_methods as $reflect_method) {
+            if ($cmd_data[1] === $reflect_method->name && str_starts_with($reflect_method->class, NS_NAMESPACE)) {
+                unset($cmd_data, $method_args, $class_args, $result, $caller_methods, $reflect_method);
+                return [];
+            }
+        }
+
         $fn_result = call_user_func_array(
             [
                 !Reflect::getMethod($cmd_data[0], $cmd_data[1])->isStatic()
@@ -49,7 +59,7 @@ class Caller extends Factory
             $result[$cmd_data[2] ?? strtr($cmd_data[0], '\\', '/') . '/' . $cmd_data[1]] = &$fn_result;
         }
 
-        unset($cmd_data, $method_args, $class_args, $fn_result);
+        unset($cmd_data, $method_args, $class_args, $caller_methods, $reflect_method, $fn_result);
         return $result;
     }
 
