@@ -45,6 +45,7 @@ class NS
 
         define('NS_VER', '8.1.0');
         define('NS_ROOT', __DIR__);
+        define('NS_NAMESPACE', __NAMESPACE__);
 
         define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
         define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
