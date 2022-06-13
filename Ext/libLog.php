@@ -22,7 +22,7 @@
 namespace Nervsys\Ext;
 
 use Nervsys\LC\Factory;
-use Nervsys\Lib\App;
+use Nervsys\LC\Lib\App;
 
 class libLog extends Factory
 {

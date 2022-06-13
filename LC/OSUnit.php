@@ -27,7 +27,7 @@ class OSUnit extends Factory
     public string $hw_hash  = '';
     public string $php_path = '';
 
-    /** @var OS\Linux|OS\WINNT|OS\Darwin $lib_os */
+    /** @var OSC\Linux|OSC\WINNT|OSC\Darwin $lib_os */
     protected object $lib_os;
 
     /**
@@ -36,7 +36,7 @@ class OSUnit extends Factory
     public function __construct()
     {
         $this->php_os = PHP_OS;
-        $this->lib_os = parent::getObj(__NAMESPACE__ . '\\OS\\' . $this->php_os);
+        $this->lib_os = parent::getObj(__NAMESPACE__ . '\\OSC\\' . $this->php_os);
     }
 
     /**

@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC\OS;
+namespace Nervsys\LC\OSC;
 
 class Darwin
 {

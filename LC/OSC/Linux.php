@@ -1,11 +1,10 @@
 <?php
 
 /**
- * WINNT controller library
+ * Linux controller library
  *
  * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
- * Copyright 2021 take your time <704505144@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +19,9 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC\OS;
+namespace Nervsys\LC\OSC;
 
-class WINNT
+class Linux
 {
     public string $os_cmd;
 
@@ -32,14 +31,13 @@ class WINNT
      */
     public function getHwHash(): string
     {
-        $ps_cmd = 'powershell -Command "';
-        $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Caption, CreationClassName, Family, Manufacturer, Name, ProcessorId, ProcessorType | Format-List;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version | Format-List;';
-        $ps_cmd .= 'Get-NetAdapter -physical | select InterfaceDescription, MacAddress | Format-List;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_PhysicalMemory | select Capacity | Format-List;';
-        $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select SerialNumber | Format-List"';
+        $queries = [
+            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
+            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\'',
+            'lshw -C "memory,cpu,pci,isa,display,ide,bridge"',
+        ];
 
-        exec($ps_cmd, $output, $status);
+        exec(implode(' && ', $queries), $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
@@ -48,7 +46,7 @@ class WINNT
         $hw_info = '';
 
         foreach ($output as $value) {
-            if (!str_contains($value, ':')) {
+            if (str_contains($value, '*-') || !str_contains($value, ':')) {
                 continue;
             }
 
@@ -58,7 +56,7 @@ class WINNT
 
         $hw_hash = hash('md5', trim($hw_info));
 
-        unset($ps_cmd, $output, $status, $hw_info, $value, $k, $v);
+        unset($queries, $output, $status, $hw_info, $value, $k, $v);
         return $hw_hash;
     }
 
@@ -68,55 +66,43 @@ class WINNT
      */
     public function getPhpPath(): string
     {
-        $ps_cmd = 'powershell -Command "Get-WMIObject -class Win32_process -Filter "ProcessId=' . getmypid() . '" | select ExecutablePath | Format-List"';
-
-        exec($ps_cmd, $output, $status);
+        exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
 
         if (0 !== $status) {
             throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
         }
 
-        $php_path = '';
-        $output   = array_filter($output);
-
-        foreach ($output as $value) {
-            if (0 < ($mark_pos = strpos($value, ':'))) {
-                $php_path = trim(substr($value, $mark_pos + 2));
-                break;
-            }
-        }
-
-        if ('' === $php_path) {
+        if (empty($output)) {
             throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
         }
+
+        $php_path = &$output[0];
 
         if (!is_file($php_path)) {
             throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
         }
 
-        unset($ps_cmd, $output, $status, $value, $mark_pos);
+        unset($output, $status);
         return $php_path;
     }
 
     /**
-     * Set as background command
-     *
      * @return $this
      */
     public function setAsBg(): self
     {
-        $this->os_cmd = 'start "" /B ' . $this->os_cmd . ' > nul 2>&1';
+        $this->os_cmd = 'nohup ' . $this->os_cmd . ' > /dev/null 2>&1 &';
 
         return $this;
     }
 
     /**
-     * Set command with ENV values
-     *
      * @return $this
      */
     public function setEnvPath(): self
     {
+        $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
+
         return $this;
     }
 }

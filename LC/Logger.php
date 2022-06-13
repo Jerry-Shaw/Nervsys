@@ -21,7 +21,7 @@
 
 namespace Nervsys\LC;
 
-use Nervsys\Lib\App;
+use Nervsys\LC\Lib\App;
 
 class Logger extends Factory
 {

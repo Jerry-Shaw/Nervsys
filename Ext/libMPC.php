@@ -23,11 +23,11 @@ namespace Nervsys\Ext;
 use Nervsys\LC\Caller;
 use Nervsys\LC\Error;
 use Nervsys\LC\Factory;
+use Nervsys\LC\Lib\App;
+use Nervsys\LC\Lib\IOData;
+use Nervsys\LC\Lib\Router;
 use Nervsys\LC\OSUnit;
 use Nervsys\LC\Reflect;
-use Nervsys\Lib\App;
-use Nervsys\Lib\IOData;
-use Nervsys\Lib\Router;
 
 class libMPC extends Factory
 {

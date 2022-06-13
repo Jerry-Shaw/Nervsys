@@ -21,8 +21,8 @@
 
 namespace Nervsys\LC;
 
-use Nervsys\Lib\App;
-use Nervsys\Lib\IOData;
+use Nervsys\LC\Lib\App;
+use Nervsys\LC\Lib\IOData;
 
 class Error extends Factory
 {

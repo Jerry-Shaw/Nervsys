@@ -23,7 +23,7 @@
 namespace Nervsys\Ext;
 
 use Nervsys\LC\Factory;
-use Nervsys\Lib\IOData;
+use Nervsys\LC\Lib\IOData;
 
 class libMySQL extends Factory
 {

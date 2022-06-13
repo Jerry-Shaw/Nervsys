@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Lib;
+namespace Nervsys\LC\Lib;
 
 use Nervsys\LC\Factory;
 
