@@ -2,11 +2,11 @@
 
 README: [English](README.md) | [简体中文](README_zh-CN.md)
 
-[![release](https://img.shields.io/badge/release-8.0.3-blue?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/releases)
-[![issues](https://img.shields.io/github/issues/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/issues)
-[![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/graphs/contributors)
-[![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/commits/master)
-[![license](https://img.shields.io/github/license/Jerry-Shaw/NervSys?style=flat-square)](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md)
+[![release](https://img.shields.io/badge/release-8.0.3-blue?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/releases)
+[![issues](https://img.shields.io/github/issues/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/issues)
+[![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/graphs/contributors)
+[![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/commits/master)
+[![license](https://img.shields.io/github/license/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/blob/master/LICENSE.md)
 
 ## About Nervsys
 
@@ -68,7 +68,7 @@ Root/
 Follow "[Installation](#installation)" steps to integrate NS into your entry script. Demo code is as follows.
 
 ```php
-require __DIR__ . '/../../NervSys/NS.php';
+require __DIR__ . '/../../Nervsys/NS.php';
 
 //optional, if needed, please review "Ext/libCoreApi.php"
 \Ext\libCoreApi::new()
@@ -216,5 +216,5 @@ Support Program.
 ## License
 
 This software is licensed under the terms of the Apache 2.0 License.  
-You can find a copy of the license in the [LICENSE.md](https://github.com/Jerry-Shaw/NervSys/blob/master/LICENSE.md)
+You can find a copy of the license in the [LICENSE.md](https://github.com/Jerry-Shaw/Nervsys/blob/master/LICENSE.md)
 file.
