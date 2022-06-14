@@ -21,8 +21,6 @@
 
 namespace Nervsys;
 
-use Nervsys\LC\Factory;
-use Nervsys\LC\Reflect;
 use Nervsys\LC\System;
 
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
@@ -67,7 +65,6 @@ class NS
      */
     public function __construct()
     {
-
         $this->system = System::new();
         $this->system->addAutoloadPath($this->system->app->root_path, true);
     }
@@ -120,25 +117,15 @@ class NS
                     }
 
                     try {
-                        $method_args = Factory::buildArgs(
-                            Reflect::getMethod($cmd_data[0], $cmd_data[1])->getParameters(),
-                            $this->system->IOData->src_input
-                        );
-
-                        $class_args = method_exists($cmd_data[0], '__construct')
-                            ? Factory::buildArgs(Reflect::getMethod($cmd_data[0], '__construct')->getParameters(), $this->system->IOData->src_input)
-                            : [];
+                        $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $this->system->IOData->src_input, $this->system->IOData->src_input);
                     } catch (\Throwable $throwable) {
                         if ($this->system->app->core_debug) {
                             http_response_code(500);
-                            $this->system->IODataAddMsgData('ArgumentError', $throwable->getMessage());
                         }
 
                         unset($throwable);
                         continue;
                     }
-
-                    $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $method_args, $class_args);
 
                     if (!$this->system->hook->runAfter($full_cmd)) {
                         break;
