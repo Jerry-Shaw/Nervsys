@@ -29,6 +29,33 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
     exit('Nervsys 8.1+ needs PHP 8.1.0 or higher!');
 }
 
+set_time_limit(0);
+ignore_user_abort(true);
+
+define('NS_VER', '8.1.0');
+define('NS_ROOT', __DIR__);
+define('NS_NAMESPACE', __NAMESPACE__);
+
+define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
+define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
+
+define('HOSTNAME', gethostname() ?: 'localhost');
+
+spl_autoload_register(
+    static function (string $class): void
+    {
+        $file_path = __DIR__ . DIRECTORY_SEPARATOR . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php';
+
+        if (is_file($file_path)) {
+            require $file_path;
+        }
+
+        unset($class, $file_path);
+    },
+    true,
+    true
+);
+
 class NS
 {
     public System $system;
@@ -40,32 +67,6 @@ class NS
      */
     public function __construct()
     {
-        set_time_limit(0);
-        ignore_user_abort(true);
-
-        define('NS_VER', '8.1.0');
-        define('NS_ROOT', __DIR__);
-        define('NS_NAMESPACE', __NAMESPACE__);
-
-        define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
-        define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
-
-        define('HOSTNAME', gethostname() ?: 'localhost');
-
-        spl_autoload_register(
-            static function (string $class): void
-            {
-                $file_path = __DIR__ . DIRECTORY_SEPARATOR . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php';
-
-                if (is_file($file_path)) {
-                    require $file_path;
-                }
-
-                unset($class, $file_path);
-            },
-            true,
-            true
-        );
 
         $this->system = System::new();
         $this->system->addAutoloadPath($this->system->app->root_path, true);

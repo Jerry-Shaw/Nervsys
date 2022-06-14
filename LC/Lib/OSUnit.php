@@ -19,7 +19,10 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\LC\Lib;
+
+use Nervsys\LC\Factory;
+use Nervsys\LC\OSC;
 
 class OSUnit extends Factory
 {
@@ -31,12 +34,12 @@ class OSUnit extends Factory
     protected object $lib_os;
 
     /**
-     * @throws \ReflectionException
+     * OSUnit constructor.
      */
     public function __construct()
     {
         $this->php_os = PHP_OS;
-        $this->lib_os = parent::getObj(__NAMESPACE__ . '\\OSC\\' . $this->php_os);
+        $this->lib_os = parent::getObj(NS_NAMESPACE . '\\LC\\OSC\\' . $this->php_os);
     }
 
     /**

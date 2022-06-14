@@ -22,7 +22,9 @@
 namespace Nervsys\LC;
 
 use Nervsys\LC\Lib\App;
+use Nervsys\LC\Lib\Caller;
 use Nervsys\LC\Lib\CORS;
+use Nervsys\LC\Lib\Error;
 use Nervsys\LC\Lib\Hook;
 use Nervsys\LC\Lib\IOData;
 use Nervsys\LC\Lib\Router;

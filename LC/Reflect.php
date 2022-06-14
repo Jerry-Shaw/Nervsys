@@ -116,6 +116,24 @@ class Reflect
     }
 
     /**
+     * @param string $class_name
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public static function getTraits(string $class_name): array
+    {
+        $key = trim($class_name, '\\') . '@Trait';
+
+        if (!isset(self::$reflects[$key])) {
+            self::$reflects[$key] = self::getClass($class_name)->getTraits();
+        }
+
+        unset($class_name);
+        return self::$reflects[$key];
+    }
+
+    /**
      * @param \ReflectionParameter $parameter
      *
      * @return array

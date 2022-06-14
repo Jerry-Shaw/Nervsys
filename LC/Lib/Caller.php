@@ -19,7 +19,10 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\LC\Lib;
+
+use Nervsys\LC\Factory;
+use Nervsys\LC\Reflect;
 
 class Caller extends Factory
 {
@@ -33,33 +36,19 @@ class Caller extends Factory
      */
     public function runMethod(array $cmd_data, array $method_args, array $class_args = []): array
     {
-        $result = [];
-
-        $caller_methods = Reflect::getMethods($cmd_data[0], \ReflectionMethod::IS_PUBLIC);
-
-        /** @var \ReflectionMethod $reflect_method */
-        foreach ($caller_methods as $reflect_method) {
-            if ($cmd_data[1] === $reflect_method->name && str_starts_with($reflect_method->class, NS_NAMESPACE)) {
-                unset($cmd_data, $method_args, $class_args, $result, $caller_methods, $reflect_method);
-                return [];
-            }
-        }
+        $result     = [];
+        $api_method = Security::new()->getApiMethod($cmd_data[0], $cmd_data[1], $class_args, \ReflectionMethod::IS_PUBLIC);
 
         $fn_result = call_user_func_array(
-            [
-                !Reflect::getMethod($cmd_data[0], $cmd_data[1])->isStatic()
-                    ? parent::getObj($cmd_data[0], $class_args)
-                    : $cmd_data[0],
-                $cmd_data[1]
-            ],
-            $method_args
+            $api_method,
+            parent::buildArgs(Reflect::getCallable($api_method)->getParameters(), $method_args)
         );
 
         if (!is_null($fn_result)) {
             $result[$cmd_data[2] ?? strtr($cmd_data[0], '\\', '/') . '/' . $cmd_data[1]] = &$fn_result;
         }
 
-        unset($cmd_data, $method_args, $class_args, $caller_methods, $reflect_method, $fn_result);
+        unset($cmd_data, $method_args, $class_args, $api_method, $fn_result);
         return $result;
     }
 

@@ -19,9 +19,9 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\LC\Lib;
 
-use Nervsys\LC\Lib\App;
+use Nervsys\LC\Factory;
 
 class Logger extends Factory
 {

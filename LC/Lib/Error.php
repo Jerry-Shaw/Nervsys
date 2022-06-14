@@ -19,10 +19,9 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\LC\Lib;
 
-use Nervsys\LC\Lib\App;
-use Nervsys\LC\Lib\IOData;
+use Nervsys\LC\Factory;
 
 class Error extends Factory
 {

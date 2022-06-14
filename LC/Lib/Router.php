@@ -21,7 +21,6 @@
 
 namespace Nervsys\LC\Lib;
 
-use Nervsys\LC\Error;
 use Nervsys\LC\Factory;
 
 class Router extends Factory
