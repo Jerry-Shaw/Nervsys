@@ -117,7 +117,7 @@ class NS
                     }
 
                     try {
-                        $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $this->system->IOData->src_input, $this->system->IOData->src_input);
+                        $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $this->system->IOData->src_input);
                     } catch (\Throwable $throwable) {
                         if ($this->system->app->core_debug) {
                             http_response_code(500);

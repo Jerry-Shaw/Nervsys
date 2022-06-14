@@ -29,26 +29,25 @@ class Caller extends Factory
     /**
      * @param array $cmd_data
      * @param array $method_args
-     * @param array $class_args
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function runMethod(array $cmd_data, array $method_args, array $class_args = []): array
+    public function runMethod(array $cmd_data, array $method_args): array
     {
-        $result     = [];
-        $api_method = Security::new()->getApiMethod($cmd_data[0], $cmd_data[1], $class_args, \ReflectionMethod::IS_PUBLIC);
+        $result = [];
+        $api_fn = Security::new()->getApiMethod($cmd_data[0], $cmd_data[1], $method_args, \ReflectionMethod::IS_PUBLIC);
 
         $fn_result = call_user_func_array(
-            $api_method,
-            parent::buildArgs(Reflect::getCallable($api_method)->getParameters(), $method_args)
+            $api_fn,
+            parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $method_args)
         );
 
         if (!is_null($fn_result)) {
             $result[$cmd_data[2] ?? strtr($cmd_data[0], '\\', '/') . '/' . $cmd_data[1]] = &$fn_result;
         }
 
-        unset($cmd_data, $method_args, $class_args, $api_method, $fn_result);
+        unset($cmd_data, $method_args, $api_fn, $fn_result);
         return $result;
     }
 
