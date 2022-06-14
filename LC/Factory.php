@@ -23,7 +23,7 @@ namespace Nervsys\LC;
 
 class Factory
 {
-    protected static array $objects = [];
+    private static array $objects = [];
 
     /**
      * @return static
@@ -34,16 +34,8 @@ class Factory
         $class_name = get_called_class();
         $class_args = func_get_args();
 
-        if (method_exists($class_name, '__construct')) {
-            if (1 === count($class_args) && is_array($class_args[0])) {
-                $class_args = $class_args[0];
-            }
-
-            if (!array_is_list($class_args)) {
-                $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
-            }
-        } else {
-            $class_args = [];
+        if (method_exists($class_name, '__construct') && 1 === count($class_args) && is_array($class_args[0])) {
+            $class_args = $class_args[0];
         }
 
         $object = self::getObj($class_name, $class_args);
@@ -57,9 +49,16 @@ class Factory
      * @param array  $class_args
      *
      * @return object
+     * @throws \ReflectionException
      */
     public static function getObj(string $class_name, array $class_args = []): object
     {
+        if (!method_exists($class_name, '__construct')) {
+            $class_args = [];
+        } elseif (!array_is_list($class_args)) {
+            $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
+        }
+
         $class_key = hash('md5', $class_name . json_encode($class_args));
 
         if (!isset(self::$objects[$class_key])) {
@@ -94,6 +93,7 @@ class Factory
                 $param_info['has_default']
                     ? $args[] = $param_info['default_value']
                     : $diff[] = '$' . $param_info['name'] . ' not found';
+
                 continue;
             }
 
