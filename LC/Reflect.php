@@ -51,7 +51,7 @@ class Reflect
      */
     public static function getMethod(string $class_name, string $method_name): \ReflectionMethod
     {
-        $key = trim($class_name . '::' . $method_name, '\\');
+        $key = trim($class_name, '\\') . '::' . $method_name;
 
         if (!isset(self::$reflects[$key])) {
             self::$reflects[$key] = new \ReflectionMethod($class_name, $method_name);
@@ -70,7 +70,7 @@ class Reflect
     public static function getCallable(callable $callable): \ReflectionFunction|\ReflectionMethod
     {
         if (is_array($callable)) {
-            $key = trim((is_object($callable[0]) ? $callable[0]::class : $callable[0]) . '::' . $callable[1], '\\');
+            $key = trim((is_object($callable[0]) ? $callable[0]::class : $callable[0]), '\\') . '::' . $callable[1];
 
             if (!isset(self::$reflects[$key])) {
                 self::$reflects[$key] = new \ReflectionMethod(...$callable);
