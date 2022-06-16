@@ -27,20 +27,22 @@ use Nervsys\LC\Reflect;
 class Caller extends Factory
 {
     /**
-     * @param array $cmd_data
-     * @param array $input_args
+     * @param array $cmd
+     * @param array $args
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function runApiFn(array $cmd_data, array $input_args): array
+    public function runApiFn(array $cmd, array $args): array
     {
         $result   = [];
         $security = Security::new();
 
         try {
-            $api_fn   = $security->getApiMethod($cmd_data[0], $cmd_data[1], $input_args, \ReflectionMethod::IS_PUBLIC);
-            $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $input_args);
+            $args = $security->antiXss($args);
+
+            $api_fn   = $security->getApiMethod($cmd[0], $cmd[1], $args, \ReflectionMethod::IS_PUBLIC);
+            $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $args);
         } catch (\Throwable $throwable) {
             $api_fn   = [$security, 'ArgumentInvalid'];
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $throwable->getMessage()]);
@@ -49,10 +51,10 @@ class Caller extends Factory
         $fn_result = call_user_func_array($api_fn, $api_args);
 
         if (!is_null($fn_result)) {
-            $result[$cmd_data[2] ?? strtr($cmd_data[0], '\\', '/') . '/' . $cmd_data[1]] = &$fn_result;
+            $result[$cmd[2] ?? strtr($cmd[0], '\\', '/') . '/' . $cmd[1]] = &$fn_result;
         }
 
-        unset($cmd_data, $input_args, $security, $api_fn, $api_args, $fn_result);
+        unset($cmd, $args, $security, $api_fn, $api_args, $fn_result);
         return $result;
     }
 

@@ -67,7 +67,6 @@ class Security extends Factory
                 return [$this, 'targetBlocked'];
             }
 
-            $this->antiXss(IOData::new());
             $callable = [!$obj->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method_name];
 
             unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
@@ -79,22 +78,11 @@ class Security extends Factory
     }
 
     /**
-     * @param IOData $IOData
-     *
-     * @return void
-     */
-    public function antiXss(IOData $IOData): void
-    {
-        $IOData->src_input = $this->xssFilter($IOData->src_input);
-        unset($IOData);
-    }
-
-    /**
      * @param array $data
      *
      * @return array
      */
-    private function xssFilter(array $data): array
+    public function antiXss(array $data): array
     {
         foreach ($data as $key => &$value) {
             if (in_array($key, $this->xss_skip_keys, true)) {
@@ -104,7 +92,7 @@ class Security extends Factory
             if (is_string($value)) {
                 $value = htmlspecialchars($value, ENT_QUOTES | ENT_HTML5 | ENT_SUBSTITUTE);
             } elseif (is_array($value)) {
-                $value = $this->xssFilter($value);
+                $value = $this->antiXss($value);
             }
         }
 
