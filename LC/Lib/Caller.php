@@ -33,7 +33,7 @@ class Caller extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function runMethod(array $cmd_data, array $method_args): array
+    public function runApiFn(array $cmd_data, array $method_args): array
     {
         $result = [];
         $api_fn = Security::new()->getApiMethod($cmd_data[0], $cmd_data[1], $method_args, \ReflectionMethod::IS_PUBLIC);

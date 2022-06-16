@@ -116,7 +116,7 @@ class NS
                         continue;
                     }
 
-                    $this->IOData->src_output += $this->caller->runMethod($cmd_data, $this->IOData->src_input);
+                    $this->IOData->src_output += $this->caller->runApiFn($cmd_data, $this->IOData->src_input);
 
                     if (!$this->hook->runAfter($full_cmd)) {
                         break;

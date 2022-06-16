@@ -732,7 +732,7 @@ class libQueue extends Factory
 
             if (!empty($cgi_cmd)) {
                 while (is_array($cmd_data = array_shift($cgi_cmd))) {
-                    $result = $this->caller->runMethod($cmd_data, $data);
+                    $result = $this->caller->runApiFn($cmd_data, $data);
 
                     if (!empty($result)) {
                         //Get return data
