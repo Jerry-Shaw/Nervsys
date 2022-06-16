@@ -26,6 +26,8 @@ use Nervsys\LC\Reflect;
 
 class Security extends Factory
 {
+    public array $xss_skip_keys = [];
+
     /**
      * @param string   $class_name
      * @param string   $method_name
@@ -65,6 +67,7 @@ class Security extends Factory
                 return [$this, 'targetBlocked'];
             }
 
+            $this->antiXss(IOData::new());
             $callable = [!$obj->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method_name];
 
             unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
@@ -76,26 +79,74 @@ class Security extends Factory
     }
 
     /**
+     * @param IOData $IOData
+     *
      * @return void
      */
-    public function targetBlocked(): void
+    public function antiXss(IOData $IOData): void
     {
-
+        $IOData->src_input = $this->xssFilter($IOData->src_input);
+        unset($IOData);
     }
 
     /**
-     * @return void
+     * @param array $data
+     *
+     * @return array
      */
-    public function targetInvalid(): void
+    private function xssFilter(array $data): array
     {
+        foreach ($data as $key => &$value) {
+            if (in_array($key, $this->xss_skip_keys, true)) {
+                continue;
+            }
 
+            if (is_string($value)) {
+                $value = htmlspecialchars($value, ENT_QUOTES | ENT_HTML5 | ENT_SUBSTITUTE);
+            } elseif (is_array($value)) {
+                $value = $this->xssFilter($value);
+            }
+        }
+
+        unset($key, $value);
+        return $data;
     }
 
     /**
+     * @param IOData $IOData
+     *
      * @return void
      */
-    public function argumentInvalid(): void
+    public function targetBlocked(IOData $IOData): void
     {
+        http_response_code(403);
+        $IOData->src_msg    = ['code' => 403, 'message' => 'Permission denied!'];
+        $IOData->src_output = [];
+    }
 
+    /**
+     * @param IOData $IOData
+     *
+     * @return void
+     */
+    public function targetInvalid(IOData $IOData): void
+    {
+        http_response_code(404);
+        $IOData->src_msg    = ['code' => 404, 'message' => 'Target NOT found!'];
+        $IOData->src_output = [];
+    }
+
+    /**
+     * @param App    $app
+     * @param IOData $IOData
+     * @param string $message
+     *
+     * @return void
+     */
+    public function ArgumentInvalid(App $app, IOData $IOData, string $message): void
+    {
+        http_response_code(500);
+        $IOData->src_msg    = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
+        $IOData->src_output = [];
     }
 }
