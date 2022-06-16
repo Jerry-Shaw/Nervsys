@@ -25,20 +25,9 @@ use Nervsys\LC\Factory;
 
 class Router extends Factory
 {
-    public App $app;
-
     public array $cgi_router_stack = [];
     public array $cli_router_stack = [];
     public array $cli_exe_path_map = [];
-
-    /**
-     * Router constructor
-     *
-     * @throws \ReflectionException
-     */
-    public function __construct()
-    {
-    }
 
     /**
      * @param string $c
@@ -164,8 +153,7 @@ class Router extends Factory
             : str_starts_with($cmd_val, '/') || str_starts_with($cmd_val, $api_dir);
 
         $cmd_val = trim($cmd_val, '/');
-
-        $cmd = '/' . ($path_match ? $cmd_val : $api_dir . $cmd_val);
+        $cmd     = '/' . ($path_match ? $cmd_val : $api_dir . $cmd_val);
 
         unset($api_path, $cmd_val, $cli_exec, $api_dir, $path_match);
         return $cmd;
