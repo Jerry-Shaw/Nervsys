@@ -61,6 +61,14 @@ trait System
         $this->OSUnit   = OSUnit::new();
         $this->security = Security::new();
 
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function initApp(): self
+    {
         register_shutdown_function([$this->error, 'shutdownHandler']);
         set_exception_handler([$this->error, 'exceptionHandler']);
         set_error_handler([$this->error, 'errorHandler']);

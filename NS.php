@@ -64,7 +64,7 @@ class NS
      */
     public function __construct()
     {
-        $this->init();
+        $this->init()->initApp();
         $this->addAutoloadPath($this->app->root_path, true);
     }
 
