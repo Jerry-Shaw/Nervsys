@@ -113,27 +113,33 @@ class Security extends Factory
     }
 
     /**
+     * @param App    $app
      * @param IOData $IOData
      *
      * @return void
      */
-    public function targetBlocked(IOData $IOData): void
+    public function targetBlocked(App $app, IOData $IOData): void
     {
         http_response_code(403);
-        $IOData->src_msg    = ['code' => 403, 'message' => 'Permission denied!'];
+        $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT Secure!'];
         $IOData->src_output = [];
+
+        unset($app, $IOData);
     }
 
     /**
+     * @param App    $app
      * @param IOData $IOData
      *
      * @return void
      */
-    public function targetInvalid(IOData $IOData): void
+    public function targetInvalid(App $app, IOData $IOData): void
     {
         http_response_code(404);
-        $IOData->src_msg    = ['code' => 404, 'message' => 'Target NOT found!'];
+        $IOData->src_msg    = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
         $IOData->src_output = [];
+
+        unset($app, $IOData);
     }
 
     /**
@@ -148,5 +154,7 @@ class Security extends Factory
         http_response_code(500);
         $IOData->src_msg    = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
         $IOData->src_output = [];
+
+        unset($app, $IOData, $message);
     }
 }
