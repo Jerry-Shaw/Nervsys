@@ -26,22 +26,8 @@ use Nervsys\LC\Reflect;
 
 class Hook extends Factory
 {
-    public App    $app;
-    public IOData $IOData;
-
     public array $stack_before = [];
     public array $stack_after  = [];
-
-    /**
-     * Hook constructor
-     *
-     * @throws \ReflectionException
-     */
-    public function __construct()
-    {
-        $this->app    = App::new();
-        $this->IOData = IOData::new();
-    }
 
     /**
      * @param string $full_cmd
@@ -55,7 +41,7 @@ class Hook extends Factory
         $hook_fn = $this->findHook($full_cmd, $this->stack_before);
 
         foreach ($hook_fn as $fn) {
-            if (!$this->passFn($fn)) {
+            if (!$this->passHook($fn)) {
                 $result = false;
                 break;
             }
@@ -77,7 +63,7 @@ class Hook extends Factory
         $hook_fn = $this->findHook($full_cmd, $this->stack_after);
 
         foreach ($hook_fn as $fn) {
-            if (!$this->passFn($fn)) {
+            if (!$this->passHook($fn)) {
                 $result = false;
                 break;
             }
@@ -111,17 +97,17 @@ class Hook extends Factory
     }
 
     /**
-     * @param callable $fn
+     * @param callable $hook_fn
      *
      * @return bool
      * @throws \ReflectionException
      */
-    private function passFn(callable $fn): bool
+    private function passHook(callable $hook_fn): bool
     {
-        $params = self::buildArgs(Reflect::getCallable($fn)->getParameters(), $this->IOData->src_input);
-        $result = call_user_func_array($fn, $params);
+        $params = self::buildArgs(Reflect::getCallable($hook_fn)->getParameters(), IOData::new()->src_input);
+        $result = call_user_func_array($hook_fn, $params);
 
-        unset($fn, $params);
+        unset($hook_fn, $params);
         return is_null($result) || true === $result;
     }
 }

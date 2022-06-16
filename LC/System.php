@@ -1,7 +1,7 @@
 <?php
 
 /**
- * System Controller library
+ * System Traits
  *
  * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
@@ -27,32 +27,48 @@ use Nervsys\LC\Lib\CORS;
 use Nervsys\LC\Lib\Error;
 use Nervsys\LC\Lib\Hook;
 use Nervsys\LC\Lib\IOData;
+use Nervsys\LC\Lib\OSUnit;
 use Nervsys\LC\Lib\Router;
+use Nervsys\LC\Lib\Security;
 
-class System extends Factory
+trait System
 {
-    public App    $app;
-    public CORS   $CORS;
-    public Hook   $hook;
-    public Error  $error;
-    public Caller $caller;
-    public IOData $IOData;
-    public Router $router;
+    public App      $app;
+    public CORS     $CORS;
+    public Hook     $hook;
+    public Error    $error;
+    public Caller   $caller;
+    public IOData   $IOData;
+    public OSUnit   $OSUnit;
+    public Router   $router;
+    public Security $security;
 
     /**
-     * System constructor
+     * System libraries initializer
      *
+     * @return $this
      * @throws \ReflectionException
      */
-    public function __construct()
+    public function init(): self
     {
-        $this->app    = App::new();
-        $this->CORS   = CORS::new();
-        $this->hook   = Hook::new();
-        $this->error  = Error::new();
-        $this->caller = Caller::new();
-        $this->IOData = IOData::new();
-        $this->router = Router::new();
+        $this->app      = App::new();
+        $this->CORS     = CORS::new();
+        $this->hook     = Hook::new();
+        $this->error    = Error::new();
+        $this->caller   = Caller::new();
+        $this->IOData   = IOData::new();
+        $this->router   = Router::new();
+        $this->OSUnit   = OSUnit::new();
+        $this->security = Security::new();
+
+        register_shutdown_function([$this->error, 'shutdownHandler']);
+        set_exception_handler([$this->error, 'exceptionHandler']);
+        set_error_handler([$this->error, 'errorHandler']);
+
+        $this->router->cgi_router_stack[] = [$this->router, 'callCgiUnit'];
+        $this->router->cli_router_stack[] = [$this->router, 'callCliUnit'];
+
+        return $this;
     }
 
     /**
@@ -143,7 +159,7 @@ class System extends Factory
      */
     public function HookAddBefore(string $cmd_path, callable $hook_fn): self
     {
-        $this->hook->stack_before[$this->router->getFullCgiCmd($cmd_path, true)][] = &$hook_fn;
+        $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = &$hook_fn;
 
         unset($cmd_path, $hook_fn);
         return $this;
@@ -157,7 +173,7 @@ class System extends Factory
      */
     public function HookAddAfter(string $cmd_path, callable $hook_fn): self
     {
-        $this->hook->stack_after[$this->router->getFullCgiCmd($cmd_path, true)][] = &$hook_fn;
+        $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = &$hook_fn;
 
         unset($cmd_path, $hook_fn);
         return $this;

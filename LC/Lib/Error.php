@@ -67,16 +67,6 @@ class Error extends Factory
     ];
 
     /**
-     * Error constructor
-     */
-    public function __construct()
-    {
-        register_shutdown_function([$this, 'shutdownHandler']);
-        set_exception_handler([$this, 'exceptionHandler']);
-        set_error_handler([$this, 'errorHandler']);
-    }
-
-    /**
      * @param int    $errno
      * @param string $errstr
      * @param string $errfile
@@ -115,22 +105,21 @@ class Error extends Factory
      */
     public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $display_errors = true): void
     {
+        $app    = App::new();
+        $IOData = IOData::new();
+
         $exception  = get_class($throwable);
         $error_code = $throwable->getCode();
 
         if (isset(self::ERROR_LEVEL[$error_code])) {
-            $error_level = self::ERROR_LEVEL[$error_code];
+            $err_lv = self::ERROR_LEVEL[$error_code];
         } elseif (false !== stripos($exception, 'error')) {
-            $error_level = 'error';
-            $error_code  = E_USER_ERROR;
+            $err_lv     = 'error';
+            $error_code = E_USER_ERROR;
         } else {
-            $error_level = 'notice';
-            $error_code  = E_USER_NOTICE;
+            $err_lv     = 'notice';
+            $error_code = E_USER_NOTICE;
         }
-
-        $app    = App::new();
-        $IOData = IOData::new();
-        $logger = Logger::new();
 
         $message = $exception . ' caught in ' . $throwable->getFile()
             . ' on line ' . $throwable->getLine() . PHP_EOL
@@ -146,18 +135,19 @@ class Error extends Factory
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
-        $logger->$error_level($message, $context);
+        http_response_code(500);
 
         if ($app->core_debug && $display_errors) {
-            http_response_code(500);
-            $logger->show($error_level, $message, $context);
+            $this->showLog($err_lv, $message, $context);
         }
 
-        if ($stop_on_error || 'error' === $error_level) {
+        $this->saveLog($app->log_path . DIRECTORY_SEPARATOR . (date('Ymd') . '-' . $err_lv) . '.log', $err_lv, $message, $context);
+
+        if ($stop_on_error || 'error' === $err_lv) {
             exit(1);
         }
 
-        unset($throwable, $stop_on_error, $display_errors, $exception, $error_code, $error_level, $app, $IOData, $logger, $message, $context);
+        unset($throwable, $stop_on_error, $display_errors, $app, $IOData, $exception, $error_code, $err_lv, $message, $context);
     }
 
     /**
@@ -186,5 +176,54 @@ class Error extends Factory
 
         unset($trace, $item, $msg);
         return $list;
+    }
+
+    /**
+     * @param string $err_lv
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    private function showLog(string $err_lv, string $message, array $context = []): void
+    {
+        echo $this->formatLog($err_lv, $message, $context);
+        unset($err_lv, $message, $context);
+    }
+
+    /**
+     * @param string $log_file
+     * @param string $err_lv
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    private function saveLog(string $log_file, string $err_lv, string $message, array $context = []): void
+    {
+        $handler = fopen($log_file, 'ab+');
+
+        fwrite($handler, $this->formatLog($err_lv, $message, $context));
+        fclose($handler);
+
+        unset($log_file, $err_lv, $message, $context, $handler);
+    }
+
+    /**
+     * @param string $err_lv
+     * @param string $message
+     * @param array  $context
+     *
+     * @return string
+     */
+    private function formatLog(string $err_lv, string $message, array $context): string
+    {
+        $log = date('Y-m-d H:i:s') . PHP_EOL;
+
+        $log .= ucfirst($err_lv) . ': ' . $message . PHP_EOL;
+        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . PHP_EOL . PHP_EOL : PHP_EOL;
+
+        unset($err_lv, $message, $context);
+        return $log;
     }
 }

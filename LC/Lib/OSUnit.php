@@ -27,6 +27,7 @@ use Nervsys\LC\OSC;
 class OSUnit extends Factory
 {
     public string $php_os;
+
     public string $hw_hash  = '';
     public string $php_path = '';
 

@@ -38,10 +38,6 @@ class Router extends Factory
      */
     public function __construct()
     {
-        $this->app = App::new();
-
-        $this->cgi_router_stack[] = [$this, 'callCgiUnit'];
-        $this->cli_router_stack[] = [$this, 'callCliUnit'];
     }
 
     /**
@@ -94,6 +90,8 @@ class Router extends Factory
      */
     public function callCgiUnit(string $c): array
     {
+        $app = App::new();
+
         $fn_list  = [];
         $cmd_list = $this->getCmdList($c);
 
@@ -105,7 +103,7 @@ class Router extends Factory
                     throw new \Exception('"' . $cmd_val . '" NOT valid!', E_USER_NOTICE);
                 }
 
-                $full_cmd = $this->getFullCgiCmd($cmd_val, $this->app->is_cli);
+                $full_cmd = $this->getFullCgiCmd($app->api_path, $cmd_val, $app->is_cli);
                 $fn_pos   = strrpos($full_cmd, '/');
                 $class    = strtr(substr($full_cmd, 0, $fn_pos), '/', '\\');
                 $method   = substr($full_cmd, $fn_pos + 1);
@@ -125,7 +123,7 @@ class Router extends Factory
             }
         }
 
-        unset($c, $cmd_list, $cmd_raw, $cmd_val, $full_cmd, $fn_pos, $class, $method);
+        unset($c, $app, $cmd_list, $cmd_raw, $cmd_val, $full_cmd, $fn_pos, $class, $method);
         return $fn_list;
     }
 
@@ -150,14 +148,15 @@ class Router extends Factory
     }
 
     /**
+     * @param string $api_path
      * @param string $cmd_val
      * @param bool   $cli_exec
      *
      * @return string
      */
-    public function getFullCgiCmd(string $cmd_val, bool $cli_exec = false): string
+    public function getFullCgiCmd(string $api_path, string $cmd_val, bool $cli_exec = false): string
     {
-        $api_dir = $this->app->api_path . '/';
+        $api_dir = trim($api_path, '/') . '/';
         $cmd_val = strtr($cmd_val, '\\', '/');
 
         $path_match = !$cli_exec
@@ -168,7 +167,7 @@ class Router extends Factory
 
         $cmd = '/' . ($path_match ? $cmd_val : $api_dir . $cmd_val);
 
-        unset($cmd_val, $cli_exec, $api_dir, $path_match);
+        unset($api_path, $cmd_val, $cli_exec, $api_dir, $path_match);
         return $cmd;
     }
 

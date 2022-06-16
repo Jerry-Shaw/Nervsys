@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Nervsys main class
+ * Nervsys Entry Script
  *
  * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
@@ -56,7 +56,7 @@ spl_autoload_register(
 
 class NS
 {
-    public System $system;
+    use System;
 
     /**
      * NS constructor
@@ -65,8 +65,8 @@ class NS
      */
     public function __construct()
     {
-        $this->system = System::new();
-        $this->system->addAutoloadPath($this->system->app->root_path, true);
+        $this->init();
+        $this->addAutoloadPath($this->app->root_path, true);
     }
 
     /**
@@ -76,67 +76,58 @@ class NS
      */
     public function go(): void
     {
-        date_default_timezone_set($this->system->app->timezone);
+        date_default_timezone_set($this->app->timezone);
 
-        if (!$this->system->app->is_cli) {
-            $this->system->CORS->checkPermission($this->system->app->is_tls);
-            $this->system->IOData->readCgi();
+        if (!$this->app->is_cli) {
+            $this->CORS->checkPermission($this->app->is_tls);
+            $this->IOData->readCgi();
         } else {
-            $this->system->IOData->readCli();
+            $this->IOData->readCli();
         }
 
-        if ($this->system->app->is_cli) {
-            $cli_cmd = $this->system->router->parseCli($this->system->IOData->src_cmd);
+        if ($this->app->is_cli) {
+            $cli_cmd = $this->router->parseCli($this->IOData->src_cmd);
 
             if (!empty($cli_cmd)) {
                 while (is_array($cmd_data = array_shift($cli_cmd))) {
                     try {
-                        $this->system->IOData->src_output += $this->system->caller->runProgram(
+                        $this->IOData->src_output += $this->caller->runProgram(
                             $cmd_data,
-                            $this->system->IOData->src_argv,
-                            $this->system->IOData->cwd_path,
-                            $this->system->app->core_debug
+                            $this->IOData->src_argv,
+                            $this->IOData->cwd_path,
+                            $this->app->core_debug
                         );
                     } catch (\Throwable $throwable) {
-                        $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
+                        $this->error->exceptionHandler($throwable, false, $this->app->core_debug);
                         unset($throwable);
                     }
                 }
             }
         }
 
-        $cgi_cmd = $this->system->router->parseCgi($this->system->IOData->src_cmd);
+        $cgi_cmd = $this->router->parseCgi($this->IOData->src_cmd);
 
         if (!empty($cgi_cmd)) {
             while (is_array($cmd_data = array_shift($cgi_cmd))) {
                 try {
                     $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
 
-                    if (!$this->system->hook->runBefore($full_cmd)) {
+                    if (!$this->hook->runBefore($full_cmd)) {
                         continue;
                     }
 
-                    try {
-                        $this->system->IOData->src_output += $this->system->caller->runMethod($cmd_data, $this->system->IOData->src_input);
-                    } catch (\Throwable $throwable) {
-                        if ($this->system->app->core_debug) {
-                            http_response_code(500);
-                        }
+                    $this->IOData->src_output += $this->caller->runMethod($cmd_data, $this->IOData->src_input);
 
-                        unset($throwable);
-                        continue;
-                    }
-
-                    if (!$this->system->hook->runAfter($full_cmd)) {
+                    if (!$this->hook->runAfter($full_cmd)) {
                         break;
                     }
                 } catch (\Throwable $throwable) {
-                    $this->system->error->exceptionHandler($throwable, false, $this->system->app->core_debug);
+                    $this->error->exceptionHandler($throwable, false, $this->app->core_debug);
                     unset($throwable);
                 }
             }
         }
 
-        $this->system->IOData->output();
+        $this->IOData->output();
     }
 }
