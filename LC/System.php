@@ -332,4 +332,17 @@ trait System
         unset($exe_name, $exe_path);
         return $this;
     }
+
+    /**
+     * @param string ...$keys
+     *
+     * @return $this
+     */
+    public function SecurityAddXssSkipKeys(string ...$keys): self
+    {
+        $this->security->xss_skip_keys = array_merge($this->security->xss_skip_keys, $keys);
+
+        unset($keys);
+        return $this;
+    }
 }
