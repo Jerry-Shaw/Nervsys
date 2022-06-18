@@ -20,7 +20,7 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC\OSC;
+namespace Nervsys\Core\OSC;
 
 class WINNT
 {

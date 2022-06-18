@@ -20,7 +20,7 @@
 
 namespace Nervsys\Ext;
 
-use Nervsys\LC\Factory;
+use Nervsys\Core\Factory;
 
 class libExeC extends Factory
 {

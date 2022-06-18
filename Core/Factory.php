@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\Core;
 
 class Factory
 {

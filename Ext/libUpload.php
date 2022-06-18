@@ -20,9 +20,9 @@
 
 namespace Nervsys\Ext;
 
-use Nervsys\LC\Factory;
-use Nervsys\LC\Lib\App;
-use Nervsys\LC\Lib\IOData;
+use Nervsys\Core\Factory;
+use Nervsys\Core\Lib\App;
+use Nervsys\Core\Lib\IOData;
 
 class libUpload extends Factory
 {

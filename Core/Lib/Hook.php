@@ -19,10 +19,10 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC\Lib;
+namespace Nervsys\Core\Lib;
 
-use Nervsys\LC\Factory;
-use Nervsys\LC\Reflect;
+use Nervsys\Core\Factory;
+use Nervsys\Core\Reflect;
 
 class Hook extends Factory
 {

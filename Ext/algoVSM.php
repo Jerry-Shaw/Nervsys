@@ -21,7 +21,7 @@
 
 namespace Nervsys\Ext;
 
-use Nervsys\LC\Factory;
+use Nervsys\Core\Factory;
 
 class algoVSM extends Factory
 {

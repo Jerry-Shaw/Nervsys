@@ -19,17 +19,17 @@
  * limitations under the License.
  */
 
-namespace Nervsys\LC;
+namespace Nervsys\Core;
 
-use Nervsys\LC\Lib\App;
-use Nervsys\LC\Lib\Caller;
-use Nervsys\LC\Lib\CORS;
-use Nervsys\LC\Lib\Error;
-use Nervsys\LC\Lib\Hook;
-use Nervsys\LC\Lib\IOData;
-use Nervsys\LC\Lib\OSUnit;
-use Nervsys\LC\Lib\Router;
-use Nervsys\LC\Lib\Security;
+use Nervsys\Core\Lib\App;
+use Nervsys\Core\Lib\Caller;
+use Nervsys\Core\Lib\CORS;
+use Nervsys\Core\Lib\Error;
+use Nervsys\Core\Lib\Hook;
+use Nervsys\Core\Lib\IOData;
+use Nervsys\Core\Lib\OSUnit;
+use Nervsys\Core\Lib\Router;
+use Nervsys\Core\Lib\Security;
 
 trait System
 {

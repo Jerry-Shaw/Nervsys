@@ -20,12 +20,12 @@
 
 namespace Nervsys\Ext;
 
-use Nervsys\LC\Factory;
-use Nervsys\LC\Lib\App;
-use Nervsys\LC\Lib\Caller;
-use Nervsys\LC\Lib\IOData;
-use Nervsys\LC\Lib\OSUnit;
-use Nervsys\LC\Lib\Router;
+use Nervsys\Core\Factory;
+use Nervsys\Core\Lib\App;
+use Nervsys\Core\Lib\Caller;
+use Nervsys\Core\Lib\IOData;
+use Nervsys\Core\Lib\OSUnit;
+use Nervsys\Core\Lib\Router;
 
 class libQueue extends Factory
 {

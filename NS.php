@@ -21,7 +21,7 @@
 
 namespace Nervsys;
 
-use Nervsys\LC\System;
+use Nervsys\Core\System;
 
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
     exit('Nervsys 8.1+ needs PHP 8.1.0 or higher!');

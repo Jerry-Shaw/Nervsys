@@ -20,8 +20,8 @@
 
 namespace Nervsys\Ext;
 
-use Nervsys\LC\Factory;
-use Nervsys\LC\Lib\App;
+use Nervsys\Core\Factory;
+use Nervsys\Core\Lib\App;
 
 class libFileIO extends Factory
 {
