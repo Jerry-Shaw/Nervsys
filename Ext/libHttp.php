@@ -62,6 +62,7 @@ class libHttp extends Factory
     public string $curl_error = '';
 
     //Runtime data container
+    public array $cURL_options = [];
     public array $runtime_data = [];
 
     /**
@@ -148,8 +149,7 @@ class libHttp extends Factory
      */
     public function addOptions(array $curl_opt): self
     {
-        $this->runtime_data['options'] ??= [];
-        $this->runtime_data['options'] += $curl_opt;
+        $this->cURL_options += $curl_opt;
 
         unset($curl_opt);
         return $this;
@@ -607,13 +607,13 @@ class libHttp extends Factory
      */
     private function buildCurlOptions(array $runtime_data, bool $with_header = true): array
     {
-        $curl_opt = $this->runtime_data['options'] ?? [];
+        $curl_opt = $this->cURL_options;
 
         $curl_opt += [CURLOPT_NOSIGNAL => true];
         $curl_opt += [CURLOPT_AUTOREFERER => true];
         $curl_opt += [CURLOPT_COOKIESESSION => true];
-        $curl_opt += [CURLOPT_FOLLOWLOCATION => true];
         $curl_opt += [CURLOPT_RETURNTRANSFER => true];
+        $curl_opt += [CURLOPT_FOLLOWLOCATION => false];
 
         if (isset($runtime_data['cookie'])) {
             $curl_opt[CURLOPT_COOKIE] = &$runtime_data['cookie'];
@@ -624,7 +624,8 @@ class libHttp extends Factory
         }
 
         if (isset($runtime_data['max_follow']) && 0 < $runtime_data['max_follow']) {
-            $curl_opt[CURLOPT_MAXREDIRS] = &$runtime_data['max_follow'];
+            $curl_opt[CURLOPT_FOLLOWLOCATION] = true;
+            $curl_opt[CURLOPT_MAXREDIRS]      = &$runtime_data['max_follow'];
         }
 
         if (isset($runtime_data['proxy'])) {
@@ -664,6 +665,9 @@ class libHttp extends Factory
         $curl_opt[CURLOPT_CUSTOMREQUEST]  = &$runtime_data['http_method'];
         $curl_opt[CURLOPT_SSL_VERIFYHOST] = &$runtime_data['ssl_verifyhost'];
         $curl_opt[CURLOPT_SSL_VERIFYPEER] = &$runtime_data['ssl_verifypeer'];
+
+        //Reset cURL options property
+        $this->cURL_options = [];
 
         unset($runtime_data, $with_header);
         return $curl_opt;
