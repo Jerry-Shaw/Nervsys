@@ -62,6 +62,7 @@ class libHttp extends Factory
     public string $curl_error = '';
 
     //Runtime data container
+    public array $rem_options  = [];
     public array $cURL_options = [];
     public array $runtime_data = [];
 
@@ -143,15 +144,30 @@ class libHttp extends Factory
     /**
      * Add custom cURL options
      *
-     * @param array $curl_opt
+     * @param array $curl_opt_pair
      *
      * @return $this
      */
-    public function addOptions(array $curl_opt): self
+    public function addOptions(array $curl_opt_pair): self
     {
-        $this->cURL_options += $curl_opt;
+        $this->cURL_options += $curl_opt_pair;
 
-        unset($curl_opt);
+        unset($curl_opt_pair);
+        return $this;
+    }
+
+    /**
+     * Remove cURL options
+     *
+     * @param int ...$curl_opts
+     *
+     * @return $this
+     */
+    public function remOptions(int ...$curl_opts): self
+    {
+        $this->rem_options = &$curl_opts;
+
+        unset($curl_opts);
         return $this;
     }
 
@@ -665,6 +681,11 @@ class libHttp extends Factory
         $curl_opt[CURLOPT_CUSTOMREQUEST]  = &$runtime_data['http_method'];
         $curl_opt[CURLOPT_SSL_VERIFYHOST] = &$runtime_data['ssl_verifyhost'];
         $curl_opt[CURLOPT_SSL_VERIFYPEER] = &$runtime_data['ssl_verifypeer'];
+
+        //Remove specific cURL options
+        if (!empty($this->rem_options)) {
+            $curl_opt = array_diff_key($curl_opt, array_flip($this->rem_options));
+        }
 
         //Reset cURL options property
         $this->cURL_options = [];
