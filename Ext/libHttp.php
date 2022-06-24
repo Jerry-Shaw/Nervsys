@@ -608,6 +608,12 @@ class libHttp extends Factory
     {
         $curl_opt = $this->runtime_data['options'] ?? [];
 
+        $curl_opt += [CURLOPT_NOSIGNAL => true];
+        $curl_opt += [CURLOPT_AUTOREFERER => true];
+        $curl_opt += [CURLOPT_COOKIESESSION => true];
+        $curl_opt += [CURLOPT_FOLLOWLOCATION => true];
+        $curl_opt += [CURLOPT_RETURNTRANSFER => true];
+
         if (isset($runtime_data['cookie'])) {
             $curl_opt[CURLOPT_COOKIE] = &$runtime_data['cookie'];
         }
@@ -617,8 +623,7 @@ class libHttp extends Factory
         }
 
         if (isset($runtime_data['max_follow']) && 0 < $runtime_data['max_follow']) {
-            $curl_opt[CURLOPT_FOLLOWLOCATION] = true;
-            $curl_opt[CURLOPT_MAXREDIRS]      = &$runtime_data['max_follow'];
+            $curl_opt[CURLOPT_MAXREDIRS] = &$runtime_data['max_follow'];
         }
 
         if (isset($runtime_data['proxy'])) {
@@ -644,11 +649,6 @@ class libHttp extends Factory
                 $curl_opt[CURLOPT_POSTFIELDS] = &$runtime_data['data'];
             }
         }
-
-        $curl_opt[CURLOPT_NOSIGNAL]       = true;
-        $curl_opt[CURLOPT_AUTOREFERER]    = true;
-        $curl_opt[CURLOPT_COOKIESESSION]  = true;
-        $curl_opt[CURLOPT_RETURNTRANSFER] = true;
 
         $curl_opt[CURLOPT_NOBODY] = !$runtime_data['with_body'];
 
