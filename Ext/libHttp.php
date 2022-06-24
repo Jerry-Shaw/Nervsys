@@ -374,6 +374,7 @@ class libHttp extends Factory
      * @param string $to_file
      *
      * @return string
+     * @throws \ReflectionException
      */
     public function fetch(string $url, string $to_file = ''): string
     {
