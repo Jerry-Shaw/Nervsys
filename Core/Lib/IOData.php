@@ -375,7 +375,7 @@ class IOData extends Factory
         $find_keys = array_intersect_key($_SERVER, $http_keys);
 
         foreach ($find_keys as $key => $value) {
-            $header_data[$http_keys[$key]] = $value;
+            $header_data[strtr($http_keys[$key], '-', '_')] = $value;
         }
 
         unset($http_keys, $key, $find_keys, $value);
@@ -387,6 +387,14 @@ class IOData extends Factory
      */
     private function readCookie(): array
     {
-        return array_intersect_key($_COOKIE, array_flip($this->cookie_keys));
+        $header_data = [];
+        $cookie_data = array_intersect_key($_COOKIE, array_flip($this->cookie_keys));
+
+        foreach ($cookie_data as $key => $value) {
+            $header_data[strtr($key, '-', '_')] = $value;
+        }
+
+        unset($cookie_data, $key, $value);
+        return $header_data;
     }
 }
