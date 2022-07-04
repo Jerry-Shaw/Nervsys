@@ -43,7 +43,9 @@ define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
 spl_autoload_register(
     static function (string $class): void
     {
-        $file_path = __DIR__ . DIRECTORY_SEPARATOR . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php';
+        $file_path = str_contains($class, '\\') ?
+            __DIR__ . DIRECTORY_SEPARATOR . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php'
+            : $class . '.php';
 
         if (is_file($file_path)) {
             require $file_path;
