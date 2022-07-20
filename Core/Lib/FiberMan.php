@@ -27,114 +27,126 @@ use Nervsys\Core\Reflect;
 class FiberMan extends Factory
 {
     private \Fiber $fiber;
-    private array  $fibers = [];
+    private array  $child = [];
 
     /**
+     * FiberMan constructor.
+     *
      * @throws \Throwable
      */
     public function __construct()
     {
-        $this->fiber = new \Fiber([$this, 'run']);
+        $this->fiber = new \Fiber([$this, 'ready']);
         $this->fiber->start();
     }
 
     /**
+     * Generate async fiber, should always be suspended inside
+     *
      * @param callable $callable
      * @param array    $args
      *
      * @return \Fiber
+     * @throws \ReflectionException
      * @throws \Throwable
      */
     public function async(callable $callable, array $args = []): \Fiber
     {
-        $fiber = new \Fiber(function () use ($callable, $args): mixed
-        {
-            $child_fiber    = new \Fiber($callable);
-            $this->fibers[] = \Fiber::getCurrent();
+        $fiber = new \Fiber($callable);
 
-            \Fiber::suspend();
+        if (!empty($args) && !array_is_list($args)) {
+            $args = parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $args);
+        }
 
-            $child_fiber->start(...parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $args));
-
-            if ($child_fiber->isSuspended()) {
-                \Fiber::suspend();
-                $child_fiber->resume();
-            }
-
-            unset($callable, $args);
-            return $child_fiber->getReturn();
-        });
-
-        $fiber->start();
+        $fiber->start(...$args);
 
         unset($callable, $args);
         return $fiber;
     }
 
     /**
-     * @return void
-     * @throws \Throwable
-     */
-    public function await(): void
-    {
-        if ($this->fiber->isSuspended()) {
-            $this->fiber->resume();
-        }
-    }
-
-    /**
-     * @param \Fiber        $fiber
-     * @param callable|null $callable
-     * @param bool          $await
+     * Await async fiber to finish, or pass a callable function to process fiber returned result
+     * Using "await()->getReturn()" to get await fiber returned result
      *
-     * @return mixed
-     * @throws \Throwable
+     * @param \Fiber        $child_fiber
+     * @param callable|null $callable
+     *
+     * @return \Fiber
      */
-    public function then(\Fiber $fiber, callable $callable = null, bool $await = true): mixed
+    public function await(\Fiber $child_fiber, callable $callable = null): \Fiber
     {
-        if ($await) {
-            $this->await();
-        } elseif ($fiber->isSuspended()) {
-            $fiber->resume();
-        }
+        $fiber = new \Fiber(function () use ($child_fiber, $callable): mixed
+        {
+            $result = null;
 
-        $fiber_return = !is_callable($callable)
-            ? $fiber->getReturn()
-            : $this->then($this->async($callable, (array)$fiber->getReturn()), null, $await);
+            while (!$child_fiber->isTerminated()) {
+                if ($child_fiber->isSuspended()) {
+                    $child_fiber->resume();
+                }
 
-        unset($fiber, $callable, $await);
-        return $fiber_return;
+                if ($child_fiber->isTerminated()) {
+                    $result = $child_fiber->getReturn();
+
+                    if (is_callable($callable)) {
+                        $args = is_array($result) && !empty($result) && !array_is_list($result)
+                            ? parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result)
+                            : [$result];
+
+                        $result = call_user_func_array($callable, $args);
+                    }
+
+                    break;
+                }
+
+                \Fiber::suspend();
+            }
+
+            unset($child_fiber, $callable, $args);
+            return $result;
+        });
+
+        $this->child[] = $fiber;
+
+        unset($child_fiber, $callable);
+        return $fiber;
     }
 
     /**
+     * Resume main fiber process
+     *
      * @return void
      * @throws \Throwable
      */
-    private function run(): void
+    public function go(): void
     {
-        /** @var \Fiber $fiber */
-        foreach ($this->fibers as $key => $fiber) {
-            if ($fiber->isRunning()) {
-                continue;
-            }
+        $this->fiber->resume();
+    }
 
-            if (!$fiber->isStarted()) {
-                $fiber->start();
-            }
+    /**
+     * Main fiber ready function
+     *
+     * @return void
+     * @throws \Throwable
+     */
+    private function ready(): void
+    {
+        while (!empty($this->child)) {
+            foreach ($this->child as $key => $fiber) {
+                if (!$fiber->isStarted()) {
+                    $fiber->start();
+                }
 
-            if ($fiber->isSuspended()) {
-                $fiber->resume();
-            }
+                if ($fiber->isSuspended()) {
+                    $fiber->resume();
+                }
 
-            if ($fiber->isTerminated()) {
-                unset($this->fibers[$key]);
+                if ($fiber->isTerminated()) {
+                    unset($this->child[$key]);
+                }
             }
         }
 
-        //Suspend main Fiber
         \Fiber::suspend();
-
-        //Start another loop
-        $this->run();
+        $this->ready();
     }
 }
