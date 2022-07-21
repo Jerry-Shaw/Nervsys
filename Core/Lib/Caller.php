@@ -83,6 +83,7 @@ class Caller extends Factory
         );
 
         if (!is_resource($proc)) {
+            unset($cmd_pair, $cmd_argv, $cwd_path, $realtime_debug, $proc, $pipes);
             return [];
         }
 
