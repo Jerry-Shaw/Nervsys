@@ -24,7 +24,7 @@ use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\IOData;
-use Nervsys\Core\Lib\OSUnit;
+use Nervsys\Core\Lib\OSMgr;
 use Nervsys\Core\Lib\Router;
 
 class libQueue extends Factory
@@ -50,7 +50,7 @@ class libQueue extends Factory
     public Caller $caller;
     public Router $router;
     public IOData $IOData;
-    public OSUnit $OSUnit;
+    public OSMgr  $OSMgr;
 
     //Process properties
     private int $max_fork = 10;
@@ -93,7 +93,7 @@ class libQueue extends Factory
         $this->caller = Caller::new();
         $this->router = Router::new();
         $this->IOData = IOData::new();
-        $this->OSUnit = OSUnit::new();
+        $this->OSMgr  = OSMgr::new();
 
         //Build prefix
         $prefix = self::KEY_PREFIX . $name . ':';
@@ -410,14 +410,14 @@ class libQueue extends Factory
         $this->redis->hSet($this->key_slot['watch'], $master_key, time());
 
         //Build job processor command
-        $job_proc = '"' . $this->OSUnit->getPhpPath() . '" "' . $this->app->script_path . '" ';
+        $job_proc = '"' . $this->OSMgr->getPhpPath() . '" "' . $this->app->script_path . '" ';
         $job_proc .= '-c"' . $this->IOData->encodeData('/' . $this->job_handler[0] . '/' . $this->job_handler[1]) . '" -r"none" ';
 
         //Build delay command
-        $cmd_delay = $this->OSUnit->setCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'delay'], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_delay = $this->OSMgr->setCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'delay'], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
 
         //Build realtime command
-        $cmd_realtime = $this->OSUnit->setCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'realtime'], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_realtime = $this->OSMgr->setCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'realtime'], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
 
         while ($this->redis->get($master_key) === $master_hash && $this->redis->expire($master_key, self::LIFETIME)) {
             //Call delay processor

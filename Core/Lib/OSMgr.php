@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OSUnit library
+ * OS Manager library
  *
  * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
@@ -24,7 +24,7 @@ namespace Nervsys\Core\Lib;
 use Nervsys\Core\Factory;
 use Nervsys\Core\OSC;
 
-class OSUnit extends Factory
+class OSMgr extends Factory
 {
     public string $php_os;
 
@@ -35,7 +35,7 @@ class OSUnit extends Factory
     protected object $lib_os;
 
     /**
-     * OSUnit constructor.
+     * OSMgr constructor.
      */
     public function __construct()
     {

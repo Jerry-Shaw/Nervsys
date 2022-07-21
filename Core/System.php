@@ -27,7 +27,7 @@ use Nervsys\Core\Lib\CORS;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\Hook;
 use Nervsys\Core\Lib\IOData;
-use Nervsys\Core\Lib\OSUnit;
+use Nervsys\Core\Lib\OSMgr;
 use Nervsys\Core\Lib\Router;
 use Nervsys\Core\Lib\Security;
 
@@ -39,7 +39,7 @@ trait System
     public Error    $error;
     public Caller   $caller;
     public IOData   $IOData;
-    public OSUnit   $OSUnit;
+    public OSMgr    $OSMgr;
     public Router   $router;
     public Security $security;
 
@@ -58,7 +58,7 @@ trait System
         $this->caller   = Caller::new();
         $this->IOData   = IOData::new();
         $this->router   = Router::new();
-        $this->OSUnit   = OSUnit::new();
+        $this->OSMgr    = OSMgr::new();
         $this->security = Security::new();
 
         return $this;

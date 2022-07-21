@@ -25,7 +25,7 @@ use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\IOData;
-use Nervsys\Core\Lib\OSUnit;
+use Nervsys\Core\Lib\OSMgr;
 use Nervsys\Core\Lib\Router;
 
 class libMPC extends Factory
@@ -35,7 +35,7 @@ class libMPC extends Factory
     public Router $router;
     public Caller $caller;
     public IOData $IOData;
-    public OSUnit $OSUnit;
+    public OSMgr  $OSMgr;
 
     public string $php_path;
 
@@ -59,7 +59,7 @@ class libMPC extends Factory
         $this->caller = Caller::new();
         $this->router = Router::new();
         $this->IOData = IOData::new();
-        $this->OSUnit = OSUnit::new();
+        $this->OSMgr  = OSMgr::new();
     }
 
     /**
@@ -87,7 +87,7 @@ class libMPC extends Factory
      */
     public function start(int $max_fork = 10): self
     {
-        $proc_cmd = $this->OSUnit
+        $proc_cmd = $this->OSMgr
             ->setCmd('"' . $this->php_path . '" "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit" -r"json"')
             ->setEnvPath()
             ->fetchCmd();
