@@ -19,18 +19,18 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Core\Lib;
+namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
 use Nervsys\Core\Reflect;
 
-class FiberMan extends Factory
+class FiberMgr extends Factory
 {
     private \Fiber $fiber;
     private array  $child = [];
 
     /**
-     * FiberMan constructor.
+     * FiberMgr constructor.
      *
      * @throws \Throwable
      */
