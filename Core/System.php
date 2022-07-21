@@ -27,9 +27,9 @@ use Nervsys\Core\Lib\CORS;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\Hook;
 use Nervsys\Core\Lib\IOData;
-use Nervsys\Core\Lib\OSMgr;
 use Nervsys\Core\Lib\Router;
 use Nervsys\Core\Lib\Security;
+use Nervsys\Core\Mgr\OSMgr;
 
 trait System
 {

@@ -25,8 +25,8 @@ use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\IOData;
-use Nervsys\Core\Lib\OSMgr;
 use Nervsys\Core\Lib\Router;
+use Nervsys\Core\Mgr\OSMgr;
 
 class libMPC extends Factory
 {

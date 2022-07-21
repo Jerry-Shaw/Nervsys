@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Core\Lib;
+namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
 use Nervsys\Core\OSC;
