@@ -101,6 +101,6 @@ class Linux
      */
     public function runWithProfile(string $command): string
     {
-        return 'source /etc/profile && ' . $command;
+        return 'source /etc/profile' . "\n" . ' && ' . "\n" . $command;
     }
 }

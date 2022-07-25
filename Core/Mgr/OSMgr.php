@@ -119,7 +119,7 @@ class OSMgr extends Factory
      *
      * @return string[]
      */
-    public function buildProcArray(string $command, string $separator = "\n"): array
+    public function buildProcCmd(string $command, string $separator = "\n"): array
     {
         $proc_command = str_contains($command, $separator)
             ? explode($separator, $command)
