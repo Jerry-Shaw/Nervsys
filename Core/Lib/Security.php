@@ -109,7 +109,7 @@ class Security extends Factory
     public function targetBlocked(App $app, IOData $IOData): void
     {
         http_response_code(403);
-        $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT Secure!'];
+        $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
         $IOData->src_output = [];
 
         unset($app, $IOData);
