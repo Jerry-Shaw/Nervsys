@@ -41,7 +41,7 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Generate async fiber, should always be suspended inside
+     * Await callable function, generate Fiber instance
      *
      * @param callable $callable
      * @param array    $args
@@ -50,7 +50,7 @@ class FiberMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function async(callable $callable, array $args = []): \Fiber
+    public function await(callable $callable, array $args = []): \Fiber
     {
         $fiber = new \Fiber($callable);
 
@@ -65,15 +65,15 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Await async fiber to finish, or pass a callable function to process fiber returned result
-     * Using "await()->getReturn()" to get await fiber returned result
+     * Generate async function from await, or pass a callable function to process await returned result
+     * Using "async()->getReturn()" to get async function returned result
      *
      * @param \Fiber        $child_fiber
      * @param callable|null $callable
      *
      * @return \Fiber
      */
-    public function await(\Fiber $child_fiber, callable $callable = null): \Fiber
+    public function async(\Fiber $child_fiber, callable $callable = null): \Fiber
     {
         $fiber = new \Fiber(function () use ($child_fiber, $callable): mixed
         {
