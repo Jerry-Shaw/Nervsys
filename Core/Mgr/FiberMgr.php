@@ -52,63 +52,57 @@ class FiberMgr extends Factory
      */
     public function await(callable $callable, array $args = []): \Fiber
     {
-        $fiber = new \Fiber($callable);
+        $await_fiber = new \Fiber($callable);
 
         if (!empty($args) && !array_is_list($args)) {
             $args = parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $args);
         }
 
-        $fiber->start(...$args);
+        $await_fiber->start(...$args);
 
         unset($callable, $args);
-        return $fiber;
+        return $await_fiber;
     }
 
     /**
      * Generate async function from await, or pass a callable function to process await returned result
      * Using "async()->getReturn()" to get async function returned result
      *
-     * @param \Fiber        $child_fiber
+     * @param \Fiber        $await_fiber
      * @param callable|null $callable
      *
      * @return \Fiber
      */
-    public function async(\Fiber $child_fiber, callable $callable = null): \Fiber
+    public function async(\Fiber $await_fiber, callable $callable = null): \Fiber
     {
-        $fiber = new \Fiber(function () use ($child_fiber, $callable): mixed
+        $async_fiber = new \Fiber(function () use ($await_fiber, $callable): mixed
         {
-            $result = null;
-
-            while (!$child_fiber->isTerminated()) {
-                if ($child_fiber->isSuspended()) {
-                    $child_fiber->resume();
-                }
-
-                if ($child_fiber->isTerminated()) {
-                    $result = $child_fiber->getReturn();
-
-                    if (is_callable($callable)) {
-                        $args = is_array($result) && !empty($result) && !array_is_list($result)
-                            ? parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result)
-                            : [$result];
-
-                        $result = call_user_func_array($callable, $args);
-                    }
-
-                    break;
+            while (!$await_fiber->isTerminated()) {
+                if ($await_fiber->isSuspended()) {
+                    $await_fiber->resume();
                 }
 
                 \Fiber::suspend();
             }
 
-            unset($child_fiber, $callable, $args);
+            $result = $await_fiber->getReturn();
+
+            if (is_callable($callable)) {
+                $args = is_array($result) && !empty($result) && !array_is_list($result)
+                    ? parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result)
+                    : [$result];
+
+                $result = call_user_func_array($callable, $args);
+            }
+
+            unset($await_fiber, $callable, $args);
             return $result;
         });
 
-        $this->child[] = $fiber;
+        $this->child[] = $async_fiber;
 
-        unset($child_fiber, $callable);
-        return $fiber;
+        unset($await_fiber, $callable);
+        return $async_fiber;
     }
 
     /**
