@@ -112,4 +112,20 @@ class OSMgr extends Factory
 
         return $command;
     }
+
+    /**
+     * @param string $command
+     * @param string $separator
+     *
+     * @return string[]
+     */
+    public function buildProcArray(string $command, string $separator = "\n"): array
+    {
+        $proc_command = str_contains($command, $separator)
+            ? explode($separator, $command)
+            : [$command];
+
+        unset($command, $separator);
+        return $proc_command;
+    }
 }
