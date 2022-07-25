@@ -91,18 +91,6 @@ class OSMgr extends Factory
     }
 
     /**
-     * @param int $return_var
-     *
-     * @return array
-     */
-    public function execCmd(int &$return_var = 0): array
-    {
-        exec($this->lib_os->os_cmd, $output, $return_var);
-
-        return $output;
-    }
-
-    /**
      * @return $this
      */
     public function setAsBg(): self
