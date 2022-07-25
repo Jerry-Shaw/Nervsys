@@ -112,12 +112,12 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Resume main fiber process
+     * Start main fiber process
      *
      * @return void
      * @throws \Throwable
      */
-    public function go(): void
+    public function start(): void
     {
         $this->fiber->resume();
     }
