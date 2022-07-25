@@ -414,10 +414,16 @@ class libQueue extends Factory
         $job_proc .= '-c"' . $this->IOData->encodeData('/' . $this->job_handler[0] . '/' . $this->job_handler[1]) . '" -r"none" ';
 
         //Build delay command
-        $cmd_delay = $this->OSMgr->setCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'delay'], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_delay = $this->OSMgr
+            ->inBackground(true)
+            ->useProfile(true)
+            ->buildCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'delay'], JSON_FORMAT)) . '"');
 
         //Build realtime command
-        $cmd_realtime = $this->OSMgr->setCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'realtime'], JSON_FORMAT)) . '"')->setAsBg()->setEnvPath()->fetchCmd();
+        $cmd_realtime = $this->OSMgr
+            ->inBackground(true)
+            ->useProfile(true)
+            ->buildCmd($job_proc . '-d"' . $this->IOData->encodeData(json_encode(['type' => 'realtime'], JSON_FORMAT)) . '"');
 
         while ($this->redis->get($master_key) === $master_hash && $this->redis->expire($master_key, self::LIFETIME)) {
             //Call delay processor

@@ -26,21 +26,21 @@ use Nervsys\Core\OSC;
 
 class OSMgr extends Factory
 {
-    public string $php_os;
+    /** @var OSC\Linux|OSC\WINNT|OSC\Darwin $lib_os */
+    protected object $lib_os;
 
     public string $hw_hash  = '';
     public string $php_path = '';
 
-    /** @var OSC\Linux|OSC\WINNT|OSC\Darwin $lib_os */
-    protected object $lib_os;
+    private bool $in_background = false;
+    private bool $use_profile   = false;
 
     /**
      * OSMgr constructor.
      */
     public function __construct()
     {
-        $this->php_os = PHP_OS;
-        $this->lib_os = parent::getObj(NS_NAMESPACE . '\\Core\\OSC\\' . $this->php_os);
+        $this->lib_os = parent::getObj(NS_NAMESPACE . '\\Core\\OSC\\' . PHP_OS);
     }
 
     /**
@@ -70,43 +70,46 @@ class OSMgr extends Factory
     }
 
     /**
-     * @param string $cmd
+     * @param bool $in_background
      *
      * @return $this
      */
-    public function setCmd(string $cmd): self
+    public function inBackground(bool $in_background): self
     {
-        $this->lib_os->os_cmd = &$cmd;
+        $this->in_background = &$in_background;
 
-        unset($cmd);
+        unset($in_background);
         return $this;
     }
 
     /**
+     * @param bool $use_profile
+     *
+     * @return $this
+     */
+    public function useProfile(bool $use_profile): self
+    {
+        $this->use_profile = &$use_profile;
+
+        unset($use_profile);
+        return $this;
+    }
+
+    /**
+     * @param string $command
+     *
      * @return string
      */
-    public function fetchCmd(): string
+    public function buildCmd(string $command): string
     {
-        return $this->lib_os->os_cmd;
-    }
+        if ($this->in_background) {
+            $command = $this->lib_os->buildBackgroundCmd($command);
+        }
 
-    /**
-     * @return $this
-     */
-    public function setAsBg(): self
-    {
-        $this->lib_os->setAsBg();
+        if ($this->use_profile) {
+            $command = $this->lib_os->runWithProfile($command);
+        }
 
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function setEnvPath(): self
-    {
-        $this->lib_os->setEnvPath();
-
-        return $this;
+        return $command;
     }
 }

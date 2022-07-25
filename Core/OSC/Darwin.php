@@ -23,8 +23,6 @@ namespace Nervsys\Core\OSC;
 
 class Darwin
 {
-    public string $os_cmd;
-
     /**
      * @return string
      * @throws \Exception
@@ -81,22 +79,22 @@ class Darwin
     }
 
     /**
-     * @return $this
+     * @param string $command
+     *
+     * @return string
      */
-    public function setAsBg(): self
+    public function buildBackgroundCmd(string $command): string
     {
-        $this->os_cmd = 'screen ' . $this->os_cmd . ' > /dev/null 2>&1 &';
-
-        return $this;
+        return 'screen ' . $command . ' > /dev/null 2>&1 &';
     }
 
     /**
-     * @return $this
+     * @param string $command
+     *
+     * @return string
      */
-    public function setEnvPath(): self
+    public function runWithProfile(string $command): string
     {
-        $this->os_cmd = 'source /etc/profile && ' . $this->os_cmd;
-
-        return $this;
+        return 'source /etc/profile && ' . $command;
     }
 }

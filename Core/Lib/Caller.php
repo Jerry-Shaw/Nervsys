@@ -136,7 +136,7 @@ class Caller extends Factory
      */
     public function runAsync(string $cmd): void
     {
-        pclose(popen(OSMgr::new()->setCmd($cmd)->setAsBg()->fetchCmd(), 'rb'));
+        pclose(popen(OSMgr::new()->inBackground(true)->buildCmd($cmd), 'rb'));
         unset($cmd);
     }
 }

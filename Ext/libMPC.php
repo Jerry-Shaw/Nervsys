@@ -88,9 +88,8 @@ class libMPC extends Factory
     public function start(int $max_fork = 10): self
     {
         $proc_cmd = $this->OSMgr
-            ->setCmd('"' . $this->php_path . '" "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit" -r"json"')
-            ->setEnvPath()
-            ->fetchCmd();
+            ->useProfile(true)
+            ->buildCmd('"' . $this->php_path . '" "' . $this->app->script_path . '" -c"/' . __CLASS__ . '/procUnit" -r"json"');
 
         //Initialize processes and pipes
         for ($i = 0; $i < $max_fork; ++$i) {

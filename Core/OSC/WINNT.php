@@ -24,8 +24,6 @@ namespace Nervsys\Core\OSC;
 
 class WINNT
 {
-    public string $os_cmd;
-
     /**
      * @return string
      * @throws \Exception
@@ -99,24 +97,22 @@ class WINNT
     }
 
     /**
-     * Set as background command
+     * @param string $command
      *
-     * @return $this
+     * @return string
      */
-    public function setAsBg(): self
+    public function buildBackgroundCmd(string $command): string
     {
-        $this->os_cmd = 'start "" /B ' . $this->os_cmd . ' > nul 2>&1';
-
-        return $this;
+        return 'start "" /B ' . $command . ' > nul 2>&1';
     }
 
     /**
-     * Set command with ENV values
+     * @param string $command
      *
-     * @return $this
+     * @return string
      */
-    public function setEnvPath(): self
+    public function runWithProfile(string $command): string
     {
-        return $this;
+        return $command;
     }
 }
