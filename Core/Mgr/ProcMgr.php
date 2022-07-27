@@ -112,7 +112,7 @@ class ProcMgr extends Factory
         while (true) {
             $read = [$this->output_list[$proc_idx]];
 
-            if (0 === (int)stream_select($read, $write, $except, 0, 10)) {
+            if (0 === (int)stream_select($read, $write, $except, 0, 200000)) {
                 \Fiber::suspend();
             } else {
                 --$this->load_list[$proc_idx];
