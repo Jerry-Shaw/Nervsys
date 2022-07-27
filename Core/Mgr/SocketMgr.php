@@ -45,7 +45,7 @@ class SocketMgr extends Factory
     public array $context_options = [];
 
     private array $event_fn = [
-        'onAccept'      => null,
+        'onConnect'     => null,
         'onWsHandshake' => null,
         'onHeartbeat'   => null,
         'onMessage'     => null,
@@ -277,8 +277,8 @@ class SocketMgr extends Factory
             $this->socket_actives[$socket_id] = time();
             $this->socket_clients[$socket_id] = &$accept;
 
-            if (is_callable($this->event_fn['onAccept'])) {
-                $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onAccept'], [$socket_id]));
+            if (is_callable($this->event_fn['onConnect'])) {
+                $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onConnect'], [$socket_id]));
             }
 
             $this->consoleLog(__FUNCTION__, $socket_id . ': Connected! ' . count($this->socket_clients) . ' online.');
@@ -289,43 +289,46 @@ class SocketMgr extends Factory
     }
 
     /**
+     * @param array $socket_ids
+     *
      * @return void
-     * @throws \Throwable
      */
-    public function read(): void
+    public function read(array $socket_ids = []): void
     {
-        while (!empty($this->socket_reads)) {
-            foreach ($this->socket_reads as $socket_id => $client) {
-                try {
-                    $message = fgets($client, 2);
+        $clients = $this->socket_main + $this->socket_clients;
 
-                    if (false === $message) {
-                        $this->consoleLog(__FUNCTION__, $socket_id . ': Read ERROR!');
-                        throw new \Exception($socket_id . ': Read ERROR!', E_USER_NOTICE);
-                    }
+        if (!empty($socket_ids)) {
+            $clients = array_intersect_key($clients, array_flip($socket_ids));
+        }
 
-                    while ('' !== ($buff = fread($client, 4096))) {
-                        $message .= $buff;
-                    }
+        foreach ($clients as $socket_id => $client) {
+            try {
+                $message = fgets($client, 2);
 
-                    $message = trim($message);
-
-                    unset($this->socket_reads[$socket_id]);
-                    $this->socket_actives[$socket_id] = time();
-
-                    if (is_callable($this->event_fn['onMessage'])) {
-                        $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onMessage'], [$socket_id, $message]));
-                    }
-                } catch (\Throwable $throwable) {
-                    $this->consoleLog('ERROR', $throwable->getMessage());
-                    $this->close($socket_id);
-                    unset($throwable);
+                if (false === $message) {
+                    $this->consoleLog(__FUNCTION__, $socket_id . ': Read ERROR!');
+                    throw new \Exception($socket_id . ': Read ERROR!', E_USER_NOTICE);
                 }
+
+                while ('' !== ($buff = fread($client, 4096))) {
+                    $message .= $buff;
+                }
+
+                $message = trim($message);
+
+                $this->socket_actives[$socket_id] = time();
+
+                if (is_callable($this->event_fn['onMessage'])) {
+                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onMessage'], [$socket_id, $message]));
+                }
+            } catch (\Throwable $throwable) {
+                $this->consoleLog('ERROR', $throwable->getMessage());
+                $this->close($socket_id);
+                unset($throwable);
             }
         }
 
-        \Fiber::suspend();
-        $this->read();
+        unset($socket_ids, $clients, $socket_id, $client, $message);
     }
 
     /**
