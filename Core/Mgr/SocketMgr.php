@@ -248,8 +248,7 @@ class SocketMgr extends Factory
 
             unset($address, $context, $flags, $server, $errno, $errstr);
 
-            $this->fiberMgr->async($this->fiberMgr->await([$this, 'serverStart']));
-            $this->fiberMgr->run();
+            $this->serverStart();
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage());
         }
@@ -259,7 +258,7 @@ class SocketMgr extends Factory
      * @return void
      * @throws \Throwable
      */
-    public function serverStart(): void
+    private function serverStart(): void
     {
         $write = $except = [];
 
@@ -287,6 +286,8 @@ class SocketMgr extends Factory
                 if (is_callable($this->event_fn['onSend'])) {
                     $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
                 }
+
+                $this->fiberMgr->run();
             } catch (\Throwable $throwable) {
                 $this->consoleLog('ERROR', $throwable->getMessage());
                 unset($throwable);
@@ -330,8 +331,7 @@ class SocketMgr extends Factory
 
             unset($address, $context, $flags, $client, $errno, $errstr);
 
-            $this->fiberMgr->async($this->fiberMgr->await([$this, 'clientStart']));
-            $this->fiberMgr->run();
+            $this->clientStart();
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage());
         }
@@ -340,7 +340,7 @@ class SocketMgr extends Factory
     /**
      * @return void
      */
-    public function clientStart(): void
+    private function clientStart(): void
     {
         $write = $except = [];
 
@@ -362,6 +362,8 @@ class SocketMgr extends Factory
                 if (is_callable($this->event_fn['onSend'])) {
                     $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
                 }
+
+                $this->fiberMgr->run();
             } catch (\Throwable $throwable) {
                 $this->consoleLog('ERROR', $throwable->getMessage());
                 unset($throwable);
@@ -422,13 +424,10 @@ class SocketMgr extends Factory
                 throw new \Exception($socket_id . ': Read ERROR!', E_USER_NOTICE);
             }
 
-            while ('' !== ($buff = fread($socket, 4096))) {
-                $message .= $buff;
-            }
+            $message .= fgets($socket);
+            $message = trim($message);
 
             $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
-
-            $message = trim($message);
 
             $this->active_clients[$socket_id] = time();
         } catch (\Throwable $throwable) {
