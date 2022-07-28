@@ -90,7 +90,7 @@ class FiberMgr extends Factory
             if (is_callable($callable)) {
                 $args = is_array($result) && !empty($result) && !array_is_list($result)
                     ? parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result)
-                    : [$result];
+                    : (array)$result;
 
                 $result = call_user_func_array($callable, $args);
             }
@@ -113,7 +113,7 @@ class FiberMgr extends Factory
      */
     public function run(): void
     {
-        $this->fiber->resume();
+        $this->fiber->isSuspended() && $this->fiber->resume();
     }
 
     /**
