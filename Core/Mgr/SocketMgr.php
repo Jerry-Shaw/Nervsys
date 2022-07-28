@@ -248,52 +248,9 @@ class SocketMgr extends Factory
 
             unset($address, $context, $flags, $server, $errno, $errstr);
 
-            $this->serverStart();
+            $this->is_websocket ? $this->websocketStart() : $this->serverStart();
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     * @throws \Throwable
-     */
-    private function serverStart(): void
-    {
-        $write = $except = [];
-
-        while (true) {
-            try {
-                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
-
-                $clients = $this->connections;
-
-                if (0 < (int)stream_select($clients, $write, $except, 0, $this->select_timeout)) {
-                    if (isset($clients[$this->socket_id])) {
-                        unset($clients[$this->socket_id]);
-                        $this->fiberMgr->async($this->fiberMgr->await([$this, 'accept']));
-                    }
-
-                    if (!empty($clients)) {
-                        foreach ($clients as $socket_id => $client) {
-                            $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$socket_id]), $this->event_fn['onMessage']);
-                        }
-
-                        unset($socket_id, $client);
-                    }
-                }
-
-                if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
-                }
-
-                $this->fiberMgr->run();
-            } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
-                unset($throwable);
-            }
-
-            unset($clients);
         }
     }
 
@@ -334,42 +291,6 @@ class SocketMgr extends Factory
             $this->clientStart();
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage());
-        }
-    }
-
-    /**
-     * @return void
-     */
-    private function clientStart(): void
-    {
-        $write = $except = [];
-
-        while (true) {
-            try {
-                if (empty($this->connections)) {
-                    $this->consoleLog('ERROR', 'Connection lost!');
-                    break;
-                }
-
-                $connection = [$this->connections[$this->socket_id]];
-
-                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
-
-                if (0 < (int)stream_select($connection, $write, $except, 0, $this->select_timeout)) {
-                    $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$this->socket_id]), $this->event_fn['onMessage']);
-                }
-
-                if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
-                }
-
-                $this->fiberMgr->run();
-            } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
-                unset($throwable);
-            }
-
-            unset($connection);
         }
     }
 
@@ -747,5 +668,91 @@ class SocketMgr extends Factory
     {
         $this->send(chr(0x8A) . chr(0), $socket_id);
         unset($socket_id);
+    }
+
+
+    private function websocketStart(): void
+    {
+
+    }
+
+
+    /**
+     * @return void
+     * @throws \Throwable
+     */
+    private function serverStart(): void
+    {
+        $write = $except = [];
+
+        while (true) {
+            try {
+                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
+
+                $clients = $this->connections;
+
+                if (0 < (int)stream_select($clients, $write, $except, 0, $this->select_timeout)) {
+                    if (isset($clients[$this->socket_id])) {
+                        unset($clients[$this->socket_id]);
+                        $this->fiberMgr->async($this->fiberMgr->await([$this, 'accept']));
+                    }
+
+                    if (!empty($clients)) {
+                        foreach ($clients as $socket_id => $client) {
+                            $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$socket_id]), $this->event_fn['onMessage']);
+                        }
+
+                        unset($socket_id, $client);
+                    }
+                }
+
+                if (is_callable($this->event_fn['onSend'])) {
+                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
+                }
+
+                $this->fiberMgr->run();
+            } catch (\Throwable $throwable) {
+                $this->consoleLog('ERROR', $throwable->getMessage());
+                unset($throwable);
+            }
+
+            unset($clients);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function clientStart(): void
+    {
+        $write = $except = [];
+
+        while (true) {
+            try {
+                if (empty($this->connections)) {
+                    $this->consoleLog('ERROR', 'Connection lost!');
+                    break;
+                }
+
+                $connection = [$this->connections[$this->socket_id]];
+
+                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
+
+                if (0 < (int)stream_select($connection, $write, $except, 0, $this->select_timeout)) {
+                    $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$this->socket_id]), $this->event_fn['onMessage']);
+                }
+
+                if (is_callable($this->event_fn['onSend'])) {
+                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
+                }
+
+                $this->fiberMgr->run();
+            } catch (\Throwable $throwable) {
+                $this->consoleLog('ERROR', $throwable->getMessage());
+                unset($throwable);
+            }
+
+            unset($connection);
+        }
     }
 }
