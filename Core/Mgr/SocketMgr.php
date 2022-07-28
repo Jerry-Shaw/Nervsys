@@ -515,7 +515,7 @@ class SocketMgr extends Factory
      *
      * @return void
      */
-    private function consoleLog(string $action, string $message): void
+    public function consoleLog(string $action, string $message): void
     {
         if ($this->debug_mode) {
             echo '[' . date('Y-m-d H:i:s') . ']: '
@@ -530,7 +530,7 @@ class SocketMgr extends Factory
     /**
      * @return string
      */
-    private function getSocketId(): string
+    public function getSocketId(): string
     {
         $socket_id = hash('md5', uniqid(getmypid() . mt_rand(), true));
         return !isset($this->connections[$socket_id]) ? $socket_id : $this->getSocketId();
