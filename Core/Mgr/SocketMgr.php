@@ -251,7 +251,7 @@ class SocketMgr extends Factory
             $this->fiberMgr->async($this->fiberMgr->await([$this, 'serverStart']));
             $this->fiberMgr->run();
         } catch (\Throwable $throwable) {
-            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->consoleLog('ERROR', $throwable->getMessage());
         }
     }
 
@@ -333,7 +333,7 @@ class SocketMgr extends Factory
             $this->fiberMgr->async($this->fiberMgr->await([$this, 'clientStart']));
             $this->fiberMgr->run();
         } catch (\Throwable $throwable) {
-            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->consoleLog('ERROR', $throwable->getMessage());
         }
     }
 
@@ -397,7 +397,7 @@ class SocketMgr extends Factory
 
             $this->consoleLog(__FUNCTION__, $socket_id . ': Connected! ' . (count($this->connections) - 1) . ' online.');
         } catch (\Throwable $throwable) {
-            $this->consoleLog('ERROR', $throwable->getMessage());
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
             unset($throwable, $accept, $socket_id);
         }
     }
@@ -501,7 +501,7 @@ class SocketMgr extends Factory
                     $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onHeartbeat'], [$socket_id]));
                 }
             } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
+                $this->consoleLog(__FUNCTION__, $throwable->getMessage());
                 unset($throwable);
             }
         }
@@ -551,7 +551,7 @@ class SocketMgr extends Factory
             fclose($this->connections[$socket_id]);
             $this->consoleLog(__FUNCTION__, $socket_id);
         } catch (\Throwable $throwable) {
-            $this->consoleLog('ERROR', $throwable->getMessage());
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
             unset($throwable);
         }
 
