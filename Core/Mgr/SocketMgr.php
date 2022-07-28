@@ -36,12 +36,10 @@ class SocketMgr extends Factory
     public bool $debug_mode   = false;
     public bool $is_websocket = false;
 
-    public string $main_id = '';
+    public string $socket_id = '';
 
-    public array $socket_main     = [];
-    public array $socket_reads    = [];
-    public array $socket_clients  = [];
-    public array $socket_actives  = [];
+    public array $connections     = [];
+    public array $active_clients  = [];
     public array $context_options = [];
 
     private array $event_fn = [
@@ -217,10 +215,51 @@ class SocketMgr extends Factory
     }
 
     /**
+     * @param string $address
+     *
+     * @return void
+     */
+    public function listenTo(string $address): void
+    {
+        try {
+            $context = stream_context_create();
+
+            if (!empty($this->context_options)) {
+                stream_context_set_params($context, $this->context_options);
+            }
+
+            $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
+                ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN
+                : STREAM_SERVER_BIND;
+
+            $server = stream_socket_server($address, $errno, $errstr, $flags, $context);
+
+            if (false === $server) {
+                throw new \Exception('Server failed to start! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
+            }
+
+            stream_set_timeout($server, $this->wait_timeout);
+
+            $this->socket_id = $this->getSocketId();
+
+            $this->connections[$this->socket_id] = &$server;
+
+            $this->consoleLog(__FUNCTION__, $address);
+
+            unset($address, $context, $flags, $server, $errno, $errstr);
+
+            $this->fiberMgr->async($this->fiberMgr->await([$this, 'serverStart']));
+            $this->fiberMgr->run();
+        } catch (\Throwable $throwable) {
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+        }
+    }
+
+    /**
      * @return void
      * @throws \Throwable
      */
-    public function listen(): void
+    public function serverStart(): void
     {
         $write = $except = [];
 
@@ -228,19 +267,20 @@ class SocketMgr extends Factory
             try {
                 $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
 
-                $clients = $this->socket_main + $this->socket_clients;
-                $changes = (int)stream_select($clients, $write, $except, 0, $this->select_timeout);
+                $clients = $this->connections;
 
-                if (0 < $changes) {
-                    if (isset($clients[$this->main_id])) {
-                        --$changes;
-                        unset($clients[$this->main_id]);
+                if (0 < (int)stream_select($clients, $write, $except, 0, $this->select_timeout)) {
+                    if (isset($clients[$this->socket_id])) {
+                        unset($clients[$this->socket_id]);
                         $this->fiberMgr->async($this->fiberMgr->await([$this, 'accept']));
                     }
 
                     if (!empty($clients)) {
-                        $this->socket_reads += $clients;
-                        $this->consoleLog(__FUNCTION__, $changes . ' clients to read.');
+                        foreach ($clients as $socket_id => $client) {
+                            $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$socket_id]), $this->event_fn['onMessage']);
+                        }
+
+                        unset($socket_id, $client);
                     }
                 }
 
@@ -252,8 +292,82 @@ class SocketMgr extends Factory
                 unset($throwable);
             }
 
-            unset($clients, $changes);
-            \Fiber::suspend();
+            unset($clients);
+        }
+    }
+
+    /**
+     * @param string $address
+     *
+     * @return void
+     */
+    public function connectTo(string $address): void
+    {
+        try {
+            $context = stream_context_create();
+
+            if (!empty($this->context_options)) {
+                stream_context_set_params($context, $this->context_options);
+            }
+
+            $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
+                ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT
+                : STREAM_CLIENT_CONNECT;
+
+            $client = stream_socket_client($address, $errno, $errstr, $this->wait_timeout, $flags, $context);
+
+            if (false === $client) {
+                throw new \Exception('Client failed to connect! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
+            }
+
+            stream_set_timeout($client, $this->wait_timeout);
+
+            $this->socket_id = $this->getSocketId();
+
+            $this->connections[$this->socket_id] = &$client;
+
+            $this->consoleLog(__FUNCTION__, $address);
+
+            unset($address, $context, $flags, $client, $errno, $errstr);
+
+            $this->fiberMgr->async($this->fiberMgr->await([$this, 'clientStart']));
+            $this->fiberMgr->run();
+        } catch (\Throwable $throwable) {
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function clientStart(): void
+    {
+        $write = $except = [];
+
+        while (true) {
+            try {
+                if (empty($this->connections)) {
+                    $this->consoleLog('ERROR', 'Connection lost!');
+                    break;
+                }
+
+                $connection = [$this->connections[$this->socket_id]];
+
+                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
+
+                if (0 < (int)stream_select($connection, $write, $except, 0, $this->select_timeout)) {
+                    $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$this->socket_id]), $this->event_fn['onMessage']);
+                }
+
+                if (is_callable($this->event_fn['onSend'])) {
+                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
+                }
+            } catch (\Throwable $throwable) {
+                $this->consoleLog('ERROR', $throwable->getMessage());
+                unset($throwable);
+            }
+
+            unset($connection);
         }
     }
 
@@ -263,7 +377,7 @@ class SocketMgr extends Factory
     public function accept(): void
     {
         try {
-            $accept = stream_socket_accept($this->socket_main[$this->main_id], 0);
+            $accept = stream_socket_accept($this->connections[$this->socket_id], 1);
 
             if (false === $accept) {
                 throw new \Exception('Connection failed!', E_USER_NOTICE);
@@ -274,14 +388,14 @@ class SocketMgr extends Factory
             stream_set_timeout($accept, $this->wait_timeout);
             stream_set_blocking($accept, $this->set_block);
 
-            $this->socket_actives[$socket_id] = time();
-            $this->socket_clients[$socket_id] = &$accept;
+            $this->active_clients[$socket_id] = time();
+            $this->connections[$socket_id]    = &$accept;
 
             if (is_callable($this->event_fn['onConnect'])) {
                 $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onConnect'], [$socket_id]));
             }
 
-            $this->consoleLog(__FUNCTION__, $socket_id . ': Connected! ' . count($this->socket_clients) . ' online.');
+            $this->consoleLog(__FUNCTION__, $socket_id . ': Connected! ' . (count($this->connections) - 1) . ' online.');
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage());
             unset($throwable, $accept, $socket_id);
@@ -289,78 +403,71 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param array $socket_ids
+     * @param string $socket_id
      *
-     * @return void
+     * @return array
      */
-    public function read(array $socket_ids = []): void
+    public function read(string $socket_id): array
     {
-        $clients = $this->socket_main + $this->socket_clients;
-
-        if (!empty($socket_ids)) {
-            $clients = array_intersect_key($clients, array_flip($socket_ids));
+        if (!isset($this->connections[$socket_id])) {
+            unset($this->active_clients[$socket_id]);
+            return [$socket_id, ''];
         }
 
-        foreach ($clients as $socket_id => $client) {
-            try {
-                $message = fgets($client, 2);
+        try {
+            $socket  = &$this->connections[$socket_id];
+            $message = fgets($socket, 2);
 
-                if (false === $message) {
-                    $this->consoleLog(__FUNCTION__, $socket_id . ': Read ERROR!');
-                    throw new \Exception($socket_id . ': Read ERROR!', E_USER_NOTICE);
-                }
-
-                while ('' !== ($buff = fread($client, 4096))) {
-                    $message .= $buff;
-                }
-
-                $message = trim($message);
-
-                $this->socket_actives[$socket_id] = time();
-
-                if (is_callable($this->event_fn['onMessage'])) {
-                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onMessage'], [$socket_id, $message]));
-                }
-            } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
-                $this->close($socket_id);
-                unset($throwable);
+            if (false === $message) {
+                throw new \Exception($socket_id . ': Read ERROR!', E_USER_NOTICE);
             }
+
+            while ('' !== ($buff = fread($socket, 4096))) {
+                $message .= $buff;
+            }
+
+            $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
+
+            $message = trim($message);
+
+            $this->active_clients[$socket_id] = time();
+        } catch (\Throwable $throwable) {
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->close($socket_id);
+            unset($throwable);
+            return [$socket_id, ''];
         }
 
-        unset($socket_ids, $clients, $socket_id, $client, $message);
+        unset($clients, $client);
+        return [$socket_id, $message];
     }
 
     /**
      * @param string $message
-     * @param array  $socket_ids
+     * @param string $socket_id
      *
      * @return void
      */
-    public function send(string $message, array $socket_ids = []): void
+    public function send(string $message, string $socket_id): void
     {
-        $clients = $this->socket_main + $this->socket_clients;
-
-        if (!empty($socket_ids)) {
-            $clients = array_intersect_key($clients, array_flip($socket_ids));
+        if (!isset($this->connections[$socket_id])) {
+            unset($this->active_clients[$socket_id], $socket_id);
+            return;
         }
 
-        foreach ($clients as $socket_id => $client) {
-            try {
-                if (false === fwrite($client, $message)) {
-                    $this->consoleLog(__FUNCTION__, $socket_id . ': Send ERROR!');
-                    throw new \Exception($socket_id . ': Send ERROR!', E_USER_NOTICE);
-                }
-
-                $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
-            } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
-                $this->close($socket_id);
-                unset($throwable);
+        try {
+            if (false === fwrite($this->connections[$socket_id], $message)) {
+                throw new \Exception($socket_id . ': Send ERROR!', E_USER_NOTICE);
             }
+
+            $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
+        } catch (\Throwable $throwable) {
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->close($socket_id);
+            unset($throwable);
         }
 
-        unset($message, $socket_ids, $clients, $socket_id, $client);
+        unset($message, $socket_id);
     }
 
     /**
@@ -371,8 +478,13 @@ class SocketMgr extends Factory
         $now_time = time();
         $max_wait = $this->alive_timeout * 2;
 
-        foreach ($this->socket_actives as $socket_id => $active_time) {
+        foreach ($this->active_clients as $socket_id => $active_time) {
             try {
+                if (!isset($this->connections[$socket_id])) {
+                    unset($this->active_clients[$socket_id]);
+                    continue;
+                }
+
                 $idle_time = $now_time - $active_time;
 
                 if ($idle_time < $this->alive_timeout) {
@@ -380,7 +492,7 @@ class SocketMgr extends Factory
                 }
 
                 if ($idle_time > $max_wait) {
-                    $this->consoleLog(__FUNCTION__, $socket_id . ': Lost heartbeat connection!');
+                    $this->consoleLog(__FUNCTION__, $socket_id . ': Heartbeat lost!');
                     $this->close($socket_id);
                     continue;
                 }
@@ -421,7 +533,7 @@ class SocketMgr extends Factory
     private function getSocketId(): string
     {
         $socket_id = hash('md5', uniqid(getmypid() . mt_rand(), true));
-        return !isset($this->socket_clients[$socket_id]) ? $socket_id : $this->getSocketId();
+        return !isset($this->connections[$socket_id]) ? $socket_id : $this->getSocketId();
     }
 
     /**
@@ -436,95 +548,14 @@ class SocketMgr extends Factory
                 $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onClose'], [$socket_id]));
             }
 
-            fclose($this->socket_clients[$socket_id]);
+            fclose($this->connections[$socket_id]);
             $this->consoleLog(__FUNCTION__, $socket_id);
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage());
             unset($throwable);
         }
 
-        unset($this->socket_reads[$socket_id], $this->socket_clients[$socket_id], $this->socket_actives[$socket_id], $socket_id);
-    }
-
-    /**
-     * @param string $address
-     *
-     * @return $this
-     * @throws \Exception
-     */
-    public function serverOn(string $address): self
-    {
-        $context = stream_context_create();
-
-        if (!empty($this->context_options)) {
-            stream_context_set_params($context, $this->context_options);
-        }
-
-        $scheme = parse_url($address, PHP_URL_SCHEME);
-
-        $server = stream_socket_server(
-            $address,
-            $errno,
-            $errstr,
-            'udp' != $scheme ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN : STREAM_SERVER_BIND,
-            $context
-        );
-
-        if (false === $server) {
-            $this->consoleLog('ERROR', $errno . ': ' . $errstr);
-            throw new \Exception('Server failed to start!', E_USER_ERROR);
-        }
-
-        stream_set_timeout($server, $this->wait_timeout);
-
-        $this->main_id     = $this->getSocketId();
-        $this->socket_main = [$this->main_id => &$server];
-
-        $this->consoleLog(__FUNCTION__, $address);
-
-        unset($address, $context, $scheme, $server, $errno, $errstr);
-        return $this;
-    }
-
-    /**
-     * @param string $address
-     *
-     * @return $this
-     * @throws \Exception
-     */
-    public function clientOn(string $address): self
-    {
-        $context = stream_context_create();
-
-        if (!empty($this->context_options)) {
-            stream_context_set_params($context, $this->context_options);
-        }
-
-        $scheme = parse_url($address, PHP_URL_SCHEME);
-
-        $client = stream_socket_client(
-            $address,
-            $errno,
-            $errstr,
-            $this->wait_timeout,
-            'udp' != $scheme ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT : STREAM_CLIENT_CONNECT,
-            $context
-        );
-
-        if (false === $client) {
-            $this->consoleLog('ERROR', $errno . ': ' . $errstr);
-            throw new \Exception('Client failed to start!', E_USER_ERROR);
-        }
-
-        stream_set_timeout($client, $this->wait_timeout);
-
-        $this->main_id     = $this->getSocketId();
-        $this->socket_main = [$this->main_id => &$client];
-
-        $this->consoleLog(__FUNCTION__, $address);
-
-        unset($address, $context, $scheme, $client, $errno, $errstr);
-        return $this;
+        unset($this->connections[$socket_id], $this->active_clients[$socket_id], $socket_id);
     }
 
     /**
@@ -704,7 +735,7 @@ class SocketMgr extends Factory
      */
     public function wsPing(string $socket_id): void
     {
-        $this->send(chr(0x89) . chr(0), [$socket_id]);
+        $this->send(chr(0x89) . chr(0), $socket_id);
         unset($socket_id);
     }
 
@@ -715,7 +746,7 @@ class SocketMgr extends Factory
      */
     public function wsPong(string $socket_id): void
     {
-        $this->send(chr(0x8A) . chr(0), [$socket_id]);
+        $this->send(chr(0x8A) . chr(0), $socket_id);
         unset($socket_id);
     }
 }
