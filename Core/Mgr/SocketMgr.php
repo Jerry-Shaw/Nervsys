@@ -759,7 +759,7 @@ class SocketMgr extends Factory
                                 $this->fiberMgr->await([$this, 'read'], [$socket_id]),
                                 function (string $socket_id, string $message): void
                                 {
-                                    if (is_callable($this->event_fn['onMessage'])) {
+                                    if ('' !== $message && is_callable($this->event_fn['onMessage'])) {
                                         $this->fiberMgr->async(
                                             $this->fiberMgr->await($this->event_fn['onMessage'],
                                                 [$socket_id, $this->wsDecode($message)]
