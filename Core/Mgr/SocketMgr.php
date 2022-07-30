@@ -491,7 +491,7 @@ class SocketMgr extends Factory
      *
      * @return int[]
      */
-    public function wsGetCodes(string $buff): array
+    public function wsGetFrameCodes(string $buff): array
     {
         $char = ord($buff[0]);
 
@@ -512,7 +512,7 @@ class SocketMgr extends Factory
      *
      * @return string
      */
-    public function wsGetKey(string $header): string
+    public function wsGetHeaderKey(string $header): string
     {
         //Validate Sec-WebSocket-Key
         $key_pos = strpos($header, 'Sec-WebSocket-Key');
@@ -538,7 +538,7 @@ class SocketMgr extends Factory
      *
      * @return string
      */
-    public function wsGetProto(string $header): string
+    public function wsGetHeaderProto(string $header): string
     {
         //Validate Sec-WebSocket-Protocol
         $proto_pos = strpos($header, 'Sec-WebSocket-Protocol');
@@ -564,7 +564,7 @@ class SocketMgr extends Factory
      *
      * @return string
      */
-    public function wsGetHandshake(string $ws_key, string $ws_proto = ''): string
+    public function wsBuildHandshake(string $ws_key, string $ws_proto = ''): string
     {
         //Set default protocol
         $ws_protocol = '';
@@ -590,6 +590,43 @@ class SocketMgr extends Factory
 
         unset($ws_key, $ws_proto, $ws_protocol);
         return $response;
+    }
+
+    /**
+     * WebSocket: Send handshake response
+     *
+     * @param string $socket_id
+     * @param string $header_msg
+     *
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function wsSendHandshake(string $socket_id, string $header_msg): void
+    {
+        $ws_key   = $this->wsGetHeaderKey($header_msg);
+        $ws_proto = $this->wsGetHeaderProto($header_msg);
+
+        if (is_callable($this->event_fn['onWsHandshake'])) {
+            $this->fiberMgr->async(
+                $this->fiberMgr->await($this->event_fn['onWsHandshake'], [$socket_id, $ws_proto]),
+                function (bool $allow_handshake) use ($ws_key, $ws_proto, $socket_id): void
+                {
+                    if ($allow_handshake) {
+                        $this->send($this->wsBuildHandshake($ws_key, $ws_proto), $socket_id);
+                    } else {
+                        $this->send('Http/1.1 406 Not Acceptable' . "\r\n\r\n", $socket_id);
+                        $this->close($socket_id);
+                    }
+
+                    unset($allow_handshake);
+                }
+            );
+        } else {
+            $this->send($this->wsBuildHandshake($ws_key, $ws_proto), $socket_id);
+        }
+
+        unset($socket_id, $header_msg, $ws_key, $ws_proto);
     }
 
     /**
@@ -676,6 +713,7 @@ class SocketMgr extends Factory
         unset($socket_id);
     }
 
+
     /**
      * @return void
      */
@@ -692,33 +730,44 @@ class SocketMgr extends Factory
 
                 if (0 < (int)stream_select($clients, $write, $except, 0, $this->select_timeout)) {
                     if (isset($clients[$this->socket_id])) {
-                        $handshake[$this->fiberMgr->async($this->fiberMgr->await([$this, 'accept']))->getReturn()] = false;
+                        $this->fiberMgr->async(
+                            $this->fiberMgr->await([$this, 'accept']),
+                            function (string $socket_id) use (&$handshake): void
+                            {
+                                $handshake[$socket_id] = false;
+                            }
+                        );
+
                         unset($clients[$this->socket_id]);
                     }
 
                     if (!empty($clients)) {
                         foreach ($clients as $socket_id => $client) {
-                            $sock_msg = $this->fiberMgr->async($this->fiberMgr->await([$this, 'read'], [$socket_id]))->getReturn();
-
-                            if ('' === $sock_msg[1]) {
-                                $this->close($socket_id);
-                                continue;
-                            }
-
-                            $raw_msg = $sock_msg[1];
-
+                            //onHandshake
                             if (isset($handshake[$socket_id])) {
-                                if (is_callable($this->event_fn['onWsHandshake'])) {
-                                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onWsHandshake'], [$socket_id, $raw_msg]));
-                                }
+                                $this->fiberMgr->async(
+                                    $this->fiberMgr->await([$this, 'read'], [$socket_id]),
+                                    [$this, 'wsSendHandshake']
+                                );
 
                                 unset($handshake[$socket_id]);
                                 continue;
                             }
 
-                            if (is_callable($this->event_fn['onMessage'])) {
-                                $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onMessage'], [$socket_id, $this->wsDecode($raw_msg)]));
-                            }
+                            //onMessage
+                            $this->fiberMgr->async(
+                                $this->fiberMgr->await([$this, 'read'], [$socket_id]),
+                                function (string $socket_id, string $message): void
+                                {
+                                    if (is_callable($this->event_fn['onMessage'])) {
+                                        $this->fiberMgr->async(
+                                            $this->fiberMgr->await($this->event_fn['onMessage'],
+                                                [$socket_id, $this->wsDecode($message)]
+                                            )
+                                        );
+                                    }
+                                }
+                            );
                         }
 
                         unset($socket_id, $client);
