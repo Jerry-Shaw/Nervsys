@@ -355,9 +355,9 @@ class SocketMgr extends Factory
                 $message .= $buff;
             }
 
-            $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
-
             $this->activities[$socket_id] = time();
+
+            $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
         } catch (\Throwable $throwable) {
             $this->consoleLog(__FUNCTION__, $throwable->getMessage());
             $this->close($socket_id);
@@ -476,6 +476,7 @@ class SocketMgr extends Factory
             }
 
             fclose($this->connections[$socket_id]);
+
             $this->consoleLog(__FUNCTION__, $socket_id);
         } catch (\Throwable $throwable) {
             $this->consoleLog(__FUNCTION__, $throwable->getMessage());
@@ -515,7 +516,6 @@ class SocketMgr extends Factory
      */
     public function wsGetHeaderKey(string $header): string
     {
-        //Validate Sec-WebSocket-Key
         $key_pos = strpos($header, 'Sec-WebSocket-Key');
 
         if (false === $key_pos) {
@@ -523,7 +523,6 @@ class SocketMgr extends Factory
             return '';
         }
 
-        //Get WebSocket key & rehash
         $key_pos += 19;
         $key_val = substr($header, $key_pos, strpos($header, "\r\n", $key_pos) - $key_pos);
         $key_val = base64_encode(hash('sha1', $key_val . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true));
@@ -541,7 +540,6 @@ class SocketMgr extends Factory
      */
     public function wsGetHeaderProto(string $header): string
     {
-        //Validate Sec-WebSocket-Protocol
         $proto_pos = strpos($header, 'Sec-WebSocket-Protocol');
 
         if (false === $proto_pos) {
@@ -549,7 +547,6 @@ class SocketMgr extends Factory
             return '';
         }
 
-        //Get Sec-WebSocket-Protocol
         $proto_pos += 24;
         $proto_val = substr($header, $proto_pos, strpos($header, "\r\n", $proto_pos) - $proto_pos);
 
@@ -567,22 +564,20 @@ class SocketMgr extends Factory
      */
     public function wsBuildHandshake(string $ws_key, string $ws_proto = ''): string
     {
-        //Set default protocol
         $ws_protocol = '';
 
         if ('' !== $ws_proto) {
-            //Only response the first protocol value
-            if (false !== ($proto_pos = strrpos($ws_proto, ','))) {
+            $proto_pos = strrpos($ws_proto, ',');
+
+            if (false !== $proto_pos) {
                 $ws_proto = substr($ws_proto, 0, $proto_pos);
             }
 
-            //Set Sec-WebSocket-Protocol response value
             $ws_protocol = 'Sec-WebSocket-Protocol: ' . $ws_proto . "\r\n";
 
             unset($proto_pos);
         }
 
-        //Generate handshake response
         $response = 'HTTP/1.1 101 Switching Protocols' . "\r\n"
             . 'Upgrade: websocket' . "\r\n"
             . 'Connection: Upgrade' . "\r\n"
@@ -743,7 +738,6 @@ class SocketMgr extends Factory
 
                     if (!empty($clients)) {
                         foreach ($clients as $socket_id => $client) {
-                            //onHandshake
                             if (isset($this->handshakes[$socket_id])) {
                                 $this->fiberMgr->async(
                                     $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
@@ -754,37 +748,30 @@ class SocketMgr extends Factory
                                 continue;
                             }
 
-                            //onMessage
                             $this->fiberMgr->async(
                                 $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
                                 function (string $socket_id, string $message): void
                                 {
-                                    //Skip empty message
                                     if ('' === $message) {
                                         return;
                                     }
 
-                                    //Parse codes
                                     $ws_codes = $this->wsGetFrameCodes($message);
 
-                                    //Accept pong frame (pong:0xA), drop non-masked frames
                                     if (0xA === $ws_codes['opcode'] || 1 !== $ws_codes['mask']) {
                                         return;
                                     }
 
-                                    //Respond to ping frame (ping:0x9)
                                     if (0x9 === $ws_codes['opcode']) {
                                         $this->wsPong($socket_id);
                                         return;
                                     }
 
-                                    //Check opcode (connection closed: 8)
                                     if (0x8 === $ws_codes['opcode']) {
                                         $this->close($socket_id);
                                         return;
                                     }
 
-                                    //Process message
                                     if (is_callable($this->event_fn['onMessage'])) {
                                         $this->fiberMgr->async(
                                             $this->fiberMgr->await($this->event_fn['onMessage'],
