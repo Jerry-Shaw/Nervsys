@@ -594,11 +594,11 @@ class SocketMgr extends Factory
      * @param string $socket_id
      * @param string $header_msg
      *
-     * @return void
+     * @return string
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function wsSendHandshake(string $socket_id, string $header_msg): void
+    public function wsSendHandshake(string $socket_id, string $header_msg): string
     {
         $ws_key   = $this->wsGetHeaderKey($header_msg);
         $ws_proto = $this->wsGetHeaderProto($header_msg);
@@ -622,7 +622,8 @@ class SocketMgr extends Factory
             $this->sendTo($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
         }
 
-        unset($socket_id, $header_msg, $ws_key, $ws_proto);
+        unset($header_msg, $ws_key, $ws_proto);
+        return $socket_id;
     }
 
     /**
@@ -738,27 +739,25 @@ class SocketMgr extends Factory
 
                     if (!empty($clients)) {
                         foreach ($clients as $socket_id => $client) {
-                            if (isset($this->handshakes[$socket_id])) {
-                                $this->fiberMgr->async(
-                                    $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
-                                    [$this, 'wsSendHandshake']
-                                );
-
-                                unset($this->handshakes[$socket_id]);
-                                continue;
-                            }
-
                             $this->fiberMgr->async(
                                 $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
                                 function (string $socket_id, string $message): void
                                 {
-                                    if ('' === $message) {
+                                    if (isset($this->handshakes[$socket_id])) {
+                                        $this->fiberMgr->async(
+                                            $this->fiberMgr->await([$this, 'wsSendHandshake'], [$socket_id, $message]),
+                                            function (string $socket_id): void
+                                            {
+                                                unset($this->handshakes[$socket_id]);
+                                            }
+                                        );
+
                                         return;
                                     }
 
                                     $ws_codes = $this->wsGetFrameCodes($message);
 
-                                    if (0xA === $ws_codes['opcode'] || 1 !== $ws_codes['mask']) {
+                                    if (0xA === $ws_codes['opcode']) {
                                         return;
                                     }
 
