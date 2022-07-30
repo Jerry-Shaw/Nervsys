@@ -800,7 +800,20 @@ class SocketMgr extends Factory
                 }
 
                 if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
+                    $this->fiberMgr->async(
+                        $this->fiberMgr->await($this->event_fn['onSend']),
+                        function (array $socket_messages): void
+                        {
+                            while (null !== ($data = array_pop($socket_messages))) {
+                                $this->fiberMgr->async(
+                                    $this->fiberMgr->await(
+                                        [$this, 'sendTo'],
+                                        [$data['socket_id'], $this->wsEncode($data['message'])]
+                                    )
+                                );
+                            }
+                        }
+                    );
                 }
 
                 $this->fiberMgr->run();
@@ -843,7 +856,20 @@ class SocketMgr extends Factory
                 }
 
                 if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
+                    $this->fiberMgr->async(
+                        $this->fiberMgr->await($this->event_fn['onSend']),
+                        function (array $socket_messages): void
+                        {
+                            while (null !== ($data = array_pop($socket_messages))) {
+                                $this->fiberMgr->async(
+                                    $this->fiberMgr->await(
+                                        [$this, 'sendTo'],
+                                        [$data['socket_id'], $data['message']]
+                                    )
+                                );
+                            }
+                        }
+                    );
                 }
 
                 $this->fiberMgr->run();
