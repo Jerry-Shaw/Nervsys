@@ -446,7 +446,7 @@ class SocketMgr extends Factory
     {
         if ($this->debug_mode) {
             echo '[' . date('Y-m-d H:i:s') . ']: '
-                . str_pad(ucfirst($action), 12)
+                . str_pad(ucfirst($action), 15)
                 . strtr($message, ["\r" => '\\r', "\n" => '\\n'])
                 . "\n";
         }
@@ -771,10 +771,14 @@ class SocketMgr extends Factory
                                         return;
                                     }
 
+                                    $message = $this->wsDecode($message);
+
+                                    $this->consoleLog('wsGetMessage', $message);
+
                                     if (is_callable($this->event_fn['onMessage'])) {
                                         $this->fiberMgr->async(
                                             $this->fiberMgr->await($this->event_fn['onMessage'],
-                                                [$socket_id, $this->wsDecode($message)]
+                                                [$socket_id, $message]
                                             )
                                         );
                                     }
