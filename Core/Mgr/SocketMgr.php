@@ -571,9 +571,9 @@ class SocketMgr extends Factory
         $ws_protocol = '';
 
         if ('' !== $ws_proto) {
-            //Only response the last protocol value
+            //Only response the first protocol value
             if (false !== ($proto_pos = strrpos($ws_proto, ','))) {
-                $ws_proto = substr($ws_proto, $proto_pos + 2);
+                $ws_proto = substr($ws_proto, 0, $proto_pos);
             }
 
             //Set Sec-WebSocket-Protocol response value
