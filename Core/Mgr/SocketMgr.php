@@ -759,7 +759,33 @@ class SocketMgr extends Factory
                                 $this->fiberMgr->await([$this, 'read'], [$socket_id]),
                                 function (string $socket_id, string $message): void
                                 {
-                                    if ('' !== $message && is_callable($this->event_fn['onMessage'])) {
+                                    //Skip empty message
+                                    if ('' === $message) {
+                                        return;
+                                    }
+
+                                    //Parse codes
+                                    $ws_codes = $this->wsGetFrameCodes($message);
+
+                                    //Accept pong frame (pong:0xA), drop non-masked frames
+                                    if (0xA === $ws_codes['opcode'] || 1 !== $ws_codes['mask']) {
+                                        return;
+                                    }
+
+                                    //Respond to ping frame (ping:0x9)
+                                    if (0x9 === $ws_codes['opcode']) {
+                                        $this->wsPong($socket_id);
+                                        return;
+                                    }
+
+                                    //Check opcode (connection closed: 8)
+                                    if (0x8 === $ws_codes['opcode']) {
+                                        $this->close($socket_id);
+                                        return;
+                                    }
+
+                                    //Process message
+                                    if (is_callable($this->event_fn['onMessage'])) {
                                         $this->fiberMgr->async(
                                             $this->fiberMgr->await($this->event_fn['onMessage'],
                                                 [$socket_id, $this->wsDecode($message)]
