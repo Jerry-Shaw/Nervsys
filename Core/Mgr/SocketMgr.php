@@ -38,6 +38,7 @@ class SocketMgr extends Factory
 
     public string $socket_id = '';
 
+    public array $handshakes      = [];
     public array $activities      = [];
     public array $connections     = [];
     public array $context_options = [];
@@ -718,7 +719,7 @@ class SocketMgr extends Factory
      */
     private function websocketStart(): void
     {
-        $write = $except = $handshake = [];
+        $write = $except = [];
         $this->onHeartbeat([$this, 'wsPing']);
 
         while (true) {
@@ -731,9 +732,9 @@ class SocketMgr extends Factory
                     if (isset($clients[$this->socket_id])) {
                         $this->fiberMgr->async(
                             $this->fiberMgr->await([$this, 'accept']),
-                            function (string $socket_id) use (&$handshake): void
+                            function (string $socket_id): void
                             {
-                                $handshake[$socket_id] = false;
+                                $this->handshakes[$socket_id] = false;
                             }
                         );
 
@@ -743,13 +744,13 @@ class SocketMgr extends Factory
                     if (!empty($clients)) {
                         foreach ($clients as $socket_id => $client) {
                             //onHandshake
-                            if (isset($handshake[$socket_id])) {
+                            if (isset($this->handshakes[$socket_id])) {
                                 $this->fiberMgr->async(
                                     $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
                                     [$this, 'wsSendHandshake']
                                 );
 
-                                unset($handshake[$socket_id]);
+                                unset($this->handshakes[$socket_id]);
                                 continue;
                             }
 
