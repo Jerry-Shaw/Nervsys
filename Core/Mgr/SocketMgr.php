@@ -369,12 +369,12 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $message
      * @param string $socket_id
+     * @param string $message
      *
      * @return void
      */
-    public function send(string $message, string $socket_id): void
+    public function send(string $socket_id, string $message): void
     {
         if (!isset($this->connections[$socket_id])) {
             unset($this->activities[$socket_id], $socket_id);
@@ -393,7 +393,7 @@ class SocketMgr extends Factory
             unset($throwable);
         }
 
-        unset($message, $socket_id);
+        unset($socket_id, $message);
     }
 
     /**
@@ -613,9 +613,9 @@ class SocketMgr extends Factory
                 function (bool $allow_handshake) use ($ws_key, $ws_proto, $socket_id): void
                 {
                     if ($allow_handshake) {
-                        $this->send($this->wsBuildHandshake($ws_key, $ws_proto), $socket_id);
+                        $this->send($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
                     } else {
-                        $this->send('Http/1.1 406 Not Acceptable' . "\r\n\r\n", $socket_id);
+                        $this->send($socket_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
                         $this->close($socket_id);
                     }
 
@@ -623,7 +623,7 @@ class SocketMgr extends Factory
                 }
             );
         } else {
-            $this->send($this->wsBuildHandshake($ws_key, $ws_proto), $socket_id);
+            $this->send($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
         }
 
         unset($socket_id, $header_msg, $ws_key, $ws_proto);
@@ -698,7 +698,7 @@ class SocketMgr extends Factory
      */
     public function wsPing(string $socket_id): void
     {
-        $this->send(chr(0x89) . chr(0), $socket_id);
+        $this->send($socket_id, chr(0x89) . chr(0));
         unset($socket_id);
     }
 
@@ -709,10 +709,9 @@ class SocketMgr extends Factory
      */
     public function wsPong(string $socket_id): void
     {
-        $this->send(chr(0x8A) . chr(0), $socket_id);
+        $this->send($socket_id, chr(0x8A) . chr(0));
         unset($socket_id);
     }
-
 
     /**
      * @return void
