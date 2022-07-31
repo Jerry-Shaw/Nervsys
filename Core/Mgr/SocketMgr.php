@@ -364,8 +364,8 @@ class SocketMgr extends Factory
             return [$socket_id, ''];
         }
 
-        unset($clients, $client);
-        return [$socket_id, $socket, $message, $fragment];
+        unset($socket, $fragment);
+        return [$socket_id, $message];
     }
 
     /**
