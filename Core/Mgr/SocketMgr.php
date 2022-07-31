@@ -453,7 +453,7 @@ class SocketMgr extends Factory
             }
 
             echo '[' . date('Y-m-d H:i:s') . ']: '
-                . str_pad(ucfirst($action), 15)
+                . str_pad(ucfirst($action), 12)
                 . strtr($message, ["\r" => '\\r', "\n" => '\\n'])
                 . $track
                 . "\n";
