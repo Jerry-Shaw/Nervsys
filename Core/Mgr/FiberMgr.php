@@ -92,7 +92,9 @@ class FiberMgr extends Factory
                     ? parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result)
                     : (array)$result;
 
-                $result = call_user_func_array($callable, $args);
+                $result = empty($args)
+                    ? call_user_func($callable, $args)
+                    : call_user_func_array($callable, $args);
             }
 
             unset($await_fiber, $callable, $args);
