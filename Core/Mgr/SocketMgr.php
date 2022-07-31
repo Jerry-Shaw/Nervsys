@@ -479,13 +479,13 @@ class SocketMgr extends Factory
     public function close(string $socket_id): void
     {
         try {
-            if (is_callable($this->event_fn['onClose'])) {
-                $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onClose'], [$socket_id]));
-            }
+            $this->consoleLog(__FUNCTION__, $socket_id);
 
             fclose($this->connections[$socket_id]);
 
-            $this->consoleLog(__FUNCTION__, $socket_id);
+            if (is_callable($this->event_fn['onClose'])) {
+                $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onClose'], [$socket_id]));
+            }
         } catch (\Throwable $throwable) {
             $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             unset($throwable);
@@ -733,14 +733,14 @@ class SocketMgr extends Factory
                 function (array $messages): void
                 {
                     while (null !== ($data = array_pop($messages))) {
+                        $this->consoleLog('sendTo', $data['socket_id'] . ': ' . $data['message']);
+
                         $this->fiberMgr->async(
                             $this->fiberMgr->await(
                                 [$this, 'sendTo'],
                                 [$data['socket_id'], $this->is_websocket ? $this->wsEncode($data['message']) : $data['message']]
                             )
                         );
-
-                        $this->consoleLog('sendTo', $data['socket_id'] . ': ' . $data['message']);
                     }
 
                     unset($messages, $data);
@@ -882,6 +882,8 @@ class SocketMgr extends Factory
                                             )
                                         );
                                     }
+
+                                    unset($socket_id, $message);
                                 }
                             );
                         }
@@ -933,6 +935,8 @@ class SocketMgr extends Factory
                                     )
                                 );
                             }
+
+                            unset($socket_id, $message);
                         }
                     );
                 }
@@ -942,6 +946,8 @@ class SocketMgr extends Factory
                         $this->fiberMgr->await($this->event_fn['onSend']),
                         function (string $message): void
                         {
+                            $this->consoleLog('SendTo', $this->socket_id . ': ' . $message);
+
                             $this->fiberMgr->async(
                                 $this->fiberMgr->await(
                                     [$this, 'sendTo'],
@@ -949,7 +955,6 @@ class SocketMgr extends Factory
                                 )
                             );
 
-                            $this->consoleLog('SendTo', $this->socket_id . ': ' . $message);
                             unset($message);
                         }
                     );
