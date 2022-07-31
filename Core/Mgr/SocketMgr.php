@@ -357,8 +357,6 @@ class SocketMgr extends Factory
             }
 
             $this->activities[$socket_id] = time();
-
-            $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
         } catch (\Throwable $throwable) {
             $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             $this->close($socket_id);
@@ -387,8 +385,6 @@ class SocketMgr extends Factory
             if (false === fwrite($this->connections[$socket_id], $message)) {
                 throw new \Exception($socket_id . ': Send ERROR!', E_USER_NOTICE);
             }
-
-            $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
         } catch (\Throwable $throwable) {
             $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             $this->close($socket_id);
@@ -819,7 +815,7 @@ class SocketMgr extends Factory
 
                                     $message = $this->wsDecode($message);
 
-                                    $this->consoleLog('wsGetMessage', $message);
+                                    $this->consoleLog('wsRecv', $socket_id . ': ' . $message);
 
                                     if (is_callable($this->event_fn['onMessage'])) {
                                         $this->fiberMgr->async(
@@ -873,7 +869,18 @@ class SocketMgr extends Factory
                         foreach ($clients as $socket_id => $client) {
                             $this->fiberMgr->async(
                                 $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
-                                $this->event_fn['onMessage']
+                                function (string $socket_id, string $message): void
+                                {
+                                    $this->consoleLog('readFrom', $socket_id . ': ' . $message);
+
+                                    if (is_callable($this->event_fn['onMessage'])) {
+                                        $this->fiberMgr->async(
+                                            $this->fiberMgr->await($this->event_fn['onMessage'],
+                                                [$socket_id, $message]
+                                            )
+                                        );
+                                    }
+                                }
                             );
                         }
 
