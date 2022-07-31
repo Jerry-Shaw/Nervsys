@@ -44,12 +44,12 @@ class SocketMgr extends Factory
     public array $context_options = [];
 
     private array $event_fn = [
-        'onConnect'     => null,
-        'onWsHandshake' => null,
-        'onHeartbeat'   => null,
-        'onMessage'     => null,
-        'onSend'        => null,
-        'onClose'       => null
+        'onConnect'     => null, //callback(string $socket_id): void
+        'onWsHandshake' => null, //callback(string $socket_id, string $ws_proto): bool $allow_handshake. True to allow, otherwise reject.
+        'onHeartbeat'   => null, //callback(string $socket_id): void. Send heartbeat frame inside callback function.
+        'onMessage'     => null, //callback(string $socket_id, string $message): void
+        'onSend'        => null, //callback(): array $messages. Message list, [['socket_id'=> 'xxx', 'message' => 'xxx'], ...]
+        'onClose'       => null  //callback(string $socket_id): void
     ];
 
     /**
