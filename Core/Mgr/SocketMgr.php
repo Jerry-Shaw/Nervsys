@@ -251,7 +251,8 @@ class SocketMgr extends Factory
 
             $this->is_websocket ? $this->websocketStart() : $this->serverStart();
         } catch (\Throwable $throwable) {
-            $this->consoleLog('ERROR', $throwable->getMessage());
+            $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
+            unset($throwable);
         }
     }
 
@@ -291,7 +292,8 @@ class SocketMgr extends Factory
 
             $this->clientStart();
         } catch (\Throwable $throwable) {
-            $this->consoleLog('ERROR', $throwable->getMessage());
+            $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
+            unset($throwable);
         }
     }
 
@@ -319,15 +321,14 @@ class SocketMgr extends Factory
                 $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onConnect'], [$socket_id]));
             }
 
-            unset($accept);
-
             $this->consoleLog(__FUNCTION__, $socket_id . ': Connected! ' . (count($this->connections) - 1) . ' online.');
         } catch (\Throwable $throwable) {
-            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             unset($throwable, $accept);
             $socket_id = '';
         }
 
+        unset($accept);
         return $socket_id;
     }
 
@@ -351,22 +352,22 @@ class SocketMgr extends Factory
                 throw new \Exception($socket_id . ': Read ERROR!', E_USER_NOTICE);
             }
 
-            while ('' !== ($buff = fread($socket, 4096))) {
-                $message .= $buff;
+            while ('' !== ($fragment = fread($socket, 4096))) {
+                $message .= $fragment;
             }
 
             $this->activities[$socket_id] = time();
 
             $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
         } catch (\Throwable $throwable) {
-            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             $this->close($socket_id);
             unset($throwable);
             return [$socket_id, ''];
         }
 
         unset($clients, $client);
-        return [$socket_id, $message];
+        return [$socket_id, $socket, $message, $fragment];
     }
 
     /**
@@ -389,7 +390,7 @@ class SocketMgr extends Factory
 
             $this->consoleLog(__FUNCTION__, $socket_id . ': ' . $message);
         } catch (\Throwable $throwable) {
-            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             $this->close($socket_id);
             unset($throwable);
         }
@@ -428,7 +429,7 @@ class SocketMgr extends Factory
                     $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onHeartbeat'], [$socket_id]));
                 }
             } catch (\Throwable $throwable) {
-                $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+                $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);
             }
         }
@@ -438,20 +439,31 @@ class SocketMgr extends Factory
 
     /**
      * @param string $action
+     * @param string $file
+     * @param int    $line
      * @param string $message
      *
      * @return void
      */
-    public function consoleLog(string $action, string $message): void
+    public function consoleLog(string $action, string $message, string $file = '', int $line = 0): void
     {
         if ($this->debug_mode) {
+            $track = '';
+
+            if ('' !== $file) {
+                $track .= ' in ' . strtr($file, '\\', '/');
+                $track .= ' on line ' . $line;
+                $track .= "\n";
+            }
+
             echo '[' . date('Y-m-d H:i:s') . ']: '
                 . str_pad(ucfirst($action), 15)
                 . strtr($message, ["\r" => '\\r', "\n" => '\\n'])
+                . $track
                 . "\n";
         }
 
-        unset($action, $message);
+        unset($action, $message, $file, $line, $track);
     }
 
     /**
@@ -479,7 +491,7 @@ class SocketMgr extends Factory
 
             $this->consoleLog(__FUNCTION__, $socket_id);
         } catch (\Throwable $throwable) {
-            $this->consoleLog(__FUNCTION__, $throwable->getMessage());
+            $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             unset($throwable);
         }
 
@@ -497,14 +509,14 @@ class SocketMgr extends Factory
     {
         $char = ord($buff[0]);
 
-        $code = [
+        $codes = [
             'fin'    => $char >> 7,
             'opcode' => $char & 0x0F,
             'mask'   => ord($buff[1]) >> 7
         ];
 
         unset($buff, $char);
-        return $code;
+        return $codes;
     }
 
     /**
@@ -713,6 +725,38 @@ class SocketMgr extends Factory
     /**
      * @return void
      */
+    private function sendMessages(): void
+    {
+        if (!is_callable($this->event_fn['onSend'])) {
+            return;
+        }
+
+        try {
+            $this->fiberMgr->async(
+                $this->fiberMgr->await($this->event_fn['onSend']),
+                function (array $messages): void
+                {
+                    while (null !== ($data = array_pop($messages))) {
+                        $this->fiberMgr->async(
+                            $this->fiberMgr->await(
+                                [$this, 'sendTo'],
+                                [$data['socket_id'], $this->is_websocket ? $this->wsEncode($data['message']) : $data['message']]
+                            )
+                        );
+                    }
+
+                    unset($messages, $data);
+                }
+            );
+        } catch (\Throwable $throwable) {
+            $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
+            unset($throwable);
+        }
+    }
+
+    /**
+     * @return void
+     */
     private function websocketStart(): void
     {
         $write = $except = [];
@@ -731,6 +775,7 @@ class SocketMgr extends Factory
                             function (string $socket_id): void
                             {
                                 $this->handshakes[$socket_id] = false;
+                                unset($socket_id);
                             }
                         );
 
@@ -749,6 +794,7 @@ class SocketMgr extends Factory
                                             function (string $socket_id): void
                                             {
                                                 unset($this->handshakes[$socket_id]);
+                                                unset($socket_id);
                                             }
                                         );
 
@@ -782,6 +828,8 @@ class SocketMgr extends Factory
                                             )
                                         );
                                     }
+
+                                    unset($socket_id, $message, $ws_codes);
                                 }
                             );
                         }
@@ -790,26 +838,10 @@ class SocketMgr extends Factory
                     }
                 }
 
-                if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async(
-                        $this->fiberMgr->await($this->event_fn['onSend']),
-                        function (array $socket_messages): void
-                        {
-                            while (null !== ($data = array_pop($socket_messages))) {
-                                $this->fiberMgr->async(
-                                    $this->fiberMgr->await(
-                                        [$this, 'sendTo'],
-                                        [$data['socket_id'], $this->wsEncode($data['message'])]
-                                    )
-                                );
-                            }
-                        }
-                    );
-                }
-
+                $this->sendMessages();
                 $this->fiberMgr->run();
             } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
+                $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);
             }
 
@@ -839,33 +871,20 @@ class SocketMgr extends Factory
 
                     if (!empty($clients)) {
                         foreach ($clients as $socket_id => $client) {
-                            $this->fiberMgr->async($this->fiberMgr->await([$this, 'readFrom'], [$socket_id]), $this->event_fn['onMessage']);
+                            $this->fiberMgr->async(
+                                $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
+                                $this->event_fn['onMessage']
+                            );
                         }
 
                         unset($socket_id, $client);
                     }
                 }
 
-                if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async(
-                        $this->fiberMgr->await($this->event_fn['onSend']),
-                        function (array $socket_messages): void
-                        {
-                            while (null !== ($data = array_pop($socket_messages))) {
-                                $this->fiberMgr->async(
-                                    $this->fiberMgr->await(
-                                        [$this, 'sendTo'],
-                                        [$data['socket_id'], $data['message']]
-                                    )
-                                );
-                            }
-                        }
-                    );
-                }
-
+                $this->sendMessages();
                 $this->fiberMgr->run();
             } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
+                $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);
             }
 
@@ -892,16 +911,32 @@ class SocketMgr extends Factory
                 $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
 
                 if (0 < (int)stream_select($connection, $write, $except, 0, $this->select_timeout)) {
-                    $this->fiberMgr->async($this->fiberMgr->await([$this, 'readFrom'], [$this->socket_id]), $this->event_fn['onMessage']);
+                    $this->fiberMgr->async(
+                        $this->fiberMgr->await([$this, 'readFrom'], [$this->socket_id]),
+                        $this->event_fn['onMessage']
+                    );
                 }
 
                 if (is_callable($this->event_fn['onSend'])) {
-                    $this->fiberMgr->async($this->fiberMgr->await($this->event_fn['onSend']));
+                    $this->fiberMgr->async(
+                        $this->fiberMgr->await($this->event_fn['onSend']),
+                        function (string $message): void
+                        {
+                            $this->fiberMgr->async(
+                                $this->fiberMgr->await(
+                                    [$this, 'sendTo'],
+                                    [$this->socket_id, $this->is_websocket ? $this->wsEncode($message) : $message]
+                                )
+                            );
+
+                            unset($message);
+                        }
+                    );
                 }
 
                 $this->fiberMgr->run();
             } catch (\Throwable $throwable) {
-                $this->consoleLog('ERROR', $throwable->getMessage());
+                $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);
             }
 
