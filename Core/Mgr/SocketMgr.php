@@ -739,6 +739,8 @@ class SocketMgr extends Factory
                                 [$data['socket_id'], $this->is_websocket ? $this->wsEncode($data['message']) : $data['message']]
                             )
                         );
+
+                        $this->consoleLog('sendTo', $data['socket_id'] . ': ' . $data['message']);
                     }
 
                     unset($messages, $data);
@@ -920,7 +922,18 @@ class SocketMgr extends Factory
                 if (0 < (int)stream_select($connection, $write, $except, 0, $this->select_timeout)) {
                     $this->fiberMgr->async(
                         $this->fiberMgr->await([$this, 'readFrom'], [$this->socket_id]),
-                        $this->event_fn['onMessage']
+                        function (string $socket_id, string $message): void
+                        {
+                            $this->consoleLog('readFrom', $socket_id . ': ' . $message);
+
+                            if (is_callable($this->event_fn['onMessage'])) {
+                                $this->fiberMgr->async(
+                                    $this->fiberMgr->await($this->event_fn['onMessage'],
+                                        [$socket_id, $message]
+                                    )
+                                );
+                            }
+                        }
                     );
                 }
 
@@ -936,6 +949,7 @@ class SocketMgr extends Factory
                                 )
                             );
 
+                            $this->consoleLog('SendTo', $this->socket_id . ': ' . $message);
                             unset($message);
                         }
                     );
