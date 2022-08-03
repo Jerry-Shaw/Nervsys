@@ -77,7 +77,7 @@ class Router extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function callCgiUnit(string $c): array
+    public function getCgiUnit(string $c): array
     {
         $app = App::new();
 
@@ -121,7 +121,7 @@ class Router extends Factory
      *
      * @return array
      */
-    public function callCliUnit(string $c): array
+    public function getCliUnit(string $c): array
     {
         $exe_list = [];
         $cmd_list = $this->getCmdList($c);

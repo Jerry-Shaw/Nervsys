@@ -73,8 +73,8 @@ trait System
         set_exception_handler([$this->error, 'exceptionHandler']);
         set_error_handler([$this->error, 'errorHandler']);
 
-        $this->router->cgi_router_stack[] = [$this->router, 'callCgiUnit'];
-        $this->router->cli_router_stack[] = [$this->router, 'callCliUnit'];
+        $this->router->cgi_router_stack[] = [$this->router, 'getCgiUnit'];
+        $this->router->cli_router_stack[] = [$this->router, 'getCliUnit'];
 
         return $this;
     }
