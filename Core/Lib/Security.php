@@ -46,7 +46,7 @@ class Security extends Factory
          * @var \ReflectionClass $obj
          */
         foreach ($traits as $name => $obj) {
-            if (str_starts_with($name, NS_NAMESPACE)) {
+            if (str_starts_with($name, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
                 if (in_array($method_name, get_class_methods($name), true)) {
                     unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj);
                     return [$this, 'targetBlocked'];
@@ -62,7 +62,7 @@ class Security extends Factory
                 continue;
             }
 
-            if (str_starts_with($obj->class, NS_NAMESPACE)) {
+            if (str_starts_with($obj->class, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
                 unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
                 return [$this, 'targetBlocked'];
             }
