@@ -88,16 +88,12 @@ class FiberMgr extends Factory
             $result = $await_fiber->getReturn();
 
             if (is_callable($callable)) {
-                $args = is_array($result) && !empty($result) && !array_is_list($result)
-                    ? parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result)
-                    : (array)$result;
-
-                $result = empty($args)
-                    ? call_user_func($callable, $args)
-                    : call_user_func_array($callable, $args);
+                $result = is_array($result) && !array_is_list($result)
+                    ? call_user_func_array($callable, parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result))
+                    : call_user_func($callable, $result);
             }
 
-            unset($await_fiber, $callable, $args);
+            unset($await_fiber, $callable);
             return $result;
         });
 
