@@ -341,7 +341,7 @@ class SocketMgr extends Factory
     {
         if (!isset($this->connections[$socket_id])) {
             unset($this->activities[$socket_id]);
-            return [$socket_id, ''];
+            return ['socket_id' => $socket_id, 'message' => ''];
         }
 
         try {
@@ -361,11 +361,11 @@ class SocketMgr extends Factory
             $this->consoleLog(__FUNCTION__, $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
             $this->close($socket_id);
             unset($throwable);
-            return [$socket_id, ''];
+            return ['socket_id' => $socket_id, 'message' => ''];
         }
 
         unset($socket, $fragment);
-        return [$socket_id, $message];
+        return ['socket_id' => $socket_id, 'message' => $message];
     }
 
     /**
