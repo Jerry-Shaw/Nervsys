@@ -195,7 +195,7 @@ class libMySQL extends Factory
      */
     public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $exec = $this->executeSQL($this->buildSql());
+        $exec = $this->executeSQL($this->buildSQL());
         $data = $exec ? $this->PDOStatement->fetch($fetch_style) : [];
 
         if (!is_array($data)) {
@@ -216,7 +216,7 @@ class libMySQL extends Factory
      */
     public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $exec = $this->executeSQL($this->buildSql());
+        $exec = $this->executeSQL($this->buildSQL());
         $data = $exec ? $this->PDOStatement->fetchAll($fetch_style) : [];
 
         unset($fetch_style, $exec);
@@ -636,7 +636,7 @@ class libMySQL extends Factory
      */
     public function execute(): bool
     {
-        return $this->executeSQL($this->buildSql());
+        return $this->executeSQL($this->buildSQL());
     }
 
     /**
@@ -687,12 +687,12 @@ class libMySQL extends Factory
      * @return string
      * @throws \ReflectionException
      */
-    public function buildSql(): string
+    public function buildSQL(): string
     {
         $runtime_sql    = $this->{'build' . ucfirst($this->runtime_data['action'])}();
         $this->last_sql = $this->buildReadableSql($runtime_sql, $this->runtime_data['bind'] ?? []);
 
-        0 < $this->explain_type && 'select' === $this->runtime_data['action'] && $this->explainSql($this->last_sql);
+        0 < $this->explain_type && 'select' === $this->runtime_data['action'] && $this->explainSQL($this->last_sql);
 
         return $runtime_sql;
     }
@@ -700,14 +700,14 @@ class libMySQL extends Factory
     /**
      * Explain SQL
      *
-     * @param string $sql
+     * @param string $readable_sql
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function explainSql(string $sql): void
+    public function explainSQL(string $readable_sql): void
     {
-        $explain = $this->query('EXPLAIN ' . $sql)->fetchAll(\PDO::FETCH_ASSOC);
+        $explain = $this->query('EXPLAIN ' . $readable_sql)->fetchAll(\PDO::FETCH_ASSOC);
 
         //Keep needed types
         foreach ($explain as $key => $item) {
@@ -718,7 +718,7 @@ class libMySQL extends Factory
 
         if (!empty($explain)) {
             //Build result
-            $result = ['SQL' => &$sql, 'EXPLAIN' => &$explain];
+            $result = ['SQL' => &$readable_sql, 'EXPLAIN' => &$explain];
 
             //Output result
             if (1 === (1 & $this->explain_type)) {
@@ -731,7 +731,7 @@ class libMySQL extends Factory
             }
         }
 
-        unset($sql, $explain, $key, $item, $result);
+        unset($readable_sql, $explain, $key, $item, $result);
     }
 
     /**
