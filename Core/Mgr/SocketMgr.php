@@ -219,82 +219,74 @@ class SocketMgr extends Factory
      * @param string $address
      *
      * @return void
+     * @throws \Throwable
      */
     public function listenTo(string $address): void
     {
-        try {
-            $context = stream_context_create();
+        $context = stream_context_create();
 
-            if (!empty($this->context_options)) {
-                stream_context_set_params($context, $this->context_options);
-            }
-
-            $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
-                ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN
-                : STREAM_SERVER_BIND;
-
-            $server = stream_socket_server($address, $errno, $errstr, $flags, $context);
-
-            if (false === $server) {
-                throw new \Exception('Server failed to start! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
-            }
-
-            stream_set_timeout($server, $this->wait_timeout);
-
-            $this->socket_id = $this->getSocketId();
-
-            $this->connections[$this->socket_id] = &$server;
-
-            $this->consoleLog(__FUNCTION__, $address);
-
-            unset($address, $context, $flags, $server, $errno, $errstr);
-
-            $this->is_websocket ? $this->websocketStart() : $this->serverStart();
-        } catch (\Throwable $throwable) {
-            $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
-            unset($throwable);
+        if (!empty($this->context_options)) {
+            stream_context_set_params($context, $this->context_options);
         }
+
+        $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
+            ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN
+            : STREAM_SERVER_BIND;
+
+        $server = stream_socket_server($address, $errno, $errstr, $flags, $context);
+
+        if (false === $server) {
+            throw new \Exception('Server failed to start! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
+        }
+
+        stream_set_timeout($server, $this->wait_timeout);
+
+        $this->socket_id = $this->getSocketId();
+
+        $this->connections[$this->socket_id] = &$server;
+
+        $this->consoleLog(__FUNCTION__, $address);
+
+        unset($address, $context, $flags, $server, $errno, $errstr);
+
+        $this->is_websocket ? $this->websocketStart() : $this->serverStart();
     }
 
     /**
      * @param string $address
      *
      * @return void
+     * @throws \Exception
      */
     public function connectTo(string $address): void
     {
-        try {
-            $context = stream_context_create();
+        $context = stream_context_create();
 
-            if (!empty($this->context_options)) {
-                stream_context_set_params($context, $this->context_options);
-            }
-
-            $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
-                ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT
-                : STREAM_CLIENT_CONNECT;
-
-            $client = stream_socket_client($address, $errno, $errstr, $this->wait_timeout, $flags, $context);
-
-            if (false === $client) {
-                throw new \Exception('Client failed to connect! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
-            }
-
-            stream_set_timeout($client, $this->wait_timeout);
-
-            $this->socket_id = $this->getSocketId();
-
-            $this->connections[$this->socket_id] = &$client;
-
-            $this->consoleLog(__FUNCTION__, $address);
-
-            unset($address, $context, $flags, $client, $errno, $errstr);
-
-            $this->clientStart();
-        } catch (\Throwable $throwable) {
-            $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
-            unset($throwable);
+        if (!empty($this->context_options)) {
+            stream_context_set_params($context, $this->context_options);
         }
+
+        $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
+            ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_PERSISTENT
+            : STREAM_CLIENT_CONNECT;
+
+        $client = stream_socket_client($address, $errno, $errstr, $this->wait_timeout, $flags, $context);
+
+        if (false === $client) {
+            throw new \Exception('Client failed to connect! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
+        }
+
+        stream_set_timeout($client, $this->wait_timeout);
+
+        $this->socket_id = $this->getSocketId();
+
+        $this->connections[$this->socket_id] = &$client;
+
+        $this->consoleLog(__FUNCTION__, $address);
+
+        unset($address, $context, $flags, $client, $errno, $errstr);
+
+        $this->clientStart();
     }
 
     /**
@@ -458,8 +450,7 @@ class SocketMgr extends Factory
 
             if ('' !== $file) {
                 $track .= ' in ' . strtr($file, '\\', '/');
-                $track .= ' on line ' . $line;
-                $track .= "\n";
+                $track .= ' on line ' . $line . "\n";
             }
 
             echo '[' . date('Y-m-d H:i:s') . ']: '
