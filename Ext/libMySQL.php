@@ -90,18 +90,17 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set reconnect mode (reset retry times limitation)
+     * Auto reconnect with limited times
      *
-     * @param bool $reconnect
-     * @param int  $retry_times
+     * @param int $retry_times
      *
      * @return $this
      */
-    public function setReconnect(bool $reconnect, int $retry_times = 3): self
+    public function autoReconnect(int $retry_times = 3): self
     {
-        $this->retry_times = $reconnect ? $retry_times : 0;
+        $this->retry_times = &$retry_times;
 
-        unset($reconnect, $retry_times);
+        unset($retry_times);
         return $this;
     }
 
@@ -891,12 +890,10 @@ class libMySQL extends Factory
     protected function isReady(): void
     {
         if (isset($this->runtime_data['action'])) {
-            //Get blocked SQL
-            $blocked_sql = $this->buildReadableSql($this->{'build' . ucfirst($this->runtime_data['action'])}(), $this->runtime_data['bind']);
-            //Reset runtime data
-            $this->runtime_data = [];
-            //Throw PDOException
-            throw new \PDOException($blocked_sql . ' NOT execute!', E_USER_ERROR);
+            throw new \PDOException(
+                $this->buildReadableSql($this->{'build' . ucfirst($this->runtime_data['action'])}(), $this->runtime_data['bind']) . ' NOT execute!',
+                E_USER_ERROR
+            );
         }
     }
 
@@ -1029,7 +1026,6 @@ class libMySQL extends Factory
             $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'] ?? [], $this->runtime_data['bind_where'] ?? []);
 
             $sql .= ' ' . implode(' ', $this->runtime_data['where']);
-            unset($this->runtime_data['where'], $this->runtime_data['bind_where']);
         }
 
         if (isset($this->runtime_data['group'])) {
@@ -1040,7 +1036,6 @@ class libMySQL extends Factory
             $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'] ?? [], $this->runtime_data['bind_having'] ?? []);
 
             $sql .= ' ' . implode(' ', $this->runtime_data['having']);
-            unset($this->runtime_data['having'], $this->runtime_data['bind_having']);
         }
 
         if (isset($this->runtime_data['order'])) {
