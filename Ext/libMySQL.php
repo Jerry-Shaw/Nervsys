@@ -27,8 +27,9 @@ use Nervsys\Core\Lib\IOData;
 
 class libMySQL extends Factory
 {
-    public \PDO   $pdo;
-    public libPDO $libPDO;
+    public \PDO          $pdo;
+    public libPDO        $libPDO;
+    public \PDOStatement $PDOStatement;
 
     public int $retry_times   = 0;
     public int $affected_rows = 0;
@@ -194,13 +195,14 @@ class libMySQL extends Factory
      */
     public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $data = ($this->execStmt()['stmt'])->fetch($fetch_style);
+        $exec = $this->executeSQL($this->buildSql());
+        $data = $exec ? $this->PDOStatement->fetch($fetch_style) : [];
 
         if (!is_array($data)) {
             $data = false !== $data ? [$data] : [];
         }
 
-        unset($fetch_style);
+        unset($fetch_style, $exec);
         return $data;
     }
 
@@ -214,9 +216,10 @@ class libMySQL extends Factory
      */
     public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $data = ($this->execStmt()['stmt'])->fetchAll($fetch_style);
+        $exec = $this->executeSQL($this->buildSql());
+        $data = $exec ? $this->PDOStatement->fetchAll($fetch_style) : [];
 
-        unset($fetch_style);
+        unset($fetch_style, $exec);
         return $data;
     }
 
@@ -255,48 +258,37 @@ class libMySQL extends Factory
     /**
      * Insert action
      *
-     * @param array ...$data
+     * @param array $data
      *
      * @return $this
      */
-    public function insert(array ...$data): self
+    public function insert(array $data): self
     {
         $this->isReady();
 
-        $param = [];
-
-        foreach ($data as $value) {
-            $param += $value;
-        }
-
         $this->runtime_data['action'] = 'insert';
+        $this->runtime_data['cols']   = array_keys($data);
+        $this->runtime_data['bind']   = array_values($data);
 
-        $this->runtime_data['cols'] = array_keys($param);
-        $this->runtime_data['bind'] = array_values($param);
-
-        unset($data, $param, $value);
+        unset($data);
         return $this;
     }
 
     /**
      * Update action
      *
-     * @param array ...$data
+     * @param array $data
      *
      * @return $this
      */
-    public function update(array ...$data): self
+    public function update(array $data): self
     {
         $this->isReady();
 
-        $this->runtime_data['value']  = [];
         $this->runtime_data['action'] = 'update';
+        $this->runtime_data['value']  = &$data;
 
-        foreach ($data as $value) {
-            $this->runtime_data['value'] += $value;
-        }
-
-        unset($data, $value);
+        unset($data);
         return $this;
     }
 
@@ -314,7 +306,7 @@ class libMySQL extends Factory
         $this->runtime_data['action'] = 'select';
         $this->runtime_data['cols']   = !empty($column) ? implode(',', $column) : '*';
 
-        unset($data);
+        unset($column);
         return $this;
     }
 
@@ -326,6 +318,7 @@ class libMySQL extends Factory
     public function delete(): self
     {
         $this->isReady();
+
         $this->runtime_data['action'] = 'delete';
 
         return $this;
@@ -393,7 +386,8 @@ class libMySQL extends Factory
             return $this;
         }
 
-        $this->runtime_data['join'] = array_merge($this->runtime_data['join'], $this->runtime_data['on'] = $this->parseCond($where, 'on'));
+        $this->runtime_data['on']   = $this->parseCond($where, 'on');
+        $this->runtime_data['join'] = array_merge($this->runtime_data['join'], $this->runtime_data['on']);
 
         unset($where);
         return $this;
@@ -411,7 +405,9 @@ class libMySQL extends Factory
         $this->runtime_data['where'] ??= [];
         $this->runtime_data['stage'] = 'where';
 
-        if (empty($where = array_filter($where))) {
+        $where = array_filter($where);
+
+        if (empty($where)) {
             return $this;
         }
 
@@ -433,7 +429,9 @@ class libMySQL extends Factory
         $this->runtime_data['having'] ??= [];
         $this->runtime_data['stage']  = 'having';
 
-        if (empty($where = array_filter($where))) {
+        $where = array_filter($where);
+
+        if (empty($where)) {
             return $this;
         }
 
@@ -452,7 +450,9 @@ class libMySQL extends Factory
      */
     public function and(array ...$where): self
     {
-        if (empty($where = array_filter($where))) {
+        $where = array_filter($where);
+
+        if (empty($where)) {
             return $this;
         }
 
@@ -477,7 +477,9 @@ class libMySQL extends Factory
      */
     public function or(array ...$where): self
     {
-        if (empty($where = array_filter($where))) {
+        $where = array_filter($where);
+
+        if (empty($where)) {
             return $this;
         }
 
@@ -634,7 +636,7 @@ class libMySQL extends Factory
      */
     public function execute(): bool
     {
-        return $this->execStmt()['exec'];
+        return $this->executeSQL($this->buildSql());
     }
 
     /**
@@ -733,28 +735,30 @@ class libMySQL extends Factory
     }
 
     /**
-     * Execute prepared PDOStatement
+     * Execute prepared SQL
      *
-     * @param int $i
+     * @param string $runtime_sql
+     * @param int    $retry_times
      *
-     * @return array
+     * @return bool
      * @throws \ReflectionException
      */
-    protected function execStmt(int $i = 1): array
+    protected function executeSQL(string $runtime_sql, int $retry_times = 0): bool
     {
-        $result = [];
-
         try {
-            $result['stmt'] = $this->pdo->prepare($this->buildSql());
-            $result['exec'] = $result['stmt']->execute($this->runtime_data['bind'] ?? []);
+            $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
+            $result = $this->PDOStatement->execute($this->runtime_data['bind'] ?? []);
+
+            $this->affected_rows = $this->PDOStatement->rowCount();
             $this->runtime_data  = [];
-            $this->affected_rows = $result['stmt']->rowCount();
         } catch (\Throwable $throwable) {
-            if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $i >= $this->retry_times) {
+            if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $retry_times >= $this->retry_times) {
                 $this->runtime_data = [];
                 throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
             }
+
+            unset($throwable);
 
             //Destroy PDO from Factory
             $this->destroy($this->pdo);
@@ -763,9 +767,10 @@ class libMySQL extends Factory
             $this->pdo = $this->libPDO->connect();
 
             //Retry executing PDOStatement
-            return $this->execStmt(++$i);
+            return $this->executeSQL($runtime_sql, ++$retry_times);
         }
 
+        unset($runtime_sql, $retry_times);
         return $result;
     }
 
@@ -790,7 +795,7 @@ class libMySQL extends Factory
      */
     protected function buildSelect(): string
     {
-        $sql = 'SELECT ' . ($this->runtime_data['cols'] ?? '*');
+        $sql = 'SELECT ' . $this->runtime_data['cols'];
         $sql .= ' FROM ' . ($this->runtime_data['table'] ?? $this->table_name);
 
         return $this->appendCond($sql);
