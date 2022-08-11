@@ -119,7 +119,7 @@ class libMPC extends Factory
                 foreach ($cgi_cmd as $cmd_data) {
                     $fiberMgr->async(
                         $fiberMgr->await([parent::getObj($cmd_data[0], $data), $cmd_data[1]], $data),
-                        function (): string
+                        function (): void
                         {
                             echo json_encode(func_get_args(), JSON_FORMAT) . "\n";
                         }
