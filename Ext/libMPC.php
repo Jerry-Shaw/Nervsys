@@ -37,20 +37,19 @@ class libMPC extends Factory
      *
      * @return $this
      * @throws \ReflectionException
-     * @throws \Throwable
+     * @throws \Exception
      */
     public function create(string $php_path, int $proc_num = 10): self
     {
         $app = App::new();
 
-        $MPC_command = $php_path . "\n"
+        $cmd = $php_path . "\n"
             . $app->script_path . "\n"
             . '-c' . "\n" . '/' . __CLASS__ . '/childProc';
 
-        $this->procMgr = ProcMgr::new($MPC_command, $app->root_path);
-        $this->procMgr->create($proc_num);
+        $this->procMgr = ProcMgr::new($cmd, $app->root_path)->create($proc_num);
 
-        unset($php_path, $proc_num, $MPC_command);
+        unset($php_path, $proc_num, $app, $cmd);
         return $this;
     }
 
@@ -75,6 +74,15 @@ class libMPC extends Factory
 
     /**
      * @return void
+     * @throws \Throwable
+     */
+    public function run(): void
+    {
+        $this->procMgr->run();
+    }
+
+    /**
+     * @return void
      * @throws \ReflectionException
      * @throws \Throwable
      */
@@ -85,7 +93,9 @@ class libMPC extends Factory
         $fiberMgr = FiberMgr::new();
 
         while (true) {
-            if (false === ($stdin = fgets(STDIN))) {
+            $stdin = fgets(STDIN);
+
+            if (false === $stdin) {
                 return;
             }
 
@@ -111,8 +121,7 @@ class libMPC extends Factory
                         $fiberMgr->await([parent::getObj($cmd_data[0], $data), $cmd_data[1]], $data),
                         function (): string
                         {
-                            echo json_encode(func_get_args(), JSON_FORMAT);
-                            echo "\n";
+                            echo json_encode(func_get_args(), JSON_FORMAT) . "\n";
                         }
                     );
                 }
