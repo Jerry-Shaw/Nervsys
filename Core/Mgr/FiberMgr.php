@@ -42,6 +42,7 @@ class FiberMgr extends Factory
 
     /**
      * Await callable function, generate Fiber instance
+     * Using "await()->getReturn()" to get Fiber returned result
      *
      * @param callable $callable
      * @param array    $args
@@ -65,8 +66,8 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Generate async function from await, or pass a callable function to process await returned result
-     * Using "async()->getReturn()" to get async function returned result
+     * Generate async function from await, pass a callable function to process await result
+     * "commit()" MUST be called in the end after "async()"s, otherwise, async fibers might NOT start
      *
      * @param \Fiber        $await_fiber
      * @param callable|null $callable
@@ -109,7 +110,7 @@ class FiberMgr extends Factory
      * @return void
      * @throws \Throwable
      */
-    public function run(): void
+    public function commit(): void
     {
         $this->fiber->isSuspended() && $this->fiber->resume();
     }
@@ -139,6 +140,7 @@ class FiberMgr extends Factory
         }
 
         \Fiber::suspend();
+
         $this->ready();
     }
 }

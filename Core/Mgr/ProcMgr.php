@@ -130,9 +130,9 @@ class ProcMgr extends Factory
      * @return void
      * @throws \Throwable
      */
-    public function run(): void
+    public function commit(): void
     {
-        $this->fiberMgr->run();
+        $this->fiberMgr->commit();
     }
 
     /**

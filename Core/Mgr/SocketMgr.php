@@ -812,7 +812,7 @@ class SocketMgr extends Factory
                 }
 
                 $this->sendMessages();
-                $this->fiberMgr->run();
+                $this->fiberMgr->commit();
             } catch (\Throwable $throwable) {
                 $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);
@@ -914,7 +914,7 @@ class SocketMgr extends Factory
                 }
 
                 $this->sendMessages();
-                $this->fiberMgr->run();
+                $this->fiberMgr->commit();
             } catch (\Throwable $throwable) {
                 $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);
@@ -1016,7 +1016,7 @@ class SocketMgr extends Factory
                     );
                 }
 
-                $this->fiberMgr->run();
+                $this->fiberMgr->commit();
             } catch (\Throwable $throwable) {
                 $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
                 unset($throwable);

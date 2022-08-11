@@ -76,9 +76,9 @@ class libMPC extends Factory
      * @return void
      * @throws \Throwable
      */
-    public function run(): void
+    public function commit(): void
     {
-        $this->procMgr->run();
+        $this->procMgr->commit();
     }
 
     /**
@@ -132,7 +132,7 @@ class libMPC extends Factory
 
             unset($stdin, $data, $cgi_cmd, $cmd_data);
 
-            $fiberMgr->run();
+            $fiberMgr->commit();
         }
     }
 }
