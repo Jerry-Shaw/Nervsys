@@ -121,7 +121,17 @@ class libMPC extends Factory
                         $fiberMgr->await([parent::getObj($cmd_data[0], $data), $cmd_data[1]], $data),
                         function (): void
                         {
-                            echo json_encode(func_get_args(), JSON_FORMAT) . "\n";
+                            switch (func_num_args()) {
+                                case 0:
+                                    echo "\n";
+                                    break;
+                                case 1:
+                                    echo json_encode(func_get_arg(0), JSON_FORMAT) . "\n";
+                                    break;
+                                default:
+                                    echo json_encode(func_num_args(), JSON_FORMAT) . "\n";
+                                    break;
+                            }
                         }
                     );
                 }
