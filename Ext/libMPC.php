@@ -76,6 +76,7 @@ class libMPC extends Factory
     /**
      * @return void
      * @throws \ReflectionException
+     * @throws \Throwable
      */
     public function childProc(): void
     {
@@ -121,6 +122,8 @@ class libMPC extends Factory
             }
 
             unset($stdin, $data, $cgi_cmd, $cmd_data);
+
+            $fiberMgr->run();
         }
     }
 }
