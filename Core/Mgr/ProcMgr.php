@@ -187,10 +187,10 @@ class ProcMgr extends Factory
     /**
      * @param int $proc_idx
      *
-     * @return void
+     * @return $this
      * @throws \Exception
      */
-    public function createProc(int $proc_idx): void
+    public function createProc(int $proc_idx): self
     {
         $proc = proc_open(
             $this->proc_cmd,
@@ -218,6 +218,7 @@ class ProcMgr extends Factory
         $this->output_list[$proc_idx] = $pipes[1];
 
         unset($proc_idx, $proc, $pipes);
+        return $this;
     }
 
     /**
@@ -229,6 +230,7 @@ class ProcMgr extends Factory
     {
         fclose($this->input_list[$proc_idx]);
         fclose($this->output_list[$proc_idx]);
+
         proc_close($this->proc_list[$proc_idx]);
 
         unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
