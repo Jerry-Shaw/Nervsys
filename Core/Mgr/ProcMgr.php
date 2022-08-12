@@ -121,7 +121,8 @@ class ProcMgr extends Factory
         }
 
         ++$this->load_list[$proc_idx];
-        fwrite($this->input_list[$proc_idx], $argv . "\n");
+
+        $this->writeProc($proc_idx, $argv);
 
         $this->fiberMgr->async($this->fiberMgr->await([$this, 'await'], [$proc_idx]), $callable);
 
@@ -248,9 +249,20 @@ class ProcMgr extends Factory
     {
         fclose($this->input_list[$proc_idx]);
         fclose($this->output_list[$proc_idx]);
-
         proc_close($this->proc_list[$proc_idx]);
 
         unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
+    }
+
+    /**
+     * @param int    $proc_idx
+     * @param string $argv
+     *
+     * @return void
+     */
+    public function writeProc(int $proc_idx, string $argv): void
+    {
+        fwrite($this->input_list[$proc_idx], $argv . "\n");
+        unset($proc_idx, $argv);
     }
 }
