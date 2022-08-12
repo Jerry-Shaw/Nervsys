@@ -128,7 +128,7 @@ class libExeC extends Factory
             ->setWatchTimeout($watch_timeout)
             ->createProc(0);
 
-        unset($command, $working_path, $watch_timeout);
+        unset($command, $working_path);
 
         while ($this->procMgr->isProcAlive(0)) {
             if (is_callable($this->event_fn['onMonitor'])) {
@@ -161,6 +161,8 @@ class libExeC extends Factory
             }
 
             $this->procMgr->fiberMgr->commit();
+
+            usleep($watch_timeout);
         }
 
         if (is_callable($this->event_fn['onExit'])) {
@@ -168,5 +170,7 @@ class libExeC extends Factory
         }
 
         $this->procMgr->closeProc(0);
+
+        unset($watch_timeout);
     }
 }
