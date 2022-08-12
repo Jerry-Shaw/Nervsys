@@ -28,7 +28,7 @@ class ProcMgr extends Factory
     public OSMgr    $OSMgr;
     public FiberMgr $fiberMgr;
 
-    public int $select_timeout = 200000;  // microseconds
+    public int $watch_timeout = 200000; //microseconds
 
     private string $command;
     private string $working_path = '';
@@ -63,9 +63,9 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function setSelectTimeout(int $microseconds): self
+    public function setWatchTimeout(int $microseconds): self
     {
-        $this->select_timeout = &$microseconds;
+        $this->watch_timeout = &$microseconds;
 
         unset($microseconds);
         return $this;
@@ -127,7 +127,7 @@ class ProcMgr extends Factory
         while (true) {
             $read = [$this->output_list[$proc_idx]];
 
-            if (0 === (int)stream_select($read, $write, $except, 0, $this->select_timeout)) {
+            if (0 === (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
                 \Fiber::suspend();
             } else {
                 --$this->load_list[$proc_idx];
