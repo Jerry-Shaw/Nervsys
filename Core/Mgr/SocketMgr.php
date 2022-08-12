@@ -28,9 +28,9 @@ class SocketMgr extends Factory
     public OSMgr    $OSMgr;
     public FiberMgr $fiberMgr;
 
-    public int $wait_timeout   = 3;       // seconds
-    public int $alive_timeout  = 30;      // seconds
-    public int $select_timeout = 200000;  // microseconds
+    public int $wait_timeout  = 3;      // seconds
+    public int $alive_timeout = 30;     // seconds
+    public int $watch_timeout = 200000; // microseconds
 
     public bool $set_block    = false;
     public bool $debug_mode   = false;
@@ -184,9 +184,9 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setSelectTimeout(int $microseconds): self
+    public function setWatchTimeout(int $microseconds): self
     {
-        $this->select_timeout = &$microseconds;
+        $this->watch_timeout = &$microseconds;
 
         unset($microseconds);
         return $this;
@@ -790,7 +790,7 @@ class SocketMgr extends Factory
 
                 $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
 
-                if (0 < (int)stream_select($clients, $write, $except, 0, $this->select_timeout)) {
+                if (0 < (int)stream_select($clients, $write, $except, 0, $this->watch_timeout)) {
                     if (isset($clients[$this->socket_id])) {
                         $this->fiberMgr->async(
                             $this->fiberMgr->await([$this, 'accept']),
@@ -900,7 +900,7 @@ class SocketMgr extends Factory
 
                 $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
 
-                if (0 < (int)stream_select($clients, $write, $except, 0, $this->select_timeout)) {
+                if (0 < (int)stream_select($clients, $write, $except, 0, $this->watch_timeout)) {
                     if (isset($clients[$this->socket_id])) {
                         $this->fiberMgr->async($this->fiberMgr->await([$this, 'accept']));
                         unset($clients[$this->socket_id]);
@@ -976,7 +976,7 @@ class SocketMgr extends Factory
 
                 $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
 
-                if (0 < (int)stream_select($connection, $write, $except, 0, $this->select_timeout)) {
+                if (0 < (int)stream_select($connection, $write, $except, 0, $this->watch_timeout)) {
                     $this->fiberMgr->async(
                         $this->fiberMgr->await([$this, 'readFrom'], [$this->socket_id]),
                         function (string $socket_id, string $message): void
