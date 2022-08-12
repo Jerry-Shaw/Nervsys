@@ -34,12 +34,13 @@ class libMPC extends Factory
     /**
      * @param string $php_path
      * @param int    $proc_num
+     * @param int    $watch_timeout
      *
      * @return $this
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function create(string $php_path, int $proc_num = 10): self
+    public function create(string $php_path, int $proc_num = 10, int $watch_timeout = 10000): self
     {
         $app = App::new();
 
@@ -47,9 +48,11 @@ class libMPC extends Factory
             . $app->script_path . "\n"
             . '-c' . "\n" . '/' . __CLASS__ . '/childProc';
 
-        $this->procMgr = ProcMgr::new($cmd, $app->root_path)->create($proc_num);
+        $this->procMgr = ProcMgr::new($cmd, $app->root_path)
+            ->setWatchTimeout($watch_timeout)
+            ->create($proc_num);
 
-        unset($php_path, $proc_num, $app, $cmd);
+        unset($php_path, $proc_num, $watch_timeout, $app, $cmd);
         return $this;
     }
 
@@ -123,26 +126,27 @@ class libMPC extends Factory
                         {
                             switch (func_num_args()) {
                                 case 0:
-                                    echo "\n";
                                     break;
                                 case 1:
-                                    echo json_encode(func_get_arg(0), JSON_FORMAT) . "\n";
+                                    echo json_encode(func_get_arg(0), JSON_FORMAT);
                                     break;
                                 default:
-                                    echo json_encode(func_num_args(), JSON_FORMAT) . "\n";
+                                    echo json_encode(func_num_args(), JSON_FORMAT);
                                     break;
                             }
+
+                            echo "\n";
                         }
                     );
                 }
+
+                $fiberMgr->commit();
             } catch (\Throwable $throwable) {
                 $error->exceptionHandler($throwable, false, false);
                 unset($throwable);
             }
 
             unset($stdin, $data, $cgi_cmd, $cmd_data);
-
-            $fiberMgr->commit();
         }
     }
 }
