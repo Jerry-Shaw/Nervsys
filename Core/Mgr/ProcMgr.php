@@ -28,6 +28,8 @@ class ProcMgr extends Factory
     public OSMgr    $OSMgr;
     public FiberMgr $fiberMgr;
 
+    public bool $auto_create = false; //Auto create process
+
     public int $watch_timeout = 200000; //microseconds
 
     private string $command;
@@ -56,6 +58,19 @@ class ProcMgr extends Factory
         $this->proc_cmd = $this->OSMgr->buildProcCmd($this->command);
 
         unset($command, $working_path);
+    }
+
+    /**
+     * @param bool $auto_create
+     *
+     * @return $this
+     */
+    public function autoCreateProc(bool $auto_create): self
+    {
+        $this->auto_create = &$auto_create;
+
+        unset($auto_create);
+        return $this;
     }
 
     /**
@@ -174,7 +189,10 @@ class ProcMgr extends Factory
 
         if (!$proc_status['running']) {
             $this->closeProc($proc_idx);
-            $this->createProc($proc_idx);
+
+            if ($this->auto_create) {
+                $this->createProc($proc_idx);
+            }
 
             unset($proc_idx, $proc_status);
             return false;
