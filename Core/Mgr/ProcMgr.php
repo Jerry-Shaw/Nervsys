@@ -168,7 +168,7 @@ class ProcMgr extends Factory
      * @return bool
      * @throws \Exception
      */
-    private function isProcAlive(int $proc_idx): bool
+    public function isProcAlive(int $proc_idx): bool
     {
         $proc_status = proc_get_status($this->proc_list[$proc_idx]);
 
@@ -190,7 +190,7 @@ class ProcMgr extends Factory
      * @return void
      * @throws \Exception
      */
-    private function createProc(int $proc_idx): void
+    public function createProc(int $proc_idx): void
     {
         $proc = proc_open(
             $this->proc_cmd,
@@ -225,7 +225,7 @@ class ProcMgr extends Factory
      *
      * @return void
      */
-    private function closeProc(int $proc_idx): void
+    public function closeProc(int $proc_idx): void
     {
         fclose($this->input_list[$proc_idx]);
         fclose($this->output_list[$proc_idx]);
