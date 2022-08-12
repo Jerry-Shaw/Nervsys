@@ -46,10 +46,12 @@ class libMPC extends Factory
 
         $cmd = $php_path . "\n"
             . $app->script_path . "\n"
-            . '-c' . "\n" . '/' . __CLASS__ . '/childProc';
+            . '-c' . "\n"
+            . '/' . __CLASS__ . '/childProc';
 
         $this->procMgr = ProcMgr::new($cmd, $app->root_path)
             ->setWatchTimeout($watch_timeout)
+            ->autoCreateProc(true)
             ->create($proc_num);
 
         unset($php_path, $proc_num, $watch_timeout, $app, $cmd);
