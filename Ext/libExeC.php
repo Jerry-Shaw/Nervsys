@@ -25,11 +25,11 @@ use Nervsys\Core\Mgr\ProcMgr;
 
 class libExeC extends Factory
 {
-    const EXIT_CMD = 'ExitProc';
-
     public ProcMgr $procMgr;
 
     public string $proc_id;
+
+    public bool $exit_proc = false;
 
     private array $event_fn = [
         'onMonitor' => null, //callback(string $proc_id): void. Process monitor
@@ -116,6 +116,15 @@ class libExeC extends Factory
     }
 
     /**
+     * @return $this
+     */
+    public function exitProc(): self
+    {
+        $this->exit_proc = true;
+        return $this;
+    }
+
+    /**
      * @param string $command
      * @param string $working_path
      * @param int    $watch_timeout
@@ -132,7 +141,7 @@ class libExeC extends Factory
 
         unset($command, $working_path);
 
-        while ($this->procMgr->isProcAlive(0)) {
+        while ($this->procMgr->isProcAlive(0) && !$this->exit_proc) {
             if (is_callable($this->event_fn['onMonitor'])) {
                 call_user_func($this->event_fn['onMonitor'], $this->proc_id);
             }
@@ -154,11 +163,6 @@ class libExeC extends Factory
                     function (array $commands): void
                     {
                         foreach ($commands as $command) {
-                            if (self::EXIT_CMD === $command) {
-                                $this->procMgr->closeProc(0);
-                                return;
-                            }
-
                             $this->procMgr->writeProc(0, $command);
                         }
 
