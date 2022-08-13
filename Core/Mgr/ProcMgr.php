@@ -241,6 +241,18 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @param int    $proc_idx
+     * @param string $argv
+     *
+     * @return void
+     */
+    public function writeProc(int $proc_idx, string $argv): void
+    {
+        fwrite($this->input_list[$proc_idx], $argv . "\n");
+        unset($proc_idx, $argv);
+    }
+
+    /**
      * @param int $proc_idx
      *
      * @return void
@@ -252,17 +264,5 @@ class ProcMgr extends Factory
         proc_close($this->proc_list[$proc_idx]);
 
         unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
-    }
-
-    /**
-     * @param int    $proc_idx
-     * @param string $argv
-     *
-     * @return void
-     */
-    public function writeProc(int $proc_idx, string $argv): void
-    {
-        fwrite($this->input_list[$proc_idx], $argv . "\n");
-        unset($proc_idx, $argv);
     }
 }
