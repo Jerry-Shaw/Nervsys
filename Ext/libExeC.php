@@ -25,6 +25,8 @@ use Nervsys\Core\Mgr\ProcMgr;
 
 class libExeC extends Factory
 {
+    const EXIT_CMD = 'ExitProc';
+
     public ProcMgr $procMgr;
 
     public string $proc_id;
@@ -152,6 +154,11 @@ class libExeC extends Factory
                     function (array $commands): void
                     {
                         foreach ($commands as $command) {
+                            if (self::EXIT_CMD === $command) {
+                                $this->procMgr->closeProc(0);
+                                return;
+                            }
+
                             $this->procMgr->writeProc(0, $command);
                         }
 
@@ -168,8 +175,6 @@ class libExeC extends Factory
         if (is_callable($this->event_fn['onExit'])) {
             call_user_func($this->event_fn['onExit'], $this->proc_id);
         }
-
-        $this->procMgr->closeProc(0);
 
         unset($watch_timeout);
     }
