@@ -214,7 +214,7 @@ class ProcMgr extends Factory
         $proc = proc_open(
             $this->proc_cmd,
             [
-                ['socket', 'rb'],
+                ['pipe', 'rb'],
                 ['socket', 'wb'],
                 ['socket', 'wb']
             ],
