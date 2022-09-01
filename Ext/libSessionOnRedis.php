@@ -24,13 +24,10 @@ use Nervsys\Core\Factory;
 
 class libSessionOnRedis extends Factory
 {
-    //SESSION key prefix
     const PREFIX = 'SESS:';
 
-    /** @var \Redis $redis */
     public \Redis $redis;
 
-    //SESSION life
     protected int $life = 600;
 
     /**
@@ -98,6 +95,7 @@ class libSessionOnRedis extends Factory
      * @param string $session_id
      *
      * @return string
+     * @throws \RedisException
      */
     public function sessionRead(string $session_id): string
     {
@@ -111,6 +109,7 @@ class libSessionOnRedis extends Factory
      * @param string $session_data
      *
      * @return bool
+     * @throws \RedisException
      */
     public function sessionWrite(string $session_id, string $session_data): bool
     {
@@ -126,6 +125,7 @@ class libSessionOnRedis extends Factory
      * @param string $session_id
      *
      * @return bool
+     * @throws \RedisException
      */
     public function sessionDestroy(string $session_id): bool
     {

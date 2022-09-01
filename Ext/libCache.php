@@ -27,7 +27,6 @@ class libCache extends Factory
     //Cache key prefix
     const PREFIX = 'CAS:';
 
-    /** @var \Redis $redis */
     public \Redis $redis;
 
     /**

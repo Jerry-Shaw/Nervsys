@@ -27,7 +27,7 @@ use Nervsys\Core\Lib\App;
 class libLog extends Factory
 {
     private string $log_path;
-    private string $log_file = 'default.log';
+    private string $log_file;
 
     /**
      * libLog constructor

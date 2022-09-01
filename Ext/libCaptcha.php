@@ -43,12 +43,10 @@ class libCaptcha extends Factory
         self::TYPE_CALC,
     ];
 
-    /** @var libCrypt $libCrypt */
+    public \Redis   $redis;
     public libCrypt $libCrypt;
 
-    /** @var \Redis $redis */
-    public \Redis $redis;
-    public bool   $use_redis = false;
+    public bool $use_redis = false;
 
     //Code output types
     protected array $types = [];

@@ -33,7 +33,6 @@ class libLock extends Factory
     //Retry limit
     const RETRY = 10;
 
-    /** @var \Redis $redis */
     public \Redis $redis;
 
     //Lock pool
