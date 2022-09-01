@@ -198,7 +198,7 @@ class libQueue extends Factory
      */
     private function addJob(string $key, string $cmd, array $data): int
     {
-        $data['c']  = &$cmd;
+        $data['@']  = &$cmd;
         $job_length = (int)$this->redis->lPush($key, json_encode($data, JSON_FORMAT));
 
         unset($key, $cmd, $data);
@@ -246,8 +246,8 @@ class libQueue extends Factory
             while (false !== ($delay_job = $this->redis->rPop($job_key))) {
                 $job_data = json_decode($delay_job, true);
 
-                if (is_array($job_data) && isset($job_data['c'])) {
-                    $this->addRealtime($job_data['c'], $job_data);
+                if (is_array($job_data) && isset($job_data['@'])) {
+                    $this->addRealtime($job_data['@'], $job_data);
                 }
             }
 
@@ -269,8 +269,8 @@ class libQueue extends Factory
     {
         $job_data = json_decode($job_json, true);
 
-        if (is_array($job_data) && isset($job_data['c'])) {
-            $libMPC->sendCMD($job_data['c'], $job_data);
+        if (is_array($job_data) && isset($job_data['@'])) {
+            $libMPC->sendCMD($job_data['@'], $job_data);
         }
 
         unset($libMPC, $job_json, $job_data);

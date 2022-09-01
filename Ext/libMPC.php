@@ -69,7 +69,7 @@ class libMPC extends Factory
      */
     public function sendCMD(string $cmd, array $data = [], callable $callable = null): self
     {
-        $data['c'] = &$cmd;
+        $data['@'] = &$cmd;
 
         $this->procMgr->sendArgv(json_encode($data), $callable);
 
@@ -119,7 +119,7 @@ class libMPC extends Factory
             }
 
             try {
-                $cgi_cmd = $router->parseCgi($data['c']);
+                $cgi_cmd = $router->parseCgi($data['@']);
 
                 foreach ($cgi_cmd as $cmd_data) {
                     $fiberMgr->async(
