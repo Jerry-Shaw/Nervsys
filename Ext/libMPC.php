@@ -67,7 +67,7 @@ class libMPC extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function sendCMD(string $cmd, array $data, callable $callable = null): self
+    public function sendCMD(string $cmd, array $data = [], callable $callable = null): self
     {
         $data['c'] = &$cmd;
 
