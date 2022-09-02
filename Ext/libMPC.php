@@ -24,8 +24,8 @@ use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\Router;
-use Nervsys\Core\Mgr\FiberMgr;
 use Nervsys\Core\Mgr\ProcMgr;
+use Nervsys\Core\Reflect;
 
 class libMPC extends Factory
 {
@@ -93,9 +93,8 @@ class libMPC extends Factory
      */
     public function childProc(): void
     {
-        $error    = Error::new();
-        $router   = Router::new();
-        $fiberMgr = FiberMgr::new();
+        $error  = Error::new();
+        $router = Router::new();
 
         while (true) {
             $stdin = fgets(STDIN);
@@ -121,33 +120,30 @@ class libMPC extends Factory
             try {
                 $cgi_cmd = $router->parseCgi($data['@']);
 
+                unset($data['@']);
+
                 foreach ($cgi_cmd as $cmd_data) {
-                    $fiberMgr->async(
-                        $fiberMgr->await([parent::getObj($cmd_data[0], $data), $cmd_data[1]], $data),
-                        function (): void
-                        {
-                            switch (func_num_args()) {
-                                case 0:
-                                    break;
-                                case 1:
-                                    echo json_encode(func_get_arg(0), JSON_FORMAT);
-                                    break;
-                                default:
-                                    echo json_encode(func_num_args(), JSON_FORMAT);
-                                    break;
-                            }
+                    $fn_args  = $data;
+                    $callable = [parent::getObj($cmd_data[0], $fn_args), $cmd_data[1]];
 
-                            echo "\n";
-                        }
-                    );
+                    if (!empty($fn_args) && !array_is_list($fn_args)) {
+                        $fn_args = parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $fn_args);
+                    }
+
+                    $result = call_user_func_array($callable, $fn_args);
+
+                    if (!is_null($result)) {
+                        echo json_encode($result, JSON_FORMAT);
+                    }
+
+                    unset($fn_args, $callable, $result);
                 }
-
-                $fiberMgr->commit();
             } catch (\Throwable $throwable) {
                 $error->exceptionHandler($throwable, false, false);
                 unset($throwable);
             }
 
+            echo "\n";
             unset($stdin, $data, $cgi_cmd, $cmd_data);
         }
     }
