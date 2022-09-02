@@ -22,11 +22,11 @@
 namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
+use Nervsys\Core\Reflect;
 
 class ProcMgr extends Factory
 {
-    public OSMgr    $OSMgr;
-    public FiberMgr $fiberMgr;
+    public OSMgr $OSMgr;
 
     public bool $auto_create = false; //Auto create process
 
@@ -36,6 +36,7 @@ class ProcMgr extends Factory
     private string $working_path = '';
 
     private array $proc_cmd;
+    private array $job_list    = [];
     private array $load_list   = [];
     private array $proc_list   = [];
     private array $input_list  = [];
@@ -49,8 +50,7 @@ class ProcMgr extends Factory
      */
     public function __construct(string $command, string $working_path = '')
     {
-        $this->OSMgr    = OSMgr::new();
-        $this->fiberMgr = FiberMgr::new();
+        $this->OSMgr = OSMgr::new();
 
         $this->working_path = &$working_path;
 
@@ -110,7 +110,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      * @throws \ReflectionException
-     * @throws \Throwable
+     * @throws \Exception
      */
     public function sendArgv(string $argv, callable $callable = null): self
     {
@@ -124,7 +124,9 @@ class ProcMgr extends Factory
 
         $this->writeProc($proc_idx, $argv);
 
-        $this->fiberMgr->async($this->fiberMgr->await([$this, 'await'], [$proc_idx]), $callable);
+        $this->job_list[$proc_idx][] = $callable;
+
+        $this->await($proc_idx);
 
         unset($argv, $callable, $proc_idx);
         return $this;
@@ -133,37 +135,41 @@ class ProcMgr extends Factory
     /**
      * @param int $proc_idx
      *
-     * @return string
-     * @throws \Throwable
+     * @return void
+     * @throws \ReflectionException
      */
-    public function await(int $proc_idx): string
+    public function await(int $proc_idx): void
     {
         $write = $except = [];
+        $read  = [$proc_idx => $this->output_list[$proc_idx]];
 
-        while (true) {
-            $read = [$this->output_list[$proc_idx]];
-
-            if (0 === (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-                \Fiber::suspend();
-            } else {
-                --$this->load_list[$proc_idx];
-                break;
-            }
+        if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
+            $this->readProc($read);
         }
 
-        $result = trim(fgets($this->output_list[$proc_idx]));
-
         unset($proc_idx, $write, $except, $read);
-        return $result;
     }
 
     /**
      * @return void
-     * @throws \Throwable
+     * @throws \ReflectionException
      */
     public function commit(): void
     {
-        $this->fiberMgr->commit();
+        $write   = $except = [];
+        $workers = count($this->job_list);
+
+        while ($workers < count($this->job_list, COUNT_RECURSIVE)) {
+            $read = $this->output_list;
+
+            if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
+                $this->readProc($read);
+            }
+
+            unset($read);
+        }
+
+        unset($write, $except, $workers);
     }
 
     /**
@@ -253,14 +259,45 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @param array $read
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    private function readProc(array $read): void
+    {
+        foreach ($read as $proc_idx => $proc_pipe) {
+            --$this->load_list[$proc_idx];
+
+            $output   = trim(fgets($proc_pipe));
+            $callable = array_shift($this->job_list[$proc_idx]);
+
+            if (is_callable($callable)) {
+                $data = json_decode($output, true);
+
+                is_array($data) && !array_is_list($data)
+                    ? call_user_func_array($callable, parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $data))
+                    : call_user_func($callable, $data);
+
+                unset($data);
+            }
+
+            unset($output, $callable);
+        }
+
+        unset($read, $proc_idx, $proc_pipe);
+    }
+
+    /**
      * @param int $proc_idx
      *
      * @return void
      */
-    public function closeProc(int $proc_idx): void
+    private function closeProc(int $proc_idx): void
     {
         fclose($this->input_list[$proc_idx]);
         fclose($this->output_list[$proc_idx]);
+
         proc_close($this->proc_list[$proc_idx]);
 
         unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
