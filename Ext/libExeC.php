@@ -25,26 +25,26 @@ use Nervsys\Core\Mgr\ProcMgr;
 
 class libExeC extends Factory
 {
+    const QUIT = 'QuitProc';
+
     public ProcMgr $procMgr;
 
-    public string $proc_id;
-
-    public bool $exit_proc = false;
-
+    public string $proc_name;
     private array $event_fn = [
-        'onMonitor' => null, //callback(string $proc_id): void. Process monitor
-        'onCommand' => null, //callback(string $proc_id): array $commands. Read commands and return to libExeC
-        'onOutput'  => null, //callback(string $proc_id, string $proc_output): void. Catch output message from async process
-        'onExit'    => null  //callback(string $proc_id): void. Exit event monitor
+        'onMonitor' => null, //callback(string $proc_name): void. Process monitor
+        'onCommand' => null, //callback(string $proc_name): array $commands. Read commands and return to libExeC
+        'onOutput'  => null, //callback(string $proc_name, string $proc_output): void. Catch output message from async process
+        'onExit'    => null  //callback(string $proc_name): void. Exit event monitor
     ];
 
     /**
-     * @param string $proc_id
+     * @param string $proc_name
      */
-    public function __construct(string $proc_id)
+    public function __construct(string $proc_name)
     {
-        $this->proc_id = &$proc_id;
-        unset($proc_id);
+        $this->proc_name = &$proc_name;
+
+        unset($proc_name);
     }
 
     /**
@@ -116,15 +116,6 @@ class libExeC extends Factory
     }
 
     /**
-     * @return $this
-     */
-    public function exitProc(): self
-    {
-        $this->exit_proc = true;
-        return $this;
-    }
-
-    /**
      * @param string $command
      * @param string $working_path
      * @param int    $watch_timeout
@@ -139,47 +130,41 @@ class libExeC extends Factory
             ->setWatchTimeout($watch_timeout)
             ->createProc(0);
 
-        unset($command, $working_path);
+        unset($command, $working_path, $watch_timeout);
 
-        while ($this->procMgr->isProcAlive(0) && !$this->exit_proc) {
+        while ($this->procMgr->isProcAlive(0)) {
             if (is_callable($this->event_fn['onMonitor'])) {
-                call_user_func($this->event_fn['onMonitor'], $this->proc_id);
+                call_user_func($this->event_fn['onMonitor'], $this->proc_name);
             }
 
             if (is_callable($this->event_fn['onOutput'])) {
-                $this->procMgr->fiberMgr->async(
-                    $this->procMgr->fiberMgr->await([$this->procMgr, 'await'], [0]),
-                    function (string $output): void
-                    {
-                        call_user_func($this->event_fn['onOutput'], $this->proc_id, $output);
-                        unset($output);
-                    }
-                );
+                try {
+                    $output = $this->procMgr->awaitProc(0);
+                } catch (\Throwable) {
+                    break;
+                }
+
+                call_user_func($this->event_fn['onOutput'], $this->proc_name, $output);
+                unset($output);
             }
 
             if (is_callable($this->event_fn['onCommand'])) {
-                $this->procMgr->fiberMgr->async(
-                    $this->procMgr->fiberMgr->await($this->event_fn['onCommand'], [$this->proc_id]),
-                    function (array $commands): void
-                    {
-                        foreach ($commands as $command) {
-                            $this->procMgr->writeProc(0, $command);
-                        }
+                $commands = call_user_func($this->event_fn['onCommand'], $this->proc_name);
 
-                        unset($commands, $command);
+                foreach ($commands as $command) {
+                    if (self::QUIT === $command) {
+                        break 2;
                     }
-                );
+
+                    $this->procMgr->writeProc(0, $command);
+                }
+
+                unset($commands, $command);
             }
-
-            $this->procMgr->fiberMgr->commit();
-
-            usleep($watch_timeout);
         }
 
         if (is_callable($this->event_fn['onExit'])) {
-            call_user_func($this->event_fn['onExit'], $this->proc_id);
+            call_user_func($this->event_fn['onExit'], $this->proc_name);
         }
-
-        unset($watch_timeout);
     }
 }
