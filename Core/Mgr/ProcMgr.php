@@ -22,7 +22,6 @@
 namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
-use Nervsys\Core\Reflect;
 
 class ProcMgr extends Factory
 {
@@ -30,6 +29,7 @@ class ProcMgr extends Factory
 
     public bool $auto_create = false; //Auto create process
 
+    public int $flush_on_load = 10;     //Auto commit on pending jobs per process
     public int $watch_timeout = 200000; //microseconds
 
     private string $command;
@@ -113,6 +113,10 @@ class ProcMgr extends Factory
      */
     public function sendArgv(string $argv, callable $callable = null): self
     {
+        if ($this->flush_on_load < (count($this->job_list, COUNT_RECURSIVE) / count($this->job_list))) {
+            $this->commit();
+        }
+
         $proc_idx = array_search(min($this->load_list), $this->load_list, true);
 
         if (false === $proc_idx || !$this->isProcAlive($proc_idx)) {
@@ -125,28 +129,8 @@ class ProcMgr extends Factory
 
         $this->job_list[$proc_idx][] = $callable;
 
-        $this->await($proc_idx);
-
         unset($argv, $callable, $proc_idx);
         return $this;
-    }
-
-    /**
-     * @param int $proc_idx
-     *
-     * @return void
-     */
-    public function await(int $proc_idx): void
-    {
-        $write = $except = [];
-        $read  = [$proc_idx => $this->output_list[$proc_idx]];
-
-        if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-            --$this->load_list[$proc_idx];
-            $this->readProc($proc_idx, array_shift($this->job_list[$proc_idx]));
-        }
-
-        unset($proc_idx, $write, $except, $read);
     }
 
     /**
@@ -255,6 +239,24 @@ class ProcMgr extends Factory
      *
      * @return void
      */
+    public function awaitProc(int $proc_idx, callable $callable = null): void
+    {
+        $write = $except = [];
+        $read  = [$proc_idx => $this->output_list[$proc_idx]];
+
+        if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
+            $this->readProc($proc_idx, $callable);
+        }
+
+        unset($proc_idx, $callable, $write, $except, $read);
+    }
+
+    /**
+     * @param int           $proc_idx
+     * @param callable|null $callable
+     *
+     * @return void
+     */
     public function readProc(int $proc_idx, callable $callable = null): void
     {
         $output = fgets($this->output_list[$proc_idx]);
@@ -275,7 +277,6 @@ class ProcMgr extends Factory
     public function writeProc(int $proc_idx, string $argv): void
     {
         fwrite($this->input_list[$proc_idx], $argv . "\n");
-
         unset($proc_idx, $argv);
     }
 
@@ -288,7 +289,6 @@ class ProcMgr extends Factory
     {
         fclose($this->input_list[$proc_idx]);
         fclose($this->output_list[$proc_idx]);
-
         proc_close($this->proc_list[$proc_idx]);
 
         unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
