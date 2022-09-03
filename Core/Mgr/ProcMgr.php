@@ -29,7 +29,7 @@ class ProcMgr extends Factory
 
     public bool $auto_create = false; //Auto create process
 
-    public int $flush_on_load = 10;     //Auto commit on pending jobs per process
+    public int $flush_on_load = 10;     //Auto commit on process load rate
     public int $watch_timeout = 200000; //microseconds
 
     private string $command;
@@ -234,21 +234,22 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int           $proc_idx
-     * @param callable|null $callable
+     * @param int $proc_idx
      *
-     * @return void
+     * @return string
      */
-    public function awaitProc(int $proc_idx, callable $callable = null): void
+    public function awaitProc(int $proc_idx): string
     {
-        $write = $except = [];
-        $read  = [$proc_idx => $this->output_list[$proc_idx]];
+        $output = '';
+        $write  = $except = [];
+        $read   = [$proc_idx => $this->output_list[$proc_idx]];
 
         if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-            $this->readProc($proc_idx, $callable);
+            $output = trim(fgets($this->output_list[$proc_idx]));
         }
 
-        unset($proc_idx, $callable, $write, $except, $read);
+        unset($proc_idx, $write, $except, $read);
+        return $output;
     }
 
     /**
@@ -277,6 +278,7 @@ class ProcMgr extends Factory
     public function writeProc(int $proc_idx, string $argv): void
     {
         fwrite($this->input_list[$proc_idx], $argv . "\n");
+
         unset($proc_idx, $argv);
     }
 
