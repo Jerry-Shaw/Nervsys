@@ -141,10 +141,14 @@ class libExeC extends Factory
                 try {
                     $output = $this->procMgr->awaitProc(0);
                 } catch (\Throwable) {
+                    $this->procMgr->closeProc(0);
                     break;
                 }
 
-                call_user_func($this->event_fn['onOutput'], $this->proc_name, $output);
+                if ('' !== $output) {
+                    call_user_func($this->event_fn['onOutput'], $this->proc_name, $output);
+                }
+
                 unset($output);
             }
 
@@ -153,6 +157,7 @@ class libExeC extends Factory
 
                 foreach ($commands as $command) {
                     if (self::QUIT === $command) {
+                        $this->procMgr->closeProc(0);
                         break 2;
                     }
 
