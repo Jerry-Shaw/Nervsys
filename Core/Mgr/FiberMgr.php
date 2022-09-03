@@ -42,7 +42,7 @@ class FiberMgr extends Factory
 
     /**
      * Await callable function, generate Fiber instance
-     * Using "await()->getReturn()" to get Fiber returned result
+     * MUST call "Fiber::suspend()" inside callable function to make it async
      *
      * @param callable $callable
      * @param array    $args
@@ -66,42 +66,18 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Generate async function from await, pass a callable function to process await result
-     * "commit()" MUST be called in the end after "async()"s, otherwise, async fibers might NOT start
+     * Add await fiber into async child list, pass a callable function to process returned result
+     * "commit()" MUST be called in the end after "async()"s, otherwise, async fibers might NOT resume
      *
      * @param \Fiber        $await_fiber
      * @param callable|null $callable
      *
-     * @return \Fiber
+     * @return void
      */
-    public function async(\Fiber $await_fiber, callable $callable = null): \Fiber
+    public function async(\Fiber $await_fiber, callable $callable = null): void
     {
-        $async_fiber = new \Fiber(function () use ($await_fiber, $callable): mixed
-        {
-            while (!$await_fiber->isTerminated()) {
-                if ($await_fiber->isSuspended()) {
-                    $await_fiber->resume();
-                }
-
-                \Fiber::suspend();
-            }
-
-            $result = $await_fiber->getReturn();
-
-            if (is_callable($callable)) {
-                $result = is_array($result) && !array_is_list($result)
-                    ? call_user_func_array($callable, parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result))
-                    : call_user_func($callable, $result);
-            }
-
-            unset($await_fiber, $callable);
-            return $result;
-        });
-
-        $this->child[] = $async_fiber;
-
+        $this->child[] = [$await_fiber, $callable];
         unset($await_fiber, $callable);
-        return $async_fiber;
     }
 
     /**
@@ -124,19 +100,27 @@ class FiberMgr extends Factory
     private function ready(): void
     {
         while (!empty($this->child)) {
-            foreach ($this->child as $key => $fiber) {
-                if (!$fiber->isStarted()) {
-                    $fiber->start();
+            foreach ($this->child as $fiber_key => $fiber_proc) {
+                if ($fiber_proc[0]->isSuspended()) {
+                    $fiber_proc[0]->resume();
                 }
 
-                if ($fiber->isSuspended()) {
-                    $fiber->resume();
-                }
+                if ($fiber_proc[0]->isTerminated()) {
+                    unset($this->child[$fiber_key]);
 
-                if ($fiber->isTerminated()) {
-                    unset($this->child[$key]);
+                    if (is_callable($fiber_proc[1])) {
+                        $result = $fiber_proc[0]->getReturn();
+
+                        is_array($result) && !array_is_list($result)
+                            ? call_user_func_array($fiber_proc[1], parent::buildArgs(Reflect::getCallable($fiber_proc[1])->getParameters(), $result))
+                            : call_user_func($fiber_proc[1], $result);
+
+                        unset($result);
+                    }
                 }
             }
+
+            unset($fiber_key, $fiber_proc);
         }
 
         \Fiber::suspend();
