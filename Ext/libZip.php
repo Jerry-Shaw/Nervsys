@@ -158,7 +158,7 @@ class libZip extends Factory
      */
     private function getEntryName(string $path, string $base_path): string
     {
-        return substr($path, strpos($path, $base_path));
+        return strtr(substr($path, strpos($path, $base_path)), '\\', '/');
     }
 
     /**
