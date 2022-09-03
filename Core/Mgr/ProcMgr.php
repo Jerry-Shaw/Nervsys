@@ -160,18 +160,6 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @return void
-     */
-    public function closeAllProc(): void
-    {
-        foreach ($this->proc_list as $proc_idx => $proc_resource) {
-            $this->closeProc($proc_idx);
-        }
-
-        unset($proc_idx, $proc_resource);
-    }
-
-    /**
      * @param int $proc_idx
      *
      * @return bool
@@ -287,12 +275,24 @@ class ProcMgr extends Factory
      *
      * @return void
      */
-    private function closeProc(int $proc_idx): void
+    public function closeProc(int $proc_idx): void
     {
         fclose($this->input_list[$proc_idx]);
         fclose($this->output_list[$proc_idx]);
         proc_close($this->proc_list[$proc_idx]);
 
         unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
+    }
+
+    /**
+     * @return void
+     */
+    public function closeAllProc(): void
+    {
+        foreach ($this->proc_list as $proc_idx => $proc_resource) {
+            $this->closeProc($proc_idx);
+        }
+
+        unset($proc_idx, $proc_resource);
     }
 }
