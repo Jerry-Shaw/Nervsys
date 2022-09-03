@@ -54,7 +54,7 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Add await fiber into async child list, pass a callable function to process returned result
+     * Add await fiber into async fiber list, pass a callable function to process returned result
      * "commit()" MUST be called in the end after "async()"s, otherwise, async fibers might NOT resume
      *
      * @param \Fiber        $await_fiber
@@ -66,7 +66,9 @@ class FiberMgr extends Factory
     public function async(\Fiber $await_fiber, callable $callable = null): void
     {
         if ($await_fiber->isTerminated()) {
-            is_callable($callable) && $this->fiberDone($await_fiber, $callable);
+            if (is_callable($callable)) {
+                $this->fiberDone($await_fiber, $callable);
+            }
         } else {
             $this->fibers[] = [&$await_fiber, &$callable];
         }
@@ -75,7 +77,7 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Run main fiber process
+     * Commit all async fibers
      *
      * @return void
      * @throws \Throwable
@@ -96,6 +98,8 @@ class FiberMgr extends Factory
                     }
                 }
             }
+
+            $this->fibers = array_values($this->fibers);
 
             unset($fiber_key, $fiber_proc);
         }
