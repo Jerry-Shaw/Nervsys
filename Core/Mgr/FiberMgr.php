@@ -26,19 +26,7 @@ use Nervsys\Core\Reflect;
 
 class FiberMgr extends Factory
 {
-    private \Fiber $fiber;
-    private array  $child = [];
-
-    /**
-     * FiberMgr constructor.
-     *
-     * @throws \Throwable
-     */
-    public function __construct()
-    {
-        $this->fiber = new \Fiber([$this, 'ready']);
-        $this->fiber->start();
-    }
+    private array $fibers = [];
 
     /**
      * Await callable function, generate Fiber instance
@@ -73,10 +61,16 @@ class FiberMgr extends Factory
      * @param callable|null $callable
      *
      * @return void
+     * @throws \ReflectionException
      */
     public function async(\Fiber $await_fiber, callable $callable = null): void
     {
-        $this->child[] = [$await_fiber, $callable];
+        if ($await_fiber->isTerminated()) {
+            is_callable($callable) && $this->fiberDone($await_fiber, $callable);
+        } else {
+            $this->fibers[] = [&$await_fiber, &$callable];
+        }
+
         unset($await_fiber, $callable);
     }
 
@@ -88,43 +82,40 @@ class FiberMgr extends Factory
      */
     public function commit(): void
     {
-        $this->fiber->isSuspended() && $this->fiber->resume();
-    }
-
-    /**
-     * Main fiber ready function
-     *
-     * @return void
-     * @throws \Throwable
-     */
-    private function ready(): void
-    {
-        while (!empty($this->child)) {
-            foreach ($this->child as $fiber_key => $fiber_proc) {
+        while (!empty($this->fibers)) {
+            foreach ($this->fibers as $fiber_key => $fiber_proc) {
                 if ($fiber_proc[0]->isSuspended()) {
                     $fiber_proc[0]->resume();
                 }
 
                 if ($fiber_proc[0]->isTerminated()) {
-                    unset($this->child[$fiber_key]);
+                    unset($this->fibers[$fiber_key]);
 
                     if (is_callable($fiber_proc[1])) {
-                        $result = $fiber_proc[0]->getReturn();
-
-                        is_array($result) && !array_is_list($result)
-                            ? call_user_func_array($fiber_proc[1], parent::buildArgs(Reflect::getCallable($fiber_proc[1])->getParameters(), $result))
-                            : call_user_func($fiber_proc[1], $result);
-
-                        unset($result);
+                        $this->fiberDone($fiber_proc[0], $fiber_proc[1]);
                     }
                 }
             }
 
             unset($fiber_key, $fiber_proc);
         }
+    }
 
-        \Fiber::suspend();
+    /**
+     * @param \Fiber   $fiber
+     * @param callable $callable
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    private function fiberDone(\Fiber $fiber, callable $callable): void
+    {
+        $result = $fiber->getReturn();
 
-        $this->ready();
+        is_array($result) && !array_is_list($result)
+            ? call_user_func_array($callable, parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result))
+            : call_user_func($callable, $result);
+
+        unset($fiber, $callable, $result);
     }
 }
