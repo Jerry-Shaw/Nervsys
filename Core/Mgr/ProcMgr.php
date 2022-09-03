@@ -109,7 +109,6 @@ class ProcMgr extends Factory
      * @param callable|null $callable
      *
      * @return $this
-     * @throws \ReflectionException
      * @throws \Exception
      */
     public function sendArgv(string $argv, callable $callable = null): self
@@ -136,7 +135,6 @@ class ProcMgr extends Factory
      * @param int $proc_idx
      *
      * @return void
-     * @throws \ReflectionException
      */
     public function await(int $proc_idx): void
     {
@@ -144,7 +142,8 @@ class ProcMgr extends Factory
         $read  = [$proc_idx => $this->output_list[$proc_idx]];
 
         if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-            $this->readProc($read);
+            --$this->load_list[$proc_idx];
+            $this->readProc($proc_idx, array_shift($this->job_list[$proc_idx]));
         }
 
         unset($proc_idx, $write, $except, $read);
@@ -152,7 +151,6 @@ class ProcMgr extends Factory
 
     /**
      * @return void
-     * @throws \ReflectionException
      */
     public function commit(): void
     {
@@ -163,7 +161,12 @@ class ProcMgr extends Factory
             $read = $this->output_list;
 
             if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-                $this->readProc($read);
+                foreach ($read as $proc_idx => $proc_pipe) {
+                    --$this->load_list[$proc_idx];
+                    $this->readProc($proc_idx, array_shift($this->job_list[$proc_idx]));
+                }
+
+                unset($proc_idx, $proc_pipe);
             }
 
             unset($read);
@@ -247,6 +250,23 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @param int           $proc_idx
+     * @param callable|null $callable
+     *
+     * @return void
+     */
+    public function readProc(int $proc_idx, callable $callable = null): void
+    {
+        $output = fgets($this->output_list[$proc_idx]);
+
+        if (false !== $output && is_callable($callable)) {
+            call_user_func($callable, trim($output));
+        }
+
+        unset($proc_idx, $callable, $output);
+    }
+
+    /**
      * @param int    $proc_idx
      * @param string $argv
      *
@@ -255,37 +275,8 @@ class ProcMgr extends Factory
     public function writeProc(int $proc_idx, string $argv): void
     {
         fwrite($this->input_list[$proc_idx], $argv . "\n");
+
         unset($proc_idx, $argv);
-    }
-
-    /**
-     * @param array $read
-     *
-     * @return void
-     * @throws \ReflectionException
-     */
-    private function readProc(array $read): void
-    {
-        foreach ($read as $proc_idx => $proc_pipe) {
-            --$this->load_list[$proc_idx];
-
-            $output   = trim(fgets($proc_pipe));
-            $callable = array_shift($this->job_list[$proc_idx]);
-
-            if (is_callable($callable)) {
-                $data = json_decode($output, true);
-
-                is_array($data) && !array_is_list($data)
-                    ? call_user_func_array($callable, parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $data))
-                    : call_user_func($callable, $data);
-
-                unset($data);
-            }
-
-            unset($output, $callable);
-        }
-
-        unset($read, $proc_idx, $proc_pipe);
     }
 
     /**
