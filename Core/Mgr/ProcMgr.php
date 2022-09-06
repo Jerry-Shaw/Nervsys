@@ -113,7 +113,7 @@ class ProcMgr extends Factory
      */
     public function sendArgv(string $argv, callable $callable = null): self
     {
-        if ($this->flush_on_load < (count($this->job_list, COUNT_RECURSIVE) / count($this->job_list))) {
+        if (count($this->job_list, COUNT_RECURSIVE) > $this->flush_on_load * count($this->job_list)) {
             $this->commit();
         }
 
