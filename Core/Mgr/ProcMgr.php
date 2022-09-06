@@ -54,7 +54,7 @@ class ProcMgr extends Factory
 
         $this->working_path = &$working_path;
 
-        $this->command  = $this->OSMgr->useProfile(true)->buildCmd($command);
+        $this->command  = $this->OSMgr->buildCmd($command);
         $this->proc_cmd = $this->OSMgr->buildProcCmd($this->command);
 
         unset($command, $working_path);
