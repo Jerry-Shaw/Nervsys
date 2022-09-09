@@ -33,6 +33,7 @@ class ProcMgr extends Factory
     public int $watch_timeout = 200000; //microseconds
 
     private string $command;
+    private string $char_eol     = "\n";
     private string $working_path = '';
 
     private array $proc_cmd;
@@ -87,20 +88,23 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int $proc_count
+     * @param int    $proc_count
+     * @param string $char_eol
      *
      * @return $this
      * @throws \Exception
      */
-    public function create(int $proc_count = 1): self
+    public function create(int $proc_count = 1, string $char_eol = "\n"): self
     {
+        $this->char_eol = &$char_eol;
+
         for ($i = 0; $i < $proc_count; ++$i) {
             $this->createProc($i);
         }
 
         register_shutdown_function([$this, 'closeAllProc']);
 
-        unset($proc_count, $i);
+        unset($proc_count, $char_eol, $i);
         return $this;
     }
 
@@ -265,7 +269,7 @@ class ProcMgr extends Factory
      */
     public function writeProc(int $proc_idx, string $argv): void
     {
-        fwrite($this->input_list[$proc_idx], $argv . "\n");
+        fwrite($this->input_list[$proc_idx], $argv . $this->char_eol);
 
         unset($proc_idx, $argv);
     }
