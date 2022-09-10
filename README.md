@@ -2,7 +2,7 @@
 
 README: [English](README.md) | [简体中文](README_zh-CN.md)
 
-[![release](https://img.shields.io/badge/release-8.0.3-blue?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/releases)
+[![release](https://img.shields.io/badge/release-8.1.0-blue?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/releases)
 [![issues](https://img.shields.io/github/issues/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/issues)
 [![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/graphs/contributors)
 [![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/commits/master)
@@ -21,7 +21,7 @@ README: [English](README.md) | [简体中文](README_zh-CN.md)
   **NS**, that's what most of us call it, but, don't mix it up with Nintendo Switch.
 
 * Requirements:  
-  PHP **7.4+** and above. Any kind of web server or running under CLI mode.
+  PHP **8.1+** and above. Any kind of web server or running under CLI mode.
 
 * Usage example:
     1. Ordinary framework for Web-backend-developing
@@ -34,7 +34,7 @@ README: [English](README.md) | [简体中文](README_zh-CN.md)
 1. Clone or download source code to anywhere on your machine. Only one copy is required on the same machine even
    multiple projects exist.
 2. Include "NS.php" in the main entry script of the project, and call it with using "NS::new();".
-3. If needed, using "/Ext/libCoreApi" to register your own modules and functions before calling "NS::new();".
+3. If needed, using "trait System" to register your own modules and functions before calling "NS::new();".
 4. Write your API code classes under "/api", application code classes under "/app", if not changed, and there you go.
 5. In "/Ext", there are common useful extensions for normal project development, so, please do review them when coding.
    They can be helpful.
@@ -50,17 +50,14 @@ README: [English](README.md) | [简体中文](README_zh-CN.md)
 ```text
 Root/
     ├─api/                            default api entry code path
-    │    └─DemoApiClass.php           demo api php class file
+    │    ├─DemoApiClass.php           demo api php class file
+    │    └─...                        other opened api php class file
     ├─app/                            default application code path
-    │    └─DemoAppClass.php           demo application php class file
-    ├─config/                         suggested conf file path (use "Ext/libConfGet.php" to process)
-    │       ├─dev.conf                conf file for dev
-    │       ├─prod.conf               conf file for prod
-    │       └─...                     other conf files
-    ├─message/                        suggested message file path (use "Ext/libErrno.php" to process)
-    │        └─msg.ini                custom message ini file
+    │    ├─DemoAppClass.php           demo application php class file
+    │    └─...                        other application php class file
     └─www/                            default home path
-         └─index.php                  main entry script
+         ├─index.php                  main entry script
+         └─...                        other entry script file, such as "api.php"
 ```
 
 #### 2. NS integration
@@ -70,16 +67,15 @@ Follow "[Installation](#installation)" steps to integrate NS into your entry scr
 ```php
 require __DIR__ . '/../../Nervsys/NS.php';
 
-//optional, if needed, please review "Ext/libCoreApi.php"
-\Ext\libCoreApi::new()
-    //open core debug mode (error display with results)
-    ->setCoreDebug(true)
-    //open CORS to all with default headers
-    ->addCorsRecord('*')
-    //set output content type to "application/json; charset=utf-8"
-    ->setContentType('application/json');
+$ns = new Nervsys\NS();
 
-NS::new();
+$ns->AppSetApiPath('myApiPath')
+    ->AppSetCoreDebug(true)
+    ->IODataSetContentType('application/json')
+    ->HookAddBefore('/', [\app\hook\ApiCheck::new(), 'userToken'])
+    ->addAutoloadPath($ns->app->root_path . DIRECTORY_SEPARATOR . 'library');
+
+$ns->go();
 ```
 
 #### 3. Request data format
@@ -201,7 +197,11 @@ hook related functions, etc...
 - [x] Custom error handler module support
 - [x] Custom data reader/output module support
 - [x] Path based hook registration function support
+- [x] Put main system controlling functions in trait for easily use
+- [x] Process controller manager support
+- [x] Simple Fiber manager support
 - [x] Socket related functions
+- [x] Some useful algorithms
 - [ ] ML/AI based internal router
 - [ ] More detailed documents and demos
 
