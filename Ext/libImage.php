@@ -149,6 +149,66 @@ class libImage extends Factory
     }
 
     /**
+     * @param string $img_src
+     * @param string $img_dst
+     * @param string $text
+     * @param string $font
+     * @param int    $type
+     * @param array  $options
+     *
+     * @return bool
+     */
+    public function addWatermarkFromString(string $img_src, string $img_dst, string $text, string $font, int $type = 0, array $options = []): bool
+    {
+        //Get image data
+        $img_info = getimagesize($img_src);
+
+        if (!in_array($img_info['mime'], self::MIME, true)) {
+            return false;
+        }
+
+        //Process image
+        $img_type = substr($img_info['mime'], 6);
+        $src_img  = call_user_func('imagecreatefrom' . $img_type, $img_src);
+
+        $text_len = mb_strlen($text, 'UTF-8');
+
+        $font_size   = $options['size'] ?? 16;
+        $text_angle  = $options['angle'] ?? 0;
+        $text_width  = $text_len * $font_size;
+        $font_color  = $options['color'] ?? [0, 0, 0, 100];
+        $font_margin = $options['margin'] ?? [$text_width, $font_size * 3];
+
+        $draw_color = imagecolorallocatealpha($src_img, $font_color[0], $font_color[1], $font_color[2], $font_color[3]);
+
+        if (0 === $type) {
+            imagettftext($src_img, $font_size, $text_angle, $font_margin[0] / 2 - $text_width / 2, $font_margin[1] / 2 - $font_size / 2, $draw_color, $font, $text);
+        } elseif (1 === $type) {
+            imagettftext($src_img, $font_size, $text_angle, $font_size, $font_size, $draw_color, $font, $text);
+        } elseif (2 === $type) {
+            imagettftext($src_img, $font_size, $text_angle, $font_margin[0] - $text_width - $font_size, $font_size, $draw_color, $font, $text);
+        } elseif (3 === $type) {
+            imagettftext($src_img, $font_size, $text_angle, $font_size, $font_margin[1] - $font_size * 2, $draw_color, $font, $text);
+        } elseif (4 === $type) {
+            imagettftext($src_img, $font_size, $text_angle, $font_margin[0] - $text_width - $font_size, $font_margin[1] - $font_size * 2, $draw_color, $font, $text);
+        } else {
+            for ($x = $font_size; $x < $img_info[0]; $x += $font_margin[0]) {
+                for ($y = $font_size; $y < $img_info[1]; $y += $font_margin[1]) {
+                    imagettftext($src_img, $font_size, $text_angle, $x, $y, $draw_color, $font, $text);
+                }
+            }
+
+            unset($x, $y);
+        }
+
+        $result = call_user_func('image' . $img_type, $src_img, $img_dst);
+        imagedestroy($src_img);
+
+        unset($img_src, $img_dst, $text, $font, $type, $options, $img_info, $img_type, $src_img, $text_len, $font_size, $text_angle, $text_width, $font_color, $font_margin, $draw_color);
+        return $result;
+    }
+
+    /**
      * Get image coordinates
      *
      * @param int $img_w
