@@ -31,11 +31,16 @@ class algoImage extends Factory
 
     /**
      * @param string $image_file_path
+     *
+     * @return $this
      */
-    public function __construct(string $image_file_path)
+    public function setImageFile(string $image_file_path): self
     {
         $this->image_size = getimagesize($image_file_path);
         $this->gdImage    = imagecreatefromstring(file_get_contents($image_file_path));
+
+        unset($image_file_path);
+        return $this;
     }
 
     /**
@@ -54,7 +59,7 @@ class algoImage extends Factory
                 $blue  = $rgb & 255;
 
                 $luma = ($red * 19595 + $green * 38469 + $blue * 7472) >> 16;
-                $gray = (1 - $luma / 255) * 100;
+                $gray = round((1 - $luma / 255) * 100);
 
                 $pixels[] = [
                     'x'     => $x,
