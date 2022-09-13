@@ -171,11 +171,9 @@ class libImage extends Factory
         $img_type = substr($img_info['mime'], 6);
         $src_img  = call_user_func('imagecreatefrom' . $img_type, $img_src);
 
-        $text_len = mb_strlen($text, 'UTF-8');
-
         $font_size   = $options['size'] ?? 16;
         $text_angle  = $options['angle'] ?? 0;
-        $text_width  = $text_len * $font_size;
+        $text_width  = strlen($text) * $font_size;
         $font_color  = $options['color'] ?? [0, 0, 0, 100];
         $font_margin = $options['margin'] ?? [$text_width, $font_size * 3];
 
@@ -192,19 +190,19 @@ class libImage extends Factory
         } elseif (4 === $type) {
             imagettftext($src_img, $font_size, $text_angle, $font_margin[0] - $text_width - $font_size, $font_margin[1] - $font_size * 2, $draw_color, $font, $text);
         } else {
-            for ($x = $font_size; $x < $img_info[0]; $x += $font_margin[0]) {
-                for ($y = $font_size; $y < $img_info[1]; $y += $font_margin[1]) {
+            for ($y = $font_size; $y < $img_info[1]; $y += $font_margin[1]) {
+                for ($x = $font_size; $x < $img_info[0]; $x += $font_margin[0]) {
                     imagettftext($src_img, $font_size, $text_angle, $x, $y, $draw_color, $font, $text);
                 }
             }
 
-            unset($x, $y);
+            unset($y, $x);
         }
 
         $result = call_user_func('image' . $img_type, $src_img, $img_dst);
         imagedestroy($src_img);
 
-        unset($img_src, $img_dst, $text, $font, $type, $options, $img_info, $img_type, $src_img, $text_len, $font_size, $text_angle, $text_width, $font_color, $font_margin, $draw_color);
+        unset($img_src, $img_dst, $text, $font, $type, $options, $img_info, $img_type, $src_img, $font_size, $text_angle, $text_width, $font_color, $font_margin, $draw_color);
         return $result;
     }
 
