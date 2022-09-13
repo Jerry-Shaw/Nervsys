@@ -174,7 +174,7 @@ class libImage extends Factory
         $font_size   = $options['size'] ?? 16;
         $text_angle  = $options['angle'] ?? 0;
         $text_width  = strlen($text) * $font_size;
-        $font_color  = $options['color'] ?? [0, 0, 0, 127];
+        $font_color  = $options['color'] ?? [0, 0, 0, 64];
         $font_margin = $options['margin'] ?? [$text_width, $font_size * 3];
 
         $draw_color = imagecolorallocatealpha($src_img, $font_color[0], $font_color[1], $font_color[2], $font_color[3]);
