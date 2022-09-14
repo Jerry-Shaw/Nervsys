@@ -27,7 +27,8 @@ class algoImage extends Factory
 {
     public \GdImage $gdImage;
 
-    public array $image_size;
+    public int $image_width;
+    public int $image_height;
 
     /**
      * @param string $image_file_path
@@ -36,8 +37,10 @@ class algoImage extends Factory
      */
     public function setImageFile(string $image_file_path): self
     {
-        $this->image_size = getimagesize($image_file_path);
-        $this->gdImage    = imagecreatefromstring(file_get_contents($image_file_path));
+        $this->gdImage = imagecreatefromstring(file_get_contents($image_file_path));
+
+        $this->image_width  = imagesx($this->gdImage);
+        $this->image_height = imagesy($this->gdImage);
 
         unset($image_file_path);
         return $this;
@@ -50,8 +53,8 @@ class algoImage extends Factory
     {
         $pixels = [];
 
-        for ($y = 0; $y < $this->image_size[1]; ++$y) {
-            for ($x = 0; $x < $this->image_size[0]; ++$x) {
+        for ($y = 0; $y < $this->image_height; ++$y) {
+            for ($x = 0; $x < $this->image_width; ++$x) {
                 $rgb = imagecolorat($this->gdImage, $x, $y);
 
                 $red   = ($rgb >> 16) & 255;
