@@ -48,8 +48,8 @@ class libImage extends Factory
 
         //Get new size
         $img_size = $crop
-            ? self::crop($img_info[0], $img_info[1], $width, $height)
-            : self::zoom($img_info[0], $img_info[1], $width, $height);
+            ? self::getCropSize($img_info[0], $img_info[1], $width, $height)
+            : self::getZoomSize($img_info[0], $img_info[1], $width, $height);
 
         //No need to resize/crop
         if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) {
@@ -207,7 +207,7 @@ class libImage extends Factory
     }
 
     /**
-     * Get image coordinates
+     * Get image size for cropping
      *
      * @param int $img_w
      * @param int $img_h
@@ -216,7 +216,7 @@ class libImage extends Factory
      *
      * @return array
      */
-    private function crop(int $img_w, int $img_h, int $to_w, int $to_h): array
+    public function getCropSize(int $img_w, int $img_h, int $to_w, int $to_h): array
     {
         $size          = [];
         $size['img_w'] = &$to_w;
@@ -252,7 +252,7 @@ class libImage extends Factory
     }
 
     /**
-     * Get new image size
+     * Get image size for zooming
      *
      * @param int $img_w
      * @param int $img_h
@@ -261,7 +261,7 @@ class libImage extends Factory
      *
      * @return array
      */
-    private function zoom(int $img_w, int $img_h, int $to_w, int $to_h): array
+    public function getZoomSize(int $img_w, int $img_h, int $to_w, int $to_h): array
     {
         $size = [];
 
