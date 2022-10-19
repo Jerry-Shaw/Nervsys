@@ -85,31 +85,19 @@ class Router extends Factory
         $cmd_list = $this->getCmdList($c);
 
         foreach ($cmd_list as $cmd_raw) {
-            try {
-                $cmd_val = strtr($cmd_raw, '\\', '/');
+            $cmd_val = strtr($cmd_raw, '\\', '/');
 
-                if (false === strpos($cmd_val, '/', 1)) {
-                    throw new \Exception('"' . $cmd_val . '" NOT valid!', E_USER_NOTICE);
-                }
-
-                $full_cmd = $this->getFullCgiCmd($app->api_path, $cmd_val, $app->is_cli);
-                $fn_pos   = strrpos($full_cmd, '/');
-                $class    = strtr(substr($full_cmd, 0, $fn_pos), '/', '\\');
-                $method   = substr($full_cmd, $fn_pos + 1);
-
-                if (!class_exists($class)) {
-                    throw new \Exception('"' . substr($cmd_val, 0, strrpos($cmd_val, '/')) . '" NOT found!', E_USER_NOTICE);
-                }
-
-                if (!method_exists($class, $method)) {
-                    throw new \Exception('"' . $cmd_val . '" NOT found!', E_USER_NOTICE);
-                }
-
-                $fn_list[] = [$class, $method, $cmd_raw];
-            } catch (\Throwable $throwable) {
-                Error::new()->exceptionHandler($throwable, false);
-                unset($throwable);
+            if (false === strpos($cmd_val, '/', 1)) {
+                $fn_list[] = [Security::class, 'targetInvalid', $cmd_raw];
+                continue;
             }
+
+            $full_cmd = $this->getFullCgiCmd($app->api_path, $cmd_val, $app->is_cli);
+            $fn_pos   = strrpos($full_cmd, '/');
+            $class    = strtr(substr($full_cmd, 0, $fn_pos), '/', '\\');
+            $method   = substr($full_cmd, $fn_pos + 1);
+
+            $fn_list[] = [$class, $method, $cmd_raw];
         }
 
         unset($c, $app, $cmd_list, $cmd_raw, $cmd_val, $full_cmd, $fn_pos, $class, $method);
