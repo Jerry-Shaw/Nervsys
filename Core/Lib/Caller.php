@@ -42,7 +42,10 @@ class Caller extends Factory
         try {
             $args = $security->antiXss($args);
 
-            $api_fn   = $security->getApiMethod($cmd[0], $cmd[1], $args, \ReflectionMethod::IS_PUBLIC);
+            $api_fn = Security::class !== $cmd[0]
+                ? $security->getApiMethod($cmd[0], $cmd[1], $args, \ReflectionMethod::IS_PUBLIC)
+                : [$security, $cmd[1]];
+
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $args);
         } catch (\ReflectionException $reflectionException) {
             $api_fn   = [$security, 'targetInvalid'];
