@@ -22,8 +22,8 @@
 namespace Nervsys\Core\Lib;
 
 use Nervsys\Core\Factory;
-use Nervsys\Core\Reflect;
 use Nervsys\Core\Mgr\OSMgr;
+use Nervsys\Core\Reflect;
 
 class Caller extends Factory
 {
@@ -44,9 +44,16 @@ class Caller extends Factory
 
             $api_fn   = $security->getApiMethod($cmd[0], $cmd[1], $args, \ReflectionMethod::IS_PUBLIC);
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $args);
+        } catch (\ReflectionException $reflectionException) {
+            $api_fn   = [$security, 'targetInvalid'];
+            $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $reflectionException->getMessage()]);
+
+            unset($reflectionException);
         } catch (\Throwable $throwable) {
             $api_fn   = [$security, 'ArgumentInvalid'];
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $throwable->getMessage()]);
+
+            unset($throwable);
         }
 
         $fn_result = call_user_func_array($api_fn, $api_args);
