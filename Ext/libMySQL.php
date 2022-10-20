@@ -530,12 +530,30 @@ class libMySQL extends Factory
 
         foreach ($param as $col => $val) {
             $this->isRaw($col);
-            $order[] = $col . ' ' . strtoupper($val);
+
+            if (is_string($val) && in_array(strtoupper($val), ['ASC', 'DESC'], true)) {
+                //By column
+                $order[] = $col . ' ' . strtoupper($val);
+            } else {
+                //By FIELD()
+                if (is_string($val)) {
+                    $order[] = 'FIELD(' . $col . ', ' . $val . ')';
+                } elseif (!empty($val)) {
+                    $last_val = strtoupper(end($val));
+
+                    if (!in_array($last_val, ['ASC', 'DESC'], true)) {
+                        $order[] = 'FIELD(' . $col . ', ' . implode(',', $val) . ')';
+                    } else {
+                        array_pop($val);
+                        $order[] = 'FIELD(' . $col . ', ' . implode(',', $val) . ') ' . $last_val;
+                    }
+                }
+            }
         }
 
         $this->runtime_data['order'] = implode(',', $order);
 
-        unset($orders, $param, $order, $col, $val);
+        unset($orders, $param, $order, $col, $val, $last_val);
         return $this;
     }
 
