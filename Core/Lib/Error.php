@@ -201,12 +201,12 @@ class Error extends Factory
      */
     private function saveLog(string $log_file, string $err_lv, string $message, array $context = []): void
     {
-        $handler = fopen($log_file, 'ab+');
+        $handle = fopen($log_file, 'ab+');
 
-        fwrite($handler, $this->formatLog($err_lv, $message, $context));
-        fclose($handler);
+        fwrite($handle, $this->formatLog($err_lv, $message, $context));
+        fclose($handle);
 
-        unset($log_file, $err_lv, $message, $context, $handler);
+        unset($log_file, $err_lv, $message, $context, $handle);
     }
 
     /**
