@@ -171,9 +171,9 @@ class libFileIO extends Factory
             $file_path = $path . DIRECTORY_SEPARATOR . $content;
 
             $content_list[] = [
-                'name'   => basename($content),
-                'path'   => $file_path,
-                'isFile' => is_file($file_path)
+                'filename' => basename($content),
+                'urlPath'  => substr($file_path, strlen($path) + 1),
+                'isFile'   => is_file($file_path)
             ];
         }
 
