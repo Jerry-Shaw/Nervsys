@@ -151,6 +151,39 @@ class libFileIO extends Factory
     }
 
     /**
+     * @param string $path
+     *
+     * @return array
+     */
+    public function getDirContents(string $path): array
+    {
+        if (!is_dir($path) || false === ($dir = opendir($path))) {
+            return [];
+        }
+
+        $content_list = [];
+
+        while (false !== ($content = readdir($dir))) {
+            if (in_array($content, ['.', '..'], true)) {
+                continue;
+            }
+
+            $file_path = $path . DIRECTORY_SEPARATOR . $content;
+
+            $content_list[] = [
+                'name'   => basename($content),
+                'path'   => $file_path,
+                'isFile' => is_file($file_path)
+            ];
+        }
+
+        closedir($dir);
+
+        unset($path, $dir, $content, $file_path);
+        return $content_list;
+    }
+
+    /**
      * Copy dir to path
      *
      * @param string $src
