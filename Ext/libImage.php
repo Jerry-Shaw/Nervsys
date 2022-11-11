@@ -48,8 +48,8 @@ class libImage extends Factory
 
         //Get new size
         $img_size = $crop
-            ? self::getCropSize($img_info[0], $img_info[1], $width, $height)
-            : self::getZoomSize($img_info[0], $img_info[1], $width, $height);
+            ? $this->getCropSize($img_info[0], $img_info[1], $width, $height)
+            : $this->getZoomSize($img_info[0], $img_info[1], $width, $height);
 
         //No need to resize/crop
         if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) {
@@ -203,6 +203,96 @@ class libImage extends Factory
         imagedestroy($src_img);
 
         unset($img_src, $img_dst, $text, $font, $type, $options, $img_info, $img_type, $src_img, $font_size, $text_angle, $text_width, $font_color, $font_margin, $draw_color);
+        return $result;
+    }
+
+    /**
+     * @param string $img_src
+     * @param string $img_dst
+     * @param string $img_watermark
+     * @param int    $type
+     * @param array  $options
+     *
+     * @return bool
+     */
+    public function addWatermarkFromImage(string $img_src, string $img_dst, string $img_watermark, int $type = 0, array $options = []): bool
+    {
+        //Get image data
+        $img_info = getimagesize($img_src);
+
+        if (!in_array($img_info['mime'], self::MIME, true)) {
+            return false;
+        }
+
+        //Process image
+        $img_type = substr($img_info['mime'], 6);
+        $src_img  = call_user_func('imagecreatefrom' . $img_type, $img_src);
+
+        $src_width  = imagesx($src_img);
+        $src_height = imagesy($src_img);
+
+        $src_watermark = imagecreatefromstring(file_get_contents($img_watermark));
+
+        $watermark_width  = imagesx($src_watermark);
+        $watermark_height = imagesy($src_watermark);
+
+        $options['width']  ??= $watermark_width;
+        $options['height'] ??= $watermark_height;
+
+        $target_width  = min($options['width'], $watermark_width);
+        $target_height = min($options['height'], $watermark_height);
+
+        //Correct watermark size
+        if ($watermark_width > $target_width || $watermark_height > $target_height) {
+            $watermark_size = $this->getZoomSize($watermark_width, $watermark_height, $target_width, $target_height);
+            $new_watermark  = imagecreatetruecolor($watermark_size['img_w'], $watermark_size['img_h']);
+
+            $target_width  = &$watermark_size['img_w'];
+            $target_height = &$watermark_size['img_h'];
+
+            imagecopyresampled(
+                $new_watermark,
+                $src_watermark,
+                0,
+                0,
+                0,
+                0,
+                $target_width,
+                $target_height,
+                $watermark_width,
+                $watermark_height
+            );
+
+            imagedestroy($src_watermark);
+
+            $src_watermark = &$new_watermark;
+
+            imagedestroy($new_watermark);
+            unset($watermark_size, $new_watermark);
+        }
+
+        if (0 === $type) {
+            for ($y = 0; $y < $src_height; $y += $target_height) {
+                for ($x = 0; $x < $src_width; $x += $target_width) {
+                    imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 0.5);
+
+                    $x += $target_width / 2;
+                    $y += $target_height / 2;
+                }
+            }
+        } else {
+            $x = $options['x'] ?? ($src_width - $target_width) / 2;
+            $y = $options['y'] ?? ($src_height - $target_height) / 2;
+
+            imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 0.5);
+        }
+
+        $result = imagejpeg($src_img, $img_dst, 50);
+
+        imagedestroy($src_img);
+        imagedestroy($src_watermark);
+
+        unset($img_src, $img_dst, $img_watermark, $type, $options, $img_info, $img_type, $src_img, $src_width, $src_height, $src_watermark, $watermark_width, $watermark_height, $target_width, $target_height, $x, $y);
         return $result;
     }
 
