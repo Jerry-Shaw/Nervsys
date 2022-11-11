@@ -199,7 +199,8 @@ class libImage extends Factory
             unset($y, $x);
         }
 
-        $result = call_user_func('image' . $img_type, $src_img, $img_dst);
+        $result = imagejpeg($src_img, $img_dst, 50);
+
         imagedestroy($src_img);
 
         unset($img_src, $img_dst, $text, $font, $type, $options, $img_info, $img_type, $src_img, $font_size, $text_angle, $text_width, $font_color, $font_margin, $draw_color);
@@ -268,6 +269,7 @@ class libImage extends Factory
             $src_watermark = &$new_watermark;
 
             imagedestroy($new_watermark);
+
             unset($watermark_size, $new_watermark);
         }
 
