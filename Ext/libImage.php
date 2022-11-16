@@ -274,19 +274,16 @@ class libImage extends Factory
         }
 
         if (0 === $type) {
-            for ($y = 0; $y < $src_height; $y += $target_height) {
-                for ($x = 0; $x < $src_width; $x += $target_width) {
-                    imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 0.5);
-
-                    $x += $target_width / 2;
-                    $y += $target_height / 2;
+            for ($y = 0; $y < $src_height; $y += $target_height * 2) {
+                for ($x = 0; $x < $src_width; $x += $target_width * 2) {
+                    imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 30);
                 }
             }
         } else {
             $x = $options['x'] ?? ($src_width - $target_width) / 2;
             $y = $options['y'] ?? ($src_height - $target_height) / 2;
 
-            imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 0.5);
+            imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 30);
         }
 
         $result = imagejpeg($src_img, $img_dst, 50);
