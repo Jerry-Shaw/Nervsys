@@ -73,8 +73,8 @@ class libImage extends Factory
             case 3:
                 //Deal with the transparent color in a PNG
                 $transparent = imagecolorallocatealpha($img_thumb, 0, 0, 0, 127);
-                imagealphablending($img_thumb, false);
                 imagefill($img_thumb, 0, 0, $transparent);
+                imagealphablending($img_thumb, false);
                 imagesavealpha($img_thumb, true);
                 break;
         }
@@ -248,6 +248,9 @@ class libImage extends Factory
             $watermark_size = $this->getZoomSize($watermark_width, $watermark_height, $target_width, $target_height);
             $new_watermark  = imagecreatetruecolor($watermark_size['img_w'], $watermark_size['img_h']);
 
+            imagealphablending($new_watermark, false);
+            imagesavealpha($new_watermark, true);
+
             $target_width  = &$watermark_size['img_w'];
             $target_height = &$watermark_size['img_h'];
 
@@ -273,20 +276,26 @@ class libImage extends Factory
             unset($watermark_size, $new_watermark);
         }
 
+        $img_blank = imagecreatetruecolor($src_width, $src_height);
+
+        imagecopy($img_blank, $src_img, 0, 0, 0, 0, $src_width, $src_height);
+
         if (0 === $type) {
             for ($y = 0; $y < $src_height; $y += $target_height * 2) {
                 for ($x = 0; $x < $src_width; $x += $target_width * 2) {
-                    imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 30);
+                    imagecopy($img_blank, $src_watermark, $x, $y, 0, 0, $target_width, $target_height);
                 }
             }
         } else {
             $x = $options['x'] ?? ($src_width - $target_width) / 2;
             $y = $options['y'] ?? ($src_height - $target_height) / 2;
 
-            imagecopymerge($src_img, $src_watermark, $x, $y, 0, 0, $target_width, $target_height, $options['pct'] ?? 30);
+            imagecopy($img_blank, $src_watermark, $x, $y, 0, 0, $target_width, $target_height);
         }
 
-        $result = imagejpeg($src_img, $img_dst, 50);
+        imagecopymerge($src_img, $img_blank, 0, 0, 0, 0, $src_width, $src_height, 10);
+
+        $result = imagejpeg($src_img, $img_dst, 60);
 
         imagedestroy($src_img);
         imagedestroy($src_watermark);
