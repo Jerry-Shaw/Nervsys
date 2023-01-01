@@ -48,12 +48,12 @@ class Caller extends Factory
 
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $args);
         } catch (\ReflectionException $reflectionException) {
-            $api_fn   = [$security, 'targetInvalid'];
+            $api_fn   = current($security->fn_target_invalid);
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $reflectionException->getMessage()]);
 
             unset($reflectionException);
         } catch (\Throwable $throwable) {
-            $api_fn   = [$security, 'argumentInvalid'];
+            $api_fn   = current($security->fn_argument_invalid);
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $throwable->getMessage()]);
 
             unset($throwable);
