@@ -110,7 +110,7 @@ class Security extends Factory
      *
      * @return void
      */
-    public function targetBlocked(App $app, IOData $IOData): void
+    public function fnTargetBlocked(App $app, IOData $IOData): void
     {
         http_response_code(403);
 
@@ -126,7 +126,7 @@ class Security extends Factory
      *
      * @return void
      */
-    public function targetInvalid(App $app, IOData $IOData): void
+    public function fnTargetInvalid(App $app, IOData $IOData): void
     {
         http_response_code(404);
 
@@ -143,7 +143,7 @@ class Security extends Factory
      *
      * @return void
      */
-    public function argumentInvalid(App $app, IOData $IOData, string $message): void
+    public function fnArgumentInvalid(App $app, IOData $IOData, string $message): void
     {
         http_response_code(500);
 
