@@ -76,6 +76,10 @@ trait System
         $this->router->cgi_router_stack[] = [$this->router, 'getCgiUnit'];
         $this->router->cli_router_stack[] = [$this->router, 'getCliUnit'];
 
+        $this->security->fn_target_blocked   = [$this->security, 'fnTargetBlocked'];
+        $this->security->fn_target_invalid   = [$this->security, 'fnTargetInvalid'];
+        $this->security->fn_argument_invalid = [$this->security, 'fnArgumentInvalid'];
+
         return $this;
     }
 
@@ -341,6 +345,45 @@ trait System
     public function SecurityAddXssSkipKeys(string ...$keys): self
     {
         $this->security->xss_skip_keys = array_merge($this->security->xss_skip_keys, $keys);
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
+     * @param callable $fnTargetBlocked
+     *
+     * @return $this
+     */
+    public function SecuritySetFnTargetBlocked(callable $fnTargetBlocked): self
+    {
+        $this->security->fn_target_blocked = [$fnTargetBlocked];
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
+     * @param callable $fnTargetInvalid
+     *
+     * @return $this
+     */
+    public function SecuritySetFnTargetInvalid(callable $fnTargetInvalid): self
+    {
+        $this->security->fn_target_invalid = [$fnTargetInvalid];
+
+        unset($keys);
+        return $this;
+    }
+
+    /**
+     * @param callable $fnArgumentInvalid
+     *
+     * @return $this
+     */
+    public function SecuritySetFnArgumentInvalid(callable $fnArgumentInvalid): self
+    {
+        $this->security->fn_argument_invalid = [$fnArgumentInvalid];
 
         unset($keys);
         return $this;
