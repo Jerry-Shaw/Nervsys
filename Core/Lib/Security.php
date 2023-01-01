@@ -28,9 +28,9 @@ class Security extends Factory
 {
     public array $xss_skip_keys = [];
 
-    public array $callable_target_blocked   = [];
-    public array $callable_target_invalid   = [];
-    public array $callable_argument_invalid = [];
+    public array $fn_target_blocked   = [];
+    public array $fn_target_invalid   = [];
+    public array $fn_argument_invalid = [];
 
     /**
      * @param string   $class_name
@@ -53,7 +53,7 @@ class Security extends Factory
             if (str_starts_with($name, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
                 if (in_array($method_name, get_class_methods($name), true)) {
                     unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj);
-                    return [$this, 'targetBlocked'];
+                    return current($this->fn_target_blocked);
                 }
             }
         }
@@ -68,7 +68,7 @@ class Security extends Factory
 
             if (str_starts_with($obj->class, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
                 unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
-                return [$this, 'targetBlocked'];
+                return current($this->fn_target_blocked);
             }
 
             $callable = [!$obj->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method_name];
@@ -78,7 +78,7 @@ class Security extends Factory
         }
 
         unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
-        return [$this, 'targetInvalid'];
+        return current($this->fn_target_invalid);
     }
 
     /**
@@ -114,10 +114,7 @@ class Security extends Factory
     {
         http_response_code(403);
 
-        is_callable($this->callable_target_blocked)
-            ? call_user_func($this->callable_target_blocked, $app, $IOData)
-            : $IOData->src_msg = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
-
+        $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
         $IOData->src_output = [];
 
         unset($app, $IOData);
@@ -133,10 +130,7 @@ class Security extends Factory
     {
         http_response_code(404);
 
-        is_callable($this->callable_target_invalid)
-            ? call_user_func($this->callable_target_invalid, $app, $IOData)
-            : $IOData->src_msg = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
-
+        $IOData->src_msg    = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
         $IOData->src_output = [];
 
         unset($app, $IOData);
@@ -153,10 +147,7 @@ class Security extends Factory
     {
         http_response_code(500);
 
-        is_callable($this->callable_argument_invalid)
-            ? call_user_func($this->callable_argument_invalid, $app, $IOData, $message)
-            : $IOData->src_msg = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
-
+        $IOData->src_msg    = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
         $IOData->src_output = [];
 
         unset($app, $IOData, $message);
