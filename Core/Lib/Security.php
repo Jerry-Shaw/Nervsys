@@ -28,6 +28,10 @@ class Security extends Factory
 {
     public array $xss_skip_keys = [];
 
+    public array $callable_target_blocked   = [];
+    public array $callable_target_invalid   = [];
+    public array $callable_argument_invalid = [];
+
     /**
      * @param string   $class_name
      * @param string   $method_name
@@ -109,7 +113,11 @@ class Security extends Factory
     public function targetBlocked(App $app, IOData $IOData): void
     {
         http_response_code(403);
-        $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
+
+        is_callable($this->callable_target_blocked)
+            ? call_user_func($this->callable_target_blocked, $app, $IOData)
+            : $IOData->src_msg = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
+
         $IOData->src_output = [];
 
         unset($app, $IOData);
@@ -124,7 +132,11 @@ class Security extends Factory
     public function targetInvalid(App $app, IOData $IOData): void
     {
         http_response_code(404);
-        $IOData->src_msg    = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
+
+        is_callable($this->callable_target_invalid)
+            ? call_user_func($this->callable_target_invalid, $app, $IOData)
+            : $IOData->src_msg = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
+
         $IOData->src_output = [];
 
         unset($app, $IOData);
@@ -137,10 +149,14 @@ class Security extends Factory
      *
      * @return void
      */
-    public function ArgumentInvalid(App $app, IOData $IOData, string $message): void
+    public function argumentInvalid(App $app, IOData $IOData, string $message): void
     {
         http_response_code(500);
-        $IOData->src_msg    = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
+
+        is_callable($this->callable_argument_invalid)
+            ? call_user_func($this->callable_argument_invalid, $app, $IOData, $message)
+            : $IOData->src_msg = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
+
         $IOData->src_output = [];
 
         unset($app, $IOData, $message);

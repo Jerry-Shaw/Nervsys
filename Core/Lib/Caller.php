@@ -53,7 +53,7 @@ class Caller extends Factory
 
             unset($reflectionException);
         } catch (\Throwable $throwable) {
-            $api_fn   = [$security, 'ArgumentInvalid'];
+            $api_fn   = [$security, 'argumentInvalid'];
             $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $throwable->getMessage()]);
 
             unset($throwable);
