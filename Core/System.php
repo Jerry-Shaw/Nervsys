@@ -76,9 +76,9 @@ trait System
         $this->router->cgi_router_stack[] = [$this->router, 'getCgiUnit'];
         $this->router->cli_router_stack[] = [$this->router, 'getCliUnit'];
 
-        $this->security->fn_target_blocked   = [$this->security, 'fnTargetBlocked'];
-        $this->security->fn_target_invalid   = [$this->security, 'fnTargetInvalid'];
-        $this->security->fn_argument_invalid = [$this->security, 'fnArgumentInvalid'];
+        $this->security->fn_target_blocked[]   = [$this->security, 'fnTargetBlocked'];
+        $this->security->fn_target_invalid[]   = [$this->security, 'fnTargetInvalid'];
+        $this->security->fn_argument_invalid[] = [$this->security, 'fnArgumentInvalid'];
 
         return $this;
     }
