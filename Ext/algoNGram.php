@@ -29,18 +29,22 @@ class algoNGram extends Factory
     public array $src_data;
 
     /**
-     * Set data list cut in minimal length
-     *
-     * @param array $data
+     * @param string $source
+     * @param string $separator
      *
      * @return $this
      */
-    public function setDataList(array $data): self
+    public function setSrcData(string $source, string $separator = ''): self
     {
-        $this->src_data = &$data;
-        $this->src_len  = count($this->src_data);
+        if ('' !== $separator) {
+            $this->src_data = str_contains($source, $separator) ? explode($separator, $source) : [$source];
+        } else {
+            $this->src_data = mb_str_split($source, 1, 'UTF-8');
+        }
 
-        unset($data);
+        $this->src_len = count($this->src_data);
+
+        unset($source, $separator);
         return $this;
     }
 
