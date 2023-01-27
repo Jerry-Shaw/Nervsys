@@ -3,8 +3,8 @@
 /**
  * WINNT controller library
  *
- * Copyright 2016-2022 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2022 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
+ * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
  * Copyright 2021 take your time <704505144@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

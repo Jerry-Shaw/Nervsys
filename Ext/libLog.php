@@ -3,7 +3,7 @@
 /**
  * Log Extension
  *
- * Copyright 2020-2022 秋水之冰 <27206617@qq.com>
+ * Copyright 2020-2023 秋水之冰 <27206617@qq.com>
  * Copyright 2020 leo <2579186091@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
