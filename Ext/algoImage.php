@@ -85,4 +85,27 @@ class algoImage extends Factory
     {
         return round((1 - $this->toIntensity($red, $green, $blue) / 255) * 100);
     }
+
+    /**
+     * @param array $pixel_gray_data
+     *
+     * @return array
+     */
+    public function getHistogram(array $pixel_gray_data): array
+    {
+        $data = [];
+
+        for ($i = 0; $i < 256; ++$i) {
+            $data[$i] = 0;
+        }
+
+        $gray_value_count = array_count_values($pixel_gray_data);
+
+        foreach ($gray_value_count as $value => $count) {
+            $data[$value] += $count;
+        }
+
+        unset($pixel_gray_data, $i, $gray_value_count, $value, $count);
+        return $data;
+    }
 }
