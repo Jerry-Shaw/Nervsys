@@ -27,9 +27,6 @@ class algoImage extends Factory
 {
     public \GdImage $gdImage;
 
-    public int $image_width;
-    public int $image_height;
-
     /**
      * @param string $image_file_path
      *
@@ -39,9 +36,6 @@ class algoImage extends Factory
     {
         $this->gdImage = imagecreatefromstring(file_get_contents($image_file_path));
 
-        $this->image_width  = imagesx($this->gdImage);
-        $this->image_height = imagesy($this->gdImage);
-
         unset($image_file_path);
         return $this;
     }
@@ -49,34 +43,46 @@ class algoImage extends Factory
     /**
      * @return array
      */
-    public function getPixelArray(): array
+    public function getSizeXY(): array
     {
-        $pixels = [];
+        return [
+            'width'  => imagesx($this->gdImage),
+            'height' => imagesy($this->gdImage)
+        ];
+    }
 
-        for ($y = 0; $y < $this->image_height; ++$y) {
-            for ($x = 0; $x < $this->image_width; ++$x) {
-                $rgb = imagecolorat($this->gdImage, $x, $y);
+    /**
+     * @param int $x
+     * @param int $y
+     *
+     * @return array
+     */
+    public function getRGBA(int $x, int $y): array
+    {
+        return imagecolorsforindex($this->gdImage, imagecolorat($this->gdImage, $x, $y));
+    }
 
-                $red   = ($rgb >> 16) & 255;
-                $green = ($rgb >> 8) & 255;
-                $blue  = $rgb & 255;
+    /**
+     * @param int $red
+     * @param int $green
+     * @param int $blue
+     *
+     * @return int
+     */
+    public function toIntensity(int $red, int $green, int $blue): int
+    {
+        return ($red * 19595 + $green * 38469 + $blue * 7472) >> 16;
+    }
 
-                $luma = ($red * 19595 + $green * 38469 + $blue * 7472) >> 16;
-                $gray = round((1 - $luma / 255) * 100);
-
-                $pixels[] = [
-                    'x'     => $x,
-                    'y'     => $y,
-                    'red'   => $red,
-                    'green' => $green,
-                    'blue'  => $blue,
-                    'luma'  => $luma,
-                    'gray'  => $gray,
-                ];
-            }
-        }
-
-        unset($y, $x, $rgb, $red, $green, $blue, $luma, $gray);
-        return $pixels;
+    /**
+     * @param int $red
+     * @param int $green
+     * @param int $blue
+     *
+     * @return int
+     */
+    public function toGrayscale(int $red, int $green, int $blue): int
+    {
+        return round((1 - $this->toIntensity($red, $green, $blue) / 255) * 100);
     }
 }
