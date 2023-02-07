@@ -187,7 +187,7 @@ class IOData extends Factory
                     echo $res;
                 } else {
                     //Force output data as JSON string
-                    header('Content-Type: application/json; charset=utf-8');
+                    !headers_sent() && header('Content-Type: application/json; charset=utf-8');
                     echo json_encode($data, JSON_FORMAT);
                 }
                 break;
