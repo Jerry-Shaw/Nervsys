@@ -88,10 +88,11 @@ class algoImage extends Factory
 
     /**
      * @param array $pixel_gray_data
+     * @param bool  $by_percentage
      *
      * @return array
      */
-    public function getHistogram(array $pixel_gray_data): array
+    public function getHistogram(array $pixel_gray_data, bool $by_percentage = true): array
     {
         $data = [];
 
@@ -99,13 +100,14 @@ class algoImage extends Factory
             $data[$i] = 0;
         }
 
+        $total_pixels     = count($pixel_gray_data);
         $gray_value_count = array_count_values($pixel_gray_data);
 
         foreach ($gray_value_count as $value => $count) {
-            $data[$value] += $count;
+            $data[$value] = $by_percentage ? round(100 * $count / $total_pixels, 4) : $count;
         }
 
-        unset($pixel_gray_data, $i, $gray_value_count, $value, $count);
+        unset($pixel_gray_data, $by_percentage, $i, $total_pixels, $gray_value_count, $value, $count);
         return $data;
     }
 }
