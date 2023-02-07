@@ -43,7 +43,7 @@ class algoImage extends Factory
     /**
      * @return array
      */
-    public function getSizeXY(): array
+    public function getImageSize(): array
     {
         return [
             'width'  => imagesx($this->gdImage),
@@ -57,7 +57,7 @@ class algoImage extends Factory
      *
      * @return array
      */
-    public function getRGBA(int $x, int $y): array
+    public function getRGBAValues(int $x, int $y): array
     {
         return imagecolorsforindex($this->gdImage, imagecolorat($this->gdImage, $x, $y));
     }
@@ -69,7 +69,7 @@ class algoImage extends Factory
      *
      * @return int
      */
-    public function toIntensity(int $red, int $green, int $blue): int
+    public function rgbToIntensity(int $red, int $green, int $blue): int
     {
         return ($red * 19595 + $green * 38469 + $blue * 7472) >> 16;
     }
@@ -81,9 +81,9 @@ class algoImage extends Factory
      *
      * @return int
      */
-    public function toGrayscale(int $red, int $green, int $blue): int
+    public function rgbToGrayscale(int $red, int $green, int $blue): int
     {
-        return round((1 - $this->toIntensity($red, $green, $blue) / 255) * 100);
+        return round((1 - $this->rgbToIntensity($red, $green, $blue) / 255) * 100);
     }
 
     /**
@@ -92,7 +92,7 @@ class algoImage extends Factory
      *
      * @return array
      */
-    public function getHistogram(array $pixel_gray_data, bool $by_percentage = true): array
+    public function getHistogramData(array $pixel_gray_data, bool $by_percentage = true): array
     {
         $data = [];
 
@@ -109,5 +109,36 @@ class algoImage extends Factory
 
         unset($pixel_gray_data, $by_percentage, $i, $total_pixels, $gray_value_count, $value, $count);
         return $data;
+    }
+
+    /**
+     * @param array $histogram_data
+     * @param int   $grayscale_value
+     *
+     * @return float
+     */
+    public function getVarianceByGrayscale(array $histogram_data, int $grayscale_value): float
+    {
+        $w0_pct  = $w1_pct = 0;
+        $u0_data = $u1_data = 0;
+
+        foreach ($histogram_data as $gray_value => $percent_value) {
+            if ($gray_value < $grayscale_value) {
+                $w0_pct  += $percent_value;
+                $u0_data += $gray_value * $percent_value;
+            } else {
+                $w1_pct  += $percent_value;
+                $u1_data += $gray_value * $percent_value;
+            }
+        }
+
+        $u  = $u0_data + $u1_data;
+        $u0 = $u0_data / ($w0_pct ?: 1);
+        $u1 = $u1_data / ($w1_pct ?: 1);
+
+        $f = $w0_pct * pow($u0 - $u, 2) + $w1_pct * pow($u1 - $u, 2);
+
+        unset($histogram_data, $grayscale_value, $w0_pct, $w1_pct, $u0_data, $u1_data, $gray_value, $percent_value, $u, $u0, $u1);
+        return $f;
     }
 }
