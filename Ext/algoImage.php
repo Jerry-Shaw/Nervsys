@@ -81,28 +81,38 @@ class algoImage extends Factory
     }
 
     /**
-     * @param array $pixel_gray_data
-     * @param bool  $by_percentage
+     * @param \GdImage $gd_image
+     * @param bool     $by_percentage
      *
      * @return array
      */
-    public function getGrayHistogramData(array $pixel_gray_data, bool $by_percentage = true): array
+    public function getGrayHistogram(\GdImage $gd_image, bool $by_percentage = true): array
     {
-        $data = [];
+        $width  = imagesx($gd_image);
+        $height = imagesy($gd_image);
+
+        $gray_values = $gray_histogram = [];
 
         for ($i = 0; $i <= 0xFF; ++$i) {
-            $data[$i] = 0;
+            $gray_histogram[$i] = 0;
         }
 
-        $total_pixels     = count($pixel_gray_data);
-        $gray_value_count = array_count_values($pixel_gray_data);
+        for ($x = 0; $x < $width; ++$x) {
+            for ($y = 0; $y < $height; ++$y) {
+                $rgba_value    = $this->getRGBAValues($gd_image, $x, $y);
+                $gray_values[] = $this->rgbToIntensity($rgba_value['red'], $rgba_value['green'], $rgba_value['blue'],);
+            }
+        }
+
+        $total_pixels     = count($gray_values);
+        $gray_value_count = array_count_values($gray_values);
 
         foreach ($gray_value_count as $value => $count) {
-            $data[$value] = $by_percentage ? round(100 * $count / $total_pixels, 4) : $count;
+            $gray_histogram[$value] = $by_percentage ? round(100 * $count / $total_pixels, 4) : $count;
         }
 
-        unset($pixel_gray_data, $by_percentage, $i, $total_pixels, $gray_value_count, $value, $count);
-        return $data;
+        unset($gd_image, $by_percentage, $width, $height, $gray_values, $i, $x, $y, $rgba_value, $total_pixels, $gray_value_count, $value, $count);
+        return $gray_histogram;
     }
 
     /**
