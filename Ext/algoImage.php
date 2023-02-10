@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Algorithm: Image pixel processor
+ * Algorithm: Image data algorithm
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
  * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
@@ -25,41 +25,35 @@ use Nervsys\Core\Factory;
 
 class algoImage extends Factory
 {
-    public \GdImage $gdImage;
-
     /**
-     * @param string $image_file_path
+     * @param \GdImage $gd_image
      *
-     * @return $this
-     */
-    public function setImageFile(string $image_file_path): self
-    {
-        $this->gdImage = imagecreatefromstring(file_get_contents($image_file_path));
-
-        unset($image_file_path);
-        return $this;
-    }
-
-    /**
      * @return array
      */
-    public function getImageSize(): array
+    public function getImageSize(\GdImage $gd_image): array
     {
-        return [
-            'width'  => imagesx($this->gdImage),
-            'height' => imagesy($this->gdImage)
+        $size_xy = [
+            'width'  => imagesx($gd_image),
+            'height' => imagesy($gd_image)
         ];
+
+        unset($gd_image);
+        return $size_xy;
     }
 
     /**
-     * @param int $x
-     * @param int $y
+     * @param \GdImage $gd_image
+     * @param int      $x
+     * @param int      $y
      *
      * @return array
      */
-    public function getRGBAValues(int $x, int $y): array
+    public function getRGBAValues(\GdImage $gd_image, int $x, int $y): array
     {
-        return imagecolorsforindex($this->gdImage, imagecolorat($this->gdImage, $x, $y));
+        $rgba = imagecolorsforindex($gd_image, imagecolorat($gd_image, $x, $y));
+
+        unset($gd_image, $x, $y);
+        return $rgba;
     }
 
     /**
