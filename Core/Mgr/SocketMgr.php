@@ -311,10 +311,8 @@ class SocketMgr extends Factory
 
             if (is_callable($this->event_fn['onConnect'])) {
                 $this->fiberMgr->async(
-                    $this->fiberMgr->await(
-                        $this->event_fn['onConnect'],
-                        [$socket_id]
-                    )
+                    $this->event_fn['onConnect'],
+                    [$socket_id]
                 );
             }
 
@@ -420,10 +418,8 @@ class SocketMgr extends Factory
 
                 if (is_callable($this->event_fn['onHeartbeat'])) {
                     $this->fiberMgr->async(
-                        $this->fiberMgr->await(
-                            $this->event_fn['onHeartbeat'],
-                            [$socket_id]
-                        )
+                        $this->event_fn['onHeartbeat'],
+                        [$socket_id]
                     );
                 }
             } catch (\Throwable $throwable) {
@@ -486,10 +482,8 @@ class SocketMgr extends Factory
 
             if (is_callable($this->event_fn['onClose'])) {
                 $this->fiberMgr->async(
-                    $this->fiberMgr->await(
-                        $this->event_fn['onClose'],
-                        [$socket_id]
-                    )
+                    $this->event_fn['onClose'],
+                    [$socket_id]
                 );
             }
         } catch (\Throwable $throwable) {
@@ -619,7 +613,8 @@ class SocketMgr extends Factory
 
         if (is_callable($this->event_fn['onWsHandshake'])) {
             $this->fiberMgr->async(
-                $this->fiberMgr->await($this->event_fn['onWsHandshake'], [$socket_id, $ws_proto]),
+                $this->event_fn['onWsHandshake'],
+                [$socket_id, $ws_proto],
                 function (bool $allow_handshake) use ($ws_key, $ws_proto, $socket_id): void
                 {
                     if ($allow_handshake) {
@@ -735,7 +730,8 @@ class SocketMgr extends Factory
 
         try {
             $this->fiberMgr->async(
-                $this->fiberMgr->await($this->event_fn['onSend']),
+                $this->event_fn['onSend'],
+                [],
                 function (array $messages): void
                 {
                     while (null !== ($data = array_pop($messages))) {
@@ -763,10 +759,8 @@ class SocketMgr extends Factory
             $this->consoleLog('sendTo', $socket_id . ': ' . $message);
 
             $this->fiberMgr->async(
-                $this->fiberMgr->await(
-                    [$this, 'sendTo'],
-                    [$socket_id, $this->is_websocket ? $this->wsEncode($message) : $message]
-                )
+                [$this, 'sendTo'],
+                [$socket_id, $this->is_websocket ? $this->wsEncode($message) : $message]
             );
         } catch (\Throwable $throwable) {
             $this->consoleLog('ERROR', $throwable->getMessage(), $throwable->getFile(), $throwable->getLine());
@@ -788,12 +782,13 @@ class SocketMgr extends Factory
             try {
                 $clients = $this->connections;
 
-                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
+                $this->fiberMgr->async([$this, 'heartbeat']);
 
                 if (0 < (int)stream_select($clients, $write, $except, 0, $this->watch_timeout)) {
                     if (isset($clients[$this->socket_id])) {
                         $this->fiberMgr->async(
-                            $this->fiberMgr->await([$this, 'accept']),
+                            [$this, 'accept'],
+                            [],
                             function (string $socket_id): void
                             {
                                 $this->handshakes[$socket_id] = false;
@@ -831,12 +826,14 @@ class SocketMgr extends Factory
     {
         try {
             $this->fiberMgr->async(
-                $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
+                [$this, 'readFrom'],
+                [$socket_id],
                 function (string $socket_id, string $message): void
                 {
                     if (isset($this->handshakes[$socket_id])) {
                         $this->fiberMgr->async(
-                            $this->fiberMgr->await([$this, 'wsSendHandshake'], [$socket_id, $message]),
+                            [$this, 'wsSendHandshake'],
+                            [$socket_id, $message],
                             function (string $socket_id): void
                             {
                                 unset($this->handshakes[$socket_id], $socket_id);
@@ -868,10 +865,8 @@ class SocketMgr extends Factory
 
                     if (is_callable($this->event_fn['onMessage'])) {
                         $this->fiberMgr->async(
-                            $this->fiberMgr->await(
-                                $this->event_fn['onMessage'],
-                                [$socket_id, $message]
-                            )
+                            $this->event_fn['onMessage'],
+                            [$socket_id, $message]
                         );
                     }
 
@@ -898,11 +893,11 @@ class SocketMgr extends Factory
             try {
                 $clients = $this->connections;
 
-                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
+                $this->fiberMgr->async([$this, 'heartbeat']);
 
                 if (0 < (int)stream_select($clients, $write, $except, 0, $this->watch_timeout)) {
                     if (isset($clients[$this->socket_id])) {
-                        $this->fiberMgr->async($this->fiberMgr->await([$this, 'accept']));
+                        $this->fiberMgr->async([$this, 'accept']);
                         unset($clients[$this->socket_id]);
                     }
 
@@ -933,17 +928,16 @@ class SocketMgr extends Factory
     {
         try {
             $this->fiberMgr->async(
-                $this->fiberMgr->await([$this, 'readFrom'], [$socket_id]),
+                [$this, 'readFrom'],
+                [$socket_id],
                 function (string $socket_id, string $message): void
                 {
                     $this->consoleLog('readFrom', $socket_id . ': ' . $message);
 
                     if (is_callable($this->event_fn['onMessage'])) {
                         $this->fiberMgr->async(
-                            $this->fiberMgr->await(
-                                $this->event_fn['onMessage'],
-                                [$socket_id, $message]
-                            )
+                            $this->event_fn['onMessage'],
+                            [$socket_id, $message]
                         );
                     }
 
@@ -974,21 +968,20 @@ class SocketMgr extends Factory
 
                 $connection = [$this->connections[$this->socket_id]];
 
-                $this->fiberMgr->async($this->fiberMgr->await([$this, 'heartbeat']));
+                $this->fiberMgr->async([$this, 'heartbeat']);
 
                 if (0 < (int)stream_select($connection, $write, $except, 0, $this->watch_timeout)) {
                     $this->fiberMgr->async(
-                        $this->fiberMgr->await([$this, 'readFrom'], [$this->socket_id]),
+                        [$this, 'readFrom'],
+                        [$this->socket_id],
                         function (string $socket_id, string $message): void
                         {
                             $this->consoleLog('readFrom', $socket_id . ': ' . $message);
 
                             if (is_callable($this->event_fn['onMessage'])) {
                                 $this->fiberMgr->async(
-                                    $this->fiberMgr->await(
-                                        $this->event_fn['onMessage'],
-                                        [$socket_id, $message]
-                                    )
+                                    $this->event_fn['onMessage'],
+                                    [$socket_id, $message]
                                 );
                             }
 
@@ -999,16 +992,15 @@ class SocketMgr extends Factory
 
                 if (is_callable($this->event_fn['onSend'])) {
                     $this->fiberMgr->async(
-                        $this->fiberMgr->await($this->event_fn['onSend']),
+                        $this->event_fn['onSend'],
+                        [],
                         function (string $message): void
                         {
                             $this->consoleLog('SendTo', $this->socket_id . ': ' . $message);
 
                             $this->fiberMgr->async(
-                                $this->fiberMgr->await(
-                                    [$this, 'sendTo'],
-                                    [$this->socket_id, $this->is_websocket ? $this->wsEncode($message) : $message]
-                                )
+                                [$this, 'sendTo'],
+                                [$this->socket_id, $this->is_websocket ? $this->wsEncode($message) : $message]
                             );
 
                             unset($message);
