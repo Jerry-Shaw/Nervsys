@@ -30,50 +30,55 @@ class FiberMgr extends Factory
 
     /**
      * Await callable function, generate Fiber instance
-     * MUST call "Fiber::suspend()" inside callable function to make it async
+     * Call "Fiber::suspend()" inside to make it suspended
      *
      * @param callable $callable
-     * @param array    $args
+     * @param array    $arguments
      *
      * @return \Fiber
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function await(callable $callable, array $args = []): \Fiber
+    public function await(callable $callable, array $arguments = []): \Fiber
     {
         $await_fiber = new \Fiber($callable);
 
-        if (!empty($args) && !array_is_list($args)) {
-            $args = parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $args);
+        if (!empty($arguments) && !array_is_list($arguments)) {
+            $arguments = parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $arguments);
         }
 
-        $await_fiber->start(...$args);
+        $await_fiber->start(...$arguments);
 
-        unset($callable, $args);
+        unset($callable, $arguments);
         return $await_fiber;
     }
 
     /**
-     * Add await fiber into async fiber list, pass a callable function to process returned result
-     * "commit()" MUST be called in the end after "async()"s, otherwise, async fibers might NOT resume
+     * Add callable function to async queue
+     * Using callback function to catch the results
+     * Call "commit()" in the end after "async()"s to run all fibers
      *
-     * @param \Fiber        $await_fiber
-     * @param callable|null $callable
+     * @param callable      $callable
+     * @param array         $arguments
+     * @param callable|null $callback
      *
      * @return void
      * @throws \ReflectionException
+     * @throws \Throwable
      */
-    public function async(\Fiber $await_fiber, callable $callable = null): void
+    public function async(callable $callable, array $arguments = [], callable $callback = null): void
     {
+        $await_fiber = $this->await($callable, $arguments);
+
         if ($await_fiber->isTerminated()) {
-            if (is_callable($callable)) {
-                $this->fiberDone($await_fiber, $callable);
+            if (is_callable($callback)) {
+                $this->fiberDone($await_fiber, $callback);
             }
         } else {
-            $this->fibers[] = [&$await_fiber, &$callable];
+            $this->fibers[] = [&$await_fiber, &$callback];
         }
 
-        unset($await_fiber, $callable);
+        unset($callable, $arguments, $callback, $await_fiber);
     }
 
     /**
@@ -107,19 +112,19 @@ class FiberMgr extends Factory
 
     /**
      * @param \Fiber   $fiber
-     * @param callable $callable
+     * @param callable $callback
      *
      * @return void
      * @throws \ReflectionException
      */
-    private function fiberDone(\Fiber $fiber, callable $callable): void
+    private function fiberDone(\Fiber $fiber, callable $callback): void
     {
         $result = $fiber->getReturn();
 
         is_array($result) && !array_is_list($result)
-            ? call_user_func_array($callable, parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $result))
-            : call_user_func($callable, $result);
+            ? call_user_func_array($callback, parent::buildArgs(Reflect::getCallable($callback)->getParameters(), $result))
+            : call_user_func($callback, $result);
 
-        unset($fiber, $callable, $result);
+        unset($fiber, $callback, $result);
     }
 }
