@@ -24,6 +24,32 @@ namespace Nervsys\Core\OSC;
 class Darwin
 {
     /**
+     * @return array
+     */
+    public function getIPv4(): array
+    {
+        exec('osascript -e "IPv4 address of (system info)"', $output, $status);
+
+        $ip_v4 = 0 === $status ? array_filter($output) : [];
+
+        unset($output, $status);
+        return $ip_v4;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIPv6(): array
+    {
+        exec("ifconfig | grep 'inet6' | grep -v 'inet ' | grep -v '::1' | awk '{print $2}' | awk -F '%' '{print $1}'", $output, $status);
+
+        $ip_v6 = 0 === $status ? array_filter($output) : [];
+
+        unset($output, $status);
+        return $ip_v6;
+    }
+
+    /**
      * @return string
      * @throws \Exception
      */
