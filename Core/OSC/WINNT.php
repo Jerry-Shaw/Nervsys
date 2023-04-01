@@ -25,6 +25,32 @@ namespace Nervsys\Core\OSC;
 class WINNT
 {
     /**
+     * @return array
+     */
+    public function getIPv4(): array
+    {
+        exec('powershell -Command "Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $(Get-NetConnectionProfile | Select-Object -ExpandProperty InterfaceIndex) | Select-Object -ExpandProperty IPAddress"', $output, $status);
+
+        $ip_v4 = 0 === $status ? array_filter($output) : [];
+
+        unset($output, $status);
+        return $ip_v4;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIPv6(): array
+    {
+        exec('powershell -Command "Get-NetIPAddress -AddressFamily IPv6 -PrefixOrigin RouterAdvertisement -SuffixOrigin Link|Select-Object -ExpandProperty IPAddress"', $output, $status);
+
+        $ip_v6 = 0 === $status ? array_filter($output) : [];
+
+        unset($output, $status);
+        return $ip_v6;
+    }
+
+    /**
      * @return string
      * @throws \Exception
      */
