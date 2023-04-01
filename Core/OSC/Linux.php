@@ -24,6 +24,32 @@ namespace Nervsys\Core\OSC;
 class Linux
 {
     /**
+     * @return array
+     */
+    public function getIPv4(): array
+    {
+        exec("ip a | grep 'inet' | grep -v 'inet6' | grep -v '127*' | awk '{print $2}'|awk -F '/' '{print $1}'", $output, $status);
+
+        $ip_v4 = 0 === $status ? array_filter($output) : [];
+
+        unset($output, $status);
+        return $ip_v4;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIPv6(): array
+    {
+        exec("ip a | grep 'inet6' | grep -v 'inet ' | grep -v '::1' | awk '{print $2}'|awk -F '/' '{print $1}'", $output, $status);
+
+        $ip_v6 = 0 === $status ? array_filter($output) : [];
+
+        unset($output, $status);
+        return $ip_v6;
+    }
+
+    /**
      * @return string
      * @throws \Exception
      */
