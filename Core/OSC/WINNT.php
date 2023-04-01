@@ -42,7 +42,7 @@ class WINNT
      */
     public function getIPv6(): array
     {
-        exec('powershell -Command "Get-NetIPAddress -AddressFamily IPv6 -PrefixOrigin RouterAdvertisement -SuffixOrigin Link|Select-Object -ExpandProperty IPAddress"', $output, $status);
+        exec('powershell -Command "Get-NetIPAddress -AddressFamily IPv6 -PrefixOrigin RouterAdvertisement -SuffixOrigin Link | Select-Object -ExpandProperty IPAddress"', $output, $status);
 
         $ip_v6 = 0 === $status ? array_filter($output) : [];
 
