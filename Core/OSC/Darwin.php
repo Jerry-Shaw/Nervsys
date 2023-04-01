@@ -28,7 +28,7 @@ class Darwin
      */
     public function getIPv4(): array
     {
-        exec('osascript -e "IPv4 address of (system info)"', $output, $status);
+        exec("ifconfig | grep 'inet' | grep -v 'inet6' | grep -v '127*' | awk '{print $2}' | awk '{print $1}'", $output, $status);
 
         $ip_v4 = 0 === $status ? array_filter($output) : [];
 
@@ -41,7 +41,7 @@ class Darwin
      */
     public function getIPv6(): array
     {
-        exec("ifconfig | grep 'inet6' | grep -v 'inet ' | grep -v '::1' | awk '{print $2}' | awk -F '%' '{print $1}'", $output, $status);
+        exec("ifconfig | grep 'inet6' | grep -v '::1' | grep -v '%' | awk '{print $2}' | awk '{print $1}'", $output, $status);
 
         $ip_v6 = 0 === $status ? array_filter($output) : [];
 
