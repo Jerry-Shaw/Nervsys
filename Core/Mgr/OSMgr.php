@@ -29,6 +29,9 @@ class OSMgr extends Factory
     /** @var OSC\Linux|OSC\WINNT|OSC\Darwin $lib_os */
     protected object $lib_os;
 
+    public array $ip_v4 = [];
+    public array $ip_v6 = [];
+
     public string $hw_hash  = '';
     public string $php_path = '';
 
@@ -41,6 +44,30 @@ class OSMgr extends Factory
     public function __construct()
     {
         $this->lib_os = parent::getObj(NS_NAMESPACE . '\\Core\\OSC\\' . PHP_OS);
+    }
+
+    /**
+     * @return array
+     */
+    public function getIPv4(): array
+    {
+        if (empty($this->ip_v4)) {
+            $this->ip_v4 = $this->lib_os->getIPv4();
+        }
+
+        return $this->ip_v4;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIPv6(): array
+    {
+        if (empty($this->ip_v6)) {
+            $this->ip_v6 = $this->lib_os->getIPv6();
+        }
+
+        return $this->ip_v6;
     }
 
     /**
