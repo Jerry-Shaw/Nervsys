@@ -25,176 +25,63 @@ use Nervsys\Core\Factory;
 
 class ProcMgr extends Factory
 {
-    public OSMgr $OSMgr;
+    public array $proc_cmd;
 
-    public bool $auto_create = false; //Auto create process
+    public string $argv_end_char = "\n";
 
-    public int $flush_on_load = 10;     //Auto commit on process load rate
-    public int $watch_timeout = 200000; //microseconds
+    public string|null $work_dir = null;
 
-    private string $command;
-    private string $char_eol     = "\n";
-    private string $working_path = '';
+    public array $readAt = [0, 20000];
 
-    private array $proc_cmd;
-    private array $job_list    = [];
-    private array $load_list   = [];
-    private array $proc_list   = [];
-    private array $input_list  = [];
-    private array $output_list = [];
+    protected array $procProp = [];
 
     /**
-     * @param string $command
+     * @param string ...$proc_cmd
+     */
+    public function __construct(string ...$proc_cmd)
+    {
+        $this->proc_cmd = &$proc_cmd;
+    }
+
+    /**
+     * @param string $end_char
+     *
+     * @return $this
+     */
+    public function argvEndChar(string $end_char): self
+    {
+        $this->argv_end_char = &$end_char;
+
+        unset($end_char);
+        return $this;
+    }
+
+    /**
      * @param string $working_path
      *
-     * @throws \ReflectionException
-     */
-    public function __construct(string $command, string $working_path = '')
-    {
-        $this->OSMgr = OSMgr::new();
-
-        $this->working_path = &$working_path;
-
-        $this->command  = $this->OSMgr->buildCmd($command);
-        $this->proc_cmd = $this->OSMgr->buildProcCmd($this->command);
-
-        unset($command, $working_path);
-    }
-
-    /**
-     * @param bool $auto_create
-     *
      * @return $this
      */
-    public function autoCreateProc(bool $auto_create): self
+    public function setWorkDir(string $working_path): self
     {
-        $this->auto_create = &$auto_create;
+        $this->work_dir = &$working_path;
 
-        unset($auto_create);
+        unset($working_path);
+        return $this;
+    }
+
+    public function readAt(int $seconds, int $microseconds = null): self
+    {
+        $this->readAt = [$seconds, $microseconds];
+
+        unset($seconds, $microseconds);
         return $this;
     }
 
     /**
-     * @param int $microseconds
-     *
-     * @return $this
-     */
-    public function setWatchTimeout(int $microseconds): self
-    {
-        $this->watch_timeout = &$microseconds;
-
-        unset($microseconds);
-        return $this;
-    }
-
-    /**
-     * @param int    $proc_count
-     * @param string $char_eol
-     *
      * @return $this
      * @throws \Exception
      */
-    public function create(int $proc_count = 1, string $char_eol = "\n"): self
-    {
-        $this->char_eol = &$char_eol;
-
-        for ($i = 0; $i < $proc_count; ++$i) {
-            $this->createProc($i);
-        }
-
-        register_shutdown_function([$this, 'closeAllProc']);
-
-        unset($proc_count, $char_eol, $i);
-        return $this;
-    }
-
-    /**
-     * @param string        $argv
-     * @param callable|null $callable
-     *
-     * @return $this
-     * @throws \Exception
-     */
-    public function sendArgv(string $argv, callable $callable = null): self
-    {
-        if (count($this->job_list, COUNT_RECURSIVE) > $this->flush_on_load * count($this->job_list)) {
-            $this->commit();
-        }
-
-        $proc_idx = array_search(min($this->load_list), $this->load_list, true);
-
-        if (false === $proc_idx || !$this->isProcAlive($proc_idx)) {
-            return $this->sendArgv($argv, $callable);
-        }
-
-        ++$this->load_list[$proc_idx];
-
-        $this->writeProc($proc_idx, $argv);
-
-        $this->job_list[$proc_idx][] = $callable;
-
-        unset($argv, $callable, $proc_idx);
-        return $this;
-    }
-
-    /**
-     * @return void
-     */
-    public function commit(): void
-    {
-        $write   = $except = [];
-        $workers = count($this->job_list);
-
-        while ($workers < count($this->job_list, COUNT_RECURSIVE)) {
-            $read = $this->output_list;
-
-            if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-                foreach ($read as $proc_idx => $proc_pipe) {
-                    --$this->load_list[$proc_idx];
-                    $this->readProc($proc_idx, array_shift($this->job_list[$proc_idx]));
-                }
-
-                unset($proc_idx, $proc_pipe);
-            }
-
-            unset($read);
-        }
-
-        unset($write, $except, $workers);
-    }
-
-    /**
-     * @param int $proc_idx
-     *
-     * @return bool
-     * @throws \Exception
-     */
-    public function isProcAlive(int $proc_idx): bool
-    {
-        $proc_status = proc_get_status($this->proc_list[$proc_idx]);
-
-        if (!$proc_status['running']) {
-            $this->closeProc($proc_idx);
-
-            if ($this->auto_create) {
-                $this->createProc($proc_idx);
-            }
-
-            unset($proc_idx, $proc_status);
-            return false;
-        }
-
-        unset($proc_idx, $proc_status);
-        return true;
-    }
-
-    /**
-     * @param int $proc_idx
-     *
-     * @return $this
-     * @throws \Exception
-     */
-    public function createProc(int $proc_idx): self
+    public function run(): self
     {
         $proc = proc_open(
             $this->proc_cmd,
@@ -204,99 +91,94 @@ class ProcMgr extends Factory
                 ['socket', 'wb']
             ],
             $pipes,
-            '' !== $this->working_path ? $this->working_path : null
+            $this->work_dir
         );
 
         if (!is_resource($proc)) {
-            throw new \Exception('Process create ERROR: "' . $this->command . '"', E_USER_ERROR);
+            throw new \Exception('Failed to open "' . implode(' ', $this->proc_cmd) . '"', E_USER_ERROR);
         }
 
         stream_set_blocking($pipes[0], false);
         stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
 
-        fclose($pipes[2]);
+        $this->procProp['stdin']  = $pipes[0];
+        $this->procProp['stdout'] = $pipes[1];
+        $this->procProp['stderr'] = $pipes[2];
+        $this->procProp['proc']   = $proc;
 
-        $this->load_list[$proc_idx]   = 0;
-        $this->proc_list[$proc_idx]   = $proc;
-        $this->input_list[$proc_idx]  = $pipes[0];
-        $this->output_list[$proc_idx] = $pipes[1];
+        register_shutdown_function([$this, 'close']);
 
-        unset($proc_idx, $proc, $pipes);
+        unset($proc, $pipes);
         return $this;
     }
 
     /**
-     * @param int $proc_idx
-     *
+     * @return bool
+     */
+    public function isAlive(): bool
+    {
+        $proc_status = proc_get_status($this->procProp['proc']);
+        $proc_alive  = $proc_status['running'] ?? false;
+
+        unset($proc_status);
+        return $proc_alive;
+    }
+
+    /**
      * @return string
      */
-    public function awaitProc(int $proc_idx): string
+    public function getCmd(): string
     {
-        $output = '';
-        $write  = $except = [];
-        $read   = [$proc_idx => $this->output_list[$proc_idx]];
-
-        if (0 < (int)stream_select($read, $write, $except, 0, $this->watch_timeout)) {
-            $output = trim(fgets($this->output_list[$proc_idx]));
-        }
-
-        unset($proc_idx, $write, $except, $read);
-        return $output;
+        return implode(' ', $this->proc_cmd);
     }
 
     /**
-     * @param int           $proc_idx
-     * @param callable|null $callable
-     *
-     * @return void
+     * @return array
      */
-    public function readProc(int $proc_idx, callable $callable = null): void
+    public function getMsg(): array
     {
-        $output = fgets($this->output_list[$proc_idx]);
+        $read = [
+            'stdout' => $this->procProp['stdout'],
+            'stderr' => $this->procProp['stderr']
+        ];
 
-        if (false !== $output && is_callable($callable)) {
-            call_user_func($callable, trim($output));
+        $write = $except = $result = [];
+
+        $changed = stream_select($read, $write, $except, $this->readAt[0], $this->readAt[1]);
+
+        if (0 < $changed) {
+            $result = [
+                'type' => key($read),
+                'data' => trim(fgets(current($read)))
+            ];
         }
 
-        unset($proc_idx, $callable, $output);
+        unset($read, $write, $except, $changed);
+        return $result;
     }
 
     /**
-     * @param int    $proc_idx
      * @param string $argv
      *
-     * @return void
+     * @return $this
      */
-    public function writeProc(int $proc_idx, string $argv): void
+    public function sendArgv(string $argv): self
     {
-        fwrite($this->input_list[$proc_idx], $argv . $this->char_eol);
+        fwrite($this->procProp['stdin'], $argv . $this->argv_end_char);
 
-        unset($proc_idx, $argv);
-    }
-
-    /**
-     * @param int $proc_idx
-     *
-     * @return void
-     */
-    public function closeProc(int $proc_idx): void
-    {
-        fclose($this->input_list[$proc_idx]);
-        fclose($this->output_list[$proc_idx]);
-        proc_close($this->proc_list[$proc_idx]);
-
-        unset($this->load_list[$proc_idx], $this->proc_list[$proc_idx], $this->input_list[$proc_idx], $this->output_list[$proc_idx], $proc_idx);
+        unset($argv);
+        return $this;
     }
 
     /**
      * @return void
      */
-    public function closeAllProc(): void
+    public function close(): void
     {
-        foreach ($this->proc_list as $proc_idx => $proc_resource) {
-            $this->closeProc($proc_idx);
-        }
-
-        unset($proc_idx, $proc_resource);
+        fclose($this->procProp['stdin']);
+        fclose($this->procProp['stdout']);
+        fclose($this->procProp['stderr']);
+        proc_close($this->procProp['proc']);
     }
 }
