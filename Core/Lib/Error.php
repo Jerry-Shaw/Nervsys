@@ -131,7 +131,14 @@ class Error extends Factory
             'Memory'   => round(memory_get_usage() / 1048576, 4) . 'MB',
             'Duration' => round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 4) . 'ms',
             //Params & trace
-            'Param'    => ['ip' => $app->client_ip, 'cmd' => $IOData->src_cmd, 'data' => $IOData->src_input, 'argv' => $IOData->src_argv],
+            'Params'   => [
+                'ip'   => $app->client_ip,
+                'ua'   => $app->user_agent,
+                'cmd'  => $IOData->src_cmd,
+                'lang' => $app->user_lang,
+                'data' => $IOData->src_input,
+                'argv' => $IOData->src_argv
+            ],
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
