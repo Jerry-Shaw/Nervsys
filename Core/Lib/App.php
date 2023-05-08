@@ -30,8 +30,10 @@ class App extends Factory
     public string $root_path;
     public string $script_path;
 
-    public string $client_ip = '0.0.0.0';
-    public string $timezone  = 'Asia/Shanghai';
+    public string $client_ip  = '0.0.0.0';
+    public string $user_lang  = 'Unknown';
+    public string $user_agent = 'Unknown';
+    public string $timezone   = 'Asia/Shanghai';
 
     public bool $is_cli = false;
     public bool $is_tls = false;
@@ -79,7 +81,19 @@ class App extends Factory
         $this->is_cli = 'cli' === PHP_SAPI;
 
         if ($this->is_cli) {
+            $this->client_ip  = '127.0.0.1';
+            $this->user_lang  = 'System Lang';
+            $this->user_agent = 'CLI Command';
+
             return;
+        }
+
+        if (isset($_SERVER['HTTP_USER_AGENT'])) {
+            $this->user_agent = &$_SERVER['HTTP_USER_AGENT'];
+        }
+
+        if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            $this->user_lang = &$_SERVER['HTTP_ACCEPT_LANGUAGE'];
         }
 
         $this->is_tls = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
