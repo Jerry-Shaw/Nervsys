@@ -163,7 +163,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function sendArgv(string $argv): self
+    public function putArgv(string $argv): self
     {
         fwrite($this->procProp['stdin'], $argv . $this->argv_end_char);
 
