@@ -80,7 +80,7 @@ class ProcMgr extends Factory
      */
     public function readAt(int $seconds, int $microseconds = null): self
     {
-        $this->read_at = [$seconds, $microseconds];
+        $this->read_at = [&$seconds, &$microseconds];
 
         unset($seconds, $microseconds);
         return $this;
@@ -236,6 +236,7 @@ class ProcMgr extends Factory
                             call_user_func($callbacks[0], $stdout_data[$idx]);
                         } catch (\Throwable $throwable) {
                             $Error->exceptionHandler($throwable, false, false);
+                            unset($throwable);
                         }
                     }
                 }
@@ -248,6 +249,7 @@ class ProcMgr extends Factory
                             call_user_func($callbacks[1], $stderr_data[$idx]);
                         } catch (\Throwable $throwable) {
                             $Error->exceptionHandler($throwable, false, false);
+                            unset($throwable);
                         }
                     }
                 }
@@ -268,7 +270,6 @@ class ProcMgr extends Factory
         fclose($this->proc_list[$idx]['stdin']);
         fclose($this->proc_list[$idx]['stdout']);
         fclose($this->proc_list[$idx]['stderr']);
-
         proc_close($this->proc_list[$idx]['proc']);
 
         unset($this->proc_list[$idx], $this->proc_job_count[$idx], $this->proc_callbacks[$idx], $idx);
