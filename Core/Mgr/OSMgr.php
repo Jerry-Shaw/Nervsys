@@ -39,7 +39,7 @@ class OSMgr extends Factory
     private bool $use_profile   = false;
 
     /**
-     * OSMgr constructor.
+     * @throws \ReflectionException
      */
     public function __construct()
     {
