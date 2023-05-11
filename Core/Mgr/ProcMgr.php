@@ -140,7 +140,7 @@ class ProcMgr extends Factory
      * @return $this
      * @throws \Exception
      */
-    public function runProcLB(int $proc_num = 1): self
+    public function runPLB(int $proc_num): self
     {
         for ($i = 0; $i < $proc_num; ++$i) {
             $this->runProc($i);
