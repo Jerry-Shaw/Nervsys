@@ -74,6 +74,20 @@ class App extends Factory
     }
 
     /**
+     * @param string $locale
+     *
+     * @return $this
+     */
+    public function setLocale(string $locale): self
+    {
+        setlocale(LC_ALL, $locale);
+        putenv('LC_ALL=' . $locale);
+
+        unset($locale);
+        return $this;
+    }
+
+    /**
      * @return void
      */
     private function setAppEnv(): void
