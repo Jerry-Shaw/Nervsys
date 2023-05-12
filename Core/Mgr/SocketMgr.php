@@ -37,6 +37,7 @@ class SocketMgr extends Factory
     public array $callbacks = [
         'onConnect'   => null,  //callback(string $socket_id): void
         'onHandshake' => null,  //callback(string $ws_proto): bool, true to allow, otherwise reject.
+        'onHeartbeat' => null,  //callback(string $socket_id): string, heartbeat message send to $socket_id
         'onMessage'   => null,  //callback(string $socket_id, string $message): void
         'onSend'      => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
         'onClose'     => null   //callback(string $socket_id): void
@@ -171,7 +172,7 @@ class SocketMgr extends Factory
      */
     public function setCallbackFn(string $callback_param, callable $callback_func): self
     {
-        if (!isset($this->callbacks[$callback_param])) {
+        if (!key_exists($callback_param, $this->callbacks)) {
             throw new \Exception('"' . $callback_param . '" NOT accept!', E_USER_ERROR);
         }
 
@@ -267,11 +268,13 @@ class SocketMgr extends Factory
             $this->activities[$socket_id]  = time();
             $this->connections[$socket_id] = $client;
 
+            $this->debug('Client connected: ' . $socket_id);
+
             if (is_callable($this->callbacks['onConnect'])) {
                 try {
                     call_user_func($this->callbacks['onConnect'], $socket_id);
                 } catch (\Throwable $throwable) {
-                    $this->debug('Accept callback ERROR: ' . $throwable->getMessage());
+                    $this->debug('onConnect callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                 }
@@ -341,6 +344,8 @@ class SocketMgr extends Factory
      * @param bool $websocket
      *
      * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
      */
     public function onHeartbeat(bool $websocket = false): void
     {
@@ -369,7 +374,26 @@ class SocketMgr extends Factory
                     continue;
                 }
 
-                $websocket ? $this->wsPing($socket_id) : $this->sendMessage($socket_id, $this->heartbeat);
+                if ($websocket) {
+                    $this->wsPing($socket_id);
+                    $this->debug('Heartbeat to websocket: ' . $socket_id);
+                } else {
+                    if (!is_callable($this->callbacks['onHeartbeat'])) {
+                        $heartbeat = $this->heartbeat;
+                    } else {
+                        try {
+                            $heartbeat = call_user_func($this->callbacks['onHeartbeat'], $socket_id);
+                        } catch (\Throwable $throwable) {
+                            $heartbeat = $this->heartbeat;
+                            $this->debug('onHeartbeat callback ERROR: ' . $throwable->getMessage());
+                            $this->error->exceptionHandler($throwable, false, false);
+                            unset($throwable);
+                        }
+                    }
+
+                    $this->sendMessage($socket_id, $heartbeat);
+                    $this->debug('Heartbeat to client: ' . $socket_id);
+                }
             }
 
             \Fiber::suspend();
@@ -532,7 +556,7 @@ class SocketMgr extends Factory
             try {
                 call_user_func($this->callbacks['onClose'], $socket_id);
             } catch (\Throwable $throwable) {
-                $this->debug('Close callback ERROR: ' . $throwable->getMessage());
+                $this->debug('onClose callback ERROR: ' . $throwable->getMessage());
                 $this->error->exceptionHandler($throwable, false, false);
                 unset($throwable);
             }
