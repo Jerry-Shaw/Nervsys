@@ -26,14 +26,6 @@ use Nervsys\Core\Lib\Error;
 
 class SocketMgr extends Factory
 {
-    const CALLBACK_PARAMS = [
-        'onConnect',     //callback(string $socket_id): void
-        'onHandshake',   //callback(string $ws_proto): bool, true to allow, otherwise reject.
-        'onMessage',     //callback(string $socket_id, string $message): void
-        'onSend',        //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onClose'        //callback(string $socket_id): void
-    ];
-
     public Error    $error;
     public FiberMgr $fiberMgr;
 
@@ -42,14 +34,16 @@ class SocketMgr extends Factory
     public bool $block_mode = false;
     public bool $debug_mode = false;
 
+    public array $callbacks = [
+        'onConnect'   => null,  //callback(string $socket_id): void
+        'onHandshake' => null,  //callback(string $ws_proto): bool, true to allow, otherwise reject.
+        'onMessage'   => null,  //callback(string $socket_id, string $message): void
+        'onSend'      => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onClose'     => null   //callback(string $socket_id): void
+    ];
+
     public array $options = [];
     public array $read_at = [0, 20000, 60, 200];
-
-    public array $onConnect   = [];
-    public array $onHandshake = [];
-    public array $onMessage   = [];
-    public array $onSend      = [];
-    public array $onClose     = [];
 
     public array $handshakes  = [];
     public array $activities  = [];
@@ -169,26 +163,21 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $callback_param
-     * @param object $callback_object
-     * @param string $callback_method
+     * @param string   $callback_param
+     * @param callable $callback_func
      *
      * @return $this
      * @throws \Exception
      */
-    public function setCallbackFn(string $callback_param, object $callback_object, string $callback_method): self
+    public function setCallbackFn(string $callback_param, callable $callback_func): self
     {
-        if (!in_array($callback_param, self::CALLBACK_PARAMS, true)) {
+        if (!isset($this->callbacks[$callback_param])) {
             throw new \Exception('"' . $callback_param . '" NOT accept!', E_USER_ERROR);
         }
 
-        if (!method_exists($callback_object, $callback_method)) {
-            throw new \Exception('Method "' . $callback_method . '" NOT exist in "', $callback_object::class . '"', E_USER_ERROR);
-        }
+        $this->callbacks[$callback_param] = &$callback_func;
 
-        $this->$callback_param = [$callback_object, $callback_method];
-
-        unset($callback_param, $callback_object, $callback_method);
+        unset($callback_param, $callback_func);
         return $this;
     }
 
@@ -278,9 +267,9 @@ class SocketMgr extends Factory
             $this->activities[$socket_id]  = time();
             $this->connections[$socket_id] = $client;
 
-            if (is_callable($this->onConnect)) {
+            if (is_callable($this->callbacks['onConnect'])) {
                 try {
-                    call_user_func($this->onConnect, $socket_id);
+                    call_user_func($this->callbacks['onConnect'], $socket_id);
                 } catch (\Throwable $throwable) {
                     $this->debug('Accept callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
@@ -335,9 +324,9 @@ class SocketMgr extends Factory
 
                 $this->debug('Read message from ' . $socket_id . ': ' . $message);
 
-                if (is_callable($this->onMessage)) {
+                if (is_callable($this->callbacks['onMessage'])) {
                     try {
-                        call_user_func($this->onMessage, $socket_id, $message);
+                        call_user_func($this->callbacks['onMessage'], $socket_id, $message);
                     } catch (\Throwable $throwable) {
                         $this->debug('onMessage callback ERROR: ' . $throwable->getMessage());
                         $this->error->exceptionHandler($throwable, false, false);
@@ -396,7 +385,7 @@ class SocketMgr extends Factory
      */
     public function onSend(bool $websocket = false): void
     {
-        if (!is_callable($this->onSend)) {
+        if (!is_callable($this->callbacks['onSend'])) {
             return;
         }
 
@@ -416,7 +405,7 @@ class SocketMgr extends Factory
                 }
 
                 try {
-                    $msg_list = call_user_func($this->onSend, $socket_id);
+                    $msg_list = call_user_func($this->callbacks['onSend'], $socket_id);
                 } catch (\Throwable $throwable) {
                     $this->debug('onSend callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
@@ -539,9 +528,9 @@ class SocketMgr extends Factory
 
         $this->debug('Client closed: ' . $socket_id);
 
-        if (is_callable($this->onClose)) {
+        if (is_callable($this->callbacks['onClose'])) {
             try {
-                call_user_func($this->onClose, $socket_id);
+                call_user_func($this->callbacks['onClose'], $socket_id);
             } catch (\Throwable $throwable) {
                 $this->debug('Close callback ERROR: ' . $throwable->getMessage());
                 $this->error->exceptionHandler($throwable, false, false);
@@ -598,9 +587,9 @@ class SocketMgr extends Factory
         $ws_key   = $this->wsGetHeaderKey($message);
         $ws_proto = $this->wsGetHeaderProto($message);
 
-        if (is_callable($this->onHandshake)) {
+        if (is_callable($this->callbacks['onHandshake'])) {
             try {
-                $handshake = (bool)call_user_func($this->onHandshake, $ws_proto);
+                $handshake = (bool)call_user_func($this->callbacks['onHandshake'], $ws_proto);
             } catch (\Throwable) {
                 $handshake = false;
             }
