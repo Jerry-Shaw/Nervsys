@@ -158,7 +158,13 @@ class ProcMgr extends Factory
     public function isAlive(int $idx = 0): bool
     {
         $proc_status = proc_get_status($this->proc_list[$idx]['proc']);
-        $proc_alive  = $proc_status['running'] ?? false;
+
+        if ($proc_status['running']) {
+            $proc_alive = true;
+        } else {
+            $this->close($idx);
+            $proc_alive = false;
+        }
 
         unset($idx, $proc_status);
         return $proc_alive;
@@ -177,6 +183,23 @@ class ProcMgr extends Factory
         }
 
         unset($idx);
+    }
+
+    /**
+     * @return array
+     */
+    public function getAliveIdx(): array
+    {
+        $alive_idx = [];
+
+        foreach ($this->proc_list as $idx => $proc) {
+            if ($this->isAlive($idx)) {
+                $alive_idx[] = $idx;
+            }
+        }
+
+        unset($idx, $proc);
+        return $alive_idx;
     }
 
     /**
