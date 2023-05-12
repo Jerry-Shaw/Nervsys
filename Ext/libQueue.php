@@ -21,258 +21,334 @@
 namespace Nervsys\Ext;
 
 use Nervsys\Core\Factory;
+use Nervsys\Core\Lib\App;
+use Nervsys\Core\Lib\Caller;
+use Nervsys\Core\Lib\Error;
+use Nervsys\Core\Lib\Router;
 use Nervsys\Core\Mgr\OSMgr;
+use Nervsys\Core\Mgr\ProcMgr;
 
 class libQueue extends Factory
 {
-    const WORKER_KEY = 'Q:';
-
     public \Redis $redis;
 
-    private string $worker_key;
+    private array $proc_redis_conf;
+
+    private string $proc_worker_key;
+
+    private string $queue_name;
+    private string $QProc_key;
     private string $realtime_key;
     private string $delay_set_key;
     private string $delay_job_key;
+    private string $error_log_key;
     private string $unique_hash_key;
 
     /**
-     * @param string $queue_name
+     * @param string $name
      */
-    public function __construct(string $queue_name = 'default')
+    public function __construct(string $name = 'default',)
     {
-        $this->worker_key = self::WORKER_KEY . $queue_name;
+        $this->proc_worker_key = 'Q:' . $name;
 
-        $this->realtime_key    = $this->worker_key . ':realtime';
-        $this->delay_set_key   = $this->worker_key . ':delaySet';
-        $this->delay_job_key   = $this->worker_key . ':delayJob:';
-        $this->unique_hash_key = $this->worker_key . ':uniqueJob:';
+        $this->queue_name      = &$name;
+        $this->QProc_key       = $this->proc_worker_key . ':QProc';
+        $this->realtime_key    = $this->proc_worker_key . ':realtime';
+        $this->delay_set_key   = $this->proc_worker_key . ':delaySet';
+        $this->delay_job_key   = $this->proc_worker_key . ':delayJob:';
+        $this->error_log_key   = $this->proc_worker_key . ':errorList';
+        $this->unique_hash_key = $this->proc_worker_key . ':uniqueJob:';
 
-        unset($queue_name);
+        unset($name);
     }
 
     /**
-     * Bind to Redis connection
-     *
-     * @param \Redis $redis
+     * @param array $redis_conf
      *
      * @return $this
      */
-    public function bindRedis(\Redis $redis): self
+    public function setRedisConf(array $redis_conf): self
     {
-        $this->redis = &$redis;
+        $this->proc_redis_conf = &$redis_conf;
 
-        unset($redis);
+        unset($redis_conf);
         return $this;
     }
 
     /**
+     * @param string $cmd
+     * @param array  $data
+     * @param string $unique_hash
+     * @param int    $unique_ttl
+     *
+     * @return int
+     * @throws \RedisException
+     */
+    public function addRealtime(string $cmd, array $data, string $unique_hash = '', int $unique_ttl = 60): int
+    {
+        $pass_unique = '' === $unique_hash || $this->passUnique($unique_hash, $unique_ttl);
+
+        $result = $pass_unique ? $this->saveQJob($this->realtime_key, $cmd, $data, $unique_hash) : -1;
+
+        unset($cmd, $data, $unique_hash, $unique_ttl, $pass_unique);
+        return $result;
+    }
+
+    /**
+     * @param string $cmd
+     * @param array  $data
+     * @param int    $run_at
+     * @param string $unique_hash
+     * @param int    $unique_ttl
+     *
+     * @return int
+     * @throws \RedisException
+     */
+    public function addDelay(string $cmd, array $data, int $run_at, string $unique_hash = '', int $unique_ttl = 60): int
+    {
+        $result = -1;
+
+        $pass_unique = '' === $unique_hash || $this->passUnique($unique_hash, $unique_ttl);
+
+        if ($pass_unique) {
+            $this->redis->zAdd($this->delay_set_key, $run_at, $run_at);
+
+            $result = $this->saveQJob($this->delay_job_key . $run_at, $cmd, $data, $unique_hash);
+        }
+
+        unset($cmd, $data, $run_at, $unique_hash, $unique_ttl, $pass_unique);
+        return $result;
+    }
+
+    /**
      * @param int $proc_num
+     * @param int $cycle_jobs
+     * @param int $watch_microseconds
      *
      * @return void
      * @throws \RedisException
      * @throws \ReflectionException
-     * @throws \Throwable
+     * @throws \Exception
      */
-    public function start(int $proc_num = 10): void
+    public function start(int $proc_num = 10, int $cycle_jobs = 200, int $watch_microseconds = 20000): void
     {
-        if (false === $this->redis->setnx($this->worker_key, date('Y-m-d H:i:s'))) {
-            exit('Already started!');
-        }
+        $this->redis = libRedis::new($this->proc_redis_conf)->connect();
 
-        $this->redis->expire($this->worker_key, 60);
+        if (false === $this->redis->setnx($this->proc_worker_key, date('Y-m-d H:i:s'))) {
+            exit('Queue "' . $this->queue_name . '" already running!');
+        }
 
         register_shutdown_function(function (string $worker_key): void
         {
             $this->redis->del($worker_key);
             unset($worker_key);
-        }, $this->worker_key);
+        }, $this->proc_worker_key);
 
-        $libMPC = libMPC::new()->create(OSMgr::new()->getPhpPath(), $proc_num);
+        $app   = App::new();
+        $OSMgr = OSMgr::new();
 
-        while ($this->redis->exists($this->worker_key) && $this->redis->expire($this->worker_key, 60)) {
-            $this->callDelayJobs($this->delay_set_key, $this->delay_job_key);
+        $procMgr = ProcMgr::new(
+            $OSMgr->getPhpPath(),
+            $app->script_path,
+            '-c', '/' . __CLASS__ . '/QProc',
+            '-d', json_encode(['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs])
+        );
 
-            $job_num  = $proc_num - 1;
-            $job_data = $this->redis->brPop([$this->realtime_key], 30);
+        $procMgr->setWorkDir(dirname($app->script_path))->runPLB($proc_num);
 
-            if (empty($job_data)) {
+        while ($this->redis->expire($this->proc_worker_key, 30)) {
+            $this->syncDelayJobs();
+
+            $proc_idx = $procMgr->getAliveIdx();
+            $job_num  = $this->redis->lLen($this->realtime_key);
+            $need_num = min($proc_num, ceil($job_num / $cycle_jobs)) - count($proc_idx);
+
+            if (0 < $need_num) {
+                $idx = 0;
+
+                for ($i = 0; $i < $need_num;) {
+                    if (!in_array($idx, $proc_idx, true)) {
+                        $procMgr->keepAlive($idx);
+
+                        ++$idx;
+                        ++$i;
+                    }
+                }
+            }
+
+            usleep($watch_microseconds);
+        }
+    }
+
+    /**
+     * @param array $redis
+     * @param int   $cycles
+     *
+     * @return void
+     * @throws \RedisException
+     * @throws \ReflectionException
+     */
+    public function QProc(array $redis, int $cycles = 200): void
+    {
+        $error  = Error::new();
+        $caller = Caller::new();
+        $router = Router::new();
+
+        $this->redis = libRedis::new($redis)->connect();
+
+        $proc_id   = getmypid();
+        $jobs_done = 0;
+
+        $this->redis->hSet($this->QProc_key, $proc_id, date('Y-m-d H:i:s'));
+        $this->redis->expire($this->QProc_key, 60);
+
+        register_shutdown_function(function (string $QProc_key, int $proc_id): void
+        {
+            $this->redis->hDel($QProc_key, $proc_id);
+            unset($QProc_key, $proc_id);
+        }, $this->QProc_key, $proc_id);
+
+        while (!empty($job_json = $this->redis->brPop([$this->realtime_key], 10))) {
+            $this->redis->expire($this->QProc_key, 60);
+
+            $job_data = json_decode($job_json, true);
+
+            try {
+                if (!is_array($job_data)) {
+                    throw new \Exception('Queue data ERROR!', E_USER_NOTICE);
+                }
+
+                if (isset($job_data['!'])) {
+                    $unique_key = $this->getUniqueKey($job_data['!']);
+
+                    if (-1 === $this->redis->ttl($unique_key)) {
+                        $this->redis->del($unique_key);
+                    }
+                }
+
+                if (!isset($job_data['@']) || empty($c_list = $router->parseCgi($job_data['@']))) {
+                    throw new \Exception('Queue CMD ERROR!', E_USER_NOTICE);
+                }
+            } catch (\Throwable $throwable) {
+                $this->saveError($job_json, $throwable->getMessage());
+                unset($throwable);
                 continue;
             }
 
-            $this->sendJob($libMPC, $job_data[1]);
-
-            while (0 < $job_num && false !== ($job_json = $this->redis->rPop($this->realtime_key))) {
-                --$job_num;
-                $this->sendJob($libMPC, $job_json);
+            while (is_array($cmd_data = array_shift($c_list))) {
+                try {
+                    $caller->runApiFn($cmd_data, $job_data);
+                } catch (\Throwable $throwable) {
+                    $this->saveError($job_json, $throwable->getMessage());
+                    $error->exceptionHandler($throwable, false, false);
+                    unset($throwable);
+                }
             }
 
-            $libMPC->commit();
+            if (++$jobs_done >= $cycles) {
+                break;
+            }
         }
-
-        unset($proc_num, $libMPC, $job_num, $job_data, $job_json);
     }
 
     /**
-     * @param string $cmd
-     * @param array  $data
-     *
-     * @return int
-     * @throws \RedisException
-     */
-    public function addRealtime(string $cmd, array $data): int
-    {
-        $result = $this->addJob($this->realtime_key, $cmd, $data);
-
-        unset($cmd, $data);
-        return $result;
-    }
-
-    /**
-     * @param string $cmd
-     * @param array  $data
      * @param string $unique_hash
-     * @param int    $bypass_after
      *
-     * @return int
-     * @throws \RedisException
+     * @return string
      */
-    public function addRealtimeUnique(string $cmd, array $data, string $unique_hash, int $bypass_after): int
+    private function getUniqueKey(string $unique_hash): string
     {
-        $result = -1;
-
-        if ($this->addUniqueHash($this->unique_hash_key, $unique_hash, $bypass_after)) {
-            $result = $this->addRealtime($cmd, $data);
-        }
-
-        unset($cmd, $data, $unique_hash, $bypass_after);
-        return $result;
-    }
-
-    /**
-     * @param string $cmd
-     * @param array  $data
-     * @param int    $run_at
-     *
-     * @return int
-     * @throws \RedisException
-     */
-    public function addDelay(string $cmd, array $data, int $run_at): int
-    {
-        $this->redis->zAdd($this->delay_set_key, $run_at, $run_at);
-
-        $result = $this->addJob($this->delay_job_key . $run_at, $cmd, $data);
-
-        unset($cmd, $data, $run_at);
-        return $result;
-    }
-
-    /**
-     * @param string $cmd
-     * @param array  $data
-     * @param int    $run_at
-     * @param string $unique_hash
-     * @param int    $bypass_after
-     *
-     * @return int
-     * @throws \RedisException
-     */
-    public function addDelayUnique(string $cmd, array $data, int $run_at, string $unique_hash, int $bypass_after): int
-    {
-        $result = -1;
-
-        if ($this->addUniqueHash($this->unique_hash_key, $unique_hash, $bypass_after)) {
-            $result = $this->addDelay($cmd, $data, $run_at);
-        }
-
-        unset($cmd, $data, $run_at, $unique_hash, $bypass_after);
-        return $result;
+        return $this->unique_hash_key . $unique_hash;
     }
 
     /**
      * @param string $key
      * @param string $cmd
      * @param array  $data
+     * @param string $hash
      *
      * @return int
      * @throws \RedisException
      */
-    private function addJob(string $key, string $cmd, array $data): int
+    private function saveQJob(string $key, string $cmd, array $data, string $hash): int
     {
-        $data['@']  = &$cmd;
+        $data['@'] = &$cmd;
+
+        if ('' !== $hash) {
+            $data['!'] = &$hash;
+        }
+
         $job_length = (int)$this->redis->lPush($key, json_encode($data, JSON_FORMAT));
 
-        unset($key, $cmd, $data);
+        unset($key, $cmd, $data, $hash);
         return $job_length;
     }
 
     /**
-     * @param string $key
-     * @param string $unique_hash
-     * @param int    $bypass_after
-     *
-     * @return bool
-     * @throws \RedisException
-     */
-    private function addUniqueHash(string $key, string $unique_hash, int $bypass_after): bool
-    {
-        if (false === $this->redis->setnx($key, $unique_hash)) {
-            return false;
-        }
-
-        $this->redis->expire($key, $bypass_after);
-
-        unset($key, $unique_hash, $bypass_after);
-        return true;
-    }
-
-    /**
-     * @param string $delay_set_key
-     * @param string $delay_job_key
+     * @param string $job_json
+     * @param string $error_msg
      *
      * @return void
      * @throws \RedisException
      */
-    private function callDelayJobs(string $delay_set_key, string $delay_job_key): void
+    private function saveError(string $job_json, string $error_msg): void
     {
-        $job_key_list = $this->redis->zRangeByScore($delay_set_key, 0, time());
+        $error_data = [
+            'time'      => date('Y-m-d H:i:s'),
+            'job_json'  => $job_json,
+            'error_msg' => $error_msg
+        ];
+
+        $this->redis->lPush($this->error_log_key, json_encode($error_data, JSON_FORMAT));
+
+        unset($job_json, $error_msg, $error_data);
+    }
+
+    /**
+     * @return void
+     * @throws \RedisException
+     */
+    private function syncDelayJobs(): void
+    {
+        $job_key_list = $this->redis->zRangeByScore($this->delay_set_key, 0, time());
 
         if (empty($job_key_list)) {
             return;
         }
 
         foreach ($job_key_list as $timestamp) {
-            $job_key = $delay_job_key . $timestamp;
+            $job_key = $this->delay_job_key . $timestamp;
 
-            while (false !== ($delay_job = $this->redis->rPop($job_key))) {
-                $job_data = json_decode($delay_job, true);
-
-                if (is_array($job_data) && isset($job_data['@'])) {
-                    $this->addRealtime($job_data['@'], $job_data);
-                }
+            while (false !== ($job_data = $this->redis->rPop($job_key))) {
+                $this->redis->lPush($this->realtime_key, $job_data);
             }
 
-            $this->redis->zRem($delay_set_key, $timestamp);
+            $this->redis->zRem($this->delay_set_key, $timestamp);
         }
 
-        unset($delay_set_key, $delay_job_key, $job_key_list, $timestamp, $job_key, $delay_job, $job_data);
+        unset($job_key_list, $timestamp, $job_key, $job_data);
     }
 
     /**
-     * @param libMPC $libMPC
-     * @param string $job_json
+     * @param string $unique_hash
+     * @param int    $unique_ttl
      *
-     * @return void
-     * @throws \ReflectionException
-     * @throws \Throwable
+     * @return bool
+     * @throws \RedisException
      */
-    private function sendJob(libMPC $libMPC, string $job_json): void
+    private function passUnique(string $unique_hash, int $unique_ttl): bool
     {
-        $job_data = json_decode($job_json, true);
+        $unique_key = $this->getUniqueKey($unique_hash);
 
-        if (is_array($job_data) && isset($job_data['@'])) {
-            $libMPC->sendCMD($job_data['@'], $job_data);
+        if (false === $this->redis->setnx($unique_key, date('Y-m-d H:i:s', time() + $unique_ttl))) {
+            return false;
         }
 
-        unset($libMPC, $job_json, $job_data);
+        if (0 < $unique_ttl) {
+            $this->redis->expire($unique_key, $unique_ttl);
+        }
+
+        unset($unique_hash, $unique_ttl, $unique_key);
+        return true;
     }
 }
