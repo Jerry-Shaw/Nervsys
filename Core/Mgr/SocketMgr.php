@@ -40,7 +40,7 @@ class SocketMgr extends Factory
     public string $heartbeat = "\n";
 
     public bool $block_mode = false;
-    public bool $debug_mode = true;
+    public bool $debug_mode = false;
 
     public array $options = [];
     public array $read_at = [0, 20000, 60, 200];
