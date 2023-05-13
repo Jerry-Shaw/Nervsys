@@ -97,7 +97,7 @@ class Factory
                 continue;
             }
 
-            if (key_exists($param_info['name'], $data_package)) {
+            if (!key_exists($param_info['name'], $data_package)) {
                 $param_info['has_default']
                     ? $args[] = $param_info['default_value']
                     : $diff[] = '$' . $param_info['name'] . ' not found';
