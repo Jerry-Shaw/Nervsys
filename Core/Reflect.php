@@ -144,6 +144,7 @@ class Reflect
         $info = [];
 
         $info['name']          = $parameter->getName();
+        $info['is_variadic']   = $parameter->isVariadic();
         $info['has_default']   = $parameter->isDefaultValueAvailable();
         $info['default_value'] = $info['has_default'] ? $parameter->getDefaultValue() : null;
 
