@@ -84,12 +84,20 @@ class Factory
         foreach ($param_reflects as $param_reflect) {
             $param_info = Reflect::getParameterInfo($param_reflect);
 
+            if ($param_info['is_variadic']) {
+                if (key_exists($param_info['name'], $data_package)) {
+                    $args = (array)$data_package[$param_info['name']];
+                }
+
+                continue;
+            }
+
             if (!$param_info['build_in']) {
                 $args[] = self::getObj($param_info['type']);
                 continue;
             }
 
-            if (!isset($data_package[$param_info['name']])) {
+            if (key_exists($param_info['name'], $data_package)) {
                 $param_info['has_default']
                     ? $args[] = $param_info['default_value']
                     : $diff[] = '$' . $param_info['name'] . ' not found';
