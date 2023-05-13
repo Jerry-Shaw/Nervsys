@@ -22,7 +22,9 @@
 namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
+use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\Error;
+use Nervsys\Core\Lib\Router;
 
 class ProcMgr extends Factory
 {
@@ -148,6 +150,60 @@ class ProcMgr extends Factory
 
         unset($proc_num, $i);
         return $this;
+    }
+
+    /**
+     * @param int $jobs
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function worker(int $jobs = 200): void
+    {
+        $do = 0;
+
+        $error  = Error::new();
+        $caller = Caller::new();
+        $router = Router::new();
+
+        while (++$do <= $jobs) {
+            $job_json = fgets(STDIN);
+
+            if (false === $job_json) {
+                return;
+            }
+
+            $job_json = trim($job_json);
+            $job_data = json_decode($job_json, true);
+
+            try {
+                if (!is_array($job_data) || !isset($job_data['c']) || empty($c_list = $router->parseCgi($job_data['c']))) {
+                    throw new \Exception('Proc worker data ERROR: ' . $job_json, E_USER_NOTICE);
+                }
+            } catch (\Throwable $throwable) {
+                $error->exceptionHandler($throwable, false, false);
+                unset($throwable);
+                echo "\n";
+                continue;
+            }
+
+            $result = [];
+
+            while (is_array($cmd_data = array_shift($c_list))) {
+                try {
+                    $result += $caller->runApiFn($cmd_data, $job_data);
+                } catch (\Throwable $throwable) {
+                    $error->exceptionHandler($throwable, false, false);
+                    unset($throwable);
+                }
+            }
+
+            echo json_encode(1 === count($result) ? current($result) : $result, JSON_FORMAT) . "\n";
+
+            unset($job_json, $job_data, $c_list, $result, $cmd_data);
+        }
+
+        unset($jobs, $do, $error, $caller, $router);
     }
 
     /**
