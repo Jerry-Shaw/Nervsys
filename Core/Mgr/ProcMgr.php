@@ -158,7 +158,7 @@ class ProcMgr extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    public function worker(int $jobs = 200): void
+    public function worker(int $jobs = 2000): void
     {
         $do = 0;
 
