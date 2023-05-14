@@ -360,6 +360,18 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @return void
+     */
+    public function exit(): void
+    {
+        foreach ($this->proc_list as $idx => $proc) {
+            $this->close($idx);
+        }
+
+        unset($idx, $proc);
+    }
+
+    /**
      * @param array $stream_list
      *
      * @return array
