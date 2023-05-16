@@ -165,27 +165,31 @@ trait System
 
     /**
      * @param string   $cmd_path
-     * @param callable $hook_fn
+     * @param callable ...$hook_fn
      *
      * @return $this
      */
-    public function HookAddBefore(string $cmd_path, callable $hook_fn): self
+    public function HookAddBefore(string $cmd_path, callable ...$hook_fn): self
     {
-        $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = &$hook_fn;
+        foreach ($hook_fn as $fn) {
+            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
+        }
 
-        unset($cmd_path, $hook_fn);
+        unset($cmd_path, $hook_fn, $fn);
         return $this;
     }
 
     /**
      * @param string   $cmd_path
-     * @param callable $hook_fn
+     * @param callable ...$hook_fn
      *
      * @return $this
      */
-    public function HookAddAfter(string $cmd_path, callable $hook_fn): self
+    public function HookAddAfter(string $cmd_path, callable ...$hook_fn): self
     {
-        $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = &$hook_fn;
+        foreach ($hook_fn as $fn) {
+            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
+        }
 
         unset($cmd_path, $hook_fn);
         return $this;
