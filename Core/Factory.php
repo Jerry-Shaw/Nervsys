@@ -85,7 +85,7 @@ class Factory
             $param_info = Reflect::getParameterInfo($param_reflect);
 
             if ($param_info['is_variadic']) {
-                if (key_exists($param_info['name'], $data_package)) {
+                if (array_key_exists($param_info['name'], $data_package)) {
                     $args = (array)$data_package[$param_info['name']];
                 }
 
@@ -97,7 +97,7 @@ class Factory
                 continue;
             }
 
-            if (!key_exists($param_info['name'], $data_package)) {
+            if (!isset($data_package[$param_info['name']])) {
                 $param_info['has_default']
                     ? $args[] = $param_info['default_value']
                     : $diff[] = '$' . $param_info['name'] . ' not found';
