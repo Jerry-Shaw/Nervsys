@@ -172,7 +172,7 @@ class SocketMgr extends Factory
      */
     public function setCallbackFn(string $callback_param, callable $callback_func): self
     {
-        if (!key_exists($callback_param, $this->callbacks)) {
+        if (!array_key_exists($callback_param, $this->callbacks)) {
             throw new \Exception('"' . $callback_param . '" NOT accept!', E_USER_ERROR);
         }
 
