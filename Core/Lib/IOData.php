@@ -319,16 +319,18 @@ class IOData extends Factory
             return substr($_SERVER['PATH_INFO'], 1);
         }
 
-        if (false !== $start = strpos($_SERVER['REQUEST_URI'], '/', 1)) {
-            $stop = strpos($_SERVER['REQUEST_URI'], '?');
+        $start  = 0;
+        $script = basename($_SERVER['SCRIPT_FILENAME']);
+        $stop   = strpos($_SERVER['REQUEST_URI'], '?') ?: strlen($_SERVER['REQUEST_URI']);
 
-            if (0 < $len = (false === $stop ? strlen($_SERVER['REQUEST_URI']) : $stop) - ++$start) {
-                return substr($_SERVER['REQUEST_URI'], $start, $len);
-            }
+        if (false !== ($find_pos = strpos($_SERVER['REQUEST_URI'], $script))) {
+            $start += $find_pos + strlen($script);
         }
 
-        unset($start, $stop, $len);
-        return '';
+        $cmd = substr($_SERVER['REQUEST_URI'], ++$start, $stop - $start);
+
+        unset($start, $script, $stop, $find_pos);
+        return $cmd;
     }
 
     /**
