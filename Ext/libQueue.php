@@ -210,10 +210,10 @@ class libQueue extends Factory
             unset($QProc_key, $proc_id);
         }, $this->QProc_key, $proc_id);
 
-        while (!empty($job_json = $this->redis->brPop([$this->realtime_key], 10))) {
+        while (!empty($job_pop = $this->redis->brPop([$this->realtime_key], 10))) {
             $this->redis->expire($this->QProc_key, 60);
 
-            $job_data = json_decode($job_json, true);
+            $job_data = json_decode($job_pop[1], true);
 
             try {
                 if (!is_array($job_data)) {
@@ -232,7 +232,7 @@ class libQueue extends Factory
                     throw new \Exception('Queue CMD ERROR!', E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
-                $this->saveError($job_json, $throwable->getMessage());
+                $this->saveError($job_pop[0], $job_pop[1], $throwable->getMessage());
                 unset($throwable);
                 continue;
             }
@@ -241,7 +241,7 @@ class libQueue extends Factory
                 try {
                     $caller->runApiFn($cmd_data, $job_data);
                 } catch (\Throwable $throwable) {
-                    $this->saveError($job_json, $throwable->getMessage());
+                    $this->saveError($job_pop[0], $job_pop[1], $throwable->getMessage());
                     $error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                 }
@@ -287,15 +287,17 @@ class libQueue extends Factory
     }
 
     /**
+     * @param string $job_key
      * @param string $job_json
      * @param string $error_msg
      *
      * @return void
      * @throws \RedisException
      */
-    private function saveError(string $job_json, string $error_msg): void
+    private function saveError(string $job_key, string $job_json, string $error_msg): void
     {
         $error_data = [
+            'key'       => $job_key,
             'time'      => date('Y-m-d H:i:s'),
             'job_json'  => $job_json,
             'error_msg' => $error_msg
@@ -303,7 +305,7 @@ class libQueue extends Factory
 
         $this->redis->lPush($this->error_log_key, json_encode($error_data, JSON_FORMAT));
 
-        unset($job_json, $error_msg, $error_data);
+        unset($job_key, $job_json, $error_msg, $error_data);
     }
 
     /**
