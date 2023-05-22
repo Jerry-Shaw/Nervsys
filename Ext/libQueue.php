@@ -66,10 +66,14 @@ class libQueue extends Factory
      * @param array $redis_conf
      *
      * @return $this
+     * @throws \RedisException
+     * @throws \ReflectionException
      */
     public function setRedisConf(array $redis_conf): self
     {
         $this->proc_redis_conf = &$redis_conf;
+
+        $this->redis = libRedis::new($redis_conf)->connect();
 
         unset($redis_conf);
         return $this;
@@ -128,12 +132,9 @@ class libQueue extends Factory
      * @return void
      * @throws \RedisException
      * @throws \ReflectionException
-     * @throws \Exception
      */
     public function start(int $proc_num = 10, int $cycle_jobs = 200, int $watch_microseconds = 20000): void
     {
-        $this->redis = libRedis::new($this->proc_redis_conf)->connect();
-
         if (false === $this->redis->setnx($this->proc_worker_key, date('Y-m-d H:i:s'))) {
             exit('Queue "' . $this->queue_name . '" already running!');
         }
