@@ -134,7 +134,7 @@ class libQueue extends Factory
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function start(int $proc_num = 10, int $cycle_jobs = 200, int $watch_microseconds = 20000): void
+    public function start(int $proc_num = 10, int $cycle_jobs = 2000, int $watch_microseconds = 20000): void
     {
         if (false === $this->redis->setnx($this->proc_worker_key, date('Y-m-d H:i:s'))) {
             exit('Queue "' . $this->queue_name . '" already running!');
