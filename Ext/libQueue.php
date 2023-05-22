@@ -132,6 +132,7 @@ class libQueue extends Factory
      * @return void
      * @throws \RedisException
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public function start(int $proc_num = 10, int $cycle_jobs = 200, int $watch_microseconds = 20000): void
     {
