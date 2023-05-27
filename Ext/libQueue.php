@@ -161,20 +161,12 @@ class libQueue extends Factory
         while ($this->redis->expire($this->proc_worker_key, 30)) {
             $this->syncDelayJobs();
 
-            $proc_idx = $procMgr->getAliveIdx();
             $job_num  = $this->redis->lLen($this->realtime_key);
-            $need_num = min($proc_num, ceil($job_num / $cycle_jobs)) - count($proc_idx);
+            $need_num = min($proc_num, ceil($job_num / $cycle_jobs));
 
             if (0 < $need_num) {
-                $idx = 0;
-
-                for ($i = 0; $i < $need_num;) {
-                    if (!in_array($idx, $proc_idx, true)) {
-                        $procMgr->keepAlive($idx);
-
-                        ++$idx;
-                        ++$i;
-                    }
+                for ($i = 0; $i < $need_num; ++$i) {
+                    $procMgr->keepAlive($i);
                 }
             }
 
