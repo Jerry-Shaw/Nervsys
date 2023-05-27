@@ -179,19 +179,19 @@ class ProcMgr extends Factory
     {
         $proc_status = proc_get_status($this->proc_list[$idx]);
 
-        if (!$proc_status['running']) {
+        if (!$proc_status['running'] && self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
             $this->proc_status[$idx] ^= self::P_STDIN;
         }
 
         $stdout_status = stream_get_meta_data($this->proc_stdout[$idx]);
 
-        if ($stdout_status['eof']) {
+        if ($stdout_status['eof'] && self::P_STDOUT === ($this->proc_status[$idx] & self::P_STDOUT)) {
             $this->proc_status[$idx] ^= self::P_STDOUT;
         }
 
         $stderr_status = stream_get_meta_data($this->proc_stderr[$idx]);
 
-        if ($stderr_status['eof']) {
+        if ($stderr_status['eof'] && self::P_STDERR === ($this->proc_status[$idx] & self::P_STDERR)) {
             $this->proc_status[$idx] ^= self::P_STDERR;
         }
 
