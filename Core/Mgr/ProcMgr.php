@@ -177,6 +177,10 @@ class ProcMgr extends Factory
      */
     public function getStatus(int $idx = 0): int
     {
+        if (0 === $this->proc_status[$idx]) {
+            return 0;
+        }
+
         $proc_status = proc_get_status($this->proc_list[$idx]);
 
         if (!$proc_status['running'] && self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
