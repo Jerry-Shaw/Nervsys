@@ -274,7 +274,7 @@ class ProcMgr extends Factory
      */
     public function close(int $idx = 0): void
     {
-        if (isset($this->proc_status[$idx])) {
+        if (isset($this->proc_list[$idx])) {
             fclose($this->proc_stdin[$idx]);
             fclose($this->proc_stdout[$idx]);
             fclose($this->proc_stderr[$idx]);
