@@ -28,24 +28,40 @@ use Nervsys\Core\Lib\Router;
 
 class ProcMgr extends Factory
 {
+    const P_STDIN  = 1;
+    const P_STDOUT = 2;
+    const P_STDERR = 4;
+
+    public Error $error;
+
     public array $proc_cmd;
 
     public array $read_at = [0, 20000];
-
-    protected array $proc_list      = [];
-    protected array $proc_job_count = [];
-    protected array $proc_callbacks = [];
 
     public string $argv_end_char = "\n";
 
     public string|null $work_dir = null;
 
+    protected array $proc_list   = [];
+    protected array $proc_stdin  = [];
+    protected array $proc_stdout = [];
+    protected array $proc_stderr = [];
+    protected array $proc_status = [];
+
+    protected array $proc_job_count = [];
+    protected array $proc_callbacks = [];
+
     /**
      * @param string ...$proc_cmd
+     *
+     * @throws \ReflectionException
      */
     public function __construct(string ...$proc_cmd)
     {
+        $this->error    = Error::new();
         $this->proc_cmd = &$proc_cmd;
+
+        unset($proc_cmd);
     }
 
     /**
@@ -89,20 +105,12 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @return string
-     */
-    public function getCmd(): string
-    {
-        return implode(' ', $this->proc_cmd);
-    }
-
-    /**
      * @param int $idx
      *
-     * @return void
+     * @return $this
      * @throws \Exception
      */
-    public function runProc(int $idx = 0): void
+    public function runProc(int $idx = 0): self
     {
         $proc = proc_open(
             $this->proc_cmd,
@@ -123,10 +131,11 @@ class ProcMgr extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
-        $this->proc_list[$idx]['stdin']  = $pipes[0];
-        $this->proc_list[$idx]['stdout'] = $pipes[1];
-        $this->proc_list[$idx]['stderr'] = $pipes[2];
-        $this->proc_list[$idx]['proc']   = $proc;
+        $this->proc_list[$idx]   = $proc;
+        $this->proc_stdin[$idx]  = $pipes[0];
+        $this->proc_stdout[$idx] = $pipes[1];
+        $this->proc_stderr[$idx] = $pipes[2];
+        $this->proc_status[$idx] = self::P_STDIN | self::P_STDOUT | self::P_STDERR;
 
         $this->proc_job_count[$idx] = 0;
         $this->proc_callbacks[$idx] = [];
@@ -134,6 +143,7 @@ class ProcMgr extends Factory
         register_shutdown_function([$this, 'close'], $idx);
 
         unset($idx, $proc, $pipes);
+        return $this;
     }
 
     /**
@@ -153,6 +163,136 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @return string
+     */
+    public function getCmd(): string
+    {
+        return implode(' ', $this->proc_cmd);
+    }
+
+    /**
+     * @param int $idx
+     *
+     * @return int
+     */
+    public function getStatus(int $idx = 0): int
+    {
+        $proc_status = proc_get_status($this->proc_list[$idx]);
+
+        if (!$proc_status['running']) {
+            $this->proc_status[$idx] ^= self::P_STDIN;
+        }
+
+        $stdout_status = stream_get_meta_data($this->proc_stdout[$idx]);
+
+        if ($stdout_status['eof']) {
+            $this->proc_status[$idx] ^= self::P_STDOUT;
+        }
+
+        $stderr_status = stream_get_meta_data($this->proc_stderr[$idx]);
+
+        if ($stderr_status['eof']) {
+            $this->proc_status[$idx] ^= self::P_STDERR;
+        }
+
+        unset($proc_status, $stdout_status, $stderr_status);
+        return $this->proc_status[$idx];
+    }
+
+    /**
+     * @param int $idx
+     *
+     * @return void
+     * @throws \Exception
+     */
+    public function keepAlive(int $idx = 0): void
+    {
+        if (0 === $this->getStatus($idx)) {
+            $this->close($idx);
+            $this->runProc($idx);
+        }
+
+        unset($idx);
+    }
+
+    /**
+     * @param string        $argv
+     * @param callable|null $msg_callback
+     * @param callable|null $err_callback
+     *
+     * @return void
+     * @throws \Exception
+     */
+    public function putArgv(string $argv, callable $msg_callback = null, callable $err_callback = null): void
+    {
+        $idx = $this->getRunningIdx();
+
+        ++$this->proc_job_count[$idx];
+        fwrite($this->proc_stdin[$idx], $argv . $this->argv_end_char);
+        array_unshift($this->proc_callbacks[$idx], [$msg_callback, $err_callback]);
+
+        unset($argv, $msg_callback, $err_callback, $idx);
+    }
+
+    /**
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function awaitJobs(): void
+    {
+        while (0 < array_sum($this->proc_job_count)) {
+            $this->readIo();
+            $this->cleanup();
+        }
+    }
+
+    /**
+     * @param callable|null $msg_callback
+     * @param callable|null $err_callback
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function awaitProc(callable $msg_callback = null, callable $err_callback = null): void
+    {
+        while (!empty($this->proc_status)) {
+            $this->readIo([$msg_callback, $err_callback]);
+            $this->cleanup();
+        }
+
+        unset($msg_callback, $err_callback);
+    }
+
+    /**
+     * @param int $idx
+     *
+     * @return void
+     */
+    public function close(int $idx = 0): void
+    {
+        if (isset($this->proc_status[$idx])) {
+            fclose($this->proc_stdin[$idx]);
+            fclose($this->proc_stdout[$idx]);
+            fclose($this->proc_stderr[$idx]);
+            proc_close($this->proc_list[$idx]);
+        }
+
+        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_status[$idx], $this->proc_job_count[$idx], $this->proc_callbacks[$idx], $idx);
+    }
+
+    /**
+     * @return void
+     */
+    public function exit(): void
+    {
+        foreach ($this->proc_status as $idx => $status) {
+            $this->close($idx);
+        }
+
+        unset($idx, $status);
+    }
+
+    /**
      * @param int $jobs
      *
      * @return void
@@ -162,7 +302,6 @@ class ProcMgr extends Factory
     {
         $do = 0;
 
-        $error  = Error::new();
         $caller = Caller::new();
         $router = Router::new();
 
@@ -181,7 +320,7 @@ class ProcMgr extends Factory
                     throw new \Exception('Proc worker data ERROR: ' . $job_json, E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
-                $error->exceptionHandler($throwable, false, false);
+                $this->error->exceptionHandler($throwable, false, false);
                 unset($throwable);
                 echo "\n";
                 continue;
@@ -193,7 +332,7 @@ class ProcMgr extends Factory
                 try {
                     $result += $caller->runApiFn($cmd_data, $job_data);
                 } catch (\Throwable $throwable) {
-                    $error->exceptionHandler($throwable, false, false);
+                    $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                 }
             }
@@ -203,172 +342,78 @@ class ProcMgr extends Factory
             unset($job_json, $job_data, $c_list, $result, $cmd_data);
         }
 
-        unset($jobs, $do, $error, $caller, $router);
+        unset($jobs, $do, $caller, $router);
     }
 
     /**
-     * @param int $idx
-     *
-     * @return bool
-     */
-    public function isAlive(int $idx = 0): bool
-    {
-        $proc_status = proc_get_status($this->proc_list[$idx]['proc']);
-
-        if ($proc_status['running']) {
-            $proc_alive = true;
-        } else {
-            $this->close($idx);
-            $proc_alive = false;
-        }
-
-        unset($idx, $proc_status);
-        return $proc_alive;
-    }
-
-    /**
-     * @param int $idx
+     * @param array $proc_callbacks
      *
      * @return void
-     * @throws \Exception
-     */
-    public function keepAlive(int $idx = 0): void
-    {
-        if (!$this->isAlive($idx)) {
-            $this->runProc($idx);
-        }
-
-        unset($idx);
-    }
-
-    /**
-     * @return array
-     */
-    public function getAliveIdx(): array
-    {
-        $alive_idx = [];
-
-        foreach ($this->proc_list as $idx => $proc) {
-            if ($this->isAlive($idx)) {
-                $alive_idx[] = $idx;
-            }
-        }
-
-        unset($idx, $proc);
-        return $alive_idx;
-    }
-
-    /**
-     * @param string        $argv
-     * @param callable|null $msg_callback
-     * @param callable|null $err_callback
-     *
-     * @return void
-     * @throws \Exception
-     */
-    public function putMsg(string $argv, callable $msg_callback = null, callable $err_callback = null): void
-    {
-        $proc_idx = key($this->proc_list);
-
-        $this->keepAlive($proc_idx);
-
-        ++$this->proc_job_count[$proc_idx];
-        array_unshift($this->proc_callbacks[$proc_idx], [$msg_callback, $err_callback]);
-
-        fwrite($this->proc_list[$proc_idx]['stdin'], $argv . $this->argv_end_char);
-
-        $proc_idx !== array_key_last($this->proc_list) ? next($this->proc_list) : reset($this->proc_list);
-
-        unset($argv, $msg_callback, $err_callback, $proc_idx);
-    }
-
-    /**
-     * @param bool $await
-     *
-     * @return array
      * @throws \ReflectionException
      */
-    public function getMsg(bool $await = false): array
+    protected function readIo(array $proc_callbacks = []): void
     {
-        $result = [];
-        $Error  = Error::new();
+        $stdout_data = $this->readLine($this->proc_stdout);
+        $stderr_data = $this->readLine($this->proc_stderr);
 
-        do {
-            $stdout_list = array_column($this->proc_list, 'stdout');
-            $stdout_data = $this->readStream($stdout_list);
+        $stream_data = $stdout_data + $stderr_data;
 
-            $stderr_list = array_column($this->proc_list, 'stderr');
-            $stderr_data = $this->readStream($stderr_list);
+        foreach ($stream_data as $idx => $io_data) {
+            $job_callbacks = array_pop($this->proc_callbacks[$idx]);
 
-            $stream_data = $stdout_data + $stderr_data;
-
-            foreach ($stream_data as $idx => $io_data) {
-                --$this->proc_job_count[$idx];
-
-                $callbacks = array_pop($this->proc_callbacks[$idx]);
-
-                if (isset($stdout_data[$idx])) {
-                    $result[$idx]['stdout'] = $stdout_data[$idx];
-
-                    if (isset($callbacks[0]) && is_callable($callbacks[0])) {
-                        try {
-                            call_user_func($callbacks[0], $stdout_data[$idx]);
-                        } catch (\Throwable $throwable) {
-                            $Error->exceptionHandler($throwable, false, false);
-                            unset($throwable);
-                        }
-                    }
-                }
-
-                if (isset($stderr_data[$idx])) {
-                    $result[$idx]['stderr'] = $stderr_data[$idx];
-
-                    if (isset($callbacks[1]) && is_callable($callbacks[1])) {
-                        try {
-                            call_user_func($callbacks[1], $stderr_data[$idx]);
-                        } catch (\Throwable $throwable) {
-                            $Error->exceptionHandler($throwable, false, false);
-                            unset($throwable);
-                        }
-                    }
-                }
+            if (0 > --$this->proc_job_count[$idx]) {
+                $this->proc_job_count[$idx] = 0;
             }
-        } while ($await && 0 < array_sum($this->proc_job_count));
 
-        unset($await, $stdout_list, $stdout_data, $stderr_list, $stderr_data, $stream_data, $idx, $io_data, $callbacks);
-        return $result;
+            if (isset($stdout_data[$idx])) {
+                $this->callIoFn($stdout_data[$idx], [$job_callbacks[0] ?? null, $proc_callbacks[0] ?? null]);
+            }
+
+            if (isset($stderr_data[$idx])) {
+                $this->callIoFn($stderr_data[$idx], [$job_callbacks[1] ?? null, $proc_callbacks[1] ?? null]);
+            }
+        }
+
+        unset($proc_callbacks, $stdout_data, $stderr_data, $stream_data, $idx, $io_data, $job_callbacks);
     }
 
     /**
-     * @param int $idx
+     * @param string $output
+     * @param array  $callbacks
      *
      * @return void
+     * @throws \ReflectionException
      */
-    public function close(int $idx = 0): void
+    protected function callIoFn(string $output, array $callbacks): void
     {
-        if (!isset($this->proc_list[$idx])) {
-            unset($idx);
-            return;
+        foreach ($callbacks as $callback) {
+            if (!is_callable($callback)) {
+                continue;
+            }
+
+            try {
+                call_user_func($callback, $output);
+            } catch (\Throwable $throwable) {
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
+            }
         }
 
-        fclose($this->proc_list[$idx]['stdin']);
-        fclose($this->proc_list[$idx]['stdout']);
-        fclose($this->proc_list[$idx]['stderr']);
-        proc_close($this->proc_list[$idx]['proc']);
-
-        unset($this->proc_list[$idx], $this->proc_job_count[$idx], $this->proc_callbacks[$idx], $idx);
+        unset($output, $callbacks, $callback);
     }
 
     /**
      * @return void
      */
-    public function exit(): void
+    protected function cleanup(): void
     {
-        foreach ($this->proc_list as $idx => $proc) {
-            $this->close($idx);
+        foreach ($this->proc_status as $idx => $status) {
+            if (0 === $this->getStatus($idx)) {
+                $this->close($idx);
+            }
         }
 
-        unset($idx, $proc);
+        unset($idx, $status);
     }
 
     /**
@@ -376,7 +421,7 @@ class ProcMgr extends Factory
      *
      * @return array
      */
-    public function readStream(array $stream_list): array
+    protected function readLine(array $stream_list): array
     {
         $result = $write = $except = [];
 
@@ -388,5 +433,36 @@ class ProcMgr extends Factory
 
         unset($stream_list, $write, $except, $idx, $stream);
         return $result;
+    }
+
+    /**
+     * @return int
+     * @throws \Exception
+     */
+    protected function getRunningIdx(): int
+    {
+        $idx    = key($this->proc_status);
+        $status = $this->getStatus($idx);
+
+        switch ($status) {
+            case self::P_STDIN:
+            case self::P_STDIN | self::P_STDOUT:
+            case self::P_STDIN | self::P_STDERR:
+            case self::P_STDIN | self::P_STDOUT | self::P_STDERR:
+                break;
+            case 0:
+                $this->close($idx);
+                $this->runProc($idx);
+                break;
+            default:
+                $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
+                $idx = $this->getRunningIdx();
+                break;
+        }
+
+        $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
+
+        unset($status);
+        return $idx;
     }
 }
