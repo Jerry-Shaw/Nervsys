@@ -428,6 +428,7 @@ class ProcMgr extends Factory
         if (0 < stream_select($stream_list, $write, $except, $this->read_at[0], $this->read_at[1])) {
             foreach ($stream_list as $idx => $stream) {
                 $result[$idx] = trim(fgets($stream));
+                $this->getStatus($idx);
             }
         }
 
