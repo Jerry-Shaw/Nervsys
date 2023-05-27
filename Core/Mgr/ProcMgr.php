@@ -187,19 +187,10 @@ class ProcMgr extends Factory
             $this->proc_status[$idx] ^= self::P_STDIN;
         }
 
-        $stdout_status = stream_get_meta_data($this->proc_stdout[$idx]);
+        $this->syncIoStatus($idx, self::P_STDOUT, $proc_status['running'], stream_get_meta_data($this->proc_stdout[$idx]));
+        $this->syncIoStatus($idx, self::P_STDERR, $proc_status['running'], stream_get_meta_data($this->proc_stderr[$idx]));
 
-        if ($stdout_status['eof'] && self::P_STDOUT === ($this->proc_status[$idx] & self::P_STDOUT)) {
-            $this->proc_status[$idx] ^= self::P_STDOUT;
-        }
-
-        $stderr_status = stream_get_meta_data($this->proc_stderr[$idx]);
-
-        if ($stderr_status['eof'] && self::P_STDERR === ($this->proc_status[$idx] & self::P_STDERR)) {
-            $this->proc_status[$idx] ^= self::P_STDERR;
-        }
-
-        unset($proc_status, $stdout_status, $stderr_status);
+        unset($proc_status);
         return $this->proc_status[$idx];
     }
 
@@ -229,13 +220,20 @@ class ProcMgr extends Factory
      */
     public function putArgv(string $argv, callable $msg_callback = null, callable $err_callback = null): void
     {
-        $idx = $this->getRunningIdx();
+        try {
+            $idx = $this->getRunningIdx();
 
-        ++$this->proc_job_count[$idx];
-        fwrite($this->proc_stdin[$idx], $argv . $this->argv_end_char);
-        array_unshift($this->proc_callbacks[$idx], [$msg_callback, $err_callback]);
+            fwrite($this->proc_stdin[$idx], $argv . $this->argv_end_char);
+            array_unshift($this->proc_callbacks[$idx], [$msg_callback, $err_callback]);
 
-        unset($argv, $msg_callback, $err_callback, $idx);
+            ++$this->proc_job_count[$idx];
+
+            unset($idx);
+        } catch (\Throwable) {
+            $this->putArgv($argv, $msg_callback, $err_callback);
+        }
+
+        unset($argv, $msg_callback, $err_callback);
     }
 
     /**
@@ -259,7 +257,7 @@ class ProcMgr extends Factory
      */
     public function awaitProc(callable $msg_callback = null, callable $err_callback = null): void
     {
-        while (!empty($this->proc_status)) {
+        while (0 < array_sum($this->proc_status)) {
             $this->readIo([$msg_callback, $err_callback]);
             $this->cleanup();
         }
@@ -441,23 +439,43 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @param int   $idx
+     * @param int   $const_def
+     * @param bool  $proc_running
+     * @param array $stream_status
+     *
+     * @return void
+     */
+    protected function syncIoStatus(int $idx, int $const_def, bool $proc_running, array $stream_status): void
+    {
+        if (($this->proc_status[$idx] & $const_def) === $const_def) {
+            if ($stream_status['eof'] || (!$proc_running && 0 === $stream_status['unread_bytes'])) {
+                $this->proc_status[$idx] ^= $const_def;
+            }
+        }
+
+        unset($idx, $const_def, $proc_running, $stream_status);
+    }
+
+    /**
      * @return int
      * @throws \Exception
      */
     protected function getRunningIdx(): int
     {
-        $idx    = key($this->proc_status);
-        $status = $this->getStatus($idx);
+        $idx = key($this->proc_status);
 
-        switch ($status) {
+        switch ($this->getStatus($idx)) {
             case self::P_STDIN:
             case self::P_STDIN | self::P_STDOUT:
             case self::P_STDIN | self::P_STDERR:
             case self::P_STDIN | self::P_STDOUT | self::P_STDERR:
+                $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
                 break;
             case 0:
                 $this->close($idx);
                 $this->runProc($idx);
+                $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
                 break;
             default:
                 $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
@@ -465,9 +483,6 @@ class ProcMgr extends Factory
                 break;
         }
 
-        $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
-
-        unset($status);
         return $idx;
     }
 }
