@@ -92,13 +92,11 @@ class App extends Factory
      */
     private function setAppEnv(): void
     {
-        $this->is_cli = 'cli' === PHP_SAPI;
-
-        if ($this->is_cli) {
+        if ('cli' === PHP_SAPI) {
+            $this->is_cli     = true;
             $this->client_ip  = '127.0.0.1';
             $this->user_lang  = 'System Lang';
             $this->user_agent = 'CLI Command';
-
             return;
         }
 
