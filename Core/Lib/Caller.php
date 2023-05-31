@@ -40,7 +40,9 @@ class Caller extends Factory
         $security = Security::new();
 
         try {
-            $args = $security->antiXss($args);
+            if (!App::new()->is_cli) {
+                $args = $security->antiXss($args);
+            }
 
             $api_fn = Security::class !== $cmd[0]
                 ? $security->getApiMethod($cmd[0], $cmd[1], $args, \ReflectionMethod::IS_PUBLIC)
