@@ -80,7 +80,7 @@ class libLog extends Factory
             chmod($path, 0666);
         }
 
-        fwrite($file[$key], $logs . PHP_EOL . PHP_EOL);
+        fwrite($file[$key], $logs . PHP_EOL);
         unset($logs, $path, $key);
     }
 }
