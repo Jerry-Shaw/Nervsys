@@ -41,44 +41,44 @@ class Security extends Factory
      * @return callable
      * @throws \ReflectionException
      */
-    public function getApiMethod(string $class_name, string $method_name, array $class_args = [], int $filter = null): callable
+    public function getApiMethod(string $class_name, string $method_name, array &$class_args = [], int $filter = null): callable
     {
-        $traits = Reflect::getTraits($class_name);
+        $fn_list = [];
+        $fn_api  = current($this->fn_target_invalid);
 
-        /**
-         * @var string           $name
-         * @var \ReflectionClass $obj
-         */
-        foreach ($traits as $name => $obj) {
-            if (str_starts_with($name, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
-                if (in_array($method_name, get_class_methods($name), true)) {
-                    unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj);
-                    return current($this->fn_target_blocked);
-                }
-            }
-        }
-
+        $traits  = Reflect::getTraits($class_name);
         $methods = Reflect::getMethods($class_name, $filter);
 
-        /** @var \ReflectionMethod $obj */
-        foreach ($methods as $obj) {
-            if ($method_name !== $obj->name) {
+        /** @var \ReflectionClass $r_class */
+        foreach ($traits as $r_class) {
+            $r_methods = $r_class->getMethods($filter);
+            $fn_list   += array_combine(array_column($r_methods, 'name'), $r_methods);
+        }
+
+        $fn_list += array_combine(array_column($methods, 'name'), $methods);
+
+        foreach ([$method_name, '__call', '__callStatic'] as $method) {
+            if (!isset($fn_list[$method])) {
                 continue;
             }
 
-            if (str_starts_with($obj->class, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
-                unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
-                return current($this->fn_target_blocked);
+            if (str_starts_with($fn_list[$method]->class, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
+                $fn_api = current($this->fn_target_blocked);
+                break;
             }
 
-            $callable = [!$obj->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method_name];
+            $fn_api = [!$fn_list[$method]->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method];
 
-            unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
-            return $callable;
+            if ($method_name !== $method) {
+                $fn_params  = Reflect::getCallable($fn_api)->getParameters();
+                $class_args = [$fn_params[0]->name => $method_name, $fn_params[1]->name => $class_args];
+            }
+
+            break;
         }
 
-        unset($class_name, $method_name, $class_args, $filter, $traits, $name, $obj, $methods);
-        return current($this->fn_target_invalid);
+        unset($class_name, $method_name, $class_args, $filter, $fn_list, $traits, $methods, $r_class, $r_methods, $method, $fn_params);
+        return $fn_api;
     }
 
     /**
