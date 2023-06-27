@@ -21,365 +21,288 @@
 namespace Nervsys\Ext;
 
 use Nervsys\Core\Factory;
-use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\IOData;
 
 class libUpload extends Factory
 {
-    //Default MIME-Type
-    const MIME = [
-        //docs
-        'xml'  => 'text/xml',
-        'txt'  => 'text/plain',
-        'rtf'  => 'application/rtf',
-        'pdf'  => 'application/pdf',
-        'doc'  => 'application/msword',
-        'xls'  => 'application/vnd.ms-excel',
-        'ppt'  => 'application/vnd.ms-powerpoint',
-        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-
-        //image
-        'gif'  => 'image/gif',
-        'jpg'  => 'image/jpeg',
-        'png'  => 'image/png',
-        'bmp'  => 'image/bmp',
-
-        //video
-        'avi'  => 'video/msvideo',
-        'flv'  => 'video/x-flv',
-        'mov'  => 'video/quicktime',
-        'mp4'  => 'video/mp4',
-        'mpeg' => 'video/mpeg',
-        'wmv'  => 'video/x-ms-wmv',
-
-        //audio
-        'aac'  => 'audio/aac',
-        'm4a'  => 'audio/mp4',
-        'mid'  => 'audio/mid',
-        'mp3'  => 'audio/mpeg',
-        'ogg'  => 'audio/ogg',
-        'wav'  => 'audio/wav',
-
-        //package
-        '7z'   => 'application/x-7z-compressed',
-        'gz'   => 'application/x-gzip',
-        'zip'  => 'application/x-zip-compressed',
-        'rar'  => 'application/octet-stream',
-        'tar'  => 'application/x-tar',
-
-        //misc
-        'apk'  => 'application/vnd.android.package-archive'
+    const UPLOAD_ERROR = [
+        //UPLOAD_ERR_OK
+        0 => 'Upload succeeded.',
+        //UPLOAD_ERR_INI_SIZE
+        1 => 'File too large (0).',
+        //UPLOAD_ERR_FORM_SIZE
+        2 => 'File too large (1).',
+        //UPLOAD_ERR_PARTIAL
+        3 => 'Partially uploaded.',
+        //UPLOAD_ERR_NO_FILE
+        4 => 'No file uploaded.',
+        //File type restrict by code
+        5 => 'File type NOT allowed.',
+        //UPLOAD_ERR_NO_TMP_DIR
+        6 => 'Path NOT found.',
+        //UPLOAD_ERR_CANT_WRITE
+        7 => 'Failed to save file.',
+        //UPLOAD_ERR_EXTENSION
+        8 => 'Stopped by extension.'
     ];
 
-    //Error message
-    const ERRNO = [
-        UPLOAD_ERR_OK         => 'Upload succeed.',
-        UPLOAD_ERR_INI_SIZE   => 'File too large (ini).',
-        UPLOAD_ERR_FORM_SIZE  => 'File too large (code).',
-        UPLOAD_ERR_PARTIAL    => 'Partially uploaded.',
-        UPLOAD_ERR_NO_FILE    => 'No file uploaded.',
-        UPLOAD_ERR_NO_TMP_DIR => 'Path NOT exist.',
-        UPLOAD_ERR_CANT_WRITE => 'Failed to write.',
-        UPLOAD_ERR_EXTENSION  => 'Extension blocked.'
-    ];
-
-    public IOData $IOData;
+    public IOData    $IOData;
+    public libFileIO $libFileIO;
 
     public string $upload_path;
 
-    public array $ext  = [];
-    public int   $perm = 0666;
-    public int   $size = 20971520;
+    public int $max_size  = 0;
+    public int $file_perm = 0666;
 
-    private array $runtime = [];
+    public array $allowed_ext = [];
+
+    public array $upload_runtime = [
+        'name'     => '',
+        'type'     => '',
+        'tmp_name' => '',
+        'error'    => UPLOAD_ERR_NO_FILE,
+        'size'     => 0
+    ];
+
+    public array $upload_result = [
+        'errno'  => UPLOAD_ERR_NO_FILE,
+        'result' => self::UPLOAD_ERROR[UPLOAD_ERR_NO_FILE],
+        'name'   => '',
+        'type'   => '',
+        'size'   => 0,
+        'path'   => '',
+        'url'    => ''
+    ];
+
+    public array $mime_types = [
+        'text/xml'                                                                  => 'xml',
+        'text/plain'                                                                => 'txt',
+        'application/rtf'                                                           => 'rtf',
+        'application/pdf'                                                           => 'pdf',
+        'application/msword'                                                        => 'doc',
+        'application/vnd.ms-excel'                                                  => 'xls',
+        'application/vnd.ms-powerpoint'                                             => 'ppt',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'   => 'docx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'         => 'xlsx',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+        'image/gif'                                                                 => 'gif',
+        'image/jpeg'                                                                => 'jpg',
+        'image/png'                                                                 => 'png',
+        'image/bmp'                                                                 => 'bmp',
+        'video/msvideo'                                                             => 'avi',
+        'video/quicktime'                                                           => 'mov',
+        'video/mp4'                                                                 => 'mp4',
+        'video/mpeg'                                                                => 'mpeg',
+        'video/x-ms-wmv'                                                            => 'wmv',
+        'audio/aac'                                                                 => 'aac',
+        'audio/mp4'                                                                 => 'm4a',
+        'audio/mid'                                                                 => 'mid',
+        'audio/mpeg'                                                                => 'mp3',
+        'audio/ogg'                                                                 => 'ogg',
+        'audio/wav'                                                                 => 'wav',
+        'application/x-7z-compressed'                                               => '7z',
+        'application/x-gzip'                                                        => 'gz',
+        'application/x-zip-compressed'                                              => 'zip',
+        'application/octet-stream'                                                  => 'rar',
+        'application/x-tar'                                                         => 'tar'
+    ];
 
     /**
-     * libUpload constructor
+     * @param string $upload_path
      *
      * @throws \ReflectionException
      */
-    public function __construct()
+    public function __construct(string $upload_path)
     {
         $this->IOData      = IOData::new();
-        $this->upload_path = App::new()->root_path;
-    }
-
-    /**
-     * Set upload root path
-     *
-     * @param string $upload_path
-     *
-     * @return $this
-     */
-    public function setUploadPath(string $upload_path): self
-    {
+        $this->libFileIO   = libFileIO::new();
         $this->upload_path = &$upload_path;
 
         unset($upload_path);
-        return $this;
     }
 
     /**
-     * Set allowed extension
-     *
-     * @param string ...$ext
+     * @param string $mime
+     * @param string $ext
      *
      * @return $this
      */
-    public function setAllowedExt(string ...$ext): self
+    public function addMimeType(string $mime, string $ext): self
     {
-        $this->ext = &$ext;
+        $this->mime_types[$mime] = &$ext;
 
-        unset($ext);
+        unset($mime, $ext);
         return $this;
     }
 
     /**
-     * Set allowed size
-     *
-     * @param int $size
+     * @param int $file_perm
      *
      * @return $this
      */
-    public function setAllowedSize(int $size): self
+    public function setFilePerm(int $file_perm): self
     {
-        $this->size = &$size;
+        $this->file_perm = &$file_perm;
 
-        unset($size);
+        unset($file_perm);
         return $this;
     }
 
     /**
-     * Set file permission
-     *
-     * @param int $perm
+     * @param string ...$allowed_ext
      *
      * @return $this
      */
-    public function setFilePerm(int $perm): self
+    public function setAllowedExt(string ...$allowed_ext): self
     {
-        $this->perm = &$perm;
+        $this->allowed_ext = &$allowed_ext;
 
-        unset($perm);
+        unset($allowed_ext);
         return $this;
     }
 
     /**
-     * Fetch upload file/base64
-     *
-     * @param string $filename
+     * @param int $max_size
      *
      * @return $this
      */
-    public function fetch(string $filename): self
+    public function setMaxSizeInBytes(int $max_size): self
     {
-        //Check file
-        if (!isset($this->IOData->src_input[$filename])) {
-            $this->runtime['error'] = UPLOAD_ERR_NO_FILE;
-            return $this;
-        }
+        $this->max_size = &$max_size;
 
-        //Reset file
-        $this->runtime = [];
-
-        //Receive file/base64
-        is_array($this->IOData->src_input[$filename])
-            ? $this->recvFile($this->IOData->src_input[$filename])
-            : $this->recvBase64($this->IOData->src_input[$filename]);
-
-        unset($filename, $as, $unit_pool);
+        unset($max_size);
         return $this;
     }
 
     /**
-     * Save file/base64
-     *
-     * @param string $to
-     * @param string $as
+     * @param string $io_data_key
+     * @param string $save_dir
+     * @param string $save_name
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function save(string $to = 'upload', string $as = ''): array
+    public function saveFile(string $io_data_key, string $save_dir = '', string $save_name = ''): array
     {
-        //Check upload error
-        if (isset($this->runtime['error'])) {
-            return $this->getError($this->runtime['error']);
+        if (!isset($this->IOData->src_input[$io_data_key])) {
+            unset($io_data_key, $save_dir, $save_name);
+            return $this->upload_result;
         }
 
-        //Check file size
-        if (0 < $this->size && $this->runtime['size'] > $this->size) {
-            return $this->getError(UPLOAD_ERR_FORM_SIZE);
+        $upload_runtime = is_string($this->IOData->src_input[$io_data_key])
+            ? $this->getBase64File($this->IOData->src_input[$io_data_key])
+            : $this->IOData->src_input[$io_data_key];
+
+        if (0 !== $upload_runtime['error']) {
+            unset($io_data_key, $save_dir, $save_name);
+            return $this->getResult($upload_runtime['error']);
         }
 
-        //Init libFile
-        $libFile = libFileIO::new();
-
-        //Check file extension
-        $ext = array_search($this->runtime['type'], self::MIME, true);
-
-        if (false === $ext && 'saveFile' === $this->runtime['fn']) {
-            $ext = $libFile->getExt($this->runtime['name']);
+        if (0 < $this->max_size && $upload_runtime['size'] > $this->max_size) {
+            unset($io_data_key, $save_dir, $save_name, $upload_runtime);
+            return $this->getResult(UPLOAD_ERR_FORM_SIZE);
         }
 
-        if (
-            (empty($this->ext) && !isset(self::MIME[(string)$ext]))
-            || (!empty($this->ext) && !in_array($ext, $this->ext, true) && !in_array('*', $this->ext, true))
+        if ('' === $save_name) {
+            $save_name = &$upload_runtime['name'];
+        }
+
+        if (!empty($this->allowed_ext)) {
+            if (!in_array($this->libFileIO->getExt($save_name), $this->allowed_ext, true)
+                || !in_array($this->mime_types[$upload_runtime['type']] ?? 'tmp', $this->allowed_ext, true)
+            ) {
+                unset($io_data_key, $save_dir, $save_name, $upload_runtime);
+                return $this->getResult(5);
+            }
+        }
+
+        $file_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . $save_name;
+
+        file_exists($file_path) && unlink($file_path);
+
+        if (move_uploaded_file($upload_runtime['tmp_name'], $file_path)
+            || rename($upload_runtime['tmp_name'], $file_path)
+            || copy($upload_runtime['tmp_name'], $file_path)
         ) {
-            return $this->getError(UPLOAD_ERR_EXTENSION);
+            chmod($file_path, $this->file_perm);
+
+            $upload_result = $this->getResult(
+                UPLOAD_ERR_OK,
+                [
+                    'name' => &$upload_runtime['name'],
+                    'type' => &$upload_runtime['type'],
+                    'size' => &$upload_runtime['size'],
+                    'path' => &$file_path,
+                    'url'  => trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name
+                ]
+            );
+        } else {
+            $upload_result = $this->getResult(UPLOAD_ERR_CANT_WRITE);
         }
 
-        //Create save path
-        if ('' === $save_path = $libFile->mkPath($to, $this->upload_path)) {
-            return $this->getError(UPLOAD_ERR_NO_TMP_DIR);
-        }
-
-        //Correct filename
-        if ('' === $as) {
-            $as = ('saveFile' === $this->runtime['fn'] ? md5_file($this->runtime['tmp_name']) : hash('md5', $this->runtime['data'])) . $ext;
-        }
-
-        //Build save properties
-        $url_path  = trim($to, '\\/') . DIRECTORY_SEPARATOR . $as;
-        $file_path = $save_path . $as;
-
-        //Delete existing file
-        is_file($file_path) && unlink($file_path);
-
-        //Save file/base64
-        if (!$this->{$this->runtime['fn']}($file_path)) {
-            return $this->getError(UPLOAD_ERR_CANT_WRITE);
-        }
-
-        //Set permissions
-        chmod($file_path, $this->perm);
-
-        //Build upload result
-        $result = $this->getError(UPLOAD_ERR_OK);
-
-        $result['url']  = &$url_path;
-        $result['path'] = &$file_path;
-        $result['name'] = &$as;
-        $result['size'] = $this->runtime['size'];
-
-        unset($to, $as, $libFile, $ext, $save_path, $url_path, $file_path);
-        return $result;
+        unset($io_data_key, $save_dir, $save_name, $upload_runtime, $file_path);
+        return $upload_result;
     }
 
     /**
-     * Receive file from stream
-     *
-     * @param array $file
-     */
-    private function recvFile(array $file): void
-    {
-        //Server side error
-        if (!isset($file['error']) || UPLOAD_ERR_OK !== $file['error']) {
-            $this->runtime['error'] = $file['error'] ?? UPLOAD_ERR_NO_FILE;
-            return;
-        }
-
-        //Copy file property
-        unset($file['error']);
-        $this->runtime = $file + ['fn' => 'saveFile'];
-
-        //Deep detect file type
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime  = finfo_file($finfo, $this->runtime['tmp_name'], FILEINFO_MIME_TYPE);
-
-        finfo_close($finfo);
-
-        //Correct file type
-        if (false !== $mime && $this->runtime['type'] !== $mime) {
-            $this->runtime['type'] = &$mime;
-        }
-
-        unset($file, $finfo, $mime);
-    }
-
-    /**
-     * Receive file from base64
-     *
-     * @param string $base64
-     */
-    private function recvBase64(string $base64): void
-    {
-        //Invalid base64 upload
-        if (false === $pos = strpos($base64, ';base64,')) {
-            $this->runtime['error'] = UPLOAD_ERR_NO_FILE;
-            return;
-        }
-
-        //Process base64 stream
-        $this->runtime = [
-            'type' => substr($base64, 5, $pos - 5),
-            'data' => $data = base64_decode(substr($base64, $pos + 8)),
-            'size' => strlen($data),
-            'fn'   => 'saveBase64'
-        ];
-
-        //Deep detect base64 type
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime  = finfo_buffer($finfo, $data, FILEINFO_MIME_TYPE);
-
-        finfo_close($finfo);
-
-        //Correct file type
-        if (false !== $mime && $this->runtime['type'] !== $mime) {
-            $this->runtime['type'] = &$mime;
-        }
-
-        unset($base64, $pos, $data, $finfo, $mime);
-    }
-
-    /**
-     * Save uploaded file
-     *
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    private function saveFile(string $file_path): bool
-    {
-        $save = move_uploaded_file($this->runtime['tmp_name'], $file_path)
-            || rename($this->runtime['tmp_name'], $file_path)
-            || copy($this->runtime['tmp_name'], $file_path);
-
-        unset($file_path);
-        return $save;
-    }
-
-    /**
-     * Save base64 to file
-     *
-     * @param string $file_path
-     *
-     * @return bool
-     */
-    private function saveBase64(string $file_path): bool
-    {
-        if (!$save = (file_put_contents($file_path, $this->runtime['data']) === $this->runtime['size'])) {
-            is_file($file_path) && unlink($file_path);
-        }
-
-        unset($file_path);
-        return $save;
-    }
-
-    /**
-     * Get error message
-     *
-     * @param int $errno
+     * @param int   $errno
+     * @param array $extra_data
      *
      * @return array
      */
-    private function getError(int $errno): array
+    private function getResult(int $errno, array $extra_data = []): array
     {
-        return [
-            'errno'   => &$errno,
-            'message' => self::ERRNO[$errno]
+        $upload_result = $this->upload_result;
+
+        $upload_result['errno']  = $errno;
+        $upload_result['result'] = self::UPLOAD_ERROR[$errno];
+
+        $upload_result = array_replace($upload_result, $extra_data);
+
+        unset($errno, $extra_data);
+        return $upload_result;
+    }
+
+    /**
+     * @param string $file_base64
+     *
+     * @return array
+     */
+    private function getBase64File(string $file_base64): array
+    {
+        $base64_pos = strpos($file_base64, ';base64,');
+
+        if (false === $base64_pos) {
+            unset($file_base64, $base64_pos);
+            return $this->upload_runtime;
+        }
+
+        $file_data = base64_decode(substr($file_base64, $base64_pos + 8));
+        $file_mime = substr($file_base64, 5, $base64_pos - 5);
+        $temp_file = tempnam(sys_get_temp_dir(), 'UPLOAD_');
+        $temp_fp   = fopen($temp_file, 'wb');
+
+        fwrite($temp_fp, $file_data);
+        fclose($temp_fp);
+
+        register_shutdown_function(
+            function (string $temp_file): void
+            {
+                file_exists($temp_file) && unlink($temp_file);
+                unset($temp_file);
+            },
+            $temp_file
+        );
+
+        $upload_runtime = [
+            'name'     => basename($temp_file) . '.' . ($this->mime_types[$file_mime] ?? 'tmp'),
+            'type'     => &$file_mime,
+            'tmp_name' => &$temp_file,
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => strlen($file_data)
         ];
+
+        unset($file_base64, $base64_pos, $file_data, $file_mime, $temp_file, $temp_fp);
+        return $upload_runtime;
     }
 }
