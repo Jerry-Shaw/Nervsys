@@ -56,22 +56,16 @@ class libUpload extends Factory
 
     public array $allowed_ext = [];
 
-    public array $upload_runtime = [
-        'name'     => '',
-        'type'     => '',
-        'tmp_name' => '',
-        'error'    => UPLOAD_ERR_NO_FILE,
-        'size'     => 0
-    ];
-
     public array $upload_result = [
-        'errno'  => UPLOAD_ERR_NO_FILE,
-        'result' => self::UPLOAD_ERROR[UPLOAD_ERR_NO_FILE],
-        'name'   => '',
-        'type'   => '',
-        'size'   => 0,
-        'path'   => '',
-        'url'    => ''
+        'error'     => UPLOAD_ERR_NO_FILE,
+        'name'      => '',
+        'type'      => '',
+        'size'      => 0,
+        'tmp_name'  => '',
+        'full_path' => '',
+        'file_path' => '',
+        'file_url'  => '',
+        'result'    => self::UPLOAD_ERROR[UPLOAD_ERR_NO_FILE]
     ];
 
     public array $mime_types = [
@@ -114,8 +108,9 @@ class libUpload extends Factory
      */
     public function __construct(string $upload_path)
     {
-        $this->IOData      = IOData::new();
-        $this->libFileIO   = libFileIO::new();
+        $this->IOData    = IOData::new();
+        $this->libFileIO = libFileIO::new();
+
         $this->upload_path = &$upload_path;
 
         unset($upload_path);
@@ -189,30 +184,32 @@ class libUpload extends Factory
             return $this->upload_result;
         }
 
-        $upload_runtime = is_string($this->IOData->src_input[$io_data_key])
+        $upload_result = is_string($this->IOData->src_input[$io_data_key])
             ? $this->getBase64File($this->IOData->src_input[$io_data_key])
             : $this->IOData->src_input[$io_data_key];
 
-        if (0 !== $upload_runtime['error']) {
+        $upload_result += $this->upload_result;
+
+        if (0 !== $upload_result['error']) {
             unset($io_data_key, $save_dir, $save_name);
-            return $this->getResult($upload_runtime['error']);
+            return $this->getResult($upload_result, $upload_result['error']);
         }
 
-        if (0 < $this->max_size && $upload_runtime['size'] > $this->max_size) {
-            unset($io_data_key, $save_dir, $save_name, $upload_runtime);
-            return $this->getResult(UPLOAD_ERR_FORM_SIZE);
+        if (0 < $this->max_size && $upload_result['size'] > $this->max_size) {
+            unset($io_data_key, $save_dir, $save_name);
+            return $this->getResult($upload_result, UPLOAD_ERR_FORM_SIZE);
         }
 
         if ('' === $save_name) {
-            $save_name = &$upload_runtime['name'];
+            $save_name = &$upload_result['name'];
         }
 
         if (!empty($this->allowed_ext)) {
             if (!in_array($this->libFileIO->getExt($save_name), $this->allowed_ext, true)
-                || !in_array($this->mime_types[$upload_runtime['type']] ?? 'tmp', $this->allowed_ext, true)
+                || !in_array($this->mime_types[$upload_result['type']] ?? 'tmp', $this->allowed_ext, true)
             ) {
-                unset($io_data_key, $save_dir, $save_name, $upload_runtime);
-                return $this->getResult(5);
+                unset($io_data_key, $save_dir, $save_name);
+                return $this->getResult($upload_result, 5);
             }
         }
 
@@ -220,47 +217,37 @@ class libUpload extends Factory
 
         file_exists($file_path) && unlink($file_path);
 
-        if (move_uploaded_file($upload_runtime['tmp_name'], $file_path)
-            || rename($upload_runtime['tmp_name'], $file_path)
-            || copy($upload_runtime['tmp_name'], $file_path)
+        if (move_uploaded_file($upload_result['tmp_name'], $file_path)
+            || rename($upload_result['tmp_name'], $file_path)
+            || copy($upload_result['tmp_name'], $file_path)
         ) {
             chmod($file_path, $this->file_perm);
 
-            $upload_result = $this->getResult(
-                UPLOAD_ERR_OK,
-                [
-                    'name' => &$upload_runtime['name'],
-                    'type' => &$upload_runtime['type'],
-                    'size' => &$upload_runtime['size'],
-                    'path' => &$file_path,
-                    'url'  => trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name
-                ]
-            );
+            $upload_result = $this->getResult($upload_result, UPLOAD_ERR_OK);
+
+            $upload_result['file_path'] = &$file_path;
+            $upload_result['file_url']  = trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name;
         } else {
-            $upload_result = $this->getResult(UPLOAD_ERR_CANT_WRITE);
+            $upload_result = $this->getResult($upload_result, UPLOAD_ERR_CANT_WRITE);
         }
 
-        unset($io_data_key, $save_dir, $save_name, $upload_runtime, $file_path);
+        unset($io_data_key, $save_dir, $save_name, $file_path);
         return $upload_result;
     }
 
     /**
-     * @param int   $errno
-     * @param array $extra_data
+     * @param array $result
+     * @param int   $error
      *
      * @return array
      */
-    private function getResult(int $errno, array $extra_data = []): array
+    private function getResult(array $result, int $error): array
     {
-        $upload_result = $this->upload_result;
+        $result['error']  = &$error;
+        $result['result'] = self::UPLOAD_ERROR[$error];
 
-        $upload_result['errno']  = $errno;
-        $upload_result['result'] = self::UPLOAD_ERROR[$errno];
-
-        $upload_result = array_replace($upload_result, $extra_data);
-
-        unset($errno, $extra_data);
-        return $upload_result;
+        unset($error);
+        return $result;
     }
 
     /**
@@ -274,7 +261,7 @@ class libUpload extends Factory
 
         if (false === $base64_pos) {
             unset($file_base64, $base64_pos);
-            return $this->upload_runtime;
+            return $this->upload_result;
         }
 
         $file_data = base64_decode(substr($file_base64, $base64_pos + 8));
@@ -294,15 +281,18 @@ class libUpload extends Factory
             $temp_file
         );
 
-        $upload_runtime = [
-            'name'     => basename($temp_file) . '.' . ($this->mime_types[$file_mime] ?? 'tmp'),
-            'type'     => &$file_mime,
-            'tmp_name' => &$temp_file,
-            'error'    => UPLOAD_ERR_OK,
-            'size'     => strlen($file_data)
+        $file_name = basename($temp_file) . '.' . ($this->mime_types[$file_mime] ?? 'tmp');
+
+        $upload_result = [
+            'error'     => UPLOAD_ERR_OK,
+            'name'      => &$file_name,
+            'type'      => &$file_mime,
+            'size'      => strlen($file_data),
+            'tmp_name'  => &$temp_file,
+            'full_path' => &$file_name
         ];
 
-        unset($file_base64, $base64_pos, $file_data, $file_mime, $temp_file, $temp_fp);
-        return $upload_runtime;
+        unset($file_base64, $base64_pos, $file_data, $file_mime, $temp_file, $temp_fp, $file_name);
+        return $upload_result;
     }
 }
