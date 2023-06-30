@@ -241,7 +241,7 @@ class libUpload extends Factory
      *
      * @return array
      */
-    private function getResult(array $result, int $error): array
+    protected function getResult(array $result, int $error): array
     {
         $result['error']  = &$error;
         $result['result'] = self::UPLOAD_ERROR[$error];
@@ -255,7 +255,7 @@ class libUpload extends Factory
      *
      * @return array
      */
-    private function getBase64File(string $file_base64): array
+    protected function getBase64File(string $file_base64): array
     {
         $base64_pos = strpos($file_base64, ';base64,');
 
