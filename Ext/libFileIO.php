@@ -102,7 +102,7 @@ class libFileIO extends Factory
                 continue;
             }
 
-            $file_path = $path . DIRECTORY_SEPARATOR . $file;
+            $file_path = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $file;
 
             if (is_file($file_path)) {
                 $file_list[] = $file_path;
