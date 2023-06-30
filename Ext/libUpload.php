@@ -51,6 +51,8 @@ class libUpload extends Factory
 
     public string $upload_path;
 
+    public string $temp_dir = 'SlicedTempDir';
+
     public int $max_size  = 0;
     public int $file_perm = 0666;
 
@@ -157,6 +159,19 @@ class libUpload extends Factory
     }
 
     /**
+     * @param string $temp_dir
+     *
+     * @return $this
+     */
+    public function setSliceTempDir(string $temp_dir): self
+    {
+        $this->temp_dir = &$temp_dir;
+
+        unset($temp_dir);
+        return $this;
+    }
+
+    /**
      * @param int $max_size
      *
      * @return $this
@@ -233,6 +248,87 @@ class libUpload extends Factory
 
         unset($io_data_key, $save_dir, $save_name, $file_path);
         return $upload_result;
+    }
+
+    /**
+     * @param string $io_data_key
+     * @param string $ticket_id
+     * @param int    $slice_id
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function saveSlice(string $io_data_key, string $ticket_id, int $slice_id): array
+    {
+        $this->addMimeType('application/octet-stream', 'tmp');
+
+        $save_tmp = $this->saveFile($io_data_key, $this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $ticket_id . '_' . $slice_id . '.tmp');
+
+        $save_tmp['slice_mp5'] = 0 === $save_tmp['error'] ? md5_file($save_tmp['file_path']) : '';
+
+        unset($io_data_key, $ticket_id, $slice_id);
+        return $save_tmp;
+    }
+
+    /**
+     * @param string $ticket_id
+     * @param string $save_dir
+     * @param string $save_name
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function mergeSlice(string $ticket_id, string $save_dir, string $save_name): array
+    {
+        if (!empty($this->allowed_ext) && !in_array($this->libFileIO->getExt($save_name), $this->allowed_ext, true)) {
+            unset($ticket_id, $save_dir, $save_name);
+            return $this->getResult($this->upload_result, 5);
+        }
+
+        $tmp_path  = $this->libFileIO->mkPath($this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $this->upload_path);
+        $save_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . '/' . $save_name;
+
+        $tmp_list = $this->libFileIO->getFiles($tmp_path, $ticket_id . '_*.tmp');
+
+        sort($tmp_list, SORT_NATURAL);
+
+        $save_fp = fopen($save_path, 'ab+');
+
+        foreach ($tmp_list as $tmp_file) {
+            $tmp_fp = fopen($tmp_file, 'rb');
+
+            while (!feof($tmp_fp)) {
+                fwrite($save_fp, fread($tmp_fp, 4096));
+            }
+
+            fclose($tmp_fp);
+            unset($tmp_fp);
+        }
+
+        fclose($save_fp);
+
+        $this->libFileIO->delDir($tmp_path);
+
+        $upload_result = $this->getResult($this->upload_result, UPLOAD_ERR_OK);
+
+        $upload_result['file_path'] = &$save_path;
+        $upload_result['file_url']  = trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name;
+
+        unset($ticket_id, $save_dir, $save_name, $tmp_path, $save_path, $tmp_list, $save_fp, $tmp_file);
+        return $upload_result;
+    }
+
+    /**
+     * @param string $ticket_id
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function removeSlice(string $ticket_id): void
+    {
+        $this->libFileIO->delDir($this->libFileIO->mkPath($this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $this->upload_path));
+
+        unset($ticket_id);
     }
 
     /**
