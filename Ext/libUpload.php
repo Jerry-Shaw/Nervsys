@@ -285,14 +285,18 @@ class libUpload extends Factory
             return $this->getResult($this->upload_result, 5);
         }
 
-        $tmp_path  = $this->libFileIO->mkPath($this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $this->upload_path);
-        $save_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . $save_name;
-
+        $tmp_path = $this->libFileIO->mkPath($this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $this->upload_path);
         $tmp_list = $this->libFileIO->getFiles($tmp_path, $ticket_id . '_*.tmp');
+
+        if (empty($tmp_list)) {
+            unset($ticket_id, $save_dir, $save_name, $tmp_path, $tmp_list);
+            return $this->getResult($this->upload_result, UPLOAD_ERR_NO_FILE);
+        }
 
         sort($tmp_list, SORT_NATURAL);
 
-        $save_fp = fopen($save_path, 'ab+');
+        $save_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . $save_name;
+        $save_fp   = fopen($save_path, 'ab+');
 
         foreach ($tmp_list as $tmp_file) {
             $tmp_fp = fopen($tmp_file, 'rb');
@@ -314,7 +318,7 @@ class libUpload extends Factory
         $upload_result['file_path'] = &$save_path;
         $upload_result['file_url']  = trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name;
 
-        unset($ticket_id, $save_dir, $save_name, $tmp_path, $save_path, $tmp_list, $save_fp, $tmp_file);
+        unset($ticket_id, $save_dir, $save_name, $tmp_path, $tmp_list, $save_path, $save_fp, $tmp_file);
         return $upload_result;
     }
 
