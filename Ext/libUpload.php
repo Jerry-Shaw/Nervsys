@@ -286,7 +286,7 @@ class libUpload extends Factory
         }
 
         $tmp_path  = $this->libFileIO->mkPath($this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $this->upload_path);
-        $save_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . '/' . $save_name;
+        $save_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . $save_name;
 
         $tmp_list = $this->libFileIO->getFiles($tmp_path, $ticket_id . '_*.tmp');
 
