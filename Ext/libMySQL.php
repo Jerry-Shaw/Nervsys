@@ -38,13 +38,9 @@ class libMySQL extends Factory
     public string $table_name   = '';
     public string $table_prefix = '';
 
-    public int   $explain_type  = 0;
-    public array $explain_keeps = [];
-    public array $runtime_data  = [];
+    public array $runtime_data = [];
 
     public static int $transactions = 0;
-
-    const EXPLAIN_LEVEL = ['NULL', 'system', 'const', 'eq_ref', 'ref', 'range', 'index', 'ALL'];
 
     /**
      * Bind libPDO object
@@ -102,28 +98,6 @@ class libMySQL extends Factory
         $this->retry_times = &$retry_times;
 
         unset($retry_times);
-        return $this;
-    }
-
-    /**
-     * Set SQL explain mode
-     *
-     * @param int    $explain_type  (0: disable; 1: output; 2: save log; 3: both)
-     * @param string $explain_level (NULL, system, const, eq_ref, ref, range, index, ALL)
-     *
-     * @return $this
-     */
-    public function setExplainMode(int $explain_type, string $explain_level = 'range'): self
-    {
-        $keep_level = array_search($explain_level, self::EXPLAIN_LEVEL, true);
-
-        $this->explain_keeps = false !== $keep_level
-            ? array_slice(self::EXPLAIN_LEVEL, $keep_level)
-            : self::EXPLAIN_LEVEL;
-
-        $this->explain_type = &$explain_type;
-
-        unset($explain_type, $explain_level, $keep_level);
         return $this;
     }
 
@@ -703,16 +677,10 @@ class libMySQL extends Factory
      * Build runtime SQL
      *
      * @return string
-     * @throws \ReflectionException
      */
     public function buildSQL(): string
     {
-        $runtime_sql    = $this->{'build' . ucfirst($this->runtime_data['action'])}();
-        $this->last_sql = $this->buildReadableSql($runtime_sql, $this->runtime_data['bind'] ?? []);
-
-        0 < $this->explain_type && 'select' === $this->runtime_data['action'] && $this->explainSQL($this->last_sql);
-
-        return $runtime_sql;
+        return $this->{'build' . ucfirst($this->runtime_data['action'])}();
     }
 
     /**
@@ -720,36 +688,11 @@ class libMySQL extends Factory
      *
      * @param string $readable_sql
      *
-     * @return void
-     * @throws \ReflectionException
+     * @return array [NULL, system, const, eq_ref, ref, range, index, ALL]
      */
-    public function explainSQL(string $readable_sql): void
+    public function explainSQL(string $readable_sql): array
     {
-        $explain = $this->query('EXPLAIN ' . $readable_sql)->fetchAll(\PDO::FETCH_ASSOC);
-
-        //Keep needed types
-        foreach ($explain as $key => $item) {
-            if (!in_array($item['type'], $this->explain_keeps, true)) {
-                unset($explain[$key]);
-            }
-        }
-
-        if (!empty($explain)) {
-            //Build result
-            $result = ['SQL' => &$readable_sql, 'EXPLAIN' => &$explain];
-
-            //Output result
-            if (1 === (1 & $this->explain_type)) {
-                IOData::new()->src_msg['SQL_EXPLAIN'][] = $result;
-            }
-
-            //Save result
-            if (2 === (2 & $this->explain_type)) {
-                libLog::new('SQL_EXPLAIN')->add($result);
-            }
-        }
-
-        unset($readable_sql, $explain, $key, $item, $result);
+        return $this->query('EXPLAIN ' . $readable_sql)->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -766,10 +709,14 @@ class libMySQL extends Factory
         try {
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
-            $result = $this->PDOStatement->execute($this->runtime_data['bind'] ?? []);
+            $params = $this->runtime_data['bind'] ?? [];
+            $result = $this->PDOStatement->execute($params);
 
+            $this->last_sql      = $this->buildReadableSql($runtime_sql, $params);
             $this->affected_rows = $this->PDOStatement->rowCount();
-            $this->runtime_data  = [];
+
+            $this->runtime_data = [];
+            unset($params);
         } catch (\Throwable $throwable) {
             if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $retry_times >= $this->retry_times) {
                 $this->runtime_data = [];
