@@ -812,25 +812,34 @@ class libMySQL extends Factory
     /**
      * Build readable SQL with params
      *
-     * @param string $sql
-     * @param array  $params
+     * @param string $runtime_sql
+     * @param array  $bind_params
      *
      * @return string
      */
-    protected function buildReadableSql(string $sql, array $params): string
+    protected function buildReadableSql(string $runtime_sql, array $bind_params): string
     {
-        foreach ($params as &$param) {
-            if (is_string($param)) {
-                $this->isRaw($param);
-                $param = '"' . addslashes($param) . '"';
-            }
-        }
+        $bind_params = array_map(
+            function (int|float|string|null $value): int|float|string|null
+            {
+                if (is_string($value)) {
+                    $this->isRaw($value);
 
-        $sql = str_replace('?', '%s', $sql);
-        $sql = sprintf($sql, ...$params);
+                    if (!is_numeric($value)) {
+                        $value = '"' . addslashes($value) . '"';
+                    }
+                }
 
-        unset($params);
-        return $sql;
+                return $value;
+            },
+            $bind_params
+        );
+
+        $runtime_sql = str_replace('?', '%s', $runtime_sql);
+        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
+
+        unset($bind_params);
+        return $runtime_sql;
     }
 
     /**
