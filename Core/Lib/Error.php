@@ -98,12 +98,12 @@ class Error extends Factory
     /**
      * @param \Throwable $throwable
      * @param bool       $stop_on_error
-     * @param bool       $display_errors
+     * @param bool       $report_error
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $display_errors = true): void
+    public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $report_error = true): void
     {
         $app    = App::new();
         $IOData = IOData::new();
@@ -142,10 +142,12 @@ class Error extends Factory
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
-        http_response_code(500);
+        if ($report_error) {
+            http_response_code(500);
 
-        if ($app->core_debug && $display_errors) {
-            $this->showLog($err_lv, $message, $context);
+            if ($app->core_debug) {
+                $this->showLog($err_lv, $message, $context);
+            }
         }
 
         $this->saveLog($app->log_path . DIRECTORY_SEPARATOR . (date('Ymd') . '-' . $err_lv) . '.log', $err_lv, $message, $context);
@@ -154,7 +156,7 @@ class Error extends Factory
             exit(1);
         }
 
-        unset($throwable, $stop_on_error, $display_errors, $app, $IOData, $exception, $error_code, $err_lv, $message, $context);
+        unset($throwable, $stop_on_error, $report_error, $app, $IOData, $exception, $error_code, $err_lv, $message, $context);
     }
 
     /**
