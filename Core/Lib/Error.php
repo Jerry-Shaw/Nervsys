@@ -152,7 +152,7 @@ class Error extends Factory
 
         $this->saveLog($app->log_path . DIRECTORY_SEPARATOR . (date('Ymd') . '-' . $err_lv) . '.log', $err_lv, $message, $context);
 
-        if ($stop_on_error || 'error' === $err_lv) {
+        if ($stop_on_error) {
             exit(1);
         }
 
