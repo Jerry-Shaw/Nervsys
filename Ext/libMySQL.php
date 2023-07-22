@@ -707,15 +707,16 @@ class libMySQL extends Factory
     protected function executeSQL(string $runtime_sql, int $retry_times = 0): bool
     {
         try {
+            $params = $this->runtime_data['bind'] ?? [];
+
+            $this->last_sql     = $this->buildReadableSql($runtime_sql, $params);
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
-            $params = $this->runtime_data['bind'] ?? [];
             $result = $this->PDOStatement->execute($params);
 
-            $this->last_sql      = $this->buildReadableSql($runtime_sql, $params);
             $this->affected_rows = $this->PDOStatement->rowCount();
+            $this->runtime_data  = [];
 
-            $this->runtime_data = [];
             unset($params);
         } catch (\Throwable $throwable) {
             if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $retry_times >= $this->retry_times) {
@@ -870,7 +871,7 @@ class libMySQL extends Factory
     {
         if (isset($this->runtime_data['action'])) {
             throw new \PDOException(
-                $this->buildReadableSql($this->{'build' . ucfirst($this->runtime_data['action'])}(), $this->runtime_data['bind']) . ' NOT execute!',
+                $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
                 E_USER_ERROR
             );
         }
