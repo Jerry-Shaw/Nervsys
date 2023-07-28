@@ -123,6 +123,16 @@ class WINNT
     }
 
     /**
+     * @param int $pid
+     *
+     * @return void
+     */
+    public function killProc(int $pid): void
+    {
+        exec('taskkill -PID ' . $pid . ' -F');
+    }
+
+    /**
      * @param string $command
      *
      * @return string

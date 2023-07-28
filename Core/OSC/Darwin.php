@@ -105,6 +105,16 @@ class Darwin
     }
 
     /**
+     * @param int $pid
+     *
+     * @return void
+     */
+    public function killProc(int $pid): void
+    {
+        exec('kill -9 ' . $pid);
+    }
+
+    /**
      * @param string $command
      *
      * @return string

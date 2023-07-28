@@ -97,6 +97,16 @@ class OSMgr extends Factory
     }
 
     /**
+     * @param int $pid
+     *
+     * @return void
+     */
+    public function killProc(int $pid): void
+    {
+        $this->lib_os->killProc($pid);
+    }
+
+    /**
      * @param bool $in_background
      *
      * @return $this
