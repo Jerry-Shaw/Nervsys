@@ -42,6 +42,7 @@ class ProcMgr extends Factory
 
     public string|null $work_dir = null;
 
+    protected array $proc_pid    = [];
     protected array $proc_list   = [];
     protected array $proc_stdin  = [];
     protected array $proc_stdout = [];
@@ -131,6 +132,7 @@ class ProcMgr extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
+        $this->proc_pid[$idx]    = proc_get_status($proc)['pid'];
         $this->proc_list[$idx]   = $proc;
         $this->proc_stdin[$idx]  = $pipes[0];
         $this->proc_stdout[$idx] = $pipes[1];
@@ -168,6 +170,16 @@ class ProcMgr extends Factory
     public function getCmd(): string
     {
         return implode(' ', $this->proc_cmd);
+    }
+
+    /**
+     * @param int $idx
+     *
+     * @return int
+     */
+    public function getPid(int $idx = 0): int
+    {
+        return $this->proc_pid[$idx];
     }
 
     /**
