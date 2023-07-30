@@ -296,7 +296,12 @@ class libUpload extends Factory
         sort($tmp_list, SORT_NATURAL);
 
         $save_path = $this->libFileIO->mkPath($save_dir, $this->upload_path) . $save_name;
-        $save_fp   = fopen($save_path, 'ab+');
+
+        if (is_file($save_path)) {
+            unlink($save_path);
+        }
+
+        $save_fp = fopen($save_path, 'ab+');
 
         foreach ($tmp_list as $tmp_file) {
             $tmp_fp = fopen($tmp_file, 'rb');
