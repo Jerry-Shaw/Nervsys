@@ -411,7 +411,10 @@ class ProcMgr extends Factory
 
                 if (0 >= --$this->proc_job_count[$idx]) {
                     $this->proc_job_count[$idx] = 0;
-                    break;
+
+                    if (empty($proc_callbacks)) {
+                        break;
+                    }
                 }
             }
 
