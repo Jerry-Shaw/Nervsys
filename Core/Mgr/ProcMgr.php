@@ -402,9 +402,7 @@ class ProcMgr extends Factory
         }
 
         foreach ($read_list as $idx => $data) {
-            while (!feof($data['stream'])) {
-                $output = trim(fgets($data['stream']));
-
+            while ('' !== ($output = trim(fgets($data['stream'])))) {
                 $job_callbacks = array_pop($this->proc_callbacks[$idx]);
 
                 if (0 > --$this->proc_job_count[$idx]) {
