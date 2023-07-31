@@ -405,13 +405,14 @@ class ProcMgr extends Factory
             while ('' !== ($output = trim(fgets($data['stream'])))) {
                 $job_callbacks = array_pop($this->proc_callbacks[$idx]);
 
-                if (0 > --$this->proc_job_count[$idx]) {
-                    $this->proc_job_count[$idx] = 0;
-                }
-
                 'out' === $data['type']
                     ? $this->callIoFn($output, [$job_callbacks[0] ?? null, $proc_callbacks[0] ?? null])
                     : $this->callIoFn($output, [$job_callbacks[1] ?? null, $proc_callbacks[1] ?? null]);
+
+                if (0 >= --$this->proc_job_count[$idx]) {
+                    $this->proc_job_count[$idx] = 0;
+                    break;
+                }
             }
 
             $this->getStatus($idx);
