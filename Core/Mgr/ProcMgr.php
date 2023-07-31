@@ -381,28 +381,45 @@ class ProcMgr extends Factory
      */
     protected function readIo(array $proc_callbacks = []): void
     {
-        $stdout_data = $this->readLine($this->proc_stdout);
-        $stderr_data = $this->readLine($this->proc_stderr);
+        $write     = [];
+        $except    = [];
+        $streams   = [];
+        $read_list = [];
 
-        $stream_data = $stdout_data + $stderr_data;
+        foreach ($this->proc_stdout as $key => $value) {
+            $streams['out_' . $key] = $value;
+        }
 
-        foreach ($stream_data as $idx => $io_data) {
-            $job_callbacks = array_pop($this->proc_callbacks[$idx]);
+        foreach ($this->proc_stderr as $key => $value) {
+            $streams['err_' . $key] = $value;
+        }
 
-            if (0 > --$this->proc_job_count[$idx]) {
-                $this->proc_job_count[$idx] = 0;
-            }
-
-            if (isset($stdout_data[$idx])) {
-                $this->callIoFn($stdout_data[$idx], [$job_callbacks[0] ?? null, $proc_callbacks[0] ?? null]);
-            }
-
-            if (isset($stderr_data[$idx])) {
-                $this->callIoFn($stderr_data[$idx], [$job_callbacks[1] ?? null, $proc_callbacks[1] ?? null]);
+        if (0 < stream_select($streams, $write, $except, $this->read_at[0], $this->read_at[1])) {
+            foreach ($streams as $key => $stream) {
+                [$type, $idx] = explode('_', $key);
+                $read_list[$idx] ??= ['type' => $type, 'stream' => $stream];
             }
         }
 
-        unset($proc_callbacks, $stdout_data, $stderr_data, $stream_data, $idx, $io_data, $job_callbacks);
+        foreach ($read_list as $idx => $data) {
+            while (!feof($data['stream'])) {
+                $output = trim(fgets($data['stream']));
+
+                $job_callbacks = array_pop($this->proc_callbacks[$idx]);
+
+                if (0 > --$this->proc_job_count[$idx]) {
+                    $this->proc_job_count[$idx] = 0;
+                }
+
+                'out' === $data['type']
+                    ? $this->callIoFn($output, [$job_callbacks[0] ?? null, $proc_callbacks[0] ?? null])
+                    : $this->callIoFn($output, [$job_callbacks[1] ?? null, $proc_callbacks[1] ?? null]);
+            }
+
+            $this->getStatus($idx);
+        }
+
+        unset($proc_callbacks, $write, $except, $streams, $read_list, $key, $value, $stream, $type, $idx, $data, $output, $job_callbacks);
     }
 
     /**
