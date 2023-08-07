@@ -263,17 +263,17 @@ class ProcMgr extends Factory
     /**
      * @param callable|null $stdout_callback
      * @param callable|null $stderr_callback
-     * @param callable|null $argv_callback
+     * @param callable      ...$other_callbacks
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function awaitProc(callable $stdout_callback = null, callable $stderr_callback = null, callable $argv_callback = null): void
+    public function awaitProc(callable $stdout_callback = null, callable $stderr_callback = null, callable ...$other_callbacks): void
     {
         while (0 < array_sum($this->proc_status)) {
-            if (is_callable($argv_callback)) {
+            foreach ($other_callbacks as $callback) {
                 try {
-                    $argv = call_user_func($argv_callback);
+                    $argv = call_user_func($callback);
 
                     if (is_string($argv) && '' !== $argv) {
                         fwrite($this->proc_stdin[0], $argv . $this->argv_end_char);
@@ -288,7 +288,7 @@ class ProcMgr extends Factory
             $this->cleanup();
         }
 
-        unset($stdout_callback, $stderr_callback, $argv_callback, $argv);
+        unset($stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv);
     }
 
     /**
