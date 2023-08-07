@@ -36,7 +36,7 @@ class ProcMgr extends Factory
 
     public array $proc_cmd;
 
-    public array $read_at = [0, 20000];
+    public array $read_at = [0, 500000];
 
     public string $argv_end_char = "\n";
 
@@ -406,7 +406,6 @@ class ProcMgr extends Factory
                 if (empty($stdio_callbacks)) {
                     --$this->proc_job_count[$idx];
                     $stdio_callbacks = array_pop($this->proc_callbacks[$idx]);
-
                     $this->callIoFn($output, 'out' === $data['type'] ? $stdio_callbacks[0] : $stdio_callbacks[1]);
 
                     if (0 >= $this->proc_job_count[$idx]) {
@@ -457,26 +456,6 @@ class ProcMgr extends Factory
         }
 
         unset($idx, $status);
-    }
-
-    /**
-     * @param array $stream_list
-     *
-     * @return array
-     */
-    protected function readLine(array $stream_list): array
-    {
-        $result = $write = $except = [];
-
-        if (0 < stream_select($stream_list, $write, $except, $this->read_at[0], $this->read_at[1])) {
-            foreach ($stream_list as $idx => $stream) {
-                $result[$idx] = trim(fgets($stream));
-                $this->getStatus($idx);
-            }
-        }
-
-        unset($stream_list, $write, $except, $idx, $stream);
-        return $result;
     }
 
     /**
