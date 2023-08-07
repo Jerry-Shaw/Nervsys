@@ -44,7 +44,7 @@ class SocketMgr extends Factory
     ];
 
     public array $options = [];
-    public array $read_at = [0, 20000, 60, 200];
+    public array $read_at = [0, 500000, 60, 200];
 
     public array $handshakes  = [];
     public array $activities  = [];
