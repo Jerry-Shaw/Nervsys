@@ -223,29 +223,29 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param string        $argv
-     * @param callable|null $msg_callback
-     * @param callable|null $err_callback
+     * @param string        $job_argv
+     * @param callable|null $stdout_callback
+     * @param callable|null $stderr_callback
      *
      * @return void
      * @throws \Exception
      */
-    public function putArgv(string $argv, callable $msg_callback = null, callable $err_callback = null): void
+    public function putJob(string $job_argv, callable $stdout_callback = null, callable $stderr_callback = null): void
     {
         try {
             $idx = $this->getRunningIdx();
 
-            fwrite($this->proc_stdin[$idx], $argv . $this->argv_end_char);
-            array_unshift($this->proc_callbacks[$idx], [$msg_callback, $err_callback]);
+            fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
+            array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
 
             ++$this->proc_job_count[$idx];
 
             unset($idx);
         } catch (\Throwable) {
-            $this->putArgv($argv, $msg_callback, $err_callback);
+            $this->putJob($job_argv, $stdout_callback, $stderr_callback);
         }
 
-        unset($argv, $msg_callback, $err_callback);
+        unset($job_argv, $stdout_callback, $stderr_callback);
     }
 
     /**
@@ -284,7 +284,7 @@ class ProcMgr extends Factory
                 }
             }
 
-            $this->readIo([$stdout_callback, $stderr_callback]);
+            $this->readIo($stdout_callback, $stderr_callback);
             $this->cleanup();
         }
 
@@ -374,12 +374,12 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param array $proc_callbacks
+     * @param callable|null ...$stdio_callbacks
      *
      * @return void
      * @throws \ReflectionException
      */
-    protected function readIo(array $proc_callbacks = []): void
+    protected function readIo(callable|null ...$stdio_callbacks): void
     {
         $write     = [];
         $except    = [];
@@ -403,41 +403,37 @@ class ProcMgr extends Factory
 
         foreach ($read_list as $idx => $data) {
             while ('' !== ($output = trim(fgets($data['stream'])))) {
-                $job_callbacks = array_pop($this->proc_callbacks[$idx]);
+                if (empty($stdio_callbacks)) {
+                    --$this->proc_job_count[$idx];
+                    $stdio_callbacks = array_pop($this->proc_callbacks[$idx]);
 
-                'out' === $data['type']
-                    ? $this->callIoFn($output, [$job_callbacks[0] ?? null, $proc_callbacks[0] ?? null])
-                    : $this->callIoFn($output, [$job_callbacks[1] ?? null, $proc_callbacks[1] ?? null]);
+                    $this->callIoFn($output, 'out' === $data['type'] ? $stdio_callbacks[0] : $stdio_callbacks[1]);
 
-                if (0 >= --$this->proc_job_count[$idx]) {
-                    $this->proc_job_count[$idx] = 0;
-
-                    if (empty($proc_callbacks)) {
+                    if (0 >= $this->proc_job_count[$idx]) {
+                        $this->proc_job_count[$idx] = 0;
                         break;
                     }
+                } else {
+                    $this->callIoFn($output, 'out' === $data['type'] ? $stdio_callbacks[0] : $stdio_callbacks[1]);
                 }
             }
 
             $this->getStatus($idx);
         }
 
-        unset($proc_callbacks, $write, $except, $streams, $read_list, $key, $value, $stream, $type, $idx, $data, $output, $job_callbacks);
+        unset($stdio_callbacks, $write, $except, $streams, $read_list, $key, $value, $stream, $type, $idx, $data, $output);
     }
 
     /**
-     * @param string $output
-     * @param array  $callbacks
+     * @param string        $output
+     * @param callable|null $callback
      *
      * @return void
      * @throws \ReflectionException
      */
-    protected function callIoFn(string $output, array $callbacks): void
+    protected function callIoFn(string $output, callable|null $callback): void
     {
-        foreach ($callbacks as $callback) {
-            if (!is_callable($callback)) {
-                continue;
-            }
-
+        if (is_callable($callback)) {
             try {
                 call_user_func($callback, $output);
             } catch (\Throwable $throwable) {
@@ -446,7 +442,7 @@ class ProcMgr extends Factory
             }
         }
 
-        unset($output, $callbacks, $callback);
+        unset($output, $callback);
     }
 
     /**
