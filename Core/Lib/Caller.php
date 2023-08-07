@@ -108,7 +108,7 @@ class Caller extends Factory
         while (proc_get_status($proc)['running']) {
             $read = [$pipes[1], $pipes[2]];
 
-            if (0 === (int)stream_select($read, $write, $except, 1)) {
+            if (0 === (int)stream_select($read, $write, $except, 0, 500000)) {
                 continue;
             }
 
