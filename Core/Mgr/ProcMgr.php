@@ -404,11 +404,10 @@ class ProcMgr extends Factory
         foreach ($read_list as $idx => $data) {
             while ('' !== ($output = trim(fgets($data['stream'])))) {
                 if (empty($stdio_callbacks)) {
-                    --$this->proc_job_count[$idx];
-                    $stdio_callbacks = array_pop($this->proc_callbacks[$idx]);
-                    $this->callIoFn($output, 'out' === $data['type'] ? $stdio_callbacks[0] : $stdio_callbacks[1]);
+                    $job_callbacks = array_pop($this->proc_callbacks[$idx]);
+                    $this->callIoFn($output, 'out' === $data['type'] ? $job_callbacks[0] : $job_callbacks[1]);
 
-                    if (0 >= $this->proc_job_count[$idx]) {
+                    if (0 >= --$this->proc_job_count[$idx]) {
                         $this->proc_job_count[$idx] = 0;
                         break;
                     }
@@ -420,7 +419,7 @@ class ProcMgr extends Factory
             $this->getStatus($idx);
         }
 
-        unset($stdio_callbacks, $write, $except, $streams, $read_list, $key, $value, $stream, $type, $idx, $data, $output);
+        unset($stdio_callbacks, $write, $except, $streams, $read_list, $key, $value, $stream, $type, $idx, $data, $output, $job_callbacks);
     }
 
     /**
