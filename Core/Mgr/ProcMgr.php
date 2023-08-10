@@ -337,7 +337,7 @@ class ProcMgr extends Factory
             $job_json = fgets(STDIN);
 
             if (false === $job_json) {
-                return;
+                exit(0);
             }
 
             $job_json = trim($job_json);
@@ -349,8 +349,8 @@ class ProcMgr extends Factory
                 }
             } catch (\Throwable $throwable) {
                 $this->error->exceptionHandler($throwable, false, false);
+                echo $throwable->getMessage() . "\n";
                 unset($throwable);
-                echo "\n";
                 continue;
             }
 
@@ -371,6 +371,7 @@ class ProcMgr extends Factory
         }
 
         unset($jobs, $do, $caller, $router);
+        exit(0);
     }
 
     /**
