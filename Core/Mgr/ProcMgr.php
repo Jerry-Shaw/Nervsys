@@ -34,6 +34,8 @@ class ProcMgr extends Factory
 
     public Error $error;
 
+    public int $threshold;
+
     public array $proc_cmd;
 
     public array $read_at = [0, 500000];
@@ -150,17 +152,20 @@ class ProcMgr extends Factory
 
     /**
      * @param int $proc_num
+     * @param int $job_threshold
      *
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $proc_num): self
+    public function runPLB(int $proc_num, int $job_threshold = 8): self
     {
+        $this->threshold = &$job_threshold;
+
         for ($i = 0; $i < $proc_num; ++$i) {
             $this->runProc($i);
         }
 
-        unset($proc_num, $i);
+        unset($proc_num, $job_threshold, $i);
         return $this;
     }
 
@@ -238,7 +243,10 @@ class ProcMgr extends Factory
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
 
-            ++$this->proc_job_count[$idx];
+            if (0 === ++$this->proc_job_count[$idx] % $this->threshold) {
+                $this->readIo();
+                $this->cleanup();
+            }
 
             unset($idx);
         } catch (\Throwable) {
