@@ -275,29 +275,21 @@ trait System
 
     /**
      * @param int    $code
-     * @param string $msg
+     * @param string $message
+     * @param array  $values
      *
      * @return $this
      */
-    public function IODataSetCodeMsg(int $code, string $msg): self
+    public function IODataSetCodeMsg(int $code, string $message, array $values = []): self
     {
+        if (!empty($values)) {
+            $message = sprintf($message, ...$values);
+        }
+
         $this->IOData->src_msg['code']    = &$code;
-        $this->IOData->src_msg['message'] = &$msg;
+        $this->IOData->src_msg['message'] = &$message;
 
-        unset($code, $msg);
-        return $this;
-    }
-
-    /**
-     * @param string $msg_key
-     *
-     * @return $this
-     */
-    public function IODataAddMsgData(string $msg_key): self
-    {
-        $this->IOData->src_msg[$msg_key] = array_merge($this->IOData->src_msg[$msg_key] ?? [], array_slice(func_get_args(), 1, null, true));
-
-        unset($msg_key);
+        unset($code, $message, $values);
         return $this;
     }
 
