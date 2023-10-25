@@ -57,27 +57,23 @@ class algoImage extends Factory
     }
 
     /**
-     * @param int $red
-     * @param int $green
-     * @param int $blue
+     * @param int  $red
+     * @param int  $green
+     * @param int  $blue
+     * @param bool $normalize
      *
      * @return int
      */
-    public function rgbToIntensity(int $red, int $green, int $blue): int
+    public function rgbToGrayValue(int $red, int $green, int $blue, bool $normalize = false): int
     {
-        return ($red * 19595 + $green * 38469 + $blue * 7472) >> 16;
-    }
+        $gray_value = ($red * 19595 + $green * 38469 + $blue * 7472) >> 16;
 
-    /**
-     * @param int $red
-     * @param int $green
-     * @param int $blue
-     *
-     * @return int
-     */
-    public function rgbToGrayscale(int $red, int $green, int $blue): int
-    {
-        return round((1 - $this->rgbToIntensity($red, $green, $blue) / 0xFF) * 100);
+        if ($normalize) {
+            $gray_value = (int)round(($gray_value / 0xFF) * 100);
+        }
+
+        unset($red, $green, $blue, $normalize);
+        return $gray_value;
     }
 
     /**
@@ -100,7 +96,7 @@ class algoImage extends Factory
         for ($x = 0; $x < $width; ++$x) {
             for ($y = 0; $y < $height; ++$y) {
                 $rgba_value    = $this->getRGBAValues($gd_image, $x, $y);
-                $gray_values[] = $this->rgbToIntensity($rgba_value['red'], $rgba_value['green'], $rgba_value['blue'],);
+                $gray_values[] = $this->rgbToGrayValue($rgba_value['red'], $rgba_value['green'], $rgba_value['blue'],);
             }
         }
 
