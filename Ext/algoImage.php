@@ -77,6 +77,31 @@ class algoImage extends Factory
     }
 
     /**
+     * @param int  $gray_value
+     * @param bool $is_normalised
+     *
+     * @return int[]
+     */
+    public function grayValueMapToRGB(int $gray_value, bool $is_normalised = false): array
+    {
+        if ($is_normalised) {
+            $gray_value = round(($gray_value * 0xFF) / 100);
+        }
+
+        $rgb_value  = ['red' => 0, 'blue' => 0];
+        $calc_value = min(abs($gray_value - 0x80) * 2, 0xFF);
+
+        0x80 <= $gray_value
+            ? $rgb_value['red'] = $gray_value
+            : $rgb_value['blue'] = $gray_value;
+
+        $rgb_value['green'] = 0xFF - $calc_value;
+
+        unset($gray_value, $is_normalised, $calc_value);
+        return $rgb_value;
+    }
+
+    /**
      * @param \GdImage $gd_image
      * @param bool     $by_percentage
      *
