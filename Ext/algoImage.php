@@ -92,8 +92,8 @@ class algoImage extends Factory
         $calc_value = min(abs($gray_value - 0x80) * 2, 0xFF);
 
         0x80 <= $gray_value
-            ? $rgb_value['red'] = $gray_value
-            : $rgb_value['blue'] = $gray_value;
+            ? $rgb_value['red'] = $calc_value
+            : $rgb_value['blue'] = $calc_value;
 
         $rgb_value['green'] = 0xFF - $calc_value;
 
