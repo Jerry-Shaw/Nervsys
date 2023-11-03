@@ -78,11 +78,12 @@ class algoImage extends Factory
 
     /**
      * @param int  $gray_value
+     * @param int  $step_value
      * @param bool $is_normalised
      *
      * @return int[]
      */
-    public function grayValueMapToRGB(int $gray_value, bool $is_normalised = false): array
+    public function grayValueMapToRGB(int $gray_value, int $step_value = 1, bool $is_normalised = false): array
     {
         if ($is_normalised) {
             $gray_value = round(($gray_value * 0xFF) / 100);
@@ -91,13 +92,17 @@ class algoImage extends Factory
         $rgb_value  = ['red' => 0, 'blue' => 0];
         $calc_value = min(abs($gray_value - 0x80) * 2, 0xFF);
 
+        if (1 < $step_value) {
+            $calc_value = min(round($calc_value / $step_value) * $step_value, 0xFF);
+        }
+
         0x80 <= $gray_value
             ? $rgb_value['red'] = $calc_value
             : $rgb_value['blue'] = $calc_value;
 
         $rgb_value['green'] = 0xFF - $calc_value;
 
-        unset($gray_value, $is_normalised, $calc_value);
+        unset($gray_value, $step_value, $is_normalised, $calc_value);
         return $rgb_value;
     }
 
