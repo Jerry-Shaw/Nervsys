@@ -27,21 +27,23 @@ use Nervsys\Core\Lib\CORS;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\Hook;
 use Nervsys\Core\Lib\IOData;
+use Nervsys\Core\Lib\Profiling;
 use Nervsys\Core\Lib\Router;
 use Nervsys\Core\Lib\Security;
 use Nervsys\Core\Mgr\OSMgr;
 
 trait System
 {
-    public App      $app;
-    public CORS     $CORS;
-    public Hook     $hook;
-    public Error    $error;
-    public Caller   $caller;
-    public IOData   $IOData;
-    public OSMgr    $OSMgr;
-    public Router   $router;
-    public Security $security;
+    public App       $app;
+    public CORS      $CORS;
+    public Hook      $hook;
+    public Error     $error;
+    public Caller    $caller;
+    public IOData    $IOData;
+    public OSMgr     $OSMgr;
+    public Router    $router;
+    public Security  $security;
+    public Profiling $profiling;
 
     /**
      * System libraries initializer
@@ -51,15 +53,16 @@ trait System
      */
     public function init(): self
     {
-        $this->app      = App::new();
-        $this->CORS     = CORS::new();
-        $this->hook     = Hook::new();
-        $this->error    = Error::new();
-        $this->caller   = Caller::new();
-        $this->IOData   = IOData::new();
-        $this->router   = Router::new();
-        $this->OSMgr    = OSMgr::new();
-        $this->security = Security::new();
+        $this->app       = App::new();
+        $this->CORS      = CORS::new();
+        $this->hook      = Hook::new();
+        $this->error     = Error::new();
+        $this->caller    = Caller::new();
+        $this->IOData    = IOData::new();
+        $this->router    = Router::new();
+        $this->OSMgr     = OSMgr::new();
+        $this->security  = Security::new();
+        $this->profiling = Profiling::new();
 
         return $this;
     }
@@ -290,6 +293,20 @@ trait System
         $this->IOData->src_msg['message'] = &$message;
 
         unset($code, $message, $values);
+        return $this;
+    }
+
+    /**
+     * @param int $memory_bytes
+     * @param int $time_milliseconds
+     *
+     * @return $this
+     */
+    public function ProfilingSetThresholds(int $memory_bytes, int $time_milliseconds): self
+    {
+        $this->profiling->setThresholds($memory_bytes, $time_milliseconds);
+
+        unset($memory_bytes, $time_milliseconds);
         return $this;
     }
 
