@@ -81,6 +81,8 @@ class NS
     {
         date_default_timezone_set($this->app->timezone);
 
+        $this->profiling->start('NS_DATA_READER');
+
         if (!$this->app->is_cli) {
             $this->CORS->checkPermission($this->app->is_tls);
             $this->IOData->readCgi();
@@ -88,8 +90,12 @@ class NS
             $this->IOData->readCli();
         }
 
+        $this->profiling->end('NS_DATA_READER');
+
         if ($this->app->is_cli) {
+            $this->profiling->start('NS_CLI_ROUTER');
             $cli_cmd = $this->router->parseCli($this->IOData->src_cmd);
+            $this->profiling->start('NS_CLI_ROUTER');
 
             if (!empty($cli_cmd)) {
                 while (is_array($cmd_data = array_shift($cli_cmd))) {
@@ -108,20 +114,35 @@ class NS
             }
         }
 
+        $this->profiling->start('NS_CGI_ROUTER');
         $cgi_cmd = $this->router->parseCgi($this->IOData->src_cmd);
+        $this->profiling->start('NS_CGI_ROUTER');
 
         if (!empty($cgi_cmd)) {
             while (is_array($cmd_data = array_shift($cgi_cmd))) {
                 try {
                     $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
 
-                    if (!$this->hook->runBefore($full_cmd)) {
+                    $profiling_name = 'NS_HOOK_BEFORE@' . $full_cmd;
+                    $this->profiling->start($profiling_name);
+                    $pass_hook = $this->hook->runBefore($full_cmd);
+                    $this->profiling->end($profiling_name);
+
+                    if (!$pass_hook) {
                         continue;
                     }
 
+                    $profiling_name = 'NS_API_CALLER@' . $full_cmd;
+                    $this->profiling->start($profiling_name);
                     $this->IOData->src_output += $this->caller->runApiFn($cmd_data, $this->IOData->src_input);
+                    $this->profiling->end($profiling_name);
 
-                    if (!$this->hook->runAfter($full_cmd)) {
+                    $profiling_name = 'NS_HOOK_AFTER@' . $full_cmd;
+                    $this->profiling->start($profiling_name);
+                    $pass_hook = $this->hook->runAfter($full_cmd);
+                    $this->profiling->end($profiling_name);
+
+                    if (!$pass_hook) {
                         break;
                     }
                 } catch (\Throwable $throwable) {
@@ -131,6 +152,8 @@ class NS
             }
         }
 
+        $this->profiling->start('NS_DATA_OUTPUT');
         $this->IOData->output();
+        $this->profiling->start('NS_DATA_OUTPUT');
     }
 }
