@@ -34,9 +34,9 @@ class IOData extends Factory
 
     public string $src_cmd  = '';
     public string $cwd_path = '';
-    public array  $src_argv = [];
 
     public array $src_msg    = [];
+    public array $src_argv   = [];
     public array $src_input  = [];
     public array $src_output = [];
 
