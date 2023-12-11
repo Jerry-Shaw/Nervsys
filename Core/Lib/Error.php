@@ -227,10 +227,10 @@ class Error extends Factory
      */
     private function formatLog(string $err_lv, string $message, array $context): string
     {
-        $log = date('Y-m-d H:i:s') . PHP_EOL;
+        $log = date('Y-m-d H:i:s') . "\r\n";
 
-        $log .= ucfirst($err_lv) . ': ' . $message . PHP_EOL;
-        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . PHP_EOL . PHP_EOL : PHP_EOL;
+        $log .= ucfirst($err_lv) . ': ' . $message . "\r\n";
+        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
 
         unset($err_lv, $message, $context);
         return $log;
