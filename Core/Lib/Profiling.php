@@ -53,7 +53,7 @@ class Profiling extends Factory
     public function start(string $name): void
     {
         $this->profiling_data[$name][] = [
-            (int)(microtime(true) * 1000),
+            round(microtime(true) * 1000, 2),
             memory_get_usage()
         ];
 
@@ -80,8 +80,8 @@ class Profiling extends Factory
             return;
         }
 
-        $mem_usage = memory_get_usage() - $data[1];
-        $time_cost = (int)(microtime(true) * 1000) - $data[0];
+        $mem_usage = round(memory_get_usage() - $data[1], 2);
+        $time_cost = round(microtime(true) * 1000, 2) - $data[0];
 
         if ($mem_usage > $this->memory_threshold || $time_cost > $this->timer_threshold) {
             $log_file = App::new()->log_path . DIRECTORY_SEPARATOR . ('profiling-' . date('Ymd')) . '.log';
