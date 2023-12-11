@@ -32,7 +32,7 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.1.0');
+define('NS_VER', '8.1.10');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
 define('NS_HOSTNAME', gethostname() ?: 'localhost');
