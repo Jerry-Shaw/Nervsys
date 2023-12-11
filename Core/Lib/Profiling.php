@@ -28,20 +28,24 @@ class Profiling extends Factory
     public int $timer_threshold  = -1;
     public int $memory_threshold = -1;
 
+    public bool $with_input_data = false;
+
     public array $profiling_data = [];
 
     /**
-     * @param int $memory_bytes
-     * @param int $time_milliseconds
+     * @param int  $memory_bytes
+     * @param int  $time_milliseconds
+     * @param bool $with_input_data
      *
      * @return $this
      */
-    public function setThresholds(int $memory_bytes, int $time_milliseconds): self
+    public function setThresholds(int $memory_bytes, int $time_milliseconds, bool $with_input_data = false): self
     {
         $this->memory_threshold = &$memory_bytes;
         $this->timer_threshold  = &$time_milliseconds;
+        $this->with_input_data  = &$with_input_data;
 
-        unset($memory_bytes, $time_milliseconds);
+        unset($memory_bytes, $time_milliseconds, $with_input_data);
         return $this;
     }
 
@@ -89,11 +93,15 @@ class Profiling extends Factory
             $log_data = date('Y-m-d H:i:s') . "\r\n";
             $log_data .= 'Name: ' . $name . "\r\n";
             $log_data .= 'Time: ' . $time_cost . "ms\r\n";
-            $log_data .= 'Memory: ' . $mem_usage . "MB\r\n\r\n";
+            $log_data .= 'Memory: ' . $mem_usage . "MB\r\n";
+
+            if ($this->with_input_data) {
+                $log_data .= 'Params: ' . json_encode(IOData::new()->src_input, JSON_PRETTY) . "\r\n";
+            }
 
             $handle = fopen($log_file, 'ab+');
 
-            fwrite($handle, $log_data);
+            fwrite($handle, $log_data . "\r\n");
             fclose($handle);
 
             unset($log_file, $log_data, $handle);
