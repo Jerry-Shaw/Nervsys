@@ -28,74 +28,68 @@ class Profiling extends Factory
     public int $timer_threshold  = -1;
     public int $memory_threshold = -1;
 
-    public bool $with_input_data = false;
-
     public array $profiling_data = [];
 
     /**
-     * @param int  $memory_bytes
-     * @param int  $time_milliseconds
-     * @param bool $with_input_data
+     * @param int $memory_bytes
+     * @param int $time_milliseconds
      *
      * @return $this
      */
-    public function setThresholds(int $memory_bytes, int $time_milliseconds, bool $with_input_data = false): self
+    public function setThresholds(int $memory_bytes, int $time_milliseconds): self
     {
         $this->memory_threshold = &$memory_bytes;
         $this->timer_threshold  = &$time_milliseconds;
-        $this->with_input_data  = &$with_input_data;
 
-        unset($memory_bytes, $time_milliseconds, $with_input_data);
+        unset($memory_bytes, $time_milliseconds);
         return $this;
     }
 
     /**
-     * @param string $name
+     * @param string $profile_name
      *
      * @return void
      */
-    public function start(string $name): void
+    public function start(string $profile_name): void
     {
-        $this->profiling_data[$name][] = [
-            microtime(true),
-            memory_get_usage()
+        $this->profiling_data[$profile_name][] = [
+            memory_get_usage(),
+            microtime(true)
         ];
 
-        unset($name);
+        unset($profile_name);
     }
 
     /**
-     * @param string $name
+     * @param string $profile_name
+     * @param bool   $force_save
+     * @param bool   $with_input_data
+     * @param string $log_file_name
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function end(string $name): void
+    public function end(string $profile_name, bool $force_save = false, bool $with_input_data = false, string $log_file_name = 'profiling'): void
     {
-        $data = array_pop($this->profiling_data[$name]);
+        $profile_data = array_pop($this->profiling_data[$profile_name]);
 
-        if (0 > $this->memory_threshold && 0 > $this->timer_threshold) {
-            unset($name, $data);
+        if (is_null($profile_data) || (0 > $this->memory_threshold && 0 > $this->timer_threshold)) {
+            unset($profile_name, $force_save, $with_input_data, $log_file_name, $profile_data);
             return;
         }
 
-        if (is_null($data)) {
-            unset($name, $data);
-            return;
-        }
+        $mem_usage = round((memory_get_usage() - $profile_data[0]) / 1048576, 2);
+        $time_cost = round((microtime(true) - $profile_data[1]) * 1000, 2);
 
-        $mem_usage = round((memory_get_usage() - $data[1]) / 1048576, 2);
-        $time_cost = round((microtime(true) - $data[0]) * 1000, 2);
-
-        if ($mem_usage > $this->memory_threshold || $time_cost > $this->timer_threshold) {
-            $log_file = App::new()->log_path . DIRECTORY_SEPARATOR . ('profiling-' . date('Ymd')) . '.log';
+        if ($force_save || $mem_usage > $this->memory_threshold || $time_cost > $this->timer_threshold) {
+            $log_file = App::new()->log_path . DIRECTORY_SEPARATOR . ($log_file_name . '-' . date('Ymd')) . '.log';
 
             $log_data = date('Y-m-d H:i:s') . "\r\n";
-            $log_data .= 'Name: ' . $name . "\r\n";
+            $log_data .= 'Name: ' . $profile_name . "\r\n";
             $log_data .= 'Time: ' . $time_cost . "ms\r\n";
             $log_data .= 'Memory: ' . $mem_usage . "MB\r\n";
 
-            if ($this->with_input_data) {
+            if ($with_input_data) {
                 $log_data .= 'Params: ' . json_encode(IOData::new()->src_input, JSON_PRETTY) . "\r\n";
             }
 
@@ -107,6 +101,6 @@ class Profiling extends Factory
             unset($log_file, $log_data, $handle);
         }
 
-        unset($name, $data, $mem_usage, $time_cost);
+        unset($profile_name, $force_save, $with_input_data, $log_file_name, $profile_data, $mem_usage, $time_cost);
     }
 }
