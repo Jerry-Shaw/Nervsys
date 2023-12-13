@@ -78,7 +78,7 @@ class Profiling extends Factory
             return;
         }
 
-        $mem_usage = round((memory_get_usage() - $profile_data[0]) / 1048576, 2);
+        $mem_usage = memory_get_usage() - $profile_data[0];
         $time_cost = round((microtime(true) - $profile_data[1]) * 1000, 2);
 
         if ($force_save || $mem_usage > $this->memory_threshold || $time_cost > $this->timer_threshold) {
@@ -87,7 +87,7 @@ class Profiling extends Factory
             $log_data = date('Y-m-d H:i:s') . "\r\n";
             $log_data .= 'Name: ' . $profile_name . "\r\n";
             $log_data .= 'Time: ' . $time_cost . "ms\r\n";
-            $log_data .= 'Memory: ' . $mem_usage . "MB\r\n";
+            $log_data .= 'Memory: ' . (round($mem_usage / 1048576, 2)) . "MB\r\n";
 
             if ($with_input_data) {
                 $log_data .= 'Params: ' . json_encode(IOData::new()->src_input, JSON_PRETTY) . "\r\n";
