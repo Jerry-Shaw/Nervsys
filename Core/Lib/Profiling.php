@@ -79,14 +79,14 @@ class Profiling extends Factory
         }
 
         $mem_usage = memory_get_usage() - $profile_data[0];
-        $time_cost = round((microtime(true) - $profile_data[1]) * 1000, 2);
+        $time_cost = (microtime(true) - $profile_data[1]) * 1000;
 
         if ($force_save || $mem_usage > $this->memory_threshold || $time_cost > $this->timer_threshold) {
             $log_file = App::new()->log_path . DIRECTORY_SEPARATOR . ($log_file_name . '-' . date('Ymd')) . '.log';
 
             $log_data = date('Y-m-d H:i:s') . "\r\n";
             $log_data .= 'Name: ' . $profile_name . "\r\n";
-            $log_data .= 'Time: ' . $time_cost . "ms\r\n";
+            $log_data .= 'Time: ' . (round($time_cost, 2)) . "ms\r\n";
             $log_data .= 'Memory: ' . (round($mem_usage / 1048576, 2)) . "MB\r\n";
 
             if ($with_input_data) {
