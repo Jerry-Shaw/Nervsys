@@ -167,6 +167,42 @@ trait System
     }
 
     /**
+     * @param callable $handler
+     *
+     * @return $this
+     */
+    public function ErrorAddHandler(callable $handler): self
+    {
+        $this->error->custom_handler[] = $handler;
+
+        unset($handler);
+        return $this;
+    }
+
+    /**
+     * @param callable $handler
+     *
+     * @return $this
+     */
+    public function ErrorSetHandler(callable $handler): self
+    {
+        $this->error->custom_handler = [$handler];
+
+        unset($handler);
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function ErrorResetHandler(): self
+    {
+        $this->error->custom_handler = [];
+
+        return $this;
+    }
+
+    /**
      * @param string   $cmd_path
      * @param callable ...$hook_fn
      *
