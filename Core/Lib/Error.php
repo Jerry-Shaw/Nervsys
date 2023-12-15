@@ -66,6 +66,8 @@ class Error extends Factory
         E_USER_DEPRECATED   => 'notice'
     ];
 
+    public array $custom_handler = [];
+
     /**
      * @param int    $errno
      * @param string $errstr
@@ -151,6 +153,12 @@ class Error extends Factory
         }
 
         $this->saveLog($app->log_path . DIRECTORY_SEPARATOR . ($err_lv . '-' . date('Ymd')) . '.log', $err_lv, $message, $context);
+
+        foreach ($this->custom_handler as $handler) {
+            if (is_callable($handler)) {
+                call_user_func($handler, $throwable);
+            }
+        }
 
         if ($stop_on_error) {
             exit(1);
