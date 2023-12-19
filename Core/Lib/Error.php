@@ -144,19 +144,19 @@ class Error extends Factory
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
-        if ($report_error) {
-            http_response_code(500);
-
-            if ($app->core_debug) {
-                $this->showLog($err_lv, $message, $context);
-            }
-        }
-
         $this->saveLog($app->log_path . DIRECTORY_SEPARATOR . ($err_lv . '-' . date('Ymd')) . '.log', $err_lv, $message, $context);
 
         foreach ($this->custom_handler as $handler) {
             if (is_callable($handler)) {
                 call_user_func($handler, $throwable);
+            }
+        }
+
+        if ($report_error) {
+            http_response_code(500);
+
+            if ($app->core_debug) {
+                $this->showLog($err_lv, $message, $context);
             }
         }
 
