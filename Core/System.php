@@ -235,19 +235,6 @@ trait System
     }
 
     /**
-     * @param string $content_type
-     *
-     * @return $this
-     */
-    public function IODataSetContentType(string $content_type): self
-    {
-        $this->IOData->content_type = &$content_type;
-
-        unset($content_type);
-        return $this;
-    }
-
-    /**
      * @param string ...$keys
      *
      * @return $this
@@ -300,19 +287,6 @@ trait System
     }
 
     /**
-     * @param callable $output_handler
-     *
-     * @return $this
-     */
-    public function IODataSetOutputHandler(callable $output_handler): self
-    {
-        $this->IOData->output_handler = [$output_handler];
-
-        unset($output_handler);
-        return $this;
-    }
-
-    /**
      * @param int    $code
      * @param string $message
      * @param array  $values
@@ -329,6 +303,32 @@ trait System
         $this->IOData->src_msg['message'] = &$message;
 
         unset($code, $message, $values);
+        return $this;
+    }
+
+    /**
+     * @param string $content_type
+     *
+     * @return $this
+     */
+    public function IODataSetContentType(string $content_type): self
+    {
+        $this->IOData->content_type = &$content_type;
+
+        unset($content_type);
+        return $this;
+    }
+
+    /**
+     * @param callable $output_handler
+     *
+     * @return $this
+     */
+    public function IODataSetOutputHandler(callable $output_handler): self
+    {
+        $this->IOData->output_handler = [$output_handler];
+
+        unset($output_handler);
         return $this;
     }
 
