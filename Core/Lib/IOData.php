@@ -144,6 +144,28 @@ class IOData extends Factory
     }
 
     /**
+     * @param bool $keep_headers
+     * @param bool $keep_cookies
+     *
+     * @return array
+     */
+    public function getInputData(bool $keep_headers = false, bool $keep_cookies = false): array
+    {
+        $input_data = $this->src_input;
+
+        if (!$keep_headers) {
+            $input_data = array_diff_key($input_data, array_flip($this->header_keys));
+        }
+
+        if (!$keep_cookies) {
+            $input_data = array_diff_key($input_data, array_flip($this->cookie_keys));
+        }
+
+        unset($keep_headers, $keep_cookies);
+        return $input_data;
+    }
+
+    /**
      * @return void
      */
     public function output(): void
