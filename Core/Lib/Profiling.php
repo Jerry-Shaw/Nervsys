@@ -103,4 +103,16 @@ class Profiling extends Factory
 
         unset($profile_name, $force_save, $with_input_data, $log_file_name, $profile_data, $mem_usage, $time_cost);
     }
+
+    /**
+     * @throws \ReflectionException
+     */
+    public function __destruct()
+    {
+        foreach ($this->profiling_data as $profile_name => $profile_data) {
+            $this->end($profile_name);
+        }
+
+        unset($profile_name, $profile_data);
+    }
 }
