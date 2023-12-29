@@ -39,7 +39,7 @@ class libLog extends Factory
     public function __construct(string $log_name = 'default')
     {
         $this->log_path = App::new()->log_path;
-        $this->log_file = date('Ymd') . '-' . $log_name . '.log';
+        $this->log_file = $log_name . '-' . date('Ymd') . '.log';
         unset($log_name);
     }
 
