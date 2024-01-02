@@ -88,7 +88,7 @@ class Router extends Factory
             $cmd_val = strtr($cmd_raw, '\\', '/');
 
             if (false === strpos($cmd_val, '/', 1)) {
-                $fn_list[] = [Security::class, 'targetInvalid', $cmd_raw];
+                $fn_list[] = [Security::class, 'fnTargetInvalid', $cmd_raw];
                 continue;
             }
 
