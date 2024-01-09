@@ -34,8 +34,6 @@ class ProcMgr extends Factory
 
     public Error $error;
 
-    public int $threshold;
-
     public array $proc_cmd;
 
     public array $read_at = [0, 500000];
@@ -46,6 +44,7 @@ class ProcMgr extends Factory
 
     protected array $proc_pid    = [];
     protected array $proc_list   = [];
+    protected array $proc_await  = [];
     protected array $proc_stdin  = [];
     protected array $proc_stdout = [];
     protected array $proc_stderr = [];
@@ -136,6 +135,7 @@ class ProcMgr extends Factory
 
         $this->proc_pid[$idx]    = proc_get_status($proc)['pid'];
         $this->proc_list[$idx]   = $proc;
+        $this->proc_await[$idx]  = $idx;
         $this->proc_stdin[$idx]  = $pipes[0];
         $this->proc_stdout[$idx] = $pipes[1];
         $this->proc_stderr[$idx] = $pipes[2];
@@ -152,20 +152,17 @@ class ProcMgr extends Factory
 
     /**
      * @param int $proc_num
-     * @param int $job_threshold
      *
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $proc_num, int $job_threshold = 8): self
+    public function runPLB(int $proc_num): self
     {
-        $this->threshold = &$job_threshold;
-
         for ($i = 0; $i < $proc_num; ++$i) {
             $this->runProc($i);
         }
 
-        unset($proc_num, $job_threshold, $i);
+        unset($proc_num, $i);
         return $this;
     }
 
@@ -238,15 +235,10 @@ class ProcMgr extends Factory
     public function putJob(string $job_argv, callable $stdout_callback = null, callable $stderr_callback = null): void
     {
         try {
-            $idx = $this->getRunningIdx();
+            $idx = $this->getAwaitIdx();
 
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
-
-            if (0 === ++$this->proc_job_count[$idx] % $this->threshold) {
-                $this->readIo();
-                $this->cleanup();
-            }
 
             unset($idx);
         } catch (\Throwable) {
@@ -425,6 +417,7 @@ class ProcMgr extends Factory
                 }
             }
 
+            $this->proc_await[$idx] = $idx;
             $this->getStatus($idx);
         }
 
@@ -489,28 +482,37 @@ class ProcMgr extends Factory
      * @return int
      * @throws \Exception
      */
-    protected function getRunningIdx(): int
+    protected function getAwaitIdx(): int
     {
-        $idx = key($this->proc_status);
+        if (empty($this->proc_await)) {
+            $this->readIo();
+            $this->cleanup();
+
+            usleep(20000);
+            return $this->getAwaitIdx();
+        }
+
+        $idx = array_pop($this->proc_await);
 
         switch ($this->getStatus($idx)) {
             case self::P_STDIN:
             case self::P_STDIN | self::P_STDOUT:
             case self::P_STDIN | self::P_STDERR:
             case self::P_STDIN | self::P_STDOUT | self::P_STDERR:
-                $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
                 break;
+
             case 0:
                 $this->close($idx);
                 $this->runProc($idx);
-                $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
+                $idx = $this->getAwaitIdx();
                 break;
+
             default:
-                $idx !== array_key_last($this->proc_status) ? next($this->proc_status) : reset($this->proc_status);
-                $idx = $this->getRunningIdx();
+                $idx = $this->getAwaitIdx();
                 break;
         }
 
+        unset($this->proc_await[$idx]);
         return $idx;
     }
 }
