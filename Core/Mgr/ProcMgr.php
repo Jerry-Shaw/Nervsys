@@ -36,7 +36,9 @@ class ProcMgr extends Factory
 
     public array $proc_cmd;
 
-    public array $read_at = [0, 500000];
+    public int $read_seconds      = 0;
+    public int $read_microseconds = 50000;
+    public int $wait_microseconds = 20000;
 
     public string $argv_end_char = "\n";
 
@@ -100,9 +102,23 @@ class ProcMgr extends Factory
      */
     public function readAt(int $seconds, int $microseconds = null): self
     {
-        $this->read_at = [&$seconds, &$microseconds];
+        $this->read_seconds      = &$seconds;
+        $this->read_microseconds = &$microseconds;
 
         unset($seconds, $microseconds);
+        return $this;
+    }
+
+    /**
+     * @param int $microseconds
+     *
+     * @return $this
+     */
+    public function waitAt(int $microseconds): self
+    {
+        $this->wait_microseconds = &$microseconds;
+
+        unset($microseconds);
         return $this;
     }
 
@@ -397,7 +413,7 @@ class ProcMgr extends Factory
             $streams['err_' . $key] = $value;
         }
 
-        if (0 < stream_select($streams, $write, $except, $this->read_at[0], $this->read_at[1])) {
+        if (0 < stream_select($streams, $write, $except, $this->read_seconds, $this->read_microseconds)) {
             foreach ($streams as $key => $stream) {
                 [$type, $idx] = explode('_', $key);
                 $read_list[$idx] ??= ['type' => $type, 'stream' => $stream];
@@ -490,7 +506,7 @@ class ProcMgr extends Factory
             $this->readIo();
             $this->cleanup();
 
-            usleep(20000);
+            usleep($this->wait_microseconds);
             return $this->getAwaitIdx();
         }
 
