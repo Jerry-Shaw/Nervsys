@@ -240,6 +240,8 @@ class ProcMgr extends Factory
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
 
+            ++$this->proc_job_count[$idx];
+
             unset($idx);
         } catch (\Throwable) {
             $this->putJob($job_argv, $stdout_callback, $stderr_callback);
