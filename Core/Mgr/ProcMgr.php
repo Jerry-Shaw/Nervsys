@@ -339,23 +339,19 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int $jobs
-     *
      * @return void
      * @throws \ReflectionException
      */
-    public function worker(int $jobs = 2000): void
+    public function worker(): void
     {
-        $do = 0;
-
         $caller = Caller::new();
         $router = Router::new();
 
-        while (++$do <= $jobs) {
+        while (true) {
             $job_json = fgets(STDIN);
 
             if (false === $job_json) {
-                exit(0);
+                break;
             }
 
             $job_json = trim($job_json);
@@ -388,7 +384,7 @@ class ProcMgr extends Factory
             unset($job_json, $job_data, $c_list, $result, $cmd_data);
         }
 
-        unset($jobs, $do, $caller, $router);
+        unset($caller, $router);
         exit(0);
     }
 
