@@ -400,10 +400,9 @@ class ProcMgr extends Factory
      */
     protected function readIo(callable|null ...$stdio_callbacks): void
     {
-        $write     = [];
-        $except    = [];
-        $streams   = [];
-        $read_list = [];
+        $write   = [];
+        $except  = [];
+        $streams = [];
 
         foreach ($this->proc_stdout as $key => $value) {
             $streams['out_' . $key] = $value;
@@ -416,30 +415,28 @@ class ProcMgr extends Factory
         if (0 < stream_select($streams, $write, $except, $this->read_seconds, $this->read_microseconds)) {
             foreach ($streams as $key => $stream) {
                 [$type, $idx] = explode('_', $key);
-                $read_list[$idx] ??= ['type' => $type, 'stream' => $stream];
-            }
-        }
 
-        foreach ($read_list as $idx => $data) {
-            while ('' !== ($output = trim(fgets($data['stream'])))) {
-                if (empty($stdio_callbacks)) {
-                    $job_callbacks = array_pop($this->proc_callbacks[$idx]);
-                    $this->callIoFn($output, 'out' === $data['type'] ? $job_callbacks[0] : $job_callbacks[1]);
+                while ('' !== ($output = trim(fgets($stream)))) {
+                    if (empty($stdio_callbacks)) {
+                        $job_callbacks = array_pop($this->proc_callbacks[$idx]);
 
-                    if (0 >= --$this->proc_job_count[$idx]) {
-                        $this->proc_job_count[$idx] = 0;
-                        break;
+                        $this->callIoFn($output, 'out' === $type ? $job_callbacks[0] : $job_callbacks[1]);
+
+                        if (0 >= --$this->proc_job_count[$idx]) {
+                            $this->proc_job_count[$idx] = 0;
+                            break;
+                        }
+                    } else {
+                        $this->callIoFn($output, 'out' === $type ? $stdio_callbacks[0] : $stdio_callbacks[1]);
                     }
-                } else {
-                    $this->callIoFn($output, 'out' === $data['type'] ? $stdio_callbacks[0] : $stdio_callbacks[1]);
                 }
-            }
 
-            $this->proc_await[$idx] = $idx;
-            $this->getStatus($idx);
+                $this->proc_await[$idx] = $idx;
+                $this->getStatus($idx);
+            }
         }
 
-        unset($stdio_callbacks, $write, $except, $streams, $read_list, $key, $value, $stream, $type, $idx, $data, $output, $job_callbacks);
+        unset($stdio_callbacks, $write, $except, $streams, $key, $value, $stream, $type, $idx, $data, $output, $job_callbacks);
     }
 
     /**
