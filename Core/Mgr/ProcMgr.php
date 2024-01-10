@@ -36,23 +36,25 @@ class ProcMgr extends Factory
 
     public array $proc_cmd;
 
-    public int $read_seconds      = 0;
-    public int $read_microseconds = 50000;
-    public int $wait_microseconds = 20000;
+    public int $read_seconds        = 0;
+    public int $read_microseconds   = 50000;
+    public int $wait_microseconds   = 20000;
+    public int $proc_max_executions = 2000;
 
     public string $argv_end_char = "\n";
 
     public string|null $work_dir = null;
 
-    protected array $proc_pid    = [];
-    protected array $proc_list   = [];
-    protected array $proc_await  = [];
-    protected array $proc_stdin  = [];
-    protected array $proc_stdout = [];
-    protected array $proc_stderr = [];
-    protected array $proc_status = [];
+    protected array $proc_pid      = [];
+    protected array $proc_list     = [];
+    protected array $proc_await    = [];
+    protected array $proc_stdin    = [];
+    protected array $proc_stdout   = [];
+    protected array $proc_stderr   = [];
+    protected array $proc_status   = [];
+    protected array $proc_job_done = [];
 
-    protected array $proc_job_count = [];
+    protected array $proc_job_await = [];
     protected array $proc_callbacks = [];
 
     /**
@@ -157,7 +159,8 @@ class ProcMgr extends Factory
         $this->proc_stderr[$idx] = $pipes[2];
         $this->proc_status[$idx] = self::P_STDIN | self::P_STDOUT | self::P_STDERR;
 
-        $this->proc_job_count[$idx] = 0;
+        $this->proc_job_done[$idx]  = 0;
+        $this->proc_job_await[$idx] = 0;
         $this->proc_callbacks[$idx] = [];
 
         register_shutdown_function([$this, 'close'], $idx);
@@ -167,18 +170,21 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int $proc_num
+     * @param int $proc_number
+     * @param int $max_executions
      *
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $proc_num): self
+    public function runPLB(int $proc_number = 8, int $max_executions = 2000): self
     {
-        for ($i = 0; $i < $proc_num; ++$i) {
+        $this->proc_max_executions = &$max_executions;
+
+        for ($i = 0; $i < $proc_number; ++$i) {
             $this->runProc($i);
         }
 
-        unset($proc_num, $i);
+        unset($proc_number, $max_executions, $i);
         return $this;
     }
 
@@ -209,6 +215,19 @@ class ProcMgr extends Factory
     {
         if (0 === $this->proc_status[$idx]) {
             return 0;
+        }
+
+        if ($this->proc_max_executions <= $this->proc_job_done[$idx]) {
+            if (0 >= $this->proc_job_await[$idx]) {
+                $this->proc_status[$idx] = 0;
+                return 0;
+            }
+
+            if (self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
+                $this->proc_status[$idx] ^= self::P_STDIN;
+            }
+
+            return self::P_STDOUT | self::P_STDERR;
         }
 
         $proc_status = proc_get_status($this->proc_list[$idx]);
@@ -256,7 +275,7 @@ class ProcMgr extends Factory
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
 
-            ++$this->proc_job_count[$idx];
+            ++$this->proc_job_await[$idx];
 
             unset($idx);
         } catch (\Throwable) {
@@ -272,7 +291,7 @@ class ProcMgr extends Factory
      */
     public function awaitJobs(): void
     {
-        while (0 < array_sum($this->proc_job_count)) {
+        while (0 < array_sum($this->proc_job_await)) {
             $this->readIo();
             $this->cleanup();
         }
@@ -323,7 +342,7 @@ class ProcMgr extends Factory
             proc_close($this->proc_list[$idx]);
         }
 
-        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_job_count[$idx], $this->proc_callbacks[$idx], $idx);
+        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_job_await[$idx], $this->proc_callbacks[$idx], $idx);
     }
 
     /**
@@ -418,8 +437,11 @@ class ProcMgr extends Factory
 
                         $this->callIoFn($output, 'out' === $type ? $job_callbacks[0] : $job_callbacks[1]);
 
-                        if (0 >= --$this->proc_job_count[$idx]) {
-                            $this->proc_job_count[$idx] = 0;
+                        ++$this->proc_job_done[$idx];
+                        --$this->proc_job_await[$idx];
+
+                        if (0 >= $this->proc_job_await[$idx]) {
+                            $this->proc_job_await[$idx] = 0;
                             break;
                         }
                     } else {
@@ -500,6 +522,7 @@ class ProcMgr extends Factory
             $this->cleanup();
 
             usleep($this->wait_microseconds);
+
             return $this->getAwaitIdx();
         }
 
