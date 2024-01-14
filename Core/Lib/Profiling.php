@@ -105,6 +105,14 @@ class Profiling extends Factory
     }
 
     /**
+     * @return void
+     */
+    public function reset(): void
+    {
+        $this->profiling_data = [];
+    }
+
+    /**
      * @throws \ReflectionException
      */
     public function __destruct()
