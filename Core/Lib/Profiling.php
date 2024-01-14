@@ -71,9 +71,14 @@ class Profiling extends Factory
      */
     public function end(string $profile_name, bool $force_save = false, bool $with_input_data = false, string $log_file_name = 'profiling'): void
     {
+        if (!isset($this->profiling_data[$profile_name])) {
+            unset($profile_name, $force_save, $with_input_data, $log_file_name);
+            return;
+        }
+
         $profile_data = array_pop($this->profiling_data[$profile_name]);
 
-        if (is_null($profile_data) || (0 > $this->memory_threshold && 0 > $this->timer_threshold)) {
+        if (!is_array($profile_data) || (0 > $this->memory_threshold && 0 > $this->timer_threshold)) {
             unset($profile_name, $force_save, $with_input_data, $log_file_name, $profile_data);
             return;
         }
@@ -105,11 +110,20 @@ class Profiling extends Factory
     }
 
     /**
+     * @param bool $reset_thresholds
+     *
      * @return void
      */
-    public function reset(): void
+    public function reset(bool $reset_thresholds = true): void
     {
         $this->profiling_data = [];
+
+        if ($reset_thresholds) {
+            $this->memory_threshold = -1;
+            $this->timer_threshold  = -1;
+        }
+
+        unset($reset_thresholds);
     }
 
     /**
