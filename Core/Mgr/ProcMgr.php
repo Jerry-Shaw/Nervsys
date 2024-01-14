@@ -24,6 +24,7 @@ namespace Nervsys\Core\Mgr;
 use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\Error;
+use Nervsys\Core\Lib\Profiling;
 use Nervsys\Core\Lib\Router;
 
 class ProcMgr extends Factory
@@ -363,6 +364,8 @@ class ProcMgr extends Factory
      */
     public function worker(): void
     {
+        Profiling::new()->reset();
+
         $caller = Caller::new();
         $router = Router::new();
 
