@@ -47,17 +47,20 @@ class Profiling extends Factory
 
     /**
      * @param string $profile_name
+     * @param bool   $analyze_cli
      *
      * @return void
      */
-    public function start(string $profile_name): void
+    public function start(string $profile_name, bool $analyze_cli = false): void
     {
-        $this->profiling_data[$profile_name][] = [
-            memory_get_usage(),
-            microtime(true)
-        ];
+        if ($analyze_cli || 'cli' !== PHP_SAPI) {
+            $this->profiling_data[$profile_name][] = [
+                memory_get_usage(),
+                microtime(true)
+            ];
+        }
 
-        unset($profile_name);
+        unset($profile_name, $analyze_cli);
     }
 
     /**
