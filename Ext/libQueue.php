@@ -24,7 +24,6 @@ use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\Error;
-use Nervsys\Core\Lib\Profiling;
 use Nervsys\Core\Lib\Router;
 use Nervsys\Core\Mgr\OSMgr;
 use Nervsys\Core\Mgr\ProcMgr;
@@ -147,8 +146,6 @@ class libQueue extends Factory
             unset($worker_key);
         }, $this->proc_worker_key);
 
-        Profiling::new()->reset();
-
         $app   = App::new();
         $OSMgr = OSMgr::new();
 
@@ -187,8 +184,6 @@ class libQueue extends Factory
      */
     public function QProc(array $redis, int $cycles): void
     {
-        Profiling::new()->reset();
-
         $error  = Error::new();
         $caller = Caller::new();
         $router = Router::new();
