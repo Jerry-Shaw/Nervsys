@@ -3,7 +3,7 @@
 /**
  * Crypt Extension
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ use Nervsys\Core\Factory;
 
 class libCrypt extends Factory
 {
-    /** @var libCryptGen $libCryptGen */
-    public libCryptGen $libCryptGen;
+    /** @var libKeygen $libKeygen */
+    public libKeygen $libKeygen;
 
     //Crypt method
     public string $method = 'AES-256-CTR';
@@ -36,15 +36,15 @@ class libCrypt extends Factory
     /**
      * Bind crypt keygen object
      *
-     * @param libCryptGen $crypt_gen
+     * @param libKeygen $keygen
      *
      * @return $this
      */
-    public function bindCryptGen(libCryptGen $crypt_gen): self
+    public function bindKeygen(libKeygen $keygen): self
     {
-        $this->libCryptGen = &$crypt_gen;
+        $this->libKeygen = &$keygen;
 
-        unset($crypt_gen);
+        unset($keygen);
         return $this;
     }
 
@@ -87,7 +87,7 @@ class libCrypt extends Factory
      */
     public function getKey(int $length = 32): string
     {
-        return $this->libCryptGen->create($length);
+        return $this->libKeygen->create($length);
     }
 
     /**
@@ -256,8 +256,8 @@ class libCrypt extends Factory
     public function sign(string $string, string $rsa_key = ''): string
     {
         //Prepare key
-        $key = $this->libCryptGen->create();
-        $mix = $this->libCryptGen->obscure($key);
+        $key = $this->libKeygen->create();
+        $mix = $this->libKeygen->obscure($key);
 
         //Encrypt signature
         $mix = '' === $rsa_key ? $this->base64UrlEncode($mix) : $this->rsaEncrypt($mix, $rsa_key);
@@ -287,7 +287,7 @@ class libCrypt extends Factory
 
         //Rebuild crypt keys
         $mix = '' === $rsa_key ? $this->base64UrlDecode($mix) : $this->rsaDecrypt($mix, $rsa_key);
-        $key = $this->libCryptGen->rebuild($mix);
+        $key = $this->libKeygen->rebuild($mix);
 
         //Decrypt signature
         $sig = $this->decrypt($enc, $key);
@@ -309,7 +309,7 @@ class libCrypt extends Factory
         $iv_len = openssl_cipher_iv_length($this->method);
 
         //Parse keys from key string
-        $keys = $this->libCryptGen->extract($key);
+        $keys = $this->libKeygen->extract($key);
 
         //Correct iv when length not match
         switch ($iv_len <=> strlen($keys['iv'])) {
