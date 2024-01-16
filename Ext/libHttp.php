@@ -172,6 +172,19 @@ class libHttp extends Factory
     }
 
     /**
+     * @param string $cookie
+     *
+     * @return $this
+     */
+    public function setCookie(string $cookie): self
+    {
+        $this->runtime_data['cookie'] = &$cookie;
+
+        unset($cookie);
+        return $this;
+    }
+
+    /**
      * Set HTTP method
      *
      * @param string $http_method
