@@ -81,11 +81,13 @@ class libCrypt extends Factory
     /**
      * Get crypt key
      *
+     * @param int $length
+     *
      * @return string
      */
-    public function getKey(): string
+    public function getKey(int $length = 32): string
     {
-        return $this->libCryptGen->create();
+        return $this->libCryptGen->create($length);
     }
 
     /**
