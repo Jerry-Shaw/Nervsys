@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Crypt KeyGen Extension
+ * Keygen Extension
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ namespace Nervsys\Ext;
 
 use Nervsys\Core\Factory;
 
-class libCryptGen extends Factory
+class libKeygen extends Factory
 {
     /**
-     * Create Crypt Key
+     * Create key of specific length
      *
      * @return string (Default 32 bits)
      */
