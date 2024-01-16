@@ -27,11 +27,33 @@ class libCryptGen extends Factory
     /**
      * Create Crypt Key
      *
-     * @return string (32 bits)
+     * @return string (Default 32 bits)
      */
-    public function create(): string
+    public function create(int $length = 32): string
     {
-        return hash('md5', uniqid(mt_rand(), true));
+        $char_list = [];
+
+        array_push($char_list, ...range('a', 'z'), ...range('A', 'Z'), ...range(0, 9));
+
+        $char_keys  = $char_list;
+        $char_count = count($char_list);
+
+        if ($length > $char_count) {
+            $times = ceil($length / $char_count) - 1;
+
+            for ($i = 0; $i < $times; ++$i) {
+                array_push($char_keys, ...$char_list);
+            }
+
+            unset($times, $i);
+        }
+
+        shuffle($char_keys);
+
+        $key = implode('', array_slice($char_keys, 0, $length));
+
+        unset($length, $char_list, $char_keys, $char_count);
+        return $key;
     }
 
     /**
