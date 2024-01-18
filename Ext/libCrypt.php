@@ -82,12 +82,13 @@ class libCrypt extends Factory
      * Get crypt key
      *
      * @param int $length
+     * @param int $key_type
      *
      * @return string
      */
-    public function getKey(int $length = 32): string
+    public function getKey(int $length = 32, int $key_type = libKeygen::KEY_ALL_ALPHANUMERIC): string
     {
-        return $this->libKeygen->create($length);
+        return $this->libKeygen->create($length, $key_type);
     }
 
     /**
