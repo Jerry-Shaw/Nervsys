@@ -24,16 +24,35 @@ use Nervsys\Core\Factory;
 
 class libKeygen extends Factory
 {
+    const KEY_ONLY_NUMBERS      = 1;
+    const KEY_LOWERCASE_LETTERS = 2;
+    const KEY_UPPERCASE_LETTERS = 4;
+    const KEY_ALL_ALPHANUMERIC  = 7;
+
     /**
-     * Create key of specific length
+     * Create key in specific types of specific length
      *
      * @return string (Default 32 bits)
      */
-    public function create(int $length = 32): string
+    public function create(int $length = 32, int $key_type = self::KEY_ALL_ALPHANUMERIC): string
     {
         $char_list = [];
 
-        array_push($char_list, ...range('a', 'z'), ...range('A', 'Z'), ...range(0, 9));
+        if (!in_array($key_type, range(1, 7), true)) {
+            $key_type = self::KEY_ALL_ALPHANUMERIC;
+        }
+
+        if (self::KEY_ONLY_NUMBERS === ($key_type & self::KEY_ONLY_NUMBERS)) {
+            array_push($char_list, ...range(0, 9));
+        }
+
+        if (self::KEY_LOWERCASE_LETTERS === ($key_type & self::KEY_LOWERCASE_LETTERS)) {
+            array_push($char_list, ...range('a', 'z'));
+        }
+
+        if (self::KEY_UPPERCASE_LETTERS === ($key_type & self::KEY_UPPERCASE_LETTERS)) {
+            array_push($char_list, ...range('A', 'Z'));
+        }
 
         $char_keys  = $char_list;
         $char_count = count($char_list);
@@ -52,7 +71,7 @@ class libKeygen extends Factory
 
         $key = implode('', array_slice($char_keys, 0, $length));
 
-        unset($length, $char_list, $char_keys, $char_count);
+        unset($length, $key_type, $char_list, $char_keys, $char_count);
         return $key;
     }
 
