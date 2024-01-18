@@ -59,7 +59,7 @@ class libKeygen extends Factory
     /**
      * Extract AES Keys from Crypt Key
      *
-     * @param string $key (32 bits)
+     * @param string $key (suggested 32 bits)
      *
      * @return array
      */
@@ -97,7 +97,7 @@ class libKeygen extends Factory
             $unit[$k] = $v . $unit_key;
         }
 
-        $key = implode($unit);
+        $key = implode('', $unit);
 
         unset($unit, $k, $v, $unit_key);
         return $key;
@@ -123,7 +123,7 @@ class libKeygen extends Factory
                 : $unit_item;
         }
 
-        $key = implode($unit);
+        $key = implode('', $unit);
 
         unset($unit, $k, $v, $unit_key, $unit_item);
         return $key;
