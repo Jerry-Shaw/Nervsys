@@ -217,7 +217,9 @@ class libCaptcha extends Factory
         unset($codes['char'], $text);
 
         //Add arc noise
-        $noise_count = ceil($this->height / 8);
+        $thickness = mt_rand(1, 4);
+        imagesetthickness($image, $thickness);
+        $noise_count = ceil($this->height / ($thickness * 4));
         for ($i = 0; $i < $noise_count; ++$i) {
             imagearc(
                 $image,
@@ -232,7 +234,7 @@ class libCaptcha extends Factory
         }
 
         //Add point noise
-        $noise_count = $this->height * 16;
+        $noise_count = $this->height * 32;
         for ($i = 0; $i < $noise_count; ++$i) {
             imagesetpixel(
                 $image,
@@ -242,7 +244,7 @@ class libCaptcha extends Factory
             );
         }
 
-        unset($colors, $color_index, $noise_count, $i);
+        unset($colors, $color_index, $thickness, $noise_count, $i);
 
         //Start output buffer
         ob_clean();
@@ -363,7 +365,7 @@ class libCaptcha extends Factory
             $result['char'][] = $list[mt_rand(0, 35)];
         }
 
-        $result['hash'] = implode($result['char']);
+        $result['hash'] = implode('', $result['char']);
 
         unset($list, $i);
         return $result;
@@ -382,7 +384,7 @@ class libCaptcha extends Factory
             $result['char'][] = (string)mt_rand(0, 9);
         }
 
-        $result['hash'] = implode($result['char']);
+        $result['hash'] = implode('', $result['char']);
 
         unset($i);
         return $result;
@@ -403,7 +405,7 @@ class libCaptcha extends Factory
             $result['char'][] = $list[mt_rand(0, 25)];
         }
 
-        $result['hash'] = implode($result['char']);
+        $result['hash'] = implode('', $result['char']);
 
         unset($list, $i);
         return $result;
@@ -445,7 +447,7 @@ class libCaptcha extends Factory
     {
         $result = [];
 
-        //Allowed calculate options
+        //Allowed calculation options
         $option = ['+', '-', '*'];
 
         //Generate random numbers and option indicators
