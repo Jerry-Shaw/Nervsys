@@ -118,7 +118,7 @@ trait System
      *
      * @return $this
      */
-    public function AppSetApiPath(string $pathname): self
+    public function setApiPath(string $pathname): self
     {
         $this->app->api_path = &$pathname;
 
@@ -131,7 +131,7 @@ trait System
      *
      * @return $this
      */
-    public function AppSetTimezone(string $timezone): self
+    public function setTimezone(string $timezone): self
     {
         $this->app->timezone = &$timezone;
 
@@ -144,7 +144,7 @@ trait System
      *
      * @return $this
      */
-    public function AppSetCoreDebug(bool $core_debug_mode): self
+    public function setCoreDebug(bool $core_debug_mode): self
     {
         $this->app->core_debug = &$core_debug_mode;
 
@@ -158,9 +158,9 @@ trait System
      *
      * @return $this
      */
-    public function CorsAddRecord(string $allow_origin, string $allow_headers = ''): self
+    public function addCorsRule(string $allow_origin, string $allow_headers = ''): self
     {
-        $this->CORS->addRecord($allow_origin, $allow_headers);
+        $this->CORS->addRule($allow_origin, $allow_headers);
 
         unset($allow_origin, $allow_headers);
         return $this;
@@ -171,7 +171,7 @@ trait System
      *
      * @return $this
      */
-    public function ErrorAddHandler(callable $handler): self
+    public function addErrorHandler(callable $handler): self
     {
         $this->error->custom_handler[] = $handler;
 
@@ -184,7 +184,7 @@ trait System
      *
      * @return $this
      */
-    public function ErrorSetHandler(callable $handler): self
+    public function setErrorHandler(callable $handler): self
     {
         $this->error->custom_handler = [$handler];
 
@@ -195,7 +195,7 @@ trait System
     /**
      * @return $this
      */
-    public function ErrorResetHandler(): self
+    public function resetErrorHandler(): self
     {
         $this->error->custom_handler = [];
 
@@ -208,7 +208,7 @@ trait System
      *
      * @return $this
      */
-    public function HookAddBefore(string $cmd_path, callable ...$hook_fn): self
+    public function addPreHook(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
             $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
@@ -224,7 +224,7 @@ trait System
      *
      * @return $this
      */
-    public function HookAddAfter(string $cmd_path, callable ...$hook_fn): self
+    public function addPostHook(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
             $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
@@ -239,7 +239,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataReadHeaderKeys(string ...$keys): self
+    public function readHeaderKeys(string ...$keys): self
     {
         $this->IOData->header_keys = &$keys;
 
@@ -252,7 +252,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataReadCookieKeys(string ...$keys): self
+    public function readCookieKeys(string ...$keys): self
     {
         $this->IOData->cookie_keys = &$keys;
 
@@ -265,7 +265,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataAddCgiHandler(callable $cgi_handler): self
+    public function addCgiHandler(callable $cgi_handler): self
     {
         $this->IOData->cgi_handler[] = $cgi_handler;
 
@@ -278,7 +278,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataAddCliHandler(callable $cli_handler): self
+    public function addCliHandler(callable $cli_handler): self
     {
         $this->IOData->cli_handler[] = $cli_handler;
 
@@ -293,7 +293,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataSetCodeMsg(int $code, string $message, array $values = []): self
+    public function setCodeMsg(int $code, string $message, array $values = []): self
     {
         if (!empty($values)) {
             $message = sprintf($message, ...$values);
@@ -311,7 +311,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataSetContentType(string $content_type): self
+    public function setContentType(string $content_type): self
     {
         $this->IOData->content_type = &$content_type;
 
@@ -324,7 +324,7 @@ trait System
      *
      * @return $this
      */
-    public function IODataSetOutputHandler(callable $output_handler): self
+    public function setOutputHandler(callable $output_handler): self
     {
         $this->IOData->output_handler = [$output_handler];
 
@@ -338,7 +338,7 @@ trait System
      *
      * @return $this
      */
-    public function ProfilingSetThresholds(int $memory_bytes, int $time_milliseconds): self
+    public function setProfilingThresholds(int $memory_bytes, int $time_milliseconds): self
     {
         $this->profiling->setThresholds($memory_bytes, $time_milliseconds);
 
@@ -351,7 +351,7 @@ trait System
      *
      * @return $this
      */
-    public function RouterAddCgi(callable $cgi_router): self
+    public function addCgiRouter(callable $cgi_router): self
     {
         array_unshift($this->router->cgi_router_stack, $cgi_router);
 
@@ -364,7 +364,7 @@ trait System
      *
      * @return $this
      */
-    public function RouterAddCli(callable $cli_router): self
+    public function addCliRouter(callable $cli_router): self
     {
         array_unshift($this->router->cli_router_stack, $cli_router);
 
@@ -378,7 +378,7 @@ trait System
      *
      * @return $this
      */
-    public function RouterAddPathMap(string $exe_name, string $exe_path): self
+    public function addCliPathMap(string $exe_name, string $exe_path): self
     {
         $this->router->cli_exe_path_map[$exe_name] = &$exe_path;
 
@@ -391,7 +391,7 @@ trait System
      *
      * @return $this
      */
-    public function SecurityAddXssSkipKeys(string ...$keys): self
+    public function addXssSkipKeys(string ...$keys): self
     {
         $this->security->xss_skip_keys = array_merge($this->security->xss_skip_keys, $keys);
 
@@ -404,7 +404,7 @@ trait System
      *
      * @return $this
      */
-    public function SecuritySetFnTargetBlocked(callable $fnTargetBlocked): self
+    public function setFnTargetBlocked(callable $fnTargetBlocked): self
     {
         $this->security->fn_target_blocked = [$fnTargetBlocked];
 
@@ -417,7 +417,7 @@ trait System
      *
      * @return $this
      */
-    public function SecuritySetFnTargetInvalid(callable $fnTargetInvalid): self
+    public function setFnTargetInvalid(callable $fnTargetInvalid): self
     {
         $this->security->fn_target_invalid = [$fnTargetInvalid];
 
@@ -430,7 +430,7 @@ trait System
      *
      * @return $this
      */
-    public function SecuritySetFnArgumentInvalid(callable $fnArgumentInvalid): self
+    public function setFnArgumentInvalid(callable $fnArgumentInvalid): self
     {
         $this->security->fn_argument_invalid = [$fnArgumentInvalid];
 
