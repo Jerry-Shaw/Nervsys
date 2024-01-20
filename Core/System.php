@@ -219,6 +219,22 @@ trait System
     }
 
     /**
+     * @param callable $hook_fn
+     * @param string   ...$cmd_path
+     *
+     * @return $this
+     */
+    public function addPreFunc(callable $hook_fn, string ...$cmd_path): self
+    {
+        foreach ($cmd_path as $path) {
+            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
+        }
+
+        unset($hook_fn, $cmd_path, $path);
+        return $this;
+    }
+
+    /**
      * @param string   $cmd_path
      * @param callable ...$hook_fn
      *
@@ -230,7 +246,23 @@ trait System
             $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
         }
 
-        unset($cmd_path, $hook_fn);
+        unset($cmd_path, $hook_fn, $fn);
+        return $this;
+    }
+
+    /**
+     * @param callable $hook_fn
+     * @param string   ...$cmd_path
+     *
+     * @return $this
+     */
+    public function addPostFunc(callable $hook_fn, string ...$cmd_path): self
+    {
+        foreach ($cmd_path as $path) {
+            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
+        }
+
+        unset($hook_fn, $cmd_path, $path);
         return $this;
     }
 
