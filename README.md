@@ -69,10 +69,10 @@ require __DIR__ . '/../../Nervsys/NS.php';
 
 $ns = new Nervsys\NS();
 
-$ns->AppSetApiPath('myApiPath')
-    ->AppSetCoreDebug(true)
-    ->IODataSetContentType('application/json')
-    ->HookAddBefore('/', [\app\hook\ApiCheck::new(), 'userToken'])
+$ns->setApiPath('myApiPath')
+    ->setCoreDebug(true)
+    ->setContentType('application/json')
+    ->addPreHook('/', [\app\hook\ApiCheck::new(), 'userToken'])
     ->addAutoloadPath($ns->app->root_path . DIRECTORY_SEPARATOR . 'library');
 
 $ns->go();
