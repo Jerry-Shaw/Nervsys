@@ -319,26 +319,6 @@ trait System
     }
 
     /**
-     * @param int    $code
-     * @param string $message
-     * @param array  $values
-     *
-     * @return $this
-     */
-    public function setCodeMsg(int $code, string $message, array $values = []): self
-    {
-        if (!empty($values)) {
-            $message = sprintf($message, ...$values);
-        }
-
-        $this->IOData->src_msg['code']    = &$code;
-        $this->IOData->src_msg['message'] = &$message;
-
-        unset($code, $message, $values);
-        return $this;
-    }
-
-    /**
      * @param string $content_type
      *
      * @return $this
@@ -361,6 +341,26 @@ trait System
         $this->IOData->output_handler = [$output_handler];
 
         unset($output_handler);
+        return $this;
+    }
+
+    /**
+     * @param int    $code
+     * @param string $message
+     * @param array  $values
+     *
+     * @return $this
+     */
+    public function setOutputCodeMsg(int $code, string $message, array $values = []): self
+    {
+        if (!empty($values)) {
+            $message = sprintf($message, ...$values);
+        }
+
+        $this->IOData->src_msg['code']    = &$code;
+        $this->IOData->src_msg['message'] = &$message;
+
+        unset($code, $message, $values);
         return $this;
     }
 
