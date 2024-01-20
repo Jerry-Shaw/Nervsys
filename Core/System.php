@@ -208,7 +208,7 @@ trait System
      *
      * @return $this
      */
-    public function addPreHook(string $cmd_path, callable ...$hook_fn): self
+    public function addPreHooks(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
             $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
@@ -224,7 +224,7 @@ trait System
      *
      * @return $this
      */
-    public function addPreFunc(callable $hook_fn, string ...$cmd_path): self
+    public function addPreHookFunc(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
             $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
@@ -240,7 +240,7 @@ trait System
      *
      * @return $this
      */
-    public function addPostHook(string $cmd_path, callable ...$hook_fn): self
+    public function addPostHooks(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
             $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
@@ -256,7 +256,7 @@ trait System
      *
      * @return $this
      */
-    public function addPostFunc(callable $hook_fn, string ...$cmd_path): self
+    public function addPostHookFunc(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
             $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
