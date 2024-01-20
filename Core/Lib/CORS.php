@@ -25,26 +25,26 @@ use Nervsys\Core\Factory;
 
 class CORS extends Factory
 {
-    private array  $allowed_list  = [];
-    private string $allow_headers = 'X-Requested-With, Content-Type, Content-Length';
+    private array  $allowed_list    = [];
+    private string $allowed_headers = 'X-Requested-With, Content-Type, Content-Length';
 
     /**
-     * @param string $allow_origin
-     * @param string $allow_headers
+     * @param string $allowed_origin
+     * @param string $allowed_headers
      *
      * @return $this
      */
-    public function addRecord(string $allow_origin, string $allow_headers = ''): self
+    public function addRule(string $allowed_origin, string $allowed_headers = ''): self
     {
-        $accept_headers = $this->allow_headers;
+        $accept_headers = $this->allowed_headers;
 
-        if ('' !== $allow_headers) {
-            $accept_headers .= ', ' . $allow_headers;
+        if ('' !== $allowed_headers) {
+            $accept_headers .= ', ' . $allowed_headers;
         }
 
-        $this->allowed_list[$allow_origin] = &$accept_headers;
+        $this->allowed_list[$allowed_origin] = &$accept_headers;
 
-        unset($allow_origin, $allow_headers, $accept_headers);
+        unset($allowed_origin, $allowed_headers, $accept_headers);
         return $this;
     }
 
