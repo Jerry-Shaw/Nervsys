@@ -224,7 +224,7 @@ trait System
      *
      * @return $this
      */
-    public function addPreHookFunc(callable $hook_fn, string ...$cmd_path): self
+    public function addPreHookRules(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
             $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
@@ -256,7 +256,7 @@ trait System
      *
      * @return $this
      */
-    public function addPostHookFunc(callable $hook_fn, string ...$cmd_path): self
+    public function addPostHookRules(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
             $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
