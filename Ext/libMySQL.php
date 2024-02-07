@@ -299,32 +299,38 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set to table
+     * Set action to a table
      *
      * @param string $table
+     * @param bool   $with_prefix
      *
      * @return $this
      */
-    public function to(string $table): self
+    public function to(string $table, bool $with_prefix = false): self
     {
-        $this->runtime_data['table'] = $this->table_prefix . $table;
+        if ($with_prefix) {
+            $table = $this->table_prefix . $table;
+        }
 
-        unset($table);
+        $this->runtime_data['table'] = &$table;
+
+        unset($table, $with_prefix);
         return $this;
     }
 
     /**
-     * Set from table
+     * Alias function of "to"
      *
      * @param string $table
+     * @param bool   $with_prefix
      *
      * @return $this
      */
-    public function from(string $table): self
+    public function from(string $table, bool $with_prefix = false): self
     {
-        $this->runtime_data['table'] = $this->table_prefix . $table;
+        $this->to($table, $with_prefix);
 
-        unset($table);
+        unset($table, $with_prefix);
         return $this;
     }
 
