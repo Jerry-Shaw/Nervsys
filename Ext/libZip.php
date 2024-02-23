@@ -102,12 +102,16 @@ class libZip extends Factory
                 throw new \Exception('Zip failed!', $errno);
             }
 
-            foreach ($this->target_file as $path) {
-                $base_path = basename($path);
-                is_dir($path) ? $this->zipDir($zipArchive, $path, $base_path) : $this->zipFile($zipArchive, $path, $base_path);
+            foreach ($this->target_file as $file_path) {
+                $file_path = realpath($file_path);
+                $file_name = basename($file_path);
+
+                is_dir($file_path)
+                    ? $this->zipDir($zipArchive, $file_path, $file_name)
+                    : $this->zipFile($zipArchive, $file_path, $file_name);
             }
 
-            unset($errno, $path, $base_path);
+            unset($errno, $file_path, $file_name);
 
             $result = ['errno' => 0, 'path' => &$zip_path];
         } catch (\Throwable $throwable) {
@@ -152,13 +156,13 @@ class libZip extends Factory
      * Get entry name inside zip file
      *
      * @param string $path
-     * @param string $base_path
+     * @param string $name
      *
      * @return string
      */
-    private function getEntryName(string $path, string $base_path): string
+    private function getEntryName(string $path, string $name): string
     {
-        return strtr(substr($path, strpos($path, $base_path)), '\\', '/');
+        return strtr(substr($path, strpos($path, $name)), '\\', '/');
     }
 
     /**
@@ -166,14 +170,14 @@ class libZip extends Factory
      *
      * @param \ZipArchive $zipArchive
      * @param string      $path
-     * @param string      $base_path
+     * @param string      $name
      */
-    private function zipFile(\ZipArchive $zipArchive, string $path, string $base_path): void
+    private function zipFile(\ZipArchive $zipArchive, string $path, string $name): void
     {
         $path = strtr($path, '\\', '/');
-        $zipArchive->addFile($path, $this->getEntryName($path, $base_path));
+        $zipArchive->addFile($path, $this->getEntryName($path, $name));
 
-        unset($zipArchive, $path, $base_path);
+        unset($zipArchive, $path, $name);
     }
 
     /**
@@ -181,29 +185,31 @@ class libZip extends Factory
      *
      * @param \ZipArchive $zipArchive
      * @param string      $path
-     * @param string      $base_path
+     * @param string      $name
      *
      * @throws \Exception
      */
-    private function zipDir(\ZipArchive $zipArchive, string $path, string $base_path): void
+    private function zipDir(\ZipArchive $zipArchive, string $path, string $name): void
     {
         if (false === ($dir = opendir($path))) {
             throw new \Exception('Open "' . $path . '" failed!', \ZipArchive::ER_READ);
         }
 
-        $zipArchive->addEmptyDir($this->getEntryName($path, $base_path));
+        $zipArchive->addEmptyDir($this->getEntryName($path, $name));
 
         while (false !== ($file = readdir($dir))) {
             if (in_array($file, ['.', '..'], true)) {
                 continue;
             }
 
-            $file_path = $path . DIRECTORY_SEPARATOR . $file;
+            $file_path = realpath($path . DIRECTORY_SEPARATOR . $file);
 
-            is_dir($file_path) ? $this->zipDir($zipArchive, $file_path, $base_path) : $this->zipFile($zipArchive, $file_path, $base_path);
+            is_dir($file_path)
+                ? $this->zipDir($zipArchive, $file_path, $name)
+                : $this->zipFile($zipArchive, $file_path, $name);
         }
 
-        unset($zipArchive, $path, $base_path, $dir, $file, $file_path);
+        unset($zipArchive, $path, $name, $dir, $file, $file_path);
     }
 
     /**
