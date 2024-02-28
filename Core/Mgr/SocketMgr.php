@@ -309,16 +309,14 @@ class SocketMgr extends Factory
                 }
 
                 try {
-                    if (!$websocket) {
-                        $message = $this->readMessage($socket_id);
-                    } else {
+                    $message = $this->readMessage($socket_id);
+
+                    if ($websocket) {
                         if (isset($this->handshakes[$socket_id])) {
-                            $message = $this->readMessage($socket_id, false);
                             $this->wsSendHandshake($socket_id, $message);
                             continue;
                         }
 
-                        $message = $this->readMessage($socket_id);
                         $message = $this->wsGetMessage($socket_id, $message);
                     }
                 } catch (\Throwable $throwable) {
@@ -477,31 +475,22 @@ class SocketMgr extends Factory
 
     /**
      * @param string $socket_id
-     * @param bool   $read_by_line
      *
      * @return string
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function readMessage(string $socket_id, bool $read_by_line = true): string
+    public function readMessage(string $socket_id): string
     {
         try {
-            if ($read_by_line) {
-                $message = fgets($this->connections[$socket_id]);
+            $message = fread($this->connections[$socket_id], 4096);
 
-                if (false === $message) {
-                    throw new \Exception('Read client ERROR!', E_USER_NOTICE);
-                }
-            } else {
-                $message = fread($this->connections[$socket_id], 4096);
+            if (false === $message) {
+                throw new \Exception('Read client ERROR!', E_USER_NOTICE);
+            }
 
-                if (false === $message) {
-                    throw new \Exception('Read client ERROR!', E_USER_NOTICE);
-                }
-
-                while ('' !== ($fragment = fread($this->connections[$socket_id], 4096))) {
-                    $message .= $fragment;
-                }
+            while ('' !== ($fragment = fread($this->connections[$socket_id], 4096))) {
+                $message .= $fragment;
             }
 
             $this->activities[$socket_id] = time();
@@ -510,7 +499,7 @@ class SocketMgr extends Factory
             throw new \Exception('Read client ERROR!', E_USER_NOTICE);
         }
 
-        unset($socket_id, $read_by_line, $fragment);
+        unset($socket_id, $fragment);
         return $message;
     }
 
