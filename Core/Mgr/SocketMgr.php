@@ -587,17 +587,17 @@ class SocketMgr extends Factory
         $ws_codes = $this->wsGetFrameCodes($message);
 
         if (0xA === $ws_codes['opcode']) {
-            throw new \Exception('Pong frame!', E_USER_NOTICE);
+            throw new \Exception('Received Pong frame!', E_USER_NOTICE);
         }
 
         if (0x9 === $ws_codes['opcode']) {
             $this->wsPong($socket_id);
-            throw new \Exception('Ping frame!', E_USER_NOTICE);
+            throw new \Exception('Received Ping frame!', E_USER_NOTICE);
         }
 
         if (0x8 === $ws_codes['opcode']) {
             $this->closeSocket($socket_id);
-            throw new \Exception('Client closed!', E_USER_NOTICE);
+            throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
         }
 
         $message = $this->wsDecode($message);
