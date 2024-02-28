@@ -308,21 +308,23 @@ class SocketMgr extends Factory
                     \Fiber::suspend();
                 }
 
-                $message = '';
+                try {
+                    if (!$websocket) {
+                        $message = $this->readMessage($socket_id);
+                    } else {
+                        if (isset($this->handshakes[$socket_id])) {
+                            $message = $this->readMessage($socket_id, false);
+                            $this->wsSendHandshake($socket_id, $message);
+                            continue;
+                        }
 
-                if (!$this->readMessage($socket_id, $message)) {
+                        $message = $this->readMessage($socket_id);
+                        $message = $this->wsGetMessage($socket_id, $message);
+                    }
+                } catch (\Throwable $throwable) {
+                    $this->debug('onMessage debug: ' . $throwable->getMessage());
+                    unset($throwable);
                     continue;
-                }
-
-                if ($websocket) {
-                    if (isset($this->handshakes[$socket_id])) {
-                        $this->wsSendHandshake($socket_id, $message);
-                        continue;
-                    }
-
-                    if (!$this->wsGetMessage($socket_id, $message)) {
-                        continue;
-                    }
                 }
 
                 $this->debug('Read message from ' . $socket_id . ': ' . $message);
@@ -475,34 +477,41 @@ class SocketMgr extends Factory
 
     /**
      * @param string $socket_id
-     * @param string $message
+     * @param bool   $read_by_line
      *
-     * @return bool
+     * @return string
      * @throws \ReflectionException
+     * @throws \Exception
      */
-    public function readMessage(string $socket_id, string &$message): bool
+    public function readMessage(string $socket_id, bool $read_by_line = true): string
     {
-        $continue = true;
-
         try {
-            $message = fgetc($this->connections[$socket_id]);
+            if ($read_by_line) {
+                $message = fgets($this->connections[$socket_id]);
 
-            if (false === $message) {
-                throw new \Exception('Read client ERROR!', E_USER_NOTICE);
-            }
+                if (false === $message) {
+                    throw new \Exception('Read client ERROR!', E_USER_NOTICE);
+                }
+            } else {
+                $message = fread($this->connections[$socket_id], 4096);
 
-            while ('' !== ($fragment = fread($this->connections[$socket_id], 4096))) {
-                $message .= $fragment;
+                if (false === $message) {
+                    throw new \Exception('Read client ERROR!', E_USER_NOTICE);
+                }
+
+                while ('' !== ($fragment = fread($this->connections[$socket_id], 4096))) {
+                    $message .= $fragment;
+                }
             }
 
             $this->activities[$socket_id] = time();
         } catch (\Throwable) {
             $this->closeSocket($socket_id);
-            $continue = false;
+            throw new \Exception('Read client ERROR!', E_USER_NOTICE);
         }
 
-        unset($socket_id, $fragment);
-        return $continue;
+        unset($socket_id, $read_by_line, $fragment);
+        return $message;
     }
 
     /**
@@ -569,32 +578,32 @@ class SocketMgr extends Factory
      * @param string $socket_id
      * @param string $message
      *
-     * @return bool
+     * @return string
      * @throws \ReflectionException
+     * @throws \Exception
      */
-    public function wsGetMessage(string $socket_id, string &$message): bool
+    public function wsGetMessage(string $socket_id, string $message): string
     {
-        $continue = true;
         $ws_codes = $this->wsGetFrameCodes($message);
 
         if (0xA === $ws_codes['opcode']) {
-            $continue = false;
+            throw new \Exception('Pong frame!', E_USER_NOTICE);
         }
 
         if (0x9 === $ws_codes['opcode']) {
             $this->wsPong($socket_id);
-            $continue = false;
+            throw new \Exception('Ping frame!', E_USER_NOTICE);
         }
 
         if (0x8 === $ws_codes['opcode']) {
             $this->closeSocket($socket_id);
-            $continue = false;
+            throw new \Exception('Client closed!', E_USER_NOTICE);
         }
 
         $message = $this->wsDecode($message);
 
         unset($socket_id, $ws_codes);
-        return $continue;
+        return $message;
     }
 
     /**
