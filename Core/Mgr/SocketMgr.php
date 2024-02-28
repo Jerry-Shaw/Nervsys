@@ -613,7 +613,7 @@ class SocketMgr extends Factory
 
         if (is_callable($this->callbacks['onHandshake'])) {
             try {
-                $handshake = (bool)call_user_func($this->callbacks['onHandshake'], $ws_proto);
+                $handshake = (bool)call_user_func($this->callbacks['onHandshake'], $socket_id, $ws_proto);
             } catch (\Throwable) {
                 $handshake = false;
             }
