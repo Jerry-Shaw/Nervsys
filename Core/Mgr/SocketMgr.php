@@ -586,18 +586,43 @@ class SocketMgr extends Factory
     {
         $ws_codes = $this->wsGetFrameCodes($message);
 
-        if (0xA === $ws_codes['opcode']) {
-            throw new \Exception('Received Pong frame!', E_USER_NOTICE);
-        }
+        switch ($ws_codes['opcode']) {
+            case 0x0:
+                break;
+            case 0x1:
+                break;
+            case 0x2:
+                break;
 
-        if (0x9 === $ws_codes['opcode']) {
-            $this->wsPong($socket_id);
-            throw new \Exception('Received Ping frame!', E_USER_NOTICE);
-        }
+            case 0x8:
+                $this->closeSocket($socket_id);
+                throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
+                break;
+            case 0x9:
+                $this->wsPong($socket_id);
+                throw new \Exception('Received Ping frame!', E_USER_NOTICE);
+                break;
+            case 0xA:
+                throw new \Exception('Received Pong frame!', E_USER_NOTICE);
+                break;
 
-        if (0x8 === $ws_codes['opcode']) {
-            $this->closeSocket($socket_id);
-            throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
+            case 0x3:
+            case 0x4:
+            case 0x5:
+            case 0x6:
+            case 0x7:
+            case 0xB:
+            case 0xC:
+            case 0xD:
+            case 0xE:
+            case 0xF:
+                throw new \Exception('Opcode: ' . $ws_codes['opcode'] . '. Reserved frames!', E_USER_NOTICE);
+                break;
+
+            default:
+                $this->closeSocket($socket_id);
+                throw new \Exception('Opcode ERROR! Close connection!', E_USER_NOTICE);
+                break;
         }
 
         $message = $this->wsDecode($message);
@@ -736,39 +761,48 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $buff
+     * @param string $buffer
      *
      * @return string
      */
-    public function wsDecode(string $buff): string
+    public function wsDecode(string $buffer): string
     {
-        $payload_len = (ord($buff[1]) & 0x7F);
+        $payload_length = (ord($buffer[1]) & 0x7F);
 
-        switch ($payload_len) {
+        switch ($payload_length) {
             case 126:
-                $mask = substr($buff, 4, 4);
-                $data = substr($buff, 8);
+                $data_length = ((ord($buffer[2]) & 0xFF) << 8) | (ord($buffer[3]) & 0xFF);
+                $data_mask   = substr($buffer, 4, 4);
+                $data_body   = substr($buffer, 8, $data_length);
                 break;
 
             case 127:
-                $mask = substr($buff, 10, 4);
-                $data = substr($buff, 14);
+                $data_length = (ord($buffer[2]) << 56)
+                    | (ord($buffer[3]) << 48)
+                    | (ord($buffer[4]) << 40)
+                    | (ord($buffer[5]) << 32)
+                    | (ord($buffer[6]) << 24)
+                    | (ord($buffer[7]) << 16)
+                    | (ord($buffer[8]) << 8)
+                    | (ord($buffer[7]) << 0);
+                $data_mask   = substr($buffer, 10, 4);
+                $data_body   = substr($buffer, 14, $data_length);
                 break;
 
             default:
-                $mask = substr($buff, 2, 4);
-                $data = substr($buff, 6);
+                $data_mask = substr($buffer, 2, 4);
+                $data_body = substr($buffer, 6, $payload_length);
                 break;
         }
 
         $message = '';
-        $length  = strlen($data);
+        $length  = strlen($data_body);
 
         for ($i = 0; $i < $length; ++$i) {
-            $message .= $data[$i] ^ $mask[$i % 4];
+            $message .= $data_body[$i] ^ $data_mask[$i % 4];
         }
 
-        unset($buff, $payload_len, $mask, $data, $length, $i);
+        unset($buffer, $payload_length, $data_length, $data_mask, $data_body, $length, $i);
         return $message;
     }
 
