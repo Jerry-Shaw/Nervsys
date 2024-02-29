@@ -602,6 +602,8 @@ class SocketMgr extends Factory
                     $ws_codes['data_length'] = strlen($message);
 
                     unset($this->data_frames[$socket_id]);
+
+                    $this->debug('onMessage debug: All continuation frames received!');
                 }
                 break;
             case 0x1:
@@ -612,7 +614,7 @@ class SocketMgr extends Factory
                     $this->data_frames[$socket_id]['mask'] = $ws_codes['data_mask'];
                     $this->data_frames[$socket_id]['data'] = substr($message, $ws_codes['data_offset'], $ws_codes['data_length']);
 
-                    throw new \Exception('Received continuation frame!', E_USER_NOTICE);
+                    throw new \Exception('Received first continuation frame!', E_USER_NOTICE);
                 }
                 break;
 
