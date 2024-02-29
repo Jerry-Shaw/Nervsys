@@ -265,7 +265,9 @@ class SocketMgr extends Factory
                 $this->handshakes[$socket_id] = false;
             }
 
-            $this->activities[$socket_id]  = time();
+            $now_time = time();
+
+            $this->activities[$socket_id]  = [$now_time, $now_time];
             $this->connections[$socket_id] = $client;
 
             $this->debug('Client connected: ' . $socket_id);
@@ -356,23 +358,23 @@ class SocketMgr extends Factory
             $count    = 0;
             $now_time = time();
 
-            foreach ($this->activities as $socket_id => $active_time) {
+            foreach ($this->activities as $socket_id => $active_times) {
                 if (++$count > $this->read_at[3]) {
                     $count = 0;
                     \Fiber::suspend();
                 }
 
-                $wait_sec = $now_time - $active_time;
-
-                if ($wait_sec < $watch_sec) {
+                if ($now_time - max(...$active_times) < $watch_sec) {
                     continue;
                 }
 
-                if ($wait_sec > $alive_sec) {
+                if ($now_time - $active_times[0] > $alive_sec) {
                     $this->debug('Heartbeat lost: ' . $socket_id);
                     $this->closeSocket($socket_id);
                     continue;
                 }
+
+                $this->activities[$socket_id][1] = $now_time;
 
                 if ($websocket) {
                     $this->wsPing($socket_id);
@@ -493,7 +495,7 @@ class SocketMgr extends Factory
                 $message .= $fragment;
             }
 
-            $this->activities[$socket_id] = time();
+            $this->activities[$socket_id][0] = time();
         } catch (\Throwable) {
             $this->closeSocket($socket_id);
             throw new \Exception('Read client ERROR!', E_USER_NOTICE);
