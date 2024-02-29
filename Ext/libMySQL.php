@@ -23,7 +23,6 @@
 namespace Nervsys\Ext;
 
 use Nervsys\Core\Factory;
-use Nervsys\Core\Lib\IOData;
 
 class libMySQL extends Factory
 {
@@ -263,6 +262,31 @@ class libMySQL extends Factory
         $this->runtime_data['value']  = &$data;
 
         unset($data);
+        return $this;
+    }
+
+    /**
+     * Replace action
+     *
+     * @param array $data
+     * @param bool  $use_set
+     *
+     * @return $this
+     */
+    public function replace(array $data, bool $use_set = false): self
+    {
+        $this->isReady();
+
+        if (!$use_set) {
+            $this->runtime_data['action'] = 'replace';
+            $this->runtime_data['cols']   = array_keys($data);
+            $this->runtime_data['bind']   = array_values($data);
+        } else {
+            $this->runtime_data['action'] = 'replaceSet';
+            $this->runtime_data['value']  = &$data;
+        }
+
+        unset($data, $use_set);
         return $this;
     }
 
@@ -780,30 +804,33 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . ($this->runtime_data['table'] ?? $this->table_name) . ' SET';
+        $sql = 'UPDATE ' . ($this->runtime_data['table'] ?? $this->table_name) . $this->getLastSql();
 
-        $data = [];
-        foreach ($this->runtime_data['value'] as $col => $val) {
-            if (str_starts_with($val, $col)) {
-                $raw = str_replace(' ', '', $val);
-                $opt = substr($raw, $pos = strlen($col), 1);
-                $num = substr($raw, $pos + 1);
-
-                if (in_array($opt, ['+', '-', '*', '/'], true) && is_numeric($num)) {
-                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($num, '.') ? (int)$num : (float)$num);
-                    continue;
-                }
-            }
-
-            $data[] = $col . '=?';
-
-            $this->runtime_data['bind'][] = $val;
-        }
-
-        $sql .= ' ' . implode(',', $data);
-
-        unset($data, $col, $val, $raw, $opt, $num);
         return $this->appendCond($sql);
+    }
+
+    /**
+     * Build SQL for REPLACE INTO
+     *
+     * @return string
+     */
+    protected function buildReplace(): string
+    {
+        $sql = 'REPLACE INTO ' . ($this->runtime_data['table'] ?? $this->table_name);
+        $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
+        $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
+
+        return $sql;
+    }
+
+    /**
+     * Build SQL for REPLACE INTO ... SET
+     *
+     * @return string
+     */
+    protected function buildReplaceSet(): string
+    {
+        return 'REPLACE INTO ' . ($this->runtime_data['table'] ?? $this->table_name) . $this->getSqlSet();
     }
 
     /**
@@ -1036,6 +1063,38 @@ class libMySQL extends Factory
             $sql .= ' FOR ' . $this->runtime_data['lock'];
         }
 
+        return $sql;
+    }
+
+    /**
+     * @return string
+     */
+    private function getSqlSet(): string
+    {
+        $data = [];
+
+        foreach ($this->runtime_data['value'] as $col => $val) {
+            if (str_starts_with($val, $col)) {
+                $raw = str_replace(' ', '', $val);
+                $opt = substr($raw, $pos = strlen($col), 1);
+                $num = substr($raw, $pos + 1);
+
+                if (in_array($opt, ['+', '-', '*', '/'], true) && is_numeric($num)) {
+                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($num, '.') ? (int)$num : (float)$num);
+                    continue;
+                }
+
+                unset($raw, $opt, $num);
+            }
+
+            $data[] = $col . '=?';
+
+            $this->runtime_data['bind'][] = $val;
+        }
+
+        $sql = ' SET ' . implode(',', $data);
+
+        unset($data, $col, $val);
         return $sql;
     }
 }
