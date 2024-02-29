@@ -50,6 +50,7 @@ class SocketMgr extends Factory
     public array $activities  = [];
     public array $connections = [];
     public array $master_sock = [];
+    public array $data_frames = [];
 
     /**
      * @throws \ReflectionException
@@ -579,10 +580,13 @@ class SocketMgr extends Factory
 
         switch ($ws_codes['opcode']) {
             case 0x0:
+
                 break;
             case 0x1:
+
                 break;
             case 0x2:
+
                 break;
 
             case 0x8:
@@ -616,7 +620,7 @@ class SocketMgr extends Factory
                 break;
         }
 
-        $message = $this->wsDecode($message);
+        $message = $this->wsDecode($message, $ws_codes['data_mask'], $ws_codes['data_offset'], $ws_codes['data_length']);
 
         unset($socket_id, $ws_codes);
         return $message;
@@ -733,42 +737,32 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $buff
-     *
-     * @return int[]
-     */
-    public function wsGetFrameCodes(string $buff): array
-    {
-        $char = ord($buff[0]);
-
-        $codes = [
-            'fin'    => $char >> 7,
-            'opcode' => $char & 0x0F,
-            'mask'   => ord($buff[1]) >> 7
-        ];
-
-        unset($buff, $char);
-        return $codes;
-    }
-
-    /**
      * @param string $buffer
      *
-     * @return string
+     * @return array
      */
-    public function wsDecode(string $buffer): string
+    public function wsGetFrameCodes(string $buffer): array
     {
-        $payload_length = (ord($buffer[1]) & 0x7F);
+        $codes = [];
+        $char  = ord($buffer[0]);
+
+        $codes['fin']    = $char >> 7;
+        $codes['opcode'] = $char & 0x0F;
+        $codes['masked'] = ord($buffer[1]) >> 7;
+
+        $payload_length          = (ord($buffer[1]) & 0x7F);
+        $codes['payload_length'] = $payload_length;
 
         switch ($payload_length) {
             case 126:
-                $data_length = ((ord($buffer[2]) & 0xFF) << 8) | (ord($buffer[3]) & 0xFF);
-                $data_mask   = substr($buffer, 4, 4);
-                $data_body   = substr($buffer, 8, $data_length);
+                $codes['data_offset'] = 8;
+                $codes['data_length'] = ((ord($buffer[2]) & 0xFF) << 8) | (ord($buffer[3]) & 0xFF);
+                $codes['data_mask']   = substr($buffer, 4, 4);
                 break;
 
             case 127:
-                $data_length = (ord($buffer[2]) << 56)
+                $codes['data_offset'] = 14;
+                $codes['data_length'] = (ord($buffer[2]) << 56)
                     | (ord($buffer[3]) << 48)
                     | (ord($buffer[4]) << 40)
                     | (ord($buffer[5]) << 32)
@@ -776,24 +770,39 @@ class SocketMgr extends Factory
                     | (ord($buffer[7]) << 16)
                     | (ord($buffer[8]) << 8)
                     | (ord($buffer[7]) << 0);
-                $data_mask   = substr($buffer, 10, 4);
-                $data_body   = substr($buffer, 14, $data_length);
+                $codes['data_mask']   = substr($buffer, 10, 4);
                 break;
 
             default:
-                $data_mask = substr($buffer, 2, 4);
-                $data_body = substr($buffer, 6, $payload_length);
+                $codes['data_offset'] = 6;
+                $codes['data_length'] = $payload_length;
+                $codes['data_mask']   = substr($buffer, 2, 4);
                 break;
         }
 
-        $message = '';
-        $length  = strlen($data_body);
+        unset($buffer, $char, $payload_length);
+        return $codes;
+    }
+
+    /**
+     * @param string $buffer
+     * @param string $mask
+     * @param int    $offset
+     * @param int    $length
+     *
+     * @return string
+     */
+    public function wsDecode(string $buffer, string $mask, int $offset, int $length): string
+    {
+        $message   = '';
+        $data_body = substr($buffer, $offset, $length);
+        $length    = strlen($data_body);
 
         for ($i = 0; $i < $length; ++$i) {
-            $message .= $data_body[$i] ^ $data_mask[$i % 4];
+            $message .= $data_body[$i] ^ $mask[$i % 4];
         }
 
-        unset($buffer, $payload_length, $data_length, $data_mask, $data_body, $length, $i);
+        unset($buffer, $mask, $offset, $length, $data_body, $i);
         return $message;
     }
 
