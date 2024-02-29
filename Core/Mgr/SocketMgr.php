@@ -578,15 +578,42 @@ class SocketMgr extends Factory
     {
         $ws_codes = $this->wsGetFrameCodes($message);
 
+        if (1 !== $ws_codes['masked']) {
+            $this->closeSocket($socket_id);
+            throw new \Exception('Data unmasked! Close connection!', E_USER_NOTICE);
+        }
+
         switch ($ws_codes['opcode']) {
             case 0x0:
+                if (0 === $ws_codes['fin']) {
+                    if (!isset($this->data_frames[$socket_id]) || empty($this->data_frames[$socket_id])) {
+                        unset($this->data_frames[$socket_id]);
+                        throw new \Exception('Continuation frame lost!', E_USER_NOTICE);
+                    }
 
+                    $this->data_frames[$socket_id]['data'] .= substr($message, $ws_codes['data_offset'], $ws_codes['data_length']);
+
+                    throw new \Exception('Received continuation frame!', E_USER_NOTICE);
+                } else {
+                    $message = $this->data_frames[$socket_id]['data'] . $message;
+
+                    $ws_codes['data_mask']   = $this->data_frames[$socket_id]['mask'];
+                    $ws_codes['data_offset'] = 0;
+                    $ws_codes['data_length'] = strlen($message);
+
+                    unset($this->data_frames[$socket_id]);
+                }
                 break;
             case 0x1:
-
-                break;
             case 0x2:
+                if (0 === $ws_codes['fin']) {
+                    $this->data_frames[$socket_id] = [];
 
+                    $this->data_frames[$socket_id]['mask'] = $ws_codes['data_mask'];
+                    $this->data_frames[$socket_id]['data'] = substr($message, $ws_codes['data_offset'], $ws_codes['data_length']);
+
+                    throw new \Exception('Received continuation frame!', E_USER_NOTICE);
+                }
                 break;
 
             case 0x8:
