@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Profiling library
+ * Profiler library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ namespace Nervsys\Core\Lib;
 
 use Nervsys\Core\Factory;
 
-class Profiling extends Factory
+class Profiler extends Factory
 {
     public int $timer_threshold  = -1;
     public int $memory_threshold = -1;
@@ -72,7 +72,7 @@ class Profiling extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    public function end(string $profile_name, bool $force_save = false, bool $with_input_data = false, string $log_file_name = 'profiling'): void
+    public function end(string $profile_name, bool $force_save = false, bool $with_input_data = false, string $log_file_name = 'profiler'): void
     {
         if (!isset($this->profiling_data[$profile_name])) {
             unset($profile_name, $force_save, $with_input_data, $log_file_name);

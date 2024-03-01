@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ProFiling Extension
+ * Profiler Extension
  *
  * Copyright 2023 秋水之冰 <27206617@qq.com>
  *
@@ -20,9 +20,9 @@
 
 namespace Nervsys\Ext;
 
-use Nervsys\Core\Lib\Profiling;
+use Nervsys\Core\Lib\Profiler;
 
-class libProfiling extends Profiling
+class libProfiler extends Profiler
 {
     /**
      * @param string $profile_name
