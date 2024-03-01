@@ -264,10 +264,9 @@ class ProcMgr extends Factory
      * @param callable|null $stdout_callback
      * @param callable|null $stderr_callback
      *
-     * @return void
-     * @throws \Exception
+     * @return self
      */
-    public function putJob(string $job_argv, callable $stdout_callback = null, callable $stderr_callback = null): void
+    public function putJob(string $job_argv, callable $stdout_callback = null, callable $stderr_callback = null): self
     {
         try {
             $idx = $this->getAwaitIdx();
@@ -283,6 +282,7 @@ class ProcMgr extends Factory
         }
 
         unset($job_argv, $stdout_callback, $stderr_callback);
+        return $this;
     }
 
     /**
