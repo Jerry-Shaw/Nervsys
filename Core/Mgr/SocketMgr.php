@@ -4,7 +4,7 @@
  * Socket Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,7 +214,9 @@ class SocketMgr extends Factory
         $context = stream_context_create();
 
         if (!empty($this->options)) {
-            stream_context_set_params($context, $this->options);
+            if (!stream_context_set_params($context, ['options' => $this->options])) {
+                throw new \Exception('Failed to set context options!', E_USER_ERROR);
+            }
         }
 
         $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
