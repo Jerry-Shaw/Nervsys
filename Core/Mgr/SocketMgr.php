@@ -251,7 +251,14 @@ class SocketMgr extends Factory
                 continue;
             }
 
-            $client = stream_socket_accept(current($socket), 1);
+            try {
+                $client = stream_socket_accept(current($socket), 1);
+            } catch (\Throwable $throwable) {
+                $this->debug('Accept connection failed: ' . $throwable->getMessage());
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
+                continue;
+            }
 
             if (false === $client) {
                 $this->debug('Failed to accept client!');
