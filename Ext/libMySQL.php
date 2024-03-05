@@ -125,10 +125,6 @@ class libMySQL extends Factory
     public function setTableName(string $table_name = ''): self
     {
         if ('' === $table_name) {
-            if ('' !== $this->table_name) {
-                return $this;
-            }
-
             $table_name = get_class($this);
         }
 
