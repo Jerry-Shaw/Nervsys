@@ -585,7 +585,12 @@ class SocketMgr extends Factory
      */
     public function wsGetMessage(string $socket_id, string $message): string
     {
-        $ws_codes = $this->wsGetFrameCodes($message);
+        try {
+            $ws_codes = $this->wsGetFrameCodes($message);
+        } catch (\Throwable $throwable) {
+            $this->closeSocket($socket_id);
+            throw new \Exception('Failed to read frame data: ' . $throwable->getMessage(), E_USER_NOTICE);
+        }
 
         if (1 !== $ws_codes['masked']) {
             $this->closeSocket($socket_id);
@@ -658,7 +663,12 @@ class SocketMgr extends Factory
                 break;
         }
 
-        $message = $this->wsDecode($message, $ws_codes['data_mask'], $ws_codes['data_offset'], $ws_codes['data_length']);
+        try {
+            $message = $this->wsDecode($message, $ws_codes['data_mask'], $ws_codes['data_offset'], $ws_codes['data_length']);
+        } catch (\Throwable $throwable) {
+            $this->closeSocket($socket_id);
+            throw new \Exception('Failed to decode frame data: ' . $throwable->getMessage(), E_USER_NOTICE);
+        }
 
         unset($socket_id, $ws_codes);
         return $message;
@@ -673,28 +683,30 @@ class SocketMgr extends Factory
      */
     public function wsSendHandshake(string $socket_id, string $message): void
     {
-        $handshake = true;
+        try {
+            $handshake = true;
 
-        $ws_key   = $this->wsGetHeaderKey($message);
-        $ws_proto = $this->wsGetHeaderProto($message);
+            $ws_key   = $this->wsGetHeaderKey($message);
+            $ws_proto = $this->wsGetHeaderProto($message);
 
-        if (is_callable($this->callbacks['onHandshake'])) {
-            try {
+            if (is_callable($this->callbacks['onHandshake'])) {
                 $handshake = (bool)call_user_func($this->callbacks['onHandshake'], $socket_id, $ws_proto);
-            } catch (\Throwable) {
-                $handshake = false;
             }
+
+            if ($handshake) {
+                $this->debug('Accept handshake: ' . $message);
+                $this->sendMessage($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
+                unset($this->handshakes[$socket_id]);
+                return;
+            }
+        } catch (\Throwable $throwable) {
+            $this->debug('webSocket onHandshake ERROR: ' . $throwable->getMessage());
+            unset($throwable);
         }
 
-        if ($handshake) {
-            $this->debug('Accept handshake: ' . $message);
-            $this->sendMessage($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
-            unset($this->handshakes[$socket_id]);
-        } else {
-            $this->debug('Refuse handshake: ' . $message);
-            $this->sendMessage($socket_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
-            $this->closeSocket($socket_id);
-        }
+        $this->debug('Refuse handshake: ' . $message);
+        $this->sendMessage($socket_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
+        $this->closeSocket($socket_id);
 
         unset($socket_id, $message, $handshake, $ws_key, $ws_proto);
     }
