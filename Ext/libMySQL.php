@@ -800,7 +800,7 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . ($this->runtime_data['table'] ?? $this->table_name) . $this->getLastSql();
+        $sql = 'UPDATE ' . ($this->runtime_data['table'] ?? $this->table_name) . $this->getSqlSet();
 
         return $this->appendCond($sql);
     }
