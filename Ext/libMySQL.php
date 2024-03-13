@@ -964,7 +964,7 @@ class libMySQL extends Factory
                     $cond_list[] = '=';
                 } else {
                     $cond_list[] = $item;
-                    $value[0]    = '';
+                    continue;
                 }
             } else {
                 $cond_list[] = 'IN';
