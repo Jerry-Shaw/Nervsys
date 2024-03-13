@@ -153,7 +153,7 @@ class Error extends Factory
         }
 
         if ($report_error) {
-            http_response_code(500);
+            !headers_sent() && http_response_code(500);
 
             if ($app->core_debug) {
                 $this->showLog($err_lv, $message, $context);
