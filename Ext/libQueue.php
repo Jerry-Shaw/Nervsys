@@ -22,11 +22,12 @@ namespace Nervsys\Ext;
 
 use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\App;
-use Nervsys\Core\Lib\Caller;
 use Nervsys\Core\Lib\Error;
 use Nervsys\Core\Lib\Router;
+use Nervsys\Core\Lib\Security;
 use Nervsys\Core\Mgr\OSMgr;
 use Nervsys\Core\Mgr\ProcMgr;
+use Nervsys\Core\Reflect;
 
 class libQueue extends Factory
 {
@@ -184,9 +185,9 @@ class libQueue extends Factory
      */
     public function QProc(array $redis, int $cycles): void
     {
-        $error  = Error::new();
-        $caller = Caller::new();
-        $router = Router::new();
+        $error    = Error::new();
+        $router   = Router::new();
+        $security = Security::new();
 
         $this->redis = libRedis::new($redis)->connect();
 
@@ -231,7 +232,14 @@ class libQueue extends Factory
 
             while (is_array($cmd_data = array_shift($c_list))) {
                 try {
-                    $caller->runApiFn($cmd_data, $job_data);
+                    if (Security::class === $cmd_data[0]) {
+                        throw new \Exception('Queue CMD ERROR, redirect to: "' . $cmd_data[0] . '/' . $cmd_data[1] . '"', E_USER_NOTICE);
+                    }
+
+                    $api_fn   = $security->getApiMethod($cmd_data[0], $cmd_data[1], $job_data, \ReflectionMethod::IS_PUBLIC);
+                    $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $job_data);
+
+                    call_user_func_array($api_fn, $api_args);
                 } catch (\Throwable $throwable) {
                     $this->saveError($job[0], $job[1], $throwable->getMessage());
                     $error->exceptionHandler($throwable, false, false);
