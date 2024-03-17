@@ -210,6 +210,7 @@ class libQueue extends Factory
 
             try {
                 if (!is_array($job_data)) {
+                    $job_data = [$job[1]];
                     throw new \Exception('Queue data ERROR!', E_USER_NOTICE);
                 }
 
@@ -225,7 +226,7 @@ class libQueue extends Factory
                     throw new \Exception('Queue CMD ERROR!', E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
-                $this->saveError($job[0], $job[1], $throwable->getMessage());
+                $this->saveError($job[0], $job_data, $throwable->getMessage());
                 unset($throwable);
                 continue;
             }
@@ -241,7 +242,7 @@ class libQueue extends Factory
 
                     call_user_func_array($api_fn, $api_args);
                 } catch (\Throwable $throwable) {
-                    $this->saveError($job[0], $job[1], $throwable->getMessage());
+                    $this->saveError($job[0], $job_data, $throwable->getMessage());
                     $error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                 }
@@ -288,24 +289,24 @@ class libQueue extends Factory
 
     /**
      * @param string $job_key
-     * @param string $job_json
+     * @param array  $job_data
      * @param string $error_msg
      *
      * @return void
      * @throws \RedisException
      */
-    private function saveError(string $job_key, string $job_json, string $error_msg): void
+    private function saveError(string $job_key, array $job_data, string $error_msg): void
     {
         $error_data = [
             'key'       => $job_key,
             'time'      => date('Y-m-d H:i:s'),
-            'job_json'  => $job_json,
+            'job_data'  => $job_data,
             'error_msg' => $error_msg
         ];
 
         $this->redis->lPush($this->error_log_key, json_encode($error_data, JSON_FORMAT));
 
-        unset($job_key, $job_json, $error_msg, $error_data);
+        unset($job_key, $job_data, $error_msg, $error_data);
     }
 
     /**
