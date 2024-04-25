@@ -171,7 +171,7 @@ class SocketMgr extends Factory
      * @return $this
      * @throws \Exception
      */
-    public function setCallbackFn(string $callback_param, callable $callback_func): self
+    public function setEventFn(string $callback_param, callable $callback_func): self
     {
         if (!array_key_exists($callback_param, $this->callbacks)) {
             throw new \Exception('"' . $callback_param . '" NOT accept!', E_USER_ERROR);
@@ -180,6 +180,84 @@ class SocketMgr extends Factory
         $this->callbacks[$callback_param] = &$callback_func;
 
         unset($callback_param, $callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onConnect(callable $callback_func): self
+    {
+        $this->callbacks['onConnect'] = &$callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onHandshake(callable $callback_func): self
+    {
+        $this->callbacks['onHandshake'] = &$callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onHeartbeat(callable $callback_func): self
+    {
+        $this->callbacks['onHeartbeat'] = &$callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onMessage(callable $callback_func): self
+    {
+        $this->callbacks['onMessage'] = &$callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onSend(callable $callback_func): self
+    {
+        $this->callbacks['onSend'] = &$callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onClose(callable $callback_func): self
+    {
+        $this->callbacks['onClose'] = &$callback_func;
+
+        unset($callback_func);
         return $this;
     }
 
@@ -195,10 +273,10 @@ class SocketMgr extends Factory
     {
         $this->createServer($address);
 
-        $this->fiberMgr->async([$this, 'onConnect'], [$websocket]);
-        $this->fiberMgr->async([$this, 'onMessage'], [$websocket]);
-        $this->fiberMgr->async([$this, 'onHeartbeat'], [$websocket]);
-        $this->fiberMgr->async([$this, 'onSend'], [$websocket]);
+        $this->fiberMgr->async([$this, 'onConnectFn'], [$websocket]);
+        $this->fiberMgr->async([$this, 'onMessageFn'], [$websocket]);
+        $this->fiberMgr->async([$this, 'onHeartbeatFn'], [$websocket]);
+        $this->fiberMgr->async([$this, 'onSendFn'], [$websocket]);
 
         $this->fiberMgr->commit();
     }
@@ -241,7 +319,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onConnect(bool $websocket = false): void
+    public function onConnectFn(bool $websocket = false): void
     {
         $write = $except = [];
 
@@ -301,7 +379,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onMessage(bool $websocket = false): void
+    public function onMessageFn(bool $websocket = false): void
     {
         $write = $except = [];
 
@@ -359,7 +437,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onHeartbeat(bool $websocket = false): void
+    public function onHeartbeatFn(bool $websocket = false): void
     {
         $alive_sec = &$this->read_at[2];
         $watch_sec = (int)($alive_sec / 1.5);
@@ -419,7 +497,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onSend(bool $websocket = false): void
+    public function onSendFn(bool $websocket = false): void
     {
         if (!is_callable($this->callbacks['onSend'])) {
             return;
