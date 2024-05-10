@@ -764,6 +764,8 @@ class SocketMgr extends Factory
         try {
             $handshake = true;
 
+            $this->debug('Received handshake: ' . $message);
+
             $ws_key   = $this->wsGetHeaderKey($message);
             $ws_proto = $this->wsGetHeaderProto($message);
 
