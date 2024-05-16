@@ -165,21 +165,21 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string   $callback_param
-     * @param callable $callback_func
+     * @param string   $event
+     * @param callable $callback
      *
      * @return $this
      * @throws \Exception
      */
-    public function setEventFn(string $callback_param, callable $callback_func): self
+    public function setEventListener(string $event, callable $callback): self
     {
-        if (!array_key_exists($callback_param, $this->callbacks)) {
-            throw new \Exception('"' . $callback_param . '" NOT accept!', E_USER_ERROR);
+        if (!array_key_exists($event, $this->callbacks)) {
+            throw new \Exception('"' . $event . '" NOT accept!', E_USER_ERROR);
         }
 
-        $this->callbacks[$callback_param] = &$callback_func;
+        $this->callbacks[$event] = &$callback;
 
-        unset($callback_param, $callback_func);
+        unset($event, $callback);
         return $this;
     }
 
