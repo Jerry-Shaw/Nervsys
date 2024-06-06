@@ -573,13 +573,13 @@ class SocketMgr extends Factory
     public function readMessage(string $socket_id): string
     {
         try {
-            $message = fread($this->connections[$socket_id], 4096);
+            $message = fgetc($this->connections[$socket_id]);
 
             if (false === $message) {
                 throw new \Exception('Read client ERROR!', E_USER_NOTICE);
             }
 
-            while ('' !== ($fragment = fread($this->connections[$socket_id], 4096))) {
+            while ('' !== ($fragment = fread($this->connections[$socket_id], 8192))) {
                 $message .= $fragment;
             }
 
