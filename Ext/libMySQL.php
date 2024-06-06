@@ -948,7 +948,7 @@ class libMySQL extends Factory
             }
 
             //Field
-            $cond_list[] = array_shift($value);
+            $cond_list[] = '`' . array_shift($value) . '`';
 
             //Operator
             if (2 <= count($value)) {
@@ -982,9 +982,13 @@ class libMySQL extends Factory
 
                     while (null !== ($data = array_shift($value))) {
                         if (0 === ($idx & 1)) {
-                            $cond_list[] = '?';
+                            if (!str_starts_with($data, '`') || !str_ends_with($data, '`')) {
+                                $cond_list[] = '?';
 
-                            $this->runtime_data[$bind_stage][] = $data;
+                                $this->runtime_data[$bind_stage][] = $data;
+                            } else {
+                                $cond_list[] = '`' . trim($data, '`') . '`';
+                            }
                         } else {
                             if (!in_array($data, ['+', '-', '*', '/', '%', '=', '<=>', '<', '>', '<=', '>=', '<>', '!=', '|', '&', '^', '~', '<<', '>>', 'MOD'], true)) {
                                 throw new \PDOException('Invalid operator: "' . $data . '"!', E_USER_ERROR);
