@@ -931,7 +931,7 @@ class libMySQL extends Factory
         foreach ($where as $value) {
             //Condition
             if (1 < count($value)) {
-                if (in_array($item = strtoupper($value[0]), ['AND', '&&', 'OR', '||', 'XOR', '&', '~', '|', '^'], true)) {
+                if (in_array($item = strtoupper($value[0]), ['NOT', '!', 'AND', '&&', 'OR', '||', 'XOR'], true)) {
                     $cond_list[] = $item;
                     array_shift($value);
                 } elseif (1 < count($cond_list)) {
@@ -954,7 +954,7 @@ class libMySQL extends Factory
             if (2 === count($value)) {
                 $item = strtoupper(array_shift($value));
 
-                if (!in_array($item, ['=', '<', '>', '<=', '>=', '<>', '!=', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                if (!in_array($item, ['=', '<=>', '<', '>', '<=', '>=', '<>', '!=', '|', '&', '^', '~', '<<', '>>', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
                     throw new \PDOException('Invalid operator: "' . $item . '"!', E_USER_ERROR);
                 }
 
