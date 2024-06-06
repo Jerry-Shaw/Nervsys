@@ -3,7 +3,7 @@
 /**
  * MySQL Extension
  *
- * Copyright 2019-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2019-2024 秋水之冰 <27206617@qq.com>
  * Copyright 2021 wwj <904428723@qq.com>
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
  *
@@ -951,10 +951,10 @@ class libMySQL extends Factory
             $cond_list[] = array_shift($value);
 
             //Operator
-            if (2 === count($value)) {
+            if (2 <= count($value)) {
                 $item = strtoupper(array_shift($value));
 
-                if (!in_array($item, ['=', '<=>', '<', '>', '<=', '>=', '<>', '!=', '|', '&', '^', '~', '<<', '>>', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
+                if (!in_array($item, ['+', '-', '*', '/', '%', '=', '<=>', '<', '>', '<=', '>=', '<>', '!=', '|', '&', '^', '~', '<<', '>>', 'MOD', 'LIKE', 'NOT LIKE', 'IN', 'NOT IN', 'BETWEEN'], true)) {
                     throw new \PDOException('Invalid operator: "' . $item . '"!', E_USER_ERROR);
                 }
 
@@ -970,17 +970,36 @@ class libMySQL extends Factory
                 $cond_list[] = 'IN';
             }
 
-            //Data
-            if (!is_array($data = array_shift($value))) {
-                if ('join' !== $this->runtime_data['stage']) {
-                    $cond_list[] = '?';
+            //Avoid errors when data is missing
+            if (empty($value)) {
+                continue;
+            }
 
-                    $this->runtime_data[$bind_stage][] = $data;
+            //Data
+            if (!is_array($value[0])) {
+                if ('join' !== $this->runtime_data['stage']) {
+                    $idx = 0;
+
+                    while (null !== ($data = array_shift($value))) {
+                        if (0 === ($idx & 1)) {
+                            $cond_list[] = '?';
+
+                            $this->runtime_data[$bind_stage][] = $data;
+                        } else {
+                            if (!in_array($data, ['+', '-', '*', '/', '%', '=', '<=>', '<', '>', '<=', '>=', '<>', '!=', '|', '&', '^', '~', '<<', '>>', 'MOD'], true)) {
+                                throw new \PDOException('Invalid operator: "' . $data . '"!', E_USER_ERROR);
+                            }
+
+                            $cond_list[] = $data;
+                        }
+
+                        ++$idx;
+                    }
                 } else {
-                    $cond_list[] = $data;
+                    $cond_list[] = array_shift($value);
                 }
             } else {
-                $data = array_values($data);
+                $data = array_values((array)array_shift($value));
 
                 if ('BETWEEN' !== end($cond_list)) {
                     if ('join' !== $this->runtime_data['stage']) {
