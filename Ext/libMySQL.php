@@ -1019,8 +1019,10 @@ class libMySQL extends Factory
 
                         ++$idx;
                     }
+
+                    unset($idx);
                 } else {
-                    $cond_list[] = array_shift($value);
+                    $cond_list[] = $this->escapeField(array_shift($value));
                 }
             } else {
                 $data = array_values((array)array_shift($value));
