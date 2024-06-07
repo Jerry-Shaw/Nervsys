@@ -722,6 +722,26 @@ class libMySQL extends Factory
     }
 
     /**
+     * @param string $field
+     *
+     * @return string
+     */
+    protected function escapeField(string $field): string
+    {
+        $field = trim($field, '`');
+
+        if (!str_contains($field, '.')) {
+            return '`' . $field . '`';
+        }
+
+        $fields = explode('.', $field, 2);
+        $field  = $fields[0] . '.`' . $fields[1] . '`';
+
+        unset($fields);
+        return $field;
+    }
+
+    /**
      * Execute prepared SQL
      *
      * @param string $runtime_sql
@@ -948,7 +968,7 @@ class libMySQL extends Factory
             }
 
             //Field
-            $cond_list[] = '`' . array_shift($value) . '`';
+            $cond_list[] = $this->escapeField(array_shift($value));
 
             //Operator
             if (2 <= count($value)) {
@@ -987,7 +1007,7 @@ class libMySQL extends Factory
 
                                 $this->runtime_data[$bind_stage][] = $data;
                             } else {
-                                $cond_list[] = '`' . trim($data, '`') . '`';
+                                $cond_list[] = $this->escapeField($data);
                             }
                         } else {
                             if (!in_array($data, ['+', '-', '*', '/', '%', '=', '<=>', '<', '>', '<=', '>=', '<>', '!=', '|', '&', '^', '~', '<<', '>>', 'MOD'], true)) {
