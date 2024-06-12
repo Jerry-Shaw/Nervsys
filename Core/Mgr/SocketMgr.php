@@ -29,22 +29,26 @@ class SocketMgr extends Factory
     public Error    $error;
     public FiberMgr $fiberMgr;
 
+    public string $address   = '';
+    public string $master_id = '';
     public string $heartbeat = "\n";
 
     public bool $block_mode = false;
     public bool $debug_mode = false;
 
     public array $callbacks = [
-        'onConnect'   => null,  //callback(string $socket_id): void
-        'onHandshake' => null,  //callback(string $ws_proto): bool, true to allow, otherwise reject.
-        'onHeartbeat' => null,  //callback(string $socket_id): string, heartbeat message send to $socket_id
-        'onMessage'   => null,  //callback(string $socket_id, string $message): void
-        'onSend'      => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onClose'     => null   //callback(string $socket_id): void
+        'onConnect'    => null,  //callback(string $socket_id): string
+        'onHandshake'  => null,  //callback(string $ws_proto): bool, true to allow, otherwise reject.
+        'onHeartbeat'  => null,  //callback(string $socket_id): string, heartbeat message send to $socket_id
+        'onMessage'    => null,  //callback(string $socket_id, string $message): void
+        'onSend'       => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendFailed' => null,  //callback(string $socket_id, string $message): void
+        'onClose'      => null   //callback(string $socket_id): void
     ];
 
-    public array $options = [];
-    public array $read_at = [0, 500000, 60, 200];
+    public array $options   = [];
+    public array $read_at   = [0, 500000, 60, 200];
+    public array $reconnect = [3, 10]; //retry_times: -1 means always try to connect, 0 means don't reconnect after disconnected
 
     public array $handshakes  = [];
     public array $activities  = [];
@@ -84,6 +88,20 @@ class SocketMgr extends Factory
         $this->debug_mode = &$debug_mode;
 
         unset($debug_mode);
+        return $this;
+    }
+
+    /**
+     * @param int $retry_times
+     * @param int $wait_seconds
+     *
+     * @return $this
+     */
+    public function setReconnectOptions(int $retry_times, int $wait_seconds): self
+    {
+        $this->reconnect = [&$retry_times, &$wait_seconds];
+
+        unset($retry_times, $wait_seconds);
         return $this;
     }
 
@@ -253,6 +271,19 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
+    public function onSendFailed(callable $callback_func): self
+    {
+        $this->callbacks['onSendFailed'] = &$callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
     public function onClose(callable $callback_func): self
     {
         $this->callbacks['onClose'] = &$callback_func;
@@ -271,12 +302,13 @@ class SocketMgr extends Factory
      */
     public function listenTo(string $address, bool $websocket = false): void
     {
+        $this->address = &$address;
         $this->createServer($address);
 
-        $this->fiberMgr->async([$this, 'onConnectFn'], [$websocket]);
-        $this->fiberMgr->async([$this, 'onMessageFn'], [$websocket]);
-        $this->fiberMgr->async([$this, 'onHeartbeatFn'], [$websocket]);
-        $this->fiberMgr->async([$this, 'onSendFn'], [$websocket]);
+        $this->fiberMgr->async([$this, 'serverOnConnect'], [$websocket]);
+        $this->fiberMgr->async([$this, 'serverOnMessage'], [$websocket]);
+        $this->fiberMgr->async([$this, 'serverOnHeartbeat'], [$websocket]);
+        $this->fiberMgr->async([$this, 'serverOnSend'], [$websocket]);
 
         $this->fiberMgr->commit();
     }
@@ -307,7 +339,8 @@ class SocketMgr extends Factory
             throw new \Exception('Server failed to start! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
         }
 
-        $this->master_sock = [$this->getSocketId() => &$master_socket];
+        $this->master_id   = $this->getSocketId();
+        $this->master_sock = [$this->master_id => &$master_socket];
 
         unset($address, $context, $flags, $master_socket);
     }
@@ -319,7 +352,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onConnectFn(bool $websocket = false): void
+    public function serverOnConnect(bool $websocket = false): void
     {
         $write = $except = [];
 
@@ -362,9 +395,13 @@ class SocketMgr extends Factory
 
             if (is_callable($this->callbacks['onConnect'])) {
                 try {
-                    call_user_func($this->callbacks['onConnect'], $socket_id);
+                    $response = call_user_func($this->callbacks['onConnect'], $socket_id);
+
+                    if (is_string($response) && '' !== $response) {
+                        $this->sendMessage($socket_id, $websocket ? $this->wsEncode($response) : $response);
+                    }
                 } catch (\Throwable $throwable) {
-                    $this->debug('onConnect callback ERROR: ' . $throwable->getMessage());
+                    $this->debug('serverOnConnect callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                 }
@@ -379,7 +416,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onMessageFn(bool $websocket = false): void
+    public function serverOnMessage(bool $websocket = false): void
     {
         $write = $except = [];
 
@@ -410,7 +447,7 @@ class SocketMgr extends Factory
                         $message = $this->wsGetMessage($socket_id, $message);
                     }
                 } catch (\Throwable $throwable) {
-                    $this->debug('onMessage debug: ' . $throwable->getMessage());
+                    $this->debug('serverOnMessage debug: ' . $throwable->getMessage());
                     unset($throwable);
                     continue;
                 }
@@ -421,7 +458,7 @@ class SocketMgr extends Factory
                     try {
                         call_user_func($this->callbacks['onMessage'], $socket_id, $message);
                     } catch (\Throwable $throwable) {
-                        $this->debug('onMessage callback ERROR: ' . $throwable->getMessage());
+                        $this->debug('serverOnMessage callback ERROR: ' . $throwable->getMessage());
                         $this->error->exceptionHandler($throwable, false, false);
                         unset($throwable);
                     }
@@ -437,7 +474,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onHeartbeatFn(bool $websocket = false): void
+    public function serverOnHeartbeat(bool $websocket = false): void
     {
         $alive_sec = &$this->read_at[2];
         $watch_sec = (int)($alive_sec / 1.5);
@@ -457,7 +494,7 @@ class SocketMgr extends Factory
                 }
 
                 if ($now_time - $active_times[0] > $alive_sec) {
-                    $this->debug('Heartbeat lost: ' . $socket_id);
+                    $this->debug('Client heartbeat lost: ' . $socket_id);
                     $this->closeSocket($socket_id);
                     continue;
                 }
@@ -466,7 +503,7 @@ class SocketMgr extends Factory
 
                 if ($websocket) {
                     $this->wsPing($socket_id);
-                    $this->debug('Heartbeat to websocket: ' . $socket_id);
+                    $this->debug('Send heartbeat to websocket: ' . $socket_id);
                 } else {
                     if (!is_callable($this->callbacks['onHeartbeat'])) {
                         $heartbeat = $this->heartbeat;
@@ -475,14 +512,14 @@ class SocketMgr extends Factory
                             $heartbeat = call_user_func($this->callbacks['onHeartbeat'], $socket_id);
                         } catch (\Throwable $throwable) {
                             $heartbeat = $this->heartbeat;
-                            $this->debug('onHeartbeat callback ERROR: ' . $throwable->getMessage());
+                            $this->debug('serverOnHeartbeat callback ERROR: ' . $throwable->getMessage());
                             $this->error->exceptionHandler($throwable, false, false);
                             unset($throwable);
                         }
                     }
 
                     $this->sendMessage($socket_id, $heartbeat);
-                    $this->debug('Heartbeat to client: ' . $socket_id);
+                    $this->debug('Send heartbeat to client: ' . $socket_id);
                 }
             }
 
@@ -497,7 +534,7 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function onSendFn(bool $websocket = false): void
+    public function serverOnSend(bool $websocket = false): void
     {
         if (!is_callable($this->callbacks['onSend'])) {
             return;
@@ -521,7 +558,7 @@ class SocketMgr extends Factory
                 try {
                     $msg_list = call_user_func($this->callbacks['onSend'], $socket_id);
                 } catch (\Throwable $throwable) {
-                    $this->debug('onSend callback ERROR: ' . $throwable->getMessage());
+                    $this->debug('serverOnSend callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                     continue;
@@ -529,14 +566,251 @@ class SocketMgr extends Factory
 
                 foreach ($msg_list as $raw_msg) {
                     if ($this->sendMessage($socket_id, $websocket ? $this->wsEncode($raw_msg) : $raw_msg)) {
-                        $this->debug('Send Message: ' . $raw_msg . ' to ' . $socket_id);
+                        $this->debug('Send message: ' . $raw_msg . ' to ' . $socket_id);
+                        usleep($this->read_at[1]);
                     } else {
-                        break;
+                        if (is_callable($this->callbacks['onSendFailed'])) {
+                            try {
+                                call_user_func($this->callbacks['onSendFailed'], $socket_id, $raw_msg);
+                            } catch (\Throwable $throwable) {
+                                $this->debug('serverOnSendFailed callback ERROR: ' . $throwable->getMessage());
+                                $this->error->exceptionHandler($throwable, false, false);
+                                unset($throwable);
+                                continue;
+                            }
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
 
             \Fiber::suspend();
+        }
+    }
+
+    /**
+     * @param string $address
+     *
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function connectTo(string $address): void
+    {
+        $this->address = &$address;
+        $this->createClient($address);
+
+        $this->fiberMgr->async([$this, 'clientOnMessage']);
+        $this->fiberMgr->async([$this, 'clientOnHeartbeat']);
+        $this->fiberMgr->async([$this, 'clientOnSend']);
+
+        $this->fiberMgr->commit();
+    }
+
+    /**
+     * @param string $address
+     *
+     * @return void
+     * @throws \Exception
+     */
+    public function createClient(string $address): void
+    {
+        $context = stream_context_create();
+
+        if (!empty($this->options)) {
+            if (!stream_context_set_params($context, ['options' => $this->options])) {
+                throw new \Exception('Failed to set context options!', E_USER_ERROR);
+            }
+        }
+
+        $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
+            ? STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT
+            : STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT;
+
+        $master_socket = stream_socket_client($address, $errno, $errstr, 60, $flags, $context);
+
+        if (false === $master_socket) {
+            throw new \Exception('Client failed to connect! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
+        }
+
+        stream_set_blocking($master_socket, $this->block_mode);
+
+        $now_time          = time();
+        $this->master_id   = $this->getSocketId();
+        $this->master_sock = [$this->master_id => $master_socket];
+        $this->activities  = [$this->master_id => [$now_time, $now_time]];
+
+        unset($address, $context, $flags, $master_socket, $now_time);
+    }
+
+    /**
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function clientOnMessage(): void
+    {
+        $write = $except = [];
+
+        while (true) {
+            $servers = $this->master_sock;
+
+            if (0 === stream_select($servers, $write, $except, $this->read_at[0], $this->read_at[1])) {
+                \Fiber::suspend();
+                continue;
+            }
+
+            $this->connections = $servers;
+
+            try {
+                $message = $this->readMessage($this->master_id);
+            } catch (\Throwable $throwable) {
+                $this->debug('Read message failed: ' . $throwable->getMessage());
+                $this->clientReconnect();
+                unset($throwable);
+                \Fiber::suspend();
+                continue;
+            }
+
+            $this->debug('Read message from server: ' . $message);
+
+            if (is_callable($this->callbacks['onMessage'])) {
+                try {
+                    call_user_func($this->callbacks['onMessage'], $this->master_id, $message);
+                } catch (\Throwable $throwable) {
+                    $this->debug('clientOnMessage callback ERROR: ' . $throwable->getMessage());
+                    $this->error->exceptionHandler($throwable, false, false);
+                    unset($throwable);
+                }
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function clientOnHeartbeat(): void
+    {
+        $alive_sec = round($this->read_at[2] / 2);
+
+        if (!is_callable($this->callbacks['onHeartbeat'])) {
+            $heartbeat = $this->heartbeat;
+        } else {
+            try {
+                $heartbeat = call_user_func($this->callbacks['onHeartbeat'], $this->master_id);
+            } catch (\Throwable $throwable) {
+                $heartbeat = $this->heartbeat;
+                $this->debug('clientOnHeartbeat callback ERROR: ' . $throwable->getMessage());
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
+            }
+        }
+
+        while (true) {
+            $now_time  = time();
+            $last_time = $this->activities[$this->master_id][1] ?? 0;
+
+            if ($now_time - $last_time < $alive_sec) {
+                \Fiber::suspend();
+                continue;
+            }
+
+            if ($this->sendMessage($this->master_id, $heartbeat)) {
+                $this->activities[$this->master_id][1] = $now_time;
+                $this->debug('Send heartbeat to server');
+            } else {
+                $this->clientReconnect();
+            }
+        }
+    }
+
+    /**
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function clientOnSend(): void
+    {
+        if (!is_callable($this->callbacks['onSend'])) {
+            return;
+        }
+
+        while (true) {
+            try {
+                $msg_list = call_user_func($this->callbacks['onSend'], $this->master_id);
+
+                foreach ($msg_list as $raw_msg) {
+                    if ($this->sendMessage($this->master_id, $raw_msg)) {
+                        $this->debug('Send message to server: ' . $raw_msg);
+                        usleep($this->read_at[1]);
+                    } else {
+                        $this->clientReconnect();
+
+                        if (is_callable($this->callbacks['onSendFailed'])) {
+                            try {
+                                call_user_func($this->callbacks['onSendFailed'], $this->master_id, $raw_msg);
+                            } catch (\Throwable $throwable) {
+                                $this->debug('clientOnSendFailed callback ERROR: ' . $throwable->getMessage());
+                                $this->error->exceptionHandler($throwable, false, false);
+                                unset($throwable);
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $throwable) {
+                $this->debug('clientOnSend callback ERROR: ' . $throwable->getMessage());
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
+            }
+
+            \Fiber::suspend();
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function clientReconnect(): void
+    {
+        switch ($this->reconnect[0]) {
+            case 0:
+                $this->debug('Connect failed, quit!');
+                exit();
+
+            case -1:
+                while (true) {
+                    $this->debug('Reconnecting...');
+
+                    sleep($this->reconnect[1]);
+
+                    try {
+                        $this->createClient($this->address);
+                        break;
+                    } catch (\Throwable $throwable) {
+                        $this->debug('Connect failed: ' . $throwable->getMessage());
+                        unset($throwable);
+                    }
+                }
+
+                break;
+
+            default:
+                for ($i = 1; $i <= $this->reconnect[0]; $i++) {
+                    $this->debug('Reconnecting...');
+
+                    sleep($this->reconnect[1]);
+
+                    try {
+                        $this->createClient($this->address);
+                        break;
+                    } catch (\Throwable $throwable) {
+                        $this->debug('Connect failed (' . $i . '/' . $this->reconnect[0] . '): ' . $throwable->getMessage());
+                        unset($throwable);
+                    }
+                }
+
+                exit();
         }
     }
 
