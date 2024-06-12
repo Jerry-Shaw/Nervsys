@@ -397,8 +397,8 @@ class SocketMgr extends Factory
                 try {
                     $response = call_user_func($this->callbacks['onConnect'], $socket_id);
 
-                    if (is_string($response) && '' !== $response) {
-                        $this->sendMessage($socket_id, $websocket ? $this->wsEncode($response) : $response);
+                    if (!$websocket && is_string($response) && '' !== $response) {
+                        $this->sendMessage($socket_id, $response);
                     }
                 } catch (\Throwable $throwable) {
                     $this->debug('serverOnConnect callback ERROR: ' . $throwable->getMessage());
@@ -639,6 +639,7 @@ class SocketMgr extends Factory
         $now_time          = time();
         $this->master_id   = $this->getSocketId();
         $this->master_sock = [$this->master_id => $master_socket];
+        $this->connections = [$this->master_id => $master_socket];
         $this->activities  = [$this->master_id => [$now_time, $now_time]];
 
         unset($address, $context, $flags, $master_socket, $now_time);
@@ -660,8 +661,6 @@ class SocketMgr extends Factory
                 \Fiber::suspend();
                 continue;
             }
-
-            $this->connections = $servers;
 
             try {
                 $message = $this->readMessage($this->master_id);
