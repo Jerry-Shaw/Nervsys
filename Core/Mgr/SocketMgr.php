@@ -631,7 +631,7 @@ class SocketMgr extends Factory
         $master_socket = stream_socket_client($address, $errno, $errstr, 60, $flags, $context);
 
         if (false === $master_socket) {
-            throw new \Exception('Client failed to connect! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
+            throw new \Exception('Failed to connect! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
         }
 
         stream_set_blocking($master_socket, $this->block_mode);
@@ -774,7 +774,7 @@ class SocketMgr extends Factory
     {
         switch ($this->reconnect[0]) {
             case 0:
-                $this->debug('Connect failed, quit!');
+                $this->debug('Reconnect failed, quit!');
                 exit();
 
             case -1:
@@ -785,14 +785,12 @@ class SocketMgr extends Factory
 
                     try {
                         $this->createClient($this->address);
-                        break;
+                        return;
                     } catch (\Throwable $throwable) {
-                        $this->debug('Connect failed: ' . $throwable->getMessage());
+                        $this->debug('Reconnect failed: ' . $throwable->getMessage());
                         unset($throwable);
                     }
                 }
-
-                break;
 
             default:
                 for ($i = 1; $i <= $this->reconnect[0]; $i++) {
@@ -802,13 +800,14 @@ class SocketMgr extends Factory
 
                     try {
                         $this->createClient($this->address);
-                        break;
+                        return;
                     } catch (\Throwable $throwable) {
-                        $this->debug('Connect failed (' . $i . '/' . $this->reconnect[0] . '): ' . $throwable->getMessage());
+                        $this->debug('Reconnect failed (' . $i . '/' . $this->reconnect[0] . '): ' . $throwable->getMessage());
                         unset($throwable);
                     }
                 }
 
+                $this->debug('Reconnect failed ' . $this->reconnect[0] . ' times, quit!');
                 exit();
         }
     }
@@ -849,7 +848,7 @@ class SocketMgr extends Factory
             $message = fgetc($this->connections[$socket_id]);
 
             if (false === $message) {
-                throw new \Exception('Read client ERROR!', E_USER_NOTICE);
+                throw new \Exception('Read ERROR!', E_USER_NOTICE);
             }
 
             while ('' !== ($fragment = fread($this->connections[$socket_id], 8192))) {
@@ -859,7 +858,7 @@ class SocketMgr extends Factory
             $this->activities[$socket_id][0] = time();
         } catch (\Throwable) {
             $this->closeSocket($socket_id);
-            throw new \Exception('Read client ERROR!', E_USER_NOTICE);
+            throw new \Exception('Read ERROR!', E_USER_NOTICE);
         }
 
         unset($socket_id, $fragment);
@@ -911,7 +910,7 @@ class SocketMgr extends Factory
 
         unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id]);
 
-        $this->debug('Client closed: ' . $socket_id);
+        $this->debug('Connection closed: ' . $socket_id);
 
         if (is_callable($this->callbacks['onClose'])) {
             try {
