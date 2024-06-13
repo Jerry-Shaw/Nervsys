@@ -131,6 +131,22 @@ trait System
     }
 
     /**
+     * @param string $path
+     *
+     * @return $this
+     */
+    public function setRootPath(string $path): self
+    {
+        $this->removeAutoloadPath($this->app->root_path);
+        $this->addAutoloadPath($path);
+
+        $this->app->root_path = &$path;
+
+        unset($path);
+        return $this;
+    }
+
+    /**
      * @param string $pathname
      *
      * @return $this
