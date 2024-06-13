@@ -140,6 +140,14 @@ trait System
         $this->removeAutoloadPath($this->app->root_path);
         $this->addAutoloadPath($path);
 
+        try {
+            $log_path = rtrim($path, '\\/') . DIRECTORY_SEPARATOR . 'logs';
+            rename($this->app->log_path, $log_path);
+            $this->app->log_path = &$log_path;
+        } catch (\Throwable) {
+            //Directory exists
+        }
+
         $this->app->root_path = &$path;
 
         unset($path);
