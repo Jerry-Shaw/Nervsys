@@ -45,6 +45,8 @@ trait System
     public Security $security;
     public Profiler $profiler;
 
+    public array $autoload_paths = [];
+
     /**
      * System libraries initializer
      *
@@ -94,22 +96,37 @@ trait System
      */
     public function addAutoloadPath(string $autoload_path, bool $autoload_prepend = false): self
     {
+        $this->autoload_paths[$autoload_path] = static function (string $class) use ($autoload_path): void
+        {
+            $file_path = $autoload_path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
+
+            if (is_file($file_path)) {
+                require $file_path;
+            }
+
+            unset($class, $autoload_path, $file_path);
+        };
+
         spl_autoload_register(
-            static function (string $class) use ($autoload_path): void
-            {
-                $file_path = $autoload_path . DIRECTORY_SEPARATOR . strtr($class, '\\', DIRECTORY_SEPARATOR) . '.php';
-
-                if (is_file($file_path)) {
-                    require $file_path;
-                }
-
-                unset($class, $autoload_path, $file_path);
-            },
+            $this->autoload_paths[$autoload_path],
             true,
             $autoload_prepend
         );
 
         unset($autoload_path, $autoload_prepend);
+        return $this;
+    }
+
+    /**
+     * @param string $autoload_path
+     *
+     * @return $this
+     */
+    public function removeAutoloadPath(string $autoload_path): self
+    {
+        spl_autoload_unregister($this->autoload_paths[$autoload_path]);
+
+        unset($this->autoload_paths[$autoload_path], $autoload_path);
         return $this;
     }
 
