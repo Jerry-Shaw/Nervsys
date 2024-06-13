@@ -147,15 +147,15 @@ trait System
     }
 
     /**
-     * @param string $pathname
+     * @param string $dir_name
      *
      * @return $this
      */
-    public function setApiPath(string $pathname): self
+    public function setApiDir(string $dir_name): self
     {
-        $this->app->api_path = &$pathname;
+        $this->app->api_dir = &$dir_name;
 
-        unset($pathname);
+        unset($dir_name);
         return $this;
     }
 
@@ -244,7 +244,7 @@ trait System
     public function addPreHooks(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
-            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
+            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_dir, $cmd_path, true)][] = $fn;
         }
 
         unset($cmd_path, $hook_fn, $fn);
@@ -260,7 +260,7 @@ trait System
     public function addPreHookRules(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
-            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
+            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_dir, $path, true)][] = $hook_fn;
         }
 
         unset($hook_fn, $cmd_path, $path);
@@ -276,7 +276,7 @@ trait System
     public function addPostHooks(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
-            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $cmd_path, true)][] = $fn;
+            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_dir, $cmd_path, true)][] = $fn;
         }
 
         unset($cmd_path, $hook_fn, $fn);
@@ -292,7 +292,7 @@ trait System
     public function addPostHookRules(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
-            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_path, $path, true)][] = $hook_fn;
+            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_dir, $path, true)][] = $hook_fn;
         }
 
         unset($hook_fn, $cmd_path, $path);

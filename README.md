@@ -69,7 +69,7 @@ require __DIR__ . '/../../Nervsys/NS.php';
 
 $ns = new Nervsys\NS();
 
-$ns->setApiPath('myApiPath')
+$ns->setApiDir('myApiPath')
     ->setCoreDebug(true)
     ->setContentType('application/json')
     ->addPreHooks('/', [\app\hook\ApiCheck::new(), 'userToken'])

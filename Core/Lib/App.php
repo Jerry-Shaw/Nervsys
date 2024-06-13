@@ -25,7 +25,7 @@ use Nervsys\Core\Factory;
 
 class App extends Factory
 {
-    public string $api_path;
+    public string $api_dir;
     public string $log_path;
     public string $root_path;
     public string $script_path;
@@ -59,7 +59,7 @@ class App extends Factory
 
         $this->root_path = dirname($this->script_path, 2);
         $this->log_path  = $this->root_path . DIRECTORY_SEPARATOR . 'logs';
-        $this->api_path  = 'api';
+        $this->api_dir   = 'api';
 
         if (!is_dir($this->log_path)) {
             try {

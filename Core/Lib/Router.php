@@ -92,7 +92,7 @@ class Router extends Factory
                 continue;
             }
 
-            $full_cmd = $this->getFullCgiCmd($app->api_path, $cmd_val, $app->is_cli);
+            $full_cmd = $this->getFullCgiCmd($app->api_dir, $cmd_val, $app->is_cli);
             $fn_pos   = strrpos($full_cmd, '/');
             $class    = strtr(substr($full_cmd, 0, $fn_pos), '/', '\\');
             $method   = substr($full_cmd, $fn_pos + 1);
