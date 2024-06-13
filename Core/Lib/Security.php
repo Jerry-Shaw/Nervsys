@@ -112,7 +112,7 @@ class Security extends Factory
      */
     public function fnTargetBlocked(App $app, IOData $IOData): void
     {
-        http_response_code(403);
+        !headers_sent() && http_response_code(403);
 
         $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
         $IOData->src_output = [];
@@ -128,7 +128,7 @@ class Security extends Factory
      */
     public function fnTargetInvalid(App $app, IOData $IOData): void
     {
-        http_response_code(404);
+        !headers_sent() && http_response_code(404);
 
         $IOData->src_msg    = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
         $IOData->src_output = [];
@@ -145,7 +145,7 @@ class Security extends Factory
      */
     public function fnArgumentInvalid(App $app, IOData $IOData, string $message): void
     {
-        http_response_code(500);
+        !headers_sent() && http_response_code(500);
 
         $IOData->src_msg    = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
         $IOData->src_output = [];

@@ -60,7 +60,7 @@ class CORS extends Factory
         }
 
         if (is_null($allow_headers = $this->allowed_list[$_SERVER['HTTP_ORIGIN']] ?? $this->allowed_list['*'] ?? null)) {
-            http_response_code(406);
+            !headers_sent() && http_response_code(406);
             exit(0);
         }
 
@@ -69,7 +69,7 @@ class CORS extends Factory
         header('Access-Control-Allow-Credentials: true');
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
-            http_response_code(204);
+            !headers_sent() && http_response_code(204);
             exit(0);
         }
 
