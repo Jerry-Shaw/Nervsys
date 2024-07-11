@@ -26,7 +26,7 @@ class libRedis extends Factory
 {
     public \Redis|null $redis;
 
-    public int   $retry_limit = 5;
+    public int   $retry_limit = 10;
     public array $retry_match = ['lost', 'went away'];
 
     //Redis options
