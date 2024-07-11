@@ -30,7 +30,7 @@ class libMySQL extends Factory
     public libPDO        $libPDO;
     public \PDOStatement $PDOStatement;
 
-    public int $retry_limit   = 0;
+    public int $retry_limit   = 3;
     public int $affected_rows = 0;
 
     public string $last_sql     = '';
@@ -92,7 +92,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function autoReconnect(int $retry_times = 3): self
+    public function autoReconnect(int $retry_times): self
     {
         $this->retry_limit = &$retry_times;
 
@@ -764,22 +764,24 @@ class libMySQL extends Factory
             $this->runtime_data  = [];
 
             unset($params);
-        } catch (\Throwable $throwable) {
-            if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $retry_times >= $this->retry_limit) {
-                $this->runtime_data = [];
-                throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+        } catch (\PDOException $exception) {
+            if (in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true)) {
+                if (-1 === $this->retry_limit || $retry_times < $this->retry_limit) {
+                    unset($exception);
+
+                    //Destroy PDO from Factory
+                    $this->destroy($this->pdo);
+
+                    //Reconnect to PDO server
+                    $this->pdo = $this->libPDO->connect();
+
+                    //Retry executing PDOStatement
+                    return $this->executeSQL($runtime_sql, ++$retry_times);
+                }
             }
 
-            unset($throwable);
-
-            //Destroy PDO from Factory
-            $this->destroy($this->pdo);
-
-            //Reconnect to PDO server
-            $this->pdo = $this->libPDO->connect();
-
-            //Retry executing PDOStatement
-            return $this->executeSQL($runtime_sql, ++$retry_times);
+            $this->runtime_data = [];
+            throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
         unset($runtime_sql, $retry_times);
