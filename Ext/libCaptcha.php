@@ -78,7 +78,7 @@ class libCaptcha extends Factory
     }
 
     /**
-     * Bind to Redis connection
+     * Bind Redis|libRedis
      *
      * @param \Redis|libRedis $redis
      *

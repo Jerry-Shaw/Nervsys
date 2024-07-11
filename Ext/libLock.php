@@ -39,7 +39,7 @@ class libLock extends Factory
     private array $locks = [];
 
     /**
-     * Bind to Redis connection
+     * Bind Redis|libRedis
      *
      * @param \Redis|libRedis $redis
      *
