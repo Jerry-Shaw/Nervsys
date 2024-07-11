@@ -30,7 +30,7 @@ class libMySQL extends Factory
     public libPDO        $libPDO;
     public \PDOStatement $PDOStatement;
 
-    public int $retry_times   = 0;
+    public int $retry_limit   = 0;
     public int $affected_rows = 0;
 
     public string $last_sql     = '';
@@ -94,7 +94,7 @@ class libMySQL extends Factory
      */
     public function autoReconnect(int $retry_times = 3): self
     {
-        $this->retry_times = &$retry_times;
+        $this->retry_limit = &$retry_times;
 
         unset($retry_times);
         return $this;
@@ -765,7 +765,7 @@ class libMySQL extends Factory
 
             unset($params);
         } catch (\Throwable $throwable) {
-            if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $retry_times >= $this->retry_times) {
+            if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true) || $retry_times >= $this->retry_limit) {
                 $this->runtime_data = [];
                 throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
             }
