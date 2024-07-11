@@ -3,7 +3,7 @@
 /**
  * Captcha Image Extension
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,9 @@ class libCaptcha extends Factory
         self::TYPE_CALC,
     ];
 
-    public \Redis   $redis;
     public libCrypt $libCrypt;
+
+    public \Redis|libRedis $redis;
 
     public bool $use_redis = false;
 
@@ -79,11 +80,11 @@ class libCaptcha extends Factory
     /**
      * Bind to Redis connection
      *
-     * @param \Redis $redis
+     * @param \Redis|libRedis $redis
      *
      * @return $this
      */
-    public function bindRedis(\Redis $redis): self
+    public function bindRedis(\Redis|libRedis $redis): self
     {
         $this->redis     = &$redis;
         $this->use_redis = true;

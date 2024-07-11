@@ -3,7 +3,7 @@
 /**
  * Lock Extension (on Redis)
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class libLock extends Factory
     //Retry limit
     const RETRY = 10;
 
-    public \Redis $redis;
+    public \Redis|libRedis $redis;
 
     //Lock pool
     private array $locks = [];
@@ -41,11 +41,11 @@ class libLock extends Factory
     /**
      * Bind to Redis connection
      *
-     * @param \Redis $redis
+     * @param \Redis|libRedis $redis
      *
      * @return $this
      */
-    public function bindRedis(\Redis $redis): self
+    public function bindRedis(\Redis|libRedis $redis): self
     {
         $this->redis = &$redis;
 
@@ -60,6 +60,7 @@ class libLock extends Factory
      * @param int    $life
      *
      * @return bool
+     * @throws \RedisException
      */
     public function on(string $key, int $life = 60): bool
     {
@@ -86,6 +87,9 @@ class libLock extends Factory
      * Lock off
      *
      * @param string $key
+     *
+     * @return void
+     * @throws \RedisException
      */
     public function off(string $key): void
     {
@@ -117,6 +121,7 @@ class libLock extends Factory
      * @param int    $life
      *
      * @return bool
+     * @throws \RedisException
      */
     private function lock(string $key, int $life): bool
     {

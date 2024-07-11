@@ -3,7 +3,7 @@
 /**
  * Cache Extension (on Redis)
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,16 @@ class libCache extends Factory
     //Cache key prefix
     const PREFIX = 'CAS:';
 
-    public \Redis $redis;
+    public \Redis|libRedis $redis;
 
     /**
-     * Bind to Redis connection
+     * Bind Redis|libRedis
      *
-     * @param \Redis $redis
+     * @param \Redis|libRedis $redis
      *
      * @return $this
      */
-    public function bindRedis(\Redis $redis): self
+    public function bindRedis(\Redis|libRedis $redis): self
     {
         $this->redis = &$redis;
 
@@ -52,6 +52,7 @@ class libCache extends Factory
      * @param int    $life
      *
      * @return bool
+     * @throws \RedisException
      */
     public function set(string $key, array $data, int $life = 600): bool
     {
@@ -70,6 +71,7 @@ class libCache extends Factory
      * @param string $key
      *
      * @return array
+     * @throws \RedisException
      */
     public function get(string $key): array
     {
@@ -91,6 +93,7 @@ class libCache extends Factory
      * @param string $key
      *
      * @return int
+     * @throws \RedisException
      */
     public function del(string $key): int
     {

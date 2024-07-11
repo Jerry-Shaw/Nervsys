@@ -3,7 +3,7 @@
 /**
  * Session Extension (on Redis)
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,16 +26,16 @@ class libSessionOnRedis extends Factory
 {
     const PREFIX = 'SESS:';
 
-    public \Redis $redis;
+    public \Redis|libRedis $redis;
 
     protected int $life = 600;
 
     /**
      * libSession constructor.
      *
-     * @param \Redis $redis
+     * @param \Redis|libRedis $redis
      */
-    public function __construct(\Redis $redis)
+    public function __construct(\Redis|libRedis $redis)
     {
         //Check SESSION status
         if (PHP_SESSION_ACTIVE === session_status()) {

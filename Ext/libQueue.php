@@ -3,7 +3,7 @@
 /**
  * Queue Extension (on Redis)
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ use Nervsys\Core\Reflect;
 
 class libQueue extends Factory
 {
-    public \Redis $redis;
+    public \Redis|libRedis $redis;
 
     private array $proc_redis_conf;
 
