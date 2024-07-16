@@ -730,7 +730,7 @@ class libMySQL extends Factory
     {
         $field = trim($field, '`');
 
-        if (str_contains($field, ',')) {
+        if (str_contains($field, '(')) {
             return $field;
         }
 
