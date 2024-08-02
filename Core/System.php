@@ -4,7 +4,7 @@
  * System Traits
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,14 +196,15 @@ trait System
     /**
      * @param string $allow_origin
      * @param string $allow_headers
+     * @param string $expose_headers
      *
      * @return $this
      */
-    public function addCorsRule(string $allow_origin, string $allow_headers = ''): self
+    public function addCorsRule(string $allow_origin, string $allow_headers = '', string $expose_headers = ''): self
     {
-        $this->CORS->addRule($allow_origin, $allow_headers);
+        $this->CORS->addRule($allow_origin, $allow_headers, $expose_headers);
 
-        unset($allow_origin, $allow_headers);
+        unset($allow_origin, $allow_headers, $expose_headers);
         return $this;
     }
 
