@@ -44,11 +44,11 @@ class CORS extends Factory
         }
 
         if ('' !== $allowed_headers) {
-            $this->origin_list[$allowed_origin]['allow'] = ', ' . $allowed_headers;
+            $this->origin_list[$allowed_origin]['allow'] .= ', ' . $allowed_headers;
         }
 
         if ('' !== $exposed_headers) {
-            $this->origin_list[$allowed_origin]['expose'] = ', ' . $exposed_headers;
+            $this->origin_list[$allowed_origin]['expose'] .= ', ' . $exposed_headers;
         }
 
         unset($allowed_origin, $allowed_headers, $exposed_headers);
