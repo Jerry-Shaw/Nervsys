@@ -4,7 +4,7 @@
  * Cross-origin resource sharing library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,26 +25,33 @@ use Nervsys\Core\Factory;
 
 class CORS extends Factory
 {
-    private array  $allowed_list    = [];
-    private string $allowed_headers = 'X-Requested-With, Content-Type, Content-Length';
+    private array  $origin_list     = [];
+    private string $allowed_headers = 'Content-Length, Content-Type, X-Requested-With';
+    private string $exposed_headers = 'Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Pragma';
 
     /**
      * @param string $allowed_origin
      * @param string $allowed_headers
+     * @param string $exposed_headers
      *
      * @return $this
      */
-    public function addRule(string $allowed_origin, string $allowed_headers = ''): self
+    public function addRule(string $allowed_origin, string $allowed_headers = '', string $exposed_headers = ''): self
     {
-        $accept_headers = $this->allowed_headers;
-
-        if ('' !== $allowed_headers) {
-            $accept_headers .= ', ' . $allowed_headers;
+        if (!isset($this->origin_list[$allowed_origin])) {
+            $this->origin_list[$allowed_origin]['allow']  = $this->allowed_headers;
+            $this->origin_list[$allowed_origin]['expose'] = $this->exposed_headers;
         }
 
-        $this->allowed_list[$allowed_origin] = &$accept_headers;
+        if ('' !== $allowed_headers) {
+            $this->origin_list[$allowed_origin]['allow'] = ', ' . $allowed_headers;
+        }
 
-        unset($allowed_origin, $allowed_headers, $accept_headers);
+        if ('' !== $exposed_headers) {
+            $this->origin_list[$allowed_origin]['expose'] = ', ' . $exposed_headers;
+        }
+
+        unset($allowed_origin, $allowed_headers, $exposed_headers);
         return $this;
     }
 
@@ -59,20 +66,24 @@ class CORS extends Factory
             return;
         }
 
-        if (is_null($allow_headers = $this->allowed_list[$_SERVER['HTTP_ORIGIN']] ?? $this->allowed_list['*'] ?? null)) {
+        if (!isset($this->origin_list[$_SERVER['HTTP_ORIGIN']]) && !isset($this->origin_list['*'])) {
             !headers_sent() && http_response_code(406);
             exit(0);
         }
 
-        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-        header('Access-Control-Allow-Headers: ' . $allow_headers);
+        $cors_rules = $this->origin_list[$_SERVER['HTTP_ORIGIN']] ?? $this->origin_list['*'];
+
         header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+
+        header('Access-Control-Allow-Headers: ' . $cors_rules['allow']);
+        header('Access-Control-Expose-Headers: ' . $cors_rules['expose']);
 
         if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
             !headers_sent() && http_response_code(204);
             exit(0);
         }
 
-        unset($is_tls, $allow_headers);
+        unset($is_tls, $cors_rules);
     }
 }
