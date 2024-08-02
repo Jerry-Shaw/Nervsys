@@ -4,7 +4,7 @@
  * MySQL Extension
  *
  * Copyright 2019-2024 秋水之冰 <27206617@qq.com>
- * Copyright 2021 wwj <904428723@qq.com>
+ * Copyright 2021-2024 wwj <904428723@qq.com>
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -876,7 +876,8 @@ class libMySQL extends Factory
     protected function buildReadableSql(string $runtime_sql, array $bind_params): string
     {
         $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null {
+            function (int|float|string|null $value): int|float|string|null
+            {
                 if (is_string($value)) {
                     $this->isRaw($value);
 
