@@ -67,10 +67,24 @@ class NS
      *
      * @throws \Exception
      */
-    public function __construct()
+    public function __construct(string $root_path = '', string $api_dir = '')
     {
-        $this->init()->initApp();
+        $this->init();
+
+        if ('' !== $root_path) {
+            $this->app->setRoot($root_path);
+        }
+
+        if ('' !== $api_dir) {
+            $this->app->setApiDir($api_dir);
+        }
+
+        $this->app->initIOEnv()->initAppEnv();
+
+        $this->initApp();
         $this->addAutoloadPath($this->app->root_path, true);
+
+        unset($root_path, $api_dir);
     }
 
     /**
