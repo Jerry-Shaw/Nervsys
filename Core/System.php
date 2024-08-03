@@ -181,15 +181,15 @@ trait System
     }
 
     /**
-     * @param bool $core_debug_mode
+     * @param bool $debug_mode
      *
      * @return $this
      */
-    public function setCoreDebug(bool $core_debug_mode): self
+    public function setDebugMode(bool $debug_mode): self
     {
-        $this->app->core_debug = &$core_debug_mode;
+        $this->app->core_debug = &$debug_mode;
 
-        unset($core_debug_mode);
+        unset($debug_mode);
         return $this;
     }
 
