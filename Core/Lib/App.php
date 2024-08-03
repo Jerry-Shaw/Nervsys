@@ -4,7 +4,7 @@
  * App library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ use Nervsys\Core\Factory;
 
 class App extends Factory
 {
-    public string $api_dir;
-    public string $log_path;
-    public string $root_path;
-    public string $script_path;
+    public string $log_path    = '';
+    public string $root_path   = '';
+    public string $script_path = '';
 
+    public string $api_dir    = 'api';
     public string $client_ip  = '0.0.0.0';
     public string $user_lang  = 'Unknown';
     public string $user_agent = 'Unknown';
@@ -41,36 +41,29 @@ class App extends Factory
     public bool $core_debug = false;
 
     /**
-     * App constructor
+     * @param string $root_path
      *
-     * @throws \Exception
+     * @return $this
      */
-    public function __construct()
+    public function setRoot(string $root_path): self
     {
-        $this->script_path = realpath(strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR));
+        $this->root_path = &$root_path;
 
-        if (false === $this->script_path) {
-            $this->script_path = realpath(getcwd() . DIRECTORY_SEPARATOR . $this->script_path);
+        unset($root_path);
+        return $this;
+    }
 
-            if (false === $this->script_path) {
-                throw new \Exception('Script path NOT detected!', E_USER_ERROR);
-            }
-        }
+    /**
+     * @param string $api_dir
+     *
+     * @return $this
+     */
+    public function setApiDir(string $api_dir): self
+    {
+        $this->api_dir = &$api_dir;
 
-        $this->root_path = dirname($this->script_path, 2);
-        $this->log_path  = $this->root_path . DIRECTORY_SEPARATOR . 'logs';
-        $this->api_dir   = 'api';
-
-        if (!is_dir($this->log_path)) {
-            try {
-                mkdir($this->log_path, 0777, true);
-                chmod($this->log_path, 0777);
-            } catch (\Throwable) {
-                //Dir already exists
-            }
-        }
-
-        $this->setAppEnv();
+        unset($api_dir);
+        return $this;
     }
 
     /**
@@ -88,9 +81,62 @@ class App extends Factory
     }
 
     /**
+     * @param bool $core_debug
+     *
+     * @return $this
+     */
+    public function setDebugMode(bool $core_debug): self
+    {
+        $this->core_debug = &$core_debug;
+
+        unset($core_debug);
+        return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws \Exception
+     */
+    public function initIOEnv(): self
+    {
+        $this->script_path = realpath(strtr($_SERVER['SCRIPT_FILENAME'], '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR));
+
+        if (false === $this->script_path) {
+            $this->script_path = realpath(getcwd() . DIRECTORY_SEPARATOR . $_SERVER['SCRIPT_FILENAME']);
+
+            if (false === $this->script_path) {
+                throw new \Exception('Script path NOT detected!', E_USER_ERROR);
+            }
+        }
+
+        if ('' === $this->root_path) {
+            for ($i = 1; $i <= 2; ++$i) {
+                $this->root_path = dirname($this->script_path, $i);
+
+                if (is_dir($this->root_path . DIRECTORY_SEPARATOR . $this->api_dir)) {
+                    break;
+                }
+            }
+        }
+
+        $this->log_path = $this->root_path . DIRECTORY_SEPARATOR . 'logs';
+
+        if (!is_dir($this->log_path)) {
+            try {
+                mkdir($this->log_path, 0777, true);
+                chmod($this->log_path, 0777);
+            } catch (\Throwable) {
+                //Dir already exists
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * @return void
      */
-    private function setAppEnv(): void
+    public function initAppEnv(): void
     {
         if ('cli' === PHP_SAPI) {
             $this->is_cli     = true;
