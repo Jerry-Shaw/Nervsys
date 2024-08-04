@@ -32,7 +32,7 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.2.2');
+define('NS_VER', '8.2.3');
 define('NS_NAME', 'Blueberry');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
@@ -67,10 +67,24 @@ class NS
      *
      * @throws \Exception
      */
-    public function __construct()
+    public function __construct(string $root_path = '', string $api_dir = '')
     {
-        $this->init()->initApp();
+        $this->init();
+
+        if ('' !== $root_path) {
+            $this->app->setRoot($root_path);
+        }
+
+        if ('' !== $api_dir) {
+            $this->app->setApiDir($api_dir);
+        }
+
+        $this->app->initIOEnv()->initAppEnv();
+
+        $this->initApp();
         $this->addAutoloadPath($this->app->root_path, true);
+
+        unset($root_path, $api_dir);
     }
 
     /**
