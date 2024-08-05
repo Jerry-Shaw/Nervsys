@@ -25,7 +25,8 @@ use Nervsys\Core\Factory;
 
 class CORS extends Factory
 {
-    private array  $origin_list     = [];
+    public array $origin_list = [];
+
     private string $allowed_headers = 'Content-Length, Content-Type, X-Requested-With';
     private string $exposed_headers = 'Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Pragma';
 
