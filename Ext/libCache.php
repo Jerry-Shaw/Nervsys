@@ -75,11 +75,14 @@ class libCache extends Factory
      */
     public function get(string $key): array
     {
-        if (false === $cache = $this->redis->get(self::PREFIX . $key)) {
+        $key = self::PREFIX . $key;
+
+        if (false === ($cache = $this->redis->get($key))) {
             return [];
         }
 
         if (!is_array($data = json_decode($cache, true))) {
+            $this->redis->del($key);
             return [];
         }
 
