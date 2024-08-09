@@ -102,7 +102,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function readAt(int $seconds, int $microseconds = null): self
+    public function readAt(int $seconds, int|null $microseconds = null): self
     {
         $this->read_seconds      = &$seconds;
         $this->read_microseconds = &$microseconds;
@@ -266,7 +266,7 @@ class ProcMgr extends Factory
      *
      * @return self
      */
-    public function putJob(string $job_argv, callable $stdout_callback = null, callable $stderr_callback = null): self
+    public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null): self
     {
         try {
             $idx = $this->getAwaitIdx();
@@ -305,7 +305,7 @@ class ProcMgr extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    public function awaitProc(callable $stdout_callback = null, callable $stderr_callback = null, callable ...$other_callbacks): void
+    public function awaitProc(callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
     {
         while (0 < array_sum($this->proc_status)) {
             foreach ($other_callbacks as $callback) {

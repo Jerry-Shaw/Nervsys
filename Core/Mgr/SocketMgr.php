@@ -113,7 +113,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setReadOptions(int $seconds, int $microseconds = null, int $alive_seconds = 60, int $fragment_num = 200): self
+    public function setReadOptions(int $seconds, int|null $microseconds = null, int $alive_seconds = 60, int $fragment_num = 200): self
     {
         $this->read_at = [&$seconds, &$microseconds, &$alive_seconds, &$fragment_num];
 
