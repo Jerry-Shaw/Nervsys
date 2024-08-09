@@ -368,15 +368,20 @@ class libMySQL extends Factory
      *
      * @param string $table
      * @param string $type
+     * @param bool   $with_prefix
      *
      * @return $this
      */
-    public function join(string $table, string $type = 'INNER'): self
+    public function join(string $table, string $type = 'INNER', bool $with_prefix = true): self
     {
+        if ($with_prefix) {
+            $table = $this->table_prefix . $table;
+        }
+
         $this->runtime_data['on']     = [];
         $this->runtime_data['join']   ??= [];
         $this->runtime_data['stage']  = 'join';
-        $this->runtime_data['join'][] = $type . ' JOIN ' . $this->table_prefix . $table;
+        $this->runtime_data['join'][] = $type . ' JOIN ' . $table;
 
         unset($table, $type);
         return $this;
