@@ -34,7 +34,6 @@ class libMySQL extends Factory
     public int $affected_rows = 0;
 
     public string $last_sql     = '';
-    public string $table_name   = '';
     public string $table_prefix = '';
 
     public array $runtime_data = [];
@@ -101,6 +100,21 @@ class libMySQL extends Factory
     }
 
     /**
+     * Force table name with higher priority
+     *
+     * @param string $table_name
+     *
+     * @return $this
+     */
+    public function forceTableName(string $table_name): self
+    {
+        $this->runtime_data['table'] = &$table_name;
+
+        unset($table_name);
+        return $this;
+    }
+
+    /**
      * Set table prefix
      *
      * @param string $table_prefix
@@ -116,26 +130,21 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set table name using prefix
+     * Get table name from table prefix and called class
      *
-     * @param string $table_name
-     *
-     * @return $this
+     * @return string
      */
-    public function setTableName(string $table_name = ''): self
+    public function getTableName(): string
     {
-        if ('' === $table_name) {
-            $table_name = get_class($this);
+        $table_name = get_class($this);
+        $table_pos  = strrpos($table_name, '\\');
+
+        if (false !== $table_pos) {
+            $table_name = substr($table_name, $table_pos + 1);
         }
 
-        if (false !== $pos = strrpos($table_name, '\\')) {
-            $table_name = substr($table_name, $pos + 1);
-        }
-
-        $this->table_name = $this->table_prefix . $table_name;
-
-        unset($table_name, $pos);
-        return $this;
+        unset($table_pos);
+        return $this->runtime_data['table'] ?? $this->table_prefix . $table_name;
     }
 
     /**
@@ -799,7 +808,7 @@ class libMySQL extends Factory
      */
     protected function buildInsert(): string
     {
-        $sql = 'INSERT INTO ' . ($this->runtime_data['table'] ?? $this->table_name);
+        $sql = 'INSERT INTO ' . $this->getTableName();
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -814,7 +823,7 @@ class libMySQL extends Factory
     protected function buildSelect(): string
     {
         $sql = 'SELECT ' . $this->runtime_data['cols'];
-        $sql .= ' FROM ' . ($this->runtime_data['table'] ?? $this->table_name);
+        $sql .= ' FROM ' . $this->getTableName();
 
         return $this->appendCond($sql);
     }
@@ -826,7 +835,7 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . ($this->runtime_data['table'] ?? $this->table_name) . $this->getSqlSet();
+        $sql = 'UPDATE ' . $this->getTableName() . $this->getSqlSet();
 
         return $this->appendCond($sql);
     }
@@ -838,7 +847,7 @@ class libMySQL extends Factory
      */
     protected function buildReplace(): string
     {
-        $sql = 'REPLACE INTO ' . ($this->runtime_data['table'] ?? $this->table_name);
+        $sql = 'REPLACE INTO ' . $this->getTableName();
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -852,7 +861,7 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
-        return 'REPLACE INTO ' . ($this->runtime_data['table'] ?? $this->table_name) . $this->getSqlSet();
+        return 'REPLACE INTO ' . $this->getTableName() . $this->getSqlSet();
     }
 
     /**
@@ -862,7 +871,7 @@ class libMySQL extends Factory
      */
     protected function buildDelete(): string
     {
-        return $this->appendCond('DELETE FROM ' . ($this->runtime_data['table'] ?? $this->table_name));
+        return $this->appendCond('DELETE FROM ' . $this->getTableName());
     }
 
     /**
