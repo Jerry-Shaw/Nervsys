@@ -4,7 +4,7 @@
  * I/O Data Parser library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,6 @@ class IOData extends Factory
 
         if ('' === $this->src_cmd && isset($this->src_input['c'])) {
             $this->src_cmd = trim($this->src_input['c']);
-            unset($this->src_input['c']);
         }
 
         foreach ($this->cgi_handler as $handler) {
