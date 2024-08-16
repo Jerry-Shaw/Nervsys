@@ -1200,15 +1200,21 @@ class libMySQL extends Factory
         foreach ($this->runtime_data['value'] as $col => $val) {
             if (str_starts_with($val, $col)) {
                 $raw = str_replace(' ', '', $val);
-                $opt = substr($raw, $pos = strlen($col), 1);
-                $num = substr($raw, $pos + 1);
+                $raw = substr($raw, strlen($col));
 
-                if (in_array($opt, ['+', '-', '*', '/', '|', '&', '^', '~'], true) && is_numeric($num)) {
-                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($num, '.') ? (int)$num : (float)$num);
-                    continue;
+                foreach (['+', '-', '*', '/', '|', '&', '^', '~', '<<', '>>'] as $opt) {
+                    if (!str_starts_with($raw, $opt)) {
+                        continue;
+                    }
+
+                    $raw = substr($raw, strlen($opt));
+
+                    if (is_numeric($raw)) {
+                        $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
+                    }
                 }
 
-                unset($raw, $opt, $num);
+                unset($raw, $opt);
             }
 
             $data[] = $col . '=?';
