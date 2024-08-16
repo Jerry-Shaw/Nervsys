@@ -1202,7 +1202,7 @@ class libMySQL extends Factory
                 $opt = substr($raw, $pos = strlen($col), 1);
                 $num = substr($raw, $pos + 1);
 
-                if (in_array($opt, ['+', '-', '*', '/'], true) && is_numeric($num)) {
+                if (in_array($opt, ['+', '-', '*', '/', '|', '&', '^'], true) && is_numeric($num)) {
                     $data[] = $col . '=' . $col . $opt . (string)(!str_contains($num, '.') ? (int)$num : (float)$num);
                     continue;
                 }
