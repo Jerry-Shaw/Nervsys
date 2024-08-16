@@ -953,8 +953,7 @@ class libMySQL extends Factory
     protected function buildReadableSql(string $runtime_sql, array $bind_params): string
     {
         $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null
-            {
+            function (int|float|string|null $value): int|float|string|null {
                 if (is_string($value)) {
                     $this->isRaw($value);
 
@@ -1203,7 +1202,7 @@ class libMySQL extends Factory
                 $opt = substr($raw, $pos = strlen($col), 1);
                 $num = substr($raw, $pos + 1);
 
-                if (in_array($opt, ['+', '-', '*', '/'], true) && is_numeric($num)) {
+                if (in_array($opt, ['+', '-', '*', '/', '|', '&', '^'], true) && is_numeric($num)) {
                     $data[] = $col . '=' . $col . $opt . (string)(!str_contains($num, '.') ? (int)$num : (float)$num);
                     continue;
                 }
