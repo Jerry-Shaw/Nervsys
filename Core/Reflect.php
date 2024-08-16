@@ -103,7 +103,7 @@ class Reflect
      * @return array
      * @throws \ReflectionException
      */
-    public static function getMethods(string $class_name, int $filter = null): array
+    public static function getMethods(string $class_name, int|null $filter = null): array
     {
         $key = trim($class_name, '\\') . '@' . ($filter ?? 0);
 

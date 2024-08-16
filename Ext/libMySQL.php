@@ -58,6 +58,23 @@ class libMySQL extends Factory
     }
 
     /**
+     * Cleanup runtime data and unfinished transaction
+     *
+     * @return void
+     */
+    public function cleanup(): void
+    {
+        //Reset runtime data
+        $this->runtime_data = [];
+
+        //Rollback unfinished transaction
+        if ($this->pdo->inTransaction()) {
+            self::$transactions = 0;
+            $this->pdo->rollBack();
+        }
+    }
+
+    /**
      * Set auto cleanup on shutdown
      *
      * @return $this
@@ -67,21 +84,6 @@ class libMySQL extends Factory
         register_shutdown_function([$this, 'cleanup']);
 
         return $this;
-    }
-
-    /**
-     * Cleanup runtime data and unfinished transaction
-     */
-    public function cleanup(): void
-    {
-        //Clear runtime data
-        $this->runtime_data = [];
-
-        //Rollback unfinished transaction
-        if ($this->pdo->inTransaction()) {
-            self::$transactions = 0;
-            $this->pdo->rollBack();
-        }
     }
 
     /**
@@ -609,10 +611,12 @@ class libMySQL extends Factory
      * Exec SQL and return affected rows
      *
      * @param string $sql
+     * @param int    $retry_times
      *
      * @return int
+     * @throws \ReflectionException
      */
-    public function exec(string $sql): int
+    public function exec(string $sql, int $retry_times = 0): int
     {
         try {
             $this->last_sql = &$sql;
@@ -620,12 +624,20 @@ class libMySQL extends Factory
             if (false === $this->affected_rows = $this->pdo->exec($sql)) {
                 $this->affected_rows = -1;
             }
+        } catch (\PDOException $exception) {
+            if ($this->reconnect(++$retry_times)) {
+                unset($exception);
+                return $this->exec($sql, $retry_times);
+            }
+
+            $this->runtime_data = [];
+            throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
             $this->runtime_data = [];
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         }
 
-        unset($sql);
+        unset($sql, $retry_times);
         return $this->affected_rows;
     }
 
@@ -635,10 +647,12 @@ class libMySQL extends Factory
      * @param string $sql
      * @param int    $fetch_style
      * @param int    $col_no
+     * @param int    $retry_times
      *
      * @return \PDOStatement
+     * @throws \ReflectionException
      */
-    public function query(string $sql, int $fetch_style = \PDO::FETCH_ASSOC, int $col_no = 0): \PDOStatement
+    public function query(string $sql, int $fetch_style = \PDO::FETCH_ASSOC, int $col_no = 0, int $retry_times = 0): \PDOStatement
     {
         try {
             $this->last_sql = &$sql;
@@ -651,12 +665,22 @@ class libMySQL extends Factory
             $stmt = $this->pdo->query(...$sql_param);
 
             $this->affected_rows = $stmt->rowCount();
+
+            unset($sql_param);
+        } catch (\PDOException $exception) {
+            if ($this->reconnect(++$retry_times)) {
+                unset($exception);
+                return $this->query($sql, $fetch_style, $col_no, $retry_times);
+            }
+
+            $this->runtime_data = [];
+            throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
             $this->runtime_data = [];
-            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         }
 
-        unset($sql, $fetch_style, $col_no, $sql_param);
+        unset($sql, $fetch_style, $col_no, $retry_times);
         return $stmt;
     }
 
@@ -674,15 +698,33 @@ class libMySQL extends Factory
     /**
      * Begin transaction
      *
+     * @param int $retry_times
+     *
      * @return void
+     * @throws \ReflectionException
      */
-    public function begin(): void
+    public function begin(int $retry_times = 0): void
     {
-        if (0 === self::$transactions) {
-            $this->pdo->beginTransaction();
+        if (0 < self::$transactions) {
+            unset($retry_times);
+            return;
         }
 
-        ++self::$transactions;
+        try {
+            $this->pdo->beginTransaction();
+            ++self::$transactions;
+            unset($retry_times);
+        } catch (\PDOException $exception) {
+            if ($this->reconnect(++$retry_times)) {
+                $this->begin($retry_times);
+                unset($exception);
+                return;
+            }
+
+            throw new \PDOException($exception->getMessage() . '. ' . 'Start transaction failed!', E_USER_ERROR);
+        } catch (\Throwable $throwable) {
+            throw new \PDOException($throwable->getMessage() . '. ' . 'Start transaction failed!', E_USER_ERROR);
+        }
     }
 
     /**
@@ -736,17 +778,45 @@ class libMySQL extends Factory
     }
 
     /**
+     * Reconnect MySQL server
+     *
+     * @param int $retry_times
+     *
+     * @return bool
+     * @throws \ReflectionException
+     */
+    protected function reconnect(int $retry_times = 0): bool
+    {
+        if (!in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true)) {
+            return false;
+        }
+
+        if (0 < $this->retry_limit && $retry_times > $this->retry_limit) {
+            return false;
+        }
+
+        //Destroy PDO from Factory
+        $this->destroy($this->pdo);
+
+        //Reconnect to PDO server
+        $this->pdo = $this->libPDO->connect();
+
+        unset($retry_times);
+        return true;
+    }
+
+    /**
      * @param string $field
      *
      * @return string
      */
     protected function escapeField(string $field): string
     {
-        $field = trim($field, '`');
-
-        if (str_contains($field, '(')) {
+        if (str_contains($field, '`') || str_contains($field, '(') || str_contains($field, ')')) {
             return $field;
         }
+
+        $field = trim($field, '`');
 
         if (!str_contains($field, '.')) {
             return '`' . $field . '`';
@@ -783,23 +853,16 @@ class libMySQL extends Factory
 
             unset($params);
         } catch (\PDOException $exception) {
-            if (in_array($this->pdo->errorInfo()[1] ?? 0, [2006, 2013], true)) {
-                if (-1 === $this->retry_limit || $retry_times < $this->retry_limit) {
-                    unset($exception);
-
-                    //Destroy PDO from Factory
-                    $this->destroy($this->pdo);
-
-                    //Reconnect to PDO server
-                    $this->pdo = $this->libPDO->connect();
-
-                    //Retry executing PDOStatement
-                    return $this->executeSQL($runtime_sql, ++$retry_times);
-                }
+            if ($this->reconnect(++$retry_times)) {
+                unset($exception);
+                return $this->executeSQL($runtime_sql, $retry_times);
             }
 
             $this->runtime_data = [];
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
+        } catch (\Throwable $throwable) {
+            $this->runtime_data = [];
+            throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
         unset($runtime_sql, $retry_times);

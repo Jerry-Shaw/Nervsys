@@ -66,7 +66,7 @@ class FiberMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function async(callable $callable, array $arguments = [], callable $callback = null): void
+    public function async(callable $callable, array $arguments = [], callable|null $callback = null): void
     {
         $await_fiber = $this->await($callable, $arguments);
 

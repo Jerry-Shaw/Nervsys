@@ -41,7 +41,7 @@ class Security extends Factory
      * @return callable
      * @throws \ReflectionException
      */
-    public function getApiMethod(string $class_name, string $method_name, array &$class_args = [], int $filter = null): callable
+    public function getApiMethod(string $class_name, string $method_name, array &$class_args = [], int|null $filter = null): callable
     {
         $fn_list = [];
         $fn_api  = current($this->fn_target_invalid);
