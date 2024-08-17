@@ -1209,9 +1209,12 @@ class libMySQL extends Factory
 
                     $raw = substr($raw, strlen($opt));
 
-                    if (is_numeric($raw)) {
-                        $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
+                    if (!is_numeric($raw)) {
+                        continue;
                     }
+
+                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
+                    continue 2;
                 }
 
                 unset($raw, $opt);
