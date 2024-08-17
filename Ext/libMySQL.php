@@ -1210,7 +1210,7 @@ class libMySQL extends Factory
                     $raw = substr($raw, strlen($opt));
 
                     if (!is_numeric($raw)) {
-                        continue;
+                        break;
                     }
 
                     $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
