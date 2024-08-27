@@ -31,6 +31,7 @@ class SocketMgr extends Factory
 
     public string $address   = '';
     public string $master_id = '';
+    public string $sock_type = '';
     public string $heartbeat = "\n";
 
     public bool $block_mode = false;
@@ -305,7 +306,12 @@ class SocketMgr extends Factory
         $this->address = &$address;
         $this->createServer($address);
 
-        $this->fiberMgr->async([$this, 'serverOnConnect'], [$websocket]);
+        if ('udp' !== $this->sock_type) {
+            $this->fiberMgr->async([$this, 'serverOnConnect'], [$websocket]);
+        } else {
+            $this->connections = $this->master_sock;
+        }
+
         $this->fiberMgr->async([$this, 'serverOnMessage'], [$websocket]);
         $this->fiberMgr->async([$this, 'serverOnHeartbeat'], [$websocket]);
         $this->fiberMgr->async([$this, 'serverOnSend'], [$websocket]);
@@ -329,7 +335,9 @@ class SocketMgr extends Factory
             }
         }
 
-        $flags = 'udp' != parse_url($address, PHP_URL_SCHEME)
+        $this->sock_type = strtolower(parse_url($address, PHP_URL_SCHEME));
+
+        $flags = 'udp' != $this->sock_type
             ? STREAM_SERVER_BIND | STREAM_SERVER_LISTEN
             : STREAM_SERVER_BIND;
 
@@ -845,17 +853,21 @@ class SocketMgr extends Factory
     public function readMessage(string $socket_id): string
     {
         try {
-            $message = fgetc($this->connections[$socket_id]);
+            if ('udp' !== $this->sock_type) {
+                $message = fgetc($this->connections[$socket_id]);
 
-            if (false === $message) {
-                throw new \Exception('Read ERROR!', E_USER_NOTICE);
+                if (false === $message) {
+                    throw new \Exception('Read ERROR!', E_USER_NOTICE);
+                }
+
+                while ('' !== ($fragment = fread($this->connections[$socket_id], 8192))) {
+                    $message .= $fragment;
+                }
+
+                $this->activities[$socket_id][0] = time();
+            } else {
+                $message = stream_socket_recvfrom($this->connections[$socket_id], 65536);
             }
-
-            while ('' !== ($fragment = fread($this->connections[$socket_id], 8192))) {
-                $message .= $fragment;
-            }
-
-            $this->activities[$socket_id][0] = time();
         } catch (\Throwable) {
             $this->closeSocket($socket_id);
             throw new \Exception('Read ERROR!', E_USER_NOTICE);
@@ -875,8 +887,12 @@ class SocketMgr extends Factory
     public function sendMessage(string $socket_id, string $message): bool
     {
         try {
-            if (false === ($send = fwrite($this->connections[$socket_id], $message))) {
-                throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
+            if ('udp' !== $this->sock_type) {
+                if (false === ($send = fwrite($this->connections[$socket_id], $message))) {
+                    throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
+                }
+            } else {
+                $send = stream_socket_sendto($this->connections[$socket_id], $message);
             }
         } catch (\Throwable $throwable) {
             $this->debug('Send message ERROR: ' . $throwable->getMessage());
