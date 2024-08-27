@@ -144,13 +144,14 @@ class Caller extends Factory
 
     /**
      * @param string $cmd
+     * @param bool   $in_background
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function runAsync(string $cmd): void
+    public function runAsync(string $cmd, bool $in_background = true): void
     {
-        pclose(popen(OSMgr::new()->inBackground(true)->buildCmd($cmd), 'rb'));
-        unset($cmd);
+        pclose(popen(OSMgr::new()->inBackground($in_background)->buildCmd($cmd), 'rb'));
+        unset($cmd, $in_background);
     }
 }
