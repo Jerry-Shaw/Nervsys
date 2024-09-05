@@ -123,7 +123,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function setTablePrefix(string &$table_prefix): self
+    public function setTablePrefix(string $table_prefix): self
     {
         $this->table_prefix = &$table_prefix;
 
