@@ -110,7 +110,7 @@ class NS
         if ($this->app->is_cli) {
             $this->profiler->start('NS_CLI_ROUTER');
             $cli_cmd = $this->router->parseCli($this->IOData->src_cmd);
-            $this->profiler->start('NS_CLI_ROUTER');
+            $this->profiler->end('NS_CLI_ROUTER');
 
             if (!empty($cli_cmd)) {
                 while (is_array($cmd_data = array_shift($cli_cmd))) {
@@ -131,7 +131,7 @@ class NS
 
         $this->profiler->start('NS_CGI_ROUTER');
         $cgi_cmd = $this->router->parseCgi($this->IOData->src_cmd);
-        $this->profiler->start('NS_CGI_ROUTER');
+        $this->profiler->end('NS_CGI_ROUTER');
 
         if (!empty($cgi_cmd)) {
             while (is_array($cmd_data = array_shift($cgi_cmd))) {
@@ -169,6 +169,6 @@ class NS
 
         $this->profiler->start('NS_DATA_OUTPUT');
         $this->IOData->output();
-        $this->profiler->start('NS_DATA_OUTPUT');
+        $this->profiler->end('NS_DATA_OUTPUT');
     }
 }
