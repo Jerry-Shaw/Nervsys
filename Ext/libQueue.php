@@ -48,7 +48,7 @@ class libQueue extends Factory
     /**
      * @param string $name
      */
-    public function __construct(string $name = 'default',)
+    public function __construct(string $name = 'default')
     {
         $this->proc_worker_key = 'Q:' . $name;
 
@@ -240,7 +240,7 @@ class libQueue extends Factory
                     $api_fn   = $security->getApiMethod($cmd_data[0], $cmd_data[1], $job_data, \ReflectionMethod::IS_PUBLIC);
                     $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $job_data);
 
-                    call_user_func_array($api_fn, $api_args);
+                    call_user_func($api_fn, ...$api_args);
                 } catch (\Throwable $throwable) {
                     $this->saveError($job[0], $job_data, $throwable->getMessage());
                     $error->exceptionHandler($throwable, false, false);

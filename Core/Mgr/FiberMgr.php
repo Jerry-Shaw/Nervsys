@@ -121,9 +121,11 @@ class FiberMgr extends Factory
     {
         $result = $fiber->getReturn();
 
-        is_array($result) && !array_is_list($result)
-            ? call_user_func_array($callback, parent::buildArgs(Reflect::getCallable($callback)->getParameters(), $result))
-            : call_user_func($callback, $result);
+        if (is_array($result) && !array_is_list($result)) {
+            $result = parent::buildArgs(Reflect::getCallable($callback)->getParameters(), $result);
+        }
+
+        call_user_func($callback, ...$result);
 
         unset($fiber, $callback, $result);
     }

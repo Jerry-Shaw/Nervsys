@@ -63,7 +63,7 @@ class Caller extends Factory
             unset($throwable);
         }
 
-        $fn_result = call_user_func_array($api_fn, $api_args);
+        $fn_result = call_user_func($api_fn, ...$api_args);
 
         if (!is_null($fn_result)) {
             $result[$cmd[2] ?? strtr($cmd[0], '\\', '/') . '/' . $cmd[1]] = &$fn_result;

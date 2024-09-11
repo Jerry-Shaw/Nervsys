@@ -105,7 +105,7 @@ class Hook extends Factory
     private function passHook(callable $hook_fn): bool
     {
         $params = self::buildArgs(Reflect::getCallable($hook_fn)->getParameters(), IOData::new()->src_input);
-        $result = call_user_func_array($hook_fn, $params);
+        $result = call_user_func($hook_fn, ...$params);
 
         unset($hook_fn, $params);
         return is_null($result) || true === $result;
