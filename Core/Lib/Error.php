@@ -148,7 +148,7 @@ class Error extends Factory
 
         foreach ($this->custom_handler as $handler) {
             if (is_callable($handler)) {
-                call_user_func($handler, $throwable);
+                call_user_func($handler, $app, $IOData, $throwable, $report_error);
             }
         }
 
