@@ -107,6 +107,9 @@ class Error extends Factory
      */
     public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $report_error = true): void
     {
+        ob_clean();
+        !headers_sent() && http_response_code(500);
+
         $app    = App::new();
         $IOData = IOData::new();
 
@@ -152,12 +155,8 @@ class Error extends Factory
             }
         }
 
-        if ($report_error) {
-            !headers_sent() && http_response_code(500);
-
-            if ($app->core_debug) {
-                $this->showLog($err_lv, $message, $context);
-            }
+        if ($report_error || $app->core_debug) {
+            $this->showLog($err_lv, $message, $context);
         }
 
         if ($stop_on_error) {
