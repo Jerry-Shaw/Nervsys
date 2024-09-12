@@ -107,7 +107,6 @@ class Error extends Factory
      */
     public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $report_error = true): void
     {
-        ob_clean();
         !headers_sent() && http_response_code(500);
 
         $app    = App::new();
