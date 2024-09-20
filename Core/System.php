@@ -187,7 +187,7 @@ trait System
      */
     public function setDebugMode(bool $debug_mode): self
     {
-        $this->app->core_debug = &$debug_mode;
+        $this->app->debug_mode = &$debug_mode;
 
         unset($debug_mode);
         return $this;

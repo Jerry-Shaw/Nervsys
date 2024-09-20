@@ -114,7 +114,7 @@ class Security extends Factory
     {
         !headers_sent() && http_response_code(403);
 
-        $IOData->src_msg    = ['code' => 403, 'message' => !$app->core_debug ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
+        $IOData->src_msg    = ['code' => 403, 'message' => !$app->debug_mode ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
         $IOData->src_output = [];
 
         unset($app, $IOData);
@@ -130,7 +130,7 @@ class Security extends Factory
     {
         !headers_sent() && http_response_code(404);
 
-        $IOData->src_msg    = ['code' => 404, 'message' => !$app->core_debug ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
+        $IOData->src_msg    = ['code' => 404, 'message' => !$app->debug_mode ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
         $IOData->src_output = [];
 
         unset($app, $IOData);
@@ -147,7 +147,7 @@ class Security extends Factory
     {
         !headers_sent() && http_response_code(500);
 
-        $IOData->src_msg    = ['code' => 500, 'message' => !$app->core_debug ? 'Server Data Error!' : $message];
+        $IOData->src_msg    = ['code' => 500, 'message' => !$app->debug_mode ? 'Server Data Error!' : $message];
         $IOData->src_output = [];
 
         unset($app, $IOData, $message);

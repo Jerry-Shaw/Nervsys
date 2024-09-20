@@ -38,7 +38,7 @@ class App extends Factory
     public bool $is_cli = false;
     public bool $is_tls = false;
 
-    public bool $core_debug = false;
+    public bool $debug_mode = false;
 
     /**
      * @param string $root_path
@@ -87,7 +87,7 @@ class App extends Factory
      */
     public function setDebugMode(bool $core_debug): self
     {
-        $this->core_debug = &$core_debug;
+        $this->debug_mode = &$core_debug;
 
         unset($core_debug);
         return $this;

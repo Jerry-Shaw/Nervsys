@@ -105,10 +105,8 @@ class Error extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    public function exceptionHandler(\Throwable $throwable, bool $stop_on_error = true, bool $report_error = true): void
+    public function exceptionHandler(\Throwable $throwable, bool $report_error = true, bool $stop_on_error = true): void
     {
-        !headers_sent() && http_response_code(500);
-
         $app    = App::new();
         $IOData = IOData::new();
 
@@ -154,15 +152,19 @@ class Error extends Factory
             }
         }
 
-        if ($report_error || $app->core_debug) {
-            $this->showLog($err_lv, $message, $context);
+        if ($report_error) {
+            !headers_sent() && http_response_code(500);
+
+            if ($app->debug_mode) {
+                $this->showLog($err_lv, $message, $context);
+            }
         }
 
         if ($stop_on_error) {
             exit(1);
         }
 
-        unset($throwable, $stop_on_error, $report_error, $app, $IOData, $exception, $error_code, $err_lv, $message, $context);
+        unset($throwable, $report_error, $stop_on_error, $app, $IOData, $exception, $error_code, $err_lv, $message, $context);
     }
 
     /**

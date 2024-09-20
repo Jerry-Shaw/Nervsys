@@ -119,10 +119,10 @@ class NS
                             $cmd_data,
                             $this->IOData->src_argv,
                             $this->IOData->cwd_path,
-                            $this->app->core_debug
+                            $this->app->debug_mode
                         );
                     } catch (\Throwable $throwable) {
-                        $this->error->exceptionHandler($throwable, false, $this->app->core_debug);
+                        $this->error->exceptionHandler($throwable);
                         unset($throwable);
                     }
                 }
@@ -161,7 +161,7 @@ class NS
                         break;
                     }
                 } catch (\Throwable $throwable) {
-                    $this->error->exceptionHandler($throwable, false, $this->app->core_debug);
+                    $this->error->exceptionHandler($throwable);
                     unset($throwable);
                 }
             }
