@@ -3,7 +3,7 @@
 /**
  * Image Extension
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,57 @@ use Nervsys\Core\Factory;
 
 class libImage extends Factory
 {
-    //Support MIME-Type
-    const MIME = ['image/gif', 'image/jpeg', 'image/png', 'image/bmp'];
+    /**
+     * @param int   $width
+     * @param int   $height
+     * @param bool  $alpha_blending
+     * @param bool  $save_alpha
+     * @param array $fill_color
+     *
+     * @return \GdImage
+     */
+    public function createImage(int $width, int $height, bool $alpha_blending = false, bool $save_alpha = true, array $fill_color = [255, 255, 255]): \GdImage
+    {
+        $gd_image = imagecreatetruecolor($width, $height);
+
+        imagealphablending($gd_image, $alpha_blending);
+        imagesavealpha($gd_image, $save_alpha);
+
+        if ($save_alpha) {
+            $color = imagecolorallocatealpha($gd_image, $fill_color[0], $fill_color[1], $fill_color[2], 127);
+            imagecolortransparent($gd_image, $color);
+        } else {
+            $color = imagecolorallocate($gd_image, $fill_color[0], $fill_color[1], $fill_color[2]);
+        }
+
+        imagefill($gd_image, 0, 0, $color);
+
+        unset($width, $height, $alpha_blending, $save_alpha, $fill_color, $color);
+        return $gd_image;
+    }
 
     /**
-     * Resize image to giving size
+     * @param string $file
+     * @param bool   $alpha_blending
+     * @param bool   $save_alpha
+     *
+     * @return \GdImage
+     */
+    public function createImageFrom(string $file, bool $alpha_blending = false, bool $save_alpha = true): \GdImage
+    {
+        $img_info = getimagesize($file);
+        $gd_type  = substr($img_info['mime'], 6);
+        $gd_image = ('imagecreatefrom' . $gd_type)($file);
+
+        imagealphablending($gd_image, $alpha_blending);
+        imagesavealpha($gd_image, $save_alpha);
+
+        unset($file, $alpha_blending, $save_alpha, $img_info, $gd_type);
+        return $gd_image;
+    }
+
+    /**
+     * Resize/Corp image to giving size
      *
      * @param string $file
      * @param int    $width
@@ -39,358 +85,452 @@ class libImage extends Factory
      */
     public function resize(string $file, int $width, int $height, bool $crop = false): bool
     {
-        //Get image data
-        $img_info = getimagesize($file);
+        $image_type = exif_imagetype($file);
 
-        if (!in_array($img_info['mime'], self::MIME, true)) {
+        if (false === $image_type) {
+            unset($file, $width, $height, $crop, $image_type);
             return false;
         }
 
-        //Get new size
-        $img_size = $crop
-            ? $this->getCropSize($img_info[0], $img_info[1], $width, $height)
-            : $this->getZoomSize($img_info[0], $img_info[1], $width, $height);
+        $gd_image = $this->createImageFrom($file);
+        $gd_image = $this->gd_resize($gd_image, $width, $height, $crop);
+        $gd_type  = substr(image_type_to_mime_type($image_type), 6);
+        $result   = ('image' . $gd_type)($gd_image, $file);
 
-        //No need to resize/crop
-        if ($img_info[0] === $img_size['img_w'] && $img_info[1] === $img_size['img_h']) {
-            return true;
+        imagedestroy($gd_image);
+
+        unset($file, $width, $height, $crop, $image_type, $gd_image, $gd_type);
+        return $result;
+    }
+
+    /**
+     * @param string $file
+     * @param int    $angle
+     * @param array  $fill_color
+     *
+     * @return bool
+     */
+    public function rotate(string $file, int $angle = 0, array $fill_color = [255, 255, 255]): bool
+    {
+        $exif_data = exif_read_data($file);
+
+        if (false === $exif_data || !isset($exif_data['MimeType'])) {
+            unset($file, $angle, $exif_data);
+            return false;
         }
 
-        //Process image
-        $type      = substr($img_info['mime'], 6);
-        $img_src   = call_user_func('imagecreatefrom' . $type, $file);
-        $img_thumb = imagecreatetruecolor($img_size['img_w'], $img_size['img_h']);
+        if (0 === $angle) {
+            if (!isset($exif_data['Orientation'])) {
+                unset($file, $angle, $exif_data);
+                return false;
+            }
 
-        //Transparent for GIF/PNG
-        switch ($img_info[2]) {
-            case 1:
-                //Deal with the transparent color in a GIF
-                $transparent = imagecolorallocate($img_thumb, 0, 0, 0);
-                imagefill($img_thumb, 0, 0, $transparent);
-                imagecolortransparent($img_thumb, $transparent);
-                break;
-
-            case 3:
-                //Deal with the transparent color in a PNG
-                $transparent = imagecolorallocatealpha($img_thumb, 0, 0, 0, 127);
-                imagefill($img_thumb, 0, 0, $transparent);
-                imagealphablending($img_thumb, false);
-                imagesavealpha($img_thumb, true);
-                break;
+            switch ($exif_data['Orientation']) {
+                case 3:
+                    $angle = 180;
+                    break;
+                case 6:
+                    $angle = -90;
+                    break;
+                case 8:
+                    $angle = 90;
+                    break;
+                default:
+                    return true;
+            }
         }
 
-        imagecopyresampled(
-            $img_thumb,
-            $img_src,
-            0,
-            0,
-            $img_size['img_x'],
-            $img_size['img_y'],
-            $img_size['img_w'],
-            $img_size['img_h'],
-            $img_size['src_w'],
-            $img_size['src_h']
+        $gd_image = $this->createImageFrom($file);
+        $color    = imagecolorallocatealpha($gd_image, $fill_color[0], $fill_color[1], $fill_color[2], 127);
+        $gd_image = imagerotate($gd_image, $angle, $color);
+        $gd_type  = substr($exif_data['MimeType'], 6);
+        $result   = ('image' . $gd_type)($gd_image, $file);
+
+        imagedestroy($gd_image);
+
+        unset($file, $angle, $fill_color, $exif_data, $gd_image, $color, $gd_type);
+        return $result;
+    }
+
+    /**
+     * @param string $img_src       source image
+     * @param string $img_dst       save to image file
+     * @param string $img_watermark watermark image
+     * @param string $layout        layout type: top-left/top-right/bottom-left/bottom-right/center/fill
+     * @param array  $options       options:
+     *                              'width' => $image_width,
+     *                              'height' => $image_height,
+     *                              'angle' => 0,
+     *                              'alpha' => 10, (0-100, 0: transparent; 100: opaque)
+     *                              'margin' => [$watermark_width/3, $watermark_height/3],
+     *                              'fill_color' => [255, 255, 255]
+     * @param int    $jpeg_quality  image quality, default to 80 (High quality)
+     *
+     * @return bool
+     */
+    public function addWatermarkFromImage(string $img_src, string $img_dst, string $img_watermark, string $layout = 'fill', array $options = [], int $jpeg_quality = 80): bool
+    {
+        $image_type = exif_imagetype($img_src);
+
+        if (false === $image_type) {
+            unset($img_src, $img_dst, $img_watermark, $layout, $options, $image_type);
+            return false;
+        }
+
+        $gd_image     = $this->createImageFrom($img_src);
+        $gd_watermark = $this->createImageFrom($img_watermark);
+
+        $gd_merged = $this->gd_addWatermark(
+            $gd_image,
+            $gd_watermark,
+            $options['width'] ?? 0,
+            $options['height'] ?? 0,
+            $options['angle'] ?? 0,
+            $options['alpha'] ?? 10,
+            $layout,
+            $options['margin'][0] ?? (int)(imagesx($gd_watermark) / 3),
+            $options['margin'][1] ?? (int)(imagesy($gd_watermark) / 3),
+            $options['fill_color'] ?? [255, 255, 255]
         );
 
-        $result = call_user_func('image' . $type, $img_thumb, $file);
+        $gd_type = substr(image_type_to_mime_type($image_type), 6);
+        $result  = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
 
-        imagedestroy($img_src);
-        imagedestroy($img_thumb);
+        imagedestroy($gd_image);
+        imagedestroy($gd_watermark);
+        imagedestroy($gd_merged);
 
-        unset($file, $width, $height, $crop, $img_info, $img_size, $type, $img_src, $img_thumb, $transparent);
+        unset($img_src, $img_dst, $img_watermark, $layout, $options, $jpeg_quality, $image_type, $gd_image, $gd_watermark, $gd_merged, $gd_type);
         return $result;
     }
 
     /**
-     * Rotate image
-     *
-     * @param string $file
-     *
-     * @return bool
-     */
-    public function rotate(string $file): bool
-    {
-        //Get EXIF data
-        $img_exif = exif_read_data($file);
-
-        //Check property
-        if (false === $img_exif
-            || !isset($img_exif['Orientation'])
-            || !in_array($img_exif['MimeType'], self::MIME, true)
-        ) {
-            return false;
-        }
-
-        //Process image
-        $type    = substr($img_exif['MimeType'], 6);
-        $img_src = call_user_func('imagecreatefrom' . $type, $file);
-
-        //Rotate image when needed
-        switch ($img_exif['Orientation']) {
-            case 8:
-                $img_src = imagerotate($img_src, 90, 0);
-                break;
-            case 3:
-                $img_src = imagerotate($img_src, 180, 0);
-                break;
-            case 6:
-                $img_src = imagerotate($img_src, -90, 0);
-                break;
-            default:
-                imagedestroy($img_src);
-                return true;
-        }
-
-        $result = call_user_func('image' . $type, $img_src, $file);
-        imagedestroy($img_src);
-
-        unset($file, $img_exif, $type, $img_src);
-        return $result;
-    }
-
-    /**
-     * @param string $img_src
-     * @param string $img_dst
-     * @param string $text
-     * @param string $font
-     * @param int    $type
-     * @param array  $options
-     * @param int    $quality
+     * @param string $img_src      source image
+     * @param string $img_dst      save to image file
+     * @param string $text         watermark text string
+     * @param string $font         ttf font file
+     * @param string $layout       layout type: top-left/top-right/bottom-left/bottom-right/center/fill
+     * @param array  $options      options:
+     *                             'font_size' => 16,
+     *                             'font_color' => [0, 0, 0],
+     *                             'width' => $font_size * $word_count = $text_width,
+     *                             'height' => $font_size,
+     *                             'angle' => 0,
+     *                             'alpha' => 10, (0-100, 0: transparent; 100: opaque)
+     *                             'margin' => [$text_width/3, $font_size*3],
+     *                             'fill_color' => [255, 255, 255]
+     * @param int    $jpeg_quality image quality, default to 80 (High quality)
      *
      * @return bool
      */
-    public function addWatermarkFromString(string $img_src, string $img_dst, string $text, string $font, int $type = 0, array $options = [], int $quality = 60): bool
+    public function addWatermarkFromString(string $img_src, string $img_dst, string $text, string $font, string $layout = 'fill', array $options = [], int $jpeg_quality = 80): bool
     {
-        //Get image data
-        $img_info = getimagesize($img_src);
+        $image_type = exif_imagetype($img_src);
 
-        if (!in_array($img_info['mime'], self::MIME, true)) {
+        if (false === $image_type) {
+            unset($img_src, $img_dst, $text, $font, $layout, $options, $image_type);
             return false;
         }
 
-        //Process image
-        $img_type = substr($img_info['mime'], 6);
-        $src_img  = call_user_func('imagecreatefrom' . $img_type, $img_src);
+        $gd_image = $this->createImageFrom($img_src);
 
-        $font_size   = $options['size'] ?? 16;
-        $text_angle  = $options['angle'] ?? 0;
-        $text_width  = strlen($text) * $font_size;
-        $font_color  = $options['color'] ?? [0, 0, 0, 64];
-        $font_margin = $options['margin'] ?? [$text_width, $font_size * 3];
+        $font_size  = $options['font_size'] ?? 16;
+        $word_count = mb_strlen($text, 'UTF-8');
 
-        $draw_color = imagecolorallocatealpha($src_img, $font_color[0], $font_color[1], $font_color[2], $font_color[3]);
+        $canvas_width  = $font_size * $word_count;
+        $canvas_height = $font_size;
 
-        if (0 === $type) {
-            imagettftext($src_img, $font_size, $text_angle, $font_margin[0] / 2 - $text_width / 2, $font_margin[1] / 2 - $font_size / 2, $draw_color, $font, $text);
-        } elseif (1 === $type) {
-            imagettftext($src_img, $font_size, $text_angle, $font_size, $font_size, $draw_color, $font, $text);
-        } elseif (2 === $type) {
-            imagettftext($src_img, $font_size, $text_angle, $font_margin[0] - $text_width - $font_size, $font_size, $draw_color, $font, $text);
-        } elseif (3 === $type) {
-            imagettftext($src_img, $font_size, $text_angle, $font_size, $font_margin[1] - $font_size * 2, $draw_color, $font, $text);
-        } elseif (4 === $type) {
-            imagettftext($src_img, $font_size, $text_angle, $font_margin[0] - $text_width - $font_size, $font_margin[1] - $font_size * 2, $draw_color, $font, $text);
-        } else {
-            for ($y = $font_size; $y < $img_info[1]; $y += $font_margin[1]) {
-                for ($x = $font_size; $x < $img_info[0]; $x += $font_margin[0]) {
-                    imagettftext($src_img, $font_size, $text_angle, $x, $y, $draw_color, $font, $text);
-                }
-            }
+        $gd_watermark = $this->createImage($canvas_width, $canvas_height);
 
-            unset($y, $x);
-        }
+        $draw_color = imagecolorallocatealpha(
+            $gd_watermark,
+            $options['font_color'][0] ?? 0,
+            $options['font_color'][1] ?? 0,
+            $options['font_color'][2] ?? 0,
+            isset($options['alpha']) ? (int)round($options['alpha'] * 1.27) : 120
+        );
 
-        $result = imagejpeg($src_img, $img_dst, $quality);
+        imagettftext($gd_watermark, $font_size, 0, 0, 0, $draw_color, $font, $text);
 
-        imagedestroy($src_img);
+        $gd_merged = $this->gd_addWatermark(
+            $gd_image,
+            $gd_watermark,
+            $options['width'] ?? $canvas_width,
+            $options['height'] ?? $canvas_height,
+            $options['angle'] ?? 0,
+            $options['alpha'] ?? 10,
+            $layout,
+            $options['margin'][0] ?? (int)($canvas_width / 2),
+            $options['margin'][1] ?? $font_size * 3,
+            $options['fill_color'] ?? [255, 255, 255]
+        );
 
-        unset($img_src, $img_dst, $text, $font, $type, $options, $quality, $img_info, $img_type, $src_img, $font_size, $text_angle, $text_width, $font_color, $font_margin, $draw_color);
-        return $result;
-    }
+        $gd_type = substr(image_type_to_mime_type($image_type), 6);
+        $result  = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
 
-    /**
-     * @param string $img_src
-     * @param string $img_dst
-     * @param string $img_watermark
-     * @param int    $type
-     * @param array  $options
-     * @param int    $quality
-     *
-     * @return bool
-     */
-    public function addWatermarkFromImage(string $img_src, string $img_dst, string $img_watermark, int $type = 0, array $options = [], int $quality = 60): bool
-    {
-        //Get image data
-        $img_info = getimagesize($img_src);
+        imagedestroy($gd_image);
+        imagedestroy($gd_watermark);
+        imagedestroy($gd_merged);
 
-        if (!in_array($img_info['mime'], self::MIME, true)) {
-            return false;
-        }
-
-        //Process source image
-        $img_type = substr($img_info['mime'], 6);
-        $src_img  = call_user_func('imagecreatefrom' . $img_type, $img_src);
-
-        $src_width  = imagesx($src_img);
-        $src_height = imagesy($src_img);
-
-        //Process watermark image
-        $src_watermark = imagecreatefromstring(file_get_contents($img_watermark));
-
-        $watermark_width  = imagesx($src_watermark);
-        $watermark_height = imagesy($src_watermark);
-
-        //Get target watermark size
-        $target_width  = min($options['width'] ?? $watermark_width, $watermark_width);
-        $target_height = min($options['height'] ?? $watermark_height, $watermark_height);
-
-        //Resize watermark image
-        if ($watermark_width > $target_width || $watermark_height > $target_height) {
-            $watermark_size = $this->getZoomSize($watermark_width, $watermark_height, $target_width, $target_height);
-            $dst_watermark  = imagecreatetruecolor($watermark_size['img_w'], $watermark_size['img_h']);
-
-            imagealphablending($dst_watermark, false);
-            imagesavealpha($dst_watermark, true);
-
-            $target_width  = &$watermark_size['img_w'];
-            $target_height = &$watermark_size['img_h'];
-
-            imagecopyresampled(
-                $dst_watermark,
-                $src_watermark,
-                0,
-                0,
-                0,
-                0,
-                $target_width,
-                $target_height,
-                $watermark_width,
-                $watermark_height
-            );
-
-            imagedestroy($src_watermark);
-            $src_watermark = &$dst_watermark;
-            imagedestroy($dst_watermark);
-
-            unset($watermark_size, $dst_watermark);
-        }
-
-        //Create blank image to fill with source and watermark
-        $dst_filled = imagecreatetruecolor($src_width, $src_height);
-
-        imagecopy($dst_filled, $src_img, 0, 0, 0, 0, $src_width, $src_height);
-
-        if (0 === $type) {
-            for ($y = 0; $y < $src_height; $y += $target_height * 2) {
-                for ($x = 0; $x < $src_width; $x += $target_width * 2) {
-                    imagecopy($dst_filled, $src_watermark, $x, $y, 0, 0, $target_width, $target_height);
-                }
-            }
-        } else {
-            $x = $options['x'] ?? ($src_width - $target_width) / 2;
-            $y = $options['y'] ?? ($src_height - $target_height) / 2;
-
-            imagecopy($dst_filled, $src_watermark, $x, $y, 0, 0, $target_width, $target_height);
-        }
-
-        //Merge filled image to source image
-        imagecopymerge($src_img, $dst_filled, 0, 0, 0, 0, $src_width, $src_height, $options['pct'] ?? 30);
-
-        $result = imagejpeg($src_img, $img_dst, $quality);
-
-        imagedestroy($src_img);
-        imagedestroy($dst_filled);
-        imagedestroy($src_watermark);
-
-        unset($img_src, $img_dst, $img_watermark, $type, $options, $quality, $img_info, $img_type, $src_img, $src_width, $src_height, $src_watermark, $watermark_width, $watermark_height, $target_width, $target_height, $dst_filled, $x, $y);
+        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $image_type, $gd_image, $font_size, $word_count, $canvas_width, $canvas_height, $gd_watermark, $draw_color, $gd_merged, $gd_type);
         return $result;
     }
 
     /**
      * Get image size for cropping
      *
-     * @param int $img_w
-     * @param int $img_h
-     * @param int $to_w
-     * @param int $to_h
+     * @param int $img_width
+     * @param int $img_height
+     * @param int $to_width
+     * @param int $to_height
      *
      * @return array
      */
-    public function getCropSize(int $img_w, int $img_h, int $to_w, int $to_h): array
+    public function getCropSize(int $img_width, int $img_height, int $to_width, int $to_height): array
     {
-        $size          = [];
-        $size['img_w'] = &$to_w;
-        $size['img_h'] = &$to_h;
-        $size['src_w'] = $img_w;
-        $size['src_h'] = $img_h;
-        $size['img_x'] = $size['img_y'] = 0;
+        $size               = [];
+        $size['dst_width']  = &$to_width;
+        $size['dst_height'] = &$to_height;
+        $size['src_width']  = $img_width;
+        $size['src_height'] = $img_height;
+        $size['position_x'] = $size['position_y'] = 0;
 
         //Incorrect width/height
-        if (0 >= $img_w || 0 >= $img_h) {
+        if (0 >= $img_width || 0 >= $img_height) {
             return $size;
         }
 
         //Calculate new width and height
-        $ratio_img  = $img_w / $img_h;
-        $ratio_need = $to_w / $to_h;
+        $ratio_img  = $img_width / $img_height;
+        $ratio_need = $to_width / $to_height;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
-        if (0 < $ratio_diff && $img_h > $to_h) {
-            $crop_w        = (int)($img_w - $img_h * $ratio_need);
-            $size['img_x'] = (int)($crop_w / 2);
-            $size['src_w'] = $img_w - $crop_w;
+        if (0 < $ratio_diff && $img_height > $to_height) {
+            $crop_w             = (int)($img_width - $img_height * $ratio_need);
+            $size['position_x'] = (int)($crop_w / 2);
+            $size['src_width']  = $img_width - $crop_w;
             unset($crop_w);
-        } elseif (0 > $ratio_diff && $img_w > $to_w) {
-            $crop_h        = (int)($img_h - $img_w / $ratio_need);
-            $size['img_y'] = (int)($crop_h / 2);
-            $size['src_h'] = $img_h - $size['img_y'] * 2;
+        } elseif (0 > $ratio_diff && $img_width > $to_width) {
+            $crop_h             = (int)($img_height - $img_width / $ratio_need);
+            $size['position_y'] = (int)($crop_h / 2);
+            $size['src_height'] = $img_height - $size['position_y'] * 2;
             unset($crop_h);
         }
 
-        unset($img_w, $img_h, $to_w, $to_h, $ratio_img, $ratio_need, $ratio_diff);
+        unset($img_width, $img_height, $to_width, $to_height, $ratio_img, $ratio_need, $ratio_diff);
         return $size;
     }
 
     /**
      * Get image size for zooming
      *
-     * @param int $img_w
-     * @param int $img_h
-     * @param int $to_w
-     * @param int $to_h
+     * @param int $img_width
+     * @param int $img_height
+     * @param int $to_width
+     * @param int $to_height
      *
      * @return array
      */
-    public function getZoomSize(int $img_w, int $img_h, int $to_w, int $to_h): array
+    public function getZoomSize(int $img_width, int $img_height, int $to_width, int $to_height): array
     {
         $size = [];
 
-        $size['img_x'] = $size['img_y'] = 0;
-        $size['img_w'] = $size['src_w'] = $img_w;
-        $size['img_h'] = $size['src_h'] = $img_h;
+        $size['position_x'] = $size['position_y'] = 0;
+        $size['dst_width']  = $size['src_width'] = $img_width;
+        $size['dst_height'] = $size['src_height'] = $img_height;
 
         //Incorrect width/height
-        if (0 >= $img_w || 0 >= $img_h) {
+        if (0 >= $img_width || 0 >= $img_height) {
             return $size;
         }
 
         //Calculate new width and height
-        $ratio_img  = $img_w / $img_h;
-        $ratio_need = $to_w / $to_h;
+        $ratio_img  = $img_width / $img_height;
+        $ratio_need = $to_width / $to_height;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
-        if (0 < $ratio_diff && $img_w > $to_w) {
-            $size['img_w'] = &$to_w;
-            $size['img_h'] = (int)($to_w / $ratio_img);
-        } elseif (0 > $ratio_diff && $img_h > $to_h) {
-            $size['img_h'] = &$to_h;
-            $size['img_w'] = (int)($to_h * $ratio_img);
-        } elseif ($img_w > $to_w && $img_h > $to_h) {
-            $size['img_w'] = &$to_w;
-            $size['img_h'] = &$to_h;
+        if (0 < $ratio_diff && $img_width > $to_width) {
+            $size['dst_width']  = &$to_width;
+            $size['dst_height'] = (int)($to_width / $ratio_img);
+        } elseif (0 > $ratio_diff && $img_height > $to_height) {
+            $size['dst_height'] = &$to_height;
+            $size['dst_width']  = (int)($to_height * $ratio_img);
+        } elseif ($img_width > $to_width && $img_height > $to_height) {
+            $size['dst_width']  = &$to_width;
+            $size['dst_height'] = &$to_height;
         }
 
-        unset($img_w, $img_h, $to_w, $to_h, $ratio_img, $ratio_need, $ratio_diff);
+        unset($img_width, $img_height, $to_width, $to_height, $ratio_img, $ratio_need, $ratio_diff);
         return $size;
+    }
+
+    /**
+     * @param \GdImage $gd_image
+     * @param int      $width
+     * @param int      $height
+     * @param bool     $crop
+     *
+     * @return \GdImage
+     */
+    protected function gd_resize(\GdImage $gd_image, int $width, int $height, bool $crop = false): \GdImage
+    {
+        if (0 === $width || 0 === $height) {
+            unset($width, $height, $crop);
+            return $gd_image;
+        }
+
+        $gd_width  = imagesx($gd_image);
+        $gd_height = imagesy($gd_image);
+
+        $img_size = $crop
+            ? $this->getCropSize($gd_width, $gd_height, $width, $height)
+            : $this->getZoomSize($gd_width, $gd_height, $width, $height);
+
+        if ($img_size['dst_width'] === $gd_width && $img_size['dst_height'] === $gd_height) {
+            unset($width, $height, $crop, $gd_width, $gd_height, $img_size);
+            return $gd_image;
+        }
+
+        $dst_image = $this->createImage($img_size['dst_width'], $img_size['dst_height']);
+
+        imagecopyresampled(
+            $dst_image,
+            $gd_image,
+            0,
+            0,
+            $img_size['position_x'],
+            $img_size['position_y'],
+            $img_size['dst_width'],
+            $img_size['dst_height'],
+            $img_size['src_width'],
+            $img_size['src_height']
+        );
+
+        imagedestroy($gd_image);
+
+        unset($gd_image, $width, $height, $crop, $gd_width, $gd_height, $img_size);
+        return $dst_image;
+    }
+
+    /**
+     * @param \GdImage $gd_image
+     * @param \GdImage $gd_watermark
+     * @param int      $watermark_width
+     * @param int      $watermark_height
+     * @param int      $watermark_angle
+     * @param int      $watermark_alpha
+     * @param string   $layout
+     * @param int      $margin_right
+     * @param int      $margin_bottom
+     * @param array    $fill_color
+     *
+     * @return \GdImage
+     */
+    protected function gd_addWatermark(\GdImage $gd_image, \GdImage $gd_watermark, int $watermark_width, int $watermark_height, int $watermark_angle = 0, int $watermark_alpha = 10, string $layout = 'fill', int $margin_right = 0, int $margin_bottom = 0, array $fill_color = [255, 255, 255]): \GdImage
+    {
+        $gd_watermark = $this->gd_resize($gd_watermark, $watermark_width, $watermark_height);
+
+        if (0 !== $watermark_angle) {
+            $transparent  = imagecolorallocatealpha($gd_watermark, $fill_color[0], $fill_color[1], $fill_color[2], 127);
+            $gd_watermark = imagerotate($gd_watermark, $watermark_angle, $transparent);
+
+            unset($transparent);
+        }
+
+        $canvas_width  = imagesx($gd_image);
+        $canvas_height = imagesy($gd_image);
+
+        $watermark_width  = imagesx($gd_watermark);
+        $watermark_height = imagesy($gd_watermark);
+
+        $position_list = $this->getWatermarkPositions($layout, $canvas_width, $canvas_height, $watermark_width, $watermark_height, $margin_right, $margin_bottom);
+
+        $gd_canvas = $this->createImage($canvas_width, $canvas_height, true, false, $fill_color);
+
+        imagecopy($gd_canvas, $gd_image, 0, 0, 0, 0, $canvas_width, $canvas_height);
+
+        foreach ($position_list as $positions) {
+            imagecopy($gd_canvas, $gd_watermark, $positions[0], $positions[1], 0, 0, $watermark_width, $watermark_height);
+        }
+
+        imagecopymerge($gd_image, $gd_canvas, 0, 0, 0, 0, $canvas_width, $canvas_height, $watermark_alpha);
+
+        imagedestroy($gd_watermark);
+        imagedestroy($gd_canvas);
+
+        unset($gd_watermark, $watermark_width, $watermark_height, $watermark_angle, $watermark_alpha, $layout, $margin_right, $margin_bottom, $fill_color, $position_list, $canvas_width, $canvas_height, $gd_canvas, $positions);
+        return $gd_image;
+    }
+
+    /**
+     * @param string $layout
+     * @param int    $canvas_width
+     * @param int    $canvas_height
+     * @param int    $watermark_width
+     * @param int    $watermark_height
+     * @param int    $margin_right
+     * @param int    $margin_bottom
+     *
+     * @return array
+     */
+    protected function getWatermarkPositions(string $layout, int $canvas_width, int $canvas_height, int $watermark_width, int $watermark_height, int $margin_right, int $margin_bottom): array
+    {
+        $position_list = [];
+
+        switch ($layout) {
+            case 'top-left':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.05),
+                    (int)(($canvas_height - $watermark_height) * 0.05),
+                ];
+                break;
+
+            case 'top-right':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.95),
+                    (int)(($canvas_height - $watermark_height) * 0.05),
+                ];
+                break;
+
+            case 'bottom-left':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.05),
+                    (int)(($canvas_height - $watermark_height) * 0.95),
+                ];
+                break;
+
+            case 'bottom-right':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.95),
+                    (int)(($canvas_height - $watermark_height) * 0.95),
+                ];
+                break;
+
+            case 'center':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.5),
+                    (int)(($canvas_height - $watermark_height) * 0.5),
+                ];
+                break;
+
+            default:
+                $margin_right  += $watermark_width;
+                $margin_bottom += $watermark_height;
+
+                $x_start = (int)($watermark_width / 2);
+                $y_start = (int)($watermark_height / 2);
+
+                for ($x = $x_start; $x < $canvas_width; $x += $margin_right) {
+                    for ($y = $y_start; $y < $canvas_height; $y += $margin_bottom) {
+                        $position_list[] = [$x, $y,];
+                    }
+                }
+
+                unset($x_start, $y_start, $x, $y);
+                break;
+        }
+
+        unset($layout, $canvas_width, $canvas_height, $watermark_width, $watermark_height, $margin_right, $margin_bottom);
+        return $position_list;
     }
 }
