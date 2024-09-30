@@ -115,16 +115,19 @@ class libImage extends Factory
      */
     public function rotate(string $file, int $angle = 0, array $fill_color = [255, 255, 255]): bool
     {
-        $exif_data = exif_read_data($file);
-
-        if (false === $exif_data || !isset($exif_data['MimeType'])) {
-            unset($file, $angle, $exif_data);
-            return false;
-        }
-
         if (0 === $angle) {
+            try {
+                $exif_data = exif_read_data($file);
+
+                if (false === $exif_data) {
+                    throw new \Exception('EXIF: File not supported!');
+                }
+            } catch (\Throwable) {
+                throw new \Exception('EXIF: File not supported!');
+            }
+
             if (!isset($exif_data['Orientation'])) {
-                unset($file, $angle, $exif_data);
+                unset($file, $angle, $fill_color, $exif_data);
                 return false;
             }
 
@@ -141,17 +144,30 @@ class libImage extends Factory
                 default:
                     return true;
             }
+
+            unset($exif_data);
         }
 
         $gd_image = $this->createImageFrom($file);
         $color    = imagecolorallocatealpha($gd_image, $fill_color[0], $fill_color[1], $fill_color[2], 127);
-        $gd_image = imagerotate($gd_image, $angle, $color);
-        $gd_type  = substr($exif_data['MimeType'], 6);
-        $result   = ('image' . $gd_type)($gd_image, $file);
+
+        imagecolortransparent($gd_image, $color);
+        imagefill($gd_image, 0, 0, $color);
+
+        $rotated_image = imagerotate($gd_image, $angle, $color);
+
+        imagealphablending($rotated_image, false);
+        imagesavealpha($rotated_image, true);
+        imagecolortransparent($rotated_image, $color);
+        imagefill($rotated_image, 0, 0, $color);
+
+        $gd_type = $this->getImageMimeType($file);
+        $result  = ('image' . $gd_type)($rotated_image, $file);
 
         imagedestroy($gd_image);
+        imagedestroy($rotated_image);
 
-        unset($file, $angle, $fill_color, $exif_data, $gd_image, $color, $gd_type);
+        unset($file, $angle, $fill_color, $gd_image, $color, $rotated_image, $gd_type);
         return $result;
     }
 
