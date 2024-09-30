@@ -569,16 +569,18 @@ class libImage extends Factory
                 $margin_right  += $watermark_width;
                 $margin_bottom += $watermark_height;
 
-                $x_start = (int)($watermark_width / 2);
-                $y_start = (int)($watermark_height / 2);
+                $x_start  = (int)($watermark_width / 2);
+                $y_start  = (int)($watermark_height / 2);
+                $x_ending = $canvas_width + $margin_right;
+                $y_ending = $canvas_height + $margin_bottom;
 
-                for ($x = $x_start; $x < $canvas_width; $x += $margin_right) {
-                    for ($y = $y_start; $y < $canvas_height; $y += $margin_bottom) {
+                for ($x = $x_start; $x < $x_ending; $x += $margin_right) {
+                    for ($y = $y_start; $y < $y_ending; $y += $margin_bottom) {
                         $position_list[] = [$x, $y,];
                     }
                 }
 
-                unset($x_start, $y_start, $x, $y);
+                unset($x_start, $y_start, $x_ending, $y_ending, $x, $y);
                 break;
         }
 
