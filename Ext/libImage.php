@@ -226,45 +226,52 @@ class libImage extends Factory
      */
     public function addWatermarkFromString(string $img_src, string $img_dst, string $text, string $font, string $layout = 'fill', array $options = [], int $jpeg_quality = 80): bool
     {
-        $gd_image = $this->createImageFrom($img_src);
+        $font_size = $options['font_size'] ?? 16;
+        $text_box  = imagettfbbox($font_size, 0, $font, $text);
 
-        $font_size  = $options['font_size'] ?? 16;
-        $word_count = mb_strlen($text, 'UTF-8');
+        $min_x = min($text_box[0], $text_box[2], $text_box[4], $text_box[6]);
+        $min_y = min($text_box[1], $text_box[3], $text_box[5], $text_box[7]);
+        $max_x = max($text_box[0], $text_box[2], $text_box[4], $text_box[6]);
+        $max_y = max($text_box[1], $text_box[3], $text_box[5], $text_box[7]);
 
-        $canvas_width  = $font_size * $word_count;
-        $canvas_height = $font_size;
+        $pending = min(16, ceil($font_size / 2));
+        $offset  = floor($pending / 2);
 
-        $gd_watermark = $this->createImage($canvas_width, $canvas_height);
+        $text_width  = $pending + $max_x - $min_x;
+        $text_height = $pending + $max_y - $min_y;
 
-        $draw_color = imagecolorallocate(
+        $gd_watermark = $this->createImage($text_width, $text_height);
+
+        $font_color = imagecolorallocate(
             $gd_watermark,
             $options['font_color'][0] ?? 0,
             $options['font_color'][1] ?? 0,
             $options['font_color'][2] ?? 0
         );
 
-        imagettftext($gd_watermark, $font_size, 0, 0, 0, $draw_color, $font, $text);
+        imagettftext($gd_watermark, $font_size, 0, $offset, $offset + abs($min_y), $font_color, $font, $text);
 
+        $gd_image  = $this->createImageFrom($img_src);
         $gd_merged = $this->gd_addWatermark(
             $gd_image,
             $gd_watermark,
-            $options['width'] ?? $canvas_width,
-            $options['height'] ?? $canvas_height,
+            $options['width'] ?? $text_width,
+            $options['height'] ?? $text_height,
             $options['angle'] ?? 0,
             $options['alpha'] ?? 10,
             $layout,
-            $options['margin'][0] ?? (int)($canvas_width / 2),
+            $options['margin'][0] ?? (int)($text_width / 2),
             $options['margin'][1] ?? $font_size * 3,
             $options['fill_color'] ?? [255, 255, 255]
         );
 
         $result = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
 
-        imagedestroy($gd_image);
         imagedestroy($gd_watermark);
+        imagedestroy($gd_image);
         imagedestroy($gd_merged);
 
-        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $gd_image, $font_size, $word_count, $canvas_width, $canvas_height, $gd_watermark, $draw_color, $gd_merged);
+        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $font_size, $text_box, $min_x, $min_y, $max_x, $max_y, $pending, $offset, $text_width, $text_height, $gd_watermark, $font_color, $gd_image, $gd_merged);
         return $result;
     }
 
