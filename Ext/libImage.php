@@ -25,6 +25,8 @@ use Nervsys\Core\Factory;
 class libImage extends Factory
 {
     /**
+     * Create blank image canvas
+     *
      * @param int   $width
      * @param int   $height
      * @param bool  $alpha_blending
@@ -54,22 +56,24 @@ class libImage extends Factory
     }
 
     /**
+     * Create GDImage from file
+     *
      * @param string $file
      * @param bool   $alpha_blending
      * @param bool   $save_alpha
      *
      * @return \GdImage
+     * @throws \Exception
      */
     public function createImageFrom(string $file, bool $alpha_blending = false, bool $save_alpha = true): \GdImage
     {
-        $img_info = getimagesize($file);
-        $gd_type  = substr($img_info['mime'], 6);
-        $gd_image = ('imagecreatefrom' . $gd_type)($file);
+        $mime_type = $this->getImageMimeType($file);
+        $gd_image  = ('imagecreatefrom' . $mime_type)($file);
 
         imagealphablending($gd_image, $alpha_blending);
         imagesavealpha($gd_image, $save_alpha);
 
-        unset($file, $alpha_blending, $save_alpha, $img_info, $gd_type);
+        unset($file, $alpha_blending, $save_alpha, $mime_type);
         return $gd_image;
     }
 
@@ -82,33 +86,32 @@ class libImage extends Factory
      * @param bool   $crop
      *
      * @return bool
+     * @throws \Exception
      */
     public function resize(string $file, int $width, int $height, bool $crop = false): bool
     {
-        $image_type = exif_imagetype($file);
-
-        if (false === $image_type) {
-            unset($file, $width, $height, $crop, $image_type);
-            return false;
-        }
+        $mime_type = $this->getImageMimeType($file);
 
         $gd_image = $this->createImageFrom($file);
         $gd_image = $this->gd_resize($gd_image, $width, $height, $crop);
-        $gd_type  = substr(image_type_to_mime_type($image_type), 6);
-        $result   = ('image' . $gd_type)($gd_image, $file);
+
+        $result = ('image' . $mime_type)($gd_image, $file);
 
         imagedestroy($gd_image);
 
-        unset($file, $width, $height, $crop, $image_type, $gd_image, $gd_type);
+        unset($file, $width, $height, $crop, $mime_type, $gd_image);
         return $result;
     }
 
     /**
+     * Rotate image to giving degrees
+     *
      * @param string $file
      * @param int    $angle
      * @param array  $fill_color
      *
      * @return bool
+     * @throws \Exception
      */
     public function rotate(string $file, int $angle = 0, array $fill_color = [255, 255, 255]): bool
     {
@@ -153,6 +156,8 @@ class libImage extends Factory
     }
 
     /**
+     * Add watermark from image, merged to jpeg
+     *
      * @param string $img_src       source image
      * @param string $img_dst       save to image file
      * @param string $img_watermark watermark image
@@ -167,16 +172,10 @@ class libImage extends Factory
      * @param int    $jpeg_quality  image quality, default to 80 (High quality)
      *
      * @return bool
+     * @throws \Exception
      */
     public function addWatermarkFromImage(string $img_src, string $img_dst, string $img_watermark, string $layout = 'fill', array $options = [], int $jpeg_quality = 80): bool
     {
-        $image_type = exif_imagetype($img_src);
-
-        if (false === $image_type) {
-            unset($img_src, $img_dst, $img_watermark, $layout, $options, $image_type);
-            return false;
-        }
-
         $gd_image     = $this->createImageFrom($img_src);
         $gd_watermark = $this->createImageFrom($img_watermark);
 
@@ -193,18 +192,19 @@ class libImage extends Factory
             $options['fill_color'] ?? [255, 255, 255]
         );
 
-        $gd_type = substr(image_type_to_mime_type($image_type), 6);
-        $result  = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
+        $result = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
 
         imagedestroy($gd_image);
         imagedestroy($gd_watermark);
         imagedestroy($gd_merged);
 
-        unset($img_src, $img_dst, $img_watermark, $layout, $options, $jpeg_quality, $image_type, $gd_image, $gd_watermark, $gd_merged, $gd_type);
+        unset($img_src, $img_dst, $img_watermark, $layout, $options, $jpeg_quality, $gd_image, $gd_watermark, $gd_merged);
         return $result;
     }
 
     /**
+     * Add watermark from text string, merged to jpeg
+     *
      * @param string $img_src      source image
      * @param string $img_dst      save to image file
      * @param string $text         watermark text string
@@ -222,16 +222,10 @@ class libImage extends Factory
      * @param int    $jpeg_quality image quality, default to 80 (High quality)
      *
      * @return bool
+     * @throws \Exception
      */
     public function addWatermarkFromString(string $img_src, string $img_dst, string $text, string $font, string $layout = 'fill', array $options = [], int $jpeg_quality = 80): bool
     {
-        $image_type = exif_imagetype($img_src);
-
-        if (false === $image_type) {
-            unset($img_src, $img_dst, $text, $font, $layout, $options, $image_type);
-            return false;
-        }
-
         $gd_image = $this->createImageFrom($img_src);
 
         $font_size  = $options['font_size'] ?? 16;
@@ -265,14 +259,13 @@ class libImage extends Factory
             $options['fill_color'] ?? [255, 255, 255]
         );
 
-        $gd_type = substr(image_type_to_mime_type($image_type), 6);
-        $result  = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
+        $result = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
 
         imagedestroy($gd_image);
         imagedestroy($gd_watermark);
         imagedestroy($gd_merged);
 
-        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $image_type, $gd_image, $font_size, $word_count, $canvas_width, $canvas_height, $gd_watermark, $draw_color, $gd_merged, $gd_type);
+        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $gd_image, $font_size, $word_count, $canvas_width, $canvas_height, $gd_watermark, $draw_color, $gd_merged);
         return $result;
     }
 
@@ -437,9 +430,8 @@ class libImage extends Factory
             unset($transparent);
         }
 
-        $canvas_width  = imagesx($gd_image);
-        $canvas_height = imagesy($gd_image);
-
+        $canvas_width     = imagesx($gd_image);
+        $canvas_height    = imagesy($gd_image);
         $watermark_width  = imagesx($gd_watermark);
         $watermark_height = imagesy($gd_watermark);
 
@@ -460,6 +452,30 @@ class libImage extends Factory
 
         unset($gd_watermark, $watermark_width, $watermark_height, $watermark_angle, $watermark_alpha, $layout, $margin_right, $margin_bottom, $fill_color, $position_list, $canvas_width, $canvas_height, $gd_canvas, $positions);
         return $gd_image;
+    }
+
+    /**
+     * @param string $file
+     *
+     * @return string
+     * @throws \Exception
+     */
+    protected function getImageMimeType(string $file): string
+    {
+        try {
+            $image_type = exif_imagetype($file);
+
+            if (false === $image_type) {
+                throw new \Exception('libImage: Image type not supported!');
+            }
+        } catch (\Throwable) {
+            throw new \Exception('libImage: Image type not supported!');
+        }
+
+        $mime_type = substr(image_type_to_mime_type($image_type), 6);
+
+        unset($file, $image_type);
+        return $mime_type;
     }
 
     /**
