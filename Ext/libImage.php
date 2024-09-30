@@ -234,11 +234,11 @@ class libImage extends Factory
         $max_x = max($text_box[0], $text_box[2], $text_box[4], $text_box[6]);
         $max_y = max($text_box[1], $text_box[3], $text_box[5], $text_box[7]);
 
-        $pending = min(16, ceil($font_size / 2));
-        $offset  = floor($pending / 2);
+        $padding = min(16, ceil($font_size / 2));
+        $offset  = floor($padding / 2);
 
-        $text_width  = $pending + $max_x - $min_x;
-        $text_height = $pending + $max_y - $min_y;
+        $text_width  = $padding + $max_x - $min_x;
+        $text_height = $padding + $max_y - $min_y;
 
         $gd_watermark = $this->createImage($text_width, $text_height);
 
@@ -271,7 +271,7 @@ class libImage extends Factory
         imagedestroy($gd_image);
         imagedestroy($gd_merged);
 
-        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $font_size, $text_box, $min_x, $min_y, $max_x, $max_y, $pending, $offset, $text_width, $text_height, $gd_watermark, $font_color, $gd_image, $gd_merged);
+        unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $font_size, $text_box, $min_x, $min_y, $max_x, $max_y, $padding, $offset, $text_width, $text_height, $gd_watermark, $font_color, $gd_image, $gd_merged);
         return $result;
     }
 
