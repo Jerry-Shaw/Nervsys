@@ -574,9 +574,9 @@ class libImage extends Factory
                 $x_ending = $canvas_width + $margin_right;
                 $y_ending = $canvas_height + $margin_bottom;
 
-                for ($x = $x_start; $x < $x_ending; $x += $margin_right) {
-                    for ($y = $y_start; $y < $y_ending; $y += $margin_bottom) {
-                        $position_list[] = [$x, $y,];
+                for ($x = $x_start; $x <= $x_ending; $x += $margin_right) {
+                    for ($y = $y_start; $y <= $y_ending; $y += $margin_bottom) {
+                        $position_list[] = [$x, $y];
                     }
                 }
 
