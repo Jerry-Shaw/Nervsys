@@ -156,7 +156,7 @@ class libImage extends Factory
      * @param string $img_src       source image
      * @param string $img_dst       save to image file
      * @param string $img_watermark watermark image
-     * @param string $layout        layout type: top-left/top-right/bottom-left/bottom-right/center/fill
+     * @param string $layout        layout type: top-left/top-right/top-center/bottom-left/bottom-right/bottom-center/center/fill
      * @param array  $options       options:
      *                              'width' => $image_width,
      *                              'height' => $image_height,
@@ -209,7 +209,7 @@ class libImage extends Factory
      * @param string $img_dst      save to image file
      * @param string $text         watermark text string
      * @param string $font         ttf font file
-     * @param string $layout       layout type: top-left/top-right/bottom-left/bottom-right/center/fill
+     * @param string $layout       layout type: top-left/top-right/top-center/bottom-left/bottom-right/bottom-center/center/fill
      * @param array  $options      options:
      *                             'font_size' => 16,
      *                             'font_color' => [0, 0, 0],
@@ -481,35 +481,49 @@ class libImage extends Factory
             case 'top-left':
                 $position_list[] = [
                     (int)(($canvas_width - $watermark_width) * 0.05),
-                    (int)(($canvas_height - $watermark_height) * 0.05),
+                    (int)(($canvas_height - $watermark_height) * 0.05)
                 ];
                 break;
 
             case 'top-right':
                 $position_list[] = [
                     (int)(($canvas_width - $watermark_width) * 0.95),
-                    (int)(($canvas_height - $watermark_height) * 0.05),
+                    (int)(($canvas_height - $watermark_height) * 0.05)
+                ];
+                break;
+
+            case 'top-center':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.5),
+                    (int)(($canvas_height - $watermark_height) * 0.05)
                 ];
                 break;
 
             case 'bottom-left':
                 $position_list[] = [
                     (int)(($canvas_width - $watermark_width) * 0.05),
-                    (int)(($canvas_height - $watermark_height) * 0.95),
+                    (int)(($canvas_height - $watermark_height) * 0.95)
                 ];
                 break;
 
             case 'bottom-right':
                 $position_list[] = [
                     (int)(($canvas_width - $watermark_width) * 0.95),
-                    (int)(($canvas_height - $watermark_height) * 0.95),
+                    (int)(($canvas_height - $watermark_height) * 0.95)
+                ];
+                break;
+
+            case 'bottom-center':
+                $position_list[] = [
+                    (int)(($canvas_width - $watermark_width) * 0.5),
+                    (int)(($canvas_height - $watermark_height) * 0.95)
                 ];
                 break;
 
             case 'center':
                 $position_list[] = [
                     (int)(($canvas_width - $watermark_width) * 0.5),
-                    (int)(($canvas_height - $watermark_height) * 0.5),
+                    (int)(($canvas_height - $watermark_height) * 0.5)
                 ];
                 break;
 
