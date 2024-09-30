@@ -236,12 +236,11 @@ class libImage extends Factory
 
         $gd_watermark = $this->createImage($canvas_width, $canvas_height);
 
-        $draw_color = imagecolorallocatealpha(
+        $draw_color = imagecolorallocate(
             $gd_watermark,
             $options['font_color'][0] ?? 0,
             $options['font_color'][1] ?? 0,
-            $options['font_color'][2] ?? 0,
-            isset($options['alpha']) ? (int)round($options['alpha'] * 1.27) : 120
+            $options['font_color'][2] ?? 0
         );
 
         imagettftext($gd_watermark, $font_size, 0, 0, 0, $draw_color, $font, $text);
