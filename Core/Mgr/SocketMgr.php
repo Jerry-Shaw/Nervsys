@@ -350,7 +350,7 @@ class SocketMgr extends Factory
         $this->master_id   = get_resource_id($master_socket);
         $this->master_sock = [$this->master_id => &$master_socket];
 
-        $this->debug('Server started! ID: #' . $this->master_id . '. Listen to: ' . $address);
+        $this->debug('Server started! Listen to ' . $address . '. ID: #' . $this->master_id);
 
         unset($address, $context, $flags, $master_socket);
     }
@@ -652,7 +652,7 @@ class SocketMgr extends Factory
         $this->connections = [$this->master_id => $master_socket];
         $this->activities  = [$this->master_id => [$now_time, $now_time]];
 
-        $this->debug('Client started! ID: #' . $this->master_id . '. Connect to: ' . $address);
+        $this->debug('Client started! Connect to ' . $address . '. ID: #' . $this->master_id);
 
         unset($address, $context, $flags, $master_socket, $now_time);
     }
