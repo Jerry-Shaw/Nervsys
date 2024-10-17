@@ -1047,7 +1047,7 @@ class SocketMgr extends Factory
         try {
             $handshake = true;
 
-            $this->debug('Received handshake: ' . $message . ' from: #' . $socket_id);
+            $this->debug('Received handshake message from: #' . $socket_id . '.' . "\r\n" . $message);
 
             $ws_key   = $this->wsGetHeaderKey($message);
             $ws_proto = $this->wsGetHeaderProto($message);
@@ -1057,7 +1057,7 @@ class SocketMgr extends Factory
             }
 
             if ($handshake) {
-                $this->debug('Accept handshake: ' . $message . ' from: #' . $socket_id);
+                $this->debug('Accept handshake from: #' . $socket_id);
                 $this->sendMessage($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
                 unset($this->handshakes[$socket_id]);
                 return;
@@ -1067,7 +1067,7 @@ class SocketMgr extends Factory
             unset($throwable);
         }
 
-        $this->debug('Refuse handshake: ' . $message . ' from: #' . $socket_id);
+        $this->debug('Refuse handshake from: #' . $socket_id);
         $this->sendMessage($socket_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
         $this->closeSocket($socket_id);
 
