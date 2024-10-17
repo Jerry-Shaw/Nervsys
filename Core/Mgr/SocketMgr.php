@@ -347,8 +347,10 @@ class SocketMgr extends Factory
             throw new \Exception('Server failed to start! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
         }
 
-        $this->master_id   = $this->getSocketId();
+        $this->master_id   = get_resource_id($master_socket);
         $this->master_sock = [$this->master_id => &$master_socket];
+
+        $this->debug('Server started! ID: ' . $this->master_id . '. Listen to: ' . $address);
 
         unset($address, $context, $flags, $master_socket);
     }
@@ -388,7 +390,7 @@ class SocketMgr extends Factory
 
             stream_set_blocking($client, $this->block_mode);
 
-            $socket_id = $this->getSocketId();
+            $socket_id = get_resource_id($client);
 
             if ($websocket) {
                 $this->handshakes[$socket_id] = false;
@@ -399,7 +401,7 @@ class SocketMgr extends Factory
             $this->activities[$socket_id]  = [$now_time, $now_time];
             $this->connections[$socket_id] = $client;
 
-            $this->debug('Client connected: ' . $socket_id);
+            $this->debug('Client connected: #' . $socket_id);
 
             if (is_callable($this->callbacks['onConnect'])) {
                 try {
@@ -645,10 +647,12 @@ class SocketMgr extends Factory
         stream_set_blocking($master_socket, $this->block_mode);
 
         $now_time          = time();
-        $this->master_id   = $this->getSocketId();
+        $this->master_id   = get_resource_id($master_socket);
         $this->master_sock = [$this->master_id => $master_socket];
         $this->connections = [$this->master_id => $master_socket];
         $this->activities  = [$this->master_id => [$now_time, $now_time]];
+
+        $this->debug('Client started! ID: ' . $this->master_id . '. Connect to: ' . $address);
 
         unset($address, $context, $flags, $master_socket, $now_time);
     }
@@ -832,15 +836,6 @@ class SocketMgr extends Factory
         }
 
         unset($message);
-    }
-
-    /**
-     * @return string
-     */
-    public function getSocketId(): string
-    {
-        $socket_id = hash('md5', uniqid(getmypid() . mt_rand(), true));
-        return !isset($this->connections[$socket_id]) ? $socket_id : $this->getSocketId();
     }
 
     /**
