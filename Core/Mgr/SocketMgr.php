@@ -38,13 +38,13 @@ class SocketMgr extends Factory
     public bool $debug_mode = false;
 
     public array $callbacks = [
-        'onConnect'    => null,  //callback(string $socket_id): string
-        'onHandshake'  => null,  //callback(string $ws_proto): bool, true to allow, otherwise reject.
-        'onHeartbeat'  => null,  //callback(string $socket_id): string, heartbeat message send to $socket_id
-        'onMessage'    => null,  //callback(string $socket_id, string $message): void
-        'onSend'       => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onSendFailed' => null,  //callback(string $socket_id, string $message): void
-        'onClose'      => null   //callback(string $socket_id): void
+        'onConnect'    => null,  //callback(int $socket_id): string, response message back to client
+        'onHandshake'  => null,  //callback(int $socket_id, string $ws_proto): bool, true to allow, otherwise reject.
+        'onHeartbeat'  => null,  //callback(int $socket_id): string, heartbeat message send to $socket_id
+        'onMessage'    => null,  //callback(int $socket_id, string $message): void
+        'onSend'       => null,  //callback(int $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendFailed' => null,  //callback(int $socket_id, string $message): void
+        'onClose'      => null   //callback(int $socket_id): void
     ];
 
     public array $options   = [];
@@ -839,13 +839,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param int $socket_id
      *
      * @return string
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function readMessage(string $socket_id): string
+    public function readMessage(int $socket_id): string
     {
         try {
             if ('udp' !== $this->sock_type) {
@@ -873,13 +873,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param int    $socket_id
      * @param string $message
      *
      * @return bool
      * @throws \ReflectionException
      */
-    public function sendMessage(string $socket_id, string $message): bool
+    public function sendMessage(int $socket_id, string $message): bool
     {
         try {
             if ('udp' !== $this->sock_type) {
@@ -901,12 +901,12 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param int $socket_id
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function closeSocket(string $socket_id): void
+    public function closeSocket(int $socket_id): void
     {
         if (!isset($this->connections[$socket_id])) {
             return;
@@ -937,14 +937,14 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param int    $socket_id
      * @param string $message
      *
      * @return string
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function wsGetMessage(string $socket_id, string $message): string
+    public function wsGetMessage(int $socket_id, string $message): string
     {
         try {
             $ws_codes = $this->wsGetFrameCodes($message);
@@ -1036,13 +1036,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param int    $socket_id
      * @param string $message
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function wsSendHandshake(string $socket_id, string $message): void
+    public function wsSendHandshake(int $socket_id, string $message): void
     {
         try {
             $handshake = true;
@@ -1241,24 +1241,24 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param int $socket_id
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function wsPing(string $socket_id): void
+    public function wsPing(int $socket_id): void
     {
         $this->sendMessage($socket_id, chr(0x89) . chr(0));
         unset($socket_id);
     }
 
     /**
-     * @param string $socket_id
+     * @param int $socket_id
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function wsPong(string $socket_id): void
+    public function wsPong(int $socket_id): void
     {
         $this->sendMessage($socket_id, chr(0x8A) . chr(0));
         unset($socket_id);
