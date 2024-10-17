@@ -462,7 +462,7 @@ class SocketMgr extends Factory
                     continue;
                 }
 
-                $this->debug('Read message from ' . $socket_id . ': ' . $message);
+                $this->debug('Read message from #' . $socket_id . ': ' . $message);
 
                 if (is_callable($this->callbacks['onMessage'])) {
                     try {
@@ -504,7 +504,7 @@ class SocketMgr extends Factory
                 }
 
                 if ($now_time - $active_times[0] > $alive_sec) {
-                    $this->debug('Client heartbeat lost: ' . $socket_id);
+                    $this->debug('Client heartbeat lost: #' . $socket_id);
                     $this->closeSocket($socket_id);
                     continue;
                 }
@@ -513,7 +513,7 @@ class SocketMgr extends Factory
 
                 if ($websocket) {
                     $this->wsPing($socket_id);
-                    $this->debug('Send heartbeat to websocket: ' . $socket_id);
+                    $this->debug('Send heartbeat to websocket: #' . $socket_id);
                 } else {
                     if (!is_callable($this->callbacks['onHeartbeat'])) {
                         $heartbeat = $this->heartbeat;
@@ -529,7 +529,7 @@ class SocketMgr extends Factory
                     }
 
                     $this->sendMessage($socket_id, $heartbeat);
-                    $this->debug('Send heartbeat to client: ' . $socket_id);
+                    $this->debug('Send heartbeat to client: #' . $socket_id);
                 }
             }
 
@@ -576,7 +576,7 @@ class SocketMgr extends Factory
 
                 foreach ($msg_list as $raw_msg) {
                     if ($this->sendMessage($socket_id, $websocket ? $this->wsEncode($raw_msg) : $raw_msg)) {
-                        $this->debug('Send message: ' . $raw_msg . ' to ' . $socket_id);
+                        $this->debug('Send message: ' . $raw_msg . ' to #' . $socket_id);
                         usleep($this->read_at[1]);
                     } else {
                         if (is_callable($this->callbacks['onSendFailed'])) {
@@ -921,7 +921,7 @@ class SocketMgr extends Factory
 
         unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id]);
 
-        $this->debug('Connection closed: ' . $socket_id);
+        $this->debug('Connection closed: #' . $socket_id);
 
         if (is_callable($this->callbacks['onClose'])) {
             try {
@@ -1047,7 +1047,7 @@ class SocketMgr extends Factory
         try {
             $handshake = true;
 
-            $this->debug('Received handshake: ' . $message);
+            $this->debug('Received handshake: ' . $message . ' from: #' . $socket_id);
 
             $ws_key   = $this->wsGetHeaderKey($message);
             $ws_proto = $this->wsGetHeaderProto($message);
@@ -1057,7 +1057,7 @@ class SocketMgr extends Factory
             }
 
             if ($handshake) {
-                $this->debug('Accept handshake: ' . $message);
+                $this->debug('Accept handshake: ' . $message . ' from: #' . $socket_id);
                 $this->sendMessage($socket_id, $this->wsBuildHandshake($ws_key, $ws_proto));
                 unset($this->handshakes[$socket_id]);
                 return;
@@ -1067,7 +1067,7 @@ class SocketMgr extends Factory
             unset($throwable);
         }
 
-        $this->debug('Refuse handshake: ' . $message);
+        $this->debug('Refuse handshake: ' . $message . ' from: #' . $socket_id);
         $this->sendMessage($socket_id, 'Http/1.1 406 Not Acceptable' . "\r\n\r\n");
         $this->closeSocket($socket_id);
 
