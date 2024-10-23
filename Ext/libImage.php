@@ -80,7 +80,8 @@ class libImage extends Factory
     /**
      * Resize/Corp image to giving size
      *
-     * @param string $file
+     * @param string $img_src
+     * @param string $img_dst
      * @param int    $width
      * @param int    $height
      * @param bool   $crop
@@ -88,36 +89,37 @@ class libImage extends Factory
      * @return bool
      * @throws \Exception
      */
-    public function resize(string $file, int $width, int $height, bool $crop = false): bool
+    public function resize(string $img_src, string $img_dst, int $width, int $height, bool $crop = false): bool
     {
-        $mime_type = $this->getImageMimeType($file);
+        $mime_type = $this->getImageMimeType($img_src);
 
-        $gd_image = $this->createImageFrom($file);
+        $gd_image = $this->createImageFrom($img_src);
         $gd_image = $this->gd_resize($gd_image, $width, $height, $crop);
 
-        $result = ('image' . $mime_type)($gd_image, $file);
+        $result = ('image' . $mime_type)($gd_image, $img_dst);
 
         imagedestroy($gd_image);
 
-        unset($file, $width, $height, $crop, $mime_type, $gd_image);
+        unset($img_src, $img_dst, $width, $height, $crop, $mime_type, $gd_image);
         return $result;
     }
 
     /**
      * Rotate image to giving degrees
      *
-     * @param string $file
+     * @param string $img_src
+     * @param string $img_dst
      * @param int    $angle
      * @param array  $fill_color
      *
      * @return bool
      * @throws \Exception
      */
-    public function rotate(string $file, int $angle = 0, array $fill_color = [255, 255, 255]): bool
+    public function rotate(string $img_src, string $img_dst, int $angle = 0, array $fill_color = [255, 255, 255]): bool
     {
         if (0 === $angle) {
             try {
-                $exif_data = exif_read_data($file);
+                $exif_data = exif_read_data($img_src);
 
                 if (false === $exif_data) {
                     throw new \Exception('EXIF: File not supported!');
@@ -127,7 +129,7 @@ class libImage extends Factory
             }
 
             if (!isset($exif_data['Orientation'])) {
-                unset($file, $angle, $fill_color, $exif_data);
+                unset($img_src, $angle, $fill_color, $exif_data);
                 return false;
             }
 
@@ -148,7 +150,7 @@ class libImage extends Factory
             unset($exif_data);
         }
 
-        $gd_image = $this->createImageFrom($file);
+        $gd_image = $this->createImageFrom($img_src);
         $color    = imagecolorallocatealpha($gd_image, $fill_color[0], $fill_color[1], $fill_color[2], 127);
 
         imagecolortransparent($gd_image, $color);
@@ -161,13 +163,13 @@ class libImage extends Factory
         imagecolortransparent($rotated_image, $color);
         imagefill($rotated_image, 0, 0, $color);
 
-        $gd_type = $this->getImageMimeType($file);
-        $result  = ('image' . $gd_type)($rotated_image, $file);
+        $gd_type = $this->getImageMimeType($img_src);
+        $result  = ('image' . $gd_type)($rotated_image, $img_dst);
 
         imagedestroy($gd_image);
         imagedestroy($rotated_image);
 
-        unset($file, $angle, $fill_color, $gd_image, $color, $rotated_image, $gd_type);
+        unset($img_src, $img_dst, $angle, $fill_color, $gd_image, $color, $rotated_image, $gd_type);
         return $result;
     }
 
