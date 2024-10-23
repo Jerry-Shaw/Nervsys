@@ -389,7 +389,7 @@ class libImage extends Factory
      *
      * @return \GdImage
      */
-    protected function gd_resize(\GdImage $gd_image, int $width, int $height, bool $crop = false): \GdImage
+    public function gd_resize(\GdImage $gd_image, int $width, int $height, bool $crop = false): \GdImage
     {
         if (0 === $width || 0 === $height) {
             unset($width, $height, $crop);
@@ -443,7 +443,7 @@ class libImage extends Factory
      *
      * @return \GdImage
      */
-    protected function gd_addWatermark(\GdImage $gd_image, \GdImage $gd_watermark, int $watermark_width, int $watermark_height, int $watermark_angle = 0, int $watermark_alpha = 10, string $layout = 'fill', int $margin_right = 0, int $margin_bottom = 0, array $fill_color = [255, 255, 255]): \GdImage
+    public function gd_addWatermark(\GdImage $gd_image, \GdImage $gd_watermark, int $watermark_width, int $watermark_height, int $watermark_angle = 0, int $watermark_alpha = 10, string $layout = 'fill', int $margin_right = 0, int $margin_bottom = 0, array $fill_color = [255, 255, 255]): \GdImage
     {
         $gd_watermark = $this->gd_resize($gd_watermark, $watermark_width, $watermark_height);
 
@@ -484,7 +484,7 @@ class libImage extends Factory
      * @return string
      * @throws \Exception
      */
-    protected function getImageMimeType(string $file): string
+    public function getImageMimeType(string $file): string
     {
         try {
             $image_type = exif_imagetype($file);
@@ -513,7 +513,7 @@ class libImage extends Factory
      *
      * @return array
      */
-    protected function getWatermarkPositions(string $layout, int $canvas_width, int $canvas_height, int $watermark_width, int $watermark_height, int $margin_right, int $margin_bottom): array
+    public function getWatermarkPositions(string $layout, int $canvas_width, int $canvas_height, int $watermark_width, int $watermark_height, int $margin_right, int $margin_bottom): array
     {
         $position_list = [];
 
