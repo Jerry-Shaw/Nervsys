@@ -320,12 +320,12 @@ class libImage extends Factory
         $ratio_need = $to_width / $to_height;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
-        if (0 < $ratio_diff && $img_height > $to_height) {
+        if (0 < $ratio_diff) {
             $crop_w             = (int)($img_width - $img_height * $ratio_need);
             $size['position_x'] = (int)($crop_w / 2);
             $size['src_width']  = $img_width - $crop_w;
             unset($crop_w);
-        } elseif (0 > $ratio_diff && $img_width > $to_width) {
+        } elseif (0 > $ratio_diff) {
             $crop_h             = (int)($img_height - $img_width / $ratio_need);
             $size['position_y'] = (int)($crop_h / 2);
             $size['src_height'] = $img_height - $size['position_y'] * 2;
@@ -364,13 +364,13 @@ class libImage extends Factory
         $ratio_need = $to_width / $to_height;
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
-        if (0 < $ratio_diff && $img_width > $to_width) {
+        if (0 < $ratio_diff) {
             $size['dst_width']  = &$to_width;
             $size['dst_height'] = (int)($to_width / $ratio_img);
-        } elseif (0 > $ratio_diff && $img_height > $to_height) {
+        } elseif (0 > $ratio_diff) {
             $size['dst_height'] = &$to_height;
             $size['dst_width']  = (int)($to_height * $ratio_img);
-        } elseif ($img_width > $to_width && $img_height > $to_height) {
+        } elseif ($img_width !== $to_width || $img_height !== $to_height) {
             $size['dst_width']  = &$to_width;
             $size['dst_height'] = &$to_height;
         }
