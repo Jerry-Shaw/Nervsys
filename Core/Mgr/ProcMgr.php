@@ -4,7 +4,7 @@
  * Proc Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -447,8 +447,9 @@ class ProcMgr extends Factory
                     }
                 }
 
-                $this->proc_await[$idx] = $idx;
-                $this->getStatus($idx);
+                if (self::P_STDIN === ($this->getStatus($idx) & self::P_STDIN)) {
+                    $this->proc_await[$idx] = $idx;
+                }
             }
         }
 
@@ -500,7 +501,7 @@ class ProcMgr extends Factory
      */
     protected function syncIoStatus(int $idx, int $const_def, bool $proc_running, array $stream_status): void
     {
-        if (($this->proc_status[$idx] & $const_def) === $const_def) {
+        if ($const_def === ($this->proc_status[$idx] & $const_def)) {
             if ($stream_status['eof'] || (!$proc_running && 0 === $stream_status['unread_bytes'])) {
                 $this->proc_status[$idx] ^= $const_def;
             }
