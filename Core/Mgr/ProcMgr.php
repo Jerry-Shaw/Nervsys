@@ -433,7 +433,9 @@ class ProcMgr extends Factory
                     if (empty($stdio_callbacks)) {
                         $job_callbacks = array_pop($this->proc_callbacks[$idx]);
 
-                        $this->callIoFn($output, 'out' === $type ? $job_callbacks[0] : $job_callbacks[1]);
+                        if (is_array($job_callbacks)) {
+                            $this->callIoFn($output, 'out' === $type ? $job_callbacks[0] : $job_callbacks[1]);
+                        }
 
                         ++$this->proc_job_done[$idx];
                         --$this->proc_job_await[$idx];
