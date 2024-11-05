@@ -47,7 +47,7 @@ class ProcMgr extends Factory
 
     protected array $proc_pid      = [];
     protected array $proc_list     = [];
-    protected array $proc_await    = [];
+    protected array $proc_avail    = [];
     protected array $proc_stdin    = [];
     protected array $proc_stdout   = [];
     protected array $proc_stderr   = [];
@@ -153,7 +153,7 @@ class ProcMgr extends Factory
 
         $this->proc_pid[$idx]    = proc_get_status($proc)['pid'];
         $this->proc_list[$idx]   = $proc;
-        $this->proc_await[$idx]  = $idx;
+        $this->proc_avail[$idx]  = $idx;
         $this->proc_stdin[$idx]  = $pipes[0];
         $this->proc_stdout[$idx] = $pipes[1];
         $this->proc_stderr[$idx] = $pipes[2];
@@ -449,9 +449,7 @@ class ProcMgr extends Factory
                     }
                 }
 
-                if (self::P_STDIN === ($this->getStatus($idx) & self::P_STDIN)) {
-                    $this->proc_await[$idx] = $idx;
-                }
+                $this->proc_avail[$idx] = $idx;
             }
         }
 
@@ -518,7 +516,7 @@ class ProcMgr extends Factory
      */
     protected function getAwaitIdx(): int
     {
-        if (empty($this->proc_await)) {
+        if (empty($this->proc_avail)) {
             $this->readIo();
             $this->cleanup();
 
@@ -527,7 +525,7 @@ class ProcMgr extends Factory
             return $this->getAwaitIdx();
         }
 
-        $idx = array_pop($this->proc_await);
+        $idx = array_pop($this->proc_avail);
 
         switch ($this->getStatus($idx)) {
             case self::P_STDIN:
@@ -547,7 +545,7 @@ class ProcMgr extends Factory
                 break;
         }
 
-        unset($this->proc_await[$idx]);
+        unset($this->proc_avail[$idx]);
         return $idx;
     }
 }
