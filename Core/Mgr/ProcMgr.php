@@ -226,8 +226,6 @@ class ProcMgr extends Factory
             if (self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
                 $this->proc_status[$idx] ^= self::P_STDIN;
             }
-
-            return self::P_STDOUT | self::P_STDERR;
         }
 
         $proc_status = proc_get_status($this->proc_list[$idx]);
@@ -342,7 +340,7 @@ class ProcMgr extends Factory
             proc_close($this->proc_list[$idx]);
         }
 
-        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_job_await[$idx], $this->proc_callbacks[$idx], $idx);
+        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $idx);
     }
 
     /**
