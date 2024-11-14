@@ -77,6 +77,21 @@ class algoImage extends Factory
     }
 
     /**
+     * @param int|float $intensity
+     * @param int|float $min_value
+     * @param int|float $max_value
+     *
+     * @return int
+     */
+    public function intensityToGrayValue(int|float $intensity, int|float $min_value, int|float $max_value): int
+    {
+        $gray_value = (int)(($intensity - $min_value) * 255 / ($max_value - $min_value));
+
+        unset($intensity, $min_value, $max_value);
+        return $gray_value;
+    }
+
+    /**
      * @param int  $gray_value
      * @param int  $step_value
      * @param bool $is_normalised
@@ -126,7 +141,7 @@ class algoImage extends Factory
         for ($x = 0; $x < $width; ++$x) {
             for ($y = 0; $y < $height; ++$y) {
                 $rgba_value    = $this->getRGBAValues($gd_image, $x, $y);
-                $gray_values[] = $this->rgbToGrayValue($rgba_value['red'], $rgba_value['green'], $rgba_value['blue'],);
+                $gray_values[] = $this->rgbToGrayValue($rgba_value['red'], $rgba_value['green'], $rgba_value['blue']);
             }
         }
 
