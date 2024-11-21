@@ -37,7 +37,6 @@ class Error extends Factory
      * 256: E_USER_ERROR
      * 512: E_USER_WARNING
      * 1024: E_USER_NOTICE
-     * 2048: E_STRICT
      * 4096: E_RECOVERABLE_ERROR
      * 8192: E_DEPRECATED
      * 16384: E_USER_DEPRECATED
@@ -61,7 +60,6 @@ class Error extends Factory
         //Notice level
         E_NOTICE            => 'notice',
         E_USER_NOTICE       => 'notice',
-        E_STRICT            => 'notice',
         E_DEPRECATED        => 'notice',
         E_USER_DEPRECATED   => 'notice'
     ];
