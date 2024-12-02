@@ -267,7 +267,7 @@ class ProcMgr extends Factory
     public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null): self
     {
         try {
-            $idx = $this->getAwaitIdx();
+            $idx = $this->getAvailIdx();
 
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
@@ -514,7 +514,7 @@ class ProcMgr extends Factory
      * @return int
      * @throws \Exception
      */
-    protected function getAwaitIdx(): int
+    protected function getAvailIdx(): int
     {
         if (empty($this->proc_avail)) {
             $this->readIo();
@@ -522,30 +522,23 @@ class ProcMgr extends Factory
 
             usleep($this->wait_microseconds);
 
-            return $this->getAwaitIdx();
+            return $this->getAvailIdx();
         }
 
-        $idx = array_pop($this->proc_avail);
+        $idx    = array_pop($this->proc_avail);
+        $status = $this->getStatus($idx);
 
-        switch ($this->getStatus($idx)) {
-            case self::P_STDIN:
-            case self::P_STDIN | self::P_STDOUT:
-            case self::P_STDIN | self::P_STDERR:
-            case self::P_STDIN | self::P_STDOUT | self::P_STDERR:
-                break;
-
-            case 0:
-                $this->close($idx);
-                $this->runProc($idx);
-                $idx = $this->getAwaitIdx();
-                break;
-
-            default:
-                $idx = $this->getAwaitIdx();
-                break;
+        if (self::P_STDIN === ($status & self::P_STDIN)) {
+            unset($this->proc_avail[$idx], $status);
+            return $idx;
         }
 
-        unset($this->proc_avail[$idx]);
-        return $idx;
+        if (0 === $status) {
+            $this->close($idx);
+            $this->runProc($idx);
+        }
+
+        unset($idx, $status);
+        return $this->getAvailIdx();
     }
 }
