@@ -38,7 +38,6 @@ class ProcMgr extends Factory
 
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
-    public int $wait_microseconds   = 20000;
     public int $proc_max_executions = 2000;
 
     public string $argv_end_char = "\n";
@@ -108,19 +107,6 @@ class ProcMgr extends Factory
         $this->read_microseconds = &$microseconds;
 
         unset($seconds, $microseconds);
-        return $this;
-    }
-
-    /**
-     * @param int $microseconds
-     *
-     * @return $this
-     */
-    public function waitAt(int $microseconds): self
-    {
-        $this->wait_microseconds = &$microseconds;
-
-        unset($microseconds);
         return $this;
     }
 
@@ -519,8 +505,6 @@ class ProcMgr extends Factory
         if (empty($this->proc_avail)) {
             $this->readIo();
             $this->cleanup();
-
-            usleep($this->wait_microseconds);
 
             return $this->getAvailIdx();
         }
