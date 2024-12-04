@@ -46,7 +46,7 @@ class ProcMgr extends Factory
 
     protected array $proc_pid      = [];
     protected array $proc_list     = [];
-    protected array $proc_avail    = [];
+    protected array $proc_idle     = [];
     protected array $proc_stdin    = [];
     protected array $proc_stdout   = [];
     protected array $proc_stderr   = [];
@@ -137,9 +137,10 @@ class ProcMgr extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
+        $this->proc_idle['P' . $idx] = $idx;
+
         $this->proc_pid[$idx]    = proc_get_status($proc)['pid'];
         $this->proc_list[$idx]   = $proc;
-        $this->proc_avail[$idx]  = $idx;
         $this->proc_stdin[$idx]  = $pipes[0];
         $this->proc_stdout[$idx] = $pipes[1];
         $this->proc_stderr[$idx] = $pipes[2];
@@ -204,7 +205,7 @@ class ProcMgr extends Factory
         }
 
         if ($this->proc_max_executions <= $this->proc_job_done[$idx]) {
-            if (0 >= $this->proc_job_await[$idx]) {
+            if (0 > $this->proc_job_await[$idx]) {
                 $this->proc_status[$idx] = 0;
                 return 0;
             }
@@ -253,7 +254,7 @@ class ProcMgr extends Factory
     public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null): self
     {
         try {
-            $idx = $this->getAvailIdx();
+            $idx = $this->getIdleProcIdx();
 
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
@@ -425,17 +426,16 @@ class ProcMgr extends Factory
 
                         ++$this->proc_job_done[$idx];
                         --$this->proc_job_await[$idx];
-
-                        if (0 >= $this->proc_job_await[$idx]) {
-                            $this->proc_job_await[$idx] = 0;
-                            break;
-                        }
                     } else {
                         $this->callIoFn($output, 'out' === $type ? $stdio_callbacks[0] : $stdio_callbacks[1]);
                     }
                 }
 
-                $this->proc_avail[$idx] = $idx;
+                if (0 > $this->proc_job_await[$idx]) {
+                    $this->proc_job_await[$idx] = 0;
+                }
+
+                $this->proc_idle['P' . $idx] = $idx;
             }
         }
 
@@ -500,20 +500,20 @@ class ProcMgr extends Factory
      * @return int
      * @throws \Exception
      */
-    protected function getAvailIdx(): int
+    protected function getIdleProcIdx(): int
     {
-        if (empty($this->proc_avail)) {
+        if (empty($this->proc_idle)) {
             $this->readIo();
             $this->cleanup();
 
-            return $this->getAvailIdx();
+            return $this->getIdleProcIdx();
         }
 
-        $idx    = array_pop($this->proc_avail);
+        $idx    = array_shift($this->proc_idle);
         $status = $this->getStatus($idx);
 
         if (self::P_STDIN === ($status & self::P_STDIN)) {
-            unset($this->proc_avail[$idx], $status);
+            unset($status);
             return $idx;
         }
 
@@ -523,6 +523,6 @@ class ProcMgr extends Factory
         }
 
         unset($idx, $status);
-        return $this->getAvailIdx();
+        return $this->getIdleProcIdx();
     }
 }
