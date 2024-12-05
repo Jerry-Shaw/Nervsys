@@ -208,7 +208,7 @@ class ProcMgr extends Factory
         }
 
         if ($this->proc_max_executions <= $this->proc_job_done[$idx]) {
-            if (0 > $this->proc_job_await[$idx]) {
+            if (0 >= $this->proc_job_await[$idx]) {
                 $this->proc_status[$idx] = 0;
                 return 0;
             }
