@@ -39,7 +39,7 @@ class ProcMgr extends Factory
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
     public int $proc_max_executions = 2000;
-    public int $proc_job_stack_size = 20;
+    public int $proc_job_stack_size = 10;
 
     public string $argv_end_char = "\n";
 
@@ -165,7 +165,7 @@ class ProcMgr extends Factory
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $run_proc = 8, int $max_executions = 2000, int $job_stack_size = 20): self
+    public function runPLB(int $run_proc = 8, int $max_executions = 2000, int $job_stack_size = 10): self
     {
         $this->proc_max_executions = &$max_executions;
         $this->proc_job_stack_size = &$job_stack_size;
