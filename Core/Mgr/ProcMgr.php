@@ -419,6 +419,8 @@ class ProcMgr extends Factory
             foreach ($streams as $key => $stream) {
                 [$type, $idx] = explode('_', $key);
 
+                $idx = (int)$idx;
+
                 while ('' !== ($output = trim(fgets($stream)))) {
                     if (empty($stdio_callbacks)) {
                         $job_callbacks = array_pop($this->proc_callbacks[$idx]);
