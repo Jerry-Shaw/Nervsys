@@ -285,14 +285,15 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @param int           $idx
      * @param callable|null $stdout_callback
      * @param callable|null $stderr_callback
-     * @param callable      ...$other_callbacks
+     * @param callable|null ...$other_callbacks
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function awaitProc(callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
+    public function awaitProc(int $idx = 0, callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
     {
         while (0 < array_sum($this->proc_status)) {
             foreach ($other_callbacks as $callback) {
@@ -300,7 +301,7 @@ class ProcMgr extends Factory
                     $argv = call_user_func($callback);
 
                     if (is_string($argv) && '' !== $argv) {
-                        fwrite($this->proc_stdin[0], $argv . $this->argv_end_char);
+                        fwrite($this->proc_stdin[$idx], $argv . $this->argv_end_char);
                     }
                 } catch (\Throwable $throwable) {
                     $this->error->exceptionHandler($throwable, false, false);
@@ -311,7 +312,7 @@ class ProcMgr extends Factory
             $this->readIo($stdout_callback, $stderr_callback);
         }
 
-        unset($stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv);
+        unset($idx, $stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv);
     }
 
     /**
