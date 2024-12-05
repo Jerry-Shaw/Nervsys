@@ -281,7 +281,6 @@ class ProcMgr extends Factory
     {
         while (0 < array_sum($this->proc_job_await)) {
             $this->readIo();
-            $this->cleanup();
         }
     }
 
@@ -310,7 +309,6 @@ class ProcMgr extends Factory
             }
 
             $this->readIo($stdout_callback, $stderr_callback);
-            $this->cleanup();
         }
 
         unset($stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv);
@@ -331,6 +329,20 @@ class ProcMgr extends Factory
         }
 
         unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $idx);
+    }
+
+    /**
+     * @return void
+     */
+    public function cleanup(): void
+    {
+        foreach ($this->proc_status as $idx => $status) {
+            if (0 === $this->getStatus($idx)) {
+                $this->close($idx);
+            }
+        }
+
+        unset($idx, $status);
     }
 
     /**
@@ -469,20 +481,6 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @return void
-     */
-    protected function cleanup(): void
-    {
-        foreach ($this->proc_status as $idx => $status) {
-            if (0 === $this->getStatus($idx)) {
-                $this->close($idx);
-            }
-        }
-
-        unset($idx, $status);
-    }
-
-    /**
      * @param int   $idx
      * @param int   $const_def
      * @param bool  $proc_running
@@ -509,7 +507,6 @@ class ProcMgr extends Factory
     {
         if (empty($this->proc_idle)) {
             $this->readIo();
-            $this->cleanup();
 
             return $this->getIdleProcIdx();
         }
