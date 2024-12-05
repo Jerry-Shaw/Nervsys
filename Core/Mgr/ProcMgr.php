@@ -39,6 +39,7 @@ class ProcMgr extends Factory
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
     public int $proc_max_executions = 2000;
+    public int $proc_job_stack_size = 20;
 
     public string $argv_end_char = "\n";
 
@@ -157,21 +158,23 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int $proc_number
+     * @param int $run_proc
      * @param int $max_executions
+     * @param int $job_stack_size
      *
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $proc_number = 8, int $max_executions = 2000): self
+    public function runPLB(int $run_proc = 8, int $max_executions = 2000, int $job_stack_size = 20): self
     {
         $this->proc_max_executions = &$max_executions;
+        $this->proc_job_stack_size = &$job_stack_size;
 
-        for ($i = 0; $i < $proc_number; ++$i) {
+        for ($i = 0; $i < $run_proc; ++$i) {
             $this->runProc($i);
         }
 
-        unset($proc_number, $max_executions, $i);
+        unset($run_proc, $max_executions, $job_stack_size, $i);
         return $this;
     }
 
@@ -513,6 +516,10 @@ class ProcMgr extends Factory
         $status = $this->getStatus($idx);
 
         if (self::P_STDIN === ($status & self::P_STDIN)) {
+            if ($this->proc_job_await[$idx] < $this->proc_job_stack_size) {
+                $this->proc_idle['P' . $idx] = $idx;
+            }
+
             unset($status);
             return $idx;
         }
