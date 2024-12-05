@@ -280,7 +280,7 @@ class ProcMgr extends Factory
     public function awaitJobs(): void
     {
         while (0 < array_sum($this->proc_job_await)) {
-            $this->readIo();
+            $this->readIPC();
         }
     }
 
@@ -295,7 +295,7 @@ class ProcMgr extends Factory
      */
     public function awaitProc(int $idx = 0, callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
     {
-        while (0 < array_sum($this->proc_status)) {
+        while (0 < $this->getStatus($idx)) {
             foreach ($other_callbacks as $callback) {
                 try {
                     $argv = call_user_func($callback);
@@ -309,7 +309,7 @@ class ProcMgr extends Factory
                 }
             }
 
-            $this->readIo($stdout_callback, $stderr_callback);
+            $this->readIPC($stdout_callback, $stderr_callback);
         }
 
         unset($idx, $stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv);
@@ -414,7 +414,7 @@ class ProcMgr extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    protected function readIo(callable|null ...$stdio_callbacks): void
+    protected function readIPC(callable|null ...$stdio_callbacks): void
     {
         $write   = [];
         $except  = [];
@@ -507,7 +507,7 @@ class ProcMgr extends Factory
     protected function getIdleProcIdx(): int
     {
         if (empty($this->proc_idle)) {
-            $this->readIo();
+            $this->readIPC();
 
             return $this->getIdleProcIdx();
         }
