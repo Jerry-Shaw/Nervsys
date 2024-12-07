@@ -282,7 +282,6 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int           $idx
      * @param callable|null $stdout_callback
      * @param callable|null $stderr_callback
      * @param callable|null ...$other_callbacks
@@ -290,8 +289,10 @@ class ProcMgr extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    public function awaitProc(int $idx = 0, callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
+    public function awaitProc(callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
     {
+        $idx = key($this->proc_pid);
+
         while (0 < $this->getStatus($idx)) {
             foreach ($other_callbacks as $callback) {
                 try {
@@ -309,7 +310,7 @@ class ProcMgr extends Factory
             $this->readIPC($stdout_callback, $stderr_callback);
         }
 
-        unset($idx, $stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv);
+        unset($stdout_callback, $stderr_callback, $other_callbacks, $idx, $callback, $argv);
     }
 
     /**
