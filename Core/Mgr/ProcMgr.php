@@ -39,7 +39,6 @@ class ProcMgr extends Factory
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
     public int $proc_max_executions = 2000;
-    public int $proc_job_stack_size = 10;
 
     public string $argv_end_char = "\n";
 
@@ -160,21 +159,19 @@ class ProcMgr extends Factory
     /**
      * @param int $run_proc
      * @param int $max_executions
-     * @param int $job_stack_size
      *
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $run_proc = 8, int $max_executions = 2000, int $job_stack_size = 10): self
+    public function runPLB(int $run_proc = 8, int $max_executions = 2000): self
     {
         $this->proc_max_executions = &$max_executions;
-        $this->proc_job_stack_size = &$job_stack_size;
 
         for ($i = 0; $i < $run_proc; ++$i) {
             $this->runProc($i);
         }
 
-        unset($run_proc, $max_executions, $job_stack_size, $i);
+        unset($run_proc, $max_executions, $i);
         return $this;
     }
 
@@ -207,8 +204,8 @@ class ProcMgr extends Factory
             return 0;
         }
 
-        if ($this->proc_max_executions <= $this->proc_job_done[$idx]) {
-            if (0 >= $this->proc_job_await[$idx]) {
+        if ($this->proc_job_done[$idx] >= $this->proc_max_executions) {
+            if (0 === $this->proc_job_await[$idx]) {
                 $this->proc_status[$idx] = 0;
                 return 0;
             }
@@ -224,8 +221,8 @@ class ProcMgr extends Factory
             $this->proc_status[$idx] ^= self::P_STDIN;
         }
 
-        $this->syncIoStatus($idx, self::P_STDOUT, $proc_status['running'], stream_get_meta_data($this->proc_stdout[$idx]));
-        $this->syncIoStatus($idx, self::P_STDERR, $proc_status['running'], stream_get_meta_data($this->proc_stderr[$idx]));
+        $this->syncProcStatus($idx, self::P_STDOUT, $proc_status['running'], stream_get_meta_data($this->proc_stdout[$idx]));
+        $this->syncProcStatus($idx, self::P_STDERR, $proc_status['running'], stream_get_meta_data($this->proc_stderr[$idx]));
 
         unset($proc_status);
         return $this->proc_status[$idx];
@@ -262,7 +259,7 @@ class ProcMgr extends Factory
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
 
-            ++$this->proc_job_await[$idx];
+            $this->proc_job_await[$idx] = 1;
 
             unset($idx);
         } catch (\Throwable) {
@@ -279,7 +276,7 @@ class ProcMgr extends Factory
      */
     public function awaitJobs(): void
     {
-        while (0 < array_sum($this->proc_job_await)) {
+        while (in_array(1, $this->proc_job_await, true)) {
             $this->readIPC();
         }
     }
@@ -379,7 +376,7 @@ class ProcMgr extends Factory
 
             try {
                 if (!is_array($job_data) || !isset($job_data['c']) || empty($c_list = $router->parseCgi($job_data['c']))) {
-                    throw new \Exception('Proc worker data ERROR: ' . $job_json, E_USER_NOTICE);
+                    throw new \Exception('Process worker data ERROR: ' . $job_json, E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
                 $this->error->exceptionHandler($throwable, false, false);
@@ -430,34 +427,27 @@ class ProcMgr extends Factory
 
         if (0 < stream_select($streams, $write, $except, $this->read_seconds, $this->read_microseconds)) {
             foreach ($streams as $key => $stream) {
-                [$type, $idx] = explode('_', $key);
+                [$type, $idx] = explode('_', $key, 2);
 
                 $idx = (int)$idx;
 
                 while ('' !== ($output = trim(fgets($stream)))) {
                     if (empty($stdio_callbacks)) {
-                        $job_callbacks = array_pop($this->proc_callbacks[$idx]);
-
-                        if (is_array($job_callbacks)) {
-                            $this->callIoFn($output, 'out' === $type ? $job_callbacks[0] : $job_callbacks[1]);
-                        }
-
                         ++$this->proc_job_done[$idx];
-                        --$this->proc_job_await[$idx];
-                    } else {
-                        $this->callIoFn($output, 'out' === $type ? $stdio_callbacks[0] : $stdio_callbacks[1]);
+                        $stdio_callbacks = array_pop($this->proc_callbacks[$idx]);
+                    }
+
+                    if (is_array($stdio_callbacks)) {
+                        $this->callFn($output, 'out' === $type ? $stdio_callbacks[0] : $stdio_callbacks[1]);
                     }
                 }
 
-                if (0 > $this->proc_job_await[$idx]) {
-                    $this->proc_job_await[$idx] = 0;
-                }
-
+                $this->proc_job_await[$idx]  = 0;
                 $this->proc_idle['P' . $idx] = $idx;
             }
         }
 
-        unset($stdio_callbacks, $write, $except, $streams, $key, $value, $stream, $type, $idx, $data, $output, $job_callbacks);
+        unset($stdio_callbacks, $write, $except, $streams, $key, $value, $stream, $type, $idx, $output);
     }
 
     /**
@@ -467,7 +457,7 @@ class ProcMgr extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    protected function callIoFn(string $output, callable|null $callback): void
+    protected function callFn(string $output, callable|null $callback): void
     {
         if (is_callable($callback)) {
             try {
@@ -489,7 +479,7 @@ class ProcMgr extends Factory
      *
      * @return void
      */
-    protected function syncIoStatus(int $idx, int $const_def, bool $proc_running, array $stream_status): void
+    protected function syncProcStatus(int $idx, int $const_def, bool $proc_running, array $stream_status): void
     {
         if ($const_def === ($this->proc_status[$idx] & $const_def)) {
             if ($stream_status['eof'] || (!$proc_running && 0 === $stream_status['unread_bytes'])) {
@@ -502,7 +492,7 @@ class ProcMgr extends Factory
 
     /**
      * @return int
-     * @throws \Exception
+     * @throws \ReflectionException
      */
     protected function getIdleProcIdx(): int
     {
@@ -516,10 +506,6 @@ class ProcMgr extends Factory
         $status = $this->getStatus($idx);
 
         if (self::P_STDIN === ($status & self::P_STDIN)) {
-            if ($this->proc_job_await[$idx] < $this->proc_job_stack_size) {
-                $this->proc_idle['P' . $idx] = $idx;
-            }
-
             unset($status);
             return $idx;
         }
