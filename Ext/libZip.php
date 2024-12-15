@@ -60,7 +60,7 @@ class libZip extends Factory
      */
     public function setStorePath(string $path): self
     {
-        $this->store_path = &$path;
+        $this->store_path = $path;
 
         unset($path);
         return $this;
@@ -113,7 +113,7 @@ class libZip extends Factory
 
             unset($errno, $file_path, $file_name);
 
-            $result = ['errno' => 0, 'path' => &$zip_path];
+            $result = ['errno' => 0, 'path' => $zip_path];
         } catch (\Throwable $throwable) {
             $result = $this->getError($throwable->getCode());
             unset($throwable);
@@ -241,7 +241,7 @@ class libZip extends Factory
     private function getError(int $errno): array
     {
         return [
-            'errno'   => &$errno,
+            'errno'   => $errno,
             'message' => self::ERRNO[$errno] ?? 'Zip failed!'
         ];
     }
