@@ -34,7 +34,7 @@ class libHttpBot extends libHttp
 
     public string $php_path = '';
 
-    public string $user_agent        = 'Mozilla/5.0 (KHTML, like Gecko; compatible; nervsys/' . NS_VER . '/' . NS_NAME . '; nervsysBot/1.0)';
+    public string $user_agent        = 'Mozilla/5.0 (KHTML, like Gecko; compatible; nervsys/' . NS_VER . '/' . NS_NAME . '; Bot/1.0)';
     public string $html_accept_type  = 'text/html,text/plain,application/xhtml+xml,application/xml,*/*;q=0.8';
     public string $image_accept_type = 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8';
 
