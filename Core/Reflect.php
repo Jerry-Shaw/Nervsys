@@ -83,7 +83,7 @@ class Reflect
 
             if (!isset(self::$reflects[$callable])) {
                 self::$reflects[$callable] = str_contains($callable, '::')
-                    ? new \ReflectionMethod($callable)
+                    ? new \ReflectionMethod(...explode('::', $callable, 2))
                     : new \ReflectionFunction($callable);
             }
 
