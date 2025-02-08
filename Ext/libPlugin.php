@@ -37,28 +37,16 @@ class libPlugin extends Factory
      */
     public function __construct(string $plugin_namespace, string $plugin_reg_file = 'pluginList')
     {
+        $this->namespace  = $plugin_namespace;
         $plugin_reg_class = $plugin_namespace . '\\' . $plugin_reg_file;
 
         if (!class_exists($plugin_reg_class)) {
             throw new \Exception("Plugin :'" . $plugin_reg_class . "' NOT found!");
         }
 
-        $this->loadPlugins($plugin_reg_class);
+        $this->plugin_list = parent::getObj($plugin_reg_class)?->items ?? [];
 
         unset($plugin_namespace, $plugin_reg_file, $plugin_reg_class);
-    }
-
-    /**
-     * @param string $plugin_reg_class
-     *
-     * @return void
-     * @throws \ReflectionException
-     */
-    public function loadPlugins(string $plugin_reg_class): void
-    {
-        $this->plugin_list = parent::getObj($plugin_reg_class)->items;
-
-        unset($plugin_reg_class);
     }
 
     /**
@@ -70,43 +58,62 @@ class libPlugin extends Factory
     public function getPluginList(array $args = []): array
     {
         foreach ($this->plugin_list as $name => $plugin) {
-            if (is_callable($plugin['preload'])) {
-                $preload_args   = parent::buildArgs(Reflect::getCallable($plugin['preload'])->getParameters(), $args);
-                $preload_result = call_user_func($plugin['preload'], $preload_args);
+            if (!isset($plugin['preload'])) {
+                continue;
+            }
 
-                if (true !== $preload_result) {
-                    unset($this->plugin_list[$name]);
-                }
+            if (true !== $this->checkPreLoad($plugin['preload'], $args)) {
+                unset($this->plugin_list[$name]);
             }
         }
 
-        unset($args, $name, $plugin, $preload_args, $preload_result);
+        unset($args, $name, $plugin);
         return $this->plugin_list;
     }
 
     /**
      * @param string $plug_name
      * @param array  $plug_args
+     * @param string $menu_file
      *
      * @return array
      * @throws \ReflectionException
      */
-    public function getPluginMenu(string $plug_name, array $plug_args = []): array
+    public function getPluginMenu(string $plug_name, array $plug_args = [], string $menu_file = 'menu'): array
     {
-        $plugin_menu = parent::getObj($this->namespace . '\\' . $plug_name . '\\menu')?->items ?? [];
+        $plugin_menu = parent::getObj($this->namespace . '\\' . $plug_name . '\\' . $menu_file)?->items ?? [];
 
         foreach ($plugin_menu as $name => $items) {
-            if (is_callable($items['preload'])) {
-                $preload_args   = parent::buildArgs(Reflect::getCallable($items['preload'])->getParameters(), $plug_args);
-                $preload_result = call_user_func($items['preload'], $preload_args);
+            if (!isset($items['preload'])) {
+                continue;
+            }
 
-                if (true !== $preload_result) {
-                    unset($plugin_menu[$name]);
-                }
+            if (true !== $this->checkPreLoad($items['preload'], $plug_args)) {
+                unset($plugin_menu[$name]);
             }
         }
 
-        unset($plug_name, $plug_args, $name, $items, $preload_args, $preload_result);
+        unset($plug_name, $plug_args, $menu_file, $name, $items);
         return $plugin_menu;
+    }
+
+    /**
+     * @param array|string $preload
+     * @param array        $plugin_args
+     *
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public function checkPreLoad(array|string $preload, array $plugin_args): bool
+    {
+        if (is_array($preload)) {
+            $preload[0] = parent::getObj($preload[0], $plugin_args);
+        }
+
+        $fn_args = parent::buildArgs(Reflect::getCallable($preload)->getParameters(), $plugin_args);
+        $result  = call_user_func($preload, $fn_args);
+
+        unset($preload, $plugin_args, $fn_args);
+        return true === $result;
     }
 }
