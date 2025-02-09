@@ -4,7 +4,7 @@
  * Caller library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,11 @@ class Caller extends Factory
      * @param array $cmd
      * @param array $args
      *
-     * @return array
+     * @return mixed
      * @throws \ReflectionException
      */
-    public function runApiFn(array $cmd, array $args): array
+    public function runApiFn(array $cmd, array $args): mixed
     {
-        $result   = [];
         $security = Security::new();
 
         try {
@@ -65,12 +64,8 @@ class Caller extends Factory
 
         $fn_result = call_user_func($api_fn, ...$api_args);
 
-        if (!is_null($fn_result)) {
-            $result[$cmd[2] ?? strtr($cmd[0], '\\', '/') . '/' . $cmd[1]] = &$fn_result;
-        }
-
-        unset($cmd, $args, $security, $api_fn, $api_args, $fn_result);
-        return $result;
+        unset($cmd, $args, $security, $api_fn, $api_args);
+        return $fn_result;
     }
 
     /**
@@ -79,9 +74,9 @@ class Caller extends Factory
      * @param string $cwd_path
      * @param bool   $realtime_debug
      *
-     * @return array
+     * @return string
      */
-    public function runProgram(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false): array
+    public function runProgram(array $cmd_pair, array $cmd_argv = [], string $cwd_path = '', bool $realtime_debug = false): string
     {
         array_unshift($cmd_argv, $cmd_pair[1]);
 
@@ -98,11 +93,11 @@ class Caller extends Factory
 
         if (!is_resource($proc)) {
             unset($cmd_pair, $cmd_argv, $cwd_path, $realtime_debug, $proc, $pipes);
-            return [];
+            return '';
         }
 
+        $result = '';
         $write  = $except = [];
-        $result = [$cmd_pair[0] => ''];
 
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
@@ -126,7 +121,7 @@ class Caller extends Factory
                         echo $msg;
                     }
 
-                    $result[$cmd_pair[0]] .= $msg;
+                    $result .= $msg;
                 }
             }
         }
