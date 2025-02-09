@@ -420,7 +420,7 @@ trait System
      *
      * @return $this
      */
-    public function addCliPathMap(string $exe_name, string $exe_path): self
+    public function addExePathMapping(string $exe_name, string $exe_path): self
     {
         $this->router->exe_path_mapping[$exe_name] = &$exe_path;
 
