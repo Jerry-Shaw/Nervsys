@@ -4,7 +4,7 @@
  * Nervsys Entry Script
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,19 +113,22 @@ class NS
             $this->profiler->end('NS_CLI_ROUTER');
 
             if (!empty($cli_cmd)) {
-                while (is_array($cmd_data = array_shift($cli_cmd))) {
-                    try {
-                        $this->IOData->src_output += $this->caller->runProgram(
-                            $cmd_data,
-                            $this->IOData->src_argv,
-                            $this->IOData->cwd_path,
-                            $this->app->debug_mode
-                        );
-                    } catch (\Throwable $throwable) {
-                        $this->error->exceptionHandler($throwable);
-                        unset($throwable);
-                    }
+                try {
+                    $this->IOData->src_output = $this->caller->runProgram(
+                        $cli_cmd,
+                        $this->IOData->src_argv,
+                        $this->IOData->cwd_path,
+                        $this->app->debug_mode
+                    );
+                } catch (\Throwable $throwable) {
+                    $this->error->exceptionHandler($throwable);
+                    unset($throwable);
                 }
+
+                $this->profiler->start('NS_DATA_OUTPUT');
+                $this->IOData->output();
+                $this->profiler->end('NS_DATA_OUTPUT');
+                exit(0);
             }
         }
 
@@ -134,36 +137,23 @@ class NS
         $this->profiler->end('NS_CGI_ROUTER');
 
         if (!empty($cgi_cmd)) {
-            while (is_array($cmd_data = array_shift($cgi_cmd))) {
-                try {
-                    $full_cmd = strtr($cmd_data[0] . '/' . $cmd_data[1], '\\', '/');
+            try {
+                $full_cmd = strtr($cgi_cmd[0] . '/' . $cgi_cmd[1], '\\', '/');
 
-                    $profiling_name = 'NS_HOOK_BEFORE@' . $full_cmd;
-                    $this->profiler->start($profiling_name);
-                    $pass_hook = $this->hook->runBefore($full_cmd);
-                    $this->profiler->end($profiling_name);
+                $profiler_name = 'NS_HOOK_BEFORE@' . $full_cmd;
+                $this->profiler->start($profiler_name);
+                $pass_hook = $this->hook->run($full_cmd);
+                $this->profiler->end($profiler_name);
 
-                    if (!$pass_hook) {
-                        continue;
-                    }
-
-                    $profiling_name = 'NS_API_CALLER@' . $full_cmd;
-                    $this->profiler->start($profiling_name);
-                    $this->IOData->src_output += $this->caller->runApiFn($cmd_data, $this->IOData->src_input);
-                    $this->profiler->end($profiling_name);
-
-                    $profiling_name = 'NS_HOOK_AFTER@' . $full_cmd;
-                    $this->profiler->start($profiling_name);
-                    $pass_hook = $this->hook->runAfter($full_cmd);
-                    $this->profiler->end($profiling_name);
-
-                    if (!$pass_hook) {
-                        break;
-                    }
-                } catch (\Throwable $throwable) {
-                    $this->error->exceptionHandler($throwable);
-                    unset($throwable);
+                if ($pass_hook) {
+                    $profiler_name = 'NS_API_CALLER@' . $full_cmd;
+                    $this->profiler->start($profiler_name);
+                    $this->IOData->src_output = $this->caller->runApiFn($cgi_cmd, $this->IOData->src_input);
+                    $this->profiler->end($profiler_name);
                 }
+            } catch (\Throwable $throwable) {
+                $this->error->exceptionHandler($throwable);
+                unset($throwable);
             }
         }
 
