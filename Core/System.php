@@ -4,7 +4,7 @@
  * System Traits
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,7 +253,7 @@ trait System
     public function addPreHooks(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
-            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_dir, $cmd_path, true)][] = $fn;
+            $this->hook->hook_stack[$this->router->getFullCgiCmd($this->app->api_dir, $cmd_path, true)][] = $fn;
         }
 
         unset($cmd_path, $hook_fn, $fn);
@@ -269,39 +269,7 @@ trait System
     public function addPreHookRules(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
-            $this->hook->stack_before[$this->router->getFullCgiCmd($this->app->api_dir, $path, true)][] = $hook_fn;
-        }
-
-        unset($hook_fn, $cmd_path, $path);
-        return $this;
-    }
-
-    /**
-     * @param string   $cmd_path
-     * @param callable ...$hook_fn
-     *
-     * @return $this
-     */
-    public function addPostHooks(string $cmd_path, callable ...$hook_fn): self
-    {
-        foreach ($hook_fn as $fn) {
-            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_dir, $cmd_path, true)][] = $fn;
-        }
-
-        unset($cmd_path, $hook_fn, $fn);
-        return $this;
-    }
-
-    /**
-     * @param callable $hook_fn
-     * @param string   ...$cmd_path
-     *
-     * @return $this
-     */
-    public function addPostHookRules(callable $hook_fn, string ...$cmd_path): self
-    {
-        foreach ($cmd_path as $path) {
-            $this->hook->stack_after[$this->router->getFullCgiCmd($this->app->api_dir, $path, true)][] = $hook_fn;
+            $this->hook->hook_stack[$this->router->getFullCgiCmd($this->app->api_dir, $path, true)][] = $hook_fn;
         }
 
         unset($hook_fn, $cmd_path, $path);
