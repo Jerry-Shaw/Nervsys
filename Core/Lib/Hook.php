@@ -4,7 +4,7 @@
  * Hook library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@ use Nervsys\Core\Reflect;
 
 class Hook extends Factory
 {
-    public array $stack_before = [];
-    public array $stack_after  = [];
+    public array $hook_stack = [];
 
     /**
      * @param string $full_cmd
@@ -35,35 +34,13 @@ class Hook extends Factory
      * @return bool
      * @throws \ReflectionException
      */
-    public function runBefore(string $full_cmd): bool
+    public function run(string $full_cmd): bool
     {
         $result  = true;
-        $hook_fn = $this->findHook($full_cmd, $this->stack_before);
+        $hook_fn = $this->find($full_cmd, $this->hook_stack);
 
         foreach ($hook_fn as $fn) {
-            if (!$this->passHook($fn)) {
-                $result = false;
-                break;
-            }
-        }
-
-        unset($full_cmd, $hook_fn, $fn);
-        return $result;
-    }
-
-    /**
-     * @param string $full_cmd
-     *
-     * @return bool
-     * @throws \ReflectionException
-     */
-    public function runAfter(string $full_cmd): bool
-    {
-        $result  = true;
-        $hook_fn = $this->findHook($full_cmd, $this->stack_after);
-
-        foreach ($hook_fn as $fn) {
-            if (!$this->passHook($fn)) {
+            if (!$this->callFn($fn)) {
                 $result = false;
                 break;
             }
@@ -79,7 +56,7 @@ class Hook extends Factory
      *
      * @return array
      */
-    private function findHook(string $full_cmd, array $hook_list): array
+    public function find(string $full_cmd, array $hook_list): array
     {
         $fn_list  = [];
         $full_cmd = strtr($full_cmd, '\\', '/');
@@ -102,7 +79,7 @@ class Hook extends Factory
      * @return bool
      * @throws \ReflectionException
      */
-    private function passHook(callable $hook_fn): bool
+    private function callFn(callable $hook_fn): bool
     {
         $params = self::buildArgs(Reflect::getCallable($hook_fn)->getParameters(), IOData::new()->src_input);
         $result = call_user_func($hook_fn, ...$params);
