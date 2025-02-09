@@ -4,7 +4,7 @@
  * Security library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ class Security extends Factory
         !headers_sent() && http_response_code(403);
 
         $IOData->src_msg    = ['code' => 403, 'message' => !$app->debug_mode ? 'Permission denied!' : $IOData->src_cmd . ' NOT secure!'];
-        $IOData->src_output = [];
+        $IOData->src_output = null;
 
         unset($app, $IOData);
     }
@@ -131,7 +131,7 @@ class Security extends Factory
         !headers_sent() && http_response_code(404);
 
         $IOData->src_msg    = ['code' => 404, 'message' => !$app->debug_mode ? 'Target NOT found!' : $IOData->src_cmd . ' NOT found!'];
-        $IOData->src_output = [];
+        $IOData->src_output = null;
 
         unset($app, $IOData);
     }
@@ -148,7 +148,7 @@ class Security extends Factory
         !headers_sent() && http_response_code(500);
 
         $IOData->src_msg    = ['code' => 500, 'message' => !$app->debug_mode ? 'Server Data Error!' : $message];
-        $IOData->src_output = [];
+        $IOData->src_output = null;
 
         unset($app, $IOData, $message);
     }
