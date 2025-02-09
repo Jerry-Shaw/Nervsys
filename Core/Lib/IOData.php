@@ -4,7 +4,7 @@
  * I/O Data Parser library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class IOData extends Factory
     public array $src_msg    = [];
     public array $src_argv   = [];
     public array $src_input  = [];
-    public array $src_output = [];
+    public mixed $src_output = null;
 
     public string $content_type = '';
 
@@ -176,11 +176,9 @@ class IOData extends Factory
 
         !headers_sent() && header('Content-Type: ' . $this->content_type . '; charset=utf-8');
 
-        $data = 1 === count($this->src_output) ? current($this->src_output) : $this->src_output;
-
-        if (!empty($this->src_msg)) {
-            $data = $this->src_msg + ['data' => $data];
-        }
+        $data = !empty($this->src_msg)
+            ? $this->src_msg + ['data' => $this->src_output]
+            : $this->src_output;
 
         switch ($this->content_type) {
             case 'application/json':
@@ -202,10 +200,8 @@ class IOData extends Factory
             case 'text/html':
                 if (is_string($data) || is_numeric($data)) {
                     echo $data;
-                } elseif (isset($data['data']) && is_string($data['data'])) {
+                } elseif (is_array($data) && isset($data['data']) && is_string($data['data'])) {
                     echo $data['data'];
-                } elseif (is_array($data) && is_string($res = current($data))) {
-                    echo $res;
                 } else {
                     //Force output data as JSON string
                     !headers_sent() && header('Content-Type: application/json; charset=utf-8');
@@ -221,7 +217,7 @@ class IOData extends Factory
                 break;
         }
 
-        unset($data, $res);
+        unset($data);
     }
 
     /**
