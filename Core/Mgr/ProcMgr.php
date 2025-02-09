@@ -4,7 +4,7 @@
  * Proc Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -376,7 +376,7 @@ class ProcMgr extends Factory
             $job_data = json_decode($job_json, true);
 
             try {
-                if (!is_array($job_data) || !isset($job_data['c']) || empty($c_list = $router->parseCgi($job_data['c']))) {
+                if (!is_array($job_data) || !isset($job_data['c']) || empty($cmd = $router->parseCgi($job_data['c']))) {
                     throw new \Exception('Process worker data ERROR: ' . $job_json, E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
@@ -388,18 +388,16 @@ class ProcMgr extends Factory
 
             $result = [];
 
-            while (is_array($cmd_data = array_shift($c_list))) {
-                try {
-                    $result += $caller->runApiFn($cmd_data, $job_data);
-                } catch (\Throwable $throwable) {
-                    $this->error->exceptionHandler($throwable, false, false);
-                    unset($throwable);
-                }
+            try {
+                $result = $caller->runApiFn($cmd, $job_data);
+            } catch (\Throwable $throwable) {
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
             }
 
-            echo json_encode(1 === count($result) ? current($result) : $result, JSON_FORMAT) . "\n";
+            echo json_encode($result, JSON_FORMAT) . "\n";
 
-            unset($job_json, $job_data, $c_list, $result, $cmd_data);
+            unset($job_json, $job_data, $cmd, $result);
         }
 
         unset($caller, $router);
