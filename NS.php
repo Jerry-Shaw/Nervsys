@@ -114,7 +114,7 @@ class NS
 
             if (!empty($cli_cmd)) {
                 try {
-                    $this->IOData->src_output = $this->caller->runProgram(
+                    $this->caller->runProgram(
                         $cli_cmd,
                         $this->IOData->src_argv,
                         $this->IOData->cwd_path,
@@ -124,11 +124,6 @@ class NS
                     $this->error->exceptionHandler($throwable);
                     unset($throwable);
                 }
-
-                $this->profiler->start('NS_DATA_OUTPUT');
-                $this->IOData->output();
-                $this->profiler->end('NS_DATA_OUTPUT');
-                exit(0);
             }
         }
 
