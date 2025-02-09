@@ -787,7 +787,7 @@ class SocketMgr extends Factory
         switch ($this->reconnect[0]) {
             case 0:
                 $this->debug('Reconnect failed, quit!');
-                exit();
+                exit(0);
 
             case -1:
                 while (true) {
@@ -820,7 +820,7 @@ class SocketMgr extends Factory
                 }
 
                 $this->debug('Reconnect failed ' . $this->reconnect[0] . ' times, quit!');
-                exit();
+                exit(0);
         }
     }
 
