@@ -3,7 +3,7 @@
 /**
  * Queue Extension (on Redis)
  *
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ class libQueue extends Factory
                     }
                 }
 
-                if (!isset($job_data['@']) || empty($c_list = $router->parseCgi($job_data['@']))) {
+                if (!isset($job_data['@']) || empty($cmd = $router->parseCgi($job_data['@']))) {
                     throw new \Exception('Queue CMD ERROR!', E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
@@ -231,21 +231,19 @@ class libQueue extends Factory
                 continue;
             }
 
-            while (is_array($cmd_data = array_shift($c_list))) {
-                try {
-                    if (Security::class === $cmd_data[0]) {
-                        throw new \Exception('Queue CMD ERROR, redirect to: "' . $cmd_data[0] . '/' . $cmd_data[1] . '"', E_USER_NOTICE);
-                    }
-
-                    $api_fn   = $security->getApiMethod($cmd_data[0], $cmd_data[1], $job_data, \ReflectionMethod::IS_PUBLIC);
-                    $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $job_data);
-
-                    call_user_func($api_fn, ...$api_args);
-                } catch (\Throwable $throwable) {
-                    $this->saveError($job[0], $job_data, $throwable->getMessage());
-                    $error->exceptionHandler($throwable, false, false);
-                    unset($throwable);
+            try {
+                if (Security::class === $cmd[0]) {
+                    throw new \Exception('Queue CMD ERROR, redirected to: "' . $cmd[0] . '/' . $cmd[1] . '"', E_USER_NOTICE);
                 }
+
+                $api_fn   = $security->getApiMethod($cmd[0], $cmd[1], $job_data, \ReflectionMethod::IS_PUBLIC);
+                $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $job_data);
+
+                call_user_func($api_fn, ...$api_args);
+            } catch (\Throwable $throwable) {
+                $this->saveError($job[0], $job_data, $throwable->getMessage());
+                $error->exceptionHandler($throwable, false, false);
+                unset($throwable);
             }
 
             if (++$jobs_done >= $cycles) {
