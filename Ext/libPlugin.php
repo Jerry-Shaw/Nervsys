@@ -58,13 +58,13 @@ class libPlugin extends Factory
     public function getPluginList(array $args = []): array
     {
         foreach ($this->plugin_list as $name => $plugin) {
-            if (!isset($plugin['preload'])) {
-                continue;
+            if (is_array($plugin['preload']) || is_string($plugin['preload'])) {
+                if (true !== $this->checkPreLoad($plugin['preload'], $args)) {
+                    unset($this->plugin_list[$name]);
+                }
             }
 
-            if (true !== $this->checkPreLoad($plugin['preload'], $args)) {
-                unset($this->plugin_list[$name]);
-            }
+            unset($this->plugin_list[$name]['preload']);
         }
 
         unset($args, $name, $plugin);
@@ -84,13 +84,13 @@ class libPlugin extends Factory
         $plugin_menu = parent::getObj($this->namespace . '\\' . $plug_name . '\\' . $menu_file)?->items ?? [];
 
         foreach ($plugin_menu as $name => $items) {
-            if (!isset($items['preload'])) {
-                continue;
+            if (is_array($items['preload']) || is_string($items['preload'])) {
+                if (true !== $this->checkPreLoad($items['preload'], $plug_args)) {
+                    unset($plugin_menu[$name]);
+                }
             }
 
-            if (true !== $this->checkPreLoad($items['preload'], $plug_args)) {
-                unset($plugin_menu[$name]);
-            }
+            unset($plugin_menu[$name]['preload']);
         }
 
         unset($plug_name, $plug_args, $menu_file, $name, $items);
