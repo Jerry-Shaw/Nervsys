@@ -4,7 +4,7 @@
  * Router library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,48 +27,50 @@ class Router extends Factory
 {
     public array $cgi_router_stack = [];
     public array $cli_router_stack = [];
-    public array $cli_exe_path_map = [];
+    public array $exe_path_mapping = [];
 
     /**
      * @param string $c
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function parseCgi(string $c): array
     {
-        $cmd_list = [];
+        $cmd_data = [];
 
-        foreach ($this->cgi_router_stack as $rt) {
-            $cmd_list = $this->process($rt, $c);
+        foreach ($this->cgi_router_stack as $router) {
+            $cmd_data = $this->process($router, $c);
 
-            if (!empty($cmd_list)) {
+            if (!empty($cmd_data)) {
                 break;
             }
         }
 
-        unset($c, $rt);
-        return $cmd_list;
+        unset($c, $router);
+        return $cmd_data;
     }
 
     /**
      * @param string $c
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function parseCli(string $c): array
     {
-        $cmd_list = [];
+        $cmd_data = [];
 
-        foreach ($this->cli_router_stack as $rt) {
-            $cmd_list = $this->process($rt, $c);
+        foreach ($this->cli_router_stack as $router) {
+            $cmd_data = $this->process($router, $c);
 
-            if (!empty($cmd_list)) {
+            if (!empty($cmd_data)) {
                 break;
             }
         }
 
-        unset($c, $rt);
-        return $cmd_list;
+        unset($c, $router);
+        return $cmd_data;
     }
 
     /**
@@ -79,29 +81,21 @@ class Router extends Factory
      */
     public function getCgiUnit(string $c): array
     {
+        $fn  = [];
         $app = App::new();
+        $cmd = strtr($c, '\\', '/');
 
-        $fn_list  = [];
-        $cmd_list = $this->getCmdList($c);
-
-        foreach ($cmd_list as $cmd_raw) {
-            $cmd_val = strtr($cmd_raw, '\\', '/');
-
-            if (false === strpos($cmd_val, '/', 1)) {
-                $fn_list[] = [$cmd_val, 'null', $cmd_raw];
-                continue;
-            }
-
-            $full_cmd = $this->getFullCgiCmd($app->api_dir, $cmd_val, $app->is_cli);
+        if (false !== strpos($cmd, '/', 1)) {
+            $full_cmd = $this->getFullCgiCmd($app->api_dir, $cmd, $app->is_cli);
             $fn_pos   = strrpos($full_cmd, '/');
             $class    = strtr(substr($full_cmd, 0, $fn_pos), '/', '\\');
             $method   = substr($full_cmd, $fn_pos + 1);
 
-            $fn_list[] = [$class, $method, $cmd_raw];
+            $fn = [$class, $method];
         }
 
-        unset($c, $app, $cmd_list, $cmd_raw, $cmd_val, $full_cmd, $fn_pos, $class, $method);
-        return $fn_list;
+        unset($c, $app, $cmd, $full_cmd, $fn_pos, $class, $method);
+        return $fn;
     }
 
     /**
@@ -111,17 +105,14 @@ class Router extends Factory
      */
     public function getCliUnit(string $c): array
     {
-        $exe_list = [];
-        $cmd_list = $this->getCmdList($c);
+        $exe = [];
 
-        foreach ($cmd_list as $exe_name) {
-            if (isset($this->cli_exe_path_map[$exe_name])) {
-                $exe_list[] = [$exe_name, $this->cli_exe_path_map[$exe_name]];
-            }
+        if (isset($this->exe_path_mapping[$c])) {
+            $exe = [$c, $this->exe_path_mapping[$c]];
         }
 
-        unset($c, $cmd_list, $exe_name);
-        return $exe_list;
+        unset($c);
+        return $exe;
     }
 
     /**
@@ -148,35 +139,27 @@ class Router extends Factory
     }
 
     /**
-     * @param callable $rt
-     * @param string   $c
+     * @param callable $router
+     * @param string   $cmd
      *
      * @return array
+     * @throws \ReflectionException
      */
-    private function process(callable $rt, string $c): array
+    private function process(callable $router, string $cmd): array
     {
-        $c_list = call_user_func($rt, $c);
+        try {
+            $cmd_data = call_user_func($router, $cmd);
 
-        if (!is_array($c_list)) {
-            unset($rt, $c, $c_list);
-            return [];
+            if (is_array($cmd_data)) {
+                unset($router, $cmd);
+                return $cmd_data;
+            }
+        } catch (\Throwable $throwable) {
+            Error::new()->exceptionHandler($throwable, false, false);
+            unset($throwable);
         }
 
-        if (!empty($c_list) && count($c_list) === count($c_list, COUNT_RECURSIVE)) {
-            $c_list = [$c_list];
-        }
-
-        unset($rt, $c);
-        return $c_list;
-    }
-
-    /**
-     * @param string $c
-     *
-     * @return string[]
-     */
-    private function getCmdList(string $c): array
-    {
-        return array_filter(str_contains($c, '|') ? explode('|', $c) : [$c]);
+        unset($router, $cmd, $cmd_data);
+        return [];
     }
 }
