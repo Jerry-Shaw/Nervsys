@@ -454,7 +454,7 @@ trait System
      */
     public function addCliPathMap(string $exe_name, string $exe_path): self
     {
-        $this->router->cli_exe_path_map[$exe_name] = &$exe_path;
+        $this->router->exe_path_mapping[$exe_name] = &$exe_path;
 
         unset($exe_name, $exe_path);
         return $this;
