@@ -2,7 +2,7 @@
 
 README: [English](README.md) | [简体中文](README_zh-CN.md)
 
-[![release](https://img.shields.io/badge/release-8.2.5-blue?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/releases)
+[![release](https://img.shields.io/badge/release-8.2.6-blue?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/releases)
 [![issues](https://img.shields.io/github/issues/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/issues)
 [![contributors](https://img.shields.io/github/contributors/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/graphs/contributors)
 [![last-commit](https://img.shields.io/github/last-commit/Jerry-Shaw/Nervsys?style=flat-square)](https://github.com/Jerry-Shaw/Nervsys/commits/master)

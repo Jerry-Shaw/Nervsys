@@ -32,7 +32,7 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.2.5');
+define('NS_VER', '8.2.6');
 define('NS_NAME', 'Blueberry');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
