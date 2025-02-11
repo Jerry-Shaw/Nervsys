@@ -59,15 +59,18 @@ class libPlugin extends Factory
     {
         foreach ($this->plugin_list as $name => $plugin) {
             if (is_array($plugin['preload']) || is_string($plugin['preload'])) {
-                if (true !== $this->checkPreLoad($plugin['preload'], $args)) {
-                    unset($this->plugin_list[$name]);
-                }
-            }
+                $preload = $this->callFn($plugin['preload'], $args);
 
-            unset($this->plugin_list[$name]['preload']);
+                if (false === $preload) {
+                    unset($this->plugin_list[$name]);
+                    continue;
+                }
+
+                $this->plugin_list[$name]['preload'] = $preload;
+            }
         }
 
-        unset($args, $name, $plugin);
+        unset($args, $name, $plugin, $preload);
         return $this->plugin_list;
     }
 
@@ -85,35 +88,38 @@ class libPlugin extends Factory
 
         foreach ($plugin_menu as $name => $items) {
             if (is_array($items['preload']) || is_string($items['preload'])) {
-                if (true !== $this->checkPreLoad($items['preload'], $plug_args)) {
-                    unset($plugin_menu[$name]);
-                }
-            }
+                $preload = $this->callFn($items['preload'], $plug_args);
 
-            unset($plugin_menu[$name]['preload']);
+                if (false === $preload) {
+                    unset($plugin_menu[$name]);
+                    continue;
+                }
+
+                $plugin_menu[$name]['preload'] = $preload;
+            }
         }
 
-        unset($plug_name, $plug_args, $menu_file, $name, $items);
+        unset($plug_name, $plug_args, $menu_file, $name, $items, $preload);
         return $plugin_menu;
     }
 
     /**
      * @param array|string $preload
-     * @param array        $plugin_args
+     * @param array        $args
      *
-     * @return bool
+     * @return mixed
      * @throws \ReflectionException
      */
-    public function checkPreLoad(array|string $preload, array $plugin_args): bool
+    public function callFn(array|string $preload, array $args): mixed
     {
         if (is_array($preload)) {
-            $preload[0] = parent::getObj($preload[0], $plugin_args);
+            $preload[0] = parent::getObj($preload[0], $args);
         }
 
-        $fn_args = parent::buildArgs(Reflect::getCallable($preload)->getParameters(), $plugin_args);
-        $result  = call_user_func($preload, $fn_args);
+        $args   = parent::buildArgs(Reflect::getCallable($preload)->getParameters(), $args);
+        $result = call_user_func($preload, $args);
 
-        unset($preload, $plugin_args, $fn_args);
-        return true === $result;
+        unset($preload, $args);
+        return $result;
     }
 }
