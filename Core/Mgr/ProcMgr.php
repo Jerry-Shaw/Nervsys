@@ -389,7 +389,7 @@ class ProcMgr extends Factory
             $result = [];
 
             try {
-                $result = $caller->runApiFn($cmd, $job_data);
+                $result = $caller->runApiFn($cmd, $job_data, false);
             } catch (\Throwable $throwable) {
                 $this->error->exceptionHandler($throwable, false, false);
                 unset($throwable);
