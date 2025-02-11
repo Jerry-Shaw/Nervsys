@@ -143,7 +143,7 @@ class NS
                 if ($pass_hook) {
                     $profiler_name = 'NS_API_CALLER@' . $full_cmd;
                     $this->profiler->start($profiler_name);
-                    $this->IOData->src_output = $this->caller->runApiFn($cgi_cmd, $this->IOData->src_input);
+                    $this->IOData->src_output = $this->caller->runApiFn($cgi_cmd, $this->IOData->src_input, true);
                     $this->profiler->end($profiler_name);
                 }
             } catch (\Throwable $throwable) {
