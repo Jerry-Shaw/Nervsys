@@ -37,8 +37,8 @@ class libPlugin extends Factory
      */
     public function __construct(string $plugin_namespace, string $plugin_reg_file = 'pluginList')
     {
-        $this->namespace  = $plugin_namespace;
-        $plugin_reg_class = $plugin_namespace . '\\' . $plugin_reg_file;
+        $this->namespace  = strtr($plugin_namespace, '/', '\\');
+        $plugin_reg_class = $this->namespace . '\\' . $plugin_reg_file;
 
         if (!class_exists($plugin_reg_class)) {
             throw new \Exception("Plugin :'" . $plugin_reg_class . "' NOT found!");
