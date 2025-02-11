@@ -30,16 +30,17 @@ class Caller extends Factory
     /**
      * @param array $cmd
      * @param array $args
+     * @param bool  $anti_xss
      *
      * @return mixed
      * @throws \ReflectionException
      */
-    public function runApiFn(array $cmd, array $args): mixed
+    public function runApiFn(array $cmd, array $args, bool $anti_xss): mixed
     {
         $security = Security::new();
 
         try {
-            if (!App::new()->is_cli) {
+            if ($anti_xss) {
                 $args = $security->antiXss($args);
             }
 
@@ -64,7 +65,7 @@ class Caller extends Factory
 
         $fn_result = call_user_func($api_fn, ...$api_args);
 
-        unset($cmd, $args, $security, $api_fn, $api_args);
+        unset($cmd, $args, $anti_xss, $security, $api_fn, $api_args);
         return $fn_result;
     }
 
