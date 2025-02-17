@@ -80,14 +80,23 @@ class algoImage extends Factory
      * @param int|float $intensity
      * @param int|float $min_value
      * @param int|float $max_value
+     * @param int|float $signal_gain
      *
      * @return int
      */
-    public function intensityToGrayValue(int|float $intensity, int|float $min_value, int|float $max_value): int
+    public function intensityToGrayValue(int|float $intensity, int|float $min_value, int|float $max_value, int|float $signal_gain = 1.0): int
     {
+        $intensity *= $signal_gain;
+
+        if ($intensity > $max_value) {
+            $intensity = $max_value;
+        } elseif ($intensity < $min_value) {
+            $intensity = $min_value;
+        }
+
         $gray_value = (int)(($intensity - $min_value) * 255 / ($max_value - $min_value));
 
-        unset($intensity, $min_value, $max_value);
+        unset($intensity, $min_value, $max_value, $signal_gain);
         return $gray_value;
     }
 
