@@ -84,7 +84,7 @@ class algoImage extends Factory
      *
      * @return int
      */
-    public function intensityToGrayValue(int|float $intensity, int|float $min_value, int|float $max_value, int|float $signal_gain = 1.0): int
+    public function intensityToGrayValue(int|float $intensity, int|float $min_value, int|float $max_value, int|float $signal_gain = 1): int
     {
         $intensity *= $signal_gain;
 
