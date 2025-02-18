@@ -107,10 +107,10 @@ class Factory
                 continue;
             }
 
-            if (array_key_exists('int', $param_info['type']) && is_numeric($data_package[$param_info['name']])) {
-                $args[] = (int)$data_package[$param_info['name']];
-            } elseif (array_key_exists('float', $param_info['type']) && is_numeric($data_package[$param_info['name']])) {
+            if (array_key_exists('float', $param_info['type']) && is_numeric($data_package[$param_info['name']])) {
                 $args[] = (float)$data_package[$param_info['name']];
+            } elseif (array_key_exists('int', $param_info['type']) && is_numeric($data_package[$param_info['name']])) {
+                $args[] = (int)$data_package[$param_info['name']];
             } elseif (array_key_exists('string', $param_info['type']) && (is_string($data_package[$param_info['name']]) || is_numeric($data_package[$param_info['name']]))) {
                 $args[] = trim((string)$data_package[$param_info['name']]);
             } elseif (array_key_exists('array', $param_info['type']) && is_array($data_package[$param_info['name']])) {
