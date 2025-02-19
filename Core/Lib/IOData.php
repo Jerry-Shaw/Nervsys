@@ -52,7 +52,7 @@ class IOData extends Factory
     {
         $this->readAccept();
 
-        $this->src_cmd = trim($this->readUrl());
+        $this->src_cmd = trim($this->readUri());
 
         $this->src_input = $this->readHttp();
         $this->src_input += $this->readInput(file_get_contents('php://input'));
@@ -330,13 +330,13 @@ class IOData extends Factory
     /**
      * @return string
      */
-    private function readUrl(): string
+    private function readUri(): string
     {
         if (isset($_SERVER['PATH_INFO']) && 1 < strlen($_SERVER['PATH_INFO'])) {
             return substr($_SERVER['PATH_INFO'], 1);
         }
 
-        $start  = 0;
+        $start  = 1;
         $script = basename($_SERVER['SCRIPT_FILENAME']);
         $stop   = strpos($_SERVER['REQUEST_URI'], '?') ?: strlen($_SERVER['REQUEST_URI']);
 
@@ -344,10 +344,11 @@ class IOData extends Factory
             $start += $find_pos + strlen($script);
         }
 
-        $cmd = substr($_SERVER['REQUEST_URI'], ++$start, $stop - $start);
+        $cmd_len = $stop - $start;
+        $cmd_val = $cmd_len > 0 ? substr($_SERVER['REQUEST_URI'], $start, $cmd_len) : '';
 
-        unset($start, $script, $stop, $find_pos);
-        return $cmd;
+        unset($start, $script, $stop, $find_pos, $cmd_len);
+        return $cmd_val;
     }
 
     /**
