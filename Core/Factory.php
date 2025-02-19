@@ -103,7 +103,7 @@ class Factory
                     continue;
                 }
 
-                $diff[] = '$' . $param_info['name'] . ' NOT found!';
+                $diff[] = '$' . $param_info['name'] . ' NOT found';
                 continue;
             }
 
@@ -119,7 +119,7 @@ class Factory
                 $args[] = $data_package[$param_info['name']];
             } elseif (array_key_exists('object', $param_info['type']) && is_object($data_package[$param_info['name']])) {
                 $args[] = $data_package[$param_info['name']];
-            } elseif (empty($param_info['type'])) {
+            } elseif (empty($param_info['type']) || array_key_exists('mixed', $param_info['type'])) {
                 $args[] = $data_package[$param_info['name']];
             } else {
                 $expected = implode('|', array_keys($param_info['type']));
@@ -137,9 +137,9 @@ class Factory
                     $param_value = '(' . $detected . ')';
                 }
 
-                $diff[] = '$' . $param_info['name'] . ': expected \''
-                    . $expected . '\', but got \''
-                    . $detected . ' ' . $param_value . '\'';
+                $diff[] = '$' . $param_info['name'] . ' needs \''
+                    . $expected . '\' value instead of '
+                    . $detected . ' \'' . $param_value . '\'';
             }
         }
 
