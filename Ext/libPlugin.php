@@ -56,7 +56,7 @@ class libPlugin extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getPluginList(array $args = []): array
+    public function getList(array $args = []): array
     {
         foreach ($this->plugin_list as $name => $plugin) {
             if (isset($items['preload']) && (is_array($plugin['preload']) || is_string($plugin['preload']))) {
@@ -83,7 +83,7 @@ class libPlugin extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getPluginMenu(string $plug_name, array $plug_args = [], string $menu_file = 'menu'): array
+    public function getMenu(string $plug_name, array $plug_args = [], string $menu_file = 'menu'): array
     {
         $plugin_menu = parent::getObj($this->namespace . '\\' . $plug_name . '\\' . $menu_file)?->items ?? [];
 
