@@ -105,6 +105,21 @@ class libPlugin extends Factory
     }
 
     /**
+     * @param string $plug_name
+     * @param string $const_name
+     * @param string $const_class
+     *
+     * @return mixed
+     */
+    public function getConst(string $plug_name, string $const_name, string $const_class = 'pluginConst'): mixed
+    {
+        $constant = $this->namespace . '\\' . $plug_name . '\\' . $const_class . '::' . $const_name;
+
+        unset($plug_name, $const_name, $const_class);
+        return constant($constant);
+    }
+
+    /**
      * @param array|string $preload
      * @param array        $args
      *
