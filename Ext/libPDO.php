@@ -3,7 +3,7 @@
 /**
  * PDO connector Extension
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ use Nervsys\Core\Factory;
  */
 class libPDO extends Factory
 {
+    public \PDO|null $pdo;
+
     protected string $usr = '';
     protected string $pwd = '';
     protected string $dsn = '';
@@ -59,6 +61,9 @@ class libPDO extends Factory
         string $charset = 'utf8mb4'
     )
     {
+        //Set pdo to null
+        $this->pdo = null;
+
         //Copy username & password
         $this->usr = &$user;
         $this->pwd = &$pwd;
@@ -71,14 +76,21 @@ class libPDO extends Factory
     }
 
     /**
-     * Connect PDO
+     * Connect PDO Driver
      *
-     * @return \PDO
+     * @return $this
      * @throws \ReflectionException
      */
-    public function connect(): \PDO
+    public function connect(): self
     {
-        return parent::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
+        //Destroy existed PDO object from factory
+        if ($this->pdo instanceof \PDO) {
+            $this->destroy($this->pdo);
+        }
+
+        $this->pdo = parent::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
+
+        return $this;
     }
 
     /**
