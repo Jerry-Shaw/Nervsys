@@ -108,6 +108,11 @@ class libRedis extends Factory
      */
     public function connect(int $retry_times = 0): self
     {
+        //Destroy existed redis object from factory
+        if ($this->redis instanceof \Redis) {
+            $this->destroy($this->redis);
+        }
+
         /** @var \Redis $redis */
         $redis = parent::getObj(\Redis::class);
 
