@@ -3,7 +3,7 @@
 /**
  * MySQL Extension
  *
- * Copyright 2019-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2019-2025 秋水之冰 <27206617@qq.com>
  * Copyright 2021-2024 wwj <904428723@qq.com>
  * Copyright 2018-2019 kristenzz <kristenzz1314@gmail.com>
  *
@@ -50,8 +50,8 @@ class libMySQL extends Factory
      */
     public function bindLibPdo(libPDO $libPDO): self
     {
-        $this->libPDO = &$libPDO;
-        $this->pdo    = $libPDO->connect();
+        $this->libPDO = $libPDO->pdo instanceof \PDO ? $libPDO : $libPDO->connect();
+        $this->pdo    = $this->libPDO->pdo;
 
         unset($libPDO);
         return $this;
@@ -771,6 +771,7 @@ class libMySQL extends Factory
      * @param string $readable_sql
      *
      * @return array [NULL, system, const, eq_ref, ref, range, index, ALL]
+     * @throws \ReflectionException
      */
     public function explainSQL(string $readable_sql): array
     {
@@ -795,11 +796,9 @@ class libMySQL extends Factory
             return false;
         }
 
-        //Destroy PDO from Factory
-        $this->destroy($this->pdo);
-
-        //Reconnect to PDO server
-        $this->pdo = $this->libPDO->connect();
+        //Reconnect to PDO driver
+        $this->libPDO = $this->libPDO->connect();
+        $this->pdo    = $this->libPDO->pdo;
 
         unset($retry_times);
         return true;
