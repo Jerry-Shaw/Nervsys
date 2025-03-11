@@ -3,7 +3,7 @@
 /**
  * Redis Connector Extension
  *
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,7 @@ class libRedis extends Factory
     public array $retry_match = ['lost', 'went away'];
 
     //Redis options
-    protected int $db = 0;
-
+    protected int    $db     = 0;
     protected string $auth   = '';
     protected string $prefix = '';
     protected string $method = '';
@@ -98,62 +97,87 @@ class libRedis extends Factory
     }
 
     /**
-     * Connection/Reconnection
+     * Connect redis
      *
-     * @param int $retry_times
-     *
-     * @return $this|self
-     * @throws \RedisException
+     * @return $this
      * @throws \ReflectionException
      */
-    public function connect(int $retry_times = 0): self
+    public function connect(): self
     {
+        //Destroy existed redis object from factory
+        if ($this->redis instanceof \Redis) {
+            $this->destroy($this->redis);
+        }
+
         /** @var \Redis $redis */
         $redis = parent::getObj(\Redis::class);
 
-        try {
-            //Connect
-            $redis->{$this->method}(...$this->props);
+        //Connect
+        $redis->{$this->method}(...$this->props);
 
-            //Set auth
-            if ('' !== $this->auth && !$redis->auth($this->auth)) {
-                throw new \RedisException('Authentication Failed!', E_USER_ERROR);
-            }
-
-            //Set DB
-            if (!$redis->select($this->db)) {
-                throw new \RedisException('DB [' . $this->db . '] NOT found!', E_USER_ERROR);
-            }
-
-            //Set prefix
-            if ('' !== $this->prefix) {
-                $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
-            }
-
-            //Set read timeout & serializer mode
-            $redis->setOption(\Redis::OPT_READ_TIMEOUT, -1);
-            $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-        } catch (\RedisException $exception) {
-            $error = $exception->getMessage();
-
-            foreach ($this->retry_match as $match) {
-                if (false === stripos($error, $match)) {
-                    continue;
-                }
-
-                if (-1 === $this->retry_limit || $retry_times < $this->retry_limit) {
-                    unset($exception, $error, $match);
-                    return $this->connect(++$retry_times);
-                }
-            }
-
-            throw new \RedisException($error, E_USER_ERROR);
+        //Set auth
+        if ('' !== $this->auth && !$redis->auth($this->auth)) {
+            throw new \RedisException('Authentication Failed!', E_USER_ERROR);
         }
 
-        $this->redis = &$redis;
+        //Set DB
+        if (!$redis->select($this->db)) {
+            throw new \RedisException('DB [' . $this->db . '] NOT found!', E_USER_ERROR);
+        }
 
-        unset($retry_times, $redis);
+        //Set prefix
+        if ('' !== $this->prefix) {
+            $redis->setOption(\Redis::OPT_PREFIX, $this->prefix . ':');
+        }
+
+        //Set read timeout & serializer mode
+        $redis->setOption(\Redis::OPT_READ_TIMEOUT, -1);
+        $redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+
+        $this->redis = $redis;
+
+        unset($redis);
         return $this;
+    }
+
+    /**
+     * @param string $name
+     * @param array  $arguments
+     * @param int    $retry_times
+     *
+     * @return mixed
+     * @throws \ReflectionException
+     */
+    public function run(string $name, array $arguments, int $retry_times = 0): mixed
+    {
+        try {
+            $data = $this->redis->{$name}(...$arguments);
+        } catch (\RedisException $exception) {
+            $reconnect = false;
+            $error_msg = $exception->getMessage();
+
+            foreach ($this->retry_match as $match) {
+                if (false !== stripos($error_msg, $match)) {
+                    $reconnect = true;
+                    break;
+                }
+            }
+
+            if (0 <= $this->retry_limit && ++$retry_times > $this->retry_limit) {
+                $reconnect = false;
+            }
+
+            if (!$reconnect) {
+                throw new \RedisException($error_msg, E_USER_ERROR);
+            }
+
+            $data = $this->connect()->run($name, $arguments, $retry_times);
+
+            unset($exception, $reconnect, $error_msg, $match);
+        }
+
+        unset($name, $arguments, $retry_times);
+        return $data;
     }
 
     /**
@@ -168,11 +192,7 @@ class libRedis extends Factory
             $this->connect();
         }
 
-        try {
-            $data = $this->redis->{$name}(...$arguments);
-        } catch (\RedisException) {
-            $data = $this->connect()->redis->{$name}(...$arguments);
-        }
+        $data = $this->run($name, $arguments);
 
         unset($name, $arguments);
         return $data;

@@ -4,7 +4,7 @@
  * Reflect library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,24 +141,27 @@ class Reflect
      */
     public static function getParameterInfo(\ReflectionParameter $parameter): array
     {
-        $info = [];
-
-        $info['name']          = $parameter->getName();
-        $info['is_variadic']   = $parameter->isVariadic();
-        $info['has_default']   = $parameter->isDefaultValueAvailable();
-        $info['default_value'] = $info['has_default'] ? $parameter->getDefaultValue() : null;
-
+        $param_info   = [];
         $reflect_type = $parameter->getType();
+        $has_default  = $parameter->isDefaultValueAvailable();
+
+        $param_info['name']          = $parameter->getName();
+        $param_info['type']          = [];
+        $param_info['is_variadic']   = $parameter->isVariadic();
+        $param_info['has_default']   = $has_default;
+        $param_info['default_value'] = $has_default ? $parameter->getDefaultValue() : null;
 
         if (!is_null($reflect_type)) {
-            $info['type']     = $reflect_type->getName();
-            $info['build_in'] = $reflect_type->isBuiltin();
-        } else {
-            $info['type']     = null;
-            $info['build_in'] = true;
+            $param_types = $reflect_type instanceof \ReflectionUnionType
+                ? $reflect_type->getTypes()
+                : [$reflect_type];
+
+            foreach ($param_types as $param_type) {
+                $param_info['type'][$param_type->getName()] = $param_type->isBuiltin();
+            }
         }
 
-        unset($parameter, $reflect_type);
-        return $info;
+        unset($parameter, $reflect_type, $has_default, $param_types, $param_type);
+        return $param_info;
     }
 }

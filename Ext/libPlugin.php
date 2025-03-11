@@ -4,6 +4,7 @@
  * Plugin Manager Extension
  *
  * Copyright 2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2025 vickywang06 <904428723@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +56,7 @@ class libPlugin extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getPluginList(array $args = []): array
+    public function getList(array $args = []): array
     {
         foreach ($this->plugin_list as $name => $plugin) {
             if (isset($items['preload']) && (is_array($plugin['preload']) || is_string($plugin['preload']))) {
@@ -82,7 +83,7 @@ class libPlugin extends Factory
      * @return array
      * @throws \ReflectionException
      */
-    public function getPluginMenu(string $plug_name, array $plug_args = [], string $menu_file = 'menu'): array
+    public function getMenu(string $plug_name, array $plug_args = [], string $menu_file = 'menu'): array
     {
         $plugin_menu = parent::getObj($this->namespace . '\\' . $plug_name . '\\' . $menu_file)?->items ?? [];
 
@@ -101,6 +102,21 @@ class libPlugin extends Factory
 
         unset($plug_name, $plug_args, $menu_file, $name, $items, $preload);
         return $plugin_menu;
+    }
+
+    /**
+     * @param string $plug_name
+     * @param string $const_name
+     * @param string $const_class
+     *
+     * @return mixed
+     */
+    public function getConst(string $plug_name, string $const_name, string $const_class = 'pluginConst'): mixed
+    {
+        $constant = $this->namespace . '\\' . $plug_name . '\\' . $const_class . '::' . $const_name;
+
+        unset($plug_name, $const_name, $const_class);
+        return constant($constant);
     }
 
     /**

@@ -82,45 +82,64 @@ class Factory
         $args = $diff = [];
 
         foreach ($param_reflects as $param_reflect) {
-            $param_info = Reflect::getParameterInfo($param_reflect);
+            $param_info  = Reflect::getParameterInfo($param_reflect);
+            $param_exist = array_key_exists($param_info['name'], $data_package);
 
             if ($param_info['is_variadic']) {
-                if (array_key_exists($param_info['name'], $data_package)) {
-                    $args = (array)$data_package[$param_info['name']];
+                $args[] = $param_exist ? (array)$data_package[$param_info['name']] : [];
+                continue;
+            }
+
+            if (!$param_exist) {
+                if ($param_info['has_default']) {
+                    $args[] = $param_info['default_value'];
+                    continue;
                 }
 
+                $object_name = array_search(false, $param_info['type'], true);
+
+                if (false !== $object_name) {
+                    $args[] = self::getObj($object_name);
+                    continue;
+                }
+
+                $diff[] = '$' . $param_info['name'] . ' NOT found';
                 continue;
             }
 
-            if (!$param_info['build_in']) {
-                $args[] = self::getObj($param_info['type']);
-                continue;
-            }
-
-            if (!isset($data_package[$param_info['name']])) {
-                $param_info['has_default']
-                    ? $args[] = $param_info['default_value']
-                    : $diff[] = '$' . $param_info['name'] . ' not found';
-
-                continue;
-            }
-
-            if ('int' === $param_info['type'] && is_numeric($data_package[$param_info['name']])) {
-                $args[] = (int)$data_package[$param_info['name']];
-            } elseif ('float' === $param_info['type'] && is_numeric($data_package[$param_info['name']])) {
+            if (array_key_exists('float', $param_info['type']) && is_numeric($data_package[$param_info['name']])) {
                 $args[] = (float)$data_package[$param_info['name']];
-            } elseif ('string' === $param_info['type'] && (is_string($data_package[$param_info['name']]) || is_numeric($data_package[$param_info['name']]))) {
+            } elseif (array_key_exists('int', $param_info['type']) && is_numeric($data_package[$param_info['name']])) {
+                $args[] = (int)$data_package[$param_info['name']];
+            } elseif (array_key_exists('string', $param_info['type']) && (is_string($data_package[$param_info['name']]) || is_numeric($data_package[$param_info['name']]))) {
                 $args[] = trim((string)$data_package[$param_info['name']]);
-            } elseif ('array' === $param_info['type'] && is_array($data_package[$param_info['name']])) {
+            } elseif (array_key_exists('array', $param_info['type']) && is_array($data_package[$param_info['name']])) {
                 $args[] = $data_package[$param_info['name']];
-            } elseif ('bool' === $param_info['type'] && is_bool($data_package[$param_info['name']])) {
+            } elseif (array_key_exists('bool', $param_info['type']) && is_bool($data_package[$param_info['name']])) {
                 $args[] = $data_package[$param_info['name']];
-            } elseif ('object' === $param_info['type'] && is_object($data_package[$param_info['name']])) {
+            } elseif (array_key_exists('object', $param_info['type']) && is_object($data_package[$param_info['name']])) {
                 $args[] = $data_package[$param_info['name']];
-            } elseif (is_null($param_info['type'])) {
+            } elseif (empty($param_info['type']) || array_key_exists('mixed', $param_info['type'])) {
                 $args[] = $data_package[$param_info['name']];
             } else {
-                $diff[] = '$' . $param_info['name'] . ': expected \'' . $param_info['type'] . '\', but got \'' . $data_package[$param_info['name']] . '\'';
+                $expected = implode('|', array_keys($param_info['type']));
+                $detected = gettype($data_package[$param_info['name']]);
+
+                if (in_array($detected, ['integer', 'double', 'string'], true)) {
+                    $param_value = (string)$data_package[$param_info['name']];
+                } elseif ('boolean' === $detected) {
+                    $param_value = true === $data_package[$param_info['name']] ? 'true' : 'false';
+                } elseif ('array' === $detected) {
+                    $param_value = '[' . implode(', ', $data_package[$param_info['name']]) . ']';
+                } elseif ('NULL' === $detected) {
+                    $param_value = 'NULL';
+                } else {
+                    $param_value = '(' . $detected . ')';
+                }
+
+                $diff[] = '$' . $param_info['name'] . ' needs \''
+                    . $expected . '\' value instead of '
+                    . $detected . ' \'' . $param_value . '\'';
             }
         }
 
@@ -128,7 +147,7 @@ class Factory
             throw new \Exception(implode(', ', $diff), E_ERROR);
         }
 
-        unset($param_reflects, $data_package, $diff, $param_reflect, $param_info);
+        unset($param_reflects, $data_package, $diff, $param_reflect, $param_info, $param_exist, $object_name, $expected, $detected, $param_value);
         return $args;
     }
 
