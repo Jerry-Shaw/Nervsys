@@ -41,11 +41,11 @@ class Hook extends Factory
     {
         $hook_hash = $this->createHash($hook_fn);
 
-        $this->hooks[$hook_hash]    = $hook_fn;
-        $this->target[$target_path] = $hook_hash;
+        $this->hooks[$hook_hash]      = $hook_fn;
+        $this->target[$target_path][] = $hook_hash;
 
         foreach ($exclude_path as $exclude) {
-            $this->exclude[$exclude] = $hook_hash;
+            $this->exclude[$exclude][] = $hook_hash;
         }
 
         unset($hook_fn, $target_path, $exclude_path, $hook_hash, $exclude);
@@ -85,19 +85,19 @@ class Hook extends Factory
      */
     public function find(string $full_cmd, array $path_list): array
     {
-        $hash_list = [];
-        $full_cmd  = strtr($full_cmd, '\\', '/');
+        $targets  = [];
+        $full_cmd = strtr($full_cmd, '\\', '/');
 
         ksort($path_list);
 
-        foreach ($path_list as $path => $hash) {
+        foreach ($path_list as $path => $hash_list) {
             if (str_starts_with($full_cmd, $path)) {
-                $hash_list[] = $hash;
+                $targets[] = array_merge($targets, $hash_list);
             }
         }
 
-        unset($full_cmd, $path_list, $path, $hash);
-        return $hash_list;
+        unset($full_cmd, $path_list, $path, $hash_list);
+        return $targets;
     }
 
     /**
