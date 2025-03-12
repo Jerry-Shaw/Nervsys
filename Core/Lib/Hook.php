@@ -92,7 +92,7 @@ class Hook extends Factory
 
         foreach ($path_list as $path => $hash_list) {
             if (str_starts_with($full_cmd, $path)) {
-                $targets[] = array_merge($targets, $hash_list);
+                $targets = array_merge($targets, $hash_list);
             }
         }
 
