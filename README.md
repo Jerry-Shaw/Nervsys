@@ -72,7 +72,7 @@ $ns = new Nervsys\NS();
 $ns->setApiDir('myApiPath')
     ->setDebugMode(true)
     ->setContentType('application/json')
-    ->addPreHooks('/', [\app\hook\ApiCheck::new(), 'userToken'])
+    ->assignHook([\app\hook\ApiCheck::new(), 'userToken'], '/', '/api/login')
     ->addAutoloadPath($ns->app->root_path . DIRECTORY_SEPARATOR . 'library');
 
 $ns->go();
