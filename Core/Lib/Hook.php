@@ -26,7 +26,31 @@ use Nervsys\Core\Reflect;
 
 class Hook extends Factory
 {
-    public array $hook_stack = [];
+    public array $hooks   = [];
+    public array $target  = [];
+    public array $exclude = [];
+
+    /**
+     * @param callable $hook_fn
+     * @param string   $target_path
+     * @param string   ...$exclude_path
+     *
+     * @return $this
+     */
+    public function assign(callable $hook_fn, string $target_path, string ...$exclude_path): self
+    {
+        $hook_hash = $this->createHash($hook_fn);
+
+        $this->hooks[$hook_hash]      = $hook_fn;
+        $this->target[$target_path][] = $hook_hash;
+
+        foreach ($exclude_path as $exclude) {
+            $this->exclude[$exclude][] = $hook_hash;
+        }
+
+        unset($hook_fn, $target_path, $exclude_path, $hook_hash, $exclude);
+        return $this;
+    }
 
     /**
      * @param string $full_cmd
@@ -36,41 +60,64 @@ class Hook extends Factory
      */
     public function run(string $full_cmd): bool
     {
-        $result  = true;
-        $hook_fn = $this->find($full_cmd, $this->hook_stack);
+        $result = true;
 
-        foreach ($hook_fn as $fn) {
-            if (!$this->callFn($fn)) {
+        $targets   = $this->find($full_cmd, $this->target);
+        $excludes  = $this->find($full_cmd, $this->exclude);
+        $hash_list = array_diff($targets, $excludes);
+
+        foreach ($hash_list as $hash) {
+            if (!$this->callFn($this->hooks[$hash])) {
                 $result = false;
                 break;
             }
         }
 
-        unset($full_cmd, $hook_fn, $fn);
+        unset($full_cmd, $targets, $excludes, $hash_list, $hash);
         return $result;
     }
 
     /**
      * @param string $full_cmd
-     * @param array  $hook_list
+     * @param array  $path_list
      *
      * @return array
      */
-    public function find(string $full_cmd, array $hook_list): array
+    public function find(string $full_cmd, array $path_list): array
     {
-        $fn_list  = [];
+        $targets  = [];
         $full_cmd = strtr($full_cmd, '\\', '/');
 
-        ksort($hook_list);
+        ksort($path_list);
 
-        foreach ($hook_list as $path => $hook) {
+        foreach ($path_list as $path => $hash_list) {
             if (str_starts_with($full_cmd, $path)) {
-                $fn_list = array_merge($fn_list, $hook);
+                $targets = array_merge($targets, $hash_list);
             }
         }
 
-        unset($full_cmd, $hook_list, $path, $hook);
-        return $fn_list;
+        unset($full_cmd, $path_list, $path, $hash_list);
+        return $targets;
+    }
+
+    /**
+     * @param callable $callable
+     *
+     * @return string
+     */
+    private function createHash(callable $callable): string
+    {
+        if (is_array($callable)) {
+            $object_id = is_object($callable[0]) ? spl_object_id($callable[0]) : $callable[0];
+            $object_id .= '::' . $callable[1];
+        } elseif (is_object($callable)) {
+            $object_id = spl_object_id($callable);
+        } else {
+            $object_id = $callable;
+        }
+
+        unset($callable);
+        return hash('md5', $object_id);
     }
 
     /**

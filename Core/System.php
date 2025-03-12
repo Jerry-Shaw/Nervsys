@@ -245,6 +245,21 @@ trait System
     }
 
     /**
+     * @param callable $hook_fn
+     * @param string   $target_path
+     * @param string   ...$exclude_path
+     *
+     * @return $this
+     */
+    public function assignHook(callable $hook_fn, string $target_path, string ...$exclude_path): self
+    {
+        $this->hook->assign($hook_fn, $target_path, ...$exclude_path);
+
+        unset($hook_fn, $target_path, $exclude_path);
+        return $this;
+    }
+
+    /**
      * @param string   $cmd_path
      * @param callable ...$hook_fn
      *
@@ -253,7 +268,7 @@ trait System
     public function addPreHooks(string $cmd_path, callable ...$hook_fn): self
     {
         foreach ($hook_fn as $fn) {
-            $this->hook->hook_stack[$this->router->getFullCgiCmd($this->app->api_dir, $cmd_path, true)][] = $fn;
+            $this->hook->assign($fn, $cmd_path);
         }
 
         unset($cmd_path, $hook_fn, $fn);
@@ -269,7 +284,7 @@ trait System
     public function addPreHookRules(callable $hook_fn, string ...$cmd_path): self
     {
         foreach ($cmd_path as $path) {
-            $this->hook->hook_stack[$this->router->getFullCgiCmd($this->app->api_dir, $path, true)][] = $hook_fn;
+            $this->hook->assign($hook_fn, $path);
         }
 
         unset($hook_fn, $cmd_path, $path);
