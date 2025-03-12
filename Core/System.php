@@ -245,6 +245,21 @@ trait System
     }
 
     /**
+     * @param callable $hook_fn
+     * @param string   $target_path
+     * @param string   ...$exclude_path
+     *
+     * @return $this
+     */
+    public function assignHook(callable $hook_fn, string $target_path, string ...$exclude_path): self
+    {
+        $this->hook->assign($hook_fn, $target_path, ...$exclude_path);
+
+        unset($hook_fn, $target_path, $exclude_path);
+        return $this;
+    }
+
+    /**
      * @param string   $cmd_path
      * @param callable ...$hook_fn
      *
