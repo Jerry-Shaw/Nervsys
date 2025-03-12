@@ -264,6 +264,7 @@ trait System
      * @param callable ...$hook_fn
      *
      * @return $this
+     * @deprecated
      */
     public function addPreHooks(string $cmd_path, callable ...$hook_fn): self
     {
@@ -280,6 +281,7 @@ trait System
      * @param string   ...$cmd_path
      *
      * @return $this
+     * @deprecated
      */
     public function addPreHookRules(callable $hook_fn, string ...$cmd_path): self
     {
