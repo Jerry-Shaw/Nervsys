@@ -64,7 +64,8 @@ class Hook extends Factory
 
         $targets   = $this->find($full_cmd, $this->target);
         $excludes  = $this->find($full_cmd, $this->exclude);
-        $hash_list = array_diff($targets, $excludes);
+        $hook_list = array_flip($this->hooks);
+        $hash_list = array_intersect($hook_list, array_diff($targets, $excludes));
 
         foreach ($hash_list as $hash) {
             if (!$this->callFn($this->hooks[$hash])) {
@@ -87,8 +88,6 @@ class Hook extends Factory
     {
         $targets  = [];
         $full_cmd = strtr($full_cmd, '\\', '/');
-
-        ksort($path_list);
 
         foreach ($path_list as $path => $hash_list) {
             if (str_starts_with($full_cmd, $path)) {
