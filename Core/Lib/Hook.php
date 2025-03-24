@@ -64,7 +64,7 @@ class Hook extends Factory
 
         $targets   = $this->find($full_cmd, $this->target);
         $excludes  = $this->find($full_cmd, $this->exclude);
-        $hook_list = array_flip($this->hooks);
+        $hook_list = array_keys($this->hooks);
         $hash_list = array_intersect($hook_list, array_diff($targets, $excludes));
 
         foreach ($hash_list as $hash) {
