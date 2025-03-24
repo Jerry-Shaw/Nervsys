@@ -74,7 +74,7 @@ class Hook extends Factory
             }
         }
 
-        unset($full_cmd, $targets, $excludes, $hash_list, $hash);
+        unset($full_cmd, $targets, $excludes, $hook_list, $hash_list, $hash);
         return $result;
     }
 
