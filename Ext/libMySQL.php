@@ -1197,7 +1197,7 @@ class libMySQL extends Factory
 
         if ('select' === $this->runtime_data['action']) {
             $this->select_count['sql']  = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
-            $this->select_count['bind'] = $this->runtime_data['bind'];
+            $this->select_count['bind'] = $this->runtime_data['bind'] ?? [];
         }
 
         if (isset($this->runtime_data['order'])) {
