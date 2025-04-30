@@ -215,12 +215,12 @@ class libMySQL extends Factory
     }
 
     /**
-     * Get count rows from the last executed SQL
+     * Get the number of found rows from the last select SQL
      *
      * @return int
      * @throws \ReflectionException
      */
-    public function getLastSelectCount(): int
+    public function getLastFoundRows(): int
     {
         if (empty($this->select_count)) {
             return 0;
@@ -1171,7 +1171,8 @@ class libMySQL extends Factory
      */
     protected function appendCond(string $sql): string
     {
-        $clause = '';
+        $clause   = '';
+        $group_by = false;
 
         if (isset($this->runtime_data['join'])) {
             $clause .= ' ' . implode(' ', $this->runtime_data['join']);
@@ -1185,7 +1186,8 @@ class libMySQL extends Factory
         }
 
         if (isset($this->runtime_data['group'])) {
-            $clause .= ' GROUP BY ' . $this->runtime_data['group'];
+            $clause   .= ' GROUP BY ' . $this->runtime_data['group'];
+            $group_by = true;
         }
 
         if (isset($this->runtime_data['having'])) {
@@ -1196,7 +1198,12 @@ class libMySQL extends Factory
         }
 
         if ('select' === $this->runtime_data['action']) {
-            $this->select_count['sql']  = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
+            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
+
+            if ($group_by) {
+                $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS rows';
+            }
+
             $this->select_count['bind'] = $this->runtime_data['bind'] ?? [];
         }
 
@@ -1214,7 +1221,7 @@ class libMySQL extends Factory
 
         $sql .= $clause;
 
-        unset($clause);
+        unset($clause, $group_by);
         return $sql;
     }
 
