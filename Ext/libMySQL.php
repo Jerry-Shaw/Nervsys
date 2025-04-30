@@ -37,6 +37,7 @@ class libMySQL extends Factory
     public string $table_prefix = '';
 
     public array $runtime_data = [];
+    public array $select_count = [];
 
     public static int $transactions = 0;
 
@@ -175,7 +176,7 @@ class libMySQL extends Factory
      */
     public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $exec = $this->executeSQL($this->buildSQL());
+        $exec = $this->executeSQL($this->buildSQL(), $this->runtime_data['bind'] ?? []);
         $data = $exec ? $this->PDOStatement->fetch($fetch_style) : [];
 
         if (!is_array($data)) {
@@ -196,7 +197,7 @@ class libMySQL extends Factory
      */
     public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $exec = $this->executeSQL($this->buildSQL());
+        $exec = $this->executeSQL($this->buildSQL(), $this->runtime_data['bind'] ?? []);
         $data = $exec ? $this->PDOStatement->fetchAll($fetch_style) : [];
 
         unset($fetch_style, $exec);
@@ -211,6 +212,25 @@ class libMySQL extends Factory
     public function getLastSql(): string
     {
         return $this->last_sql;
+    }
+
+    /**
+     * Get the number of found rows from the last select SQL
+     *
+     * @return int
+     * @throws \ReflectionException
+     */
+    public function getLastFoundRows(): int
+    {
+        if (empty($this->select_count)) {
+            return 0;
+        }
+
+        $exec  = $this->executeSQL($this->select_count['sql'], $this->select_count['bind'] ?? []);
+        $count = $exec ? (int)($this->PDOStatement->fetch(\PDO::FETCH_ASSOC)['C'] ?? 0) : -1;
+
+        unset($exec);
+        return $count;
     }
 
     /**
@@ -692,7 +712,7 @@ class libMySQL extends Factory
      */
     public function execute(): bool
     {
-        return $this->executeSQL($this->buildSQL());
+        return $this->executeSQL($this->buildSQL(), $this->runtime_data['bind'] ?? []);
     }
 
     /**
@@ -832,29 +852,26 @@ class libMySQL extends Factory
      * Execute prepared SQL
      *
      * @param string $runtime_sql
+     * @param array  $runtime_params
      * @param int    $retry_times
      *
      * @return bool
      * @throws \ReflectionException
      */
-    protected function executeSQL(string $runtime_sql, int $retry_times = 0): bool
+    protected function executeSQL(string $runtime_sql, array $runtime_params = [], int $retry_times = 0): bool
     {
         try {
-            $params = $this->runtime_data['bind'] ?? [];
-
-            $this->last_sql     = $this->buildReadableSql($runtime_sql, $params);
+            $this->last_sql     = $this->buildReadableSql($runtime_sql, $runtime_params);
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
-            $result = $this->PDOStatement->execute($params);
+            $result = $this->PDOStatement->execute($runtime_params);
 
             $this->affected_rows = $this->PDOStatement->rowCount();
             $this->runtime_data  = [];
-
-            unset($params);
         } catch (\PDOException $exception) {
             if ($this->reconnect(++$retry_times)) {
                 unset($exception);
-                return $this->executeSQL($runtime_sql, $retry_times);
+                return $this->executeSQL($runtime_sql, $runtime_params, $retry_times);
             }
 
             $this->runtime_data = [];
@@ -864,7 +881,7 @@ class libMySQL extends Factory
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
-        unset($runtime_sql, $retry_times);
+        unset($runtime_sql, $runtime_params, $retry_times);
         return $result;
     }
 
@@ -1154,38 +1171,57 @@ class libMySQL extends Factory
      */
     protected function appendCond(string $sql): string
     {
+        $clause   = '';
+        $group_by = false;
+
         if (isset($this->runtime_data['join'])) {
-            $sql .= ' ' . implode(' ', $this->runtime_data['join']);
+            $clause .= ' ' . implode(' ', $this->runtime_data['join']);
         }
 
         if (isset($this->runtime_data['where'])) {
-            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'] ?? [], $this->runtime_data['bind_where'] ?? []);
+            $this->runtime_data['bind'] ??= [];
+            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'], $this->runtime_data['bind_where'] ?? []);
 
-            $sql .= ' ' . implode(' ', $this->runtime_data['where']);
+            $clause .= ' ' . implode(' ', $this->runtime_data['where']);
         }
 
         if (isset($this->runtime_data['group'])) {
-            $sql .= ' GROUP BY ' . $this->runtime_data['group'];
+            $clause   .= ' GROUP BY ' . $this->runtime_data['group'];
+            $group_by = true;
         }
 
         if (isset($this->runtime_data['having'])) {
-            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'] ?? [], $this->runtime_data['bind_having'] ?? []);
+            $this->runtime_data['bind'] ??= [];
+            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'], $this->runtime_data['bind_having'] ?? []);
 
-            $sql .= ' ' . implode(' ', $this->runtime_data['having']);
+            $clause .= ' ' . implode(' ', $this->runtime_data['having']);
+        }
+
+        if ('select' === $this->runtime_data['action']) {
+            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
+
+            if ($group_by) {
+                $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS source';
+            }
+
+            $this->select_count['bind'] = $this->runtime_data['bind'] ?? [];
         }
 
         if (isset($this->runtime_data['order'])) {
-            $sql .= ' ORDER BY ' . $this->runtime_data['order'];
+            $clause .= ' ORDER BY ' . $this->runtime_data['order'];
         }
 
         if (isset($this->runtime_data['limit'])) {
-            $sql .= ' LIMIT ' . $this->runtime_data['limit'];
+            $clause .= ' LIMIT ' . $this->runtime_data['limit'];
         }
 
         if (isset($this->runtime_data['lock'])) {
-            $sql .= ' FOR ' . $this->runtime_data['lock'];
+            $clause .= ' FOR ' . $this->runtime_data['lock'];
         }
 
+        $sql .= $clause;
+
+        unset($clause, $group_by);
         return $sql;
     }
 
