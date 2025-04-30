@@ -1201,7 +1201,7 @@ class libMySQL extends Factory
             $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
 
             if ($group_by) {
-                $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS rows';
+                $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS source';
             }
 
             $this->select_count['bind'] = $this->runtime_data['bind'] ?? [];
