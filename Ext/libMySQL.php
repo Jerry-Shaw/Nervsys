@@ -30,6 +30,8 @@ class libMySQL extends Factory
     public libPDO        $libPDO;
     public \PDOStatement $PDOStatement;
 
+    public bool $force = false;
+
     public int $retry_limit   = 3;
     public int $affected_rows = 0;
 
@@ -59,6 +61,17 @@ class libMySQL extends Factory
     }
 
     /**
+     * Force executing SQL without WHERE condition
+     *
+     * @return $this
+     */
+    public function force(): self
+    {
+        $this->force = true;
+        return $this;
+    }
+
+    /**
      * Cleanup runtime data and unfinished transaction
      *
      * @return void
@@ -67,6 +80,7 @@ class libMySQL extends Factory
     {
         //Reset runtime data
         $this->runtime_data = [];
+        $this->force        = false;
 
         //Rollback unfinished transaction
         if ($this->pdo->inTransaction()) {
@@ -651,9 +665,11 @@ class libMySQL extends Factory
             }
 
             $this->runtime_data = [];
+            $this->force        = false;
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
             $this->runtime_data = [];
+            $this->force        = false;
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         }
 
@@ -694,9 +710,11 @@ class libMySQL extends Factory
             }
 
             $this->runtime_data = [];
+            $this->force        = false;
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
             $this->runtime_data = [];
+            $this->force        = false;
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         }
 
@@ -868,6 +886,7 @@ class libMySQL extends Factory
 
             $this->affected_rows = $this->PDOStatement->rowCount();
             $this->runtime_data  = [];
+            $this->force         = false;
         } catch (\PDOException $exception) {
             if ($this->reconnect(++$retry_times)) {
                 unset($exception);
@@ -875,9 +894,11 @@ class libMySQL extends Factory
             }
 
             $this->runtime_data = [];
+            $this->force        = false;
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
             $this->runtime_data = [];
+            $this->force        = false;
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -919,9 +940,9 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . $this->getTableName() . $this->getSqlSet();
+        $this->isSafe();
 
-        return $this->appendCond($sql);
+        return $this->appendCond('UPDATE ' . $this->getTableName() . $this->getSqlSet());
     }
 
     /**
@@ -945,6 +966,8 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
+        $this->isSafe();
+
         return 'REPLACE INTO ' . $this->getTableName() . $this->getSqlSet();
     }
 
@@ -955,6 +978,8 @@ class libMySQL extends Factory
      */
     protected function buildDelete(): string
     {
+        $this->isSafe();
+
         return $this->appendCond('DELETE FROM ' . $this->getTableName());
     }
 
@@ -1010,6 +1035,23 @@ class libMySQL extends Factory
 
         $raw_sql = substr($raw_sql, strlen($this->runtime_data['raw']));
         return true;
+    }
+
+    /**
+     * Check where clause, avoid mistakes in UPDATE and DELETE
+     *
+     * @return void
+     */
+    protected function isSafe(): void
+    {
+        if ($this->force) {
+            $this->force = false;
+            return;
+        }
+
+        if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
+            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
+        }
     }
 
     /**
