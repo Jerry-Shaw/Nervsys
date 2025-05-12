@@ -563,12 +563,13 @@ class libMySQL extends Factory
      */
     public function group(string ...$fields): self
     {
-        foreach ($fields as &$field) {
-            $this->isRaw($field);
+        foreach ($fields as $key => $field) {
+            $fields[$key] = $this->getRawSQL($field) ?? $field;
         }
 
         $this->runtime_data['group'] = implode(',', $fields);
-        unset($fields, $field);
+
+        unset($fields, $key, $field);
         return $this;
     }
 
@@ -588,7 +589,7 @@ class libMySQL extends Factory
         }
 
         foreach ($param as $col => $val) {
-            $this->isRaw($col);
+            $col = $this->getRawSQL($col) ?? $col;
 
             if (is_string($val) && in_array(strtoupper($val), ['ASC', 'DESC'], true)) {
                 //By column
@@ -994,7 +995,7 @@ class libMySQL extends Factory
             function (int|float|string|null $value): int|float|string|null
             {
                 if (is_string($value)) {
-                    $this->isRaw($value);
+                    $value = $this->getRawSQL($value) ?? $value;
 
                     if (!is_numeric($value)) {
                         $value = '"' . addslashes($value) . '"';
@@ -1011,27 +1012,6 @@ class libMySQL extends Factory
 
         unset($bind_params);
         return $runtime_sql;
-    }
-
-    /**
-     * Check raw SQL
-     *
-     * @param string $raw_sql
-     *
-     * @return bool
-     */
-    protected function isRaw(string &$raw_sql): bool
-    {
-        if (!isset($this->runtime_data['raw'])) {
-            return false;
-        }
-
-        if (!str_starts_with($raw_sql, $this->runtime_data['raw'])) {
-            return false;
-        }
-
-        $raw_sql = substr($raw_sql, strlen($this->runtime_data['raw']));
-        return true;
     }
 
     /**
@@ -1097,8 +1077,9 @@ class libMySQL extends Factory
                 }
             } else {
                 $item = (string)current($value);
+                $item = $this->getRawSQL($item);
 
-                if ($this->isRaw($item)) {
+                if (is_string($item)) {
                     $cond_list[] = $item;
                 }
 
@@ -1262,6 +1243,26 @@ class libMySQL extends Factory
 
         unset($clause, $group_by);
         return $sql;
+    }
+
+    /**
+     * Check raw SQL
+     *
+     * @param string $value
+     *
+     * @return string|null
+     */
+    protected function getRawSQL(string $value): null|string
+    {
+        if (!isset($this->runtime_data['raw'])) {
+            return null;
+        }
+
+        if (!str_starts_with($value, $this->runtime_data['raw'])) {
+            return null;
+        }
+
+        return substr($value, strlen($this->runtime_data['raw']));
     }
 
     /**
