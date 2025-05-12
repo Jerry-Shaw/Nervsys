@@ -349,10 +349,18 @@ class libMySQL extends Factory
     {
         $this->isReady();
 
-        $this->runtime_data['action'] = 'select';
-        $this->runtime_data['cols']   = !empty($column) ? implode(',', $column) : '*';
+        if (empty($column)) {
+            $column = ['*'];
+        }
 
-        unset($column);
+        foreach ($column as $key => $item) {
+            $column[$key] = $this->getRawSQL($item) ?? $item;
+        }
+
+        $this->runtime_data['action'] = 'select';
+        $this->runtime_data['cols']   = implode(',', $column);
+
+        unset($column, $key, $item);
         return $this;
     }
 
