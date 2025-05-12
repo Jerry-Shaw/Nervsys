@@ -72,6 +72,20 @@ class libMySQL extends Factory
     }
 
     /**
+     * Set string value as raw SQL part
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function asRaw(string $value): string
+    {
+        $this->runtime_data['raw'] ??= hash('crc32b', uniqid(mt_rand(), true)) . ':';
+
+        return $this->runtime_data['raw'] . $value;
+    }
+
+    /**
      * Clear runtime data
      *
      * @return void
@@ -171,22 +185,6 @@ class libMySQL extends Factory
 
         unset($table_pos);
         return $this->runtime_data['table'] ?? $this->table_prefix . $table_name;
-    }
-
-    /**
-     * Set string value as raw SQL part
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function setRaw(string $value): string
-    {
-        if (!isset($this->runtime_data['raw'])) {
-            $this->runtime_data['raw'] = hash('crc32b', uniqid(mt_rand(), true)) . ':';
-        }
-
-        return $this->runtime_data['raw'] . $value;
     }
 
     /**
