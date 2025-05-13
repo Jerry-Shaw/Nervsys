@@ -30,6 +30,8 @@ class libMySQL extends Factory
     public libPDO        $libPDO;
     public \PDOStatement $PDOStatement;
 
+    public bool $force_execute = false;
+
     public int $retry_limit   = 3;
     public int $affected_rows = 0;
 
@@ -59,15 +61,49 @@ class libMySQL extends Factory
     }
 
     /**
-     * Cleanup runtime data and unfinished transaction
+     * Force executing SQL without WHERE condition
+     *
+     * @return $this
+     */
+    public function force(): self
+    {
+        $this->force_execute = true;
+        return $this;
+    }
+
+    /**
+     * Set string value as raw SQL part
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function asRaw(string $value): string
+    {
+        $this->runtime_data['raw'] ??= hash('crc32b', uniqid(mt_rand(), true)) . ':';
+
+        return $this->runtime_data['raw'] . $value;
+    }
+
+    /**
+     * Clear runtime data
      *
      * @return void
      */
-    public function cleanup(): void
+    public function clearRuntime(): void
     {
         //Reset runtime data
-        $this->runtime_data = [];
+        $this->runtime_data  = [];
+        $this->force_execute = false;
+    }
 
+    /**
+     * Clear unfinished transaction
+     *
+     * @return void
+     */
+    public function clearTransaction(): void
+    {
         //Rollback unfinished transaction
         if ($this->pdo->inTransaction()) {
             self::$transactions = 0;
@@ -82,7 +118,8 @@ class libMySQL extends Factory
      */
     public function autoCleanup(): self
     {
-        register_shutdown_function([$this, 'cleanup']);
+        register_shutdown_function([$this, 'clearRuntime']);
+        register_shutdown_function([$this, 'clearTransaction']);
 
         return $this;
     }
@@ -148,22 +185,6 @@ class libMySQL extends Factory
 
         unset($table_pos);
         return $this->runtime_data['table'] ?? $this->table_prefix . $table_name;
-    }
-
-    /**
-     * Set string value as raw SQL part
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function setRaw(string $value): string
-    {
-        if (!isset($this->runtime_data['raw'])) {
-            $this->runtime_data['raw'] = hash('crc32b', uniqid(mt_rand(), true)) . ':';
-        }
-
-        return $this->runtime_data['raw'] . $value;
     }
 
     /**
@@ -328,10 +349,18 @@ class libMySQL extends Factory
     {
         $this->isReady();
 
-        $this->runtime_data['action'] = 'select';
-        $this->runtime_data['cols']   = !empty($column) ? implode(',', $column) : '*';
+        if (empty($column)) {
+            $column = ['*'];
+        }
 
-        unset($column);
+        foreach ($column as $key => $item) {
+            $column[$key] = $this->getRawSQL($item) ?? $item;
+        }
+
+        $this->runtime_data['action'] = 'select';
+        $this->runtime_data['cols']   = implode(',', $column);
+
+        unset($column, $key, $item);
         return $this;
     }
 
@@ -540,12 +569,13 @@ class libMySQL extends Factory
      */
     public function group(string ...$fields): self
     {
-        foreach ($fields as &$field) {
-            $this->isRaw($field);
+        foreach ($fields as $key => $field) {
+            $fields[$key] = $this->getRawSQL($field) ?? $field;
         }
 
         $this->runtime_data['group'] = implode(',', $fields);
-        unset($fields, $field);
+
+        unset($fields, $key, $field);
         return $this;
     }
 
@@ -565,7 +595,7 @@ class libMySQL extends Factory
         }
 
         foreach ($param as $col => $val) {
-            $this->isRaw($col);
+            $col = $this->getRawSQL($col) ?? $col;
 
             if (is_string($val) && in_array(strtoupper($val), ['ASC', 'DESC'], true)) {
                 //By column
@@ -639,7 +669,7 @@ class libMySQL extends Factory
     public function exec(string $sql, int $retry_times = 0): int
     {
         try {
-            $this->last_sql = &$sql;
+            $this->last_sql = $sql;
 
             if (false === $this->affected_rows = $this->pdo->exec($sql)) {
                 $this->affected_rows = -1;
@@ -650,10 +680,8 @@ class libMySQL extends Factory
                 return $this->exec($sql, $retry_times);
             }
 
-            $this->runtime_data = [];
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
-            $this->runtime_data = [];
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         }
 
@@ -675,16 +703,15 @@ class libMySQL extends Factory
     public function query(string $sql, int $fetch_style = \PDO::FETCH_ASSOC, int $col_no = 0, int $retry_times = 0): \PDOStatement
     {
         try {
-            $this->last_sql = &$sql;
+            $this->last_sql = $sql;
             $sql_param      = [$sql, $fetch_style];
 
             if ($fetch_style === \PDO::FETCH_COLUMN) {
-                $sql_param[] = &$col_no;
+                $sql_param[] = $col_no;
             }
 
-            $stmt = $this->pdo->query(...$sql_param);
-
-            $this->affected_rows = $stmt->rowCount();
+            $pdo_statement       = $this->pdo->query(...$sql_param);
+            $this->affected_rows = $pdo_statement->rowCount();
 
             unset($sql_param);
         } catch (\PDOException $exception) {
@@ -693,15 +720,13 @@ class libMySQL extends Factory
                 return $this->query($sql, $fetch_style, $col_no, $retry_times);
             }
 
-            $this->runtime_data = [];
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
-            $this->runtime_data = [];
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $sql, E_USER_ERROR);
         }
 
         unset($sql, $fetch_style, $col_no, $retry_times);
-        return $stmt;
+        return $pdo_statement;
     }
 
     /**
@@ -867,17 +892,17 @@ class libMySQL extends Factory
             $result = $this->PDOStatement->execute($runtime_params);
 
             $this->affected_rows = $this->PDOStatement->rowCount();
-            $this->runtime_data  = [];
+            $this->clearRuntime();
         } catch (\PDOException $exception) {
             if ($this->reconnect(++$retry_times)) {
                 unset($exception);
                 return $this->executeSQL($runtime_sql, $runtime_params, $retry_times);
             }
 
-            $this->runtime_data = [];
+            $this->clearRuntime();
             throw new \PDOException($exception->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         } catch (\Throwable $throwable) {
-            $this->runtime_data = [];
+            $this->clearRuntime();
             throw new \PDOException($throwable->getMessage() . '. ' . PHP_EOL . 'SQL: ' . $this->last_sql, E_USER_ERROR);
         }
 
@@ -919,9 +944,9 @@ class libMySQL extends Factory
      */
     protected function buildUpdate(): string
     {
-        $sql = 'UPDATE ' . $this->getTableName() . $this->getSqlSet();
+        $this->isSafe();
 
-        return $this->appendCond($sql);
+        return $this->appendCond('UPDATE ' . $this->getTableName() . $this->getSqlSet());
     }
 
     /**
@@ -945,6 +970,8 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
+        $this->isSafe();
+
         return 'REPLACE INTO ' . $this->getTableName() . $this->getSqlSet();
     }
 
@@ -955,6 +982,8 @@ class libMySQL extends Factory
      */
     protected function buildDelete(): string
     {
+        $this->isSafe();
+
         return $this->appendCond('DELETE FROM ' . $this->getTableName());
     }
 
@@ -972,7 +1001,7 @@ class libMySQL extends Factory
             function (int|float|string|null $value): int|float|string|null
             {
                 if (is_string($value)) {
-                    $this->isRaw($value);
+                    $value = $this->getRawSQL($value) ?? $value;
 
                     if (!is_numeric($value)) {
                         $value = '"' . addslashes($value) . '"';
@@ -992,24 +1021,20 @@ class libMySQL extends Factory
     }
 
     /**
-     * Check raw SQL
+     * Check where clause, avoid mistakes in UPDATE and DELETE
      *
-     * @param string $raw_sql
-     *
-     * @return bool
+     * @return void
      */
-    protected function isRaw(string &$raw_sql): bool
+    protected function isSafe(): void
     {
-        if (!isset($this->runtime_data['raw'])) {
-            return false;
+        if ($this->force_execute) {
+            $this->force_execute = false;
+            return;
         }
 
-        if (!str_starts_with($raw_sql, $this->runtime_data['raw'])) {
-            return false;
+        if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
+            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
         }
-
-        $raw_sql = substr($raw_sql, strlen($this->runtime_data['raw']));
-        return true;
     }
 
     /**
@@ -1058,8 +1083,9 @@ class libMySQL extends Factory
                 }
             } else {
                 $item = (string)current($value);
+                $item = $this->getRawSQL($item);
 
-                if ($this->isRaw($item)) {
+                if (is_string($item)) {
                     $cond_list[] = $item;
                 }
 
@@ -1223,6 +1249,26 @@ class libMySQL extends Factory
 
         unset($clause, $group_by);
         return $sql;
+    }
+
+    /**
+     * Check raw SQL
+     *
+     * @param string $value
+     *
+     * @return string|null
+     */
+    protected function getRawSQL(string $value): null|string
+    {
+        if (!isset($this->runtime_data['raw'])) {
+            return null;
+        }
+
+        if (!str_starts_with($value, $this->runtime_data['raw'])) {
+            return null;
+        }
+
+        return substr($value, strlen($this->runtime_data['raw']));
     }
 
     /**
