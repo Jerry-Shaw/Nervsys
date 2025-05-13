@@ -20,9 +20,10 @@
 
 namespace Nervsys\Ext;
 
+use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\IOData;
 
-class libSignature
+class libSignature extends Factory
 {
     /**
      * Verify data signature
