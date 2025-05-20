@@ -307,7 +307,7 @@ class libMySQL extends Factory
         $this->isReady();
 
         $this->runtime_data['action'] = 'update';
-        $this->runtime_data['value']  = &$data;
+        $this->runtime_data['value']  = $data;
 
         unset($data);
         return $this;
@@ -331,7 +331,7 @@ class libMySQL extends Factory
             $this->runtime_data['bind']   = array_values($data);
         } else {
             $this->runtime_data['action'] = 'replaceSet';
-            $this->runtime_data['value']  = &$data;
+            $this->runtime_data['value']  = $data;
         }
 
         unset($data, $use_set);
@@ -1298,7 +1298,14 @@ class libMySQL extends Factory
                     continue 2;
                 }
 
-                unset($raw, $opt);
+                unset($opt);
+            }
+
+            $raw = $this->getRawSQL($val);
+
+            if (is_string($raw)) {
+                $data[] = $col . '=' . $raw;
+                continue;
             }
 
             $data[] = $col . '=?';
@@ -1308,7 +1315,7 @@ class libMySQL extends Factory
 
         $sql = ' SET ' . implode(',', $data);
 
-        unset($data, $col, $val);
+        unset($data, $col, $val, $raw);
         return $sql;
     }
 }
