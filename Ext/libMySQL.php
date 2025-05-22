@@ -998,7 +998,8 @@ class libMySQL extends Factory
     protected function buildReadableSql(string $runtime_sql, array $bind_params): string
     {
         $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null {
+            function (int|float|string|null $value): int|float|string|null
+            {
                 if (is_string($value)) {
                     $value = $this->getRawSQL($value) ?? $value;
 
