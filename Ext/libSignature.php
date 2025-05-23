@@ -31,15 +31,26 @@ class libSignature extends Factory
      * @param string        $app_key
      * @param string        $app_secret
      * @param string        $sign
+     * @param array|null    $input_data
      * @param callable|null $sign_handler
      * @param callable|null $error_handler
      *
      * @return bool
      * @throws \ReflectionException
      */
-    public function verify(string $app_key, string $app_secret, string $sign, callable|null $sign_handler = null, callable|null $error_handler = null): bool
+    public function verify(
+        string        $app_key,
+        string        $app_secret,
+        string        $sign,
+        array|null    $input_data = null,
+        callable|null $sign_handler = null,
+        callable|null $error_handler = null
+    ): bool
     {
-        $input_data = IOData::new()->getInputData();
+        if (is_null($input_data)) {
+            $input_data = IOData::new()->getInputData();
+        }
+
         $client_str = $input_data['s'] ?? 'NOT Found!';
 
         unset($input_data['s'], $input_data['sign']);
