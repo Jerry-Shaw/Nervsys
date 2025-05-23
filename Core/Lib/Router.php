@@ -81,20 +81,27 @@ class Router extends Factory
      */
     public function getCgiUnit(string $c): array
     {
-        $fn  = [];
-        $app = App::new();
-        $cmd = strtr($c, '\\', '/');
-
-        if (false !== strpos($cmd, '/', 1)) {
-            $full_cmd = $this->getFullCgiCmd($app->api_dir, $cmd, $app->is_cli);
-            $fn_pos   = strrpos($full_cmd, '/');
-            $class    = strtr(substr($full_cmd, 0, $fn_pos), '/', '\\');
-            $method   = substr($full_cmd, $fn_pos + 1);
-
-            $fn = [$class, $method];
+        if ('' === $c) {
+            return [];
         }
 
-        unset($c, $app, $cmd, $full_cmd, $fn_pos, $class, $method);
+        $fn = [];
+        $c  = strtr($c, '\\', '/');
+
+        if (false !== strpos($c, '/', 1)) {
+            $app = App::new();
+            $cmd = $this->getFullCgiCmd($app->api_dir, $c, $app->is_cli);
+
+            $fn_pos = strrpos($cmd, '/');
+            $class  = strtr(substr($cmd, 0, $fn_pos), '/', '\\');
+            $method = substr($cmd, $fn_pos + 1);
+
+            $fn = [$class, $method];
+
+            unset($app, $cmd, $fn_pos, $class, $method);
+        }
+
+        unset($c);
         return $fn;
     }
 
