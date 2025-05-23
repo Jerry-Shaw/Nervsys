@@ -123,7 +123,7 @@ class libSignature extends Factory
      *
      * @return string
      */
-    private function buildQuery(array $data): string
+    public function buildQuery(array $data): string
     {
         $data_list = [];
 
@@ -144,7 +144,7 @@ class libSignature extends Factory
      *
      * @return array
      */
-    private function filterData(array $data): array
+    protected function filterData(array $data): array
     {
         foreach ($data as $k => $v) {
             if (is_array($v) || is_null($v)) {
