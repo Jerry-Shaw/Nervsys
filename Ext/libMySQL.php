@@ -151,7 +151,7 @@ class libMySQL extends Factory
      */
     public function forceTableName(string $table_name, bool $with_prefix = false): self
     {
-        if ($with_prefix) {
+        if ($with_prefix && !str_starts_with($table_name, $this->table_prefix)) {
             $table_name = $this->table_prefix . $table_name;
         }
 
