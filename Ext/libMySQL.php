@@ -38,6 +38,8 @@ class libMySQL extends Factory
     public string $last_sql     = '';
     public string $table_prefix = '';
 
+    public string|null $table = null;
+
     public array $runtime_data = [];
     public array $select_count = [];
 
@@ -133,7 +135,7 @@ class libMySQL extends Factory
      */
     public function autoReconnect(int $retry_times): self
     {
-        $this->retry_limit = &$retry_times;
+        $this->retry_limit = $retry_times;
 
         unset($retry_times);
         return $this;
@@ -143,14 +145,19 @@ class libMySQL extends Factory
      * Force table name with higher priority
      *
      * @param string $table_name
+     * @param bool   $with_prefix
      *
      * @return $this
      */
-    public function forceTableName(string $table_name): self
+    public function forceTableName(string $table_name, bool $with_prefix = false): self
     {
-        $this->runtime_data['table'] = &$table_name;
+        if ($with_prefix) {
+            $table_name = $this->table_prefix . $table_name;
+        }
 
-        unset($table_name);
+        $this->table = $table_name;
+
+        unset($table_name, $with_prefix);
         return $this;
     }
 
@@ -163,7 +170,7 @@ class libMySQL extends Factory
      */
     public function setTablePrefix(string $table_prefix): self
     {
-        $this->table_prefix = &$table_prefix;
+        $this->table_prefix = $table_prefix;
 
         unset($table_prefix);
         return $this;
@@ -176,6 +183,10 @@ class libMySQL extends Factory
      */
     public function getTableName(): string
     {
+        if (is_string($this->table)) {
+            return $this->table;
+        }
+
         $table_name = get_class($this);
         $table_pos  = strrpos($table_name, '\\');
 
@@ -184,7 +195,7 @@ class libMySQL extends Factory
         }
 
         unset($table_pos);
-        return $this->runtime_data['table'] ?? $this->table_prefix . $table_name;
+        return $this->table_prefix . $table_name;
     }
 
     /**
@@ -379,7 +390,7 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set action to a table
+     * Alias function of "forceTableName"
      *
      * @param string $table
      * @param bool   $with_prefix
@@ -388,18 +399,14 @@ class libMySQL extends Factory
      */
     public function to(string $table, bool $with_prefix = false): self
     {
-        if ($with_prefix) {
-            $table = $this->table_prefix . $table;
-        }
-
-        $this->runtime_data['table'] = &$table;
+        $this->forceTableName($table, $with_prefix);
 
         unset($table, $with_prefix);
         return $this;
     }
 
     /**
-     * Alias function of "to"
+     * Alias function of "forceTableName"
      *
      * @param string $table
      * @param bool   $with_prefix
@@ -408,7 +415,7 @@ class libMySQL extends Factory
      */
     public function from(string $table, bool $with_prefix = false): self
     {
-        $this->to($table, $with_prefix);
+        $this->forceTableName($table, $with_prefix);
 
         unset($table, $with_prefix);
         return $this;
