@@ -188,7 +188,7 @@ class libMySQL extends Factory
         if (is_string($this->table)) {
             $table_name = $full_defined
                 ? $this->table
-                : substr($this->table, strpos($this->table, ' ') ?: 0);
+                : substr($this->table, 0, strpos($this->table, ' ') ?: strlen($this->table));
 
             unset($full_defined);
             return $table_name;
