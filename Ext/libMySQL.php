@@ -177,14 +177,21 @@ class libMySQL extends Factory
     }
 
     /**
-     * Get table name from table prefix and called class
+     * Get table name from force defined value or table prefix and called class
+     *
+     * @param bool $full_defined
      *
      * @return string
      */
-    public function getTableName(): string
+    public function getTableName(bool $full_defined = false): string
     {
         if (is_string($this->table)) {
-            return $this->table;
+            $table_name = $full_defined
+                ? $this->table
+                : substr($this->table, strpos($this->table, ' ') ?: 0);
+
+            unset($full_defined);
+            return $table_name;
         }
 
         $table_name = get_class($this);
@@ -194,7 +201,7 @@ class libMySQL extends Factory
             $table_name = substr($table_name, $table_pos + 1);
         }
 
-        unset($table_pos);
+        unset($full_defined, $table_pos);
         return $this->table_prefix . $table_name;
     }
 
@@ -924,7 +931,7 @@ class libMySQL extends Factory
      */
     protected function buildInsert(): string
     {
-        $sql = 'INSERT INTO ' . $this->getTableName();
+        $sql = 'INSERT INTO ' . $this->getTableName(true);
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -939,7 +946,7 @@ class libMySQL extends Factory
     protected function buildSelect(): string
     {
         $sql = 'SELECT ' . $this->runtime_data['cols'];
-        $sql .= ' FROM ' . $this->getTableName();
+        $sql .= ' FROM ' . $this->getTableName(true);
 
         return $this->appendCond($sql);
     }
@@ -953,7 +960,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return $this->appendCond('UPDATE ' . $this->getTableName());
+        return $this->appendCond('UPDATE ' . $this->getTableName(true));
     }
 
     /**
@@ -963,7 +970,7 @@ class libMySQL extends Factory
      */
     protected function buildReplace(): string
     {
-        $sql = 'REPLACE INTO ' . $this->getTableName();
+        $sql = 'REPLACE INTO ' . $this->getTableName(true);
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -979,7 +986,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return 'REPLACE INTO ' . $this->getTableName() . $this->getSqlSet();
+        return 'REPLACE INTO ' . $this->getTableName(true) . $this->getSqlSet();
     }
 
     /**
@@ -991,7 +998,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return $this->appendCond('DELETE FROM ' . $this->getTableName());
+        return $this->appendCond('DELETE FROM ' . $this->getTableName(true));
     }
 
     /**
@@ -1235,7 +1242,7 @@ class libMySQL extends Factory
         }
 
         if ('select' === $this->runtime_data['action']) {
-            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
+            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName(true) . $clause;
 
             if ($group_by) {
                 $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS source';
