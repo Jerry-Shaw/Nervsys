@@ -177,32 +177,32 @@ class libMySQL extends Factory
     }
 
     /**
-     * Get table name from force defined value or table prefix and called class
+     * Get table name from defined value or called class
      *
-     * @param bool $full_defined
+     * @param bool $with_alias
      *
      * @return string
      */
-    public function getTableName(bool $full_defined = false): string
+    public function getTableName(bool $with_alias = false): string
     {
-        if (is_string($this->table)) {
-            $table_name = $full_defined
+        if (is_null($this->table)) {
+            $table_name = get_class($this);
+            $table_pos  = strrpos($table_name, '\\');
+
+            if (false !== $table_pos) {
+                $table_name = substr($table_name, $table_pos + 1);
+            }
+
+            $table_name = $this->table_prefix . $table_name;
+            unset($table_pos);
+        } else {
+            $table_name = $with_alias
                 ? $this->table
                 : substr($this->table, 0, strpos($this->table, ' ') ?: strlen($this->table));
-
-            unset($full_defined);
-            return $table_name;
         }
 
-        $table_name = get_class($this);
-        $table_pos  = strrpos($table_name, '\\');
-
-        if (false !== $table_pos) {
-            $table_name = substr($table_name, $table_pos + 1);
-        }
-
-        unset($full_defined, $table_pos);
-        return $this->table_prefix . $table_name;
+        unset($with_alias);
+        return $table_name;
     }
 
     /**
