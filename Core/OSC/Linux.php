@@ -57,8 +57,7 @@ class Linux
     {
         $queries = [
             'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
-            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\'',
-            'lshw -C "memory,cpu,pci,isa,display,ide,bridge"',
+            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\''
         ];
 
         exec(implode(' && ', $queries), $output, $status);
