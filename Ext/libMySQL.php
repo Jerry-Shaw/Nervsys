@@ -900,7 +900,7 @@ class libMySQL extends Factory
     protected function executeSQL(string $runtime_sql, array $runtime_params = [], int $retry_times = 0): bool
     {
         try {
-            $this->last_sql     = $this->buildReadableSql($runtime_sql, $runtime_params);
+            $this->last_sql     = $this->getReadableSql($runtime_sql, $runtime_params);
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
             $result = $this->PDOStatement->execute($runtime_params);
@@ -984,7 +984,7 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
-        return 'REPLACE INTO ' . $this->getTableName(true) . $this->getSqlSet();
+        return 'REPLACE INTO ' . $this->getTableName(true) . ' ' . $this->getSqlSet();
     }
 
     /**
@@ -1000,39 +1000,6 @@ class libMySQL extends Factory
     }
 
     /**
-     * Build readable SQL with params
-     *
-     * @param string $runtime_sql
-     * @param array  $bind_params
-     *
-     * @return string
-     */
-    protected function buildReadableSql(string $runtime_sql, array $bind_params): string
-    {
-        $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null
-            {
-                if (is_string($value)) {
-                    $value = $this->getRawSQL($value) ?? $value;
-
-                    if (!is_numeric($value)) {
-                        $value = '"' . addslashes($value) . '"';
-                    }
-                }
-
-                return $value;
-            },
-            $bind_params
-        );
-
-        $runtime_sql = str_replace('?', '%s', $runtime_sql);
-        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
-
-        unset($bind_params);
-        return $runtime_sql;
-    }
-
-    /**
      * Check where clause, avoid mistakes in UPDATE and DELETE
      *
      * @return void
@@ -1045,7 +1012,9 @@ class libMySQL extends Factory
         }
 
         if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
-            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
+            $this->force_execute = true;
+
+            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->getReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
         }
     }
 
@@ -1056,7 +1025,7 @@ class libMySQL extends Factory
     {
         if (isset($this->runtime_data['action'])) {
             throw new \PDOException(
-                $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
+                $this->getReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
                 E_USER_ERROR
             );
         }
@@ -1268,26 +1237,6 @@ class libMySQL extends Factory
     }
 
     /**
-     * Check raw SQL
-     *
-     * @param string $value
-     *
-     * @return string|null
-     */
-    protected function getRawSQL(string $value): null|string
-    {
-        if (!isset($this->runtime_data['raw'])) {
-            return null;
-        }
-
-        if (!str_starts_with($value, $this->runtime_data['raw'])) {
-            return null;
-        }
-
-        return substr($value, strlen($this->runtime_data['raw']));
-    }
-
-    /**
      * @return string
      */
     private function getSqlSet(): string
@@ -1329,9 +1278,62 @@ class libMySQL extends Factory
             $this->runtime_data['bind'][] = $val;
         }
 
-        $sql = ' SET ' . implode(',', $data);
+        $sql = 'SET ' . implode(',', $data);
 
         unset($data, $col, $val, $raw);
         return $sql;
+    }
+
+    /**
+     * Check raw SQL
+     *
+     * @param string $value
+     *
+     * @return string|null
+     */
+    protected function getRawSQL(string $value): null|string
+    {
+        if (!isset($this->runtime_data['raw'])) {
+            return null;
+        }
+
+        if (!str_starts_with($value, $this->runtime_data['raw'])) {
+            return null;
+        }
+
+        return substr($value, strlen($this->runtime_data['raw']));
+    }
+
+    /**
+     * Build readable SQL with params
+     *
+     * @param string $runtime_sql
+     * @param array  $bind_params
+     *
+     * @return string
+     */
+    protected function getReadableSql(string $runtime_sql, array $bind_params): string
+    {
+        $bind_params = array_map(
+            function (int|float|string|null $value): int|float|string|null
+            {
+                if (is_string($value)) {
+                    $value = $this->getRawSQL($value) ?? $value;
+
+                    if (!is_numeric($value)) {
+                        $value = '"' . addslashes($value) . '"';
+                    }
+                }
+
+                return $value;
+            },
+            $bind_params
+        );
+
+        $runtime_sql = str_replace('?', '%s', $runtime_sql);
+        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
+
+        unset($bind_params);
+        return $runtime_sql;
     }
 }
