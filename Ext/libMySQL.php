@@ -984,8 +984,6 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
-        $this->isSafe();
-
         return 'REPLACE INTO ' . $this->getTableName(true) . $this->getSqlSet();
     }
 
