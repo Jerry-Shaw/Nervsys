@@ -901,15 +901,14 @@ class SocketMgr extends Factory
     {
         try {
             if ('udp' !== $this->sock_type) {
-                $message = fgetc($this->connections[$socket_id]);
+                $message = '';
 
-                if (false === $message) {
-                    throw new \Exception('Read ERROR!', E_USER_NOTICE);
+                while (false !== $msg_line = fgets($this->connections[$socket_id])) {
+                    $message .= $msg_line;
                 }
 
-                $message .= fgets($this->connections[$socket_id]);
-
                 $this->activities[$socket_id][0] = time();
+                unset($msg_line);
             } else {
                 $message = stream_socket_recvfrom($this->connections[$socket_id], 65536);
             }
