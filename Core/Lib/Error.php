@@ -84,6 +84,24 @@ class Error extends Factory
     }
 
     /**
+     * @param string $err_lv
+     * @param string $message
+     * @param array  $context
+     *
+     * @return string
+     */
+    public function formatLog(string $err_lv, string $message, array $context = []): string
+    {
+        $log = date('Y-m-d H:i:s') . "\r\n";
+
+        $log .= ucfirst($err_lv) . ': ' . $message . "\r\n";
+        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
+
+        unset($err_lv, $message, $context);
+        return $log;
+    }
+
+    /**
      * @param int    $errno
      * @param string $errstr
      * @param string $errfile
@@ -221,23 +239,5 @@ class Error extends Factory
     {
         echo $this->formatLog($err_lv, $message, $context);
         unset($err_lv, $message, $context);
-    }
-
-    /**
-     * @param string $err_lv
-     * @param string $message
-     * @param array  $context
-     *
-     * @return string
-     */
-    private function formatLog(string $err_lv, string $message, array $context): string
-    {
-        $log = date('Y-m-d H:i:s') . "\r\n";
-
-        $log .= ucfirst($err_lv) . ': ' . $message . "\r\n";
-        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
-
-        unset($err_lv, $message, $context);
-        return $log;
     }
 }
