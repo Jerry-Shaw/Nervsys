@@ -3,7 +3,7 @@
 /**
  * Log Extension
  *
- * Copyright 2020-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2020-2025 秋水之冰 <27206617@qq.com>
  * Copyright 2020 leo <2579186091@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ use Nervsys\Core\Lib\App;
 class libLog extends Factory
 {
     private string $log_path;
-    private string $log_file;
+    private string $log_name;
 
     /**
      * libLog constructor
@@ -39,13 +39,12 @@ class libLog extends Factory
     public function __construct(string $log_name = 'default')
     {
         $this->log_path = App::new()->log_path;
-        $this->log_file = $log_name . '-' . date('Ymd') . '.log';
+        $this->log_name = $log_name;
+
         unset($log_name);
     }
 
     /**
-     * Add logs
-     *
      * @return $this
      */
     public function add(): self
@@ -66,21 +65,32 @@ class libLog extends Factory
     }
 
     /**
-     * Save logs
+     * @param string $logs
+     *
+     * @return void
      */
     private function save(string $logs): void
     {
-        static $file = [];
+        static $handle = [];
 
-        $path = $this->log_path . DIRECTORY_SEPARATOR . $this->log_file;
-        $key  = hash('md5', $path);
+        $date = date('Ymd');
 
-        if (!isset($file[$key])) {
-            $file[$key] = fopen($path, 'ab+');
-            chmod($path, 0666);
+        if (!isset($handle[$this->log_name][$date])) {
+            if (isset($handle[$this->log_name]) && !empty($handle[$this->log_name])) {
+                foreach ($handle[$this->log_name] as $log_handler) {
+                    fclose($log_handler);
+                }
+
+                unset($log_handler);
+            }
+
+            $log_path = $this->log_path . DIRECTORY_SEPARATOR . $this->log_name . '-' . $date . '.log';
+
+            $handle[$this->log_name] = [$date => fopen($log_path, 'ab')];
         }
 
-        fwrite($file[$key], $logs . PHP_EOL);
-        unset($logs, $path, $key);
+        fwrite($handle[$this->log_name][$date], $logs . "\r\n");
+
+        unset($logs, $date, $log_path);
     }
 }
