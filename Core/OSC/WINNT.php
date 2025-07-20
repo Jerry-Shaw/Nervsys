@@ -87,42 +87,6 @@ class WINNT
     }
 
     /**
-     * @return string
-     * @throws \Exception
-     */
-    public function getPhpPath(): string
-    {
-        $ps_cmd = 'powershell -Command "Get-WMIObject -class Win32_process -Filter "ProcessId=' . getmypid() . '" | select ExecutablePath | Format-List"';
-
-        exec($ps_cmd, $output, $status);
-
-        if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
-        }
-
-        $php_path = '';
-        $output   = array_filter($output);
-
-        foreach ($output as $value) {
-            if (0 < ($mark_pos = strpos($value, ':'))) {
-                $php_path = trim(substr($value, $mark_pos + 2));
-                break;
-            }
-        }
-
-        if ('' === $php_path) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
-        }
-
-        if (!is_file($php_path)) {
-            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
-        }
-
-        unset($ps_cmd, $output, $status, $value, $mark_pos);
-        return $php_path;
-    }
-
-    /**
      * @param int $pid
      *
      * @return void

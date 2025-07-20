@@ -79,32 +79,6 @@ class Darwin
     }
 
     /**
-     * @return string
-     * @throws \Exception
-     */
-    public function getPhpPath(): string
-    {
-        exec('lsof -p ' . getmypid() . ' -Fn | awk "NR==5{print}" | sed "s/n\//\//"', $output, $status);
-
-        if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
-        }
-
-        if (empty($output)) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
-        }
-
-        $php_path = &$output[0];
-
-        if (!is_file($php_path)) {
-            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
-        }
-
-        unset($output, $status);
-        return $php_path;
-    }
-
-    /**
      * @param int $pid
      *
      * @return void
