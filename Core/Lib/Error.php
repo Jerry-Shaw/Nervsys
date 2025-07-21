@@ -67,6 +67,41 @@ class Error extends Factory
     public array $custom_handler = [];
 
     /**
+     * @param App    $app
+     * @param string $log_file
+     * @param string $log_content
+     *
+     * @return void
+     */
+    public function saveLog(App $app, string $log_file, string $log_content): void
+    {
+        $log_handle = fopen($app->log_path . DIRECTORY_SEPARATOR . $log_file, 'ab');
+
+        fwrite($log_handle, $log_content);
+        fclose($log_handle);
+
+        unset($app, $log_file, $log_content, $log_handle);
+    }
+
+    /**
+     * @param string $err_lv
+     * @param string $message
+     * @param array  $context
+     *
+     * @return string
+     */
+    public function formatLog(string $err_lv, string $message, array $context = []): string
+    {
+        $log = date('Y-m-d H:i:s') . "\r\n";
+
+        $log .= ucfirst($err_lv) . ': ' . $message . "\r\n";
+        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
+
+        unset($err_lv, $message, $context);
+        return $log;
+    }
+
+    /**
      * @param int    $errno
      * @param string $errstr
      * @param string $errfile
@@ -142,7 +177,7 @@ class Error extends Factory
             'Trace'    => $this->getTraceLog($throwable->getTrace())
         ];
 
-        $this->saveLog($app->log_path . DIRECTORY_SEPARATOR . ($err_lv . '-' . date('Ymd')) . '.log', $err_lv, $message, $context);
+        $this->saveLog($app, 'error-' . date('Ymd') . '.log', $this->formatLog($err_lv, $message, $context));
 
         foreach ($this->custom_handler as $handler) {
             if (is_callable($handler)) {
@@ -204,41 +239,5 @@ class Error extends Factory
     {
         echo $this->formatLog($err_lv, $message, $context);
         unset($err_lv, $message, $context);
-    }
-
-    /**
-     * @param string $log_file
-     * @param string $err_lv
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    private function saveLog(string $log_file, string $err_lv, string $message, array $context = []): void
-    {
-        $handle = fopen($log_file, 'ab+');
-
-        fwrite($handle, $this->formatLog($err_lv, $message, $context));
-        fclose($handle);
-
-        unset($log_file, $err_lv, $message, $context, $handle);
-    }
-
-    /**
-     * @param string $err_lv
-     * @param string $message
-     * @param array  $context
-     *
-     * @return string
-     */
-    private function formatLog(string $err_lv, string $message, array $context): string
-    {
-        $log = date('Y-m-d H:i:s') . "\r\n";
-
-        $log .= ucfirst($err_lv) . ': ' . $message . "\r\n";
-        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
-
-        unset($err_lv, $message, $context);
-        return $log;
     }
 }

@@ -38,6 +38,8 @@ class libMySQL extends Factory
     public string $last_sql     = '';
     public string $table_prefix = '';
 
+    public string|null $table = null;
+
     public array $runtime_data = [];
     public array $select_count = [];
 
@@ -133,7 +135,7 @@ class libMySQL extends Factory
      */
     public function autoReconnect(int $retry_times): self
     {
-        $this->retry_limit = &$retry_times;
+        $this->retry_limit = $retry_times;
 
         unset($retry_times);
         return $this;
@@ -143,14 +145,19 @@ class libMySQL extends Factory
      * Force table name with higher priority
      *
      * @param string $table_name
+     * @param bool   $with_prefix
      *
      * @return $this
      */
-    public function forceTableName(string $table_name): self
+    public function forceTableName(string $table_name, bool $with_prefix = false): self
     {
-        $this->runtime_data['table'] = &$table_name;
+        if ($with_prefix && !str_starts_with($table_name, $this->table_prefix)) {
+            $table_name = $this->table_prefix . $table_name;
+        }
 
-        unset($table_name);
+        $this->table = $table_name;
+
+        unset($table_name, $with_prefix);
         return $this;
     }
 
@@ -163,28 +170,39 @@ class libMySQL extends Factory
      */
     public function setTablePrefix(string $table_prefix): self
     {
-        $this->table_prefix = &$table_prefix;
+        $this->table_prefix = $table_prefix;
 
         unset($table_prefix);
         return $this;
     }
 
     /**
-     * Get table name from table prefix and called class
+     * Get table name from defined value or called class
+     *
+     * @param bool $with_alias
      *
      * @return string
      */
-    public function getTableName(): string
+    public function getTableName(bool $with_alias = false): string
     {
-        $table_name = get_class($this);
-        $table_pos  = strrpos($table_name, '\\');
+        if (is_null($this->table)) {
+            $table_name = get_class($this);
+            $table_pos  = strrpos($table_name, '\\');
 
-        if (false !== $table_pos) {
-            $table_name = substr($table_name, $table_pos + 1);
+            if (false !== $table_pos) {
+                $table_name = substr($table_name, $table_pos + 1);
+            }
+
+            $table_name = $this->table_prefix . $table_name;
+            unset($table_pos);
+        } else {
+            $table_name = $with_alias
+                ? $this->table
+                : substr($this->table, 0, strpos($this->table, ' ') ?: strlen($this->table));
         }
 
-        unset($table_pos);
-        return $this->runtime_data['table'] ?? $this->table_prefix . $table_name;
+        unset($with_alias);
+        return $table_name;
     }
 
     /**
@@ -379,7 +397,7 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set action to a table
+     * Alias function of "forceTableName"
      *
      * @param string $table
      * @param bool   $with_prefix
@@ -388,18 +406,14 @@ class libMySQL extends Factory
      */
     public function to(string $table, bool $with_prefix = false): self
     {
-        if ($with_prefix) {
-            $table = $this->table_prefix . $table;
-        }
-
-        $this->runtime_data['table'] = &$table;
+        $this->forceTableName($table, $with_prefix);
 
         unset($table, $with_prefix);
         return $this;
     }
 
     /**
-     * Alias function of "to"
+     * Alias function of "forceTableName"
      *
      * @param string $table
      * @param bool   $with_prefix
@@ -408,7 +422,7 @@ class libMySQL extends Factory
      */
     public function from(string $table, bool $with_prefix = false): self
     {
-        $this->to($table, $with_prefix);
+        $this->forceTableName($table, $with_prefix);
 
         unset($table, $with_prefix);
         return $this;
@@ -886,7 +900,7 @@ class libMySQL extends Factory
     protected function executeSQL(string $runtime_sql, array $runtime_params = [], int $retry_times = 0): bool
     {
         try {
-            $this->last_sql     = $this->buildReadableSql($runtime_sql, $runtime_params);
+            $this->last_sql     = $this->getReadableSql($runtime_sql, $runtime_params);
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
             $result = $this->PDOStatement->execute($runtime_params);
@@ -917,7 +931,7 @@ class libMySQL extends Factory
      */
     protected function buildInsert(): string
     {
-        $sql = 'INSERT INTO ' . $this->getTableName();
+        $sql = 'INSERT INTO ' . $this->getTableName(true);
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -932,7 +946,7 @@ class libMySQL extends Factory
     protected function buildSelect(): string
     {
         $sql = 'SELECT ' . $this->runtime_data['cols'];
-        $sql .= ' FROM ' . $this->getTableName();
+        $sql .= ' FROM ' . $this->getTableName(true);
 
         return $this->appendCond($sql);
     }
@@ -946,7 +960,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return $this->appendCond('UPDATE ' . $this->getTableName());
+        return $this->appendCond('UPDATE ' . $this->getTableName(true));
     }
 
     /**
@@ -956,7 +970,7 @@ class libMySQL extends Factory
      */
     protected function buildReplace(): string
     {
-        $sql = 'REPLACE INTO ' . $this->getTableName();
+        $sql = 'REPLACE INTO ' . $this->getTableName(true);
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -970,9 +984,7 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
-        $this->isSafe();
-
-        return 'REPLACE INTO ' . $this->getTableName() . $this->getSqlSet();
+        return 'REPLACE INTO ' . $this->getTableName(true) . ' ' . $this->getSqlSet();
     }
 
     /**
@@ -984,39 +996,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return $this->appendCond('DELETE FROM ' . $this->getTableName());
-    }
-
-    /**
-     * Build readable SQL with params
-     *
-     * @param string $runtime_sql
-     * @param array  $bind_params
-     *
-     * @return string
-     */
-    protected function buildReadableSql(string $runtime_sql, array $bind_params): string
-    {
-        $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null {
-                if (is_string($value)) {
-                    $value = $this->getRawSQL($value) ?? $value;
-
-                    if (!is_numeric($value)) {
-                        $value = '"' . addslashes($value) . '"';
-                    }
-                }
-
-                return $value;
-            },
-            $bind_params
-        );
-
-        $runtime_sql = str_replace('?', '%s', $runtime_sql);
-        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
-
-        unset($bind_params);
-        return $runtime_sql;
+        return $this->appendCond('DELETE FROM ' . $this->getTableName(true));
     }
 
     /**
@@ -1032,7 +1012,9 @@ class libMySQL extends Factory
         }
 
         if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
-            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
+            $this->force_execute = true;
+
+            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->getReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
         }
     }
 
@@ -1043,7 +1025,7 @@ class libMySQL extends Factory
     {
         if (isset($this->runtime_data['action'])) {
             throw new \PDOException(
-                $this->buildReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
+                $this->getReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
                 E_USER_ERROR
             );
         }
@@ -1227,7 +1209,7 @@ class libMySQL extends Factory
         }
 
         if ('select' === $this->runtime_data['action']) {
-            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
+            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName(true) . $clause;
 
             if ($group_by) {
                 $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS source';
@@ -1252,26 +1234,6 @@ class libMySQL extends Factory
 
         unset($clause, $group_by);
         return $sql;
-    }
-
-    /**
-     * Check raw SQL
-     *
-     * @param string $value
-     *
-     * @return string|null
-     */
-    protected function getRawSQL(string $value): null|string
-    {
-        if (!isset($this->runtime_data['raw'])) {
-            return null;
-        }
-
-        if (!str_starts_with($value, $this->runtime_data['raw'])) {
-            return null;
-        }
-
-        return substr($value, strlen($this->runtime_data['raw']));
     }
 
     /**
@@ -1316,9 +1278,62 @@ class libMySQL extends Factory
             $this->runtime_data['bind'][] = $val;
         }
 
-        $sql = ' SET ' . implode(',', $data);
+        $sql = 'SET ' . implode(',', $data);
 
         unset($data, $col, $val, $raw);
         return $sql;
+    }
+
+    /**
+     * Check raw SQL
+     *
+     * @param string $value
+     *
+     * @return string|null
+     */
+    protected function getRawSQL(string $value): null|string
+    {
+        if (!isset($this->runtime_data['raw'])) {
+            return null;
+        }
+
+        if (!str_starts_with($value, $this->runtime_data['raw'])) {
+            return null;
+        }
+
+        return substr($value, strlen($this->runtime_data['raw']));
+    }
+
+    /**
+     * Build readable SQL with params
+     *
+     * @param string $runtime_sql
+     * @param array  $bind_params
+     *
+     * @return string
+     */
+    protected function getReadableSql(string $runtime_sql, array $bind_params): string
+    {
+        $bind_params = array_map(
+            function (int|float|string|null $value): int|float|string|null
+            {
+                if (is_string($value)) {
+                    $value = $this->getRawSQL($value) ?? $value;
+
+                    if (!is_numeric($value)) {
+                        $value = '"' . addslashes($value) . '"';
+                    }
+                }
+
+                return $value;
+            },
+            $bind_params
+        );
+
+        $runtime_sql = str_replace('?', '%s', $runtime_sql);
+        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
+
+        unset($bind_params);
+        return $runtime_sql;
     }
 }

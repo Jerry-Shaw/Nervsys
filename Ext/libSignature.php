@@ -25,6 +25,21 @@ use Nervsys\Core\Lib\IOData;
 
 class libSignature extends Factory
 {
+    public string $debug_key = 's.dbg';
+
+    /**
+     * @param string $key
+     *
+     * @return $this
+     */
+    public function setDebugKey(string $key): self
+    {
+        $this->debug_key = $key;
+
+        unset($key);
+        return $this;
+    }
+
     /**
      * Verify data signature
      *
@@ -51,9 +66,9 @@ class libSignature extends Factory
             $input_data = IOData::new()->getInputData();
         }
 
-        $client_str = $input_data['s'] ?? 'NOT Found!';
+        $client_str = $input_data[$this->debug_key] ?? 'NOT Found!';
 
-        unset($input_data['s'], $input_data['sign']);
+        unset($input_data[$this->debug_key], $input_data['sign']);
 
         $input_data = $this->filterData($input_data);
 

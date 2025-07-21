@@ -4,7 +4,7 @@
  * Linux controller library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,8 +57,7 @@ class Linux
     {
         $queries = [
             'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
-            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\'',
-            'lshw -C "memory,cpu,pci,isa,display,ide,bridge"',
+            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\''
         ];
 
         exec(implode(' && ', $queries), $output, $status);
@@ -82,32 +81,6 @@ class Linux
 
         unset($queries, $output, $status, $hw_info, $value, $k, $v);
         return $hw_hash;
-    }
-
-    /**
-     * @return string
-     * @throws \Exception
-     */
-    public function getPhpPath(): string
-    {
-        exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
-
-        if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
-        }
-
-        if (empty($output)) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
-        }
-
-        $php_path = &$output[0];
-
-        if (!is_file($php_path)) {
-            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
-        }
-
-        unset($output, $status);
-        return $php_path;
     }
 
     /**

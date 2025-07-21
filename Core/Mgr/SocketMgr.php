@@ -4,7 +4,7 @@
  * Socket Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,15 +47,19 @@ class SocketMgr extends Factory
         'onClose'      => null   //callback(int $socket_id): void
     ];
 
-    public array $options   = [];
-    public array $read_at   = [0, 500000, 60, 200];
-    public array $reconnect = [3, 10]; //retry_times: -1 means always try to connect, 0 means don't reconnect after disconnected
-
+    public array $options     = [];
     public array $handshakes  = [];
     public array $activities  = [];
     public array $connections = [];
     public array $master_sock = [];
     public array $data_frames = [];
+
+    public array $connect_opt  = [3, 10]; //retry_times: -1 means always try to connect, 0 means don't reconnect after disconnected
+    public array $read_timeout = [0, 500000];
+
+    public int $sending_gap     = 0;
+    public int $alive_timeout   = 60;
+    public int $max_num_in_loop = 200;
 
     /**
      * @throws \ReflectionException
@@ -67,28 +71,28 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param bool $block_mode
-     *
-     * @return $this
-     */
-    public function setBlockMode(bool $block_mode): self
-    {
-        $this->block_mode = &$block_mode;
-
-        unset($block_mode);
-        return $this;
-    }
-
-    /**
      * @param bool $debug_mode
      *
      * @return $this
      */
     public function setDebugMode(bool $debug_mode): self
     {
-        $this->debug_mode = &$debug_mode;
+        $this->debug_mode = $debug_mode;
 
         unset($debug_mode);
+        return $this;
+    }
+
+    /**
+     * @param bool $block_mode
+     *
+     * @return $this
+     */
+    public function setBlockMode(bool $block_mode): self
+    {
+        $this->block_mode = $block_mode;
+
+        unset($block_mode);
         return $this;
     }
 
@@ -98,9 +102,9 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setReconnectOptions(int $retry_times, int $wait_seconds): self
+    public function setConnectOptions(int $retry_times, int $wait_seconds): self
     {
-        $this->reconnect = [&$retry_times, &$wait_seconds];
+        $this->connect_opt = [$retry_times, $wait_seconds];
 
         unset($retry_times, $wait_seconds);
         return $this;
@@ -109,16 +113,53 @@ class SocketMgr extends Factory
     /**
      * @param int      $seconds
      * @param int|null $microseconds
-     * @param int      $alive_seconds
-     * @param int      $fragment_num
      *
      * @return $this
      */
-    public function setReadOptions(int $seconds, int|null $microseconds = null, int $alive_seconds = 60, int $fragment_num = 200): self
+    public function setReadTimeout(int $seconds, int|null $microseconds = null): self
     {
-        $this->read_at = [&$seconds, &$microseconds, &$alive_seconds, &$fragment_num];
+        $this->read_timeout = [$seconds, $microseconds];
 
-        unset($seconds, $microseconds, $alive_seconds, $fragment_num);
+        unset($seconds, $microseconds);
+        return $this;
+    }
+
+    /**
+     * @param int $microseconds
+     *
+     * @return $this
+     */
+    public function setSendingGap(int $microseconds): self
+    {
+        $this->sending_gap = $microseconds;
+
+        unset($microseconds);
+        return $this;
+    }
+
+    /**
+     * @param int $seconds
+     *
+     * @return $this
+     */
+    public function setAliveTimeout(int $seconds): self
+    {
+        $this->alive_timeout = $seconds;
+
+        unset($seconds);
+        return $this;
+    }
+
+    /**
+     * @param int $num_in_loop
+     *
+     * @return $this
+     */
+    public function setMaxNumInLoop(int $num_in_loop): self
+    {
+        $this->max_num_in_loop = $num_in_loop;
+
+        unset($num_in_loop);
         return $this;
     }
 
@@ -134,20 +175,20 @@ class SocketMgr extends Factory
     public function setSSLCert(string $local_cert, string $local_pk = '', string $passphrase = '', bool $self_signed = false, string $ssl_transport = 'ssl'): self
     {
         $options = [
-            'local_cert'          => &$local_cert,
+            'local_cert'          => $local_cert,
             'verify_peer'         => false,
-            'ssltransport'        => &$ssl_transport,
+            'ssltransport'        => $ssl_transport,
             'verify_peer_name'    => false,
-            'allow_self_signed'   => &$self_signed,
+            'allow_self_signed'   => $self_signed,
             'disable_compression' => true
         ];
 
         if ('' !== $local_pk) {
-            $options['local_pk'] = &$local_pk;
+            $options['local_pk'] = $local_pk;
         }
 
         if ('' !== $passphrase) {
-            $options['passphrase'] = &$passphrase;
+            $options['passphrase'] = $passphrase;
         }
 
         $this->setContextOptions('ssl', $options);
@@ -164,7 +205,7 @@ class SocketMgr extends Factory
      */
     public function setContextOptions(string $wrapper, array $options): self
     {
-        $this->options[$wrapper] = &$options;
+        $this->options[$wrapper] = $options;
 
         unset($wrapper, $options);
         return $this;
@@ -177,7 +218,7 @@ class SocketMgr extends Factory
      */
     public function setHeartbeatChar(string $heartbeat_char): self
     {
-        $this->heartbeat = &$heartbeat_char;
+        $this->heartbeat = $heartbeat_char;
 
         unset($heartbeat_char);
         return $this;
@@ -196,7 +237,7 @@ class SocketMgr extends Factory
             throw new \Exception('"' . $event . '" NOT accept!', E_USER_ERROR);
         }
 
-        $this->callbacks[$event] = &$callback;
+        $this->callbacks[$event] = $callback;
 
         unset($event, $callback);
         return $this;
@@ -209,7 +250,7 @@ class SocketMgr extends Factory
      */
     public function onConnect(callable $callback_func): self
     {
-        $this->callbacks['onConnect'] = &$callback_func;
+        $this->callbacks['onConnect'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -222,7 +263,7 @@ class SocketMgr extends Factory
      */
     public function onHandshake(callable $callback_func): self
     {
-        $this->callbacks['onHandshake'] = &$callback_func;
+        $this->callbacks['onHandshake'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -235,7 +276,7 @@ class SocketMgr extends Factory
      */
     public function onHeartbeat(callable $callback_func): self
     {
-        $this->callbacks['onHeartbeat'] = &$callback_func;
+        $this->callbacks['onHeartbeat'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -248,7 +289,7 @@ class SocketMgr extends Factory
      */
     public function onMessage(callable $callback_func): self
     {
-        $this->callbacks['onMessage'] = &$callback_func;
+        $this->callbacks['onMessage'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -261,7 +302,7 @@ class SocketMgr extends Factory
      */
     public function onSend(callable $callback_func): self
     {
-        $this->callbacks['onSend'] = &$callback_func;
+        $this->callbacks['onSend'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -274,7 +315,7 @@ class SocketMgr extends Factory
      */
     public function onSendFailed(callable $callback_func): self
     {
-        $this->callbacks['onSendFailed'] = &$callback_func;
+        $this->callbacks['onSendFailed'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -287,7 +328,7 @@ class SocketMgr extends Factory
      */
     public function onClose(callable $callback_func): self
     {
-        $this->callbacks['onClose'] = &$callback_func;
+        $this->callbacks['onClose'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -303,7 +344,7 @@ class SocketMgr extends Factory
      */
     public function listenTo(string $address, bool $websocket = false): void
     {
-        $this->address = &$address;
+        $this->address = $address;
         $this->createServer($address);
 
         if ('udp' !== $this->sock_type) {
@@ -348,7 +389,7 @@ class SocketMgr extends Factory
         }
 
         $this->master_id   = get_resource_id($master_socket);
-        $this->master_sock = [$this->master_id => &$master_socket];
+        $this->master_sock = [$this->master_id => $master_socket];
 
         $this->debug('Server started! Listen to ' . $address . '. ID: #' . $this->master_id);
 
@@ -369,7 +410,7 @@ class SocketMgr extends Factory
         while (true) {
             $socket = $this->master_sock;
 
-            if (0 === stream_select($socket, $write, $except, $this->read_at[0], $this->read_at[1])) {
+            if (0 === stream_select($socket, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
@@ -434,13 +475,13 @@ class SocketMgr extends Factory
             $count   = 0;
             $clients = $this->connections;
 
-            if (empty($clients) || 0 === stream_select($clients, $write, $except, $this->read_at[0], $this->read_at[1])) {
+            if (empty($clients) || 0 === stream_select($clients, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
 
             foreach ($clients as $socket_id => $client) {
-                if (++$count > $this->read_at[3]) {
+                if (++$count > $this->max_num_in_loop) {
                     $count = 0;
                     \Fiber::suspend();
                 }
@@ -450,7 +491,13 @@ class SocketMgr extends Factory
 
                     if ($websocket) {
                         if (isset($this->handshakes[$socket_id])) {
+                            while (false !== $msg_line = fgets($this->connections[$socket_id])) {
+                                $message .= $msg_line;
+                            }
+
                             $this->wsSendHandshake($socket_id, $message);
+
+                            unset($msg_line);
                             continue;
                         }
 
@@ -486,24 +533,23 @@ class SocketMgr extends Factory
      */
     public function serverOnHeartbeat(bool $websocket = false): void
     {
-        $alive_sec = &$this->read_at[2];
-        $watch_sec = (int)($alive_sec / 1.5);
+        $active_timeout = (int)($this->alive_timeout / 1.5);
 
         while (true) {
             $count    = 0;
             $now_time = time();
 
             foreach ($this->activities as $socket_id => $active_times) {
-                if (++$count > $this->read_at[3]) {
+                if (++$count > $this->max_num_in_loop) {
                     $count = 0;
                     \Fiber::suspend();
                 }
 
-                if ($now_time - max(...$active_times) < $watch_sec) {
+                if ($now_time - max(...$active_times) < $active_timeout) {
                     continue;
                 }
 
-                if ($now_time - $active_times[0] > $alive_sec) {
+                if ($now_time - $active_times[0] > $this->alive_timeout) {
                     $this->debug('Client heartbeat lost: #' . $socket_id);
                     $this->closeSocket($socket_id);
                     continue;
@@ -560,7 +606,7 @@ class SocketMgr extends Factory
             }
 
             foreach ($clients as $socket_id => $client) {
-                if (++$count > $this->read_at[3]) {
+                if (++$count > $this->max_num_in_loop) {
                     $count = 0;
                     \Fiber::suspend();
                 }
@@ -577,7 +623,10 @@ class SocketMgr extends Factory
                 foreach ($msg_list as $raw_msg) {
                     if ($this->sendMessage($socket_id, $websocket ? $this->wsEncode($raw_msg) : $raw_msg)) {
                         $this->debug('Send message: ' . $raw_msg . ' to #' . $socket_id);
-                        usleep($this->read_at[1]);
+
+                        if (0 < $this->sending_gap) {
+                            usleep($this->sending_gap);
+                        }
                     } else {
                         if (is_callable($this->callbacks['onSendFailed'])) {
                             try {
@@ -608,7 +657,7 @@ class SocketMgr extends Factory
      */
     public function connectTo(string $address): void
     {
-        $this->address = &$address;
+        $this->address = $address;
         $this->createClient($address);
 
         $this->fiberMgr->async([$this, 'clientOnMessage']);
@@ -669,7 +718,7 @@ class SocketMgr extends Factory
         while (true) {
             $servers = $this->master_sock;
 
-            if (0 === stream_select($servers, $write, $except, $this->read_at[0], $this->read_at[1])) {
+            if (0 === stream_select($servers, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
@@ -703,7 +752,7 @@ class SocketMgr extends Factory
      */
     public function clientOnHeartbeat(): void
     {
-        $alive_sec = round($this->read_at[2] / 2);
+        $check_time = $this->alive_timeout / 2;
 
         if (!is_callable($this->callbacks['onHeartbeat'])) {
             $heartbeat = $this->heartbeat;
@@ -722,7 +771,7 @@ class SocketMgr extends Factory
             $now_time  = time();
             $last_time = $this->activities[$this->master_id][1] ?? 0;
 
-            if ($now_time - $last_time < $alive_sec) {
+            if ($now_time - $last_time < $check_time) {
                 \Fiber::suspend();
                 continue;
             }
@@ -754,7 +803,10 @@ class SocketMgr extends Factory
                 foreach ($msg_list as $raw_msg) {
                     if ($this->sendMessage($this->master_id, $raw_msg)) {
                         $this->debug('Send message to server: ' . $raw_msg);
-                        usleep($this->read_at[1]);
+
+                        if (0 < $this->sending_gap) {
+                            usleep($this->sending_gap);
+                        }
                     } else {
                         $this->clientReconnect();
 
@@ -784,7 +836,7 @@ class SocketMgr extends Factory
      */
     public function clientReconnect(): void
     {
-        switch ($this->reconnect[0]) {
+        switch ($this->connect_opt[0]) {
             case 0:
                 $this->debug('Reconnect failed, quit!');
                 exit(0);
@@ -793,7 +845,7 @@ class SocketMgr extends Factory
                 while (true) {
                     $this->debug('Reconnecting...');
 
-                    sleep($this->reconnect[1]);
+                    sleep($this->connect_opt[1]);
 
                     try {
                         $this->createClient($this->address);
@@ -805,21 +857,21 @@ class SocketMgr extends Factory
                 }
 
             default:
-                for ($i = 1; $i <= $this->reconnect[0]; $i++) {
+                for ($i = 1; $i <= $this->connect_opt[0]; $i++) {
                     $this->debug('Reconnecting...');
 
-                    sleep($this->reconnect[1]);
+                    sleep($this->connect_opt[1]);
 
                     try {
                         $this->createClient($this->address);
                         return;
                     } catch (\Throwable $throwable) {
-                        $this->debug('Reconnect failed (' . $i . '/' . $this->reconnect[0] . '): ' . $throwable->getMessage());
+                        $this->debug('Reconnect failed (' . $i . '/' . $this->connect_opt[0] . '): ' . $throwable->getMessage());
                         unset($throwable);
                     }
                 }
 
-                $this->debug('Reconnect failed ' . $this->reconnect[0] . ' times, quit!');
+                $this->debug('Reconnect failed ' . $this->connect_opt[0] . ' times, quit!');
                 exit(0);
         }
     }
@@ -849,17 +901,14 @@ class SocketMgr extends Factory
     {
         try {
             if ('udp' !== $this->sock_type) {
-                $message = fgetc($this->connections[$socket_id]);
+                $message = '';
 
-                if (false === $message) {
-                    throw new \Exception('Read ERROR!', E_USER_NOTICE);
-                }
-
-                while ('' !== ($fragment = fread($this->connections[$socket_id], 8192))) {
-                    $message .= $fragment;
+                while (false !== $msg_line = fgets($this->connections[$socket_id])) {
+                    $message .= $msg_line;
                 }
 
                 $this->activities[$socket_id][0] = time();
+                unset($msg_line);
             } else {
                 $message = stream_socket_recvfrom($this->connections[$socket_id], 65536);
             }

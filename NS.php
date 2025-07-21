@@ -25,10 +25,6 @@ namespace Nervsys;
 
 use Nervsys\Core\System;
 
-if (version_compare(PHP_VERSION, '8.1.0', '<')) {
-    exit('Nervsys 8.1+ needs PHP 8.1.0 or higher!');
-}
-
 set_time_limit(0);
 ignore_user_abort(true);
 
@@ -95,6 +91,14 @@ class NS
     public function go(): void
     {
         date_default_timezone_set($this->app->timezone);
+
+        if ($this->app->debug_mode) {
+            $this->error->saveLog($this->app, 'system-' . date('Ymd') . '.log', $this->error->formatLog('warning', 'DEBUG mode is enabled. It must be disabled for security!'));
+
+            if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+                $this->error->saveLog($this->app, 'system-' . date('Ymd') . '.log', $this->error->formatLog('notice', 'PHP 8.1 or above is recommended for full functionality.'));
+            }
+        }
 
         $this->profiler->start('NS_DATA_READER');
 
