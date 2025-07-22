@@ -46,8 +46,14 @@ class Security extends Factory
         $fn_list = [];
         $fn_api  = current($this->fn_target_invalid);
 
-        $traits  = Reflect::getTraits($class_name);
-        $methods = Reflect::getMethods($class_name, $filter);
+        try {
+            $traits  = Reflect::getTraits($class_name);
+            $methods = Reflect::getMethods($class_name, $filter);
+        } catch (\Throwable $throwable) {
+            Error::new()->exceptionHandler($throwable, false, false);
+            unset($class_name, $method_name, $class_args, $filter, $fn_list, $traits, $methods, $throwable);
+            return $fn_api;
+        }
 
         /** @var \ReflectionClass $r_class */
         foreach ($traits as $r_class) {
