@@ -167,6 +167,27 @@ class WINNT
     }
 
     /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getPhpPath(): string
+    {
+        $ps_cmd   = 'powershell -command "(Get-Process -Id ' . getmypid() . ').Path"';
+        $php_path = trim(shell_exec($ps_cmd));
+
+        if (!is_string($php_path)) {
+            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+        }
+
+        if (!is_file($php_path)) {
+            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
+        }
+
+        unset($ps_cmd);
+        return $php_path;
+    }
+
+    /**
      * @param int $pid
      *
      * @return void

@@ -84,6 +84,32 @@ class Linux
     }
 
     /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getPhpPath(): string
+    {
+        exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
+
+        if (0 !== $status) {
+            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+        }
+
+        if (empty($output)) {
+            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
+        }
+
+        $php_path = &$output[0];
+
+        if (!is_file($php_path)) {
+            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
+        }
+
+        unset($output, $status);
+        return $php_path;
+    }
+
+    /**
      * @param int $pid
      *
      * @return void

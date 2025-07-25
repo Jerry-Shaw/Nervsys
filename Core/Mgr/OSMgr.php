@@ -85,10 +85,15 @@ class OSMgr extends Factory
 
     /**
      * @return string
+     * @throws \Exception
      */
     public function getPhpPath(): string
     {
-        return PHP_BINARY;
+        if ('' === $this->php_path) {
+            $this->php_path = $this->lib_os->getPhpPath();
+        }
+
+        return $this->php_path;
     }
 
     /**
