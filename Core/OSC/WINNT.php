@@ -117,6 +117,8 @@ class WINNT
                 $hw_info[] = $object->SerialNumber;
             }
 
+            $hw_info = array_values(array_filter($hw_info));
+
             foreach ($hw_info as $key => $value) {
                 $hw_info[$key] = trim($value);
             }
