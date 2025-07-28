@@ -117,6 +117,8 @@ class WINNT
                 $hw_info[] = $object->SerialNumber;
             }
 
+            $hw_info = array_values(array_filter($hw_info));
+
             foreach ($hw_info as $key => $value) {
                 $hw_info[$key] = trim($value);
             }
@@ -164,6 +166,27 @@ class WINNT
 
         unset($hw_info, $key, $value);
         return $hw_hash;
+    }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getPhpPath(): string
+    {
+        $ps_cmd   = 'powershell -command "(Get-Process -Id ' . getmypid() . ').Path"';
+        $php_path = trim(shell_exec($ps_cmd));
+
+        if (!is_string($php_path)) {
+            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+        }
+
+        if (!is_file($php_path)) {
+            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
+        }
+
+        unset($ps_cmd);
+        return $php_path;
     }
 
     /**
