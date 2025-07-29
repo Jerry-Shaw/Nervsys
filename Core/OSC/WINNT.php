@@ -124,7 +124,9 @@ class WINNT
             }
 
             unset($query, $object);
-        } else {
+        }
+
+        if (empty($hw_info)) {
             $ps_cmd = 'powershell -Command "';
             $ps_cmd .= 'Get-WMIObject -class Win32_ComputerSystem | select Model | Format-List;';
             $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Name, Family, DeviceID, Manufacturer, Description, ProcessorId, Architecture, NumberOfCores, ProcessorType | Format-List;';
@@ -160,6 +162,10 @@ class WINNT
             $hw_info = array_values($hw_info);
 
             unset($ps_cmd, $status, $k, $v);
+        }
+
+        if (empty($hw_info)) {
+            throw new \Exception(PHP_OS . ': Failed to get hardware information!', E_USER_ERROR);
         }
 
         $hw_hash = hash('md5', trim(implode('/', $hw_info)));
