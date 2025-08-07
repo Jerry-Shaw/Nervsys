@@ -594,21 +594,24 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set orders
+     * Set SQL orders
      *
-     * @param array ...$orders
+     * @param array $orders
      *
      * @return $this
      */
-    public function order(array ...$orders): self
+    public function order(array $orders): self
     {
-        $param = $order = [];
+        $order = [];
 
-        foreach ($orders as $val) {
-            $param += $val;
-        }
+        foreach ($orders as $col => $val) {
+            $sql = $this->getRawSQL($val);
 
-        foreach ($param as $col => $val) {
+            if (is_string($sql)) {
+                $order[] = $sql;
+                continue;
+            }
+
             $col = $this->getRawSQL($col) ?? $col;
 
             if (is_string($val) && in_array(strtoupper($val), ['ASC', 'DESC'], true)) {
@@ -633,7 +636,7 @@ class libMySQL extends Factory
 
         $this->runtime_data['order'] = implode(',', $order);
 
-        unset($orders, $param, $order, $col, $val, $last_val);
+        unset($orders, $order, $col, $val, $sql, $last_val);
         return $this;
     }
 
