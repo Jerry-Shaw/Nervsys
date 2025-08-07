@@ -74,6 +74,20 @@ class libMySQL extends Factory
     }
 
     /**
+     * Use SQL clause directly
+     *
+     * @param string $sql
+     *
+     * @return string
+     */
+    public function useSql(string $sql): string
+    {
+        $this->runtime_data['raw'] ??= hash('crc32b', uniqid(mt_rand(), true)) . ':';
+
+        return $this->runtime_data['raw'] . $sql;
+    }
+
+    /**
      * Set string value as raw SQL part
      *
      * @param string $value
@@ -82,9 +96,7 @@ class libMySQL extends Factory
      */
     public function asRaw(string $value): string
     {
-        $this->runtime_data['raw'] ??= hash('crc32b', uniqid(mt_rand(), true)) . ':';
-
-        return $this->runtime_data['raw'] . $value;
+        return $this->useSql($value);
     }
 
     /**
