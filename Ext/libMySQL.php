@@ -227,7 +227,7 @@ class libMySQL extends Factory
      */
     public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $exec = $this->executeSQL($this->buildSQL(), $this->runtime_data['bind'] ?? []);
+        $exec = $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
         $data = $exec ? $this->PDOStatement->fetch($fetch_style) : [];
 
         if (!is_array($data)) {
@@ -248,7 +248,7 @@ class libMySQL extends Factory
      */
     public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        $exec = $this->executeSQL($this->buildSQL(), $this->runtime_data['bind'] ?? []);
+        $exec = $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
         $data = $exec ? $this->PDOStatement->fetchAll($fetch_style) : [];
 
         unset($fetch_style, $exec);
@@ -277,7 +277,7 @@ class libMySQL extends Factory
             return 0;
         }
 
-        $exec  = $this->executeSQL($this->select_count['sql'], $this->select_count['bind'] ?? []);
+        $exec  = $this->executeSql($this->select_count['sql'], $this->select_count['bind'] ?? []);
         $count = $exec ? (int)($this->PDOStatement->fetch(\PDO::FETCH_ASSOC)['C'] ?? 0) : -1;
 
         unset($exec);
@@ -384,7 +384,7 @@ class libMySQL extends Factory
         }
 
         foreach ($column as $key => $item) {
-            $column[$key] = $this->getRawSQL($item) ?? $item;
+            $column[$key] = $this->getSqlRaw($item) ?? $item;
         }
 
         $this->runtime_data['action'] = 'select';
@@ -596,7 +596,7 @@ class libMySQL extends Factory
     public function group(string ...$fields): self
     {
         foreach ($fields as $key => $field) {
-            $fields[$key] = $this->getRawSQL($field) ?? $field;
+            $fields[$key] = $this->getSqlRaw($field) ?? $field;
         }
 
         $this->runtime_data['group'] = implode(',', $fields);
@@ -617,14 +617,14 @@ class libMySQL extends Factory
         $order = [];
 
         foreach ($orders as $col => $val) {
-            $sql = $this->getRawSQL($val);
+            $sql = $this->getSqlRaw($val);
 
             if (is_string($sql)) {
                 $order[] = $sql;
                 continue;
             }
 
-            $col = $this->getRawSQL($col) ?? $col;
+            $col = $this->getSqlRaw($col) ?? $col;
 
             if (is_string($val) && in_array(strtoupper($val), ['ASC', 'DESC'], true)) {
                 //By column
@@ -766,7 +766,7 @@ class libMySQL extends Factory
      */
     public function execute(): bool
     {
-        return $this->executeSQL($this->buildSQL(), $this->runtime_data['bind'] ?? []);
+        return $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
     }
 
     /**
@@ -834,7 +834,7 @@ class libMySQL extends Factory
      *
      * @return string
      */
-    public function buildSQL(): string
+    public function buildSql(): string
     {
         return $this->{'build' . ucfirst($this->runtime_data['action'])}();
     }
@@ -847,7 +847,7 @@ class libMySQL extends Factory
      * @return array [NULL, system, const, eq_ref, ref, range, index, ALL]
      * @throws \ReflectionException
      */
-    public function explainSQL(string $readable_sql): array
+    public function explainSql(string $readable_sql): array
     {
         return $this->query('EXPLAIN ' . $readable_sql)->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -912,10 +912,10 @@ class libMySQL extends Factory
      * @return bool
      * @throws \ReflectionException
      */
-    protected function executeSQL(string $runtime_sql, array $runtime_params = [], int $retry_times = 0): bool
+    protected function executeSql(string $runtime_sql, array $runtime_params = [], int $retry_times = 0): bool
     {
         try {
-            $this->last_sql     = $this->getReadableSql($runtime_sql, $runtime_params);
+            $this->last_sql     = $this->getSqlReadable($runtime_sql, $runtime_params);
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
             $result = $this->PDOStatement->execute($runtime_params);
@@ -925,7 +925,7 @@ class libMySQL extends Factory
         } catch (\PDOException $exception) {
             if ($this->reconnect(++$retry_times)) {
                 unset($exception);
-                return $this->executeSQL($runtime_sql, $runtime_params, $retry_times);
+                return $this->executeSql($runtime_sql, $runtime_params, $retry_times);
             }
 
             $this->clearRuntime();
@@ -1029,7 +1029,7 @@ class libMySQL extends Factory
         if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
             $this->force_execute = true;
 
-            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->getReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
+            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->getSqlReadable($this->buildSql(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
         }
     }
 
@@ -1040,7 +1040,7 @@ class libMySQL extends Factory
     {
         if (isset($this->runtime_data['action'])) {
             throw new \PDOException(
-                $this->getReadableSql($this->buildSQL(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
+                $this->getSqlReadable($this->buildSql(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
                 E_USER_ERROR
             );
         }
@@ -1079,7 +1079,7 @@ class libMySQL extends Factory
                 }
             } else {
                 $item = (string)current($value);
-                $item = $this->getRawSQL($item);
+                $item = $this->getSqlRaw($item);
 
                 if (is_string($item)) {
                     $cond_list[] = $item;
@@ -1281,7 +1281,7 @@ class libMySQL extends Factory
                 unset($opt);
             }
 
-            $raw = $this->getRawSQL($val);
+            $raw = $this->getSqlRaw($val);
 
             if (is_string($raw)) {
                 $data[] = $col . '=' . $raw;
@@ -1306,7 +1306,7 @@ class libMySQL extends Factory
      *
      * @return string|null
      */
-    protected function getRawSQL(string $value): null|string
+    protected function getSqlRaw(string $value): null|string
     {
         if (!isset($this->runtime_data['raw'])) {
             return null;
@@ -1327,13 +1327,13 @@ class libMySQL extends Factory
      *
      * @return string
      */
-    protected function getReadableSql(string $runtime_sql, array $bind_params): string
+    protected function getSqlReadable(string $runtime_sql, array $bind_params): string
     {
         $bind_params = array_map(
             function (int|float|string|null $value): int|float|string|null
             {
                 if (is_string($value)) {
-                    $value = $this->getRawSQL($value) ?? $value;
+                    $value = $this->getSqlRaw($value) ?? $value;
 
                     if (!is_numeric($value)) {
                         $value = '"' . addslashes($value) . '"';
