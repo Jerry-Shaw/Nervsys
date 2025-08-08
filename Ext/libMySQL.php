@@ -88,18 +88,6 @@ class libMySQL extends Factory
     }
 
     /**
-     * Set string value as raw SQL part
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public function asRaw(string $value): string
-    {
-        return $this->useSql($value);
-    }
-
-    /**
      * Clear runtime data
      *
      * @return void
