@@ -118,18 +118,22 @@ class ProcMgr extends Factory
      */
     public function runProc(int $idx = 0): self
     {
-        $proc = proc_open(
-            $this->proc_cmd,
-            [
-                ['pipe', 'rb'],
-                ['socket', 'wb'],
-                ['socket', 'wb']
-            ],
-            $pipes,
-            $this->work_dir
-        );
+        try {
+            $proc = proc_open(
+                $this->proc_cmd,
+                [
+                    ['pipe', 'rb'],
+                    ['socket', 'wb'],
+                    ['socket', 'wb']
+                ],
+                $pipes,
+                $this->work_dir
+            );
 
-        if (!is_resource($proc)) {
+            if (!is_resource($proc)) {
+                throw new \Exception('Failed to open "' . $this->getCmd() . '"', E_USER_ERROR);
+            }
+        } catch (\Throwable) {
             throw new \Exception('Failed to open "' . $this->getCmd() . '"', E_USER_ERROR);
         }
 
