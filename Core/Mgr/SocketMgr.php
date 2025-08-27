@@ -703,6 +703,22 @@ class SocketMgr extends Factory
 
         $this->debug('Client started! Connect to ' . $address . '. ID: #' . $this->master_id);
 
+        if (is_callable($this->callbacks['onConnect'])) {
+            try {
+                $response = call_user_func($this->callbacks['onConnect'], $this->master_id);
+
+                if (is_string($response) && '' !== $response) {
+                    $this->sendMessage($this->master_id, $response);
+                }
+
+                unset($response);
+            } catch (\Throwable $throwable) {
+                $this->debug('clientOnConnect callback ERROR: ' . $throwable->getMessage());
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
+            }
+        }
+
         unset($address, $context, $flags, $master_socket, $now_time);
     }
 
@@ -910,7 +926,11 @@ class SocketMgr extends Factory
                 $this->activities[$socket_id][0] = time();
                 unset($msg_line);
             } else {
-                $message = stream_socket_recvfrom($this->connections[$socket_id], 65536);
+                $message = stream_socket_recvfrom($this->connections[$socket_id], 65536) ?: '';
+            }
+
+            if ('' === $message) {
+                throw new \Exception('No message received', E_NOTICE);
             }
         } catch (\Throwable) {
             $this->closeSocket($socket_id);
