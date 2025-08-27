@@ -910,7 +910,11 @@ class SocketMgr extends Factory
                 $this->activities[$socket_id][0] = time();
                 unset($msg_line);
             } else {
-                $message = stream_socket_recvfrom($this->connections[$socket_id], 65536);
+                $message = stream_socket_recvfrom($this->connections[$socket_id], 65536) ?: '';
+            }
+
+            if ('' === $message) {
+                throw new \Exception('No message received', E_NOTICE);
             }
         } catch (\Throwable) {
             $this->closeSocket($socket_id);
