@@ -157,7 +157,7 @@ class libMySQL extends Factory
     }
 
     /**
-     * Specify another table for one-time action
+     * Set table name permanently to an object
      *
      * @param string $table_name
      * @param bool   $with_prefix
@@ -165,6 +165,26 @@ class libMySQL extends Factory
      * @return $this
      */
     public function setTable(string $table_name, bool $with_prefix = false): self
+    {
+        if ($with_prefix) {
+            $table_name = $this->table_prefix . $table_name;
+        }
+
+        $this->table = $table_name;
+
+        unset($table_name, $with_prefix);
+        return $this;
+    }
+
+    /**
+     * Specify another table for one-time action
+     *
+     * @param string $table_name
+     * @param bool   $with_prefix
+     *
+     * @return $this
+     */
+    public function setTableOnce(string $table_name, bool $with_prefix = false): self
     {
         if ($with_prefix) {
             $table_name = $this->table_prefix . $table_name;
@@ -192,7 +212,7 @@ class libMySQL extends Factory
     }
 
     /**
-     * Get table name from called class
+     * Get table name from (one-time table setting / object table name / called class)
      *
      * @return string
      */
