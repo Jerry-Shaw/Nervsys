@@ -63,6 +63,21 @@ class libMySQL extends Factory
     }
 
     /**
+     * Set alias table name of the main table
+     *
+     * @param string $alias
+     *
+     * @return $this
+     */
+    public function as(string $alias): self
+    {
+        $this->runtime_data['alias'] = $alias;
+
+        unset($alias);
+        return $this;
+    }
+
+    /**
      * Force executing SQL without WHERE condition
      *
      * @return $this
@@ -142,20 +157,20 @@ class libMySQL extends Factory
     }
 
     /**
-     * Force table name with higher priority
+     * Specify another table for one-time action
      *
      * @param string $table_name
      * @param bool   $with_prefix
      *
      * @return $this
      */
-    public function forceTableName(string $table_name, bool $with_prefix = false): self
+    public function setTable(string $table_name, bool $with_prefix = false): self
     {
-        if ($with_prefix && !str_starts_with($table_name, $this->table_prefix)) {
+        if ($with_prefix) {
             $table_name = $this->table_prefix . $table_name;
         }
 
-        $this->table = $table_name;
+        $this->runtime_data['table'] = $table_name;
 
         unset($table_name, $with_prefix);
         return $this;
@@ -177,31 +192,34 @@ class libMySQL extends Factory
     }
 
     /**
-     * Get table name from defined value or called class
-     *
-     * @param bool $with_alias
+     * Get table name from called class
      *
      * @return string
      */
-    public function getTableName(bool $with_alias = false): string
+    public function getTableName(): string
     {
-        if (is_null($this->table)) {
-            $table_name = get_class($this);
-            $table_pos  = strrpos($table_name, '\\');
+        if (isset($this->runtime_data['table'])) {
+            $table_name = $this->runtime_data['table'];
+        } elseif (is_string($this->table)) {
+            $table_name = $this->table;
+        } else {
+            $class_name = get_class($this);
+            $name_pos   = strrpos($class_name, '\\');
 
-            if (false !== $table_pos) {
-                $table_name = substr($table_name, $table_pos + 1);
+            if (false !== $name_pos) {
+                $class_name = substr($class_name, $name_pos + 1);
             }
 
-            $table_name = $this->table_prefix . $table_name;
-            unset($table_pos);
-        } else {
-            $table_name = $with_alias
-                ? $this->table
-                : substr($this->table, 0, strpos($this->table, ' ') ?: strlen($this->table));
+            $table_name  = $this->table_prefix . $class_name;
+            $this->table = $table_name;
+
+            unset($class_name, $name_pos);
         }
 
-        unset($with_alias);
+        if (isset($this->runtime_data['alias'])) {
+            $table_name .= ' AS ' . $this->runtime_data['alias'];
+        }
+
         return $table_name;
     }
 
@@ -393,38 +411,6 @@ class libMySQL extends Factory
 
         $this->runtime_data['action'] = 'delete';
 
-        return $this;
-    }
-
-    /**
-     * Alias function of "forceTableName"
-     *
-     * @param string $table
-     * @param bool   $with_prefix
-     *
-     * @return $this
-     */
-    public function to(string $table, bool $with_prefix = false): self
-    {
-        $this->forceTableName($table, $with_prefix);
-
-        unset($table, $with_prefix);
-        return $this;
-    }
-
-    /**
-     * Alias function of "forceTableName"
-     *
-     * @param string $table
-     * @param bool   $with_prefix
-     *
-     * @return $this
-     */
-    public function from(string $table, bool $with_prefix = false): self
-    {
-        $this->forceTableName($table, $with_prefix);
-
-        unset($table, $with_prefix);
         return $this;
     }
 
@@ -934,7 +920,7 @@ class libMySQL extends Factory
      */
     protected function buildInsert(): string
     {
-        $sql = 'INSERT INTO ' . $this->getTableName(true);
+        $sql = 'INSERT INTO ' . $this->getTableName();
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -949,7 +935,7 @@ class libMySQL extends Factory
     protected function buildSelect(): string
     {
         $sql = 'SELECT ' . $this->runtime_data['cols'];
-        $sql .= ' FROM ' . $this->getTableName(true);
+        $sql .= ' FROM ' . $this->getTableName();
 
         return $this->appendCond($sql);
     }
@@ -963,7 +949,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return $this->appendCond('UPDATE ' . $this->getTableName(true));
+        return $this->appendCond('UPDATE ' . $this->getTableName());
     }
 
     /**
@@ -973,7 +959,7 @@ class libMySQL extends Factory
      */
     protected function buildReplace(): string
     {
-        $sql = 'REPLACE INTO ' . $this->getTableName(true);
+        $sql = 'REPLACE INTO ' . $this->getTableName();
         $sql .= ' (' . implode(',', $this->runtime_data['cols']) . ')';
         $sql .= ' VALUES (' . implode(',', array_pad([], count($this->runtime_data['bind']), '?')) . ')';
 
@@ -987,7 +973,7 @@ class libMySQL extends Factory
      */
     protected function buildReplaceSet(): string
     {
-        return 'REPLACE INTO ' . $this->getTableName(true) . ' ' . $this->getSqlSet();
+        return 'REPLACE INTO ' . $this->getTableName() . ' ' . $this->getSqlSet();
     }
 
     /**
@@ -999,7 +985,7 @@ class libMySQL extends Factory
     {
         $this->isSafe();
 
-        return $this->appendCond('DELETE FROM ' . $this->getTableName(true));
+        return $this->appendCond('DELETE FROM ' . $this->getTableName());
     }
 
     /**
@@ -1212,7 +1198,7 @@ class libMySQL extends Factory
         }
 
         if ('select' === $this->runtime_data['action']) {
-            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName(true) . $clause;
+            $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM ' . $this->getTableName() . $clause;
 
             if ($group_by) {
                 $this->select_count['sql'] = 'SELECT COUNT(*) AS C FROM (' . $this->select_count['sql'] . ') AS source';
