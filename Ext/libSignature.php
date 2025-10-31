@@ -25,7 +25,7 @@ use Nervsys\Core\Lib\IOData;
 
 class libSignature extends Factory
 {
-    public string $debug_key = 's.dbg';
+    public string $debug_key = 'dbg_str';
 
     /**
      * @param string $key

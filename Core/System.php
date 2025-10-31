@@ -260,40 +260,6 @@ trait System
     }
 
     /**
-     * @param string   $cmd_path
-     * @param callable ...$hook_fn
-     *
-     * @return $this
-     * @deprecated
-     */
-    public function addPreHooks(string $cmd_path, callable ...$hook_fn): self
-    {
-        foreach ($hook_fn as $fn) {
-            $this->hook->assign($fn, $cmd_path);
-        }
-
-        unset($cmd_path, $hook_fn, $fn);
-        return $this;
-    }
-
-    /**
-     * @param callable $hook_fn
-     * @param string   ...$cmd_path
-     *
-     * @return $this
-     * @deprecated
-     */
-    public function addPreHookRules(callable $hook_fn, string ...$cmd_path): self
-    {
-        foreach ($cmd_path as $path) {
-            $this->hook->assign($hook_fn, $path);
-        }
-
-        unset($hook_fn, $cmd_path, $path);
-        return $this;
-    }
-
-    /**
      * @param string ...$keys
      *
      * @return $this
@@ -368,26 +334,6 @@ trait System
         $this->IOData->output_handler = [$output_handler];
 
         unset($output_handler);
-        return $this;
-    }
-
-    /**
-     * @param int    $code
-     * @param string $message
-     * @param array  $values
-     *
-     * @return $this
-     */
-    public function setOutputCodeMsg(int $code, string $message, array $values = []): self
-    {
-        if (!empty($values)) {
-            $message = sprintf($message, ...$values);
-        }
-
-        $this->IOData->src_msg['code']    = &$code;
-        $this->IOData->src_msg['message'] = &$message;
-
-        unset($code, $message, $values);
         return $this;
     }
 
