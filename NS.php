@@ -103,7 +103,7 @@ class NS
         $this->profiler->start('NS_DATA_READER');
 
         if (!$this->app->is_cli) {
-            $this->CORS->checkPermission($this->app->is_tls);
+            $this->CORS->checkPermission($this->app->is_https);
             $this->IOData->readCgi();
         } else {
             $this->IOData->readCli();
