@@ -31,27 +31,31 @@ class Factory
      */
     public static function new(): static
     {
-        return self::getObj(get_called_class(), func_get_args());
+        return self::getObj(get_called_class(), func_get_args(), true);
     }
 
     /**
      * @param string $class_name
      * @param array  $class_args
+     * @param bool   $user_passed
      *
      * @return object
      * @throws \ReflectionException
      */
-    public static function getObj(string $class_name, array $class_args = []): object
+    public static function getObj(string $class_name, array $class_args = [], bool $user_passed = false): object
     {
         if (!method_exists($class_name, '__construct')) {
             $class_args = [];
-        } elseif (1 === count($class_args)) {
-            if (isset($class_args[0]) && is_array($class_args[0])) {
-                $class_args = $class_args[0];
-            }
-
+        } elseif (!$user_passed) {
             if (!array_is_list($class_args)) {
                 $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
+            }
+        } else {
+            if (1 === count($class_args)
+                && isset($class_args[0])
+                && is_array($class_args[0])
+                && !array_is_list($class_args[0])) {
+                $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args[0]);
             }
         }
 
@@ -61,7 +65,7 @@ class Factory
             self::$objects[$class_key] = new ('\\' . trim($class_name, '\\'))(...$class_args);
         }
 
-        unset($class_name, $class_args);
+        unset($class_name, $class_args, $user_passed);
         return self::$objects[$class_key];
     }
 
