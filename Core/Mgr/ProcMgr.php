@@ -34,7 +34,7 @@ class ProcMgr extends Factory
 
     public Error $error;
 
-    public array $commands;
+    public array $command;
 
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
@@ -57,16 +57,16 @@ class ProcMgr extends Factory
     protected array $proc_callbacks = [];
 
     /**
-     * @param array $commands
+     * @param array $command
      *
      * @throws \ReflectionException
      */
-    public function __construct(array $commands)
+    public function __construct(array $command)
     {
-        $this->error    = Error::new();
-        $this->commands = $commands;
+        $this->error   = Error::new();
+        $this->command = $command;
 
-        unset($commands);
+        unset($command);
     }
 
     /**
@@ -120,7 +120,7 @@ class ProcMgr extends Factory
     {
         try {
             $proc = proc_open(
-                $this->commands,
+                $this->command,
                 [
                     ['pipe', 'rb'],
                     ['socket', 'wb'],
@@ -184,7 +184,7 @@ class ProcMgr extends Factory
      */
     public function getCmd(): string
     {
-        return implode(' ', $this->commands);
+        return implode(' ', $this->command);
     }
 
     /**
@@ -496,6 +496,7 @@ class ProcMgr extends Factory
     /**
      * @return int
      * @throws \ReflectionException
+     * @throws \Exception
      */
     protected function getIdleProcIdx(): int
     {
