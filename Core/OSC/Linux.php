@@ -99,7 +99,7 @@ class Linux
             throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
         }
 
-        $php_path = &$output[0];
+        $php_path = $output[0];
 
         if (!is_file($php_path)) {
             throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);

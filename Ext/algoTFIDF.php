@@ -42,8 +42,8 @@ class algoTFIDF extends Factory
      */
     public function setSrcData(array $gram_list, array $doc_list): self
     {
-        $this->src_grams = &$gram_list;
-        $this->src_docs  = &$doc_list;
+        $this->src_grams = $gram_list;
+        $this->src_docs  = $doc_list;
         $this->src_len   = count($doc_list);
 
         unset($gram_list, $doc_list);

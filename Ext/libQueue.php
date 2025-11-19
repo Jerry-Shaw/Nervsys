@@ -52,7 +52,7 @@ class libQueue extends Factory
     {
         $this->proc_worker_key = 'Q:' . $name;
 
-        $this->queue_name      = &$name;
+        $this->queue_name      = $name;
         $this->QProc_key       = $this->proc_worker_key . ':QProc';
         $this->realtime_key    = $this->proc_worker_key . ':realtime';
         $this->delay_set_key   = $this->proc_worker_key . ':delaySet';
@@ -72,7 +72,7 @@ class libQueue extends Factory
      */
     public function setRedisConf(array $redis_conf): self
     {
-        $this->proc_redis_conf = &$redis_conf;
+        $this->proc_redis_conf = $redis_conf;
 
         $this->redis = libRedis::new($redis_conf)->connect();
 
@@ -273,10 +273,10 @@ class libQueue extends Factory
      */
     private function saveQJob(string $key, string $cmd, array $data, string $hash): int
     {
-        $data['@'] = &$cmd;
+        $data['@'] = $cmd;
 
         if ('' !== $hash) {
-            $data['!'] = &$hash;
+            $data['!'] = $hash;
         }
 
         $job_length = (int)$this->redis->lPush($key, json_encode($data, JSON_FORMAT));

@@ -113,7 +113,7 @@ class libUpload extends Factory
         $this->IOData    = IOData::new();
         $this->libFileIO = libFileIO::new();
 
-        $this->upload_path = &$upload_path;
+        $this->upload_path = $upload_path;
 
         unset($upload_path);
     }
@@ -126,7 +126,7 @@ class libUpload extends Factory
      */
     public function addMimeType(string $mime, string $ext): self
     {
-        $this->mime_types[$mime] = &$ext;
+        $this->mime_types[$mime] = $ext;
 
         unset($mime, $ext);
         return $this;
@@ -139,7 +139,7 @@ class libUpload extends Factory
      */
     public function setFilePerm(int $file_perm): self
     {
-        $this->file_perm = &$file_perm;
+        $this->file_perm = $file_perm;
 
         unset($file_perm);
         return $this;
@@ -152,7 +152,7 @@ class libUpload extends Factory
      */
     public function setAllowedExt(string ...$allowed_ext): self
     {
-        $this->allowed_ext = &$allowed_ext;
+        $this->allowed_ext = $allowed_ext;
 
         unset($allowed_ext);
         return $this;
@@ -165,7 +165,7 @@ class libUpload extends Factory
      */
     public function setSliceTempDir(string $temp_dir): self
     {
-        $this->temp_dir = &$temp_dir;
+        $this->temp_dir = $temp_dir;
 
         unset($temp_dir);
         return $this;
@@ -178,7 +178,7 @@ class libUpload extends Factory
      */
     public function setMaxSizeInBytes(int $max_size): self
     {
-        $this->max_size = &$max_size;
+        $this->max_size = $max_size;
 
         unset($max_size);
         return $this;
@@ -216,7 +216,7 @@ class libUpload extends Factory
         }
 
         if ('' === $save_name) {
-            $save_name = &$upload_result['name'];
+            $save_name = $upload_result['name'];
         }
 
         if (!empty($this->allowed_ext)) {
@@ -240,7 +240,7 @@ class libUpload extends Factory
 
             $upload_result = $this->getResult($upload_result, UPLOAD_ERR_OK);
 
-            $upload_result['file_path'] = &$file_path;
+            $upload_result['file_path'] = $file_path;
             $upload_result['file_url']  = trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name;
         } else {
             $upload_result = $this->getResult($upload_result, UPLOAD_ERR_CANT_WRITE);
@@ -320,7 +320,7 @@ class libUpload extends Factory
 
         $upload_result = $this->getResult($this->upload_result, UPLOAD_ERR_OK);
 
-        $upload_result['file_path'] = &$save_path;
+        $upload_result['file_path'] = $save_path;
         $upload_result['file_url']  = trim(strtr($save_dir, '\\', '/'), '/') . '/' . $save_name;
 
         unset($ticket_id, $save_dir, $save_name, $tmp_path, $tmp_list, $save_path, $save_fp, $tmp_file);
@@ -348,7 +348,7 @@ class libUpload extends Factory
      */
     protected function getResult(array $result, int $error): array
     {
-        $result['error']  = &$error;
+        $result['error']  = $error;
         $result['result'] = self::UPLOAD_ERROR[$error];
 
         unset($error);
@@ -390,11 +390,11 @@ class libUpload extends Factory
 
         $upload_result = [
             'error'     => UPLOAD_ERR_OK,
-            'name'      => &$file_name,
-            'type'      => &$file_mime,
+            'name'      => $file_name,
+            'type'      => $file_mime,
             'size'      => strlen($file_data),
-            'tmp_name'  => &$temp_file,
-            'full_path' => &$file_name
+            'tmp_name'  => $temp_file,
+            'full_path' => $file_name
         ];
 
         unset($file_base64, $base64_pos, $file_data, $file_mime, $temp_file, $temp_fp, $file_name);

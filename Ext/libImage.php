@@ -306,8 +306,8 @@ class libImage extends Factory
     public function getCropSize(int $img_width, int $img_height, int $to_width, int $to_height): array
     {
         $size               = [];
-        $size['dst_width']  = &$to_width;
-        $size['dst_height'] = &$to_height;
+        $size['dst_width']  = $to_width;
+        $size['dst_height'] = $to_height;
         $size['src_width']  = $img_width;
         $size['src_height'] = $img_height;
         $size['position_x'] = $size['position_y'] = 0;
@@ -367,14 +367,14 @@ class libImage extends Factory
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
         if (0 < $ratio_diff) {
-            $size['dst_width']  = &$to_width;
+            $size['dst_width']  = $to_width;
             $size['dst_height'] = (int)($to_width / $ratio_img);
         } elseif (0 > $ratio_diff) {
-            $size['dst_height'] = &$to_height;
+            $size['dst_height'] = $to_height;
             $size['dst_width']  = (int)($to_height * $ratio_img);
         } elseif ($img_width !== $to_width || $img_height !== $to_height) {
-            $size['dst_width']  = &$to_width;
-            $size['dst_height'] = &$to_height;
+            $size['dst_width']  = $to_width;
+            $size['dst_height'] = $to_height;
         }
 
         unset($img_width, $img_height, $to_width, $to_height, $ratio_img, $ratio_need, $ratio_diff);

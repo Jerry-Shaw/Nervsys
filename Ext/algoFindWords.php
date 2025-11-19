@@ -60,9 +60,9 @@ class algoFindWords extends Factory
      */
     public function setVars(int $min_tf, float $min_diff, int $step_len = 8): self
     {
-        $this->min_tf   = &$min_tf;
-        $this->min_diff = &$min_diff;
-        $this->step_len = &$step_len;
+        $this->min_tf   = $min_tf;
+        $this->min_diff = $min_diff;
+        $this->step_len = $step_len;
 
         unset($min_tf, $min_diff, $step_len);
         return $this;

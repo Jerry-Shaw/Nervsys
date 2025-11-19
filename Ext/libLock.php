@@ -47,7 +47,7 @@ class libLock extends Factory
      */
     public function bindRedis(\Redis|libRedis $redis): self
     {
-        $this->redis = &$redis;
+        $this->redis = $redis;
 
         unset($redis);
         return $this;
@@ -130,7 +130,7 @@ class libLock extends Factory
         }
 
         $this->redis->expire($key, 0 < $life ? $life : 3);
-        $this->locks[] = &$key;
+        $this->locks[] = $key;
 
         unset($key, $life);
         return true;

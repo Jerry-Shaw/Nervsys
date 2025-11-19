@@ -76,7 +76,7 @@ class ProcMgr extends Factory
      */
     public function setArgvEndChar(string $end_char): self
     {
-        $this->argv_end_char = &$end_char;
+        $this->argv_end_char = $end_char;
 
         unset($end_char);
         return $this;
@@ -89,7 +89,7 @@ class ProcMgr extends Factory
      */
     public function setWorkDir(string $working_path): self
     {
-        $this->work_dir = &$working_path;
+        $this->work_dir = $working_path;
 
         unset($working_path);
         return $this;
@@ -103,8 +103,8 @@ class ProcMgr extends Factory
      */
     public function readAt(int $seconds, int|null $microseconds = null): self
     {
-        $this->read_seconds      = &$seconds;
-        $this->read_microseconds = &$microseconds;
+        $this->read_seconds      = $seconds;
+        $this->read_microseconds = $microseconds;
 
         unset($seconds, $microseconds);
         return $this;
@@ -169,7 +169,7 @@ class ProcMgr extends Factory
      */
     public function runPLB(int $run_proc = 8, int $max_executions = 2000): self
     {
-        $this->proc_max_executions = &$max_executions;
+        $this->proc_max_executions = $max_executions;
 
         for ($i = 0; $i < $run_proc; ++$i) {
             $this->runProc($i);

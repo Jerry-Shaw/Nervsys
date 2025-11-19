@@ -75,7 +75,7 @@ class FiberMgr extends Factory
                 $this->fiberDone($await_fiber, $callback);
             }
         } else {
-            $this->fibers[] = [&$await_fiber, &$callback];
+            $this->fibers[] = [$await_fiber, $callback];
         }
 
         unset($callable, $arguments, $callback, $await_fiber);

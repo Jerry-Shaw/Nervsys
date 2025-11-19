@@ -86,7 +86,7 @@ class libKeygen extends Factory
     {
         $keys = [];
 
-        $keys['key'] = &$key;
+        $keys['key'] = $key;
         $keys['iv']  = 0 === (ord($key[0]) & 1)
             ? substr($key, 0, 16)
             : substr($key, -16, 16);
