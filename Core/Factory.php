@@ -34,7 +34,10 @@ class Factory
         $class_name = get_called_class();
         $class_args = func_get_args();
 
-        if (method_exists($class_name, '__construct') && 1 === count($class_args) && is_array($class_args[0])) {
+        if (method_exists($class_name, '__construct')
+            && 1 === count($class_args)
+            && is_array($class_args[0])
+            && !array_is_list($class_args[0])) {
             $class_args = $class_args[0];
         }
 
