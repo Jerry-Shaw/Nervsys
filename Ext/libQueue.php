@@ -150,12 +150,12 @@ class libQueue extends Factory
         $app   = App::new();
         $OSMgr = OSMgr::new();
 
-        $procMgr = ProcMgr::new(
+        $procMgr = ProcMgr::new([
             $OSMgr->getPhpPath(),
             $app->script_path,
             '-c', '/' . __CLASS__ . '/QProc',
             '-d', json_encode(['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs])
-        );
+        ]);
 
         $procMgr->setWorkDir(dirname($app->script_path))->runPLB($proc_num);
 
