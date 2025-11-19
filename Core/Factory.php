@@ -45,12 +45,14 @@ class Factory
     {
         if (!method_exists($class_name, '__construct')) {
             $class_args = [];
-        } elseif (
-            1 === count($class_args)
-            && isset($class_args[0])
-            && is_array($class_args[0])
-            && !array_is_list($class_args[0])) {
-            $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args[0]);
+        } elseif (1 === count($class_args)) {
+            if (isset($class_args[0]) && is_array($class_args[0])) {
+                $class_args = $class_args[0];
+            }
+
+            if (!array_is_list($class_args)) {
+                $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
+            }
         }
 
         $class_key = hash('md5', $class_name . json_encode($class_args));
