@@ -147,17 +147,18 @@ class libQueue extends Factory
             unset($worker_key);
         }, $this->proc_worker_key);
 
-        $app   = App::new();
-        $OSMgr = OSMgr::new();
+        $app     = App::new();
+        $OSMgr   = OSMgr::new();
+        $procMgr = ProcMgr::new();
 
-        $procMgr = ProcMgr::new([
-            $OSMgr->getPhpPath(),
-            $app->script_path,
-            '-c', '/' . __CLASS__ . '/QProc',
-            '-d', json_encode(['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs])
-        ]);
-
-        $procMgr->setWorkDir(dirname($app->script_path))->runPLB($proc_num);
+        $procMgr->setWorkDir(dirname($app->script_path))
+            ->command([
+                $OSMgr->getPhpPath(),
+                $app->script_path,
+                '-c', '/' . __CLASS__ . '/QProc',
+                '-d', json_encode(['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs])
+            ])
+            ->runMP($proc_num);
 
         while ($this->redis->expire($this->proc_worker_key, 30)) {
             $this->syncDelayJobs();
