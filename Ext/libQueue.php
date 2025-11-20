@@ -34,6 +34,7 @@ class libQueue extends Factory
     public \Redis|libRedis $redis;
 
     private array $proc_redis_conf;
+    private array $proc_data_overrides = [];
 
     private string $proc_worker_key;
 
@@ -77,6 +78,19 @@ class libQueue extends Factory
         $this->redis = libRedis::new($redis_conf)->connect();
 
         unset($redis_conf);
+        return $this;
+    }
+
+    /**
+     * @param array $data_override
+     *
+     * @return $this
+     */
+    public function setDataOverride(array $data_override): self
+    {
+        $this->proc_data_overrides = $data_override;
+
+        unset($data_override);
         return $this;
     }
 
@@ -151,12 +165,18 @@ class libQueue extends Factory
         $OSMgr   = OSMgr::new();
         $procMgr = ProcMgr::new();
 
+        $proc_data = ['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs];
+
+        if (!empty($this->proc_data_overrides)) {
+            $proc_data['dataset'] = $this->proc_data_overrides;
+        }
+
         $procMgr->setWorkDir(dirname($app->script_path))
             ->command([
                 $OSMgr->getPhpPath(),
                 $app->script_path,
                 '-c', '/' . __CLASS__ . '/QProc',
-                '-d', json_encode(['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs])
+                '-d', json_encode($proc_data)
             ])
             ->runMP($proc_num);
 
@@ -177,14 +197,14 @@ class libQueue extends Factory
     }
 
     /**
-     * @param array $redis
      * @param int   $cycles
+     * @param array $redis
+     * @param array $dataset
      *
      * @return void
-     * @throws \RedisException
      * @throws \ReflectionException
      */
-    public function QProc(array $redis, int $cycles): void
+    public function QProc(int $cycles, array $redis, array $dataset = []): void
     {
         $error    = Error::new();
         $router   = Router::new();
@@ -237,7 +257,7 @@ class libQueue extends Factory
                     throw new \Exception('Queue CMD ERROR, redirected to: "' . $cmd[0] . '/' . $cmd[1] . '"', E_USER_NOTICE);
                 }
 
-                $resource = $security->getApiResource($cmd[0], $cmd[1], $job_data, \ReflectionMethod::IS_PUBLIC);
+                $resource = $security->getApiResource($cmd[0], $cmd[1], $dataset + $job_data, \ReflectionMethod::IS_PUBLIC);
                 $api_args = parent::buildArgs(Reflect::getCallable($resource['api'])->getParameters(), $resource['args']);
 
                 call_user_func($resource['api'], ...$api_args);
