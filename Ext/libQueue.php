@@ -34,6 +34,7 @@ class libQueue extends Factory
     public \Redis|libRedis $redis;
 
     private array $proc_redis_conf;
+    private array $proc_env_variable   = [];
     private array $proc_data_overrides = [];
 
     private string $proc_worker_key;
@@ -78,6 +79,19 @@ class libQueue extends Factory
         $this->redis = libRedis::new($redis_conf)->connect();
 
         unset($redis_conf);
+        return $this;
+    }
+
+    /**
+     * @param array $env_variable
+     *
+     * @return $this
+     */
+    public function setEnvVariable(array $env_variable): self
+    {
+        $this->proc_env_variable = $env_variable;
+
+        unset($env_variable);
         return $this;
     }
 
@@ -165,7 +179,7 @@ class libQueue extends Factory
         $OSMgr   = OSMgr::new();
         $procMgr = ProcMgr::new();
 
-        $proc_data = ['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs];
+        $proc_data = ['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs] + $this->proc_env_variable;
 
         if (!empty($this->proc_data_overrides)) {
             $proc_data['dataset'] = $this->proc_data_overrides;
