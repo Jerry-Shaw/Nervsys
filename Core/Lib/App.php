@@ -37,7 +37,6 @@ class App extends Factory
 
     public bool $is_cli   = false;
     public bool $is_https = false;
-    public bool $is_tls   = false;
 
     public bool $debug_mode = false;
 
@@ -155,7 +154,7 @@ class App extends Factory
             $this->user_lang = &$_SERVER['HTTP_ACCEPT_LANGUAGE'];
         }
 
-        $this->is_tls = $this->is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+        $this->is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
             ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
