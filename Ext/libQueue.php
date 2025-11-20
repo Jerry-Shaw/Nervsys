@@ -237,10 +237,10 @@ class libQueue extends Factory
                     throw new \Exception('Queue CMD ERROR, redirected to: "' . $cmd[0] . '/' . $cmd[1] . '"', E_USER_NOTICE);
                 }
 
-                $api_fn   = $security->getApiMethod($cmd[0], $cmd[1], $job_data, \ReflectionMethod::IS_PUBLIC);
-                $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $job_data);
+                $resource = $security->getApiResource($cmd[0], $cmd[1], $job_data, \ReflectionMethod::IS_PUBLIC);
+                $api_args = parent::buildArgs(Reflect::getCallable($resource['api'])->getParameters(), $resource['args']);
 
-                call_user_func($api_fn, ...$api_args);
+                call_user_func($resource['api'], ...$api_args);
             } catch (\Throwable $throwable) {
                 $this->saveError($job[0], $job_data, $throwable->getMessage());
                 $error->exceptionHandler($throwable, false, false);

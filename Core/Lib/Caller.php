@@ -29,43 +29,48 @@ class Caller extends Factory
 {
     /**
      * @param array $cmd
-     * @param array $args
+     * @param array $api_args
      * @param bool  $anti_xss
      *
      * @return mixed
      * @throws \ReflectionException
      */
-    public function runApiFn(array $cmd, array $args, bool $anti_xss): mixed
+    public function runApiFn(array $cmd, array $api_args, bool $anti_xss): mixed
     {
         $security = Security::new();
 
         try {
             if ($anti_xss) {
-                $args = $security->antiXss($args);
+                $api_args = $security->antiXss($api_args);
             }
 
-            $api_fn = Security::class !== $cmd[0]
-                ? $security->getApiMethod($cmd[0], $cmd[1], $args, \ReflectionMethod::IS_PUBLIC)
-                : [$security, $cmd[1]];
+            if (Security::class !== $cmd[0]) {
+                $resource = $security->getApiResource($cmd[0], $cmd[1], $api_args, \ReflectionMethod::IS_PUBLIC);
+                $api_fn   = $resource['api'];
+                $api_args = $resource['args'];
+                unset($resource);
+            } else {
+                $api_fn = [$security, $cmd[1]];
+            }
 
-            $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $args);
+            $fn_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $api_args);
         } catch (\ReflectionException $reflectionException) {
-            $api_fn   = current($security->fn_target_invalid);
-            $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $reflectionException->getMessage()]);
+            $api_fn  = current($security->fn_target_invalid);
+            $fn_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $reflectionException->getMessage()]);
 
             unset($reflectionException);
         } catch (\Throwable $throwable) {
             Error::new()->exceptionHandler($throwable, false, false);
 
-            $api_fn   = current($security->fn_argument_invalid);
-            $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $throwable->getMessage()]);
+            $api_fn  = current($security->fn_argument_invalid);
+            $fn_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), ['message' => $throwable->getMessage()]);
 
             unset($throwable);
         }
 
-        $fn_result = call_user_func($api_fn, ...$api_args);
+        $fn_result = call_user_func($api_fn, ...$fn_args);
 
-        unset($cmd, $args, $anti_xss, $security, $api_fn, $api_args);
+        unset($cmd, $api_args, $anti_xss, $security, $api_fn, $fn_args);
         return $fn_result;
     }
 
