@@ -61,7 +61,7 @@ class ProcMgr extends Factory
      *
      * @throws \ReflectionException
      */
-    public function __construct(array $command)
+    public function __construct(array $command = [])
     {
         $this->error   = Error::new();
         $this->command = $command;
