@@ -3,7 +3,7 @@
 /**
  * Captcha Image Extension
  *
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,7 +253,6 @@ class libCaptcha extends Factory
 
         //Output image
         imagejpeg($image, null, 25);
-        imagedestroy($image);
 
         //Capture output
         $codes['image'] = 'data:image/jpeg;base64,' . base64_encode(ob_get_contents());
