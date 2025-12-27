@@ -74,9 +74,9 @@ class libRedis extends Factory
         $this->redis = null;
 
         //Copy needed options
-        $this->db     = &$db;
-        $this->auth   = &$auth;
-        $this->prefix = &$prefix;
+        $this->db     = $db;
+        $this->auth   = $auth;
+        $this->prefix = $prefix;
 
         unset($host, $port, $auth, $db, $prefix, $timeout, $persist, $persist_id);
     }
@@ -90,7 +90,7 @@ class libRedis extends Factory
      */
     public function autoReconnect(int $retry_times): self
     {
-        $this->retry_limit = &$retry_times;
+        $this->retry_limit = $retry_times;
 
         unset($retry_times);
         return $this;

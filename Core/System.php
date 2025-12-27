@@ -143,14 +143,14 @@ trait System
         try {
             $log_path = rtrim($path, '\\/') . DIRECTORY_SEPARATOR . 'logs';
             rename($this->app->log_path, $log_path);
-            $this->app->log_path = &$log_path;
+            $this->app->log_path = $log_path;
         } catch (\Throwable) {
             //Directory exists
         }
 
-        $this->app->root_path = &$path;
+        $this->app->root_path = $path;
 
-        unset($path);
+        unset($path, $log_path);
         return $this;
     }
 
@@ -161,7 +161,7 @@ trait System
      */
     public function setApiDir(string $dir_name): self
     {
-        $this->app->api_dir = &$dir_name;
+        $this->app->api_dir = $dir_name;
 
         unset($dir_name);
         return $this;
@@ -174,7 +174,7 @@ trait System
      */
     public function setTimezone(string $timezone): self
     {
-        $this->app->timezone = &$timezone;
+        $this->app->timezone = $timezone;
 
         unset($timezone);
         return $this;
@@ -187,7 +187,7 @@ trait System
      */
     public function setDebugMode(bool $debug_mode): self
     {
-        $this->app->debug_mode = &$debug_mode;
+        $this->app->debug_mode = $debug_mode;
 
         unset($debug_mode);
         return $this;
@@ -266,7 +266,7 @@ trait System
      */
     public function readHeaderKeys(string ...$keys): self
     {
-        $this->IOData->header_keys = &$keys;
+        $this->IOData->header_keys = $keys;
 
         unset($keys);
         return $this;
@@ -279,7 +279,7 @@ trait System
      */
     public function readCookieKeys(string ...$keys): self
     {
-        $this->IOData->cookie_keys = &$keys;
+        $this->IOData->cookie_keys = $keys;
 
         unset($keys);
         return $this;
@@ -318,7 +318,7 @@ trait System
      */
     public function setContentType(string $content_type): self
     {
-        $this->IOData->content_type = &$content_type;
+        $this->IOData->content_type = $content_type;
 
         unset($content_type);
         return $this;
@@ -385,7 +385,7 @@ trait System
      */
     public function addExePathMapping(string $exe_name, string $exe_path): self
     {
-        $this->router->exe_path_mapping[$exe_name] = &$exe_path;
+        $this->router->exe_path_mapping[$exe_name] = $exe_path;
 
         unset($exe_name, $exe_path);
         return $this;

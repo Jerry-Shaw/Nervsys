@@ -28,7 +28,7 @@ use Nervsys\Core\System;
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.2.6');
+define('NS_VER', '8.2.8');
 define('NS_NAME', 'Blueberry');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
@@ -103,7 +103,7 @@ class NS
         $this->profiler->start('NS_DATA_READER');
 
         if (!$this->app->is_cli) {
-            $this->CORS->checkPermission($this->app->is_tls);
+            $this->CORS->checkPermission($this->app->is_https);
             $this->IOData->readCgi();
         } else {
             $this->IOData->readCli();

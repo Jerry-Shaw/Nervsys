@@ -25,7 +25,21 @@ use Nervsys\Core\Lib\IOData;
 
 class libSignature extends Factory
 {
-    public string $debug_key = 'dbg_str';
+    public bool   $debug_mode = false;
+    public string $debug_key  = 'dbg_str';
+
+    /**
+     * @param bool $debug_mode
+     *
+     * @return $this
+     */
+    public function setDebugMode(bool $debug_mode): self
+    {
+        $this->debug_mode = $debug_mode;
+
+        unset($debug_mode);
+        return $this;
+    }
 
     /**
      * @param string $key
@@ -137,6 +151,10 @@ class libSignature extends Factory
         $data['appKey']    = $app_key;
         $data['timestamp'] = $now_time;
         $data['nonceStr']  = $nonce_str;
+
+        if ($this->debug_mode) {
+            $data[$this->debug_key] = $server_str;
+        }
 
         unset($app_key, $app_secret, $sign_handler, $now_time, $sign_data, $nonce_str, $server_str);
         return $data;

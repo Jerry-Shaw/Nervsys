@@ -42,7 +42,7 @@ class libSessionOnRedis extends Factory
             return;
         }
 
-        $this->redis = &$redis;
+        $this->redis = $redis;
 
         //Set SESSION GC configurations
         ini_set('session.gc_divisor', 100);

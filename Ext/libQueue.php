@@ -34,6 +34,8 @@ class libQueue extends Factory
     public \Redis|libRedis $redis;
 
     private array $proc_redis_conf;
+    private array $proc_env_variable   = [];
+    private array $proc_data_overrides = [];
 
     private string $proc_worker_key;
 
@@ -52,7 +54,7 @@ class libQueue extends Factory
     {
         $this->proc_worker_key = 'Q:' . $name;
 
-        $this->queue_name      = &$name;
+        $this->queue_name      = $name;
         $this->QProc_key       = $this->proc_worker_key . ':QProc';
         $this->realtime_key    = $this->proc_worker_key . ':realtime';
         $this->delay_set_key   = $this->proc_worker_key . ':delaySet';
@@ -72,11 +74,37 @@ class libQueue extends Factory
      */
     public function setRedisConf(array $redis_conf): self
     {
-        $this->proc_redis_conf = &$redis_conf;
+        $this->proc_redis_conf = $redis_conf;
 
         $this->redis = libRedis::new($redis_conf)->connect();
 
         unset($redis_conf);
+        return $this;
+    }
+
+    /**
+     * @param array $env_variable
+     *
+     * @return $this
+     */
+    public function setEnvVariable(array $env_variable): self
+    {
+        $this->proc_env_variable = $env_variable;
+
+        unset($env_variable);
+        return $this;
+    }
+
+    /**
+     * @param array $data_override
+     *
+     * @return $this
+     */
+    public function setDataOverride(array $data_override): self
+    {
+        $this->proc_data_overrides = $data_override;
+
+        unset($data_override);
         return $this;
     }
 
@@ -147,17 +175,24 @@ class libQueue extends Factory
             unset($worker_key);
         }, $this->proc_worker_key);
 
-        $app   = App::new();
-        $OSMgr = OSMgr::new();
+        $app     = App::new();
+        $OSMgr   = OSMgr::new();
+        $procMgr = ProcMgr::new();
 
-        $procMgr = ProcMgr::new(
-            $OSMgr->getPhpPath(),
-            $app->script_path,
-            '-c', '/' . __CLASS__ . '/QProc',
-            '-d', json_encode(['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs])
-        );
+        $proc_data = ['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs] + $this->proc_env_variable;
 
-        $procMgr->setWorkDir(dirname($app->script_path))->runPLB($proc_num);
+        if (!empty($this->proc_data_overrides)) {
+            $proc_data['dataset'] = $this->proc_data_overrides;
+        }
+
+        $procMgr->setWorkDir(dirname($app->script_path))
+            ->command([
+                $OSMgr->getPhpPath(),
+                $app->script_path,
+                '-c', '/' . __CLASS__ . '/QProc',
+                '-d', json_encode($proc_data)
+            ])
+            ->runMP($proc_num);
 
         while ($this->redis->expire($this->proc_worker_key, 30)) {
             $this->syncDelayJobs();
@@ -176,14 +211,14 @@ class libQueue extends Factory
     }
 
     /**
-     * @param array $redis
      * @param int   $cycles
+     * @param array $redis
+     * @param array $dataset
      *
      * @return void
-     * @throws \RedisException
      * @throws \ReflectionException
      */
-    public function QProc(array $redis, int $cycles): void
+    public function QProc(int $cycles, array $redis, array $dataset = []): void
     {
         $error    = Error::new();
         $router   = Router::new();
@@ -236,10 +271,10 @@ class libQueue extends Factory
                     throw new \Exception('Queue CMD ERROR, redirected to: "' . $cmd[0] . '/' . $cmd[1] . '"', E_USER_NOTICE);
                 }
 
-                $api_fn   = $security->getApiMethod($cmd[0], $cmd[1], $job_data, \ReflectionMethod::IS_PUBLIC);
-                $api_args = parent::buildArgs(Reflect::getCallable($api_fn)->getParameters(), $job_data);
+                $resource = $security->getApiResource($cmd[0], $cmd[1], $dataset + $job_data, \ReflectionMethod::IS_PUBLIC);
+                $api_args = parent::buildArgs(Reflect::getCallable($resource['api'])->getParameters(), $resource['args']);
 
-                call_user_func($api_fn, ...$api_args);
+                call_user_func($resource['api'], ...$api_args);
             } catch (\Throwable $throwable) {
                 $this->saveError($job[0], $job_data, $throwable->getMessage());
                 $error->exceptionHandler($throwable, false, false);
@@ -273,10 +308,10 @@ class libQueue extends Factory
      */
     private function saveQJob(string $key, string $cmd, array $data, string $hash): int
     {
-        $data['@'] = &$cmd;
+        $data['@'] = $cmd;
 
         if ('' !== $hash) {
-            $data['!'] = &$hash;
+            $data['!'] = $hash;
         }
 
         $job_length = (int)$this->redis->lPush($key, json_encode($data, JSON_FORMAT));

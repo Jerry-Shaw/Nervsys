@@ -35,8 +35,8 @@ class App extends Factory
     public string $user_agent = 'Unknown';
     public string $timezone   = 'Asia/Shanghai';
 
-    public bool $is_cli = false;
-    public bool $is_tls = false;
+    public bool $is_cli   = false;
+    public bool $is_https = false;
 
     public bool $debug_mode = false;
 
@@ -47,7 +47,7 @@ class App extends Factory
      */
     public function setRoot(string $root_path): self
     {
-        $this->root_path = &$root_path;
+        $this->root_path = $root_path;
 
         unset($root_path);
         return $this;
@@ -60,7 +60,7 @@ class App extends Factory
      */
     public function setApiDir(string $api_dir): self
     {
-        $this->api_dir = &$api_dir;
+        $this->api_dir = $api_dir;
 
         unset($api_dir);
         return $this;
@@ -87,7 +87,7 @@ class App extends Factory
      */
     public function setDebugMode(bool $core_debug): self
     {
-        $this->debug_mode = &$core_debug;
+        $this->debug_mode = $core_debug;
 
         unset($core_debug);
         return $this;
@@ -154,7 +154,7 @@ class App extends Factory
             $this->user_lang = &$_SERVER['HTTP_ACCEPT_LANGUAGE'];
         }
 
-        $this->is_tls = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
+        $this->is_https = (isset($_SERVER['HTTPS']) && 'on' === $_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO']);
 
         $ip_rec = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
             ? $_SERVER['HTTP_X_FORWARDED_FOR'] . ', ' . $_SERVER['REMOTE_ADDR']
@@ -166,7 +166,7 @@ class App extends Factory
 
         foreach ($ip_list as $value) {
             if (is_string($addr = filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6))) {
-                $this->client_ip = &$addr;
+                $this->client_ip = $addr;
                 break;
             }
         }

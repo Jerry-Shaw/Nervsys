@@ -3,7 +3,7 @@
 /**
  * Image Extension
  *
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,8 +98,6 @@ class libImage extends Factory
 
         $result = ('image' . $mime_type)($gd_image, $img_dst);
 
-        imagedestroy($gd_image);
-
         unset($img_src, $img_dst, $width, $height, $crop, $mime_type, $gd_image);
         return $result;
     }
@@ -166,9 +164,6 @@ class libImage extends Factory
         $gd_type = $this->getImageMimeType($img_src);
         $result  = ('image' . $gd_type)($rotated_image, $img_dst);
 
-        imagedestroy($gd_image);
-        imagedestroy($rotated_image);
-
         unset($img_src, $img_dst, $angle, $fill_color, $gd_image, $color, $rotated_image, $gd_type);
         return $result;
     }
@@ -211,10 +206,6 @@ class libImage extends Factory
         );
 
         $result = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
-
-        imagedestroy($gd_image);
-        imagedestroy($gd_watermark);
-        imagedestroy($gd_merged);
 
         unset($img_src, $img_dst, $img_watermark, $layout, $options, $jpeg_quality, $gd_image, $gd_watermark, $gd_merged);
         return $result;
@@ -285,10 +276,6 @@ class libImage extends Factory
 
         $result = imagejpeg($gd_merged, $img_dst, $jpeg_quality);
 
-        imagedestroy($gd_watermark);
-        imagedestroy($gd_image);
-        imagedestroy($gd_merged);
-
         unset($img_src, $img_dst, $text, $font, $layout, $options, $jpeg_quality, $font_size, $text_box, $min_x, $min_y, $max_x, $max_y, $padding, $offset, $text_width, $text_height, $gd_watermark, $font_color, $gd_image, $gd_merged);
         return $result;
     }
@@ -306,8 +293,8 @@ class libImage extends Factory
     public function getCropSize(int $img_width, int $img_height, int $to_width, int $to_height): array
     {
         $size               = [];
-        $size['dst_width']  = &$to_width;
-        $size['dst_height'] = &$to_height;
+        $size['dst_width']  = $to_width;
+        $size['dst_height'] = $to_height;
         $size['src_width']  = $img_width;
         $size['src_height'] = $img_height;
         $size['position_x'] = $size['position_y'] = 0;
@@ -367,14 +354,14 @@ class libImage extends Factory
         $ratio_diff = round($ratio_img - $ratio_need, 2);
 
         if (0 < $ratio_diff) {
-            $size['dst_width']  = &$to_width;
+            $size['dst_width']  = $to_width;
             $size['dst_height'] = (int)($to_width / $ratio_img);
         } elseif (0 > $ratio_diff) {
-            $size['dst_height'] = &$to_height;
+            $size['dst_height'] = $to_height;
             $size['dst_width']  = (int)($to_height * $ratio_img);
         } elseif ($img_width !== $to_width || $img_height !== $to_height) {
-            $size['dst_width']  = &$to_width;
-            $size['dst_height'] = &$to_height;
+            $size['dst_width']  = $to_width;
+            $size['dst_height'] = $to_height;
         }
 
         unset($img_width, $img_height, $to_width, $to_height, $ratio_img, $ratio_need, $ratio_diff);
@@ -423,8 +410,6 @@ class libImage extends Factory
             $img_size['src_height']
         );
 
-        imagedestroy($gd_image);
-
         unset($gd_image, $width, $height, $crop, $gd_width, $gd_height, $img_size);
         return $dst_image;
     }
@@ -470,9 +455,6 @@ class libImage extends Factory
         }
 
         imagecopymerge($gd_image, $gd_canvas, 0, 0, 0, 0, $canvas_width, $canvas_height, $watermark_alpha);
-
-        imagedestroy($gd_watermark);
-        imagedestroy($gd_canvas);
 
         unset($gd_watermark, $watermark_width, $watermark_height, $watermark_angle, $watermark_alpha, $layout, $margin_right, $margin_bottom, $fill_color, $position_list, $canvas_width, $canvas_height, $gd_canvas, $positions);
         return $gd_image;

@@ -65,8 +65,8 @@ class libPDO extends Factory
         $this->pdo = null;
 
         //Copy username & password
-        $this->usr = &$user;
-        $this->pwd = &$pwd;
+        $this->usr = $user;
+        $this->pwd = $pwd;
 
         //Build DSN & OPTION
         $this->buildDsn($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);

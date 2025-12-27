@@ -34,8 +34,6 @@ class ProcMgr extends Factory
 
     public Error $error;
 
-    public array $proc_cmd;
-
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
     public int $proc_max_executions = 2000;
@@ -44,6 +42,7 @@ class ProcMgr extends Factory
 
     public string|null $work_dir = null;
 
+    protected array $command       = [];
     protected array $proc_pid      = [];
     protected array $proc_list     = [];
     protected array $proc_idle     = [];
@@ -57,16 +56,24 @@ class ProcMgr extends Factory
     protected array $proc_callbacks = [];
 
     /**
-     * @param string ...$proc_cmd
-     *
      * @throws \ReflectionException
      */
-    public function __construct(string ...$proc_cmd)
+    public function __construct()
     {
-        $this->error    = Error::new();
-        $this->proc_cmd = &$proc_cmd;
+        $this->error = Error::new();
+    }
 
-        unset($proc_cmd);
+    /**
+     * @param array $command
+     *
+     * @return $this
+     */
+    public function command(array $command): self
+    {
+        $this->command = $command;
+
+        unset($command);
+        return $this;
     }
 
     /**
@@ -76,7 +83,7 @@ class ProcMgr extends Factory
      */
     public function setArgvEndChar(string $end_char): self
     {
-        $this->argv_end_char = &$end_char;
+        $this->argv_end_char = $end_char;
 
         unset($end_char);
         return $this;
@@ -89,7 +96,7 @@ class ProcMgr extends Factory
      */
     public function setWorkDir(string $working_path): self
     {
-        $this->work_dir = &$working_path;
+        $this->work_dir = $working_path;
 
         unset($working_path);
         return $this;
@@ -103,24 +110,26 @@ class ProcMgr extends Factory
      */
     public function readAt(int $seconds, int|null $microseconds = null): self
     {
-        $this->read_seconds      = &$seconds;
-        $this->read_microseconds = &$microseconds;
+        $this->read_seconds      = $seconds;
+        $this->read_microseconds = $microseconds;
 
         unset($seconds, $microseconds);
         return $this;
     }
 
     /**
+     * Run command in single process
+     *
      * @param int $idx
      *
      * @return $this
      * @throws \Exception
      */
-    public function runProc(int $idx = 0): self
+    public function run(int $idx = 0): self
     {
         try {
             $proc = proc_open(
-                $this->proc_cmd,
+                $this->command,
                 [
                     ['pipe', 'rb'],
                     ['socket', 'wb'],
@@ -161,18 +170,20 @@ class ProcMgr extends Factory
     }
 
     /**
+     * Run command in multi-processes (Worker Load Balance)
+     *
      * @param int $run_proc
      * @param int $max_executions
      *
      * @return $this
      * @throws \Exception
      */
-    public function runPLB(int $run_proc = 8, int $max_executions = 2000): self
+    public function runMP(int $run_proc = 8, int $max_executions = 2000): self
     {
-        $this->proc_max_executions = &$max_executions;
+        $this->proc_max_executions = $max_executions;
 
         for ($i = 0; $i < $run_proc; ++$i) {
-            $this->runProc($i);
+            $this->run($i);
         }
 
         unset($run_proc, $max_executions, $i);
@@ -184,7 +195,7 @@ class ProcMgr extends Factory
      */
     public function getCmd(): string
     {
-        return implode(' ', $this->proc_cmd);
+        return implode(' ', $this->command);
     }
 
     /**
@@ -242,7 +253,7 @@ class ProcMgr extends Factory
     {
         if (0 === $this->getStatus($idx)) {
             $this->close($idx);
-            $this->runProc($idx);
+            $this->run($idx);
         }
 
         unset($idx);
@@ -496,6 +507,7 @@ class ProcMgr extends Factory
     /**
      * @return int
      * @throws \ReflectionException
+     * @throws \Exception
      */
     protected function getIdleProcIdx(): int
     {
@@ -515,7 +527,7 @@ class ProcMgr extends Factory
 
         if (0 === $status) {
             $this->close($idx);
-            $this->runProc($idx);
+            $this->run($idx);
         }
 
         unset($idx, $status);

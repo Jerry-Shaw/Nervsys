@@ -38,13 +38,16 @@ class Security extends Factory
      * @param array    $class_args
      * @param int|null $filter
      *
-     * @return callable
+     * @return array
      * @throws \ReflectionException
      */
-    public function getApiMethod(string $class_name, string $method_name, array &$class_args = [], int|null $filter = null): callable
+    public function getApiResource(string $class_name, string $method_name, array $class_args = [], int|null $filter = null): array
     {
-        $fn_list = [];
-        $fn_api  = current($this->fn_target_invalid);
+        $fn_list  = [];
+        $resource = [
+            'api'  => current($this->fn_target_invalid),
+            'args' => $class_args
+        ];
 
         try {
             $traits  = Reflect::getTraits($class_name);
@@ -52,7 +55,7 @@ class Security extends Factory
         } catch (\Throwable $throwable) {
             Error::new()->exceptionHandler($throwable, false, false);
             unset($class_name, $method_name, $class_args, $filter, $fn_list, $traits, $methods, $throwable);
-            return $fn_api;
+            return $resource;
         }
 
         /** @var \ReflectionClass $r_class */
@@ -69,14 +72,14 @@ class Security extends Factory
             }
 
             if (str_starts_with($fn_list[$method]->class, NS_NAMESPACE) && 'cli' !== PHP_SAPI) {
-                $fn_api = current($this->fn_target_blocked);
+                $resource['api'] = current($this->fn_target_blocked);
                 break;
             }
 
-            $fn_api = [!$fn_list[$method]->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method];
+            $resource['api'] = [!$fn_list[$method]->isStatic() ? parent::getObj($class_name, $class_args) : $class_name, $method];
 
             if ($method_name !== $method) {
-                $fn_params  = Reflect::getCallable($fn_api)->getParameters();
+                $fn_params  = Reflect::getCallable($resource['api'])->getParameters();
                 $class_args = [$fn_params[0]->name => $method_name, $fn_params[1]->name => $class_args];
             }
 
@@ -84,7 +87,7 @@ class Security extends Factory
         }
 
         unset($class_name, $method_name, $class_args, $filter, $fn_list, $traits, $methods, $r_class, $r_methods, $method, $fn_params);
-        return $fn_api;
+        return $resource;
     }
 
     /**

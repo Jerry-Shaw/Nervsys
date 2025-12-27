@@ -42,7 +42,7 @@ class libCrypt extends Factory
      */
     public function bindKeygen(libKeygen $keygen): self
     {
-        $this->libKeygen = &$keygen;
+        $this->libKeygen = $keygen;
 
         unset($keygen);
         return $this;
@@ -57,7 +57,7 @@ class libCrypt extends Factory
      */
     public function setMethod(string $method): self
     {
-        $this->method = &$method;
+        $this->method = $method;
 
         unset($method);
         return $this;
@@ -72,7 +72,7 @@ class libCrypt extends Factory
      */
     public function setOpensslCnfPath(string $file_path): self
     {
-        $this->openssl_cnf = &$file_path;
+        $this->openssl_cnf = $file_path;
 
         unset($file_path);
         return $this;
@@ -109,11 +109,11 @@ class libCrypt extends Factory
         $public = openssl_pkey_get_details($openssl);
 
         if (false !== $public) {
-            $keys['public'] = &$public['key'];
+            $keys['public'] = $public['key'];
         }
 
         if (openssl_pkey_export($openssl, $private, null, $config)) {
-            $keys['private'] = &$private;
+            $keys['private'] = $private;
         }
 
         unset($config, $openssl, $public, $private);

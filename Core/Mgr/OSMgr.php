@@ -113,7 +113,7 @@ class OSMgr extends Factory
      */
     public function inBackground(bool $in_background): self
     {
-        $this->in_background = &$in_background;
+        $this->in_background = $in_background;
 
         unset($in_background);
         return $this;
@@ -126,7 +126,7 @@ class OSMgr extends Factory
      */
     public function useProfile(bool $use_profile): self
     {
-        $this->use_profile = &$use_profile;
+        $this->use_profile = $use_profile;
 
         unset($use_profile);
         return $this;

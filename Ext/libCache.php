@@ -38,7 +38,7 @@ class libCache extends Factory
      */
     public function bindRedis(\Redis|libRedis $redis): self
     {
-        $this->redis = &$redis;
+        $this->redis = $redis;
 
         unset($redis);
         return $this;

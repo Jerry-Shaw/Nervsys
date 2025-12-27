@@ -3,7 +3,7 @@
 /**
  * Captcha Image Extension
  *
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ class libCaptcha extends Factory
      */
     public function bindCrypt(libCrypt $libCrypt): self
     {
-        $this->libCrypt = &$libCrypt;
+        $this->libCrypt = $libCrypt;
 
         unset($libCrypt);
         return $this;
@@ -86,7 +86,7 @@ class libCaptcha extends Factory
      */
     public function bindRedis(\Redis|libRedis $redis): self
     {
-        $this->redis     = &$redis;
+        $this->redis     = $redis;
         $this->use_redis = true;
 
         unset($redis);
@@ -103,8 +103,8 @@ class libCaptcha extends Factory
      */
     public function setSize(int $width = 240, int $height = 80): self
     {
-        $this->width  = &$width;
-        $this->height = &$height;
+        $this->width  = $width;
+        $this->height = $height;
 
         unset($width, $height);
         return $this;
@@ -119,7 +119,7 @@ class libCaptcha extends Factory
      */
     public function setFont(string $font_file): self
     {
-        $this->font_file = &$font_file;
+        $this->font_file = $font_file;
 
         unset($font_file);
         return $this;
@@ -134,7 +134,7 @@ class libCaptcha extends Factory
      */
     public function setLength(string $length): self
     {
-        $this->length = &$length;
+        $this->length = $length;
 
         unset($length);
         return $this;
@@ -149,7 +149,7 @@ class libCaptcha extends Factory
      */
     public function setTypes(string ...$type): self
     {
-        $this->types = &$type;
+        $this->types = $type;
 
         unset($type);
         return $this;
@@ -253,7 +253,6 @@ class libCaptcha extends Factory
 
         //Output image
         imagejpeg($image, null, 25);
-        imagedestroy($image);
 
         //Capture output
         $codes['image'] = 'data:image/jpeg;base64,' . base64_encode(ob_get_contents());
@@ -307,7 +306,7 @@ class libCaptcha extends Factory
             unset($key_name);
         } else {
             //Store in client
-            $key_hash = $this->libCrypt->sign(json_encode(['hash' => &$code, 'life' => time() + $life]));
+            $key_hash = $this->libCrypt->sign(json_encode(['hash' => $code, 'life' => time() + $life]));
         }
 
         unset($code, $life);
@@ -343,7 +342,7 @@ class libCaptcha extends Factory
                 return '';
             }
 
-            $key_code = &$json['hash'];
+            $key_code = $json['hash'];
             unset($res, $json);
         }
 

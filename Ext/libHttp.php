@@ -165,7 +165,7 @@ class libHttp extends Factory
      */
     public function remOptions(int ...$curl_opts): self
     {
-        $this->rem_options = &$curl_opts;
+        $this->rem_options = $curl_opts;
 
         unset($curl_opts);
         return $this;
@@ -178,7 +178,7 @@ class libHttp extends Factory
      */
     public function setCookie(string $cookie): self
     {
-        $this->runtime_data['cookie'] = &$cookie;
+        $this->runtime_data['cookie'] = $cookie;
 
         unset($cookie);
         return $this;
@@ -193,7 +193,7 @@ class libHttp extends Factory
      */
     public function setHttpMethod(string $http_method): self
     {
-        $this->runtime_data['http_method'] = &$http_method;
+        $this->runtime_data['http_method'] = $http_method;
 
         unset($http_method);
         return $this;
@@ -208,7 +208,7 @@ class libHttp extends Factory
      */
     public function setContentType(string $content_type): self
     {
-        $this->runtime_data['http_content_type'] = &$content_type;
+        $this->runtime_data['http_content_type'] = $content_type;
 
         unset($content_type);
         return $this;
@@ -223,7 +223,7 @@ class libHttp extends Factory
      */
     public function setAcceptEncoding(string $accept_encoding): self
     {
-        $this->runtime_data['accept_encoding'] = &$accept_encoding;
+        $this->runtime_data['accept_encoding'] = $accept_encoding;
 
         unset($accept_encoding);
         return $this;
@@ -238,7 +238,7 @@ class libHttp extends Factory
      */
     public function setTimeout(int $timeout): self
     {
-        $this->runtime_data['timeout'] = &$timeout;
+        $this->runtime_data['timeout'] = $timeout;
 
         unset($timeout);
         return $this;
@@ -253,7 +253,7 @@ class libHttp extends Factory
      */
     public function setReferer(string $referer): self
     {
-        $this->runtime_data['referer'] = &$referer;
+        $this->runtime_data['referer'] = $referer;
 
         unset($referer);
         return $this;
@@ -268,7 +268,7 @@ class libHttp extends Factory
      */
     public function setUserAgent(string $user_agent): self
     {
-        $this->runtime_data['user_agent'] = &$user_agent;
+        $this->runtime_data['user_agent'] = $user_agent;
 
         unset($user_agent);
         return $this;
@@ -283,7 +283,7 @@ class libHttp extends Factory
      */
     public function setMaxFollow(int $max_follow): self
     {
-        $this->runtime_data['max_follow'] = &$max_follow;
+        $this->runtime_data['max_follow'] = $max_follow;
 
         unset($max_follow);
         return $this;
@@ -298,7 +298,7 @@ class libHttp extends Factory
      */
     public function setAcceptType(string $accept_type): self
     {
-        $this->runtime_data['accept_type'] = &$accept_type;
+        $this->runtime_data['accept_type'] = $accept_type;
 
         unset($accept_type);
         return $this;
@@ -313,7 +313,7 @@ class libHttp extends Factory
      */
     public function setETag(string $etag): self
     {
-        $this->runtime_data['etag'] = &$etag;
+        $this->runtime_data['etag'] = $etag;
 
         unset($etag);
         return $this;
@@ -328,7 +328,7 @@ class libHttp extends Factory
      */
     public function setLastModified(string $last_modified): self
     {
-        $this->runtime_data['last_modified'] = &$last_modified;
+        $this->runtime_data['last_modified'] = $last_modified;
 
         unset($last_modified);
         return $this;
@@ -343,7 +343,7 @@ class libHttp extends Factory
      */
     public function setSslVerifyHost(int $ssl_verifyhost): self
     {
-        $this->runtime_data['ssl_verifyhost'] = &$ssl_verifyhost;
+        $this->runtime_data['ssl_verifyhost'] = $ssl_verifyhost;
 
         unset($ssl_verifyhost);
         return $this;
@@ -358,7 +358,7 @@ class libHttp extends Factory
      */
     public function setSslVerifyPeer(bool $ssl_verifypeer): self
     {
-        $this->runtime_data['ssl_verifypeer'] = &$ssl_verifypeer;
+        $this->runtime_data['ssl_verifypeer'] = $ssl_verifypeer;
 
         unset($ssl_verifypeer);
         return $this;
@@ -374,8 +374,8 @@ class libHttp extends Factory
      */
     public function setProxy(string $proxy, string $proxy_passwd): self
     {
-        $this->runtime_data['proxy']        = &$proxy;
-        $this->runtime_data['proxy_passwd'] = &$proxy_passwd;
+        $this->runtime_data['proxy']        = $proxy;
+        $this->runtime_data['proxy_passwd'] = $proxy_passwd;
 
         unset($proxy, $proxy_passwd);
         return $this;
@@ -390,7 +390,7 @@ class libHttp extends Factory
      */
     public function withBody(bool $with_body): self
     {
-        $this->runtime_data['with_body'] = &$with_body;
+        $this->runtime_data['with_body'] = $with_body;
 
         unset($with_body);
         return $this;
@@ -422,7 +422,7 @@ class libHttp extends Factory
         //Save to file
         if ('' !== $to_file) {
             $file_handle                = fopen($to_file, 'wb');
-            $curl_options[CURLOPT_FILE] = &$file_handle;
+            $curl_options[CURLOPT_FILE] = $file_handle;
         }
 
         //Set cURL options
@@ -610,7 +610,7 @@ class libHttp extends Factory
         $this->runtime_data += self::CURL_DEFAULT;
 
         //Merge URL data
-        $this->runtime_data['url_unit'] = &$url_unit;
+        $this->runtime_data['url_unit'] = $url_unit;
 
         //Uppercase HTTP method
         $this->runtime_data['http_method'] = strtoupper($this->runtime_data['http_method']);
@@ -645,23 +645,23 @@ class libHttp extends Factory
         $curl_opt += [CURLOPT_FOLLOWLOCATION => false];
 
         if (isset($runtime_data['cookie'])) {
-            $curl_opt[CURLOPT_COOKIE] = &$runtime_data['cookie'];
+            $curl_opt[CURLOPT_COOKIE] = $runtime_data['cookie'];
         }
 
         if (isset($runtime_data['referer'])) {
-            $curl_opt[CURLOPT_REFERER] = &$runtime_data['referer'];
+            $curl_opt[CURLOPT_REFERER] = $runtime_data['referer'];
         }
 
         if (isset($runtime_data['max_follow']) && 0 < $runtime_data['max_follow']) {
             $curl_opt[CURLOPT_FOLLOWLOCATION] = true;
-            $curl_opt[CURLOPT_MAXREDIRS]      = &$runtime_data['max_follow'];
+            $curl_opt[CURLOPT_MAXREDIRS]      = $runtime_data['max_follow'];
         }
 
         if (isset($runtime_data['proxy'])) {
-            $curl_opt[CURLOPT_PROXY] = &$runtime_data['proxy'];
+            $curl_opt[CURLOPT_PROXY] = $runtime_data['proxy'];
 
             if (isset($runtime_data['proxy_passwd'])) {
-                $curl_opt[CURLOPT_PROXYUSERPWD] = &$runtime_data['proxy_passwd'];
+                $curl_opt[CURLOPT_PROXYUSERPWD] = $runtime_data['proxy_passwd'];
             }
         }
 
@@ -677,7 +677,7 @@ class libHttp extends Factory
             } elseif (false !== stripos($runtime_data['http_content_type'], 'xml')) {
                 $curl_opt[CURLOPT_POSTFIELDS] = IOData::new()->toXml($runtime_data['data']);
             } else {
-                $curl_opt[CURLOPT_POSTFIELDS] = &$runtime_data['data'];
+                $curl_opt[CURLOPT_POSTFIELDS] = $runtime_data['data'];
             }
         }
 
@@ -686,14 +686,14 @@ class libHttp extends Factory
         //Using standard port number when no specific port is assigned in URL
         $curl_opt[CURLOPT_PORT] = $runtime_data['url_unit']['port'] ?? ('https' === $runtime_data['url_unit']['scheme'] ? 443 : 80);
 
-        $curl_opt[CURLOPT_HEADER]         = &$with_header;
-        $curl_opt[CURLOPT_TIMEOUT]        = &$runtime_data['timeout'];
-        $curl_opt[CURLOPT_ENCODING]       = &$runtime_data['accept_encoding'];
-        $curl_opt[CURLOPT_USERAGENT]      = &$runtime_data['user_agent'];
-        $curl_opt[CURLOPT_HTTPHEADER]     = &$runtime_data['header'];
-        $curl_opt[CURLOPT_CUSTOMREQUEST]  = &$runtime_data['http_method'];
-        $curl_opt[CURLOPT_SSL_VERIFYHOST] = &$runtime_data['ssl_verifyhost'];
-        $curl_opt[CURLOPT_SSL_VERIFYPEER] = &$runtime_data['ssl_verifypeer'];
+        $curl_opt[CURLOPT_HEADER]         = $with_header;
+        $curl_opt[CURLOPT_TIMEOUT]        = $runtime_data['timeout'];
+        $curl_opt[CURLOPT_ENCODING]       = $runtime_data['accept_encoding'];
+        $curl_opt[CURLOPT_USERAGENT]      = $runtime_data['user_agent'];
+        $curl_opt[CURLOPT_HTTPHEADER]     = $runtime_data['header'];
+        $curl_opt[CURLOPT_CUSTOMREQUEST]  = $runtime_data['http_method'];
+        $curl_opt[CURLOPT_SSL_VERIFYHOST] = $runtime_data['ssl_verifyhost'];
+        $curl_opt[CURLOPT_SSL_VERIFYPEER] = $runtime_data['ssl_verifypeer'];
 
         //Remove specific cURL options
         if (!empty($this->rem_options)) {
@@ -725,25 +725,25 @@ class libHttp extends Factory
         }
 
         if (isset($runtime_data['cookie'])) {
-            $header_unit['Cookie'] = &$runtime_data['cookie'];
+            $header_unit['Cookie'] = $runtime_data['cookie'];
         }
 
         if (isset($runtime_data['etag'])) {
-            $header_unit['If-None-Match'] = &$runtime_data['etag'];
+            $header_unit['If-None-Match'] = $runtime_data['etag'];
         }
 
         if (isset($runtime_data['last_modified'])) {
-            $header_unit['If-Modified-Since'] = &$runtime_data['last_modified'];
+            $header_unit['If-Modified-Since'] = $runtime_data['last_modified'];
         }
 
         $header_unit += [
-            'Accept'          => &$runtime_data['accept_type'],
-            'Accept-Charset'  => &$runtime_data['accept_charset'],
-            'Accept-Encoding' => &$runtime_data['accept_encoding'],
-            'Accept-Language' => &$runtime_data['accept_language'],
-            'Content-Type'    => &$runtime_data['http_content_type'],
-            'User-Agent'      => &$runtime_data['user_agent'],
-            'Connection'      => &$runtime_data['http_connection']
+            'Accept'          => $runtime_data['accept_type'],
+            'Accept-Charset'  => $runtime_data['accept_charset'],
+            'Accept-Encoding' => $runtime_data['accept_encoding'],
+            'Accept-Language' => $runtime_data['accept_language'],
+            'Content-Type'    => $runtime_data['http_content_type'],
+            'User-Agent'      => $runtime_data['user_agent'],
+            'Connection'      => $runtime_data['http_connection']
         ];
 
         $runtime_data['header'] = [$runtime_data['http_method'] . ' ' . $url_unit['path'] . $url_unit['query'] . ' ' . $runtime_data['http_ver']];

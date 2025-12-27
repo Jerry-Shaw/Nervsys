@@ -97,7 +97,7 @@ class IOData extends Factory
         }
 
         if (!empty($argv)) {
-            $this->src_argv = &$argv;
+            $this->src_argv = $argv;
         }
 
         $this->content_type = 'text/plain';
@@ -109,7 +109,7 @@ class IOData extends Factory
 
             foreach ($this->response_types as $type) {
                 if (str_contains($type, $opt['r'])) {
-                    $this->content_type = &$type;
+                    $this->content_type = $type;
                     break;
                 }
             }
@@ -323,7 +323,7 @@ class IOData extends Factory
             }
         }
 
-        $this->content_type = &$match_type;
+        $this->content_type = $match_type;
         unset($match_type, $match_pos, $type, $pos);
     }
 

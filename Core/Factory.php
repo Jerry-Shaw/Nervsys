@@ -4,7 +4,7 @@
  * Factory library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,32 +31,32 @@ class Factory
      */
     public static function new(): static
     {
-        $class_name = get_called_class();
-        $class_args = func_get_args();
-
-        if (method_exists($class_name, '__construct') && 1 === count($class_args) && is_array($class_args[0])) {
-            $class_args = $class_args[0];
-        }
-
-        $object = self::getObj($class_name, $class_args);
-
-        unset($class_name, $class_args);
-        return $object;
+        return self::getObj(get_called_class(), func_get_args(), true);
     }
 
     /**
      * @param string $class_name
      * @param array  $class_args
+     * @param bool   $user_passed
      *
      * @return object
      * @throws \ReflectionException
      */
-    public static function getObj(string $class_name, array $class_args = []): object
+    public static function getObj(string $class_name, array $class_args = [], bool $user_passed = false): object
     {
         if (!method_exists($class_name, '__construct')) {
             $class_args = [];
-        } elseif (!array_is_list($class_args)) {
-            $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
+        } elseif (!$user_passed) {
+            if (!array_is_list($class_args)) {
+                $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args);
+            }
+        } else {
+            if (1 === count($class_args)
+                && isset($class_args[0])
+                && is_array($class_args[0])
+                && !array_is_list($class_args[0])) {
+                $class_args = self::buildArgs(Reflect::getMethod($class_name, '__construct')->getParameters(), $class_args[0]);
+            }
         }
 
         $class_key = hash('md5', $class_name . json_encode($class_args));
@@ -65,7 +65,7 @@ class Factory
             self::$objects[$class_key] = new ('\\' . trim($class_name, '\\'))(...$class_args);
         }
 
-        unset($class_name, $class_args);
+        unset($class_name, $class_args, $user_passed);
         return self::$objects[$class_key];
     }
 

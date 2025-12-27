@@ -38,8 +38,8 @@ class Profiler extends Factory
      */
     public function setThresholds(int $memory_bytes, int $time_milliseconds): self
     {
-        $this->memory_threshold = &$memory_bytes;
-        $this->timer_threshold  = &$time_milliseconds;
+        $this->memory_threshold = $memory_bytes;
+        $this->timer_threshold  = $time_milliseconds;
 
         unset($memory_bytes, $time_milliseconds);
         return $this;
