@@ -57,13 +57,13 @@ class CORS extends Factory
     }
 
     /**
-     * @param bool $is_tls
+     * @param bool $is_https
      *
      * @return void
      */
-    public function checkPermission(bool $is_tls): void
+    public function checkPermission(bool $is_https): void
     {
-        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === ($is_tls ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
+        if (!isset($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ORIGIN'] === ($is_https ? 'https://' : 'http://') . $_SERVER['HTTP_HOST']) {
             return;
         }
 
@@ -85,6 +85,6 @@ class CORS extends Factory
             exit(0);
         }
 
-        unset($is_tls, $cors_rules);
+        unset($is_https, $cors_rules);
     }
 }
