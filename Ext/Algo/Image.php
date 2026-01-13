@@ -19,11 +19,11 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Ext;
+namespace Nervsys\Ext\Algo;
 
 use Nervsys\Core\Factory;
 
-class algoImage extends Factory
+class Image extends Factory
 {
     /**
      * @param \GdImage $gd_image

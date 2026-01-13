@@ -19,11 +19,11 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Ext;
+namespace Nervsys\Ext\Algo;
 
 use Nervsys\Core\Factory;
 
-class algoTFIDF extends Factory
+class TFIDF extends Factory
 {
     public array $src_grams = [];
     public array $src_docs  = [];

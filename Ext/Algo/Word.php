@@ -19,11 +19,11 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Ext;
+namespace Nervsys\Ext\Algo;
 
 use Nervsys\Core\Factory;
 
-class algoFindWords extends Factory
+class Word extends Factory
 {
     public int   $min_tf   = 2;
     public int   $step_len = 8;

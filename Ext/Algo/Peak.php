@@ -19,11 +19,11 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Ext;
+namespace Nervsys\Ext\Algo;
 
 use Nervsys\Core\Factory;
 
-class algoFindPeaks extends Factory
+class Peak extends Factory
 {
     public array $keys;
     public array $values;

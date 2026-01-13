@@ -19,11 +19,11 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Ext;
+namespace Nervsys\Ext\Algo;
 
 use Nervsys\Core\Factory;
 
-class algoVSM extends Factory
+class VSM extends Factory
 {
     /**
      * Calculate space vector distance between two data list

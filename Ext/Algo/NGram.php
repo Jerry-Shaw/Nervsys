@@ -19,11 +19,11 @@
  * limitations under the License.
  */
 
-namespace Nervsys\Ext;
+namespace Nervsys\Ext\Algo;
 
 use Nervsys\Core\Factory;
 
-class algoNGram extends Factory
+class NGram extends Factory
 {
     public int   $src_len;
     public array $src_data;
