@@ -28,11 +28,15 @@ use Nervsys\Core\System;
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.2.8');
+define('NS_VER', '8.3.0');
 define('NS_NAME', 'Blueberry');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
 define('NS_HOSTNAME', gethostname() ?: 'localhost');
+
+if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+    throw new \Exception(NS_NAMESPACE . ' ' . NS_VER . ' ' . NS_NAME . ' needs PHP version 8.1.0 or higher');
+}
 
 define('JSON_FORMAT', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
 define('JSON_PRETTY', JSON_FORMAT | JSON_PRETTY_PRINT);
@@ -90,15 +94,11 @@ class NS
      */
     public function go(): void
     {
-        date_default_timezone_set($this->app->timezone);
-
         if ($this->app->debug_mode) {
-            $this->error->saveLog($this->app, 'system-' . date('Ymd') . '.log', $this->error->formatLog('warning', 'DEBUG mode is enabled. It must be disabled for security!'));
-
-            if (version_compare(PHP_VERSION, '8.1.0', '<')) {
-                $this->error->saveLog($this->app, 'system-' . date('Ymd') . '.log', $this->error->formatLog('notice', 'PHP 8.1 or above is recommended for full functionality.'));
-            }
+            $this->error->saveLog($this->app, 'security-' . date('Ymd') . '.log', $this->error->formatLog('warning', '[SECURITY] Debug mode is enabled (development-only). Disable for production.'));
         }
+
+        date_default_timezone_set($this->app->timezone);
 
         $this->profiler->start('NS_DATA_READER');
 
