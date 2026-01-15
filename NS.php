@@ -46,7 +46,7 @@ spl_autoload_register(
     static function (string $class): void
     {
         $file_path = str_contains($class, '\\') ?
-            __DIR__ . DIRECTORY_SEPARATOR . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php'
+            __DIR__ . strtr(strstr($class, '\\'), '\\', DIRECTORY_SEPARATOR) . '.php'
             : $class . '.php';
 
         if (is_file($file_path)) {
