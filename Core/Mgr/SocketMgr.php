@@ -471,8 +471,10 @@ class SocketMgr extends Factory
                     continue;
                 }
 
-                //Process message
-                $this->serverProcessMessage($socket_id, $is_websocket);
+                //Process message only if connection exists
+                if (isset($this->connections[$socket_id])) {
+                    $this->serverProcessMessage($socket_id, $is_websocket);
+                }
             }
         }
     }
