@@ -29,8 +29,9 @@ class SocketMgr extends Factory
     public Error    $error;
     public FiberMgr $fiberMgr;
 
+    public int $master_id = 0;
+
     public string $address   = '';
-    public string $master_id = '';
     public string $sock_type = '';
     public string $heartbeat = "\n";
 
