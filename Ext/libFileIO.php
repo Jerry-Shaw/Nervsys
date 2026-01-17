@@ -168,18 +168,22 @@ class libFileIO extends Factory
                 continue;
             }
 
-            $file_path = $path . DIRECTORY_SEPARATOR . $content;
+            $filepath = $path . DIRECTORY_SEPARATOR . $content;
+            $is_file  = is_file($filepath);
+            $filesize = $is_file ? filesize($filepath) : 0;
 
             $content_list[] = [
                 'filename' => basename($content),
-                'urlPath'  => substr($file_path, strlen($path) + 1),
-                'isFile'   => is_file($file_path)
+                'filepath' => $filepath,
+                'filesize' => $filesize,
+                'isFile'   => $is_file,
+                'urlPath'  => substr($filepath, strlen($path) + 1)
             ];
         }
 
         closedir($dir);
 
-        unset($path, $dir, $content, $file_path);
+        unset($path, $dir, $content, $filepath, $is_file, $filesize);
         return $content_list;
     }
 
