@@ -44,6 +44,7 @@ class SocketMgr extends Factory
         'onHeartbeat'  => null,  //callback(int $socket_id): string, heartbeat message send to $socket_id
         'onMessage'    => null,  //callback(int $socket_id, string $message): void
         'onSend'       => null,  //callback(int $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendBinary' => null,  //callback(int $socket_id): array[binary], message list send to $socket_id, [msg1, msg2, msg3, ...]
         'onSendFailed' => null,  //callback(int $socket_id, string $message): void
         'onClose'      => null   //callback(int $socket_id): void
     ];
@@ -304,6 +305,19 @@ class SocketMgr extends Factory
     public function onSend(callable $callback_func): self
     {
         $this->callbacks['onSend'] = $callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
+    public function onSendBinary(callable $callback_func): self
+    {
+        $this->callbacks['onSendBinary'] = $callback_func;
 
         unset($callback_func);
         return $this;
@@ -576,7 +590,7 @@ class SocketMgr extends Factory
      */
     public function serverOnSend(bool $is_websocket = false): void
     {
-        if (!is_callable($this->callbacks['onSend'])) {
+        if (!is_callable($this->callbacks['onSendBinary']) && !is_callable($this->callbacks['onSend'])) {
             return;
         }
 
@@ -596,35 +610,44 @@ class SocketMgr extends Factory
                 }
 
                 try {
-                    $msg_list = call_user_func($this->callbacks['onSend'], $socket_id);
+                    $is_binary = true;
+                    $msg_list  = call_user_func($this->callbacks['onSendBinary'], $socket_id);
+
+                    if (empty($msg_list)) {
+                        $is_binary = false;
+                        $msg_list  = call_user_func($this->callbacks['onSend'], $socket_id);
+                    }
+
+                    if (!is_array($msg_list)) {
+                        throw new \ErrorException('onSend/onSendBinary callbacks must return message data in array');
+                    }
+
+                    foreach ($msg_list as $raw_msg) {
+                        try {
+                            $this->sendMessage($socket_id, $is_websocket ? $this->wsEncode($raw_msg, $is_binary) : $raw_msg);
+                            $this->debug('Send message: ' . ($is_binary ? 'Binary Data' : $raw_msg) . ' to #' . $socket_id);
+
+                            if (0 < $this->sending_gap) {
+                                usleep($this->sending_gap);
+                            }
+                        } catch (\Throwable) {
+                            if (is_callable($this->callbacks['onSendFailed'])) {
+                                try {
+                                    call_user_func($this->callbacks['onSendFailed'], $socket_id, $is_binary ? 'Binary Data' : $raw_msg);
+                                } catch (\Throwable $throwable) {
+                                    $this->debug('serverOnSendFailed callback ERROR: ' . $throwable->getMessage());
+                                    $this->error->exceptionHandler($throwable, false, false);
+                                    unset($throwable);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                 } catch (\Throwable $throwable) {
                     $this->debug('serverOnSend callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
                     continue;
-                }
-
-                foreach ($msg_list as $raw_msg) {
-                    if ($this->sendMessage($socket_id, $is_websocket ? $this->wsEncode($raw_msg) : $raw_msg)) {
-                        $this->debug('Send message: ' . $raw_msg . ' to #' . $socket_id);
-
-                        if (0 < $this->sending_gap) {
-                            usleep($this->sending_gap);
-                        }
-                    } else {
-                        if (is_callable($this->callbacks['onSendFailed'])) {
-                            try {
-                                call_user_func($this->callbacks['onSendFailed'], $socket_id, $raw_msg);
-                            } catch (\Throwable $throwable) {
-                                $this->debug('serverOnSendFailed callback ERROR: ' . $throwable->getMessage());
-                                $this->error->exceptionHandler($throwable, false, false);
-                                unset($throwable);
-                                continue;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
                 }
             }
 
@@ -1315,22 +1338,24 @@ class SocketMgr extends Factory
 
     /**
      * @param string $message
+     * @param bool   $is_binary
      *
      * @return string
      */
-    public function wsEncode(string $message): string
+    public function wsEncode(string $message, bool $is_binary = false): string
     {
         $length = strlen($message);
+        $opcode = $is_binary ? 0x82 : 0x81;
 
-        if (125 >= $length) {
-            $buff = chr(0x81) . chr($length) . $message;
-        } elseif (65535 >= $length) {
-            $buff = chr(0x81) . chr(126) . pack('n', $length) . $message;
+        if ($length <= 125) {
+            $buff = chr($opcode) . chr($length) . $message;
+        } elseif ($length <= 65535) {
+            $buff = chr($opcode) . chr(126) . pack('n', $length) . $message;
         } else {
-            $buff = chr(0x81) . chr(127) . pack('xxxxN', $length) . $message;
+            $buff = chr($opcode) . chr(127) . pack('xxxxN', $length) . $message;
         }
 
-        unset($message, $length);
+        unset($message, $is_binary, $length, $opcode);
         return $buff;
     }
 
