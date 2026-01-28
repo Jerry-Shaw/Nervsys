@@ -137,8 +137,8 @@ class libPDO extends Factory
                     . ';charset=' . $charset;
 
                 $this->opt[\PDO::ATTR_TIMEOUT]                  = $timeout;
-                $this->opt[\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
                 $this->opt[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                $this->opt[\PDO\Mysql::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . $charset;
                 break;
 
             case 'mssql':
