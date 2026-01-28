@@ -3,7 +3,7 @@
 /**
  * PDO connector Extension
  *
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,12 +136,12 @@ class libPDO extends Factory
                     . ';dbname=' . $db
                     . ';charset=' . $charset;
 
+                $this->opt[\PDO::ATTR_TIMEOUT] = $timeout;
+
                 if (version_compare(PHP_VERSION, '8.4.0', '>=')) {
-                    $this->opt[\PDO\Mysql::ATTR_TIMEOUT]                  = $timeout;
-                    $this->opt[\PDO\Mysql::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
-                    $this->opt[\PDO\Mysql::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                    $this->opt[\PDO\Mysql::ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
+                    $this->opt[\PDO\Mysql::ATTR_USE_BUFFERED_QUERY] = true;
                 } else {
-                    $this->opt[\PDO::ATTR_TIMEOUT]                  = $timeout;
                     $this->opt[\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
                     $this->opt[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
                 }
