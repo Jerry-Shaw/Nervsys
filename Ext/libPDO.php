@@ -136,9 +136,15 @@ class libPDO extends Factory
                     . ';dbname=' . $db
                     . ';charset=' . $charset;
 
-                $this->opt[\PDO::ATTR_TIMEOUT]                  = $timeout;
-                $this->opt[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
-                $this->opt[\PDO\Mysql::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . $charset;
+                if (version_compare(PHP_VERSION, '8.4.0', '>=')) {
+                    $this->opt[\PDO\Mysql::ATTR_TIMEOUT]                  = $timeout;
+                    $this->opt[\PDO\Mysql::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
+                    $this->opt[\PDO\Mysql::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                } else {
+                    $this->opt[\PDO::ATTR_TIMEOUT]                  = $timeout;
+                    $this->opt[\PDO::MYSQL_ATTR_INIT_COMMAND]       = 'SET NAMES ' . $charset;
+                    $this->opt[\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY] = true;
+                }
                 break;
 
             case 'mssql':
