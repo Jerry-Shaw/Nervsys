@@ -4,7 +4,7 @@
  * Socket Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -820,6 +820,8 @@ class SocketMgr extends Factory
 
     /**
      * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
      */
     public function clientOnHeartbeat(): void
     {
@@ -847,10 +849,11 @@ class SocketMgr extends Factory
                 continue;
             }
 
-            if ($this->sendMessage($this->master_id, $heartbeat)) {
+            try {
+                $this->sendMessage($this->master_id, $heartbeat);
                 $this->activities[$this->master_id][1] = $now_time;
                 $this->debug('Send heartbeat to server');
-            } else {
+            } catch (\Throwable) {
                 $this->clientReconnect();
             }
         }
@@ -863,39 +866,57 @@ class SocketMgr extends Factory
      */
     public function clientOnSend(): void
     {
-        if (!is_callable($this->callbacks['onSendString'])) {
+        if (!is_callable($this->callbacks['onSendBinary']) && !is_callable($this->callbacks['onSendString'])) {
             return;
         }
 
         while (true) {
+            $msg_list = [];
+
             try {
-                $msg_list = call_user_func($this->callbacks['onSendString'], $this->master_id);
-
-                foreach ($msg_list as $raw_msg) {
-                    if ($this->sendMessage($this->master_id, $raw_msg)) {
-                        $this->debug('Send message to server: ' . $raw_msg);
-
-                        if (0 < $this->sending_gap) {
-                            usleep($this->sending_gap);
-                        }
-                    } else {
-                        $this->clientReconnect();
-
-                        if (is_callable($this->callbacks['onSendFailed'])) {
-                            try {
-                                call_user_func($this->callbacks['onSendFailed'], $this->master_id, $raw_msg);
-                            } catch (\Throwable $throwable) {
-                                $this->debug('clientOnSendFailed callback ERROR: ' . $throwable->getMessage());
-                                $this->error->exceptionHandler($throwable, false, false);
-                                unset($throwable);
-                            }
-                        }
+                foreach ([$this->callbacks['onSendBinary'], $this->callbacks['onSendString']] as $callback) {
+                    if (!is_callable($callback)) {
+                        continue;
                     }
+
+                    $msg_list = call_user_func($callback, $this->master_id);
+
+                    if (is_array($msg_list)) {
+                        break;
+                    }
+
+                    throw new \ErrorException('onSendBinary/onSendString callback must return message data in array!');
                 }
             } catch (\Throwable $throwable) {
                 $this->debug('clientOnSend callback ERROR: ' . $throwable->getMessage());
                 $this->error->exceptionHandler($throwable, false, false);
                 unset($throwable);
+                break;
+            }
+
+            foreach ($msg_list as $raw_msg) {
+                try {
+                    $this->sendMessage($this->master_id, $raw_msg);
+                    $this->debug('Send message to server: ' . $raw_msg);
+
+                    if (0 < $this->sending_gap) {
+                        usleep($this->sending_gap);
+                    }
+                } catch (\Throwable) {
+                    $this->clientReconnect();
+
+                    if (!is_callable($this->callbacks['onSendFailed'])) {
+                        continue;
+                    }
+
+                    try {
+                        call_user_func($this->callbacks['onSendFailed'], $this->master_id, $raw_msg);
+                    } catch (\Throwable $throwable) {
+                        $this->debug('clientOnSendFailed callback ERROR: ' . $throwable->getMessage());
+                        $this->error->exceptionHandler($throwable, false, false);
+                        unset($throwable);
+                    }
+                }
             }
 
             \Fiber::suspend();
@@ -1000,28 +1021,26 @@ class SocketMgr extends Factory
      * @param int    $socket_id
      * @param string $message
      *
-     * @return bool
+     * @return void
      * @throws \ReflectionException
      */
-    public function sendMessage(int $socket_id, string $message): bool
+    public function sendMessage(int $socket_id, string $message): void
     {
         try {
             if ('udp' !== $this->sock_type) {
-                if (false === ($send = fwrite($this->connections[$socket_id], $message))) {
+                if (false === fwrite($this->connections[$socket_id], $message)) {
                     throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
                 }
             } else {
-                $send = stream_socket_sendto($this->connections[$socket_id], $message);
+                stream_socket_sendto($this->connections[$socket_id], $message);
             }
         } catch (\Throwable $throwable) {
             $this->debug('Send message ERROR: ' . $throwable->getMessage());
             $this->closeSocket($socket_id);
             unset($throwable);
-            $send = false;
         }
 
         unset($socket_id, $message);
-        return is_int($send);
     }
 
     /**
