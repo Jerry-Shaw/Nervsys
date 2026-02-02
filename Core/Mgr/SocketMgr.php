@@ -609,9 +609,10 @@ class SocketMgr extends Factory
                     \Fiber::suspend();
                 }
 
-                try {
-                    $msg_list = [];
+                $msg_list  = [];
+                $is_binary = true;
 
+                try {
                     foreach ([$this->callbacks['onSendBinary'], $this->callbacks['onSendString']] as $id => $callback) {
                         if (!is_callable($callback)) {
                             continue;
@@ -620,37 +621,40 @@ class SocketMgr extends Factory
                         $is_binary = 0 === $id;
                         $msg_list  = call_user_func($callback, $socket_id);
 
-                        if (!is_array($msg_list)) {
-                            throw new \ErrorException('onSendBinary/onSendString callbacks must return message data in array');
+                        if (is_array($msg_list)) {
+                            break;
                         }
-                    }
 
-                    foreach ($msg_list as $raw_msg) {
-                        try {
-                            $this->sendMessage($socket_id, $is_websocket ? $this->wsEncode($raw_msg, $is_binary) : $raw_msg);
-                            $this->debug('Send message: ' . ($is_binary ? 'Binary Data' : $raw_msg) . ' to #' . $socket_id);
-
-                            if (0 < $this->sending_gap) {
-                                usleep($this->sending_gap);
-                            }
-                        } catch (\Throwable) {
-                            if (is_callable($this->callbacks['onSendFailed'])) {
-                                try {
-                                    call_user_func($this->callbacks['onSendFailed'], $socket_id, $is_binary ? 'Binary Data' : $raw_msg);
-                                } catch (\Throwable $throwable) {
-                                    $this->debug('serverOnSendFailed callback ERROR: ' . $throwable->getMessage());
-                                    $this->error->exceptionHandler($throwable, false, false);
-                                    unset($throwable);
-                                    continue;
-                                }
-                            }
-                        }
+                        throw new \ErrorException('onSendBinary/onSendString callback must return message data in array!');
                     }
                 } catch (\Throwable $throwable) {
                     $this->debug('serverOnSend callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
-                    continue;
+                    break;
+                }
+
+                foreach ($msg_list as $raw_msg) {
+                    try {
+                        $this->sendMessage($socket_id, $is_websocket ? $this->wsEncode($raw_msg, $is_binary) : $raw_msg);
+                        $this->debug('Send message: ' . ($is_binary ? 'Binary Data' : $raw_msg) . ' to #' . $socket_id);
+
+                        if (0 < $this->sending_gap) {
+                            usleep($this->sending_gap);
+                        }
+                    } catch (\Throwable) {
+                        if (!is_callable($this->callbacks['onSendFailed'])) {
+                            continue;
+                        }
+
+                        try {
+                            call_user_func($this->callbacks['onSendFailed'], $socket_id, $is_binary ? 'Binary Data' : $raw_msg);
+                        } catch (\Throwable $throwable) {
+                            $this->debug('serverOnSendFailed callback ERROR: ' . $throwable->getMessage());
+                            $this->error->exceptionHandler($throwable, false, false);
+                            unset($throwable);
+                        }
+                    }
                 }
             }
 
