@@ -342,7 +342,7 @@ class ProcMgr extends Factory
             proc_close($this->proc_list[$idx]);
         }
 
-        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $idx);
+        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_idle['P' . $idx], $idx);
     }
 
     /**
