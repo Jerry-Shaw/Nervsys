@@ -333,6 +333,39 @@ class libMySQL extends Factory
     }
 
     /**
+     * Build readable SQL with params
+     *
+     * @param string $runtime_sql
+     * @param array  $bind_params
+     *
+     * @return string
+     */
+    public function getSqlReadable(string $runtime_sql, array $bind_params): string
+    {
+        $bind_params = array_map(
+            function (int|float|string|null $value): int|float|string|null
+            {
+                if (is_string($value)) {
+                    $value = $this->getSqlRaw($value) ?? $value;
+
+                    if (!is_numeric($value)) {
+                        $value = '"' . addslashes($value) . '"';
+                    }
+                }
+
+                return $value;
+            },
+            $bind_params
+        );
+
+        $runtime_sql = str_replace('?', '%s', $runtime_sql);
+        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
+
+        unset($bind_params);
+        return $runtime_sql;
+    }
+
+    /**
      * Insert action
      *
      * @param array $data
@@ -1311,38 +1344,5 @@ class libMySQL extends Factory
         }
 
         return substr($value, strlen($this->runtime_data['raw']));
-    }
-
-    /**
-     * Build readable SQL with params
-     *
-     * @param string $runtime_sql
-     * @param array  $bind_params
-     *
-     * @return string
-     */
-    protected function getSqlReadable(string $runtime_sql, array $bind_params): string
-    {
-        $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null
-            {
-                if (is_string($value)) {
-                    $value = $this->getSqlRaw($value) ?? $value;
-
-                    if (!is_numeric($value)) {
-                        $value = '"' . addslashes($value) . '"';
-                    }
-                }
-
-                return $value;
-            },
-            $bind_params
-        );
-
-        $runtime_sql = str_replace('?', '%s', $runtime_sql);
-        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
-
-        unset($bind_params);
-        return $runtime_sql;
     }
 }
