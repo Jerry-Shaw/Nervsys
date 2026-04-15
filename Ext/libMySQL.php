@@ -244,44 +244,6 @@ class libMySQL extends Factory
     }
 
     /**
-     * Fetch one row
-     *
-     * @param int $fetch_style
-     *
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
-    {
-        $exec = $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
-        $data = $exec ? $this->PDOStatement->fetch($fetch_style) : [];
-
-        if (!is_array($data)) {
-            $data = false !== $data ? [$data] : [];
-        }
-
-        unset($fetch_style, $exec);
-        return $data;
-    }
-
-    /**
-     * Fetch all rows
-     *
-     * @param int $fetch_style
-     *
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC): array
-    {
-        $exec = $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
-        $data = $exec ? $this->PDOStatement->fetchAll($fetch_style) : [];
-
-        unset($fetch_style, $exec);
-        return $data;
-    }
-
-    /**
      * Get last executed SQL
      *
      * @return string
@@ -333,36 +295,13 @@ class libMySQL extends Factory
     }
 
     /**
-     * Build readable SQL with params
-     *
-     * @param string $runtime_sql
-     * @param array  $bind_params
+     * Make a readable SQL before execute for debug
      *
      * @return string
      */
-    public function getSqlReadable(string $runtime_sql, array $bind_params): string
+    public function toReadableSql(): string
     {
-        $bind_params = array_map(
-            function (int|float|string|null $value): int|float|string|null
-            {
-                if (is_string($value)) {
-                    $value = $this->getSqlRaw($value) ?? $value;
-
-                    if (!is_numeric($value)) {
-                        $value = '"' . addslashes($value) . '"';
-                    }
-                }
-
-                return $value;
-            },
-            $bind_params
-        );
-
-        $runtime_sql = str_replace('?', '%s', $runtime_sql);
-        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
-
-        unset($bind_params);
-        return $runtime_sql;
+        return $this->debugSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
     }
 
     /**
@@ -786,6 +725,44 @@ class libMySQL extends Factory
     }
 
     /**
+     * Fetch one row
+     *
+     * @param int $fetch_style
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function fetch(int $fetch_style = \PDO::FETCH_ASSOC): array
+    {
+        $exec = $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
+        $data = $exec ? $this->PDOStatement->fetch($fetch_style) : [];
+
+        if (!is_array($data)) {
+            $data = false !== $data ? [$data] : [];
+        }
+
+        unset($fetch_style, $exec);
+        return $data;
+    }
+
+    /**
+     * Fetch all rows
+     *
+     * @param int $fetch_style
+     *
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function fetchAll(int $fetch_style = \PDO::FETCH_ASSOC): array
+    {
+        $exec = $this->executeSql($this->buildSql(), $this->runtime_data['bind'] ?? []);
+        $data = $exec ? $this->PDOStatement->fetchAll($fetch_style) : [];
+
+        unset($fetch_style, $exec);
+        return $data;
+    }
+
+    /**
      * Execute SQL statement
      *
      * @return bool
@@ -942,7 +919,7 @@ class libMySQL extends Factory
     protected function executeSql(string $runtime_sql, array $runtime_params = [], int $retry_times = 0): bool
     {
         try {
-            $this->last_sql     = $this->getSqlReadable($runtime_sql, $runtime_params);
+            $this->last_sql     = $this->debugSql($runtime_sql, $runtime_params);
             $this->PDOStatement = $this->pdo->prepare($runtime_sql);
 
             $result = $this->PDOStatement->execute($runtime_params);
@@ -1056,7 +1033,7 @@ class libMySQL extends Factory
         if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
             $this->force_execute = true;
 
-            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->getSqlReadable($this->buildSql(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
+            throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->debugSql($this->buildSql(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
         }
     }
 
@@ -1067,7 +1044,7 @@ class libMySQL extends Factory
     {
         if (isset($this->runtime_data['action'])) {
             throw new \PDOException(
-                $this->getSqlReadable($this->buildSql(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
+                $this->debugSql($this->buildSql(), $this->runtime_data['bind'] ?? []) . ' NOT execute!',
                 E_USER_ERROR
             );
         }
@@ -1344,5 +1321,39 @@ class libMySQL extends Factory
         }
 
         return substr($value, strlen($this->runtime_data['raw']));
+    }
+
+    /**
+     * FOR DEBUG ONLY
+     * Build full SQL with all bind params
+     *
+     * @param string $runtime_sql
+     * @param array  $bind_params
+     *
+     * @return string
+     */
+    protected function debugSql(string $runtime_sql, array $bind_params): string
+    {
+        $bind_params = array_map(
+            function (int|float|string|null $value): int|float|string|null
+            {
+                if (is_string($value)) {
+                    $value = $this->getSqlRaw($value) ?? $value;
+
+                    if (!is_numeric($value)) {
+                        $value = '"' . addslashes($value) . '"';
+                    }
+                }
+
+                return $value;
+            },
+            $bind_params
+        );
+
+        $runtime_sql = str_replace('?', '%s', $runtime_sql);
+        $runtime_sql = sprintf($runtime_sql, ...$bind_params);
+
+        unset($bind_params);
+        return $runtime_sql;
     }
 }
