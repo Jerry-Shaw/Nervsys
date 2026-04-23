@@ -4,7 +4,7 @@
  * System Traits
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,13 +155,30 @@ trait System
     }
 
     /**
+     * @param string $mode
+     *
+     * @return $this
+     */
+    public function setMode(string $mode): self
+    {
+        if (!in_array($mode, [App::MODE_API, App::MODE_MODULE], true)) {
+            throw new \InvalidArgumentException('Invalid mode: ' . $mode . '! Only Support: "' . App::MODE_API . '", "' . App::MODE_MODULE . '"');
+        }
+
+        $this->app->setMode($mode);
+
+        unset($mode);
+        return $this;
+    }
+
+    /**
      * @param string $dir_name
      *
      * @return $this
      */
     public function setApiDir(string $dir_name): self
     {
-        $this->app->api_dir = $dir_name;
+        $this->app->setApiDir($dir_name);
 
         unset($dir_name);
         return $this;

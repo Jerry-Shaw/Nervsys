@@ -4,7 +4,7 @@
  * Nervsys Entry Script
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ class NS
      *
      * @throws \Exception
      */
-    public function __construct(string $root_path = '', string $api_dir = '')
+    public function __construct(string $root_path = '', string $base_dir = '', string $mode = '')
     {
         $this->init();
 
@@ -76,8 +76,12 @@ class NS
             $this->app->setRoot($root_path);
         }
 
-        if ('' !== $api_dir) {
-            $this->app->setApiDir($api_dir);
+        if ('' !== $base_dir) {
+            $this->setApiDir($base_dir);
+        }
+
+        if ('' !== $mode) {
+            $this->setMode($mode);
         }
 
         $this->app->initIOEnv()->initAppEnv();
@@ -85,7 +89,7 @@ class NS
         $this->initApp();
         $this->addAutoloadPath($this->app->root_path, true);
 
-        unset($root_path, $api_dir);
+        unset($root_path, $base_dir, $mode);
     }
 
     /**

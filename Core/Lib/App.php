@@ -4,7 +4,7 @@
  * App library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2024 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,16 @@ use Nervsys\Core\Factory;
 
 class App extends Factory
 {
+    const MODE_API    = 'api';
+    const MODE_MODULE = 'module';
+
     public string $log_path    = '';
     public string $root_path   = '';
     public string $script_path = '';
 
-    public string $api_dir    = 'api';
+    public string $mode    = self::MODE_API;
+    public string $api_dir = 'api';
+
     public string $client_ip  = '0.0.0.0';
     public string $user_lang  = 'Unknown';
     public string $user_agent = 'Unknown';
@@ -50,6 +55,19 @@ class App extends Factory
         $this->root_path = $root_path;
 
         unset($root_path);
+        return $this;
+    }
+
+    /**
+     * @param string $mode
+     *
+     * @return $this
+     */
+    public function setMode(string $mode): self
+    {
+        $this->mode = $mode;
+
+        unset($mode);
         return $this;
     }
 
