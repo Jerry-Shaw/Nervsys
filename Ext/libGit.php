@@ -32,7 +32,7 @@ class libGit extends Factory
      *
      * @return libGit
      */
-    public function setPath(string $path): self
+    public function setPath(string $path): static
     {
         $this->git_root = $path;
 

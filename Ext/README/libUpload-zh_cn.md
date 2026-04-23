@@ -72,7 +72,7 @@
 
 ## 方法
 
-### `addMimeType(string $mime, string $ext): self`
+### `addMimeType(string $mime, string $ext): static`
 
 添加自定义 MIME 类型到扩展名映射。
 
@@ -81,7 +81,7 @@
     - `$ext`: 文件扩展名（如 `'pdf'`）。
 - **返回:** `$this`.
 
-### `setFilePerm(int $file_perm): self`
+### `setFilePerm(int $file_perm): static`
 
 设置上传文件的权限。
 
@@ -89,7 +89,7 @@
     - `$file_perm`: 权限值（如 0644）。
 - **返回:** `$this`.
 
-### `setAllowedExt(string ...$allowed_ext): self`
+### `setAllowedExt(string ...$allowed_ext): static`
 
 设置允许的文件扩展名。
 
@@ -97,7 +97,7 @@
     - `$allowed_ext`: 一个或多个扩展名。
 - **返回:** `$this`.
 
-### `setSliceTempDir(string $temp_dir): self`
+### `setSliceTempDir(string $temp_dir): static`
 
 设置切片上传的临时目录。
 
@@ -105,7 +105,7 @@
     - `$temp_dir`: 目录路径。
 - **返回:** `$this`.
 
-### `setMaxSizeInBytes(int $max_size): self`
+### `setMaxSizeInBytes(int $max_size): static`
 
 设置最大文件大小（字节）。
 

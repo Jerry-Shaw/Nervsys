@@ -40,7 +40,7 @@ Error message array indexed by ZipArchive error codes:
 
 ## Methods
 
-### `setStorePath(string $path): self`
+### `setStorePath(string $path): static`
 
 Sets the directory for storing ZIP files.
 
@@ -48,7 +48,7 @@ Sets the directory for storing ZIP files.
     - `$path`: Directory path.
 - **Returns:** `$this`.
 
-### `add(string $path): self`
+### `add(string $path): static`
 
 Adds a file or folder to the target list.
 

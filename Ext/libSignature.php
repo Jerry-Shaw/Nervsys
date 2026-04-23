@@ -33,7 +33,7 @@ class libSignature extends Factory
      *
      * @return $this
      */
-    public function setDebugMode(bool $debug_mode): self
+    public function setDebugMode(bool $debug_mode): static
     {
         $this->debug_mode = $debug_mode;
 
@@ -46,7 +46,7 @@ class libSignature extends Factory
      *
      * @return $this
      */
-    public function setDebugKey(string $key): self
+    public function setDebugKey(string $key): static
     {
         $this->debug_key = $key;
 

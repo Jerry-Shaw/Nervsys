@@ -25,7 +25,7 @@ hashing. It extends `Factory`.
 
 ## Methods
 
-### `setDebugMode(bool $debug_mode): self`
+### `setDebugMode(bool $debug_mode): static`
 
 Enables or disables debug mode.
 
@@ -33,7 +33,7 @@ Enables or disables debug mode.
     - `$debug_mode`: Whether to enable debug mode.
 - **Returns:** `$this`.
 
-### `setDebugKey(string $key): self`
+### `setDebugKey(string $key): static`
 
 Sets the key name for debug output.
 

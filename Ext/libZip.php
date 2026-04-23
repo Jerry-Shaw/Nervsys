@@ -58,7 +58,7 @@ class libZip extends Factory
      *
      * @return $this
      */
-    public function setStorePath(string $path): self
+    public function setStorePath(string $path): static
     {
         $this->store_path = $path;
 
@@ -73,7 +73,7 @@ class libZip extends Factory
      *
      * @return $this
      */
-    public function add(string $path): self
+    public function add(string $path): static
     {
         $this->target_file[] = $path;
 

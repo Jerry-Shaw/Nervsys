@@ -34,7 +34,7 @@ class NGram extends Factory
      *
      * @return $this
      */
-    public function setSrcData(string $source, string $separator = ''): self
+    public function setSrcData(string $source, string $separator = ''): static
     {
         if ('' !== $separator) {
             $this->src_data = str_contains($source, $separator) ? explode($separator, $source) : [$source];

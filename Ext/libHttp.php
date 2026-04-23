@@ -73,7 +73,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function addData(array $data): self
+    public function addData(array $data): static
     {
         $this->runtime_data['data'] ??= [];
         $this->runtime_data['data'] += $data;
@@ -89,7 +89,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function addHeader(array $header): self
+    public function addHeader(array $header): static
     {
         $this->runtime_data['header'] ??= [];
         $this->runtime_data['header'] += $header;
@@ -108,7 +108,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function addFile(string $key, string $filename, string $mime_type = '', string $posted_filename = ''): self
+    public function addFile(string $key, string $filename, string $mime_type = '', string $posted_filename = ''): static
     {
         if (is_file($filename)) {
             $this->runtime_data['file'][$key] = curl_file_create($filename, $mime_type, $posted_filename);
@@ -125,7 +125,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function addCookie(array $cookie): self
+    public function addCookie(array $cookie): static
     {
         $this->runtime_data['cookie'] ??= '';
 
@@ -148,7 +148,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function addOptions(array $curl_opt_pair): self
+    public function addOptions(array $curl_opt_pair): static
     {
         $this->cURL_options += $curl_opt_pair;
 
@@ -163,7 +163,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function remOptions(int ...$curl_opts): self
+    public function remOptions(int ...$curl_opts): static
     {
         $this->rem_options = $curl_opts;
 
@@ -176,7 +176,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setCookie(string $cookie): self
+    public function setCookie(string $cookie): static
     {
         $this->runtime_data['cookie'] = $cookie;
 
@@ -191,7 +191,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setHttpMethod(string $http_method): self
+    public function setHttpMethod(string $http_method): static
     {
         $this->runtime_data['http_method'] = $http_method;
 
@@ -206,7 +206,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setContentType(string $content_type): self
+    public function setContentType(string $content_type): static
     {
         $this->runtime_data['http_content_type'] = $content_type;
 

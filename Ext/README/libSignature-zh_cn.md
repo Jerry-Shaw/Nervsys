@@ -24,7 +24,7 @@
 
 ## 方法
 
-### `setDebugMode(bool $debug_mode): self`
+### `setDebugMode(bool $debug_mode): static`
 
 启用或禁用调试模式。
 
@@ -32,7 +32,7 @@
     - `$debug_mode`: 是否启用调试模式。
 - **返回:** `$this`.
 
-### `setDebugKey(string $key): self`
+### `setDebugKey(string $key): static`
 
 设置调试输出的键名。
 

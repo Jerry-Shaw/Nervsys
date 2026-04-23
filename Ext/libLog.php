@@ -47,7 +47,7 @@ class libLog extends Factory
     /**
      * @return $this
      */
-    public function add(): self
+    public function add(): static
     {
         $logs   = '';
         $params = func_get_args();

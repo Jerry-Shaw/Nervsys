@@ -72,7 +72,7 @@ Array of error messages indexed by error code:
 
 ## Methods
 
-### `addMimeType(string $mime, string $ext): self`
+### `addMimeType(string $mime, string $ext): static`
 
 Adds a custom MIME type to extension mapping.
 
@@ -81,7 +81,7 @@ Adds a custom MIME type to extension mapping.
     - `$ext`: File extension (e.g., `'pdf'`).
 - **Returns:** `$this`.
 
-### `setFilePerm(int $file_perm): self`
+### `setFilePerm(int $file_perm): static`
 
 Sets file permissions for uploaded files.
 
@@ -89,7 +89,7 @@ Sets file permissions for uploaded files.
     - `$file_perm`: Permission value (e.g., 0644).
 - **Returns:** `$this`.
 
-### `setAllowedExt(string ...$allowed_ext): self`
+### `setAllowedExt(string ...$allowed_ext): static`
 
 Sets allowed file extensions.
 
@@ -97,7 +97,7 @@ Sets allowed file extensions.
     - `$allowed_ext`: One or more extensions.
 - **Returns:** `$this`.
 
-### `setSliceTempDir(string $temp_dir): self`
+### `setSliceTempDir(string $temp_dir): static`
 
 Sets the temporary directory for sliced uploads.
 

@@ -29,7 +29,7 @@ for headers, cookies, timeouts, and file uploads. It extends `Factory`.
 
 ## Methods
 
-### `setTimeout(int $timeout): self`
+### `setTimeout(int $timeout): static`
 
 Sets the request timeout in seconds.
 
@@ -37,7 +37,7 @@ Sets the request timeout in seconds.
     - `$timeout`: Timeout value in seconds.
 - **Returns:** `$this`.
 
-### `setHeaders(array $headers): self`
+### `setHeaders(array $headers): static`
 
 Sets default headers for all requests.
 
@@ -45,7 +45,7 @@ Sets default headers for all requests.
     - `$headers`: Associative array of header names and values.
 - **Returns:** `$this`.
 
-### `setCookies(array $cookies): self`
+### `setCookies(array $cookies): static`
 
 Sets cookies to send with requests.
 

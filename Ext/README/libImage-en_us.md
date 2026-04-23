@@ -25,7 +25,7 @@ to images. It extends `Factory`.
 
 ## Methods
 
-### `setQuality(int $quality): self`
+### `setQuality(int $quality): static`
 
 Sets the JPEG quality for output images.
 
@@ -33,7 +33,7 @@ Sets the JPEG quality for output images.
     - `$quality`: Quality value from 0 to 100.
 - **Returns:** `$this`.
 
-### `setCompression(int $compression): self`
+### `setCompression(int $compression): static`
 
 Sets the PNG compression level.
 

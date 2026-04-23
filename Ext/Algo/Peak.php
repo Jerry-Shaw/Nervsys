@@ -38,7 +38,7 @@ class Peak extends Factory
      *
      * @return $this
      */
-    public function setData(array $points): self
+    public function setData(array $points): static
     {
         $this->keys   = array_keys($points);
         $this->values = array_values($points);
@@ -123,7 +123,7 @@ class Peak extends Factory
      *
      * @return $this
      */
-    private function calcTrend(int $len): self
+    private function calcTrend(int $len): static
     {
         for ($i = $len; $i >= 0; --$i) {
             if (0 !== $this->vector[$i]) {

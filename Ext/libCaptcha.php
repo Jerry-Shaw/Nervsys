@@ -69,7 +69,7 @@ class libCaptcha extends Factory
      *
      * @return $this
      */
-    public function bindCrypt(libCrypt $libCrypt): self
+    public function bindCrypt(libCrypt $libCrypt): static
     {
         $this->libCrypt = $libCrypt;
 
@@ -84,7 +84,7 @@ class libCaptcha extends Factory
      *
      * @return $this
      */
-    public function bindRedis(\Redis|libRedis $redis): self
+    public function bindRedis(\Redis|libRedis $redis): static
     {
         $this->redis     = $redis;
         $this->use_redis = true;
@@ -101,7 +101,7 @@ class libCaptcha extends Factory
      *
      * @return $this
      */
-    public function setSize(int $width = 240, int $height = 80): self
+    public function setSize(int $width = 240, int $height = 80): static
     {
         $this->width  = $width;
         $this->height = $height;
@@ -117,7 +117,7 @@ class libCaptcha extends Factory
      *
      * @return $this
      */
-    public function setFont(string $font_file): self
+    public function setFont(string $font_file): static
     {
         $this->font_file = $font_file;
 
@@ -132,7 +132,7 @@ class libCaptcha extends Factory
      *
      * @return $this
      */
-    public function setLength(string $length): self
+    public function setLength(string $length): static
     {
         $this->length = $length;
 
@@ -147,7 +147,7 @@ class libCaptcha extends Factory
      *
      * @return $this
      */
-    public function setTypes(string ...$type): self
+    public function setTypes(string ...$type): static
     {
         $this->types = $type;
 

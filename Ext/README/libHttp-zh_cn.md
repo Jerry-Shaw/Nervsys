@@ -29,7 +29,7 @@
 
 ## 方法
 
-### `setTimeout(int $timeout): self`
+### `setTimeout(int $timeout): static`
 
 设置请求超时时间（秒）。
 
@@ -37,7 +37,7 @@
     - `$timeout`: 超时值（秒）。
 - **返回:** `$this`.
 
-### `setHeaders(array $headers): self`
+### `setHeaders(array $headers): static`
 
 为所有请求设置默认头部。
 
@@ -45,7 +45,7 @@
     - `$headers`: 关联数组，包含头部名称和值。
 - **返回:** `$this`.
 
-### `setCookies(array $cookies): self`
+### `setCookies(array $cookies): static`
 
 设置请求时发送的 Cookie。
 

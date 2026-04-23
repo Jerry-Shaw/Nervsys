@@ -124,7 +124,7 @@ class libUpload extends Factory
      *
      * @return $this
      */
-    public function addMimeType(string $mime, string $ext): self
+    public function addMimeType(string $mime, string $ext): static
     {
         $this->mime_types[$mime] = $ext;
 
@@ -137,7 +137,7 @@ class libUpload extends Factory
      *
      * @return $this
      */
-    public function setFilePerm(int $file_perm): self
+    public function setFilePerm(int $file_perm): static
     {
         $this->file_perm = $file_perm;
 
@@ -150,7 +150,7 @@ class libUpload extends Factory
      *
      * @return $this
      */
-    public function setAllowedExt(string ...$allowed_ext): self
+    public function setAllowedExt(string ...$allowed_ext): static
     {
         $this->allowed_ext = $allowed_ext;
 
@@ -163,7 +163,7 @@ class libUpload extends Factory
      *
      * @return $this
      */
-    public function setSliceTempDir(string $temp_dir): self
+    public function setSliceTempDir(string $temp_dir): static
     {
         $this->temp_dir = $temp_dir;
 
@@ -176,7 +176,7 @@ class libUpload extends Factory
      *
      * @return $this
      */
-    public function setMaxSizeInBytes(int $max_size): self
+    public function setMaxSizeInBytes(int $max_size): static
     {
         $this->max_size = $max_size;
 

@@ -40,7 +40,7 @@ class libCrypt extends Factory
      *
      * @return $this
      */
-    public function bindKeygen(libKeygen $keygen): self
+    public function bindKeygen(libKeygen $keygen): static
     {
         $this->libKeygen = $keygen;
 
@@ -55,7 +55,7 @@ class libCrypt extends Factory
      *
      * @return $this
      */
-    public function setMethod(string $method): self
+    public function setMethod(string $method): static
     {
         $this->method = $method;
 
@@ -70,7 +70,7 @@ class libCrypt extends Factory
      *
      * @return $this
      */
-    public function setOpensslCnfPath(string $file_path): self
+    public function setOpensslCnfPath(string $file_path): static
     {
         $this->openssl_cnf = $file_path;
 

@@ -72,7 +72,7 @@ class libQueue extends Factory
      * @throws \RedisException
      * @throws \ReflectionException
      */
-    public function setRedisConf(array $redis_conf): self
+    public function setRedisConf(array $redis_conf): static
     {
         $this->proc_redis_conf = $redis_conf;
 
@@ -87,7 +87,7 @@ class libQueue extends Factory
      *
      * @return $this
      */
-    public function setEnvVariable(array $env_variable): self
+    public function setEnvVariable(array $env_variable): static
     {
         $this->proc_env_variable = $env_variable;
 
@@ -100,7 +100,7 @@ class libQueue extends Factory
      *
      * @return $this
      */
-    public function setDataOverride(array $data_override): self
+    public function setDataOverride(array $data_override): static
     {
         $this->proc_data_overrides = $data_override;
 

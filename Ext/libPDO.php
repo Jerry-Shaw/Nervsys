@@ -81,7 +81,7 @@ class libPDO extends Factory
      * @return $this
      * @throws \ReflectionException
      */
-    public function connect(): self
+    public function connect(): static
     {
         //Destroy existed PDO object from factory
         if ($this->pdo instanceof \PDO) {

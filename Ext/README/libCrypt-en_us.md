@@ -29,7 +29,7 @@ hashing, and digital signatures. It extends `Factory`.
 
 ## Methods
 
-### `bindKeygen(libKeygen $keygen): self`
+### `bindKeygen(libKeygen $keygen): static`
 
 Binds a key generator object to the class.
 
@@ -37,7 +37,7 @@ Binds a key generator object to the class.
     - `$keygen`: An instance of `libKeygen`.
 - **Returns:** `$this`.
 
-### `setMethod(string $method): self`
+### `setMethod(string $method): static`
 
 Sets the encryption method.
 
@@ -45,7 +45,7 @@ Sets the encryption method.
     - `$method`: Encryption method name (e.g., `'AES-256-CTR'`).
 - **Returns:** `$this`.
 
-### `setOpensslCnfPath(string $file_path): self`
+### `setOpensslCnfPath(string $file_path): static`
 
 Sets the OpenSSL configuration file path.
 

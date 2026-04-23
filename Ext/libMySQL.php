@@ -53,7 +53,7 @@ class libMySQL extends Factory
      * @return $this
      * @throws \ReflectionException
      */
-    public function bindLibPdo(libPDO $libPDO): self
+    public function bindLibPdo(libPDO $libPDO): static
     {
         $this->libPDO = $libPDO->pdo instanceof \PDO ? $libPDO : $libPDO->connect();
         $this->pdo    = $this->libPDO->pdo;
@@ -69,7 +69,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function as(string $alias): self
+    public function as(string $alias): static
     {
         $this->runtime_data['alias'] = $alias;
 
@@ -82,7 +82,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function force(): self
+    public function force(): static
     {
         $this->force_execute = true;
         return $this;
@@ -133,7 +133,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function autoCleanup(): self
+    public function autoCleanup(): static
     {
         register_shutdown_function([$this, 'clearRuntime']);
         register_shutdown_function([$this, 'clearTransaction']);
@@ -148,7 +148,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function autoReconnect(int $retry_times): self
+    public function autoReconnect(int $retry_times): static
     {
         $this->retry_limit = $retry_times;
 
@@ -164,7 +164,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function setTable(string $table_name, bool $with_prefix = false): self
+    public function setTable(string $table_name, bool $with_prefix = false): static
     {
         if ($with_prefix) {
             $table_name = $this->table_prefix . $table_name;
@@ -184,7 +184,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function setTableOnce(string $table_name, bool $with_prefix = false): self
+    public function setTableOnce(string $table_name, bool $with_prefix = false): static
     {
         if ($with_prefix) {
             $table_name = $this->table_prefix . $table_name;
@@ -203,7 +203,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function setTablePrefix(string $table_prefix): self
+    public function setTablePrefix(string $table_prefix): static
     {
         $this->table_prefix = $table_prefix;
 
@@ -311,7 +311,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function insert(array $data): self
+    public function insert(array $data): static
     {
         $this->isReady();
 

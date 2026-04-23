@@ -28,7 +28,7 @@
 
 ## 方法
 
-### `bindKeygen(libKeygen $keygen): self`
+### `bindKeygen(libKeygen $keygen): static`
 
 将密钥生成器对象绑定到该类。
 
@@ -36,7 +36,7 @@
     - `$keygen`: `libKeygen` 实例。
 - **返回:** `$this`.
 
-### `setMethod(string $method): self`
+### `setMethod(string $method): static`
 
 设置加密方法。
 
@@ -44,7 +44,7 @@
     - `$method`: 加密方法名称（如 `'AES-256-CTR'`）。
 - **返回:** `$this`.
 
-### `setOpensslCnfPath(string $file_path): self`
+### `setOpensslCnfPath(string $file_path): static`
 
 设置 OpenSSL 配置文件路径。
 

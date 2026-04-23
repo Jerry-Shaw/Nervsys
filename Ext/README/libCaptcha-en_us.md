@@ -45,7 +45,7 @@ The prefix used for storing captcha hashes in Redis (`CAPTCHA:`).
 
 ## Methods
 
-### `bindCrypt(libCrypt $libCrypt): self`
+### `bindCrypt(libCrypt $libCrypt): static`
 
 Binds a `libCrypt` object to the class.
 
@@ -53,7 +53,7 @@ Binds a `libCrypt` object to the class.
     - `$libCrypt`: An instance of `libCrypt`.
 - **Returns:** `$this`.
 
-### `bindRedis(\Redis|libRedis $redis): self`
+### `bindRedis(\Redis|libRedis $redis): static`
 
 Binds a Redis instance to the class and enables Redis storage mode.
 
@@ -61,7 +61,7 @@ Binds a Redis instance to the class and enables Redis storage mode.
     - `$redis`: An instance of `\Redis` or `libRedis`.
 - **Returns:** `$this`.
 
-### `setSize(int $width = 240, int $height = 80): self`
+### `setSize(int $width = 240, int $height = 80): static`
 
 Sets the dimensions for the generated captcha image.
 
@@ -70,7 +70,7 @@ Sets the dimensions for the generated captcha image.
     - `$height`: Height in pixels.
 - **Returns:** `$this`.
 
-### `setFont(string $font_file): self`
+### `setFont(string $font_file): static`
 
 Sets the font file used for rendering text.
 
@@ -78,7 +78,7 @@ Sets the font file used for rendering text.
     - `$font_file`: Path to the `.ttf` font file.
 - **Returns:** `$this`.
 
-### `setLength(string $length): self`
+### `setLength(string $length): static`
 
 Sets the length of the generated code (only for `num` and `word` types).
 
@@ -86,7 +86,7 @@ Sets the length of the generated code (only for `num` and `word` types).
     - `$length`: The number of characters.
 - **Returns:** `$this`.
 
-### `setTypes(string ...$type): self`
+### `setTypes(string ...$type): static`
 
 Sets which captcha types are allowed to be generated.
 

@@ -88,7 +88,7 @@ class libRedis extends Factory
      *
      * @return $this
      */
-    public function autoReconnect(int $retry_times): self
+    public function autoReconnect(int $retry_times): static
     {
         $this->retry_limit = $retry_times;
 
@@ -102,7 +102,7 @@ class libRedis extends Factory
      * @return $this
      * @throws \ReflectionException
      */
-    public function connect(): self
+    public function connect(): static
     {
         //Destroy existed redis object from factory
         if ($this->redis instanceof \Redis) {

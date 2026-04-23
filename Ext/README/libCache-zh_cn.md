@@ -23,7 +23,7 @@
 
 ## 方法
 
-### `bindRedis(\Redis|libRedis $redis): self`
+### `bindRedis(\Redis|libRedis $redis): static`
 
 绑定一个 Redis 实例到该类。
 

@@ -39,7 +39,7 @@
 
 ## 方法
 
-### `setStorePath(string $path): self`
+### `setStorePath(string $path): static`
 
 设置存储 ZIP 文件的目录。
 
@@ -47,7 +47,7 @@
     - `$path`: 目录路径。
 - **返回:** `$this`.
 
-### `add(string $path): self`
+### `add(string $path): static`
 
 将文件/文件夹添加到目标列表。
 

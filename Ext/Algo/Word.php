@@ -41,7 +41,7 @@ class Word extends Factory
      *
      * @return $this
      */
-    public function setDocText(string $doc_text, int $chunk_size = 10000): self
+    public function setDocText(string $doc_text, int $chunk_size = 10000): static
     {
         $this->chunk_list = mb_str_split($doc_text, $chunk_size, 'UTF-8');
 
@@ -58,7 +58,7 @@ class Word extends Factory
      *
      * @return $this
      */
-    public function setVars(int $min_tf, float $min_diff, int $step_len = 8): self
+    public function setVars(int $min_tf, float $min_diff, int $step_len = 8): static
     {
         $this->min_tf   = $min_tf;
         $this->min_diff = $min_diff;

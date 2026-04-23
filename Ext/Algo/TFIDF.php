@@ -40,7 +40,7 @@ class TFIDF extends Factory
      *
      * @return $this
      */
-    public function setSrcData(array $gram_list, array $doc_list): self
+    public function setSrcData(array $gram_list, array $doc_list): static
     {
         $this->src_grams = $gram_list;
         $this->src_docs  = $doc_list;

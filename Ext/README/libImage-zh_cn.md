@@ -24,7 +24,7 @@
 
 ## 方法
 
-### `setQuality(int $quality): self`
+### `setQuality(int $quality): static`
 
 设置输出图像的 JPEG 质量。
 
@@ -32,7 +32,7 @@
     - `$quality`: 0 到 100 之间的质量值。
 - **返回:** `$this`.
 
-### `setCompression(int $compression): self`
+### `setCompression(int $compression): static`
 
 设置 PNG 压缩级别。
 

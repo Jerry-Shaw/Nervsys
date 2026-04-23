@@ -24,7 +24,7 @@ The prefix used for all cache keys (`CAS:`).
 
 ## Methods
 
-### `bindRedis(\Redis|libRedis $redis): self`
+### `bindRedis(\Redis|libRedis $redis): static`
 
 Binds a Redis instance to the class.
 

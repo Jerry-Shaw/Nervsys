@@ -45,7 +45,7 @@ class libLock extends Factory
      *
      * @return $this
      */
-    public function bindRedis(\Redis|libRedis $redis): self
+    public function bindRedis(\Redis|libRedis $redis): static
     {
         $this->redis = $redis;
 

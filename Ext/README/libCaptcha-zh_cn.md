@@ -44,7 +44,7 @@ Redis 或通过加密的客户端数据存储。此类继承自 `Factory`。
 
 ## 方法
 
-### `bindCrypt(libCrypt $libCrypt): self`
+### `bindCrypt(libCrypt $libCrypt): static`
 
 将 `libCrypt` 对象绑定到该类。
 
@@ -52,7 +52,7 @@ Redis 或通过加密的客户端数据存储。此类继承自 `Factory`。
     - `$libCrypt`: `libCrypt` 实例。
 - **返回:** `$this`.
 
-### `bindRedis(\Redis|libRedis $redis): self`
+### `bindRedis(\Redis|libRedis $redis): static`
 
 将 Redis 实例绑定到该类并启用 Redis 存储模式。
 
@@ -60,7 +60,7 @@ Redis 或通过加密的客户端数据存储。此类继承自 `Factory`。
     - `$redis`: `\Redis` 或 `libRedis` 实例。
 - **返回:** `$this`.
 
-### `setSize(int $width = 240, int $height = 80): self`
+### `setSize(int $width = 240, int $height = 80): static`
 
 设置生成的验证码图片的尺寸。
 
@@ -69,7 +69,7 @@ Redis 或通过加密的客户端数据存储。此类继承自 `Factory`。
     - `$height`: 高度（像素）。
 - **返回:** `$this`.
 
-### `setFont(string $font_file): self`
+### `setFont(string $font_file): static`
 
 设置用于渲染文本的字体文件。
 
@@ -77,7 +77,7 @@ Redis 或通过加密的客户端数据存储。此类继承自 `Factory`。
     - `$font_file`: `.ttf` 字体文件路径。
 - **返回:** `$this`.
 
-### `setLength(string $length): self`
+### `setLength(string $length): static`
 
 设置生成的代码长度（仅适用于 `num` 和 `word` 类型）。
 
@@ -85,7 +85,7 @@ Redis 或通过加密的客户端数据存储。此类继承自 `Factory`。
     - `$length`: 字符数量。
 - **返回:** `$this`.
 
-### `setTypes(string ...$type): self`
+### `setTypes(string ...$type): static`
 
 设置允许生成的验证码类型。
 
