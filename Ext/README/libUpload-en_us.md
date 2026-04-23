@@ -105,7 +105,7 @@ Sets the temporary directory for sliced uploads.
     - `$temp_dir`: Directory path.
 - **Returns:** `$this`.
 
-### `setMaxSizeInBytes(int $max_size): self`
+### `setMaxSizeInBytes(int $max_size): static`
 
 Sets maximum file size in bytes.
 

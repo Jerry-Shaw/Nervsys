@@ -330,7 +330,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function update(array $data): self
+    public function update(array $data): static
     {
         $this->isReady();
 
@@ -349,7 +349,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function replace(array $data, bool $use_set = false): self
+    public function replace(array $data, bool $use_set = false): static
     {
         $this->isReady();
 
@@ -373,7 +373,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function select(string ...$column): self
+    public function select(string ...$column): static
     {
         $this->isReady();
 
@@ -397,7 +397,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function delete(): self
+    public function delete(): static
     {
         $this->isReady();
 
@@ -415,7 +415,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function join(string $table, string $type = 'INNER', bool $with_prefix = true): self
+    public function join(string $table, string $type = 'INNER', bool $with_prefix = true): static
     {
         if ($with_prefix) {
             $table = $this->table_prefix . $table;
@@ -437,7 +437,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function on(array ...$where): self
+    public function on(array ...$where): static
     {
         if (empty($where)) {
             return $this;
@@ -457,7 +457,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function where(array ...$where): self
+    public function where(array ...$where): static
     {
         $this->runtime_data['where'] ??= [];
         $this->runtime_data['stage'] = 'where';
@@ -481,7 +481,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function having(array ...$where): self
+    public function having(array ...$where): static
     {
         $this->runtime_data['having'] ??= [];
         $this->runtime_data['stage']  = 'having';
@@ -505,7 +505,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function and(array ...$where): self
+    public function and(array ...$where): static
     {
         $where = array_filter($where);
 
@@ -532,7 +532,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function or(array ...$where): self
+    public function or(array ...$where): static
     {
         $where = array_filter($where);
 
@@ -559,7 +559,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function group(string ...$fields): self
+    public function group(string ...$fields): static
     {
         foreach ($fields as $key => $field) {
             $fields[$key] = $this->getSqlRaw($field) ?? $field;
@@ -578,7 +578,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function order(array $orders): self
+    public function order(array $orders): static
     {
         $order = [];
 
@@ -626,7 +626,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function limit(int $offset, int $length = 0): self
+    public function limit(int $offset, int $length = 0): static
     {
         $this->runtime_data['limit'] = 0 < $length
             ? (string)$offset . ', ' . (string)$length
@@ -644,7 +644,7 @@ class libMySQL extends Factory
      *
      * @return $this
      */
-    public function lock(string ...$modes): self
+    public function lock(string ...$modes): static
     {
         $this->runtime_data['lock'] = implode(' ', $modes);
 

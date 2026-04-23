@@ -221,7 +221,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setAcceptEncoding(string $accept_encoding): self
+    public function setAcceptEncoding(string $accept_encoding): static
     {
         $this->runtime_data['accept_encoding'] = $accept_encoding;
 
@@ -236,7 +236,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setTimeout(int $timeout): self
+    public function setTimeout(int $timeout): static
     {
         $this->runtime_data['timeout'] = $timeout;
 
@@ -251,7 +251,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setReferer(string $referer): self
+    public function setReferer(string $referer): static
     {
         $this->runtime_data['referer'] = $referer;
 
@@ -266,7 +266,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setUserAgent(string $user_agent): self
+    public function setUserAgent(string $user_agent): static
     {
         $this->runtime_data['user_agent'] = $user_agent;
 
@@ -281,7 +281,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setMaxFollow(int $max_follow): self
+    public function setMaxFollow(int $max_follow): static
     {
         $this->runtime_data['max_follow'] = $max_follow;
 
@@ -296,7 +296,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setAcceptType(string $accept_type): self
+    public function setAcceptType(string $accept_type): static
     {
         $this->runtime_data['accept_type'] = $accept_type;
 
@@ -311,7 +311,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setETag(string $etag): self
+    public function setETag(string $etag): static
     {
         $this->runtime_data['etag'] = $etag;
 
@@ -326,7 +326,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setLastModified(string $last_modified): self
+    public function setLastModified(string $last_modified): static
     {
         $this->runtime_data['last_modified'] = $last_modified;
 
@@ -341,7 +341,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setSslVerifyHost(int $ssl_verifyhost): self
+    public function setSslVerifyHost(int $ssl_verifyhost): static
     {
         $this->runtime_data['ssl_verifyhost'] = $ssl_verifyhost;
 
@@ -356,7 +356,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setSslVerifyPeer(bool $ssl_verifypeer): self
+    public function setSslVerifyPeer(bool $ssl_verifypeer): static
     {
         $this->runtime_data['ssl_verifypeer'] = $ssl_verifypeer;
 
@@ -372,7 +372,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function setProxy(string $proxy, string $proxy_passwd): self
+    public function setProxy(string $proxy, string $proxy_passwd): static
     {
         $this->runtime_data['proxy']        = $proxy;
         $this->runtime_data['proxy_passwd'] = $proxy_passwd;
@@ -388,7 +388,7 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function withBody(bool $with_body): self
+    public function withBody(bool $with_body): static
     {
         $this->runtime_data['with_body'] = $with_body;
 
