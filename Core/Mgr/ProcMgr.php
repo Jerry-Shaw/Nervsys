@@ -68,7 +68,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function command(array $command): self
+    public function command(array $command): static
     {
         $this->command = $command;
 
@@ -81,7 +81,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function setArgvEndChar(string $end_char): self
+    public function setArgvEndChar(string $end_char): static
     {
         $this->argv_end_char = $end_char;
 
@@ -94,7 +94,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function setWorkDir(string $working_path): self
+    public function setWorkDir(string $working_path): static
     {
         $this->work_dir = $working_path;
 
@@ -108,7 +108,7 @@ class ProcMgr extends Factory
      *
      * @return $this
      */
-    public function readAt(int $seconds, int|null $microseconds = null): self
+    public function readAt(int $seconds, int|null $microseconds = null): static
     {
         $this->read_seconds      = $seconds;
         $this->read_microseconds = $microseconds;
@@ -125,7 +125,7 @@ class ProcMgr extends Factory
      * @return $this
      * @throws \Exception
      */
-    public function run(int $idx = 0): self
+    public function run(int $idx = 0): static
     {
         try {
             $proc = proc_open(
@@ -178,7 +178,7 @@ class ProcMgr extends Factory
      * @return $this
      * @throws \Exception
      */
-    public function runMP(int $run_proc = 8, int $max_executions = 2000): self
+    public function runMP(int $run_proc = 8, int $max_executions = 2000): static
     {
         $this->proc_max_executions = $max_executions;
 
@@ -266,7 +266,7 @@ class ProcMgr extends Factory
      *
      * @return self
      */
-    public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null): self
+    public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null): static
     {
         try {
             $idx = $this->getIdleProcIdx();

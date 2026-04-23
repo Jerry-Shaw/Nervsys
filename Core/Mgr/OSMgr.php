@@ -111,7 +111,7 @@ class OSMgr extends Factory
      *
      * @return $this
      */
-    public function inBackground(bool $in_background): self
+    public function inBackground(bool $in_background): static
     {
         $this->in_background = $in_background;
 
@@ -124,7 +124,7 @@ class OSMgr extends Factory
      *
      * @return $this
      */
-    public function useProfile(bool $use_profile): self
+    public function useProfile(bool $use_profile): static
     {
         $this->use_profile = $use_profile;
 

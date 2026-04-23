@@ -77,7 +77,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setDebugMode(bool $debug_mode): self
+    public function setDebugMode(bool $debug_mode): static
     {
         $this->debug_mode = $debug_mode;
 
@@ -90,7 +90,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setBlockMode(bool $block_mode): self
+    public function setBlockMode(bool $block_mode): static
     {
         $this->block_mode = $block_mode;
 
@@ -104,7 +104,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setConnectOptions(int $retry_times, int $wait_seconds): self
+    public function setConnectOptions(int $retry_times, int $wait_seconds): static
     {
         $this->connect_opt = [$retry_times, $wait_seconds];
 
@@ -118,7 +118,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setReadTimeout(int $seconds, int|null $microseconds = null): self
+    public function setReadTimeout(int $seconds, int|null $microseconds = null): static
     {
         $this->read_timeout = [$seconds, $microseconds];
 
@@ -131,7 +131,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setSendingGap(int $microseconds): self
+    public function setSendingGap(int $microseconds): static
     {
         $this->sending_gap = $microseconds;
 
@@ -144,7 +144,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setAliveTimeout(int $seconds): self
+    public function setAliveTimeout(int $seconds): static
     {
         $this->alive_timeout = $seconds;
 
@@ -157,7 +157,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setMaxNumInLoop(int $num_in_loop): self
+    public function setMaxNumInLoop(int $num_in_loop): static
     {
         $this->max_num_in_loop = $num_in_loop;
 
@@ -174,7 +174,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setSSLCert(string $local_cert, string $local_pk = '', string $passphrase = '', bool $self_signed = false, string $ssl_transport = 'ssl'): self
+    public function setSSLCert(string $local_cert, string $local_pk = '', string $passphrase = '', bool $self_signed = false, string $ssl_transport = 'ssl'): static
     {
         $options = [
             'local_cert'          => $local_cert,
@@ -205,7 +205,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setContextOptions(string $wrapper, array $options): self
+    public function setContextOptions(string $wrapper, array $options): static
     {
         $this->options[$wrapper] = $options;
 
@@ -218,7 +218,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function setHeartbeatChar(string $heartbeat_char): self
+    public function setHeartbeatChar(string $heartbeat_char): static
     {
         $this->heartbeat = $heartbeat_char;
 
@@ -233,7 +233,7 @@ class SocketMgr extends Factory
      * @return $this
      * @throws \Exception
      */
-    public function setEventListener(string $event, callable $callback): self
+    public function setEventListener(string $event, callable $callback): static
     {
         if (!array_key_exists($event, $this->callbacks)) {
             throw new \Exception('"' . $event . '" NOT accept!', E_USER_ERROR);
@@ -250,7 +250,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onConnect(callable $callback_func): self
+    public function onConnect(callable $callback_func): static
     {
         $this->callbacks['onConnect'] = $callback_func;
 
@@ -263,7 +263,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onHandshake(callable $callback_func): self
+    public function onHandshake(callable $callback_func): static
     {
         $this->callbacks['onHandshake'] = $callback_func;
 
@@ -276,7 +276,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onHeartbeat(callable $callback_func): self
+    public function onHeartbeat(callable $callback_func): static
     {
         $this->callbacks['onHeartbeat'] = $callback_func;
 
@@ -289,7 +289,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onMessage(callable $callback_func): self
+    public function onMessage(callable $callback_func): static
     {
         $this->callbacks['onMessage'] = $callback_func;
 
@@ -302,7 +302,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onSendBinary(callable $callback_func): self
+    public function onSendBinary(callable $callback_func): static
     {
         $this->callbacks['onSendBinary'] = $callback_func;
 
@@ -315,7 +315,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onSendString(callable $callback_func): self
+    public function onSendString(callable $callback_func): static
     {
         $this->callbacks['onSendString'] = $callback_func;
 
@@ -328,7 +328,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onSendFailed(callable $callback_func): self
+    public function onSendFailed(callable $callback_func): static
     {
         $this->callbacks['onSendFailed'] = $callback_func;
 
@@ -341,7 +341,7 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function onClose(callable $callback_func): self
+    public function onClose(callable $callback_func): static
     {
         $this->callbacks['onClose'] = $callback_func;
 
