@@ -26,6 +26,7 @@ use Nervsys\Core\Mgr\ProcMgr;
 
 class go extends Factory
 {
+    public App     $app;
     public ProcMgr $procMgr;
 
     public array $local_env = [];
@@ -38,31 +39,31 @@ class go extends Factory
      */
     public function __construct()
     {
-        $ver = null;
-        $app = App::new();
+        $git_ver   = null;
+        $this->app = App::new();
 
         $this->config_file = __DIR__ . DIRECTORY_SEPARATOR . 'local.json';
-        $this->module_root = $app->root_path . DIRECTORY_SEPARATOR . $app->api_dir . DIRECTORY_SEPARATOR;
+        $this->module_root = $this->app->root_path . DIRECTORY_SEPARATOR . $this->app->api_dir . DIRECTORY_SEPARATOR;
         $this->procMgr     = ProcMgr::new()->setWorkDir($this->module_root);
 
         $this->procMgr->command(['git', '-v'])->run();
 
         $exit_code = $this->procMgr->awaitProc(
-            function (string $output) use (&$ver): void
+            function (string $output) use (&$git_ver): void
             {
                 if (str_starts_with($output, 'git version')) {
-                    $ver = substr($output, strlen('git version') + 1);
+                    $git_ver = substr($output, strlen('git version') + 1);
                 }
 
                 unset($output);
             }
         );
 
-        if (0 !== $exit_code || is_null($ver)) {
+        if (0 !== $exit_code || is_null($git_ver)) {
             throw new \Exception('Git not found. Please install Git and add it to your PATH environment variable.', E_USER_WARNING);
         }
 
-        $this->output('Git version: ' . $ver, true);
+        $this->output('Git version: ' . $git_ver, true);
 
         $env_data = json_decode(file_get_contents($this->config_file), true);
 
@@ -74,7 +75,7 @@ class go extends Factory
             $this->local_env = $env_data;
         }
 
-        unset($ver, $app, $exit_code, $env_data);
+        unset($git_ver, $exit_code, $env_data);
     }
 
     /**
@@ -105,14 +106,20 @@ class go extends Factory
     /**
      * @param string $user_repo
      * @param string $tag
+     * @param string $root
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function install(string $user_repo, string $tag = ''): void
+    public function install(string $user_repo, string $tag = '', string $root = ''): void
     {
         if (!str_contains($user_repo, '/')) {
             throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}"');
+        }
+
+        if ($this->app->is_cli && '' !== $root) {
+            $this->module_root = rtrim($root, '\\/') . DIRECTORY_SEPARATOR;
+            $this->procMgr->setWorkDir($this->module_root);
         }
 
         [$user, $repo] = explode('/', $user_repo);
