@@ -216,6 +216,6 @@ class libGit extends Factory
             ->command(['git', ...$commands])
             ->readAt(0, 500)
             ->run()
-            ->awaitProc([$this, 'displayLog']);
+            ->awaitProc([$this, 'displayLog'], [$this, 'displayLog']);
     }
 }
