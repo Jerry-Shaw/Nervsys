@@ -4,7 +4,7 @@
  * Proc Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -301,10 +301,10 @@ class ProcMgr extends Factory
      * @param callable|null $stderr_callback
      * @param callable|null ...$other_callbacks
      *
-     * @return void
+     * @return int
      * @throws \ReflectionException
      */
-    public function awaitProc(callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): void
+    public function awaitProc(callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): int
     {
         $idx = key($this->proc_pid);
 
@@ -325,7 +325,11 @@ class ProcMgr extends Factory
             $this->readIPC($stdout_callback, $stderr_callback);
         }
 
-        unset($stdout_callback, $stderr_callback, $other_callbacks, $idx, $callback, $argv);
+        $status    = proc_get_status($this->proc_list[$idx]);
+        $exit_code = !$status['running'] ? $status['exitcode'] : -1;
+
+        unset($stdout_callback, $stderr_callback, $other_callbacks, $idx, $callback, $argv, $status);
+        return $exit_code;
     }
 
     /**
