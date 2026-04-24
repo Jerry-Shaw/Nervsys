@@ -1,0 +1,13 @@
+{
+  "name": "manager",
+  "version": "1.0.0",
+  "description": "Module Manager for Nervsys",
+  "author": "Jerry",
+  "entry": "go.php",
+  "repo": "",
+  "dependencies": {
+  },
+  "requires": {
+    "php": ">=8.1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "git_source": "github.com",
+  "git_platforms": {
+    "github.com": {
+      "git_url": "https://github.com/{user}/{repo}.git"
+    },
+    "gitee.com": {
+      "git_url": "https://gitee.com/{user}/{repo}.git"
+    },
+    "gitlab.com": {
+      "git_url": "https://gitlab.com/{user}/{repo}.git"
+    }
+  }
+}
