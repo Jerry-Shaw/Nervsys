@@ -44,7 +44,14 @@ class go extends Factory
 
         $this->config_file = __DIR__ . DIRECTORY_SEPARATOR . 'local.json';
         $this->module_root = $this->app->root_path . DIRECTORY_SEPARATOR . $this->app->api_dir . DIRECTORY_SEPARATOR;
-        $this->procMgr     = ProcMgr::new()->setWorkDir($this->module_root);
+
+        try {
+            mkdir($this->module_root, 0777, true);
+        } catch (\Exception) {
+            // Module path exists
+        }
+
+        $this->procMgr = ProcMgr::new()->setWorkDir($this->module_root);
 
         $this->procMgr->command(['git', '-v'])->run();
 
@@ -151,14 +158,7 @@ class go extends Factory
      */
     public function installUrl(string $repo, string $url, string $tag = ''): void
     {
-        $metadata    = $this->getModuleMeta($repo);
-        $module_path = $this->module_root . $repo;
-
-        try {
-            mkdir($module_path, 0777, true);
-        } catch (\Exception) {
-            // Module path exists
-        }
+        $metadata = $this->getModuleMeta($repo);
 
         if (empty($metadata)) {
             $command = ['git', 'clone'];
@@ -169,7 +169,7 @@ class go extends Factory
             }
 
             $command[] = $url;
-            $command[] = $module_path;
+            $command[] = $this->module_root . $repo;
 
             $this->procMgr
                 ->command($command)
@@ -190,7 +190,7 @@ class go extends Factory
             $this->installDependencies($metadata['dependencies']);
         }
 
-        unset($repo, $url, $tag, $metadata, $module_path);
+        unset($repo, $url, $tag, $metadata);
     }
 
     /**
