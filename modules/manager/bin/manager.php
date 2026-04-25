@@ -65,7 +65,7 @@ $ns->addCgiRouter(
             if (isset($IOData->src_argv[1]) && isset($IOData->src_argv[2])) {
                 $IOData->src_input['root'] = $IOData->src_argv[2] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
             } elseif (isset($IOData->src_argv[1])) {
-                $IOData->src_input['root'] = $IOData->src_argv[1];
+                $IOData->src_input['root'] = $IOData->src_argv[1] . DIRECTORY_SEPARATOR . 'modules';
             }
         }
     );
