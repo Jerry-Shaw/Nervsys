@@ -39,15 +39,24 @@ class libPDO extends Factory
     /**
      * libPDO constructor.
      *
-     * @param string $type
-     * @param string $host
-     * @param int    $port
-     * @param string $user
-     * @param string $pwd
-     * @param string $db
-     * @param int    $timeout
-     * @param bool   $persist
-     * @param string $charset
+     * @param string $type    Database type: mysql, mssql, pgsql, oci, sqlite
+     * @param string $host    mysql/mssql/pgsql/oci: hostname or IP
+     *                        sqlite: database file path OR ':memory:' for in-memory database
+     * @param int    $port    mysql/mssql/pgsql/oci: port number
+     *                        sqlite: NOT USED
+     * @param string $user    mysql/mssql/pgsql/oci: database username
+     *                        sqlite: NOT USED
+     * @param string $pwd     mysql/mssql/pgsql/oci: database password
+     *                        sqlite: NOT USED
+     * @param string $db      mysql/mssql/pgsql/oci: database name
+     *                        sqlite: NOT USED
+     * @param int    $timeout mysql/pgsql/oci: connection timeout in seconds
+     *                        sqlite: busy timeout in seconds (converted to milliseconds internally)
+     *                        mssql: NOT USED
+     * @param bool   $persist All types: enable persistent connection
+     * @param string $charset mysql/mssql/oci: character set
+     *                        sqlite: encoding used in PRAGMA encoding
+     *                        pgsql: NOT USED
      */
     public function __construct(
         string $type = 'mysql',
@@ -61,17 +70,17 @@ class libPDO extends Factory
         string $charset = 'utf8mb4'
     )
     {
-        //Set pdo to null
+        // Set pdo to null
         $this->pdo = null;
 
-        //Copy username & password
+        // Copy username & password (for non-SQLite)
         $this->usr = $user;
         $this->pwd = $pwd;
 
-        //Build DSN & OPTION
+        // Build DSN & OPTION
         $this->buildDsn($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
 
-        //Free memory
+        // Free memory
         unset($type, $host, $port, $user, $pwd, $db, $timeout, $persist, $charset);
     }
 
@@ -83,12 +92,19 @@ class libPDO extends Factory
      */
     public function connect(): static
     {
-        //Destroy existed PDO object from factory
+        // Destroy existed PDO object from factory
         if ($this->pdo instanceof \PDO) {
             $this->destroy($this->pdo);
         }
 
-        $this->pdo = parent::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
+        // SQLite does not require username/password
+        if (str_starts_with($this->dsn, 'sqlite:')) {
+            $this->pdo = parent::getObj(\PDO::class, [$this->dsn, null, null, $this->opt]);
+            // Enable foreign key constraints for SQLite
+            $this->pdo->exec('PRAGMA foreign_keys = ON');
+        } else {
+            $this->pdo = parent::getObj(\PDO::class, [$this->dsn, $this->usr, $this->pwd, $this->opt]);
+        }
 
         return $this;
     }
@@ -167,6 +183,18 @@ class libPDO extends Factory
                     . ':' . $port
                     . '/' . $db
                     . ';charset=' . $charset;
+                break;
+
+            case 'sqlite':
+                // SQLite: host parameter is used as database file path
+                // Supports ':memory:' for in-memory database or file path like '/path/to/database.db'
+                if ('' === $host || '127.0.0.1' === $host) {
+                    $host = ':memory:';
+                }
+
+                $this->dsn = 'sqlite:' . $host;
+                // SQLite timeout is measured in milliseconds
+                $this->opt[\PDO::ATTR_TIMEOUT] = $timeout * 1000;
                 break;
 
             default:
