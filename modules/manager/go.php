@@ -113,10 +113,6 @@ class go extends Factory
      */
     public function install(string $user_repo, string $tag = '', string $root = ''): void
     {
-        if (!str_contains($user_repo, '/')) {
-            throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}"');
-        }
-
         if ($this->app->is_cli && '' !== $root) {
             $this->module_root = rtrim($root, '\\/') . DIRECTORY_SEPARATOR;
             $this->procMgr->setWorkDir($this->module_root);
