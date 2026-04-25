@@ -151,7 +151,14 @@ class go extends Factory
      */
     public function installUrl(string $repo, string $url, string $tag = ''): void
     {
-        $metadata = $this->getModuleMeta($repo);
+        $metadata    = $this->getModuleMeta($repo);
+        $module_path = $this->module_root . $repo;
+
+        try {
+            mkdir($module_path, 0777, true);
+        } catch (\Exception) {
+            // Module path exists
+        }
 
         if (empty($metadata)) {
             $command = ['git', 'clone'];
@@ -162,7 +169,7 @@ class go extends Factory
             }
 
             $command[] = $url;
-            $command[] = $this->module_root . $repo;
+            $command[] = $module_path;
 
             $this->procMgr
                 ->command($command)
@@ -183,7 +190,7 @@ class go extends Factory
             $this->installDependencies($metadata['dependencies']);
         }
 
-        unset($repo, $url, $tag, $metadata);
+        unset($repo, $url, $tag, $metadata, $module_path);
     }
 
     /**
