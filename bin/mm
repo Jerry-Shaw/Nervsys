@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# ============================================
+# Nervsys Module Manager (mm)
+# ============================================
+
+# Check PHP availability
+if ! command -v php &> /dev/null; then
+    echo "[ERROR] PHP not found in PATH."
+    exit 1
+fi
+
+# Get script directory and build paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MANAGER_PHP="$SCRIPT_DIR/../modules/manager/bin/manager.php"
+PROJECT_ROOT="$(pwd)"
+
+# Get command
+COMMAND="$1"
+ARG1="$2"
+ARG2="$3"
+
+# Help
+if [ -z "$COMMAND" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "-h" ]; then
+    echo ""
+    echo "Nervsys Module Manager (mm)"
+    echo ""
+    echo "Usage:"
+    echo "  mm install {user/repo}[#tag] [target_dir]"
+    echo "  mm setSource {git_source}"
+    echo "  mm help"
+    echo ""
+    echo "Examples:"
+    echo "  mm install nervsys/logger"
+    echo "  mm install nervsys/logger#v1.0.0"
+    echo "  mm install nervsys/logger my_libs"
+    echo "  mm setSource gitee.com"
+    echo ""
+    exit 0
+fi
+
+# Install command
+if [ "$COMMAND" = "install" ]; then
+    if [ -z "$ARG1" ]; then
+        echo "[ERROR] Usage: mm install {user/repo}[#tag] [target_dir]"
+        exit 1
+    fi
+
+    # Build command with optional parameters
+    CMD="php \"$MANAGER_PHP\" install \"$ARG1\""
+    if [ -n "$ARG2" ]; then
+        CMD="$CMD \"$ARG2\""
+    fi
+    if [ -n "$PROJECT_ROOT" ]; then
+        CMD="$CMD \"$PROJECT_ROOT\""
+    fi
+
+    eval "$CMD"
+    exit $?
+fi
+
+# SetSource command
+if [ "$COMMAND" = "setSource" ]; then
+    if [ -z "$ARG1" ]; then
+        echo "[ERROR] Usage: mm setSource {git_source}"
+        exit 1
+    fi
+
+    php "$MANAGER_PHP" setsource "$ARG1"
+    exit $?
+fi
+
+echo "Unknown command: $COMMAND"
+exit 1
