@@ -15,82 +15,47 @@ if errorlevel 1 (
 
 REM Paths
 set "SCRIPT_DIR=%~dp0"
-set "PHP_SCRIPT=%SCRIPT_DIR%mm.php"
+set "MANAGER_PHP=%SCRIPT_DIR%..\modules\manager\bin\manager.php"
 set "PROJECT_ROOT=%cd%"
 
-REM Defaults
-set "MODULE_TARGET=modules"
-set "COMMAND="
-set "USER_REPO="
-set "TAG="
-
-REM Parse arguments
-set "FIRST=1"
-for %%a in (%*) do (
-    if "!FIRST!"=="1" (
-        set "COMMAND=%%a"
-        set "FIRST=0"
-    ) else (
-        if "!COMMAND!"=="install" (
-            if "!USER_REPO!"=="" (
-                set "USER_REPO=%%a"
-            ) else if "!MODULE_TARGET!"=="modules" (
-                set "MODULE_TARGET=%%a"
-            )
-        ) else if "!COMMAND!"=="setSource" (
-            set "GIT_SOURCE=%%a"
-        )
-    )
-)
+REM Get command
+set "COMMAND=%1"
+set "ARG1=%2"
+set "ARG2=%3"
 
 REM Help
 if "%COMMAND%"=="" goto :help
 if "%COMMAND%"=="help" goto :help
 if "%COMMAND%"=="-h" goto :help
 
-REM Execute command
-if "%COMMAND%"=="install" goto :install
-if "%COMMAND%"=="setSource" goto :setSource
+REM Install
+if "%COMMAND%"=="install" (
+    if "%ARG1%"=="" (
+        echo [ERROR] Usage: mm install {user/repo}[#tag] [target_dir]
+        exit /b 1
+    )
+
+    REM Build command with optional parameters
+    set "CMD=php "%MANAGER_PHP%" install "%ARG1%""
+    if not "%ARG2%"=="" set "CMD=!CMD! "%ARG2%""
+    if not "%PROJECT_ROOT%"=="" set "CMD=!CMD! "%PROJECT_ROOT%""
+
+    !CMD!
+    exit /b %errorlevel%
+)
+
+REM SetSource
+if "%COMMAND%"=="setSource" (
+    if "%ARG1%"=="" (
+        echo [ERROR] Usage: mm setSource {git_source}
+        exit /b 1
+    )
+    php "%MANAGER_PHP%" setsource "%ARG1%"
+    exit /b %errorlevel%
+)
+
 echo Unknown command: %COMMAND%
 goto :help
-
-:install
-if "%USER_REPO%"=="" (
-    echo [ERROR] Usage: mm install {user/repo}[#tag] [target_dir]
-    exit /b 1
-)
-
-REM Parse user/repo and tag
-set "REPO_NAME=%USER_REPO%"
-set "TAG_VALUE="
-for /f "tokens=1,2 delims=#" %%a in ("%USER_REPO%") do (
-    set "REPO_NAME=%%a"
-    if not "%%b"=="" set "TAG_VALUE=%%b"
-)
-
-REM Build target path
-set "TARGET_ROOT=%PROJECT_ROOT%\%MODULE_TARGET%"
-
-REM Create directory if not exists
-if not exist "%TARGET_ROOT%" mkdir "%TARGET_ROOT%" 2>nul
-
-REM Build -d parameter
-set "DATA_PARAM=user_repo=%REPO_NAME%"
-if not "%TAG_VALUE%"=="" set "DATA_PARAM=%DATA_PARAM%&tag=%TAG_VALUE%"
-set "DATA_PARAM=%DATA_PARAM%&root=%TARGET_ROOT%"
-
-REM Execute
-php "%PHP_SCRIPT%" -c"/Nervsys/modules/manager/go/install" -d"%DATA_PARAM%"
-exit /b %errorlevel%
-
-:setSource
-if "%GIT_SOURCE%"=="" (
-    echo [ERROR] Usage: mm setSource {git_source}
-    exit /b 1
-)
-
-php "%PHP_SCRIPT%" -c"/Nervsys/modules/manager/go/setSource" -d"source=%GIT_SOURCE%"
-exit /b %errorlevel%
 
 :help
 echo.
