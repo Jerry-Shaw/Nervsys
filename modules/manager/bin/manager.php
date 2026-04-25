@@ -42,32 +42,33 @@ $ns->addCgiRouter(
             $c
         ];
     }
-)
-    ->addCliHandler(
-        function (\Nervsys\Core\Lib\IOData $IOData): void
-        {
-            $argv_repo = $IOData->src_argv[0];
+);
 
-            if (!str_contains($argv_repo, '/')) {
-                throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}" or "{user}/{repo}#{tag}".');
-            }
+$ns->addCliHandler(
+    function (\Nervsys\Core\Lib\IOData $IOData): void
+    {
+        $argv_repo = $IOData->src_argv[0];
 
-            if (str_contains($argv_repo, '#')) {
-                [$user_repo, $tag] = explode('#', $argv_repo);
-            } else {
-                $user_repo = $argv_repo;
-                $tag       = '';
-            }
-
-            $IOData->src_input['user_repo'] = $user_repo;
-            $IOData->src_input['tag']       = $tag;
-
-            if (isset($IOData->src_argv[1]) && isset($IOData->src_argv[2])) {
-                $IOData->src_input['root'] = $IOData->src_argv[2] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
-            } elseif (isset($IOData->src_argv[1])) {
-                $IOData->src_input['root'] = $IOData->src_argv[1] . DIRECTORY_SEPARATOR . 'modules';
-            }
+        if (!str_contains($argv_repo, '/')) {
+            throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}" or "{user}/{repo}#{tag}".');
         }
-    );
+
+        if (str_contains($argv_repo, '#')) {
+            [$user_repo, $tag] = explode('#', $argv_repo);
+        } else {
+            $user_repo = $argv_repo;
+            $tag       = '';
+        }
+
+        $IOData->src_input['user_repo'] = $user_repo;
+        $IOData->src_input['tag']       = $tag;
+
+        if (isset($IOData->src_argv[1]) && isset($IOData->src_argv[2])) {
+            $IOData->src_input['root'] = $IOData->src_argv[2] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
+        } elseif (isset($IOData->src_argv[1])) {
+            $IOData->src_input['root'] = $IOData->src_argv[1] . DIRECTORY_SEPARATOR . 'modules';
+        }
+    }
+);
 
 $ns->go();
