@@ -131,26 +131,27 @@ trait System
     }
 
     /**
-     * @param string $path
+     * @param string $root_path
      *
      * @return $this
      */
-    public function setRootPath(string $path): self
+    public function setRootPath(string $root_path): self
     {
         $this->removeAutoloadPath($this->app->root_path);
-        $this->addAutoloadPath($path);
+        $this->addAutoloadPath($root_path);
+
+        $log_path = rtrim($root_path, '\\/') . DIRECTORY_SEPARATOR . 'logs';
 
         try {
-            $log_path = rtrim($path, '\\/') . DIRECTORY_SEPARATOR . 'logs';
             rename($this->app->log_path, $log_path);
-            $this->app->log_path = $log_path;
         } catch (\Throwable) {
             //Directory exists
         }
 
-        $this->app->root_path = $path;
+        $this->app->log_path  = $log_path;
+        $this->app->root_path = $root_path;
 
-        unset($path, $log_path);
+        unset($root_path, $log_path);
         return $this;
     }
 
