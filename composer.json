@@ -1,19 +1,28 @@
 {
   "name": "nervsys/ns",
-  "description": "A very slight PHP framework, very easy to use and integrate.",
-  "type": "project",
+  "description": "Nervsys - A minimalist, high-performance PHP framework with built-in modules, process manager, and CLI support.",
+  "type": "library",
   "license": "Apache-2.0",
   "authors": [
     {
-      "name": "Jerry",
-      "email": "27206617@qq.com"
+      "name": "Jerry Shaw",
+      "email": "jerry-shaw@live.com",
+      "role": "Developer"
     }
   ],
+  "homepage": "https://github.com/Jerry-Shaw/Nervsys",
+  "support": {
+    "source": "https://github.com/Jerry-Shaw/Nervsys",
+    "issues": "https://github.com/Jerry-Shaw/Nervsys/issues"
+  },
   "keywords": [
-    "ns",
-    "api",
     "nervsys",
-    "framework"
+    "ns",
+    "micro-framework",
+    "high-performance",
+    "cli",
+    "api",
+    "module"
   ],
   "require": {
     "php": "^8.1",
@@ -31,10 +40,27 @@
   },
   "autoload": {
     "psr-4": {
-      "Nervsys\\": ""
-    }
+      "Nervsys\\": "",
+      "Nervsys\\Core\\": "Core/",
+      "Nervsys\\Ext\\": "Ext/"
+    },
+    "files": [
+      "NS.php"
+    ]
   },
   "config": {
-    "sort-packages": true
-  }
+    "sort-packages": true,
+    "optimize-autoloader": true
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "@php -r \"echo 'Nervsys installed successfully. You can now use NS.php as your entry point.';\""
+    ],
+    "serve": [
+      "Composer\\Config::disableProcessTimeout",
+      "@php -S localhost:8080 -t www"
+    ]
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }
