@@ -17,8 +17,6 @@ PROJECT_ROOT="$(pwd)"
 
 # Get command
 COMMAND="$1"
-ARG1="$2"
-ARG2="$3"
 
 # Help
 if [ -z "$COMMAND" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "-h" ]; then
@@ -26,7 +24,7 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "-h" ]; then
     echo "Nervsys Module Manager (mm)"
     echo ""
     echo "Usage:"
-    echo "  mm install {user/repo}[#tag] [target_dir]"
+    echo "  mm install {user/repo}[#tag] [target_dir] [git_type]"
     echo "  mm setSource {git_source}"
     echo "  mm help"
     echo ""
@@ -34,41 +32,12 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "-h" ]; then
     echo "  mm install nervsys/logger"
     echo "  mm install nervsys/logger#v1.0.0"
     echo "  mm install nervsys/logger my_libs"
+    echo "  mm install nervsys/logger my_libs git"
     echo "  mm setSource gitee.com"
     echo ""
     exit 0
 fi
 
-# Install command
-if [ "$COMMAND" = "install" ]; then
-    if [ -z "$ARG1" ]; then
-        echo "[ERROR] Usage: mm install {user/repo}[#tag] [target_dir]"
-        exit 1
-    fi
-
-    # Build command with optional parameters
-    CMD="php \"$MANAGER_PHP\" install \"$ARG1\""
-    if [ -n "$ARG2" ]; then
-        CMD="$CMD \"$ARG2\""
-    fi
-    if [ -n "$PROJECT_ROOT" ]; then
-        CMD="$CMD \"$PROJECT_ROOT\""
-    fi
-
-    eval "$CMD"
-    exit $?
-fi
-
-# SetSource command
-if [ "$COMMAND" = "setSource" ]; then
-    if [ -z "$ARG1" ]; then
-        echo "[ERROR] Usage: mm setSource {git_source}"
-        exit 1
-    fi
-
-    php "$MANAGER_PHP" setsource "$ARG1"
-    exit $?
-fi
-
-echo "Unknown command: $COMMAND"
-exit 1
+# Pass all arguments and project root to PHP
+php "$MANAGER_PHP" "$@" "$PROJECT_ROOT"
+exit $?

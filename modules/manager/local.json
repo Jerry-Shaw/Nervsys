@@ -2,13 +2,16 @@
   "git_source": "github.com",
   "git_platforms": {
     "github.com": {
-      "git_url": "https://github.com/{user}/{repo}.git"
+      "ssh_url": "git@github.com:{user}/{repo}.git",
+      "https_url": "https://github.com/{user}/{repo}.git"
     },
     "gitee.com": {
-      "git_url": "https://gitee.com/{user}/{repo}.git"
+      "ssh_url": "git@gitee.com:{user}/{repo}.git",
+      "https_url": "https://gitee.com/{user}/{repo}.git"
     },
     "gitlab.com": {
-      "git_url": "https://gitlab.com/{user}/{repo}.git"
+      "ssh_url": "git@gitlab.com:{user}/{repo}.git",
+      "https_url": "https://gitlab.com/{user}/{repo}.git"
     }
   }
 }

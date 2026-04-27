@@ -63,7 +63,14 @@ $ns->addCliHandler(
         $IOData->src_input['user_repo'] = $user_repo;
         $IOData->src_input['tag']       = $tag;
 
-        if (isset($IOData->src_argv[1]) && isset($IOData->src_argv[2])) {
+        if (isset($IOData->src_argv[3]) && isset($IOData->src_argv[2]) && isset($IOData->src_argv[1])) {
+            if (!in_array($IOData->src_argv[2], ['git', 'https'], true)) {
+                throw new \InvalidArgumentException('Invalid git clone type. Expected "git" or "https". Leave it blank for https as default.');
+            }
+
+            $IOData->src_input['type'] = $IOData->src_argv[2];
+            $IOData->src_input['root'] = $IOData->src_argv[3] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
+        } elseif (isset($IOData->src_argv[2]) && isset($IOData->src_argv[1])) {
             $IOData->src_input['root'] = $IOData->src_argv[2] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
         } elseif (isset($IOData->src_argv[1])) {
             $IOData->src_input['root'] = $IOData->src_argv[1] . DIRECTORY_SEPARATOR . 'modules';

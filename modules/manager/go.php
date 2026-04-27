@@ -31,6 +31,8 @@ class go extends Factory
 
     public array $local_env = [];
 
+    public string $ssk_key = '';
+
     public string $config_file = '';
     public string $module_root = '';
 
@@ -82,6 +84,8 @@ class go extends Factory
             $this->local_env = $env_data;
         }
 
+        $this->ssk_key = $this->findSshKey();
+
         unset($git_ver, $exit_code, $env_data);
     }
 
@@ -113,12 +117,13 @@ class go extends Factory
     /**
      * @param string $user_repo
      * @param string $tag
+     * @param string $type
      * @param string $root
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function install(string $user_repo, string $tag = '', string $root = ''): void
+    public function install(string $user_repo, string $tag = '', string $type = 'https', string $root = ''): void
     {
         if ($this->app->is_cli && '' !== $root) {
             $this->module_root = rtrim($root, '\\/') . DIRECTORY_SEPARATOR;
@@ -129,11 +134,12 @@ class go extends Factory
         $metadata = $this->getModuleMeta($repo);
 
         if (empty($metadata)) {
-            $this->output('Installing ' . $repo . '...');
+            $git_url = $this->local_env['git_platforms'][$this->local_env['git_source']]['git' === $type ? 'ssh_url' : 'https_url'];
 
-            $git_url = $this->local_env['git_platforms'][$this->local_env['git_source']]['git_url'];
             $git_url = str_replace('{user}', $user, $git_url);
             $git_url = str_replace('{repo}', $repo, $git_url);
+
+            $this->output('Installing "' . $repo . '" from ' . $git_url);
 
             $this->installUrl($repo, $git_url, $tag);
             unset($git_url);
@@ -145,7 +151,7 @@ class go extends Factory
             }
         }
 
-        unset($user_repo, $tag, $user, $repo, $metadata);
+        unset($user_repo, $tag, $type, $root, $user, $repo, $metadata);
     }
 
     /**
@@ -161,6 +167,20 @@ class go extends Factory
         $metadata = $this->getModuleMeta($repo);
 
         if (empty($metadata)) {
+            if (str_starts_with($url, 'git@')) {
+                if ('' === $this->ssk_key) {
+                    $this->output('SSH Key NOT found, or, OpenSSH NOT installed.');
+                    $this->output('Skip installing "' . $repo . '" from ' . $url);
+
+                    unset($repo, $url, $tag, $metadata);
+                    return;
+                }
+
+                putenv('GIT_SSH_COMMAND=ssh -T -i ' . escapeshellarg($this->ssk_key) . ' -o StrictHostKeyChecking=no');
+            } else {
+                putenv('GIT_SSH_COMMAND=');
+            }
+
             $command = ['git', 'clone'];
 
             if ('' !== $tag) {
@@ -229,6 +249,7 @@ class go extends Factory
         unset($message, $empty_line);
     }
 
+
     /**
      * @param string $repo
      *
@@ -255,6 +276,49 @@ class go extends Factory
 
         unset($repo, $module_path, $meta_file);
         return $metadata;
+    }
+
+    /**
+     * @return string
+     * @throws \ReflectionException
+     */
+    private function findSshKey(): string
+    {
+        $user_home    = getenv('WINNT' === PHP_OS ? 'USERPROFILE' : 'HOME');
+        $ssh_key_path = $user_home . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . 'id_rsa';
+
+        if (!is_file($ssh_key_path)) {
+            $this->output('SSH Key NOT found.');
+            return '';
+        }
+
+        $this->output('SSH Key found: ' . $ssh_key_path);
+
+        $ssh_ver = null;
+        chmod($ssh_key_path, 0600);
+
+        $findSshVer = function (string $output) use (&$ssh_ver): void
+        {
+            if (str_starts_with($output, 'OpenSSH_')) {
+                $ssh_ver = $output;
+            }
+
+            unset($output);
+        };
+
+        $this->procMgr->command(['ssh', '-V'])->run();
+
+        $exit_code = $this->procMgr->awaitProc($findSshVer, $findSshVer);
+
+        if (0 !== $exit_code || is_null($ssh_ver)) {
+            $this->output('OpenSSH not installed.');
+            $ssh_key_path = '';
+        }
+
+        $this->output('OpenSSH version: ' . $ssh_ver, true);
+
+        unset($user_home, $ssh_ver, $findSshVer, $exit_code);
+        return $ssh_key_path;
     }
 
     /**
