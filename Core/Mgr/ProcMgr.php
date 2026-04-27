@@ -132,8 +132,8 @@ class ProcMgr extends Factory
                 $this->command,
                 [
                     ['pipe', 'rb'],
-                    ['socket', 'wb'],
-                    ['socket', 'wb']
+                    ['pipe', 'wb'],
+                    ['pipe', 'wb']
                 ],
                 $pipes,
                 $this->work_dir
