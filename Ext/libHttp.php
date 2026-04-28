@@ -648,10 +648,9 @@ class libHttp extends Factory
 
         // Handle WRITEFUNCTION vs RETURNTRANSFER
         if (isset($opt[CURLOPT_WRITEFUNCTION])) {
-            // If WRITEFUNCTION is set, ensure RETURNTRANSFER is false
-            $opt[CURLOPT_RETURNTRANSFER] = false;
+            $opt[CURLOPT_HEADER] = false;
+            unset($opt[CURLOPT_RETURNTRANSFER]);
         } elseif (!isset($opt[CURLOPT_RETURNTRANSFER])) {
-            // Default to RETURNTRANSFER true if not set
             $opt[CURLOPT_RETURNTRANSFER] = true;
         }
 
