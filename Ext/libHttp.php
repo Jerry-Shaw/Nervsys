@@ -68,6 +68,21 @@ class libHttp extends Factory
     public array $runtime_data = [];
 
     /**
+     * @param string $user_agent
+     * @param int    $timeout
+     */
+    public function __construct(string $user_agent = '', int $timeout = 0)
+    {
+        if ('' !== $user_agent) {
+            $this->runtime_data['user_agent'] = $user_agent;
+        }
+
+        if (0 < $timeout) {
+            $this->runtime_data['timeout'] = $timeout;
+        }
+    }
+
+    /**
      * Add request data
      *
      * @param array $data
@@ -180,6 +195,7 @@ class libHttp extends Factory
     public function resetOptions(): static
     {
         $this->cURL_options = [];
+        $this->runtime_data = [];
         return $this;
     }
 
@@ -667,8 +683,8 @@ class libHttp extends Factory
         //Merge with header data
         $runtime_data = $this->mergeHttpHeader($url_unit, $this->runtime_data);
 
-        //Reset runtime data property
-        $this->runtime_data = [];
+        //Only remove data and file
+        unset($this->runtime_data['data'], $this->runtime_data['file']);
 
         unset($url_unit);
         return $runtime_data;
