@@ -3,7 +3,7 @@
 /**
  * HTTP Request Extension
  *
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -434,9 +434,6 @@ class libHttp extends Factory
         //Get cURL info
         $this->curl_info  = curl_getinfo($curl_handle);
         $this->curl_error = curl_error($curl_handle);
-
-        //Close cURL handling
-        curl_close($curl_handle);
 
         //Close file handling
         if ('' !== $to_file) {
