@@ -25,13 +25,13 @@ use Nervsys\Core\Lib\IOData;
 
 class libHttp extends Factory
 {
-    //Pre-defined content types
+    // Pre-defined content types
     const CONTENT_TYPE_XML         = 'application/xml; charset=utf-8';
     const CONTENT_TYPE_JSON        = 'application/json; charset=utf-8';
     const CONTENT_TYPE_FORM_DATA   = 'multipart/form-data';
     const CONTENT_TYPE_URL_ENCODED = 'application/x-www-form-urlencoded; charset=UTF-8';
 
-    //cURL default data container
+    // Default configuration (base configuration)
     const CURL_DEFAULT = [
         'http_ver'          => 'HTTP/2',
         'http_method'       => 'GET',
@@ -48,86 +48,64 @@ class libHttp extends Factory
         'timeout'           => 60
     ];
 
-    //Raw data
-    public string $raw_header = '';
-    public string $raw_cookie = '';
+    // Persistent user configuration (string keys that are not direct cURL options)
+    protected array $user_config = [];
 
-    //parsed data
+    // Persistent cURL options (int keys)
+    protected array $curl_options = [];
+
+    // Temporary data (cleared after each request)
+    protected array $requestData = [];
+    protected array $requestFile = [];
+
+    // Raw and parsed data (results)
+    public string $raw_header  = '';
+    public string $raw_cookie  = '';
     public string $http_body   = '';
     public array  $http_header = [];
     public array  $http_cookie = [];
 
-    //cURL info data
+    // cURL info & error
     public array  $curl_info  = [];
     public string $curl_error = '';
 
-    //Runtime data container
-    public array $cURL_options   = [];
-    public array $remove_options = [];
-
-    public array $runtime_data = [];
-
     /**
+     * Constructor – set User-Agent and timeout as defaults
+     *
      * @param string $user_agent
      * @param int    $timeout
      */
     public function __construct(string $user_agent = '', int $timeout = 0)
     {
         if ('' !== $user_agent) {
-            $this->runtime_data['user_agent'] = $user_agent;
+            $this->curl_options[CURLOPT_USERAGENT] = $user_agent;
         }
 
         if (0 < $timeout) {
-            $this->runtime_data['timeout'] = $timeout;
+            $this->curl_options[CURLOPT_TIMEOUT] = $timeout;
         }
+
+        unset($user_agent, $timeout);
     }
 
     /**
-     * Add request data
-     *
-     * @param array $data
-     *
-     * @return $this
+     * Add request data (temporary)
      */
     public function addData(array $data): static
     {
-        $this->runtime_data['data'] ??= [];
-        $this->runtime_data['data'] += $data;
+        $this->requestData = array_merge($this->requestData, $data);
 
         unset($data);
         return $this;
     }
 
     /**
-     * Add request header
-     *
-     * @param array $header
-     *
-     * @return $this
-     */
-    public function addHeader(array $header): static
-    {
-        $this->runtime_data['header'] ??= [];
-        $this->runtime_data['header'] += $header;
-
-        unset($header);
-        return $this;
-    }
-
-    /**
-     * Add upload file
-     *
-     * @param string $key
-     * @param string $filename
-     * @param string $mime_type
-     * @param string $posted_filename
-     *
-     * @return $this
+     * Add upload file (temporary)
      */
     public function addFile(string $key, string $filename, string $mime_type = '', string $posted_filename = ''): static
     {
         if (is_file($filename)) {
-            $this->runtime_data['file'][$key] = curl_file_create($filename, $mime_type, $posted_filename);
+            $this->requestFile[$key] = curl_file_create($filename, $mime_type, $posted_filename);
         }
 
         unset($key, $filename, $mime_type, $posted_filename);
@@ -135,22 +113,29 @@ class libHttp extends Factory
     }
 
     /**
-     * Add cookie data
-     *
-     * @param array $cookie
-     *
-     * @return $this
+     * Add request header
+     */
+    public function addHeader(array $header): static
+    {
+        $this->user_config['header'] = array_merge($this->user_config['header'] ?? [], $header);
+
+        unset($header);
+        return $this;
+    }
+
+    /**
+     * Add cookie data (appends to existing cookie string)
      */
     public function addCookie(array $cookie): static
     {
-        $this->runtime_data['cookie'] ??= '';
+        $this->user_config['cookie'] ??= '';
 
         foreach ($cookie as $key => $val) {
-            if ('' !== $this->runtime_data['cookie']) {
-                $this->runtime_data['cookie'] .= '; ';
+            if ('' !== $this->user_config['cookie']) {
+                $this->user_config['cookie'] .= '; ';
             }
 
-            $this->runtime_data['cookie'] .= $key . '=' . $val;
+            $this->user_config['cookie'] .= $key . '=' . $val;
         }
 
         unset($cookie, $key, $val);
@@ -158,7 +143,8 @@ class libHttp extends Factory
     }
 
     /**
-     * Add custom cURL options
+     * Add custom cURL options (only integer keys allowed)
+     * String keys are ignored (use dedicated methods like setUserAgent, setTimeout, etc.)
      *
      * @param array $curl_opt_pair
      *
@@ -166,14 +152,18 @@ class libHttp extends Factory
      */
     public function addOptions(array $curl_opt_pair): static
     {
-        $this->cURL_options += $curl_opt_pair;
+        foreach ($curl_opt_pair as $key => $value) {
+            if (is_int($key)) {
+                $this->curl_options[$key] = $value;
+            }
+        }
 
-        unset($curl_opt_pair);
+        unset($curl_opt_pair, $key, $value);
         return $this;
     }
 
     /**
-     * Remove cURL options
+     * Remove cURL options (int keys only)
      *
      * @param int ...$curl_opts
      *
@@ -181,277 +171,215 @@ class libHttp extends Factory
      */
     public function removeOptions(int ...$curl_opts): static
     {
-        $this->remove_options = $curl_opts;
+        foreach ($curl_opts as $opt) {
+            unset($this->curl_options[$opt]);
+        }
 
-        unset($curl_opts);
+        unset($curl_opts, $opt);
         return $this;
     }
 
     /**
-     * Reset all custom cURL options.
-     *
-     * @return $this
+     * Reset all persistent configuration (both user_config and curl_options)
      */
     public function resetOptions(): static
     {
-        $this->cURL_options = [];
-        $this->runtime_data = [];
+        $this->user_config  = [];
+        $this->curl_options = [];
+
         return $this;
     }
 
     /**
-     * Set a stream callback to handle response data chunk by chunk.
-     *
-     * @param callable $callback
-     *
-     * @return $this
+     * Set a stream callback (cURL option)
      */
     public function setStreamCallback(callable $callback): static
     {
-        $this->cURL_options[CURLOPT_WRITEFUNCTION] = $callback;
+        $this->curl_options[CURLOPT_WRITEFUNCTION] = $callback;
 
         unset($callback);
         return $this;
     }
 
     /**
-     * Remove current stream callback.
-     *
-     * @return $this
+     * Remove current stream callback
      */
     public function removeStreamCallback(): static
     {
-        unset($this->cURL_options[CURLOPT_WRITEFUNCTION]);
+        unset($this->curl_options[CURLOPT_WRITEFUNCTION]);
         return $this;
     }
 
     /**
-     * @param string $cookie
-     *
-     * @return $this
+     * Set cookie string directly (overwrites any previously set cookie)
      */
     public function setCookie(string $cookie): static
     {
-        $this->runtime_data['cookie'] = $cookie;
+        $this->curl_options[CURLOPT_COOKIE] = $cookie;
 
         unset($cookie);
         return $this;
     }
 
     /**
-     * Set HTTP method
-     *
-     * @param string $http_method
-     *
-     * @return $this
+     * Set HTTP method (CUSTOMREQUEST and also update user_config for request line)
      */
     public function setHttpMethod(string $http_method): static
     {
-        $this->runtime_data['http_method'] = $http_method;
+        $this->curl_options[CURLOPT_CUSTOMREQUEST] = $http_method;
+        $this->user_config['http_method']          = $http_method;
 
         unset($http_method);
         return $this;
     }
 
     /**
-     * Set content type
-     *
-     * @param string $content_type
-     *
-     * @return $this
+     * Set content type (used in header and body encoding)
      */
     public function setContentType(string $content_type): static
     {
-        $this->runtime_data['http_content_type'] = $content_type;
+        $this->user_config['http_content_type'] = $content_type;
 
         unset($content_type);
         return $this;
     }
 
     /**
-     * Set Accept Encoding
-     *
-     * @param string $accept_encoding
-     *
-     * @return $this
+     * Set Accept-Encoding (direct cURL option)
      */
     public function setAcceptEncoding(string $accept_encoding): static
     {
-        $this->runtime_data['accept_encoding'] = $accept_encoding;
+        $this->curl_options[CURLOPT_ENCODING] = $accept_encoding;
 
         unset($accept_encoding);
         return $this;
     }
 
     /**
-     * Set cURL timeout value (seconds)
-     *
-     * @param int $timeout
-     *
-     * @return $this
+     * Set timeout (direct cURL option)
      */
     public function setTimeout(int $timeout): static
     {
-        $this->runtime_data['timeout'] = $timeout;
+        $this->curl_options[CURLOPT_TIMEOUT] = $timeout;
 
         unset($timeout);
         return $this;
     }
 
     /**
-     * Set referer URL
-     *
-     * @param string $referer
-     *
-     * @return $this
+     * Set referer (direct cURL option)
      */
     public function setReferer(string $referer): static
     {
-        $this->runtime_data['referer'] = $referer;
+        $this->curl_options[CURLOPT_REFERER] = $referer;
 
         unset($referer);
         return $this;
     }
 
     /**
-     * Set User-Agent string
-     *
-     * @param string $user_agent
-     *
-     * @return $this
+     * Set User-Agent (direct cURL option)
      */
     public function setUserAgent(string $user_agent): static
     {
-        $this->runtime_data['user_agent'] = $user_agent;
+        $this->curl_options[CURLOPT_USERAGENT] = $user_agent;
 
         unset($user_agent);
         return $this;
     }
 
     /**
-     * Set max follow depths
-     *
-     * @param int $max_follow
-     *
-     * @return $this
+     * Set max follow redirects (requires also enabling FOLLOWLOCATION)
+     * Stored in user_config because it needs special handling.
      */
     public function setMaxFollow(int $max_follow): static
     {
-        $this->runtime_data['max_follow'] = $max_follow;
+        $this->user_config['max_follow'] = $max_follow;
 
         unset($max_follow);
         return $this;
     }
 
     /**
-     * Set HTTP accept types
-     *
-     * @param string $accept_type
-     *
-     * @return $this
+     * Set Accept header (used in HTTP headers)
      */
     public function setAcceptType(string $accept_type): static
     {
-        $this->runtime_data['accept_type'] = $accept_type;
+        $this->user_config['accept_type'] = $accept_type;
 
         unset($accept_type);
         return $this;
     }
 
     /**
-     * Set ETag value
-     *
-     * @param string $etag
-     *
-     * @return $this
+     * Set ETag (used in If-None-Match header)
      */
     public function setETag(string $etag): static
     {
-        $this->runtime_data['etag'] = $etag;
+        $this->user_config['etag'] = $etag;
 
         unset($etag);
         return $this;
     }
 
     /**
-     * Set modified since value
-     *
-     * @param string $last_modified
-     *
-     * @return $this
+     * Set Last-Modified (used in If-Modified-Since header)
      */
     public function setLastModified(string $last_modified): static
     {
-        $this->runtime_data['last_modified'] = $last_modified;
+        $this->user_config['last_modified'] = $last_modified;
 
         unset($last_modified);
         return $this;
     }
 
     /**
-     * Set ssl_verifyhost value
-     *
-     * @param int $ssl_verifyhost
-     *
-     * @return $this
+     * Set SSL verify host (direct cURL option)
      */
     public function setSslVerifyHost(int $ssl_verifyhost): static
     {
-        $this->runtime_data['ssl_verifyhost'] = $ssl_verifyhost;
+        $this->curl_options[CURLOPT_SSL_VERIFYHOST] = $ssl_verifyhost;
 
         unset($ssl_verifyhost);
         return $this;
     }
 
     /**
-     * Set ssl_verifypeer value
-     *
-     * @param bool $ssl_verifypeer
-     *
-     * @return $this
+     * Set SSL verify peer (direct cURL option)
      */
     public function setSslVerifyPeer(bool $ssl_verifypeer): static
     {
-        $this->runtime_data['ssl_verifypeer'] = $ssl_verifypeer;
+        $this->curl_options[CURLOPT_SSL_VERIFYPEER] = $ssl_verifypeer;
 
         unset($ssl_verifypeer);
         return $this;
     }
 
     /**
-     * Set proxy
-     *
-     * @param string $proxy
-     * @param string $proxy_passwd
-     *
-     * @return $this
+     * Set proxy (direct cURL option for proxy and proxy userpass)
      */
     public function setProxy(string $proxy, string $proxy_passwd): static
     {
-        $this->runtime_data['proxy']        = $proxy;
-        $this->runtime_data['proxy_passwd'] = $proxy_passwd;
+        $this->curl_options[CURLOPT_PROXY]        = $proxy;
+        $this->curl_options[CURLOPT_PROXYUSERPWD] = $proxy_passwd;
 
         unset($proxy, $proxy_passwd);
         return $this;
     }
 
     /**
-     * Fetch with body content
-     *
-     * @param bool $with_body
-     *
-     * @return $this
+     * Enable/Disable fetching body (direct cURL option, CURLOPT_NOBODY is opposite)
      */
     public function withBody(bool $with_body): static
     {
-        $this->runtime_data['with_body'] = $with_body;
+        $this->curl_options[CURLOPT_NOBODY] = !$with_body;
 
         unset($with_body);
         return $this;
     }
 
     /**
-     * Fetch response body from URL (return or save)
+     * Fetch response body from URL
      *
      * @param string $url
      * @param string $to_file
@@ -462,51 +390,47 @@ class libHttp extends Factory
      */
     public function fetch(string $url, string $to_file = '', bool $reset_options = false): string
     {
-        //Get URL units
+        // Build URL unit
         $url_unit = $this->buildUrlUnit($url);
 
-        //Build runtime data
-        $runtime_data = $this->buildRuntimeData($url_unit);
+        // Merge configuration for this request (only user_config + defaults, no curl_options)
+        $request_config = $this->buildRequestConfig($url_unit);
 
-        //Build cURL options
-        $curl_options = $this->buildCurlOptions($runtime_data, '' === $to_file);
+        // Build cURL options array from request_config and persistent curl_options
+        $curl_options = $this->buildCurlOptions($request_config, $this->curl_options, '' === $to_file);
 
-        //Reset cURL options on demand
+        // Reset persistent config if requested
         if ($reset_options) {
             $this->resetOptions();
         }
 
-        //Initial cURL
+        // Initialize cURL
         $curl_handle = curl_init($url);
+        $file_handle = null;
 
-        //Save to file
         if ('' !== $to_file) {
-            $file_handle                = fopen($to_file, 'wb');
+            $file_handle = fopen($to_file, 'wb');
+
             $curl_options[CURLOPT_FILE] = $file_handle;
         }
 
-        //Set cURL options
         curl_setopt_array($curl_handle, $curl_options);
 
-        //Get raw response, return bool when save to file
-        $response = curl_exec($curl_handle);
-
-        //Get cURL info
+        $response         = curl_exec($curl_handle);
         $this->curl_info  = curl_getinfo($curl_handle);
         $this->curl_error = curl_error($curl_handle);
 
-        //Close file handling
-        if ('' !== $to_file) {
+        if (null !== $file_handle) {
             fflush($file_handle);
             fclose($file_handle);
             unset($file_handle);
         }
 
-        //Parse HTTP response
         if (is_string($response)) {
             $this->parseHttpResponse($response);
         }
 
+        // Determine return value
         if (isset($curl_options[CURLOPT_WRITEFUNCTION])) {
             $output = '';
         } elseif ('' === $to_file) {
@@ -515,13 +439,15 @@ class libHttp extends Factory
             $output = $to_file;
         }
 
-        unset($url, $to_file, $reset_options, $url_unit, $runtime_data, $curl_options, $curl_handle, $response);
+        // Clear temporary data
+        $this->requestData = [];
+        $this->requestFile = [];
+
+        unset($url, $to_file, $reset_options, $url_unit, $request_config, $curl_options, $curl_handle, $response);
         return $output;
     }
 
     /**
-     * Get HTTP response code
-     *
      * @return int
      */
     public function getHttpCode(): int
@@ -530,8 +456,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get HTTP download size
-     *
      * @return float
      */
     public function getDownSize(): float
@@ -540,8 +464,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get HTTP body size
-     *
      * @return float
      */
     public function getBodySize(): float
@@ -550,8 +472,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get HTTP total transfer time (second)
-     *
      * @return float
      */
     public function getTotalTime(): float
@@ -560,8 +480,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get HTTP body data
-     *
      * @return string
      */
     public function getHttpBody(): string
@@ -570,8 +488,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get HTTP cURL error
-     *
      * @return string
      */
     public function getHttpError(): string
@@ -580,8 +496,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get parsed HTTP Header data
-     *
      * @return array
      */
     public function getHttpHeader(): array
@@ -590,8 +504,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Get parsed HTTP Cookie data
-     *
      * @return array
      */
     public function getHttpCookie(): array
@@ -600,8 +512,6 @@ class libHttp extends Factory
     }
 
     /**
-     * Parse HTTP Cookie string
-     *
      * @param string $cookie
      *
      * @return array
@@ -612,43 +522,31 @@ class libHttp extends Factory
         $cookie_list = str_contains($cookie, '; ') ? explode('; ', $cookie) : [$cookie];
 
         foreach ($cookie_list as $value) {
-            if (false === ($pos = strpos($value, '='))) {
-                continue;
+            $pos = strpos($value, '=');
+
+            if (false !== $pos) {
+                $cookie_data[substr($value, 0, $pos)] = substr($value, $pos + 1);
             }
-
-            $key = substr($value, 0, $pos);
-            $val = substr($value, $pos + 1);
-
-            $cookie_data[$key] = $val;
         }
 
-        unset($cookie, $cookie_list, $value, $pos, $key, $val);
+        unset($cookie, $cookie_list, $value, $pos);
         return $cookie_data;
     }
 
     /**
-     * Build URL units
-     *
      * @param string $url
      *
      * @return array
      */
     private function buildUrlUnit(string $url): array
     {
-        //Parse URL
         $url_unit = parse_url($url);
 
-        //Check main components
-        if (false === $url_unit || !isset($url_unit['scheme']) || !isset($url_unit['host'])) {
+        if (false === $url_unit || !isset($url_unit['scheme'], $url_unit['host'])) {
             return [];
         }
 
-        //Prepare URL unit
-        if (!isset($url_unit['path'])) {
-            $url_unit['path'] = '/';
-        }
-
-        //Build query string
+        $url_unit['path']  = $url_unit['path'] ?? '/';
         $url_unit['query'] = isset($url_unit['query']) ? '?' . $url_unit['query'] : '';
 
         unset($url);
@@ -656,191 +554,174 @@ class libHttp extends Factory
     }
 
     /**
-     * Build runtime data
+     * Build request configuration from defaults and user_config (no curl_options)
      *
      * @param array $url_unit
      *
      * @return array
      */
-    private function buildRuntimeData(array $url_unit): array
+    private function buildRequestConfig(array $url_unit): array
     {
-        //Merge upload file data, set content-type to multipart/form-data
-        if (isset($this->runtime_data['file'])) {
-            $this->runtime_data['data']              ??= [];
-            $this->runtime_data['data']              += $this->runtime_data['file'];
-            $this->runtime_data['http_content_type'] = self::CONTENT_TYPE_FORM_DATA;
+        // Start with defaults
+        $config = self::CURL_DEFAULT;
+
+        // Merge persistent user configuration (string keys that are not direct cURL options)
+        foreach ($this->user_config as $key => $value) {
+            $config[$key] = $value;
         }
 
-        //Merge default
-        $this->runtime_data += self::CURL_DEFAULT;
+        // Merge temporary data (data + file)
+        $config['data'] = array_merge($this->requestData, $this->requestFile);
 
-        //Merge URL data
-        $this->runtime_data['url_unit'] = $url_unit;
+        if (!empty($this->requestFile)) {
+            $config['http_content_type'] = self::CONTENT_TYPE_FORM_DATA;
+        }
 
-        //Uppercase HTTP method
-        $this->runtime_data['http_method'] = strtoupper($this->runtime_data['http_method']);
+        $config['url_unit']    = $url_unit;
+        $config['http_method'] = strtoupper($config['http_method']);
 
-        //Merge with header data
-        $runtime_data = $this->mergeHttpHeader($url_unit, $this->runtime_data);
+        // Build HTTP headers (uses mergeHeaderConfig logic)
+        $config = $this->mergeHeaderConfig($url_unit, $config);
 
-        //Only remove data and file
-        unset($this->runtime_data['data'], $this->runtime_data['file']);
-
-        unset($url_unit);
-        return $runtime_data;
+        unset($url_unit, $key, $value);
+        return $config;
     }
 
     /**
-     * Build cURL options
+     * Build cURL options from request config and persistent curl options
      *
-     * @param array $runtime_data
+     * @param array $request_config
+     * @param array $curl_options
      * @param bool  $with_header
      *
      * @return array
      * @throws \ReflectionException
      */
-    private function buildCurlOptions(array $runtime_data, bool $with_header = true): array
+    private function buildCurlOptions(array $request_config, array $curl_options, bool $with_header): array
     {
-        $curl_opt = $this->cURL_options;
+        // Start with mandatory options
+        $opt = [
+            CURLOPT_NOSIGNAL       => true,
+            CURLOPT_AUTOREFERER    => true,
+            CURLOPT_COOKIESESSION  => true,
+            CURLOPT_FOLLOWLOCATION => false,
+        ];
 
-        $curl_opt += [CURLOPT_NOSIGNAL => true];
-        $curl_opt += [CURLOPT_AUTOREFERER => true];
-        $curl_opt += [CURLOPT_COOKIESESSION => true];
-        $curl_opt += [CURLOPT_FOLLOWLOCATION => false];
-
-        if (!isset($curl_opt[CURLOPT_WRITEFUNCTION])) {
-            $curl_opt += [CURLOPT_RETURNTRANSFER => true];
+        // Cookie may be set via addCookie (stored in $request_config)
+        if (isset($request_config['cookie'])) {
+            $opt[CURLOPT_COOKIE] = $request_config['cookie'];
         }
 
-        if (isset($runtime_data['cookie'])) {
-            $curl_opt[CURLOPT_COOKIE] = $runtime_data['cookie'];
+        // Max follow redirects handling (requires FOLLOWLOCATION)
+        if (isset($request_config['max_follow']) && 0 < $request_config['max_follow']) {
+            $opt[CURLOPT_FOLLOWLOCATION] = true;
+            $opt[CURLOPT_MAXREDIRS]      = $request_config['max_follow'];
         }
 
-        if (isset($runtime_data['referer'])) {
-            $curl_opt[CURLOPT_REFERER] = $runtime_data['referer'];
-        }
-
-        if (isset($runtime_data['max_follow']) && 0 < $runtime_data['max_follow']) {
-            $curl_opt[CURLOPT_FOLLOWLOCATION] = true;
-            $curl_opt[CURLOPT_MAXREDIRS]      = $runtime_data['max_follow'];
-        }
-
-        if (isset($runtime_data['proxy'])) {
-            $curl_opt[CURLOPT_PROXY] = $runtime_data['proxy'];
-
-            if (isset($runtime_data['proxy_passwd'])) {
-                $curl_opt[CURLOPT_PROXYUSERPWD] = $runtime_data['proxy_passwd'];
-            }
-        }
-
-        if (isset($runtime_data['data'])) {
-            if ('GET' === $runtime_data['http_method']) {
-                $runtime_data['http_method'] = 'POST';
+        // Request body
+        if (!empty($request_config['data'])) {
+            if ('GET' === $request_config['http_method']) {
+                $request_config['http_method'] = 'POST';
             }
 
-            if (false !== stripos($runtime_data['http_content_type'], 'urlencoded')) {
-                $curl_opt[CURLOPT_POSTFIELDS] = http_build_query($runtime_data['data']);
-            } elseif (false !== stripos($runtime_data['http_content_type'], 'json')) {
-                $curl_opt[CURLOPT_POSTFIELDS] = json_encode($runtime_data['data'], JSON_FORMAT);
-            } elseif (false !== stripos($runtime_data['http_content_type'], 'xml')) {
-                $curl_opt[CURLOPT_POSTFIELDS] = IOData::new()->toXml($runtime_data['data']);
+            if (false !== stripos($request_config['http_content_type'], 'urlencoded')) {
+                $opt[CURLOPT_POSTFIELDS] = http_build_query($request_config['data']);
+            } elseif (false !== stripos($request_config['http_content_type'], 'json')) {
+                $opt[CURLOPT_POSTFIELDS] = json_encode($request_config['data'], JSON_FORMAT);
+            } elseif (false !== stripos($request_config['http_content_type'], 'xml')) {
+                $opt[CURLOPT_POSTFIELDS] = IOData::new()->toXml($request_config['data']);
             } else {
-                $curl_opt[CURLOPT_POSTFIELDS] = $runtime_data['data'];
+                $opt[CURLOPT_POSTFIELDS] = $request_config['data'];
             }
         }
 
-        $curl_opt[CURLOPT_NOBODY] = !$runtime_data['with_body'];
+        // Other curl options that come from request_config
+        $opt[CURLOPT_HEADER]        = $with_header;
+        $opt[CURLOPT_HTTPHEADER]    = $request_config['header'];
+        $opt[CURLOPT_PORT]          = $request_config['url_unit']['port'] ?? ('https' === $request_config['url_unit']['scheme'] ? 443 : 80);
+        $opt[CURLOPT_CUSTOMREQUEST] = $request_config['http_method'];
 
-        //Using standard port number when no specific port is assigned in URL
-        $curl_opt[CURLOPT_PORT] = $runtime_data['url_unit']['port'] ?? ('https' === $runtime_data['url_unit']['scheme'] ? 443 : 80);
-
-        $curl_opt[CURLOPT_HEADER]         = $with_header;
-        $curl_opt[CURLOPT_TIMEOUT]        = $runtime_data['timeout'];
-        $curl_opt[CURLOPT_ENCODING]       = $runtime_data['accept_encoding'];
-        $curl_opt[CURLOPT_USERAGENT]      = $runtime_data['user_agent'];
-        $curl_opt[CURLOPT_HTTPHEADER]     = $runtime_data['header'];
-        $curl_opt[CURLOPT_CUSTOMREQUEST]  = $runtime_data['http_method'];
-        $curl_opt[CURLOPT_SSL_VERIFYHOST] = $runtime_data['ssl_verifyhost'];
-        $curl_opt[CURLOPT_SSL_VERIFYPEER] = $runtime_data['ssl_verifypeer'];
-
-        //Remove specific cURL options
-        if (!empty($this->remove_options)) {
-            $curl_opt = array_diff_key($curl_opt, array_flip($this->remove_options));
+        // Merge persistent cURL options (int keys) – these have highest priority
+        foreach ($curl_options as $key => $value) {
+            $opt[$key] = $value;
         }
 
-        unset($runtime_data, $with_header);
-        return $curl_opt;
+        // Handle WRITEFUNCTION vs RETURNTRANSFER
+        if (isset($opt[CURLOPT_WRITEFUNCTION])) {
+            // If WRITEFUNCTION is set, ensure RETURNTRANSFER is false
+            $opt[CURLOPT_RETURNTRANSFER] = false;
+        } elseif (!isset($opt[CURLOPT_RETURNTRANSFER])) {
+            // Default to RETURNTRANSFER true if not set
+            $opt[CURLOPT_RETURNTRANSFER] = true;
+        }
+
+        unset($request_config, $curl_options, $with_header, $key, $value);
+        return $opt;
     }
 
     /**
-     * Merge runtime data with HTTP header
-     *
      * @param array $url_unit
-     * @param array $runtime_data
+     * @param array $config
      *
      * @return array
      */
-    private function mergeHttpHeader(array $url_unit, array $runtime_data): array
+    private function mergeHeaderConfig(array $url_unit, array $config): array
     {
-        //Append port number when non-standard port is using
-        $header_unit = ['Host' => $url_unit['host'] . (isset($url_unit['port']) ? ':' . $url_unit['port'] : '')];
+        $header_unit = [
+            'Host' => $url_unit['host'] . (isset($url_unit['port']) ? ':' . $url_unit['port'] : '')
+        ];
 
-        if (isset($runtime_data['header'])) {
-            $header_unit += $runtime_data['header'];
+        if (isset($config['header'])) {
+            $header_unit += $config['header'];
         }
 
-        if (isset($runtime_data['cookie'])) {
-            $header_unit['Cookie'] = $runtime_data['cookie'];
+        if (isset($config['etag'])) {
+            $header_unit['If-None-Match'] = $config['etag'];
         }
 
-        if (isset($runtime_data['etag'])) {
-            $header_unit['If-None-Match'] = $runtime_data['etag'];
-        }
-
-        if (isset($runtime_data['last_modified'])) {
-            $header_unit['If-Modified-Since'] = $runtime_data['last_modified'];
+        if (isset($config['last_modified'])) {
+            $header_unit['If-Modified-Since'] = $config['last_modified'];
         }
 
         $header_unit += [
-            'Accept'          => $runtime_data['accept_type'],
-            'Accept-Charset'  => $runtime_data['accept_charset'],
-            'Accept-Encoding' => $runtime_data['accept_encoding'],
-            'Accept-Language' => $runtime_data['accept_language'],
-            'Content-Type'    => $runtime_data['http_content_type'],
-            'User-Agent'      => $runtime_data['user_agent'],
-            'Connection'      => $runtime_data['http_connection']
+            'Accept'          => $config['accept_type'],
+            'Accept-Charset'  => $config['accept_charset'],
+            'Accept-Language' => $config['accept_language'],
+            'Content-Type'    => $config['http_content_type'],
+            'Connection'      => $config['http_connection']
         ];
 
-        $runtime_data['header'] = [$runtime_data['http_method'] . ' ' . $url_unit['path'] . $url_unit['query'] . ' ' . $runtime_data['http_ver']];
+        $headers = [];
 
         foreach ($header_unit as $key => $val) {
-            $runtime_data['header'][] = ($key . ': ' . $val);
+            $headers[] = $key . ': ' . $val;
         }
 
-        unset($url_unit, $header_unit, $key, $val);
-        return $runtime_data;
+        $config['header'] = $headers;
+
+        unset($url_unit, $header_unit, $headers, $key, $val);
+        return $config;
     }
 
     /**
-     * Parse HTTP response into parts
-     *
      * @param string $response
+     *
+     * @return void
      */
     private function parseHttpResponse(string $response): void
     {
-        //Reset appendable variables
         $this->raw_cookie  = '';
         $this->http_header = [];
         $this->http_cookie = [];
 
-        //Get raw data of header and body
         [$this->raw_header, $this->http_body] = explode("\r\n\r\n", $response, 2);
 
-        //Parse Header
         $data_list = explode("\r\n", $this->raw_header);
 
         foreach ($data_list as $value) {
-            if (false === ($pos = strpos($value, ':'))) {
+            $pos = strpos($value, ':');
+
+            if (false === $pos) {
                 continue;
             }
 
@@ -849,7 +730,6 @@ class libHttp extends Factory
 
             $this->http_header[$key] = $val;
 
-            //Parse Cookie
             if ('set-cookie' === $key) {
                 if ('' !== $this->raw_cookie) {
                     $this->raw_cookie .= '; ';
@@ -862,14 +742,11 @@ class libHttp extends Factory
                 }
 
                 $this->raw_cookie .= rtrim($val, ';');
+                $kv_pos           = strpos($val, '=');
 
-                $kv_pos = strpos($val, '=');
-
-                if (false === ($kv_pos)) {
-                    continue;
+                if (false !== $kv_pos) {
+                    $this->http_cookie[substr($val, 0, $kv_pos)] = substr($val, $kv_pos + 1);
                 }
-
-                $this->http_cookie[substr($val, 0, $kv_pos)] = substr($val, $kv_pos + 1);
             }
         }
 
