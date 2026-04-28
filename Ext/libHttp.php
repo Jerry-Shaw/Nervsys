@@ -62,8 +62,9 @@ class libHttp extends Factory
     public string $curl_error = '';
 
     //Runtime data container
-    public array $rem_options  = [];
-    public array $cURL_options = [];
+    public array $cURL_options   = [];
+    public array $remove_options = [];
+
     public array $runtime_data = [];
 
     /**
@@ -163,11 +164,48 @@ class libHttp extends Factory
      *
      * @return $this
      */
-    public function remOptions(int ...$curl_opts): static
+    public function removeOptions(int ...$curl_opts): static
     {
-        $this->rem_options = $curl_opts;
+        $this->remove_options = $curl_opts;
 
         unset($curl_opts);
+        return $this;
+    }
+
+    /**
+     * Reset all custom cURL options.
+     *
+     * @return $this
+     */
+    public function resetOptions(): static
+    {
+        $this->cURL_options = [];
+        return $this;
+    }
+
+    /**
+     * Set a stream callback to handle response data chunk by chunk.
+     *
+     * @param callable $callback
+     *
+     * @return $this
+     */
+    public function setStreamCallback(callable $callback): static
+    {
+        $this->cURL_options[CURLOPT_WRITEFUNCTION] = $callback;
+
+        unset($callback);
+        return $this;
+    }
+
+    /**
+     * Remove current stream callback.
+     *
+     * @return $this
+     */
+    public function removeStreamCallback(): static
+    {
+        unset($this->cURL_options[CURLOPT_WRITEFUNCTION]);
         return $this;
     }
 
@@ -401,11 +439,12 @@ class libHttp extends Factory
      *
      * @param string $url
      * @param string $to_file
+     * @param bool   $reset_options
      *
      * @return string
      * @throws \ReflectionException
      */
-    public function fetch(string $url, string $to_file = ''): string
+    public function fetch(string $url, string $to_file = '', bool $reset_options = false): string
     {
         //Get URL units
         $url_unit = $this->buildUrlUnit($url);
@@ -415,6 +454,11 @@ class libHttp extends Factory
 
         //Build cURL options
         $curl_options = $this->buildCurlOptions($runtime_data, '' === $to_file);
+
+        //Reset cURL options on demand
+        if ($reset_options) {
+            $this->resetOptions();
+        }
 
         //Initial cURL
         $curl_handle = curl_init($url);
@@ -447,8 +491,16 @@ class libHttp extends Factory
             $this->parseHttpResponse($response);
         }
 
-        unset($url, $url_unit, $runtime_data, $curl_options, $curl_handle, $response);
-        return '' === $to_file ? $this->http_body : $to_file;
+        if (isset($curl_options[CURLOPT_WRITEFUNCTION])) {
+            $output = '';
+        } elseif ('' === $to_file) {
+            $output = $this->http_body;
+        } else {
+            $output = $to_file;
+        }
+
+        unset($url, $to_file, $reset_options, $url_unit, $runtime_data, $curl_options, $curl_handle, $response);
+        return $output;
     }
 
     /**
@@ -638,8 +690,11 @@ class libHttp extends Factory
         $curl_opt += [CURLOPT_NOSIGNAL => true];
         $curl_opt += [CURLOPT_AUTOREFERER => true];
         $curl_opt += [CURLOPT_COOKIESESSION => true];
-        $curl_opt += [CURLOPT_RETURNTRANSFER => true];
         $curl_opt += [CURLOPT_FOLLOWLOCATION => false];
+
+        if (!isset($curl_opt[CURLOPT_WRITEFUNCTION])) {
+            $curl_opt += [CURLOPT_RETURNTRANSFER => true];
+        }
 
         if (isset($runtime_data['cookie'])) {
             $curl_opt[CURLOPT_COOKIE] = $runtime_data['cookie'];
@@ -693,12 +748,9 @@ class libHttp extends Factory
         $curl_opt[CURLOPT_SSL_VERIFYPEER] = $runtime_data['ssl_verifypeer'];
 
         //Remove specific cURL options
-        if (!empty($this->rem_options)) {
-            $curl_opt = array_diff_key($curl_opt, array_flip($this->rem_options));
+        if (!empty($this->remove_options)) {
+            $curl_opt = array_diff_key($curl_opt, array_flip($this->remove_options));
         }
-
-        //Reset cURL options property
-        $this->cURL_options = [];
 
         unset($runtime_data, $with_header);
         return $curl_opt;
