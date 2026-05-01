@@ -66,32 +66,10 @@ class libOpenAI
         $this->httpStream = new libHttp('Nervsys/OpenAI-Stream', 300);
 
         // Configure common headers for both instances
-        $this->configureHttp($this->httpNormal);
-        $this->configureHttp($this->httpStream);
+        $this->configure($this->httpNormal);
+        $this->configure($this->httpStream);
 
         unset($api_url, $api_key, $org_id);
-    }
-
-    /**
-     * Configure a libHttp instance with common headers and content type
-     *
-     * @param libHttp $http
-     *
-     * @return void
-     */
-    private function configureHttp(libHttp $http): void
-    {
-        $http->setContentType(libHttp::CONTENT_TYPE_JSON);
-
-        if ('' !== $this->api_key) {
-            $http->addHeader(['Authorization' => 'Bearer ' . $this->api_key]);
-        }
-
-        if ('' !== $this->org_id) {
-            $http->addHeader(['OpenAI-Organization' => $this->org_id]);
-        }
-
-        unset($http);
     }
 
     /**
@@ -105,8 +83,8 @@ class libOpenAI
     {
         $this->org_id = $org_id;
 
-        $this->configureHttp($this->httpNormal);
-        $this->configureHttp($this->httpStream);
+        $this->configure($this->httpNormal);
+        $this->configure($this->httpStream);
 
         unset($org_id);
         return $this;
@@ -312,6 +290,28 @@ class libOpenAI
 
         unset($input, $model);
         return $result;
+    }
+
+    /**
+     * Configure a libHttp instance with common headers and content type
+     *
+     * @param libHttp $http
+     *
+     * @return void
+     */
+    private function configure(libHttp $http): void
+    {
+        $http->setContentType(libHttp::CONTENT_TYPE_JSON);
+
+        if ('' !== $this->api_key) {
+            $http->addHeader(['Authorization' => 'Bearer ' . $this->api_key]);
+        }
+
+        if ('' !== $this->org_id) {
+            $http->addHeader(['OpenAI-Organization' => $this->org_id]);
+        }
+
+        unset($http);
     }
 
     /**
