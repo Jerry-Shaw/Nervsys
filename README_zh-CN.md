@@ -156,28 +156,29 @@ Nervsys 采用 **“约定优于配置”** 的设计理念，让您能够跳过
 
 ### 📖 扩展文档
 
-| 组件 | 文档 |
-|:----:|:----:|
-| libCache | [📖 English](Ext/README/libCache-en_us.md) \| [📖 中文](Ext/README/libCache-zh_cn.md) |
-| libCaptcha | [📖 English](Ext/README/libCaptcha-en_us.md) \| [📖 中文](Ext/README/libCaptcha-zh_cn.md) |
-| libCrypt | [📖 English](Ext/README/libCrypt-en_us.md) \| [📖 中文](Ext/README/libCrypt-zh_cn.md) |
-| libFileIO | [📖 English](Ext/README/libFileIO-en_us.md) \| [📖 中文](Ext/README/libFileIO-zh_cn.md) |
-| libGit | [📖 English](Ext/README/libGit-en_us.md) \| [📖 中文](Ext/README/libGit-zh_cn.md) |
-| libHttp | [📖 English](Ext/README/libHttp-en_us.md) \| [📖 中文](Ext/README/libHttp-zh_cn.md) |
-| libImage | [📖 English](Ext/README/libImage-en_us.md) \| [📖 中文](Ext/README/libImage-zh_cn.md) |
-| libKeygen | [📖 English](Ext/README/libKeygen-en_us.md) \| [📖 中文](Ext/README/libKeygen-zh_cn.md) |
-| libLock | [📖 English](Ext/README/libLock-en_us.md) \| [📖 中文](Ext/README/libLock-zh_cn.md) |
-| libLog | [📖 English](Ext/README/libLog-en_us.md) \| [📖 中文](Ext/README/libLog-zh_cn.md) |
-| libMySQL | [📖 English](Ext/README/libMySQL-en_us.md) \| [📖 中文](Ext/README/libMySQL-zh_cn.md) |
-| libPDO | [📖 English](Ext/README/libPDO-en_us.md) \| [📖 中文](Ext/README/libPDO-zh_cn.md) |
-| libPlugin | [📖 English](Ext/README/libPlugin-en_us.md) \| [📖 中文](Ext/README/libPlugin-zh_cn.md) |
-| libProfiler | [📖 English](Ext/README/libProfiler-en_us.md) \| [📖 中文](Ext/README/libProfiler-zh_cn.md) |
-| libQueue | [📖 English](Ext/README/libQueue-en_us.md) \| [📖 中文](Ext/README/libQueue-zh_cn.md) |
-| libRedis | [📖 English](Ext/README/libRedis-en_us.md) \| [📖 中文](Ext/README/libRedis-zh_cn.md) |
+|        组件         |                                                  文档                                                   |
+|:-----------------:|:-----------------------------------------------------------------------------------------------------:|
+|     libCache      |          [📖 English](Ext/README/libCache-en_us.md) \| [📖 中文](Ext/README/libCache-zh_cn.md)          |
+|    libCaptcha     |        [📖 English](Ext/README/libCaptcha-en_us.md) \| [📖 中文](Ext/README/libCaptcha-zh_cn.md)        |
+|     libCrypt      |          [📖 English](Ext/README/libCrypt-en_us.md) \| [📖 中文](Ext/README/libCrypt-zh_cn.md)          |
+|     libFileIO     |         [📖 English](Ext/README/libFileIO-en_us.md) \| [📖 中文](Ext/README/libFileIO-zh_cn.md)         |
+|      libGit       |            [📖 English](Ext/README/libGit-en_us.md) \| [📖 中文](Ext/README/libGit-zh_cn.md)            |
+|      libHttp      |           [📖 English](Ext/README/libHttp-en_us.md) \| [📖 中文](Ext/README/libHttp-zh_cn.md)           |
+|     libImage      |          [📖 English](Ext/README/libImage-en_us.md) \| [📖 中文](Ext/README/libImage-zh_cn.md)          |
+|     libKeygen     |         [📖 English](Ext/README/libKeygen-en_us.md) \| [📖 中文](Ext/README/libKeygen-zh_cn.md)         |
+|      libLock      |           [📖 English](Ext/README/libLock-en_us.md) \| [📖 中文](Ext/README/libLock-zh_cn.md)           |
+|      libLog       |            [📖 English](Ext/README/libLog-en_us.md) \| [📖 中文](Ext/README/libLog-zh_cn.md)            |
+|     libMySQL      |          [📖 English](Ext/README/libMySQL-en_us.md) \| [📖 中文](Ext/README/libMySQL-zh_cn.md)          |
+|     libOpenAI     |         [📖 English](Ext/README/libOpenAI-en_us.md) \| [📖 中文](Ext/README/libOpenAI-zh_cn.md)         |
+|      libPDO       |            [📖 English](Ext/README/libPDO-en_us.md) \| [📖 中文](Ext/README/libPDO-zh_cn.md)            |
+|     libPlugin     |         [📖 English](Ext/README/libPlugin-en_us.md) \| [📖 中文](Ext/README/libPlugin-zh_cn.md)         |
+|    libProfiler    |       [📖 English](Ext/README/libProfiler-en_us.md) \| [📖 中文](Ext/README/libProfiler-zh_cn.md)       |
+|     libQueue      |          [📖 English](Ext/README/libQueue-en_us.md) \| [📖 中文](Ext/README/libQueue-zh_cn.md)          |
+|     libRedis      |          [📖 English](Ext/README/libRedis-en_us.md) \| [📖 中文](Ext/README/libRedis-zh_cn.md)          |
 | libSessionOnRedis | [📖 English](Ext/README/libSessionOnRedis-en_us.md) \| [📖 中文](Ext/README/libSessionOnRedis-zh_cn.md) |
-| libSignature | [📖 English](Ext/README/libSignature-en_us.md) \| [📖 中文](Ext/README/libSignature-zh_cn.md) |
-| libUpload | [📖 English](Ext/README/libUpload-en_us.md) \| [📖 中文](Ext/README/libUpload-zh_cn.md) |
-| libZip | [📖 English](Ext/README/libZip-en_us.md) \| [📖 中文](Ext/README/libZip-zh_cn.md) |
+|   libSignature    |      [📖 English](Ext/README/libSignature-en_us.md) \| [📖 中文](Ext/README/libSignature-zh_cn.md)      |
+|     libUpload     |         [📖 English](Ext/README/libUpload-en_us.md) \| [📖 中文](Ext/README/libUpload-zh_cn.md)         |
+|      libZip       |            [📖 English](Ext/README/libZip-en_us.md) \| [📖 中文](Ext/README/libZip-zh_cn.md)            |
 
 ---
 
