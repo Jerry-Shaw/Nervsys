@@ -37,7 +37,7 @@ echo.
 echo Nervsys Module Manager (mm)
 echo.
 echo Usage:
-echo   mm install {user/repo}[@tag][@https/@git] [target_dir]
+echo   mm install {user/repo}[@tag][#https/#git] [target_dir]
 echo   mm init {module_name} [target_dir]
 echo   mm setRemote {git_source}
 echo   mm help
@@ -45,7 +45,7 @@ echo.
 echo Examples:
 echo   mm install nervsys/logger
 echo   mm install nervsys/logger@v1.0.0
-echo   mm install nervsys/logger@v1.0.0@git
+echo   mm install nervsys/logger@v1.0.0#git
 echo   mm init my_module
 echo   mm init my_module custom_modules
 echo   mm setRemote gitee.com

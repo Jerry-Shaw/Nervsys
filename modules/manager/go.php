@@ -27,7 +27,8 @@ use Nervsys\Ext\libFileIO;
 
 class go extends Factory
 {
-    const SEPARATOR = '@';
+    const TAG_SEPARATOR  = '@';
+    const TYPE_SEPARATOR = '#';
 
     public App     $app;
     public ProcMgr $procMgr;
@@ -72,7 +73,8 @@ class go extends Factory
         );
 
         if (0 !== $exit_code || is_null($git_ver)) {
-            throw new \Exception('Git not found. Please install Git and add it to your PATH environment variable.', E_USER_WARNING);
+            $this->output('Git not found. Please install Git and add it to your PATH environment variable.', true, true);
+            return;
         }
 
         $this->output('Git version: ' . $git_ver, true);
@@ -108,7 +110,8 @@ class go extends Factory
         $support_host = array_keys($this->local_env['git_platforms']);
 
         if (!in_array($source_host, $support_host, true)) {
-            throw new \Exception('Source url "' . $repo . '" is not supported. Supported hosts are: ' . implode(', ', $support_host), E_USER_WARNING);
+            $this->output('Source url "' . $repo . '" is not supported. Supported hosts are: ' . implode(', ', $support_host), true, true);
+            return $this;
         }
 
         $this->local_env['git_source'] = $source_host;
@@ -150,18 +153,31 @@ class go extends Factory
     public function install(string $repo, string $root = ''): void
     {
         if (!str_contains($repo, '/')) {
-            throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}" or "{user}/{repo}#{tag}".');
+            $this->output('Invalid repository format. Expected "{user}/{repo}", "{user}/{repo}{@tag}", "{user}/{repo}{#source: https/git}" or "{user}/{repo}{@tag}{#source: https/git}".', true, true);
+            return;
         }
 
         $tag  = '';
         $type = 'https';
 
-        if (str_contains($repo, self::SEPARATOR)) {
-            [$repo, $tag] = explode(self::SEPARATOR, $repo, 2);
+        $pos_tag  = strpos($repo, self::TAG_SEPARATOR);
+        $pos_type = strpos($repo, self::TYPE_SEPARATOR);
 
-            if (str_contains($tag, self::SEPARATOR)) {
-                [$tag, $type] = explode(self::SEPARATOR, $tag, 2);
+        if (false !== $pos_tag && false !== $pos_type) {
+            if ($pos_tag >= $pos_type) {
+                $this->output('Invalid repository format. Expected "{user}/{repo}{@tag}{#source: https/git}" with tag before source.', true, true);
+                return;
             }
+
+            $tag  = substr($repo, $pos_tag + 1, $pos_type - $pos_tag - 1);
+            $type = substr($repo, $pos_type + 1);
+            $repo = substr($repo, 0, $pos_tag);
+        } elseif (false !== $pos_tag) {
+            $tag  = substr($repo, $pos_tag + 1);
+            $repo = substr($repo, 0, $pos_tag);
+        } elseif (false !== $pos_type) {
+            $type = substr($repo, $pos_type + 1);
+            $repo = substr($repo, 0, $pos_type);
         }
 
         if ($this->app->is_cli && '' !== $root) {
@@ -190,7 +206,7 @@ class go extends Factory
             }
         }
 
-        unset($repo, $root, $tag, $type, $user_name, $repo_name, $metadata);
+        unset($repo, $root, $tag, $type, $pos_tag, $pos_type, $user_name, $repo_name, $metadata);
     }
 
     /**
@@ -261,8 +277,8 @@ class go extends Factory
     public function installDependencies(array $repo_dependencies): void
     {
         foreach ($repo_dependencies as $repo => $dependency) {
-            [$url, $tag] = str_contains($dependency, self::SEPARATOR)
-                ? explode(self::SEPARATOR, $dependency)
+            [$url, $tag] = str_contains($dependency, self::TAG_SEPARATOR)
+                ? explode(self::TAG_SEPARATOR, $dependency)
                 : [$dependency, ''];
 
             $this->installUrl($repo, $url, $tag);
@@ -274,10 +290,12 @@ class go extends Factory
     /**
      * @param string $message
      * @param bool   $empty_line
+     * @param bool   $throw_exception
      *
      * @return void
+     * @throws \Exception
      */
-    public function output(string $message, bool $empty_line = false): void
+    public function output(string $message, bool $empty_line = false, bool $throw_exception = false): void
     {
         echo $message . PHP_EOL;
 
@@ -285,9 +303,12 @@ class go extends Factory
             echo PHP_EOL;
         }
 
+        if ($throw_exception) {
+            throw new \Exception($message, E_USER_ERROR);
+        }
+
         unset($message, $empty_line);
     }
-
 
     /**
      * @param string $repo
