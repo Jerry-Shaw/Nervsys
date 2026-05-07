@@ -39,7 +39,7 @@ echo.
 echo Usage:
 echo   mm install {user/repo}[@tag][@https/@git] [target_dir]
 echo   mm init {module_name} [target_dir]
-echo   mm setSource {git_source}
+echo   mm setRemote {git_source}
 echo   mm help
 echo.
 echo Examples:
@@ -48,6 +48,6 @@ echo   mm install nervsys/logger@v1.0.0
 echo   mm install nervsys/logger@v1.0.0@git
 echo   mm init my_module
 echo   mm init my_module custom_modules
-echo   mm setSource gitee.com
+echo   mm setRemote gitee.com
 echo.
 exit /b 0

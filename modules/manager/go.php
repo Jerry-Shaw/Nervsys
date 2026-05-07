@@ -93,28 +93,28 @@ class go extends Factory
     }
 
     /**
-     * @param string $source
+     * @param string $repo
      *
      * @return self
      * @throws \Exception
      */
-    public function setSource(string $source): self
+    public function setRemote(string $repo): self
     {
-        if (!str_contains($source, '://')) {
-            $source = 'https://' . $source;
+        if (!str_contains($repo, '://')) {
+            $repo = 'https://' . $repo;
         }
 
-        $source_host  = parse_url($source, PHP_URL_HOST);
+        $source_host  = parse_url($repo, PHP_URL_HOST);
         $support_host = array_keys($this->local_env['git_platforms']);
 
         if (!in_array($source_host, $support_host, true)) {
-            throw new \Exception('Source url "' . $source . '" is not supported. Supported hosts are: ' . implode(', ', $support_host), E_USER_WARNING);
+            throw new \Exception('Source url "' . $repo . '" is not supported. Supported hosts are: ' . implode(', ', $support_host), E_USER_WARNING);
         }
 
         $this->local_env['git_source'] = $source_host;
         $this->saveEnv();
 
-        unset($source, $source_host, $support_host);
+        unset($repo, $source_host, $support_host);
         return $this;
     }
 
