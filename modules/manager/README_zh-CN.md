@@ -21,17 +21,17 @@
 
 模块管理器本身是一个 Nervsys 模块，放置在 `modules/manager/` 目录下。
 
-~~~
+```
 modules/manager/
 ├── go.php          # 入口文件
 ├── module.json     # 模块元信息
 ├── local.json      # 本地配置
 └── README.md       # 说明文档
-~~~
+```
 
 ### 配置文件 `local.json`
 
-~~~json
+```json
 {
   "git_source": "github.com",
   "git_platforms": {
@@ -46,7 +46,7 @@ modules/manager/
     }
   }
 }
-~~~
+```
 
 - `git_source`：默认使用的 Git 平台（请确保在 `git_platforms` 中存在）
 - `git_platforms`：支持的 Git 平台及其 Git 地址模板（使用 `{user}` 和 `{repo}` 作为占位符）
@@ -57,32 +57,32 @@ modules/manager/
 
 在入口文件 `www/index.php` 中启用模块模式：
 
-~~~php
+```php
 $ns = new Nervsys\NS();
 $ns->setMode('module')
    ->setApiDir('modules')
    ->go();
-~~~
+```
 
 ### CLI 命令
 
 通过 `index.php` 调用模块管理器：
 
-~~~bash
+```bash
 # 安装模块（使用默认平台）
 php index.php -c"/Nervsys/modules/manager/go/install" -d"user_repo=demo/logger"
 
 # 安装模块并指定版本
 php index.php -c"/Nervsys/modules/manager/go/install" -d"user_repo=demo/logger&tag=v1.0.0"
-~~~
+```
 
 ### 设置默认 Git 平台
 
 **方法一：通过 CLI 命令设置**
 
-~~~bash
-php index.php -c"/Nervsys/modules/manager/go/setSource" -d"source=gitee.com"
-~~~
+```bash
+php index.php -c"/Nervsys/modules/manager/go/setRemote" -d"repo=gitee.com"
+```
 
 执行后，配置会自动保存到 `local.json` 文件中。
 
@@ -90,14 +90,14 @@ php index.php -c"/Nervsys/modules/manager/go/setSource" -d"source=gitee.com"
 
 修改 `local.json`，添加或更改 `git_source` 字段：
 
-~~~json
+```json
 {
   "git_source": "gitee.com",
   "git_platforms": {
     ...
   }
 }
-~~~
+```
 
 > 设置的平台必须存在于 `git_platforms` 配置中，否则会报错。
 
@@ -105,7 +105,7 @@ php index.php -c"/Nervsys/modules/manager/go/setSource" -d"source=gitee.com"
 
 被安装的模块需要包含 `module.json` 文件：
 
-~~~json
+```json
 {
   "name": "logger",
   "version": "1.0.0",
@@ -114,7 +114,7 @@ php index.php -c"/Nervsys/modules/manager/go/setSource" -d"source=gitee.com"
     "helper": "https://github.com/nervsys/helper.git#v1.0.0"
   }
 }
-~~~
+```
 
 - `dependencies` 中的键为模块名，值为 Git 地址（可附带 `#tag` 指定版本）。
 
@@ -127,7 +127,7 @@ php index.php -c"/Nervsys/modules/manager/go/setSource" -d"source=gitee.com"
 - `$user_repo`：格式 `{user}/{repo}`，例如 `nervsys/logger`
 - `$tag`：可选，Git tag 或 branch 名称，默认为空（使用仓库默认分支）
 
-### `setSource(string $source): self`
+### `setRemote(string $repo): self`
 
 设置默认的 Git 平台。
 
