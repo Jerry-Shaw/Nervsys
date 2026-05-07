@@ -1,0 +1,121 @@
+# Your Module Name
+
+## Quick Start
+
+1. Replace `your_module_name` in `module.json` with your actual module name (must match the module directory name)
+2. Rename the module directory to match the `name` field in `module.json`
+3. Update the namespace in `go.php` to `modules\{your_module_name}`
+4. Write your business logic in `go.php` or create separate class files
+5. Add dependencies to `module.json` as needed
+6. Refer to the [Nervsys Framework Documentation] for advanced usage
+
+## Important Naming Rules
+
+| Item                   | Rule                                 | Example               |
+|------------------------|--------------------------------------|-----------------------|
+| Module directory       | Same as `name` in `module.json`      | `modules/logger/`     |
+| `module.json` → `name` | Lowercase, use underscore for spaces | `logger`, `user_auth` |
+| Namespace in `go.php`  | `modules\{module_name}`              | `modules\logger`      |
+
+## File Structure
+
+```
+{module_name}/
+├── go.php # Entry file (required) - exposes methods to Nervsys
+├── module.json # Module metadata (required)
+├── README.md # This file
+├── app/ # (Optional) Your business logic classes
+├── Handler.php
+└── ...
+```
+
+## Entry File (`go.php`)
+
+Only methods in `go.php` are exposed for Nervsys to call. You can organize other logic in separate classes.
+
+### Basic Template
+
+```php
+<?php
+
+namespace modules\{your_module_name};
+
+use Nervsys\Core\Factory;
+
+class go extends Factory
+{
+    /**
+     * Public methods here are callable by Nervsys
+     */
+    public function yourMethod(string $param): string
+    {
+        // Call your app logic
+        return YourAppClass::process($param);
+    }
+}
+```
+
+## Recommended Pattern: Separate App Logic
+
+```php
+<?php
+
+namespace modules\{your_module_name};
+
+use Nervsys\Core\Factory;
+use modules\{your_module_name}\app\YourHandler;
+
+class go extends Factory
+{
+    public function doSomething(array $data): array
+    {
+        // Delegate to app logic
+        return YourHandler::new()->handle($data);
+    }
+}
+```
+
+## Example with Custom App Class (app/YourHandler.php)
+
+```php
+<?php
+
+namespace modules\{your_module_name}\app;
+
+use Nervsys\Core\Factory;
+
+class YourHandler extends Factory
+{
+    public function handle(array $data): array
+    {
+        // Your business logic here
+        return $data;
+    }
+}
+```
+
+## Module Metadata (`module.json`)
+
+Edit the following fields as needed:
+
+- `name`: Module name (must match directory name)
+- `version`: Module version (semver recommended)
+- `description`: Brief module description
+- `author`: Module author
+- `entry`: Actual entry filename (could be any file besides `go.php`)
+- `repo`: The git repo url of this module
+- `dependencies`: Other modules this module depends on
+- `requires`: Runtime requirements (e.g., PHP version)
+- `other-metadata`: ...
+
+## Notes
+
+- The module directory name must match the `name` field in `module.json`
+- Only public methods in `go.php` are callable by Nervsys framework
+- You can organize your own code structure freely (e.g., app/, lib/, config/)
+- This is a starter template. Add your own files and logic as needed
+- See Nervsys framework documentation for complete API reference
+
+## License
+
+Apache License 2.0

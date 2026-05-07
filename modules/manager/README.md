@@ -1,157 +1,139 @@
-# Nervsys Module Manager
+# Your Module Name
 
-Module Manager is the official module management tool for the Nervsys framework. It downloads and installs modules from
-Git repositories (GitHub / Gitee / GitLab, etc.).
+## Quick Start
 
-## Features
+1. Replace `your_module_name` in `module.json` with your actual module name (must match the module directory name)
+2. Rename the module directory to match the `name` field in `module.json`
+3. Update the namespace in `go.php` to `modules\{your_module_name}`
+4. Write your business logic in `go.php` or create separate class files
+5. Add dependencies to `module.json` as needed
+6. Refer to the [Nervsys Framework Documentation] for advanced usage
 
-- Clone modules from Git repositories to the `modules/` directory
-- Support specifying version (tag / branch)
-- Automatically parse dependencies in `module.json` and install recursively
-- Support multiple Git platform configurations
-- Integrated with `ProcMgr` for real-time installation log output
-- Prevent re-installation of existing modules
+## Important Naming Rules
 
-## Planned Features
+| Item                   | Rule                                     | Example               |
+|------------------------|------------------------------------------|-----------------------|
+| Module directory       | Must match `name` in `module.json`       | `modules/logger/`     |
+| `module.json` → `name` | Lowercase, use underscores for spaces    | `logger`, `user_auth` |
+| Namespace in `go.php`  | `modules\{module_name}`                  | `modules\logger`      |
 
-- [ ] Module update (`update` command)
-- [ ] Module uninstall (`remove` command)
-- [ ] List installed modules (`list` command)
+## File Structure
 
-## Installation
+```
+{module_name}/
+├── go.php          # Entry file (required) – exposes methods to Nervsys
+├── module.json     # Module metadata (required)
+├── README.md       # This file
+└── app/            # (Optional) Directory for business logic classes
+    ├── Handler.php
+    └── ...
+```
 
-The Module Manager itself is a Nervsys module, placed in the `modules/manager/` directory.
+## Entry File (`go.php`)
 
-~~~
-modules/manager/
-├── go.php          # Entry file
-├── module.json     # Module metadata
-├── local.json      # Local configuration (must be created manually)
-└── README.md       # Documentation
-~~~
+Only public methods in `go.php` are callable by Nervsys. It is recommended to delegate concrete logic to separate classes.
 
-### Configuration File `local.json`
+### Basic Template
 
-~~~json
+```php
+<?php
+
+namespace modules\{your_module_name};
+
+use Nervsys\Core\Factory;
+
+class go extends Factory
 {
-  "git_source": "github.com",
-  "git_platforms": {
-    "github.com": {
-      "git_url": "https://github.com/{user}/{repo}.git"
-    },
-    "gitee.com": {
-      "git_url": "https://gitee.com/{user}/{repo}.git"
-    },
-    "gitlab.com": {
-      "git_url": "https://gitlab.com/{user}/{repo}.git"
+    /**
+     * Public methods are directly callable by Nervsys
+     */
+    public function yourMethod(string $param): string
+    {
+        // Call your application logic
+        return YourAppClass::process($param);
     }
-  }
 }
-~~~
+```
 
-- `git_source`: Default Git platform (must exist in `git_platforms`)
-- `git_platforms`: Supported Git platforms with their Git URL templates (using `{user}` and `{repo}` as placeholders)
+### Recommended Pattern: Separate Application Logic
 
-## Usage
+```php
+<?php
 
-### Enable Module Mode
+namespace modules\{your_module_name};
 
-Enable module mode in the entry file `www/index.php`:
+use Nervsys\Core\Factory;
+use modules\{your_module_name}\app\YourHandler;
 
-~~~php
-$ns = new Nervsys\NS();
-$ns->setMode('module')
-   ->setApiDir('modules')
-   ->go();
-~~~
-
-### CLI Commands
-
-Call the Module Manager via `index.php`:
-
-~~~bash
-# Install a module (using default platform)
-php index.php -c"manager/install" -d'user_repo=nervsys/logger'
-
-# Install a module with a specific version
-php index.php -c"manager/install" -d'user_repo=nervsys/logger&tag=v1.0.0'
-~~~
-
-### Set the default Git platform
-
-### Set Default Git Platform
-
-The module manager uses `github.com` as the default Git platform. You can change it in the following two ways:
-
-**Method 1: Via CLI command**
-
-~~~bash
-php index.php -c"/Nervsys/modules/manager/go/setSource" -d"source=gitee.com"
-~~~
-
-After execution, the configuration will be automatically saved to the `local.json` file.
-
-**Method 2: Edit the configuration file directly**
-
-Modify `local.json` by adding or changing the `git_source` field:
-
-~~~json
+class go extends Factory
 {
-  "git_source": "gitee.com",
-  "git_platforms": {
-    ...
-  }
+    public function doSomething(array $data): array
+    {
+        // Delegate to a dedicated handler
+        return YourHandler::new()->handle($data);
+    }
 }
-~~~
+```
 
-> The specified platform must exist in the `git_platforms` configuration; otherwise, an error will be thrown.
+### Custom App Class Example (`app/YourHandler.php`)
 
-### Example `module.json` for a Module
+```php
+<?php
 
-A module to be installed must include a `module.json` file:
+namespace modules\{your_module_name}\app;
 
-~~~json
+use Nervsys\Core\Factory;
+
+class YourHandler extends Factory
+{
+    public function handle(array $data): array
+    {
+        // Implement your business logic here
+        return $data;
+    }
+}
+```
+
+## Module Metadata (`module.json`)
+
+Edit the following fields as needed:
+
+- `name`: Module name (must match directory name)
+- `version`: Module version (semver recommended)
+- `description`: Brief module description
+- `author`: Module author
+- `entry`: Entry file name (default `go.php`, can be any file)
+- `repo`: Git repository URL of this module
+- `dependencies`: Other modules this module depends on
+- `requires`: Runtime requirements (e.g., PHP version)
+- Any other custom fields...
+
+### Example Configuration
+
+```json
 {
   "name": "logger",
   "version": "1.0.0",
+  "description": "Logging utility",
+  "author": "Your Name",
   "entry": "go.php",
+  "repo": "https://github.com/your/logger",
   "dependencies": {
-    "helper": "https://github.com/nervsys/helper.git#v1.0.0"
+    "helper": "https://github.com/nervsys/helper.git"
+  },
+  "requires": {
+    "php": ">=8.1"
   }
 }
-~~~
-
-- The key in `dependencies` is the module name, and the value is the Git URL (optionally with `#tag` to specify a
-  version).
-
-## API Methods
-
-### `install(string $user_repo, string $tag = ''): void`
-
-Install a module.
-
-- `$user_repo`: Format `{user}/{repo}`, e.g., `nervsys/logger`
-- `$tag`: Optional, Git tag or branch name. Default is empty (uses the repository's default branch)
-
-### `setSource(string $source): self`
-
-Set the default Git platform.
-
-- `$source`: Platform domain or URL, e.g., `github.com` or `https://gitee.com`
-
-## Requirements
-
-- PHP 8.1+
-- Git command line tool (added to PATH)
-- Nervsys framework (with module mode enabled)
+```
 
 ## Notes
 
-- Before first use, ensure the `local.json` configuration file exists and has the correct format
-- The Module Manager does not handle HTTP downloads; it requires the Git command to clone modules
-- Dependency installation is recursive. Make sure there are no circular dependencies (the Module Manager checks for
-  already installed modules to avoid duplicates)
-- The module directory name must match the `name` field in its `module.json`
+- The module directory name must strictly match the `name` field in `module.json`
+- Only public methods in `go.php` are exposed to the Nervsys framework
+- You are free to organise your internal code structure (e.g., `app/`, `lib/`, `config/`)
+- This is a starter template; add your own files and logic as needed
+- See the Nervsys framework documentation for complete API reference
 
 ## License
 

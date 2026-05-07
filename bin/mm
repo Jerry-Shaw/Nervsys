@@ -10,12 +10,14 @@ if ! command -v php &> /dev/null; then
     exit 1
 fi
 
-# Get script directory and build paths
+# Get script directory and manager.php path
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANAGER_PHP="$SCRIPT_DIR/../modules/manager/bin/manager.php"
-PROJECT_ROOT="$(pwd)"
 
-# Get command
+# Get current working directory (startup directory)
+CWD="$(pwd)"
+
+# First argument as command
 COMMAND="$1"
 
 # Help
@@ -24,20 +26,22 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" = "help" ] || [ "$COMMAND" = "-h" ]; then
     echo "Nervsys Module Manager (mm)"
     echo ""
     echo "Usage:"
-    echo "  mm install {user/repo}[#tag] [target_dir] [git_type]"
+    echo "  mm install {user/repo}[@tag][@https/@git] [target_dir]"
+    echo "  mm init {module_name} [target_dir]"
     echo "  mm setSource {git_source}"
     echo "  mm help"
     echo ""
     echo "Examples:"
     echo "  mm install nervsys/logger"
-    echo "  mm install nervsys/logger#v1.0.0"
-    echo "  mm install nervsys/logger my_libs"
-    echo "  mm install nervsys/logger my_libs git"
+    echo "  mm install nervsys/logger@v1.0.0"
+    echo "  mm install nervsys/logger@v1.0.0@git"
+    echo "  mm init my_module"
+    echo "  mm init my_module custom_modules"
     echo "  mm setSource gitee.com"
     echo ""
     exit 0
 fi
 
-# Pass all arguments and project root to PHP
-php "$MANAGER_PHP" "$@" "$PROJECT_ROOT"
+# Pass all arguments and append CWD as last argument
+php "$MANAGER_PHP" "$@" "$CWD"
 exit $?

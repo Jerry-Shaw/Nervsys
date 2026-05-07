@@ -23,9 +23,12 @@ namespace Nervsys\modules\manager;
 use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\App;
 use Nervsys\Core\Mgr\ProcMgr;
+use Nervsys\Ext\libFileIO;
 
 class go extends Factory
 {
+    const SEPARATOR = '@';
+
     public App     $app;
     public ProcMgr $procMgr;
 
@@ -112,46 +115,82 @@ class go extends Factory
         $this->saveEnv();
 
         unset($source, $source_host, $support_host);
+        return $this;
     }
 
     /**
-     * @param string $user_repo
-     * @param string $tag
-     * @param string $type
+     * @param string $repo
      * @param string $root
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function install(string $user_repo, string $tag = '', string $type = 'https', string $root = ''): void
+    public function init(string $repo, string $root = ''): void
     {
+        $libFileIO = libFileIO::new();
+
+        $src_path = __DIR__ . DIRECTORY_SEPARATOR . 'demo_module';
+        $dst_path = $root . DIRECTORY_SEPARATOR . $repo;
+
+        $libFileIO->copyDir($src_path, $dst_path);
+
+        $this->output('Module "' . $repo . '" created successfully at: ' . $dst_path);
+        $this->output('Next: Edit module.json → Write code in go.php → See README.md for details');
+
+        unset($repo, $root, $libFileIO, $src_path, $dst_path);
+    }
+
+    /**
+     * @param string $repo
+     * @param string $root
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function install(string $repo, string $root = ''): void
+    {
+        if (!str_contains($repo, '/')) {
+            throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}" or "{user}/{repo}#{tag}".');
+        }
+
+        $tag  = '';
+        $type = 'https';
+
+        if (str_contains($repo, self::SEPARATOR)) {
+            [$repo, $tag] = explode(self::SEPARATOR, $repo, 2);
+
+            if (str_contains($tag, self::SEPARATOR)) {
+                [$tag, $type] = explode(self::SEPARATOR, $tag, 2);
+            }
+        }
+
         if ($this->app->is_cli && '' !== $root) {
             $this->module_root = rtrim($root, '\\/') . DIRECTORY_SEPARATOR;
             $this->procMgr->setWorkDir($this->module_root);
         }
 
-        [$user, $repo] = explode('/', $user_repo);
-        $metadata = $this->getModuleMeta($repo);
+        [$user_name, $repo_name] = explode('/', $repo);
+        $metadata = $this->getModuleMeta($repo_name);
 
         if (empty($metadata)) {
             $git_url = $this->local_env['git_platforms'][$this->local_env['git_source']]['git' === $type ? 'ssh_url' : 'https_url'];
 
-            $git_url = str_replace('{user}', $user, $git_url);
-            $git_url = str_replace('{repo}', $repo, $git_url);
+            $git_url = str_replace('{user}', $user_name, $git_url);
+            $git_url = str_replace('{repo}', $repo_name, $git_url);
 
-            $this->output('Installing "' . $repo . '" from ' . $git_url);
+            $this->output('Installing "' . $repo_name . '" from ' . $git_url);
 
-            $this->installUrl($repo, $git_url, $tag);
+            $this->installUrl($repo_name, $git_url, $tag);
             unset($git_url);
         } else {
-            $this->output($repo . ' already exists. Checking dependencies...');
+            $this->output($repo_name . ' already exists. Checking dependencies...');
 
             if (isset($metadata['dependencies']) && !empty($metadata['dependencies'])) {
                 $this->installDependencies($metadata['dependencies']);
             }
         }
 
-        unset($user_repo, $tag, $type, $root, $user, $repo, $metadata);
+        unset($repo, $root, $tag, $type, $user_name, $repo_name, $metadata);
     }
 
     /**
@@ -222,8 +261,8 @@ class go extends Factory
     public function installDependencies(array $repo_dependencies): void
     {
         foreach ($repo_dependencies as $repo => $dependency) {
-            [$url, $tag] = str_contains($dependency, '#')
-                ? explode('#', $dependency)
+            [$url, $tag] = str_contains($dependency, self::SEPARATOR)
+                ? explode(self::SEPARATOR, $dependency)
                 : [$dependency, ''];
 
             $this->installUrl($repo, $url, $tag);

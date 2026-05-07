@@ -1,0 +1,14 @@
+{
+  "name": "demo_module",
+  "version": "1.0.0",
+  "description": "Your module description",
+  "author": "Your Name",
+  "entry": "go.php",
+  "repo": "",
+  "dependencies": {
+    "helper": "https://github.com/nervsys/helper.git"
+  },
+  "requires": {
+    "php": ">=8.1"
+  }
+}

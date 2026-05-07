@@ -24,15 +24,13 @@ require __DIR__ . '/../../../NS.php';
 
 $ns = new Nervsys\NS();
 
-$ns->setMode(\Nervsys\Core\Lib\App::MODE_MODULE);
+$root = end($_SERVER['argv']);
 
-if (isset($_SERVER['argv'][3]) && isset($_SERVER['argv'][4])) {
-    $ns->setApiDir($_SERVER['argv'][3]);
-    $ns->setRootPath($_SERVER['argv'][4]);
-} elseif (isset($_SERVER['argv'][3])) {
-    $ns->setApiDir('modules');
-    $ns->setRootPath($_SERVER['argv'][3]);
-}
+reset($_SERVER['argv']);
+
+$ns->setRootPath($root);
+$ns->setApiDir(isset($_SERVER['argv'][4]) ? $_SERVER['argv'][3] : 'modules');
+$ns->setMode(\Nervsys\Core\Lib\App::MODE_MODULE);
 
 $ns->addCgiRouter(
     function (string $c): array
@@ -47,34 +45,14 @@ $ns->addCgiRouter(
 $ns->addCliHandler(
     function (\Nervsys\Core\Lib\IOData $IOData): void
     {
-        $argv_repo = $IOData->src_argv[0];
+        $path_array = array_reverse(array_slice($IOData->src_argv, 1));
 
-        if (!str_contains($argv_repo, '/')) {
-            throw new \InvalidArgumentException('Invalid repository format. Expected "{user}/{repo}" or "{user}/{repo}#{tag}".');
+        if (1 === count($path_array)) {
+            $path_array[] = 'modules';
         }
 
-        if (str_contains($argv_repo, '#')) {
-            [$user_repo, $tag] = explode('#', $argv_repo);
-        } else {
-            $user_repo = $argv_repo;
-            $tag       = '';
-        }
-
-        $IOData->src_input['user_repo'] = $user_repo;
-        $IOData->src_input['tag']       = $tag;
-
-        if (isset($IOData->src_argv[3]) && isset($IOData->src_argv[2]) && isset($IOData->src_argv[1])) {
-            if (!in_array($IOData->src_argv[2], ['git', 'https'], true)) {
-                throw new \InvalidArgumentException('Invalid git clone type. Expected "git" or "https". Leave it blank for https as default.');
-            }
-
-            $IOData->src_input['type'] = $IOData->src_argv[2];
-            $IOData->src_input['root'] = $IOData->src_argv[3] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
-        } elseif (isset($IOData->src_argv[2]) && isset($IOData->src_argv[1])) {
-            $IOData->src_input['root'] = $IOData->src_argv[2] . DIRECTORY_SEPARATOR . $IOData->src_argv[1];
-        } elseif (isset($IOData->src_argv[1])) {
-            $IOData->src_input['root'] = $IOData->src_argv[1] . DIRECTORY_SEPARATOR . 'modules';
-        }
+        $IOData->src_input['repo'] = $IOData->src_argv[0];
+        $IOData->src_input['root'] = implode(DIRECTORY_SEPARATOR, $path_array);
     }
 );
 
