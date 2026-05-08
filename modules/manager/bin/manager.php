@@ -20,6 +20,8 @@
 
 declare(strict_types = 1);
 
+use Nervsys\Core\Lib\IOData;
+
 require __DIR__ . '/../../../NS.php';
 
 $ns = new Nervsys\NS();
@@ -43,7 +45,7 @@ $ns->addCgiRouter(
 );
 
 $ns->addCliHandler(
-    function (\Nervsys\Core\Lib\IOData $IOData): void
+    function (IOData $IOData): void
     {
         $path_array = array_reverse(array_slice($IOData->src_argv, 1));
 
