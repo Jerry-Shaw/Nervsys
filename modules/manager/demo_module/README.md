@@ -4,10 +4,11 @@
 
 1. Replace `your_module_name` in `module.json` with your actual module name (must match the module directory name)
 2. Rename the module directory to match the `name` field in `module.json`
-3. Update the namespace in `go.php` to `modules\{your_module_name}`
-4. Write your business logic in `go.php` or create separate class files
-5. Add dependencies to `module.json` as needed
-6. Refer to the [Nervsys Framework Documentation] for advanced usage
+3. Change the git url and tag to match `repo` field in `module.json`
+4. Update the namespace in `go.php` to `modules\{your_module_name}`
+5. Write your business logic in `go.php` or create separate class files
+6. Add dependencies to `module.json` as needed, update other fields as needed
+7. Refer to the [Nervsys Framework Documentation] for advanced usage
 
 ## Important Naming Rules
 
@@ -107,6 +108,25 @@ Edit the following fields as needed:
 - `dependencies`: Other modules this module depends on
 - `requires`: Runtime requirements (e.g., PHP version)
 - `other-metadata`: ...
+
+### Metadata Example
+
+```json
+{
+  "name": "logger",
+  "version": "1.0.0",
+  "description": "Logger module",
+  "author": "Your Name",
+  "entry": "go.php",
+  "repo": "https://github.com/your/logger@1.0.0",
+  "dependencies": {
+    "helper": "https://github.com/nervsys/helper.git@2.0.0"
+  },
+  "requires": {
+    "php": ">=8.1"
+  }
+}
+```
 
 ## Notes
 

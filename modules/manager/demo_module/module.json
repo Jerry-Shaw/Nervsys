@@ -4,7 +4,7 @@
   "description": "Your module description",
   "author": "Your Name",
   "entry": "go.php",
-  "repo": "",
+  "repo": "https://github.com/your/demo_module@1.0.0",
   "dependencies": {
     "helper": "https://github.com/nervsys/helper.git"
   },

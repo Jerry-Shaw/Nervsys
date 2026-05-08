@@ -4,10 +4,11 @@
 
 1. 将 `module.json` 中的 `your_module_name` 替换为实际模块名称（必须与模块目录名一致）
 2. 将模块目录重命名为与 `module.json` 中 `name` 字段相同的名称
-3. 将 `go.php` 中的命名空间更新为 `modules\{your_module_name}`
-4. 在 `go.php` 中编写业务逻辑，或创建独立的类文件
-5. 根据需要向 `module.json` 添加依赖
-6. 深入了解请参考 [Nervsys 框架文档]
+3. 将模块的Git地址和版本号写入到 `module.json` 中的 `repo` 字段
+4. 将 `go.php` 中的命名空间更新为 `modules\{your_module_name}`
+5. 在 `go.php` 中编写业务逻辑，或创建独立的类文件
+6. 根据需要向 `module.json` 添加依赖，根据需要修改其他字段
+7. 深入了解请参考 [Nervsys 框架文档]
 
 ## 重要命名规则
 
@@ -117,9 +118,9 @@ class YourHandler extends Factory
   "description": "日志记录工具",
   "author": "Your Name",
   "entry": "go.php",
-  "repo": "https://github.com/your/logger",
+  "repo": "https://github.com/your/logger@1.0.0",
   "dependencies": {
-    "helper": "https://github.com/nervsys/helper.git"
+    "helper": "https://github.com/nervsys/helper.git@2.0.0"
   },
   "requires": {
     "php": ">=8.1"

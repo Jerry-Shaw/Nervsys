@@ -111,7 +111,7 @@ php index.php -c"/Nervsys/modules/manager/go/setRemote" -d"repo=gitee.com"
   "version": "1.0.0",
   "entry": "go.php",
   "dependencies": {
-    "helper": "https://github.com/nervsys/helper.git#v1.0.0"
+    "helper": "https://github.com/nervsys/helper.git@v1.0.0"
   }
 }
 ```

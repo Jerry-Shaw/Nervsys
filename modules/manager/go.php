@@ -42,6 +42,7 @@ class go extends Factory
 
     /**
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public function __construct()
     {
@@ -127,6 +128,7 @@ class go extends Factory
      *
      * @return void
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public function init(string $repo, string $root = ''): void
     {
@@ -149,6 +151,7 @@ class go extends Factory
      *
      * @return void
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public function install(string $repo, string $root = ''): void
     {
@@ -216,25 +219,15 @@ class go extends Factory
      *
      * @return void
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public function installUrl(string $repo, string $url, string $tag = ''): void
     {
         $metadata = $this->getModuleMeta($repo);
 
         if (empty($metadata)) {
-            if (str_starts_with($url, 'git@')) {
-                if ('' === $this->ssk_key) {
-                    $this->output('SSH Key NOT found, or, OpenSSH NOT installed.');
-                    $this->output('Skip installing "' . $repo . '" from ' . $url);
-
-                    unset($repo, $url, $tag, $metadata);
-                    return;
-                }
-
-                putenv('GIT_SSH_COMMAND=ssh -T -i ' . escapeshellarg($this->ssk_key) . ' -o StrictHostKeyChecking=no');
-            } else {
-                putenv('GIT_SSH_COMMAND=');
-            }
+            // Install module
+            $this->runSshCommand($url);
 
             $command = ['git', 'clone'];
 
@@ -259,6 +252,19 @@ class go extends Factory
 
             $metadata = $this->getModuleMeta($repo);
             unset($command, $exit_code);
+        } else {
+            // Update module
+            $metadata['repo']    ??= '';
+            $metadata['version'] ??= '';
+
+            if ('' !== $metadata['repo'] && $tag !== $metadata['version']) {
+                $pos_tag  = strpos($metadata['repo'], self::TAG_SEPARATOR);
+                $repo_url = false !== $pos_tag
+                    ? substr($metadata['repo'], 0, $pos_tag)
+                    : $metadata['repo'];
+
+                $this->updateUrl($repo, $repo_url, $tag);
+            }
         }
 
         if (isset($metadata['dependencies']) && !empty($metadata['dependencies'])) {
@@ -266,6 +272,51 @@ class go extends Factory
         }
 
         unset($repo, $url, $tag, $metadata);
+    }
+
+    /**
+     * @param string $repo
+     * @param string $url
+     * @param string $tag
+     *
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Exception
+     */
+    public function updateUrl(string $repo, string $url, string $tag = ''): void
+    {
+        $this->runSshCommand($url);
+
+        $path = $this->module_root . $repo;
+
+        $command = ['git', 'fetch', 'origin'];
+        $this->procMgr
+            ->command($command)
+            ->setWorkDir($path)
+            ->run()
+            ->awaitProc([$this, 'output'], [$this, 'output']);
+
+        if ('' !== $tag) {
+            $command = ['git', 'checkout', $tag];
+            $this->procMgr
+                ->command($command)
+                ->setWorkDir($path)
+                ->run()
+                ->awaitProc([$this, 'output'], [$this, 'output']);
+        }
+
+        $command   = ['git', 'pull'];
+        $exit_code = $this->procMgr
+            ->command($command)
+            ->setWorkDir($path)
+            ->run()
+            ->awaitProc([$this, 'output'], [$this, 'output']);
+
+        if (0 !== $exit_code) {
+            $this->output('Failed to update ' . $repo);
+        }
+
+        unset($repo, $url, $tag, $path, $command, $exit_code);
     }
 
     /**
@@ -341,6 +392,7 @@ class go extends Factory
     /**
      * @return string
      * @throws \ReflectionException
+     * @throws \Exception
      */
     private function findSshKey(): string
     {
@@ -379,6 +431,29 @@ class go extends Factory
 
         unset($user_home, $ssh_ver, $findSshVer, $exit_code);
         return $ssh_key_path;
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return void
+     * @throws \Exception
+     */
+    private function runSshCommand(string $url): void
+    {
+        if (str_starts_with($url, 'git@')) {
+            if ('' !== $this->ssk_key) {
+                putenv('GIT_SSH_COMMAND=ssh -T -i ' . escapeshellarg($this->ssk_key) . ' -o StrictHostKeyChecking=no');
+                unset($url);
+                return;
+            }
+
+            $this->output('SSH Key NOT found, or, OpenSSH NOT installed.');
+            $this->output('Skip installing module from ' . $url);
+        }
+
+        putenv('GIT_SSH_COMMAND=');
+        unset($url);
     }
 
     /**
