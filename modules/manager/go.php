@@ -460,6 +460,6 @@ class go extends Factory
      */
     private function saveEnv(): void
     {
-        file_put_contents($this->config_file, json_encode($this->local_env, JSON_FORMAT));
+        file_put_contents($this->config_file, json_encode($this->local_env, JSON_PRETTY));
     }
 }
