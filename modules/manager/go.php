@@ -192,6 +192,7 @@ class go extends Factory
         $metadata = $this->getModuleMeta($repo_name);
 
         if (empty($metadata)) {
+            // Install module
             $git_url = $this->local_env['git_platforms'][$this->local_env['git_source']]['git' === $type ? 'ssh_url' : 'https_url'];
 
             $git_url = str_replace('{user}', $user_name, $git_url);
@@ -200,16 +201,28 @@ class go extends Factory
             $this->output('Installing "' . $repo_name . '" from ' . $git_url);
 
             $this->installUrl($repo_name, $git_url, $tag);
-            unset($git_url);
         } else {
-            $this->output($repo_name . ' already exists. Checking dependencies...');
+            // Update module
+            $this->output('Updating ' . $repo_name . ' and dependencies...');
+
+            $metadata['repo']    ??= '';
+            $metadata['version'] ??= '';
+
+            if ('' !== $metadata['repo'] && '' !== $tag && $tag !== $metadata['version']) {
+                $pos_tag = strpos($metadata['repo'], self::TAG_SEPARATOR);
+                $git_url = false !== $pos_tag
+                    ? substr($metadata['repo'], 0, $pos_tag)
+                    : $metadata['repo'];
+
+                $this->updateUrl($repo_name, $git_url, $tag);
+            }
 
             if (isset($metadata['dependencies']) && !empty($metadata['dependencies'])) {
                 $this->installDependencies($metadata['dependencies']);
             }
         }
 
-        unset($repo, $root, $tag, $type, $pos_tag, $pos_type, $user_name, $repo_name, $metadata);
+        unset($repo, $root, $tag, $type, $pos_tag, $pos_type, $user_name, $repo_name, $metadata, $git_url);
     }
 
     /**
@@ -226,7 +239,6 @@ class go extends Factory
         $metadata = $this->getModuleMeta($repo);
 
         if (empty($metadata)) {
-            // Install module
             $this->runSshCommand($url);
 
             $command = ['git', 'clone'];
@@ -252,19 +264,6 @@ class go extends Factory
 
             $metadata = $this->getModuleMeta($repo);
             unset($command, $exit_code);
-        } else {
-            // Update module
-            $metadata['repo']    ??= '';
-            $metadata['version'] ??= '';
-
-            if ('' !== $metadata['repo'] && $tag !== $metadata['version']) {
-                $pos_tag  = strpos($metadata['repo'], self::TAG_SEPARATOR);
-                $repo_url = false !== $pos_tag
-                    ? substr($metadata['repo'], 0, $pos_tag)
-                    : $metadata['repo'];
-
-                $this->updateUrl($repo, $repo_url, $tag);
-            }
         }
 
         if (isset($metadata['dependencies']) && !empty($metadata['dependencies'])) {
