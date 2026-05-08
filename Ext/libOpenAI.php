@@ -20,7 +20,9 @@
 
 namespace Nervsys\Ext;
 
-class libOpenAI
+use Nervsys\Core\Factory;
+
+class libOpenAI extends Factory
 {
     public libHttp $httpNormal;
     public libHttp $httpStream;
