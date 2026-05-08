@@ -178,11 +178,26 @@ class libOpenAI extends Factory
      *
      * @return $this
      */
-    public function onStream(string $key, callable $callback): static
+    public function addStreamCallback(string $key, callable $callback): static
     {
         $this->stream_callbacks[$key] = $callback;
 
         unset($key, $callback);
+        return $this;
+    }
+
+    /**
+     * Remove a stream callback by callback key
+     *
+     * @param string $key
+     *
+     * @return $this
+     */
+    public function removeStreamCallback(string $key): static
+    {
+        unset($this->stream_callbacks[$key]);
+
+        unset($key);
         return $this;
     }
 

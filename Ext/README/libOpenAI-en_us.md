@@ -106,7 +106,7 @@ if ($result['success']) {
 }
 
 // Stream chat
-$ai->onStream('output', function($key, $data, $finished) {
+$ai->addStreamCallback('output', function($key, $data, $finished) {
     if ($finished) return;
     if ($data['success']) {
         $chunk = $data['choices'][0]['delta']['content'] ?? '';
