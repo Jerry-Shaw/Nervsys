@@ -401,6 +401,10 @@ class ProcMgr extends Factory
             } catch (\Throwable $throwable) {
                 $this->error->exceptionHandler($throwable, false, false);
                 echo $throwable->getMessage() . "\n";
+
+                flush();
+                fflush(STDOUT);
+
                 unset($throwable);
                 continue;
             }
@@ -415,6 +419,9 @@ class ProcMgr extends Factory
             }
 
             echo json_encode($result, JSON_FORMAT) . "\n";
+
+            flush();
+            fflush(STDOUT);
 
             unset($job_json, $job_data, $cmd, $result);
         }
