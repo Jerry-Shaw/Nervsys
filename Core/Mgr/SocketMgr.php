@@ -1089,93 +1089,61 @@ class SocketMgr extends Factory
      */
     public function wsGetMessage(int $socket_id, string $message): string
     {
-        try {
-            $ws_codes = $this->wsGetFrameCodes($message);
-        } catch (\Throwable $throwable) {
-            $this->closeSocket($socket_id);
-            throw new \Exception('Failed to read frame data: ' . $throwable->getMessage(), E_USER_NOTICE);
-        }
+        $result = '';
+        $buffer = $message;
 
-        if (1 !== $ws_codes['masked']) {
-            $this->closeSocket($socket_id);
-            throw new \Exception('Data unmasked! Close connection!', E_USER_NOTICE);
-        }
-
-        switch ($ws_codes['opcode']) {
-            case 0x0:
-                if (0 === $ws_codes['fin']) {
-                    if (!isset($this->data_frames[$socket_id]) || empty($this->data_frames[$socket_id])) {
-                        unset($this->data_frames[$socket_id]);
-                        throw new \Exception('Continuation frame lost!', E_USER_NOTICE);
-                    }
-
-                    $this->data_frames[$socket_id]['data'] .= substr($message, $ws_codes['data_offset'], $ws_codes['data_length']);
-
-                    throw new \Exception('Received continuation frame!', E_USER_NOTICE);
-                } else {
-                    $message = $this->data_frames[$socket_id]['data'] . $message;
-
-                    $ws_codes['data_mask']   = $this->data_frames[$socket_id]['mask'];
-                    $ws_codes['data_offset'] = 0;
-                    $ws_codes['data_length'] = strlen($message);
-
-                    unset($this->data_frames[$socket_id]);
-
-                    $this->debug('onMessage debug: All continuation frames received!');
-                }
-                break;
-            case 0x1:
-            case 0x2:
-                if (0 === $ws_codes['fin']) {
-                    $this->data_frames[$socket_id] = [];
-
-                    $this->data_frames[$socket_id]['mask'] = $ws_codes['data_mask'];
-                    $this->data_frames[$socket_id]['data'] = substr($message, $ws_codes['data_offset'], $ws_codes['data_length']);
-
-                    throw new \Exception('Received first continuation frame!', E_USER_NOTICE);
-                }
-                break;
-
-            case 0x8:
+        while ('' !== $buffer) {
+            try {
+                $ws_codes = $this->wsGetFrameCodes($buffer);
+            } catch (\Throwable $throwable) {
                 $this->closeSocket($socket_id);
-                throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
-                break;
-            case 0x9:
-                $this->wsPong($socket_id);
-                throw new \Exception('Received Ping frame!', E_USER_NOTICE);
-                break;
-            case 0xA:
-                throw new \Exception('Received Pong frame!', E_USER_NOTICE);
-                break;
+                throw new \Exception('Failed to read frame data: ' . $throwable->getMessage(), E_USER_NOTICE);
+            }
 
-            case 0x3:
-            case 0x4:
-            case 0x5:
-            case 0x6:
-            case 0x7:
-            case 0xB:
-            case 0xC:
-            case 0xD:
-            case 0xE:
-            case 0xF:
-                throw new \Exception('Opcode: ' . $ws_codes['opcode'] . '. Reserved frames!', E_USER_NOTICE);
-                break;
-
-            default:
+            if (1 !== $ws_codes['masked']) {
                 $this->closeSocket($socket_id);
-                throw new \Exception('Opcode ERROR! Close connection!', E_USER_NOTICE);
-                break;
+                throw new \Exception('Data unmasked! Close connection!', E_USER_NOTICE);
+            }
+
+            // Extract frame data
+            $frame_data = substr($buffer, $ws_codes['data_offset'], $ws_codes['data_length']);
+            $ws_decoded = $this->wsDecode($frame_data, $ws_codes['data_mask'], 0, $ws_codes['data_length']);
+
+            // Calculate frame size and move buffer
+            $frame_size = $ws_codes['data_offset'] + $ws_codes['data_length'];
+            $buffer     = substr($buffer, $frame_size);
+
+            // Handle different opcodes
+            switch ($ws_codes['opcode']) {
+                case 0x1:  // Text frame
+                case 0x0:  // Continuation frame
+                    $result .= $ws_decoded;
+                    break;
+
+                case 0x8:  // Close frame
+                    $this->closeSocket($socket_id);
+                    unset($ws_codes, $frame_data, $ws_decoded, $frame_size);
+                    throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
+                    break;
+
+                case 0x9:  // Ping frame
+                    $this->wsPong($socket_id);
+                    break;
+
+                case 0xA:  // Pong frame
+                    // Silently ignore pong frames
+                    break;
+
+                default:  // Reserved or unknown opcodes
+                    // Just ignore and continue
+                    break;
+            }
+
+            unset($ws_codes, $frame_data, $ws_decoded, $frame_size);
         }
 
-        try {
-            $message = $this->wsDecode($message, $ws_codes['data_mask'], $ws_codes['data_offset'], $ws_codes['data_length']);
-        } catch (\Throwable $throwable) {
-            $this->closeSocket($socket_id);
-            throw new \Exception('Failed to decode frame data: ' . $throwable->getMessage(), E_USER_NOTICE);
-        }
-
-        unset($socket_id, $ws_codes);
-        return $message;
+        unset($socket_id, $message, $buffer);
+        return $result;
     }
 
     /**
