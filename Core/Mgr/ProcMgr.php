@@ -32,13 +32,17 @@ class ProcMgr extends Factory
     const P_STDOUT = 2;
     const P_STDERR = 4;
 
+    const WORKER_NORMAL = '/' . __CLASS__ . '/worker';
+    const WORKER_STREAM = '/' . __CLASS__ . '/workerStream';
+
     public Error $error;
 
     public int $read_seconds        = 0;
     public int $read_microseconds   = 50000;
     public int $proc_max_executions = 2000;
 
-    public string $argv_end_char = "\n";
+    public string $argv_end_char  = "\n";
+    public string $ipc_descriptor = 'pipe';
 
     public string|null $work_dir = null;
 
@@ -52,15 +56,19 @@ class ProcMgr extends Factory
     protected array $proc_status   = [];
     protected array $proc_job_done = [];
 
-    protected array $proc_job_await = [];
-    protected array $proc_callbacks = [];
+    protected array $proc_job_await  = [];
+    protected array $proc_callbacks  = [];
+    protected array $proc_end_marker = [];
 
     /**
      * @throws \ReflectionException
      */
-    public function __construct()
+    public function __construct(string $descriptor = 'pipe')
     {
-        $this->error = Error::new();
+        $this->error          = Error::new();
+        $this->ipc_descriptor = $descriptor;
+
+        unset($descriptor);
     }
 
     /**
@@ -132,8 +140,8 @@ class ProcMgr extends Factory
                 $this->command,
                 [
                     ['pipe', 'rb'],
-                    ['pipe', 'wb'],
-                    ['pipe', 'wb']
+                    [$this->ipc_descriptor, 'wb'],
+                    [$this->ipc_descriptor, 'wb']
                 ],
                 $pipes,
                 $this->work_dir
@@ -159,9 +167,10 @@ class ProcMgr extends Factory
         $this->proc_stderr[$idx] = $pipes[2];
         $this->proc_status[$idx] = self::P_STDIN | self::P_STDOUT | self::P_STDERR;
 
-        $this->proc_job_done[$idx]  = 0;
-        $this->proc_job_await[$idx] = 0;
-        $this->proc_callbacks[$idx] = [];
+        $this->proc_job_done[$idx]   = 0;
+        $this->proc_job_await[$idx]  = 0;
+        $this->proc_callbacks[$idx]  = [];
+        $this->proc_end_marker[$idx] = [];
 
         register_shutdown_function([$this, 'close'], $idx);
 
@@ -263,15 +272,18 @@ class ProcMgr extends Factory
      * @param string        $job_argv
      * @param callable|null $stdout_callback
      * @param callable|null $stderr_callback
+     * @param string        $end_marker
      *
      * @return self
      */
-    public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null): static
+    public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null, string $end_marker = ''): static
     {
         try {
             $idx = $this->getIdleProcIdx();
 
             fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
+
+            array_unshift($this->proc_end_marker[$idx], $end_marker);
             array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
 
             $this->proc_job_await[$idx] = 1;
@@ -281,7 +293,7 @@ class ProcMgr extends Factory
             $this->putJob($job_argv, $stdout_callback, $stderr_callback);
         }
 
-        unset($job_argv, $stdout_callback, $stderr_callback);
+        unset($job_argv, $stdout_callback, $stderr_callback, $end_marker);
         return $this;
     }
 
@@ -431,12 +443,49 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function workerStream(): void
+    {
+        $caller = Caller::new();
+        $router = Router::new();
+
+        while (true) {
+            $job_json = fgets(STDIN);
+
+            if (false === $job_json) {
+                break;
+            }
+
+            $job_json = trim($job_json);
+            $job_data = json_decode($job_json, true);
+
+            if (is_array($job_data) && isset($job_data['c']) && !empty($cmd = $router->parseCgi($job_data['c']))) {
+                try {
+                    $caller->runApiFn($cmd, $job_data, false);
+                    flush();
+                    fflush(STDOUT);
+                } catch (\Throwable $throwable) {
+                    $this->error->exceptionHandler($throwable, false, false);
+                    unset($throwable);
+                }
+            }
+
+            unset($job_json, $job_data, $cmd);
+        }
+
+        unset($caller, $router);
+        exit(0);
+    }
+
+    /**
      * @param callable|null ...$stdio_callbacks
      *
      * @return void
      * @throws \ReflectionException
      */
-    protected function readIPC(callable|null ...$stdio_callbacks): void
+    public function readIPC(callable|null ...$stdio_callbacks): void
     {
         $write   = [];
         $except  = [];
@@ -458,21 +507,29 @@ class ProcMgr extends Factory
 
                 while ('' !== ($output = trim(fgets($stream)))) {
                     if (empty($stdio_callbacks)) {
-                        ++$this->proc_job_done[$idx];
-                        $stdio_callbacks = array_pop($this->proc_callbacks[$idx]);
+                        $end_marker = $this->proc_end_marker[$idx][count($this->proc_end_marker[$idx]) - 1] ?? '';
+
+                        if ('' === $end_marker || $output === $end_marker) {
+                            ++$this->proc_job_done[$idx];
+                            $this->proc_job_await[$idx]  = 0;
+                            $this->proc_idle['P' . $idx] = $idx;
+                            array_pop($this->proc_end_marker[$idx]);
+                            $callbacks = array_pop($this->proc_callbacks[$idx]);
+                        } else {
+                            $callbacks = $this->proc_callbacks[$idx][count($this->proc_callbacks[$idx]) - 1] ?? [null, null];
+                        }
+                    } else {
+                        $callbacks = $stdio_callbacks;
                     }
 
-                    if (is_array($stdio_callbacks)) {
-                        $this->callFn($output, 'out' === $type ? $stdio_callbacks[0] : $stdio_callbacks[1]);
+                    if (is_array($callbacks)) {
+                        $this->callFn($output, 'out' === $type ? $callbacks[0] : $callbacks[1]);
                     }
                 }
-
-                $this->proc_job_await[$idx]  = 0;
-                $this->proc_idle['P' . $idx] = $idx;
             }
         }
 
-        unset($stdio_callbacks, $write, $except, $streams, $key, $value, $stream, $type, $idx, $output);
+        unset($stdio_callbacks, $write, $except, $streams, $key, $value, $stream, $type, $idx, $output, $end_marker, $callbacks);
     }
 
     /**
