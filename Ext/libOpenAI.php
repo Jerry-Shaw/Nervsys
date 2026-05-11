@@ -215,7 +215,8 @@ class libOpenAI extends Factory
      */
     public function chat(array $messages, string $model = '', array $options = [], bool $stream = false): array
     {
-        $payload = array_merge($this->model_params,
+        $payload = array_merge(
+            $this->model_params,
             $options,
             [
                 'model'    => '' === $model ? $this->api_model : $model,
