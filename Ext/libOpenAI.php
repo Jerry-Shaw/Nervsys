@@ -27,10 +27,11 @@ class libOpenAI extends Factory
     public libHttp $httpNormal;
     public libHttp $httpStream;
 
-    public string $org_id    = '';
-    public string $api_url   = 'http://127.0.0.1:1234/v1';
-    public string $api_key   = '';
-    public string $api_model = 'qwen3.6-35b-a3b';
+    public string $org_id     = '';
+    public string $api_url    = 'http://127.0.0.1:1234/v1';
+    public string $api_key    = '';
+    public string $api_model  = 'qwen3.6-35b-a3b';
+    public string $end_marker = '[DONE]';
 
     public array $model_params = [
         'temperature'       => 0.2,
@@ -45,11 +46,11 @@ class libOpenAI extends Factory
     /**
      * Constructor
      *
-     * @param string $api_url API base URL
-     * @param string $api_key API key
-     * @param string $org_id  Organization ID (optional)
+     * @param string $api_url    API base URL
+     * @param string $api_key    API key
+     * @param string $end_marker API stream end marker, default: [DONE]
      */
-    public function __construct(string $api_url = '', string $api_key = '', string $org_id = '')
+    public function __construct(string $api_url = '', string $api_key = '', string $end_marker = '[DONE]')
     {
         if ('' !== $api_url) {
             $this->api_url = rtrim($api_url, '/');
@@ -59,8 +60,8 @@ class libOpenAI extends Factory
             $this->api_key = $api_key;
         }
 
-        if ('' !== $org_id) {
-            $this->org_id = $org_id;
+        if ('' !== $end_marker) {
+            $this->end_marker = $end_marker;
         }
 
         // Create two independent libHttp instances with different User-Agent and timeout
@@ -71,7 +72,7 @@ class libOpenAI extends Factory
         $this->configure($this->httpNormal);
         $this->configure($this->httpStream);
 
-        unset($api_url, $api_key, $org_id);
+        unset($api_url, $api_key, $end_marker);
     }
 
     /**
@@ -412,7 +413,7 @@ class libOpenAI extends Factory
 
             $json = substr($line, 6);
 
-            if ('[DONE]' === $json) {
+            if ($json === $this->end_marker) {
                 $this->callStreamCallbacks([], true);
                 break;
             }
