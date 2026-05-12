@@ -4,7 +4,7 @@
  * Fiber Manager library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ use Nervsys\Core\Reflect;
 class FiberMgr extends Factory
 {
     private array $fibers = [];
+    private array $stacks = [];
 
     /**
      * Await callable function, generate Fiber instance
@@ -82,7 +83,7 @@ class FiberMgr extends Factory
     }
 
     /**
-     * Commit all async fibers
+     * Submit all async fibers in queue
      *
      * @return void
      * @throws \Throwable
@@ -105,12 +106,179 @@ class FiberMgr extends Factory
             }
 
             $this->fibers = array_values($this->fibers);
-
-            unset($fiber_key, $fiber_proc);
         }
     }
 
     /**
+     * Create a new task stack
+     *
+     * @param string $stack_id
+     *
+     * @return void
+     */
+    public function createStack(string $stack_id): void
+    {
+        if (!isset($this->stacks[$stack_id])) {
+            $this->stacks[$stack_id] = [
+                'tasks'   => [],
+                'results' => []
+            ];
+        }
+    }
+
+    /**
+     * Add a task to stack
+     *
+     * @param string   $stack_id
+     * @param callable $task
+     * @param array    $args
+     *
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function addTask(string $stack_id, callable $task, array $args = []): void
+    {
+        if (!isset($this->stacks[$stack_id])) {
+            $this->createStack($stack_id);
+        }
+
+        $fiber = $this->await($task, $args);
+
+        // Handle already terminated fiber
+        if ($fiber->isTerminated()) {
+            $this->stacks[$stack_id]['results'][] = $fiber->getReturn();
+            unset($fiber);
+            return;
+        }
+
+        $this->stacks[$stack_id]['tasks'][] = $fiber;
+    }
+
+    /**
+     * Run next task in stack
+     *
+     * @param string $stack_id
+     *
+     * @return bool
+     * @throws \Throwable
+     */
+    public function runNext(string $stack_id): bool
+    {
+        if (!isset($this->stacks[$stack_id])) {
+            return false;
+        }
+
+        $stack = &$this->stacks[$stack_id];
+
+        if (empty($stack['tasks'])) {
+            return false;
+        }
+
+        // Get and remove first task
+        $fiber = array_shift($stack['tasks']);
+
+        try {
+            if ($fiber->isSuspended()) {
+                $fiber->resume();
+            }
+
+            if ($fiber->isTerminated()) {
+                $stack['results'][] = $fiber->getReturn();
+            }
+        } catch (\Throwable $e) {
+            $stack['results'][] = [
+                'error'   => true,
+                'message' => $e->getMessage(),
+                'code'    => $e->getCode()
+            ];
+        }
+
+        unset($fiber);
+        return true;
+    }
+
+    /**
+     * Run entire stack until completion
+     *
+     * @param string $stack_id
+     *
+     * @return array
+     * @throws \Throwable
+     */
+    public function runStack(string $stack_id): array
+    {
+        if (!isset($this->stacks[$stack_id])) {
+            return [];
+        }
+
+        while ($this->runNext($stack_id)) {
+            // Continue execution
+        }
+
+        $results = $this->stacks[$stack_id]['results'];
+        unset($this->stacks[$stack_id]);
+
+        return $results;
+    }
+
+    /**
+     * Check if stack exists
+     *
+     * @param string $stack_id
+     *
+     * @return bool
+     */
+    public function hasStack(string $stack_id): bool
+    {
+        return isset($this->stacks[$stack_id]);
+    }
+
+    /**
+     * Get stack status
+     *
+     * @param string $stack_id
+     *
+     * @return array|null
+     */
+    public function getStackStatus(string $stack_id): array|null
+    {
+        if (!isset($this->stacks[$stack_id])) {
+            return null;
+        }
+
+        $stack = $this->stacks[$stack_id];
+
+        return [
+            'pending' => count($stack['tasks']),
+            'results' => count($stack['results'])
+        ];
+    }
+
+    /**
+     * Clear stack from memory
+     *
+     * @param string $stack_id
+     *
+     * @return void
+     */
+    public function clearStack(string $stack_id): void
+    {
+        if (isset($this->stacks[$stack_id])) {
+            $stack = &$this->stacks[$stack_id];
+
+            // Clean up fiber references to prevent memory leaks
+            foreach ($stack['tasks'] as $task) {
+                unset($task);
+            }
+
+            unset($this->stacks[$stack_id]);
+        }
+    }
+
+    /**
+     * Handle fiber completion and callback
+     *
      * @param \Fiber   $fiber
      * @param callable $callback
      *
@@ -125,7 +293,11 @@ class FiberMgr extends Factory
             $result = parent::buildArgs(Reflect::getCallable($callback)->getParameters(), $result);
         }
 
-        call_user_func($callback, ...$result);
+        if (is_array($result)) {
+            call_user_func($callback, ...$result);
+        } else {
+            call_user_func($callback, $result);
+        }
 
         unset($fiber, $callback, $result);
     }
