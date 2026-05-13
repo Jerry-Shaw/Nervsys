@@ -1031,6 +1031,13 @@ class SocketMgr extends Factory
                 if (false === fwrite($this->connections[$socket_id], $message)) {
                     throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
                 }
+
+                $now_time = time();
+
+                $this->activities[$socket_id][0] = $now_time;
+                $this->activities[$socket_id][1] = $now_time;
+
+                unset($now_time);
             } else {
                 stream_socket_sendto($this->connections[$socket_id], $message);
             }
