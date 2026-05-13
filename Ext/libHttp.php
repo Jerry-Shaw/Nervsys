@@ -38,7 +38,7 @@ class libHttp extends Factory
         'http_connection'   => 'keep-alive',
         'http_content_type' => self::CONTENT_TYPE_URL_ENCODED,
         'ssl_verifyhost'    => 2,
-        'ssl_verifypeer'    => false,
+        'ssl_verifypeer'    => true,
         'accept_charset'    => 'UTF-8,*;q=0',
         'accept_encoding'   => 'gzip, deflate, identity,*;q=0',
         'accept_language'   => 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
