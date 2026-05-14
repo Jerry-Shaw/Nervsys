@@ -28,14 +28,14 @@ use Nervsys\Core\System;
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.3.0');
+define('NS_VER', '8.3.2');
 define('NS_NAME', 'Rocket');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
 define('NS_HOSTNAME', gethostname() ?: 'localhost');
 
-if (version_compare(PHP_VERSION, '8.1.0', '<')) {
-    echo NS_NAMESPACE . ' ' . NS_VER . ' ' . NS_NAME . ' needs PHP version 8.1.0 or higher!';
+if (version_compare(PHP_VERSION, '8.2.0', '<')) {
+    echo NS_NAMESPACE . ' ' . NS_VER . ' ' . NS_NAME . ' needs PHP version 8.2.0 or higher!';
     exit();
 }
 
