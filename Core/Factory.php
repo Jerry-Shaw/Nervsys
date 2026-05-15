@@ -103,7 +103,7 @@ class Factory
                     continue;
                 }
 
-                $diff[] = '$' . $param_info['name'] . ' NOT found';
+                $diff[] = 'Missing arguments. Expected ' . $param_info['type'] . ' with "' . $param_info['name'] . '". ';
                 continue;
             }
 
@@ -137,9 +137,7 @@ class Factory
                     $param_value = '(' . $detected . ')';
                 }
 
-                $diff[] = '$' . $param_info['name'] . ' needs \''
-                    . $expected . '\' value instead of '
-                    . $detected . ' \'' . $param_value . '\'';
+                $diff[] = 'Invalid argument type for "' . $param_info['name'] . '": expected ' . $expected . ', got ' . $detected . '. ';
             }
         }
 
