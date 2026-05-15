@@ -103,7 +103,7 @@ class Factory
                     continue;
                 }
 
-                $diff[] = 'Missing arguments. Expected ' . $param_info['type'] . ' with "' . $param_info['name'] . '". ';
+                $diff[] = 'Missing arguments. Expected ' . implode('|', array_keys($param_info['type'])) . ' with "' . $param_info['name'] . '". ';
                 continue;
             }
 
