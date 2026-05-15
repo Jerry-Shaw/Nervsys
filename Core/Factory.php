@@ -103,7 +103,7 @@ class Factory
                     continue;
                 }
 
-                $diff[] = 'Missing arguments. Expected ' . implode('|', array_keys($param_info['type'])) . ' with "' . $param_info['name'] . '". ';
+                $diff[] = 'Missing arguments: Expected ' . implode('|', array_keys($param_info['type'])) . ' with "' . $param_info['name'] . '"';
                 continue;
             }
 
@@ -137,12 +137,12 @@ class Factory
                     $param_value = '(' . $detected . ')';
                 }
 
-                $diff[] = 'Invalid argument type for "' . $param_info['name'] . '": expected ' . $expected . ', got ' . $detected . '. ';
+                $diff[] = 'Invalid argument type for "' . $param_info['name'] . '": expected ' . $expected . ', got ' . $detected;
             }
         }
 
         if (!empty($diff)) {
-            throw new \Exception(implode(', ', $diff), E_ERROR);
+            throw new \Exception(implode('. ', $diff), E_ERROR);
         }
 
         unset($param_reflects, $data_package, $diff, $param_reflect, $param_info, $param_exist, $object_name, $expected, $detected, $param_value);
