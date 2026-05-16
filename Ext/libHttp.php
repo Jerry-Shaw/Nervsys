@@ -607,6 +607,11 @@ class libHttp extends Factory
             CURLOPT_FOLLOWLOCATION => false,
         ];
 
+        // Default User-Agent
+        if (isset($request_config['user_agent'])) {
+            $opt[CURLOPT_USERAGENT] = $request_config['user_agent'];
+        }
+
         // Cookie may be set via addCookie (stored in $request_config)
         if (isset($request_config['cookie'])) {
             $opt[CURLOPT_COOKIE] = $request_config['cookie'];
