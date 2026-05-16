@@ -618,6 +618,20 @@ class libHttp extends Factory
             $opt[CURLOPT_MAXREDIRS]      = $request_config['max_follow'];
         }
 
+        // SSL Options
+        if (isset($request_config['ssl_verifyhost'])) {
+            $opt[CURLOPT_SSL_VERIFYHOST] = $request_config['ssl_verifyhost'];
+        }
+
+        if (isset($request_config['ssl_verifypeer'])) {
+            $opt[CURLOPT_SSL_VERIFYPEER] = $request_config['ssl_verifypeer'];
+
+            // Set CA for SSL verify peer (windows only)
+            if (true === $request_config['ssl_verifypeer'] && 'Windows' === PHP_OS_FAMILY) {
+                $opt[CURLOPT_SSL_OPTIONS] = CURLSSLOPT_NATIVE_CA;
+            }
+        }
+
         // Request body
         if (!empty($request_config['data'])) {
             if ('GET' === $request_config['http_method']) {
@@ -640,11 +654,6 @@ class libHttp extends Factory
         $opt[CURLOPT_HTTPHEADER]    = $request_config['header'];
         $opt[CURLOPT_PORT]          = $request_config['url_unit']['port'] ?? ('https' === $request_config['url_unit']['scheme'] ? 443 : 80);
         $opt[CURLOPT_CUSTOMREQUEST] = $request_config['http_method'];
-
-        // Set CA for SSL verify peer (windows only)
-        if (true === $this->curl_options[CURLOPT_SSL_VERIFYPEER] && 'Windows' === PHP_OS_FAMILY) {
-            $this->curl_options[CURLOPT_SSL_OPTIONS] = CURLSSLOPT_NATIVE_CA;
-        }
 
         // Merge persistent cURL options (int keys) – these have highest priority
         foreach ($curl_options as $key => $value) {
