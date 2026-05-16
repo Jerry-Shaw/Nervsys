@@ -322,10 +322,6 @@ class libOpenAI extends Factory
     {
         $http->setContentType(libHttp::CONTENT_TYPE_JSON);
 
-        if (PHP_OS_FAMILY === 'Windows') {
-            $http->addOptions([CURLOPT_SSL_OPTIONS => CURLSSLOPT_NATIVE_CA]);
-        }
-
         if ('' !== $this->api_key) {
             $http->addHeader(['Authorization' => 'Bearer ' . $this->api_key]);
         }
