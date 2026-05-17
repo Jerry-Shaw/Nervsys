@@ -543,37 +543,41 @@ class SocketMgr extends Factory
                     \Fiber::suspend();
                 }
 
-                if ($now_time - max(...$active_times) < $active_timeout) {
+                if ($now_time - $active_times[0] < $active_timeout) {
                     continue;
                 }
 
-                if ($now_time - $active_times[0] > $this->alive_timeout) {
+                if ($now_time - $active_times[1] > $this->alive_timeout) {
                     $this->debug('Client heartbeat lost: #' . $socket_id);
                     $this->closeSocket($socket_id);
                     continue;
                 }
 
+                $heartbeat = '';
+
+                $this->activities[$socket_id][0] = $now_time;
                 $this->activities[$socket_id][1] = $now_time;
 
                 if ($is_websocket) {
                     $this->wsPing($socket_id);
-                    $this->debug('Send heartbeat to websocket: #' . $socket_id);
-                } else {
-                    if (!is_callable($this->callbacks['onHeartbeat'])) {
-                        $heartbeat = $this->heartbeat;
-                    } else {
-                        try {
-                            $heartbeat = call_user_func($this->callbacks['onHeartbeat'], $socket_id);
-                        } catch (\Throwable $throwable) {
-                            $heartbeat = $this->heartbeat;
-                            $this->debug('serverOnHeartbeat callback ERROR: ' . $throwable->getMessage());
-                            $this->error->exceptionHandler($throwable, false, false);
-                            unset($throwable);
-                        }
-                    }
+                    $this->debug('Send websocket heartbeat to client: #' . $socket_id);
+                } elseif (!is_callable($this->callbacks['onHeartbeat'])) {
+                    $heartbeat = $this->heartbeat;
+                }
 
+                if (is_callable($this->callbacks['onHeartbeat'])) {
+                    try {
+                        $heartbeat = call_user_func($this->callbacks['onHeartbeat'], $socket_id);
+                    } catch (\Throwable $throwable) {
+                        $this->debug('serverOnHeartbeat callback ERROR: ' . $throwable->getMessage());
+                        $this->error->exceptionHandler($throwable, false, false);
+                        unset($throwable);
+                    }
+                }
+
+                if ('' !== $heartbeat) {
                     $this->sendMessage($socket_id, $heartbeat);
-                    $this->debug('Send heartbeat to client: #' . $socket_id);
+                    $this->debug('Send heartbeat message to client: #' . $socket_id);
                 }
             }
 
@@ -999,7 +1003,7 @@ class SocketMgr extends Factory
                     $message .= $msg_line;
                 }
 
-                $this->activities[$socket_id][0] = time();
+                $this->activities[$socket_id][1] = time();
                 unset($msg_line);
             } else {
                 $message = stream_socket_recvfrom($this->connections[$socket_id], 65536) ?: '';
@@ -1032,12 +1036,7 @@ class SocketMgr extends Factory
                     throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
                 }
 
-                $now_time = time();
-
-                $this->activities[$socket_id][0] = $now_time;
-                $this->activities[$socket_id][1] = $now_time;
-
-                unset($now_time);
+                $this->activities[$socket_id][1] = time();
             } else {
                 stream_socket_sendto($this->connections[$socket_id], $message);
             }
