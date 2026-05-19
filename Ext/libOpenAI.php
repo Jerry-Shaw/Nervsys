@@ -32,6 +32,7 @@ class libOpenAI extends Factory
     public string $api_key    = '';
     public string $api_model  = 'qwen3.6-35b-a3b';
     public string $end_marker = '[DONE]';
+    public string $sse_buffer = '';
 
     public array $model_params = [
         'temperature'       => 0.2,
@@ -398,42 +399,47 @@ class libOpenAI extends Factory
      */
     private function handleStreamChunk(string $chunk): int
     {
+        $this->sse_buffer .= $chunk;
+
         $length = strlen($chunk);
-        $lines  = explode("\n", $chunk);
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+        while (false !== ($event_end = strpos($this->sse_buffer, "\n\n"))) {
+            $sse_event        = substr($this->sse_buffer, 0, $event_end);
+            $this->sse_buffer = substr($this->sse_buffer, $event_end + 2);
+            $this->sse_buffer = ltrim($this->sse_buffer, "\r\n");
 
-            if ('' === $line) {
+            $data_pos = strpos($sse_event, 'data: ');
+
+            if (false === $data_pos) {
                 continue;
             }
 
-            if (!str_starts_with($line, 'data: ')) {
-                continue;
-            }
+            $data_line = substr($sse_event, $data_pos + 6);
+            $data_line = rtrim($data_line, "\r\n");
 
-            $json = substr($line, 6);
-
-            if ($json === $this->end_marker) {
+            if ($data_line === $this->end_marker) {
                 $this->callStreamCallbacks([], true);
-                break;
+                $this->sse_buffer = '';
+
+                unset($chunk, $event_end, $sse_event, $data_pos, $data_line);
+                return $length;
             }
 
-            $data = json_decode($json, true);
+            $data = json_decode($data_line, true);
 
-            if (null !== $data) {
-                $data['success'] = true;
+            if (is_array($data)) {
+                $data['status'] = 'success';
                 $this->callStreamCallbacks($data, false);
             } else {
                 $this->callStreamCallbacks([
-                    'success' => false,
-                    'error'   => 'JSON Decode Failed!',
-                    'data'    => $json
+                    'status'    => 'error',
+                    'message'   => 'JSON Decode Failed!',
+                    'json_data' => $data_line
                 ], false);
             }
         }
 
-        unset($chunk, $lines, $line, $json, $data);
+        unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);
         return $length;
     }
 
