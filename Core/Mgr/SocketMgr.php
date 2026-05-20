@@ -1035,7 +1035,7 @@ class SocketMgr extends Factory
                 $is_binary = false;
             }
 
-            if ('' === $message && !$is_binary) {
+            if ('' === $message && !$is_websocket) {
                 throw new \Exception('No message received', E_NOTICE);
             }
         } catch (\Throwable $throwable) {
