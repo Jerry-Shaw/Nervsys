@@ -676,15 +676,16 @@ class SocketMgr extends Factory
     public function serverProcessMessage(int $socket_id, bool $is_websocket = false): void
     {
         try {
-            $message = $this->readMessage($socket_id);
+            $message = $this->readMessage($socket_id, $is_websocket);
 
-            if ($is_websocket) {
-                if (isset($this->handshakes[$socket_id])) {
-                    $this->wsSendHandshake($socket_id, $message);
-                    return;
-                }
+            // Skip empty message (e.g., from Ping/Pong frames)
+            if ('' === $message && $is_websocket && !isset($this->handshakes[$socket_id])) {
+                return;
+            }
 
-                $message = $this->wsGetMessage($socket_id, $message);
+            if ($is_websocket && isset($this->handshakes[$socket_id])) {
+                $this->wsSendHandshake($socket_id, $message);
+                return;
             }
         } catch (\Throwable $throwable) {
             $this->debug('serverOnMessage debug: ' . $throwable->getMessage());
@@ -700,6 +701,7 @@ class SocketMgr extends Factory
             } catch (\Throwable $throwable) {
                 $this->debug('serverOnMessage callback ERROR: ' . $throwable->getMessage());
                 $this->error->exceptionHandler($throwable, false, false);
+
                 unset($throwable);
             }
         }
@@ -799,7 +801,7 @@ class SocketMgr extends Factory
             }
 
             try {
-                $message = $this->readMessage($this->master_id);
+                $message = $this->readMessage($this->master_id, false);
             } catch (\Throwable $throwable) {
                 $this->debug('Read message failed: ' . $throwable->getMessage());
                 $this->clientReconnect();
@@ -987,24 +989,31 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int $socket_id
+     * @param int  $socket_id
+     * @param bool $is_websocket
      *
      * @return string
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function readMessage(int $socket_id): string
+    public function readMessage(int $socket_id, bool $is_websocket): string
     {
         try {
             if ('udp' !== $this->sock_type) {
-                $message = '';
+                // WebSocket frame
+                if ($is_websocket && !isset($this->handshakes[$socket_id])) {
+                    $message = $this->readWebSocketData($socket_id);
+                } else {
+                    // TCP or WebSocket handshake
+                    $message = '';
 
-                while (false !== $msg_line = fgets($this->connections[$socket_id])) {
-                    $message .= $msg_line;
+                    while (false !== $msg_line = fgets($this->connections[$socket_id])) {
+                        $message .= $msg_line;
+                    }
+
+                    $this->activities[$socket_id][1] = time();
+                    unset($msg_line);
                 }
-
-                $this->activities[$socket_id][1] = time();
-                unset($msg_line);
             } else {
                 $message = stream_socket_recvfrom($this->connections[$socket_id], 65536) ?: '';
             }
@@ -1017,7 +1026,119 @@ class SocketMgr extends Factory
             throw new \Exception('Read ERROR!', E_USER_NOTICE);
         }
 
-        unset($socket_id, $fragment);
+        unset($socket_id, $is_websocket);
+        return $message;
+    }
+
+    /**
+     * @param int $socket_id
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public function readWebSocketData(int $socket_id): string
+    {
+        // Read frame header
+        $header = fread($this->connections[$socket_id], 2);
+
+        if (2 !== strlen($header)) {
+            throw new \Exception('Failed to read frame header', E_NOTICE);
+        }
+
+        $fin_rsv     = ord($header[0]);
+        $opcode      = $fin_rsv & 0x0F;
+        $masked      = (ord($header[1]) >> 7) & 0x01;
+        $payload_len = ord($header[1]) & 0x7F;
+
+        unset($fin_rsv);
+
+        // Handle extended payload length
+        if (126 === $payload_len) {
+            $extended = fread($this->connections[$socket_id], 2);
+
+            if (2 !== strlen($extended)) {
+                throw new \Exception('Failed to read extended length', E_NOTICE);
+            }
+
+            $payload_len = unpack('n', $extended)[1];
+
+            unset($extended);
+        } elseif (127 === $payload_len) {
+            $extended = fread($this->connections[$socket_id], 8);
+
+            if (8 !== strlen($extended)) {
+                throw new \Exception('Failed to read extended length', E_NOTICE);
+            }
+
+            // Only support 32-bit length (enough for practical use)
+            $high        = unpack('N', substr($extended, 0, 4))[1];
+            $low         = unpack('N', substr($extended, 4, 4))[1];
+            $payload_len = $high * 4294967296 + $low;
+
+            unset($extended, $high, $low);
+        }
+
+        // Read mask key if present
+        if (1 === $masked) {
+            $mask_key = fread($this->connections[$socket_id], 4);
+
+            if (4 !== strlen($mask_key)) {
+                throw new \Exception('Failed to read mask key', E_NOTICE);
+            }
+        } else {
+            $mask_key = '';
+        }
+
+        // Read payload data in chunks
+        $message    = '';
+        $remaining  = $payload_len;
+        $chunk_size = 65536; // 64KB per chunk
+
+        while (0 < $remaining) {
+            $read_size = min($remaining, $chunk_size);
+            $chunk     = fread($this->connections[$socket_id], $read_size);
+
+            if (false === $chunk || 0 === strlen($chunk)) {
+                throw new \Exception('Failed to read payload data', E_NOTICE);
+            }
+
+            $message   .= $chunk;
+            $remaining -= strlen($chunk);
+
+            unset($read_size, $chunk);
+        }
+
+        // Decode mask if needed
+        if (1 === $masked && 0 < $payload_len) {
+            for ($i = 0; $i < $payload_len; ++$i) {
+                $message[$i] = $message[$i] ^ $mask_key[$i % 4];
+            }
+        }
+
+        $this->activities[$socket_id][1] = time();
+
+        // Handle control frames (Ping/Pong/Close)
+        switch ($opcode) {
+            case 0x8:  // Close frame
+                $this->closeSocket($socket_id);
+                throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
+                break;
+
+            case 0x9:  // Ping frame
+                $this->wsPong($socket_id);
+                return '';
+                break;
+
+            case 0xA:  // Pong frame
+                return '';
+                break;
+
+            default:   // Text or Binary frame (0x1, 0x2) or continuation (0x0)
+                // Continue to return message
+                break;
+        }
+
+        unset($socket_id, $header, $opcode, $masked, $payload_len, $mask_key, $remaining, $chunk_size);
         return $message;
     }
 
