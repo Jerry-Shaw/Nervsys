@@ -42,7 +42,7 @@ class SocketMgr extends Factory
         'onConnect'    => null,  //callback(int $socket_id): string, response message back to client
         'onHandshake'  => null,  //callback(int $socket_id, string $ws_proto): bool, true to allow, otherwise reject.
         'onHeartbeat'  => null,  //callback(int $socket_id): string, heartbeat message send to $socket_id
-        'onMessage'    => null,  //callback(int $socket_id, string $message): void
+        'onMessage'    => null,  //callback(int $socket_id, string $message, bool $is_binary): void
         'onSendBinary' => null,  //callback(int $socket_id): array[binary], message list send to $socket_id, [msg1, msg2, msg3, ...]
         'onSendString' => null,  //callback(int $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
         'onSendFailed' => null,  //callback(int $socket_id, string $message): void
@@ -676,7 +676,8 @@ class SocketMgr extends Factory
     public function serverProcessMessage(int $socket_id, bool $is_websocket = false): void
     {
         try {
-            $message = $this->readMessage($socket_id, $is_websocket);
+            $is_binary = false;
+            $message   = $this->readMessage($socket_id, $is_websocket, $is_binary);
 
             // Skip empty message (e.g., from Ping/Pong frames)
             if ('' === $message && $is_websocket && !isset($this->handshakes[$socket_id])) {
@@ -693,11 +694,12 @@ class SocketMgr extends Factory
             return;
         }
 
-        $this->debug('Read message from #' . $socket_id . ': ' . $message);
+        $log_msg = $is_binary ? '[BINARY DATA]' : $message;
+        $this->debug('Read message from #' . $socket_id . ': ' . $log_msg);
 
         if (is_callable($this->callbacks['onMessage'])) {
             try {
-                call_user_func($this->callbacks['onMessage'], $socket_id, $message);
+                call_user_func($this->callbacks['onMessage'], $socket_id, $message, $is_binary);
             } catch (\Throwable $throwable) {
                 $this->debug('serverOnMessage callback ERROR: ' . $throwable->getMessage());
                 $this->error->exceptionHandler($throwable, false, false);
@@ -706,7 +708,7 @@ class SocketMgr extends Factory
             }
         }
 
-        unset($socket_id, $is_websocket, $message);
+        unset($socket_id, $is_websocket, $message, $is_binary);
     }
 
     /**
@@ -801,7 +803,8 @@ class SocketMgr extends Factory
             }
 
             try {
-                $message = $this->readMessage($this->master_id, false);
+                $is_binary = false;
+                $message   = $this->readMessage($this->master_id, false, $is_binary);
             } catch (\Throwable $throwable) {
                 $this->debug('Read message failed: ' . $throwable->getMessage());
                 $this->clientReconnect();
@@ -814,7 +817,7 @@ class SocketMgr extends Factory
 
             if (is_callable($this->callbacks['onMessage'])) {
                 try {
-                    call_user_func($this->callbacks['onMessage'], $this->master_id, $message);
+                    call_user_func($this->callbacks['onMessage'], $this->master_id, $message, $is_binary);
                 } catch (\Throwable $throwable) {
                     $this->debug('clientOnMessage callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
@@ -989,41 +992,55 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int  $socket_id
-     * @param bool $is_websocket
+     * @param int   $socket_id
+     * @param bool  $is_websocket
+     * @param bool &$is_binary
      *
      * @return string
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function readMessage(int $socket_id, bool $is_websocket): string
+    public function readMessage(int $socket_id, bool $is_websocket, bool &$is_binary = false): string
     {
         try {
             if ('udp' !== $this->sock_type) {
-                // WebSocket frame
+                // WebSocket frame mode
                 if ($is_websocket && !isset($this->handshakes[$socket_id])) {
-                    $message = $this->readWebSocketData($socket_id);
+                    $frame = $this->readWebSocketFrame($socket_id);
+
+                    // If frame is not complete (fragmentation), wait silently
+                    if (!$frame['is_complete']) {
+                        return '';
+                    }
+
+                    $is_binary = (0x2 === $frame['opcode']);
+                    $message   = $frame['data'];
+
+                    unset($frame);
                 } else {
-                    // TCP or WebSocket handshake
-                    $message = '';
+                    // TCP mode or WebSocket handshake
+                    $message   = '';
+                    $is_binary = false;
 
                     while (false !== $msg_line = fgets($this->connections[$socket_id])) {
                         $message .= $msg_line;
                     }
 
                     $this->activities[$socket_id][1] = time();
+
                     unset($msg_line);
                 }
             } else {
-                $message = stream_socket_recvfrom($this->connections[$socket_id], 65536) ?: '';
+                $message   = stream_socket_recvfrom($this->connections[$socket_id], 65536) ?: '';
+                $is_binary = false;
             }
 
-            if ('' === $message) {
+            if ('' === $message && !$is_binary) {
                 throw new \Exception('No message received', E_NOTICE);
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $throwable) {
             $this->closeSocket($socket_id);
-            throw new \Exception('Read ERROR!', E_USER_NOTICE);
+            throw new \Exception('Read ERROR: ' . $throwable->getMessage(), E_USER_NOTICE);
         }
 
         unset($socket_id, $is_websocket);
@@ -1033,10 +1050,10 @@ class SocketMgr extends Factory
     /**
      * @param int $socket_id
      *
-     * @return string
+     * @return array ['data' => string, 'opcode' => int, 'is_complete' => bool]
      * @throws \Exception
      */
-    public function readWebSocketData(int $socket_id): string
+    public function readWebSocketFrame(int $socket_id): array
     {
         // Read frame header
         $header = fread($this->connections[$socket_id], 2);
@@ -1045,14 +1062,13 @@ class SocketMgr extends Factory
             throw new \Exception('Failed to read frame header', E_NOTICE);
         }
 
-        $fin_rsv     = ord($header[0]);
-        $opcode      = $fin_rsv & 0x0F;
+        $fin         = (ord($header[0]) >> 7) & 0x01;
+        $opcode      = ord($header[0]) & 0x0F;
         $masked      = (ord($header[1]) >> 7) & 0x01;
         $payload_len = ord($header[1]) & 0x7F;
 
-        unset($fin_rsv);
+        unset($header);
 
-        // Handle extended payload length
         if (126 === $payload_len) {
             $extended = fread($this->connections[$socket_id], 2);
 
@@ -1070,12 +1086,10 @@ class SocketMgr extends Factory
                 throw new \Exception('Failed to read extended length', E_NOTICE);
             }
 
-            // Only support 32-bit length (enough for practical use)
-            $high        = unpack('N', substr($extended, 0, 4))[1];
-            $low         = unpack('N', substr($extended, 4, 4))[1];
-            $payload_len = $high * 4294967296 + $low;
+            // Use unpack('J') for 64-bit unsigned big-endian
+            $payload_len = unpack('J', $extended)[1];
 
-            unset($extended, $high, $low);
+            unset($extended);
         }
 
         // Read mask key if present
@@ -1090,19 +1104,19 @@ class SocketMgr extends Factory
         }
 
         // Read payload data in chunks
-        $message    = '';
+        $payload    = '';
         $remaining  = $payload_len;
         $chunk_size = 65536; // 64KB per chunk
 
         while (0 < $remaining) {
-            $read_size = min($remaining, $chunk_size);
+            $read_size = $remaining < $chunk_size ? $remaining : $chunk_size;
             $chunk     = fread($this->connections[$socket_id], $read_size);
 
             if (false === $chunk || 0 === strlen($chunk)) {
                 throw new \Exception('Failed to read payload data', E_NOTICE);
             }
 
-            $message   .= $chunk;
+            $payload   .= $chunk;
             $remaining -= strlen($chunk);
 
             unset($read_size, $chunk);
@@ -1111,7 +1125,7 @@ class SocketMgr extends Factory
         // Decode mask if needed
         if (1 === $masked && 0 < $payload_len) {
             for ($i = 0; $i < $payload_len; ++$i) {
-                $message[$i] = $message[$i] ^ $mask_key[$i % 4];
+                $payload[$i] = $payload[$i] ^ $mask_key[$i % 4];
             }
         }
 
@@ -1122,24 +1136,75 @@ class SocketMgr extends Factory
             case 0x8:  // Close frame
                 $this->closeSocket($socket_id);
                 throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
-                break;
 
             case 0x9:  // Ping frame
                 $this->wsPong($socket_id);
-                return '';
-                break;
+                return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
 
             case 0xA:  // Pong frame
-                return '';
-                break;
+                return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
 
-            default:   // Text or Binary frame (0x1, 0x2) or continuation (0x0)
-                // Continue to return message
-                break;
+            case 0x0:  // Continuation frame
+            case 0x1:  // Text frame
+            case 0x2:  // Binary frame
+                // Handle fragmentation
+                if (0 === $fin) {
+                    // Not final frame, store in buffer
+                    if (!isset($this->data_frames[$socket_id])) {
+                        $this->data_frames[$socket_id] = [
+                            'opcode' => $opcode,
+                            'data'   => ''
+                        ];
+                    } elseif (0x0 === $opcode) {
+                        // Continuation frame, keep original opcode
+                    } else {
+                        // New frame before previous finished, reset buffer
+                        $this->data_frames[$socket_id] = [
+                            'opcode' => $opcode,
+                            'data'   => ''
+                        ];
+                    }
+
+                    $this->data_frames[$socket_id]['data'] .= $payload;
+                    $this->debug('Received fragment frame (fin=0), opcode=' . $opcode . ', length=' . $payload_len);
+
+                    return ['data' => '', 'opcode' => $opcode, 'is_complete' => false];
+                }
+
+                // Final frame (fin = 1)
+                if (isset($this->data_frames[$socket_id]) && !empty($this->data_frames[$socket_id]['data'])) {
+                    // Complete fragmented message
+                    $complete_data   = $this->data_frames[$socket_id]['data'] . $payload;
+                    $original_opcode = $this->data_frames[$socket_id]['opcode'];
+
+                    if (0x0 === $original_opcode) {
+                        $original_opcode = 0x1;
+                    }
+
+                    unset($this->data_frames[$socket_id]);
+
+                    $this->debug('All fragments received, reassembled ' . strlen($complete_data) . ' bytes');
+
+                    return ['data' => $complete_data, 'opcode' => $original_opcode, 'is_complete' => true];
+                }
+
+                if (0x0 === $opcode) {
+                    // Continuation frame as final but no previous data (protocol error)
+                    $this->debug('Warning: Continuation frame without previous data');
+                    unset($this->data_frames[$socket_id]);
+
+                    return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
+                }
+
+                // Single frame (no fragmentation)
+                return ['data' => $payload, 'opcode' => $opcode, 'is_complete' => true];
+
+            default:
+                $this->debug('Unsupported opcode: ' . $opcode);
+                return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
         }
 
-        unset($socket_id, $header, $opcode, $masked, $payload_len, $mask_key, $remaining, $chunk_size);
-        return $message;
+        unset($socket_id, $masked, $payload_len, $mask_key, $remaining, $chunk_size, $payload, $opcode, $fin);
     }
 
     /**
@@ -1204,73 +1269,6 @@ class SocketMgr extends Factory
         }
 
         unset($socket_id);
-    }
-
-    /**
-     * @param int    $socket_id
-     * @param string $message
-     *
-     * @return string
-     * @throws \ReflectionException
-     * @throws \Exception
-     */
-    public function wsGetMessage(int $socket_id, string $message): string
-    {
-        $result = '';
-        $buffer = $message;
-
-        while ('' !== $buffer) {
-            try {
-                $ws_codes = $this->wsGetFrameCodes($buffer);
-            } catch (\Throwable $throwable) {
-                $this->closeSocket($socket_id);
-                throw new \Exception('Failed to read frame data: ' . $throwable->getMessage(), E_USER_NOTICE);
-            }
-
-            if (1 !== $ws_codes['masked']) {
-                $this->closeSocket($socket_id);
-                throw new \Exception('Data unmasked! Close connection!', E_USER_NOTICE);
-            }
-
-            // Extract frame data
-            $frame_data = substr($buffer, $ws_codes['data_offset'], $ws_codes['data_length']);
-            $ws_decoded = $this->wsDecode($frame_data, $ws_codes['data_mask'], 0, $ws_codes['data_length']);
-
-            // Calculate frame size and move buffer
-            $frame_size = $ws_codes['data_offset'] + $ws_codes['data_length'];
-            $buffer     = substr($buffer, $frame_size);
-
-            // Handle different opcodes
-            switch ($ws_codes['opcode']) {
-                case 0x1:  // Text frame
-                case 0x0:  // Continuation frame
-                    $result .= $ws_decoded;
-                    break;
-
-                case 0x8:  // Close frame
-                    $this->closeSocket($socket_id);
-                    unset($ws_codes, $frame_data, $ws_decoded, $frame_size);
-                    throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
-                    break;
-
-                case 0x9:  // Ping frame
-                    $this->wsPong($socket_id);
-                    break;
-
-                case 0xA:  // Pong frame
-                    // Silently ignore pong frames
-                    break;
-
-                default:  // Reserved or unknown opcodes
-                    // Just ignore and continue
-                    break;
-            }
-
-            unset($ws_codes, $frame_data, $ws_decoded, $frame_size);
-        }
-
-        unset($socket_id, $message, $buffer);
-        return $result;
     }
 
     /**
@@ -1413,14 +1411,9 @@ class SocketMgr extends Factory
 
             case 127:
                 $codes['data_offset'] = 14;
-                $codes['data_length'] = (ord($buffer[2]) << 56)
-                    | (ord($buffer[3]) << 48)
-                    | (ord($buffer[4]) << 40)
-                    | (ord($buffer[5]) << 32)
-                    | (ord($buffer[6]) << 24)
-                    | (ord($buffer[7]) << 16)
-                    | (ord($buffer[8]) << 8)
-                    | (ord($buffer[7]) << 0);
+                // Use unpack('J') for 64-bit unsigned big-endian
+                $len_data             = substr($buffer, 2, 8);
+                $codes['data_length'] = unpack('J', $len_data)[1] ?? 0;
                 $codes['data_mask']   = substr($buffer, 10, 4);
                 break;
 
@@ -1473,7 +1466,7 @@ class SocketMgr extends Factory
         } elseif ($length <= 65535) {
             $buff = chr($opcode) . chr(126) . pack('n', $length) . $message;
         } else {
-            $buff = chr($opcode) . chr(127) . pack('xxxxN', $length) . $message;
+            $buff = chr($opcode) . chr(127) . pack('J', $length) . $message;
         }
 
         unset($message, $is_binary, $length, $opcode);
