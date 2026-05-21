@@ -29,7 +29,7 @@ class SocketMgr extends Factory
     public Error    $error;
     public FiberMgr $fiberMgr;
 
-    public int $master_id = 0;
+    public string $master_id = '';
 
     public string $address   = '';
     public string $sock_type = '';
@@ -39,14 +39,14 @@ class SocketMgr extends Factory
     public bool $debug_mode = false;
 
     public array $callbacks = [
-        'onConnect'    => null,  //callback(int $socket_id): string, response message back to client
-        'onHandshake'  => null,  //callback(int $socket_id, string $ws_proto): bool, true to allow, otherwise reject.
-        'onHeartbeat'  => null,  //callback(int $socket_id): string, heartbeat message send to $socket_id
-        'onMessage'    => null,  //callback(int $socket_id, string $message, bool $is_binary): void
-        'onSendBinary' => null,  //callback(int $socket_id): array[binary], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onSendString' => null,  //callback(int $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onSendFailed' => null,  //callback(int $socket_id, string $message): void
-        'onClose'      => null   //callback(int $socket_id): void
+        'onConnect'    => null,  //callback(string $socket_id): string, response message back to client
+        'onHandshake'  => null,  //callback(string $socket_id, string $ws_proto): bool, true to allow, otherwise reject.
+        'onHeartbeat'  => null,  //callback(string $socket_id): string, heartbeat message send to $socket_id
+        'onMessage'    => null,  //callback(string $socket_id, string $message, bool $is_binary): void
+        'onSendBinary' => null,  //callback(string $socket_id): array[binary], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendString' => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendFailed' => null,  //callback(string $socket_id, string $message): void
+        'onClose'      => null   //callback(string $socket_id): void
     ];
 
     public array $options     = [];
@@ -55,6 +55,10 @@ class SocketMgr extends Factory
     public array $connections = [];
     public array $master_sock = [];
     public array $data_frames = [];
+
+    public array $external_stream   = [];
+    public array $external_context  = [];
+    public array $external_callback = [];
 
     public array $connect_opt  = [3, 10]; //retry_times: -1 means always try to connect, 0 means don't reconnect after disconnected
     public array $read_timeout = [0, 500000];
@@ -227,6 +231,55 @@ class SocketMgr extends Factory
     }
 
     /**
+     * @param array         $proc_data
+     * @param callable      $output_callback
+     * @param callable|null $error_callback
+     *
+     * @return $this
+     */
+    public function addExternalProc(array $proc_data, callable $output_callback, callable|null $error_callback = null): static
+    {
+        $context = ['cleaned' => false];
+
+        foreach ($proc_data as $key => $value) {
+            $context[$key] = $value;
+        }
+
+        $stdout_id = 'ext_' . get_resource_id($context['stdout']);
+        $stderr_id = 'ext_' . get_resource_id($context['stderr']);
+
+        $this->external_stream[$stdout_id]   = $context['stdout'];
+        $this->external_context[$stdout_id]  = $context;
+        $this->external_callback[$stdout_id] = $output_callback;
+
+        $this->external_stream[$stderr_id]   = $context['stderr'];
+        $this->external_context[$stderr_id]  = $context;
+        $this->external_callback[$stderr_id] = $error_callback;
+
+        unset($proc_data, $output_callback, $error_callback, $context, $stdout_id, $stderr_id);
+        return $this;
+    }
+
+    /**
+     * @param string $socket_id
+     *
+     * @return $this
+     */
+    public function cleanExternalProc(string $socket_id): static
+    {
+        if (isset($this->external_context[$socket_id]) && !$this->external_context[$socket_id]['cleaned']) {
+            $this->external_context[$socket_id]['cleaned'] = true;
+
+            fclose($this->external_context[$socket_id]['stdin']);
+            fclose($this->external_context[$socket_id]['stdout']);
+            fclose($this->external_context[$socket_id]['stderr']);
+            proc_close($this->external_context[$socket_id]['process']);
+        }
+
+        unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id);
+    }
+
+    /**
      * @param string   $event
      * @param callable $callback
      *
@@ -363,10 +416,10 @@ class SocketMgr extends Factory
         $this->createServer($address);
 
         if ('udp' !== $this->sock_type) {
-            $this->fiberMgr->async([$this, 'serverOnChange'], [$is_websocket]);
+            $this->fiberMgr->async([$this, 'serverOnTCPChange'], [$is_websocket]);
         } else {
             $this->connections = $this->master_sock;
-            $this->fiberMgr->async([$this, 'serverOnMessage'], [$is_websocket]);
+            $this->fiberMgr->async([$this, 'serverOnUDPMessage']);
         }
 
         $this->fiberMgr->async([$this, 'serverOnHeartbeat'], [$is_websocket]);
@@ -403,7 +456,7 @@ class SocketMgr extends Factory
             throw new \Exception('Server failed to start! ' . $errstr . '(' . $errno . ')', E_USER_ERROR);
         }
 
-        $this->master_id   = get_resource_id($master_socket);
+        $this->master_id   = 'sock_' . get_resource_id($master_socket);
         $this->master_sock = [$this->master_id => $master_socket];
 
         $this->debug('Server started! Listen to ' . $address . '. ID: #' . $this->master_id);
@@ -418,13 +471,13 @@ class SocketMgr extends Factory
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function serverOnChange(bool $is_websocket = false): void
+    public function serverOnTCPChange(bool $is_websocket = false): void
     {
         $write = $except = [];
 
         while (true) {
             $count = 0;
-            $read  = $this->master_sock + $this->connections;
+            $read  = $this->master_sock + $this->connections + $this->external_stream;
 
             if (0 === stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
@@ -455,7 +508,7 @@ class SocketMgr extends Factory
 
                     stream_set_blocking($client, $this->block_mode);
 
-                    $client_id = get_resource_id($client);
+                    $client_id = 'sock_' . get_resource_id($client);
 
                     if ($is_websocket) {
                         $this->handshakes[$client_id] = false;
@@ -485,26 +538,37 @@ class SocketMgr extends Factory
                     continue;
                 }
 
-                //Process message only if connection exists
-                if (isset($this->connections[$socket_id])) {
-                    $this->serverProcessMessage($socket_id, $is_websocket);
+                if (str_starts_with($socket_id, 'sock_')) {
+                    //Process message only if connection exists
+                    if (isset($this->connections[$socket_id])) {
+                        $this->serverProcessMessage($socket_id, $is_websocket);
+                    }
+                } else {
+                    if (is_callable($this->external_callback[$socket_id])) {
+                        try {
+                            call_user_func($this->external_callback[$socket_id], $socket_id, $this->external_context[$socket_id]);
+                        } catch (\Throwable $throwable) {
+                            $this->debug('External callback ERROR: #' . $socket_id . ' -> ' . $throwable->getMessage());
+                            unset($throwable);
+                        }
+                    }
                 }
             }
         }
     }
 
     /**
-     * @param bool $is_websocket
-     *
      * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
      */
-    public function serverOnMessage(bool $is_websocket = false): void
+    public function serverOnUDPMessage(): void
     {
         $write = $except = [];
 
         while (true) {
             $count = 0;
-            $read  = $this->connections;
+            $read  = $this->connections + $this->external_stream;
 
             if (empty($read) || 0 === stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
@@ -517,7 +581,18 @@ class SocketMgr extends Factory
                     \Fiber::suspend();
                 }
 
-                $this->serverProcessMessage($socket_id, $is_websocket);
+                if (str_starts_with($socket_id, 'sock_')) {
+                    $this->serverProcessMessage($socket_id);
+                } else {
+                    if (is_callable($this->external_callback[$socket_id])) {
+                        try {
+                            call_user_func($this->external_callback[$socket_id], $socket_id, $this->external_context[$socket_id]);
+                        } catch (\Throwable $throwable) {
+                            $this->debug('External callback ERROR: #' . $socket_id . ' -> ' . $throwable->getMessage());
+                            unset($throwable);
+                        }
+                    }
+                }
             }
         }
     }
@@ -667,13 +742,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int  $socket_id
-     * @param bool $is_websocket
+     * @param string $socket_id
+     * @param bool   $is_websocket
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function serverProcessMessage(int $socket_id, bool $is_websocket = false): void
+    public function serverProcessMessage(string $socket_id, bool $is_websocket = false): void
     {
         try {
             $is_binary = false;
@@ -759,7 +834,7 @@ class SocketMgr extends Factory
         stream_set_blocking($master_socket, $this->block_mode);
 
         $now_time          = time();
-        $this->master_id   = get_resource_id($master_socket);
+        $this->master_id   = 'sock_' . get_resource_id($master_socket);
         $this->master_sock = [$this->master_id => $master_socket];
         $this->connections = [$this->master_id => $master_socket];
         $this->activities  = [$this->master_id => [$now_time, $now_time]];
@@ -992,15 +1067,15 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int   $socket_id
-     * @param bool  $is_websocket
-     * @param bool &$is_binary
+     * @param string $socket_id
+     * @param bool   $is_websocket
+     * @param bool & $is_binary
      *
      * @return string
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function readMessage(int $socket_id, bool $is_websocket, bool &$is_binary = false): string
+    public function readMessage(string $socket_id, bool $is_websocket, bool &$is_binary = false): string
     {
         try {
             if ('udp' !== $this->sock_type) {
@@ -1048,12 +1123,12 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int $socket_id
+     * @param string $socket_id
      *
      * @return array ['data' => string, 'opcode' => int, 'is_complete' => bool]
      * @throws \Exception
      */
-    public function readWebSocketFrame(int $socket_id): array
+    public function readWebSocketFrame(string $socket_id): array
     {
         // Read frame header
         $header = fread($this->connections[$socket_id], 2);
@@ -1208,13 +1283,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int    $socket_id
+     * @param string $socket_id
      * @param string $message
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function sendMessage(int $socket_id, string $message): void
+    public function sendMessage(string $socket_id, string $message): void
     {
         try {
             if ('udp' !== $this->sock_type) {
@@ -1236,12 +1311,26 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int $socket_id
+     * @param string $socket_id
+     * @param string $message
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function closeSocket(int $socket_id): void
+    public function sendWsMessage(string $socket_id, string $message): void
+    {
+        $this->sendMessage($socket_id, $this->wsEncode($message));
+
+        unset($socket_id, $message);
+    }
+
+    /**
+     * @param string $socket_id
+     *
+     * @return void
+     * @throws \ReflectionException
+     */
+    public function closeSocket(string $socket_id): void
     {
         if (!isset($this->connections[$socket_id])) {
             return;
@@ -1272,13 +1361,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int    $socket_id
+     * @param string $socket_id
      * @param string $message
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function wsSendHandshake(int $socket_id, string $message): void
+    public function wsSendHandshake(string $socket_id, string $message): void
     {
         try {
             $handshake = true;
@@ -1474,24 +1563,24 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param int $socket_id
+     * @param string $socket_id
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function wsPing(int $socket_id): void
+    public function wsPing(string $socket_id): void
     {
         $this->sendMessage($socket_id, chr(0x89) . chr(0));
         unset($socket_id);
     }
 
     /**
-     * @param int $socket_id
+     * @param string $socket_id
      *
      * @return void
      * @throws \ReflectionException
      */
-    public function wsPong(int $socket_id): void
+    public function wsPong(string $socket_id): void
     {
         $this->sendMessage($socket_id, chr(0x8A) . chr(0));
         unset($socket_id);
