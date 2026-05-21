@@ -220,6 +220,21 @@ class ProcMgr extends Factory
     /**
      * @param int $idx
      *
+     * @return array
+     */
+    public function getProc(int $idx = 0): array
+    {
+        return [
+            'process' => $this->proc_list[$idx],
+            'stdin'   => $this->proc_stdin[$idx],
+            'stdout'  => $this->proc_stdout[$idx],
+            'stderr'  => $this->proc_stderr[$idx]
+        ];
+    }
+
+    /**
+     * @param int $idx
+     *
      * @return int
      */
     public function getStatus(int $idx = 0): int
@@ -266,6 +281,53 @@ class ProcMgr extends Factory
         }
 
         unset($idx);
+    }
+
+    /**
+     * @param int    $idx
+     * @param string $content
+     *
+     * @return void
+     * @throws \Exception
+     */
+    public function writeProc(int $idx, string $content): void
+    {
+        $written = 0;
+        $content .= $this->argv_end_char;
+        $length  = strlen($content);
+
+        while ($written < $length) {
+            $result = fwrite($this->proc_stdin[$idx], substr($content, $written));
+
+            if (false === $result) {
+                throw new \Exception('Failed to write to pipe');
+            }
+
+            if (0 === $result) {
+                usleep($this->read_microseconds);
+                continue;
+            }
+
+            $written += $result;
+        }
+
+        fflush($this->proc_stdin[$idx]);
+        unset($idx, $content, $written, $length, $result);
+    }
+
+    /**
+     * @param int    $idx
+     * @param string $pipe_name
+     *
+     * @return string
+     */
+    public function readProc(int $idx, string $pipe_name = 'stdout'): string
+    {
+        $proc_pipe = 'proc_' . $pipe_name;
+        $content   = fgets($this->$proc_pipe[$idx]);
+
+        unset($idx, $pipe_name, $proc_pipe);
+        return $content;
     }
 
     /**
@@ -412,7 +474,7 @@ class ProcMgr extends Factory
                 }
             } catch (\Throwable $throwable) {
                 $this->error->exceptionHandler($throwable, false, false);
-                echo $throwable->getMessage() . "\n";
+                echo $throwable->getMessage() . $this->argv_end_char;
 
                 flush();
                 fflush(STDOUT);
@@ -430,7 +492,7 @@ class ProcMgr extends Factory
                 unset($throwable);
             }
 
-            echo json_encode($result, JSON_FORMAT) . "\n";
+            echo json_encode($result, JSON_FORMAT) . $this->argv_end_char;
 
             flush();
             fflush(STDOUT);
