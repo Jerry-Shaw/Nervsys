@@ -1,6 +1,8 @@
 ## libOpenAI Description
 
-`libOpenAI` is an extension for interacting with OpenAI-compatible APIs (e.g., local LM Studio, OpenAI, DeepSeek). It supports both normal (non-stream) and streaming chat completions, model listing, and embeddings. It internally uses two `libHttp` instances – one for normal requests and one for streaming.
+`libOpenAI` is an extension for interacting with OpenAI-compatible APIs (e.g., local LM Studio, OpenAI, DeepSeek). It
+supports both normal (non-stream) and streaming requests for three endpoints: `/chat/completions`, `/v1/responses`, and
+`/v1/messages`. It also provides model listing and embedding creation.
 
 **Language:** English | [中文文档](./libOpenAI-zh_cn.md)
 
@@ -16,7 +18,8 @@
 - **`$api_key`** : API key (Bearer token).
 - **`$org_id`** : Organization ID (optional, used for OpenAI `OpenAI-Organization` header).
 
-Creates two `libHttp` instances (`httpNormal` and `httpStream`) with different User-Agent strings and a default timeout of 300 seconds.
+Creates two `libHttp` instances (`httpNormal` and `httpStream`) with different User-Agent strings and a default timeout
+of 300 seconds.
 
 ## Configuration Methods (Chainable)
 
@@ -44,36 +47,46 @@ Merges additional model parameters into the default parameters.
 
 Sets timeout (seconds) for both HTTP instances.
 
-## Streaming
+## Core Methods (Unified Streaming)
 
-### `onStream(string $key, callable $callback): static`
+All three main methods accept an optional `$callback` parameter. When a callback is provided, streaming is automatically
+enabled; otherwise, a non‑streaming request is performed and the parsed JSON result is returned (with `'success'` key).
 
-Registers a callback for streaming responses. The callback signature is:
+###
+`completions(array $messages, string $model = '', array $options = [], callable $callback = null, string $callback_key = ''): array`
 
-`function($key, $data, $finished)`
-
-- **`$key`** : The key you provided.
-- **`$data`** : An array containing the parsed JSON chunk (with `'success' => true`) or an error array (`'success' => false`, `'error'`, `'data'`). When `$finished` is `true`, `$data` is an empty array.
-- **`$finished`** : `true` when the stream ends, `false` for data chunks.
-
-## Core Methods
-
-### `chat(array $messages, string $model = '', array $options = [], bool $stream = false): array`
-
-Unified chat completion method.
+Performs a chat completion request (POST `/chat/completions`).
 
 - **`$messages`** : Array of messages, e.g. `[['role' => 'user', 'content' => 'Hi']]`.
 - **`$model`** : Override default model.
-- **`$options`** : Additional parameters (merged with `$model_params`).
-- **`$stream`** : If `true`, perform streaming. Return value is an empty array (output handled by callbacks). If `false`, returns parsed JSON array with `'success'` key.
+- **`$options`** : Additional parameters (merged with default model parameters).
+- **`$callback`** : Optional callback for streaming. Signature: `function($key, $data, $finished): void`
+    - `$key` : The callback key (auto‑generated or provided).
+    - `$data` : For streaming chunks, an array containing the parsed JSON chunk with `'success' => true`; for errors, an
+      array with `'success' => false`, `'error'`, and `'data'`.
+    - `$finished` : `true` when the stream ends (data is empty array), `false` for data chunks.
+- **`$callback_key`** : Optional unique key for the callback (auto‑generated if empty).
 
-### `ask(string $prompt, string $system = '', string $model = '', array $options = [], bool $stream = false): array`
+**Return**:
 
-Shortcut for single-turn conversation.
+- If `$callback` is provided: returns empty array (output handled by callback).
+- Otherwise: returns parsed JSON array with `'success'` key.
 
-- **`$prompt`** : User message.
-- **`$system`** : Optional system message.
-- Other parameters same as `chat()`.
+###
+`responses(array $input, string $model = '', array $options = [], callable $callback = null, string $callback_key = ''): array`
+
+Performs a request to the Responses API (POST `/v1/responses`). The `$input` parameter can be a string or an array of
+messages (depending on the API implementation).
+
+- Parameters have the same meaning as in `completions`.
+
+###
+`messages(array $message, string $model = '', array $options = [], callable $callback = null, string $callback_key = ''): array`
+
+Sends a single message to the Assistants API (POST `/v1/messages`). The `$message` parameter should be an associative
+array with `'role'` and `'content'`.
+
+- Parameters have the same meaning as in `completions`.
 
 ### `listModels(): array`
 
@@ -97,24 +110,44 @@ use Nervsys\Ext\libOpenAI;
 
 $ai = new libOpenAI('http://127.0.0.1:1234/v1', 'your-api-key');
 
-// Non‑stream chat
-$result = $ai->ask('Hello, how are you?');
+// Non‑stream chat completion
+$result = $ai->completions([['role' => 'user', 'content' => 'Hello']]);
 if ($result['success']) {
     echo $result['choices'][0]['message']['content'];
 } else {
     echo 'Error: ' . $result['error'];
 }
 
-// Stream chat
-$ai->addStreamCallback('output', function($key, $data, $finished) {
-    if ($finished) return;
-    if ($data['success']) {
-        $chunk = $data['choices'][0]['delta']['content'] ?? '';
-        echo $chunk;
-        flush();
+// Stream chat completion
+$ai->completions(
+    [['role' => 'user', 'content' => 'Tell a short story']],
+    '',
+    [],
+    function($key, $data, $finished) {
+        if ($finished) return;
+        if ($data['success']) {
+            $chunk = $data['choices'][0]['delta']['content'] ?? '';
+            echo $chunk;
+            flush();
+        }
     }
-});
-$ai->ask('Tell me a short story', '', '', [], true);
+);
+
+// Responses API (non‑stream)
+$resp = $ai->responses(['input' => 'Hello world']);
+if ($resp['success']) {
+    print_r($resp);
+}
+
+// Messages API (stream)
+$ai->messages(
+    ['role' => 'user', 'content' => 'Hi'],
+    '',
+    [],
+    function($key, $data, $finished) {
+        // handle streaming
+    }
+);
 
 // List models
 $models = $ai->listModels();

@@ -51,7 +51,7 @@ class libOpenAI extends Factory
      * @param string $api_key    API key
      * @param string $end_marker API stream end marker, default: [DONE]
      */
-    public function __construct(string $api_url = '', string $api_key = '', string $end_marker = '[DONE]')
+    public function __construct(string $api_url = '', string $api_key = '', string $end_marker = '')
     {
         if ('' !== $api_url) {
             $this->api_url = rtrim($api_url, '/');
@@ -171,101 +171,6 @@ class libOpenAI extends Factory
     }
 
     /**
-     * Register a stream callback
-     *
-     * @param string   $key
-     * @param callable $callback function($key, $data, $finished)
-     *                           $data: array with 'success' key (and raw data or error info)
-     *                           $finished: true on stream end (with empty data in array)
-     *
-     * @return $this
-     */
-    public function addStreamCallback(string $key, callable $callback): static
-    {
-        $this->stream_callbacks[$key] = $callback;
-
-        unset($key, $callback);
-        return $this;
-    }
-
-    /**
-     * Remove a stream callback by callback key
-     *
-     * @param string $key
-     *
-     * @return $this
-     */
-    public function removeStreamCallback(string $key): static
-    {
-        unset($this->stream_callbacks[$key]);
-
-        unset($key);
-        return $this;
-    }
-
-    /**
-     * Chat completion (unified entry)
-     *
-     * @param array  $messages
-     * @param string $model
-     * @param array  $options
-     * @param bool   $stream
-     *
-     * @return array  Parsed JSON array with 'success' key (empty on error)
-     * @throws \ReflectionException
-     */
-    public function chat(array $messages, string $model = '', array $options = [], bool $stream = false): array
-    {
-        $payload = array_merge(
-            $this->model_params,
-            $options,
-            [
-                'model'    => '' === $model ? $this->api_model : $model,
-                'messages' => $messages,
-                'stream'   => $stream,
-            ]
-        );
-
-        if ($stream) {
-            $this->sendStream('/chat/completions', $payload);
-            $result = [];
-        } else {
-            $result = $this->sendRequest('/chat/completions', $payload);
-        }
-
-        unset($messages, $model, $options, $stream, $payload);
-        return $result;
-    }
-
-    /**
-     * Quick ask (shortcut)
-     *
-     * @param string $prompt
-     * @param string $system
-     * @param string $model
-     * @param array  $options
-     * @param bool   $stream
-     *
-     * @return array  Parsed JSON array with 'success' key
-     * @throws \ReflectionException
-     */
-    public function ask(string $prompt, string $system = '', string $model = '', array $options = [], bool $stream = false): array
-    {
-        $messages = [];
-
-        if ('' !== $system) {
-            $messages[] = ['role' => 'system', 'content' => $system];
-        }
-
-        $messages[] = ['role' => 'user', 'content' => $prompt];
-
-        $result = $this->chat($messages, $model, $options, $stream);
-
-        unset($prompt, $system, $model, $options, $stream, $messages);
-        return $result;
-    }
-
-    /**
      * List available models (GET request)
      *
      * @return array  Parsed JSON array with 'success' key
@@ -309,6 +214,145 @@ class libOpenAI extends Factory
         );
 
         unset($input, $model);
+        return $result;
+    }
+
+    /**
+     * Chat completions (POST /chat/completions)
+     *
+     * @param array         $messages     List of messages (role/content pairs)
+     * @param string        $model        Model name (optional, uses default if empty)
+     * @param array         $options      Additional parameters (temperature, max_tokens, tools, etc.)
+     * @param callable|null $callback     Stream callback (if provided, enables streaming)
+     * @param string        $callback_key Unique key for callback (auto‑generated if empty)
+     *
+     * @return array Parsed JSON array with 'success' key (empty when streaming)
+     * @throws \ReflectionException
+     */
+    public function completions(
+        array         $messages,
+        string        $model = '',
+        array         $options = [],
+        callable|null $callback = null,
+        string        $callback_key = ''
+    ): array
+    {
+        $payload = array_merge(
+            $this->model_params,
+            $options,
+            [
+                'model'    => '' === $model ? $this->api_model : $model,
+                'messages' => $messages,
+                'stream'   => null !== $callback,
+            ]
+        );
+
+        $result = [];
+
+        if (null !== $callback) {
+            $key = '' !== $callback_key ? $callback_key : 'completions_stream_' . uniqid('', true);
+
+            $this->stream_callbacks[$key] = $callback;
+            $this->sendStream('/chat/completions', $payload);
+
+            unset($this->stream_callbacks[$key], $key);
+        } else {
+            $result = $this->sendRequest('/chat/completions', $payload);
+        }
+
+        unset($messages, $model, $options, $callback, $callback_key, $payload);
+        return $result;
+    }
+
+    /**
+     * Responses API (POST /v1/responses)
+     *
+     * @param array         $input        Input messages or text (structure depends on API)
+     * @param string        $model        Model name (optional, uses default if empty)
+     * @param array         $options      Additional parameters (temperature, max_tokens, tools, etc.)
+     * @param callable|null $callback     Stream callback (if provided, enables streaming)
+     * @param string        $callback_key Unique key for callback (auto‑generated if empty)
+     *
+     * @return array Parsed JSON array with 'success' key (empty when streaming)
+     * @throws \ReflectionException
+     */
+    public function responses(
+        array         $input,
+        string        $model = '',
+        array         $options = [],
+        callable|null $callback = null,
+        string        $callback_key = ''
+    ): array
+    {
+        $payload = array_merge(
+            $options,
+            [
+                'model'  => '' === $model ? $this->api_model : $model,
+                'input'  => $input,
+                'stream' => null !== $callback,
+            ]
+        );
+
+        $result = [];
+
+        if (null !== $callback) {
+            $key = '' !== $callback_key ? $callback_key : 'responses_stream_' . uniqid('', true);
+
+            $this->stream_callbacks[$key] = $callback;
+            $this->sendStream('/v1/responses', $payload);
+
+            unset($this->stream_callbacks[$key], $key);
+        } else {
+            $result = $this->sendRequest('/v1/responses', $payload);
+        }
+
+        unset($input, $model, $options, $callback, $callback_key, $payload);
+        return $result;
+    }
+
+    /**
+     * Messages API (POST /v1/messages) – Assistants
+     *
+     * @param array         $message      Single message (role/content)
+     * @param string        $model        Model name (optional, uses default if empty)
+     * @param array         $options      Additional parameters (thread_id, temperature, etc.)
+     * @param callable|null $callback     Stream callback (if provided, enables streaming)
+     * @param string        $callback_key Unique key for callback (auto‑generated if empty)
+     *
+     * @return array Parsed JSON array with 'success' key (empty when streaming)
+     * @throws \ReflectionException
+     */
+    public function messages(
+        array         $message,
+        string        $model = '',
+        array         $options = [],
+        callable|null $callback = null,
+        string        $callback_key = ''
+    ): array
+    {
+        $payload = array_merge(
+            $options,
+            [
+                'model'   => '' === $model ? $this->api_model : $model,
+                'message' => $message,
+                'stream'  => null !== $callback,
+            ]
+        );
+
+        $result = [];
+
+        if (null !== $callback) {
+            $key = '' !== $callback_key ? $callback_key : 'messages_stream_' . uniqid('', true);
+
+            $this->stream_callbacks[$key] = $callback;
+            $this->sendStream('/v1/messages', $payload);
+
+            unset($this->stream_callbacks[$key], $key);
+        } else {
+            $result = $this->sendRequest('/v1/messages', $payload);
+        }
+
+        unset($message, $model, $options, $callback, $callback_key, $payload);
         return $result;
     }
 
