@@ -24,6 +24,7 @@ use Nervsys\Core\Factory;
 
 class libOpenAI extends Factory
 {
+    public \Shmop  $shmop;
     public libHttp $httpNormal;
     public libHttp $httpStream;
 
@@ -74,6 +75,19 @@ class libOpenAI extends Factory
         $this->configure($this->httpStream);
 
         unset($api_url, $api_key, $end_marker);
+    }
+
+    /**
+     * @param \Shmop $shmop
+     *
+     * @return $this
+     */
+    public function setShmop(\Shmop $shmop): static
+    {
+        $this->shmop = $shmop;
+
+        unset($shmop);
+        return $this;
     }
 
     /**
@@ -418,6 +432,9 @@ class libOpenAI extends Factory
      */
     private function sendStream(string $endpoint, array $payload): void
     {
+        $this->sse_buffer = '';
+        shmop_write($this->shmop, "\x00", 0);
+
         $this->httpStream->setHttpMethod('POST');
         $this->httpStream->addData($payload);
 
@@ -480,6 +497,13 @@ class libOpenAI extends Factory
                     'message'   => 'JSON Decode Failed!',
                     'json_data' => $data_line
                 ], false);
+            }
+
+            if ("\x01" === shmop_read($this->shmop, 0, 1)) {
+                $this->sse_buffer = '';
+                $this->callStreamCallbacks(['status' => 'aborted'], true);
+                unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);
+                return 0;
             }
         }
 
