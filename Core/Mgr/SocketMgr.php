@@ -1183,18 +1183,38 @@ class SocketMgr extends Factory
         $remaining  = $payload_len;
         $chunk_size = 65536; // 64KB per chunk
 
+        $write  = $except = [];
+        $client = [$this->connections[$socket_id]];
+
         while (0 < $remaining) {
-            $read_size = $remaining < $chunk_size ? $remaining : $chunk_size;
+            $read_size = min($remaining, $chunk_size);
             $chunk     = fread($this->connections[$socket_id], $read_size);
 
-            if (false === $chunk || 0 === strlen($chunk)) {
+            if (false === $chunk) {
                 throw new \Exception('Failed to read payload data', E_NOTICE);
             }
 
-            $payload   .= $chunk;
-            $remaining -= strlen($chunk);
+            $len = strlen($chunk);
 
-            unset($read_size, $chunk);
+            if (0 < $len) {
+                $payload   .= $chunk;
+                $remaining -= $len;
+
+                unset($read_size, $chunk, $len);
+                continue;
+            }
+
+            // No data available yet, wait for socket to become readable
+            $read   = $client;
+            $result = stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
+
+            if (false === $result) {
+                throw new \Exception('Stream select error while waiting for payload data', E_NOTICE);
+            }
+
+            if (0 === $result) {
+                throw new \Exception('Timeout waiting for payload data', E_NOTICE);
+            }
         }
 
         // Decode mask if needed
