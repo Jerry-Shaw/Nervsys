@@ -239,7 +239,7 @@ class SocketMgr extends Factory
      */
     public function addExternalProc(array $proc_data, callable $output_callback, callable|null $error_callback = null): static
     {
-        $context = ['cleaned' => false];
+        $context = [];
 
         foreach ($proc_data as $key => $value) {
             $context[$key] = $value;
@@ -265,14 +265,18 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
-    public function cleanExternalProc(string $socket_id): static
+    public function closeExternalProc(string $socket_id): static
     {
-        if (isset($this->external_context[$socket_id]) && !$this->external_context[$socket_id]['cleaned']) {
-            $this->external_context[$socket_id]['cleaned'] = true;
-
+        if (isset($this->external_context[$socket_id]['stdin']) && is_resource($this->external_context[$socket_id]['stdin'])) {
             fclose($this->external_context[$socket_id]['stdin']);
+        }
+        if (isset($this->external_context[$socket_id]['stdout']) && is_resource($this->external_context[$socket_id]['stdout'])) {
             fclose($this->external_context[$socket_id]['stdout']);
+        }
+        if (isset($this->external_context[$socket_id]['stderr']) && is_resource($this->external_context[$socket_id]['stderr'])) {
             fclose($this->external_context[$socket_id]['stderr']);
+        }
+        if (isset($this->external_context[$socket_id]['process']) && is_resource($this->external_context[$socket_id]['process'])) {
             proc_close($this->external_context[$socket_id]['process']);
         }
 
@@ -479,8 +483,9 @@ class SocketMgr extends Factory
         while (true) {
             $count = 0;
             $read  = $this->master_sock + $this->connections + $this->external_stream;
+            $read  = $this->getValidResources($read);
 
-            if (0 === stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+            if (empty($read) || 0 === (int)stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
@@ -545,14 +550,7 @@ class SocketMgr extends Factory
                         $this->serverProcessMessage($socket_id, $is_websocket);
                     }
                 } else {
-                    if (is_callable($this->external_callback[$socket_id])) {
-                        try {
-                            call_user_func($this->external_callback[$socket_id], $socket_id, $this->external_context[$socket_id]);
-                        } catch (\Throwable $throwable) {
-                            $this->debug('External callback ERROR: #' . $socket_id . ' -> ' . $throwable->getMessage());
-                            unset($throwable);
-                        }
-                    }
+                    $this->runExternalCallback($socket_id);
                 }
             }
         }
@@ -560,7 +558,6 @@ class SocketMgr extends Factory
 
     /**
      * @return void
-     * @throws \ReflectionException
      * @throws \Throwable
      */
     public function serverOnUDPMessage(): void
@@ -570,8 +567,9 @@ class SocketMgr extends Factory
         while (true) {
             $count = 0;
             $read  = $this->connections + $this->external_stream;
+            $read  = $this->getValidResources($read);
 
-            if (empty($read) || 0 === stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+            if (empty($read) || 0 === (int)stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
@@ -585,14 +583,7 @@ class SocketMgr extends Factory
                 if (str_starts_with($socket_id, 'sock_')) {
                     $this->serverProcessMessage($socket_id);
                 } else {
-                    if (is_callable($this->external_callback[$socket_id])) {
-                        try {
-                            call_user_func($this->external_callback[$socket_id], $socket_id, $this->external_context[$socket_id]);
-                        } catch (\Throwable $throwable) {
-                            $this->debug('External callback ERROR: #' . $socket_id . ' -> ' . $throwable->getMessage());
-                            unset($throwable);
-                        }
-                    }
+                    $this->runExternalCallback($socket_id);
                 }
             }
         }
@@ -711,7 +702,7 @@ class SocketMgr extends Factory
                     $this->debug('serverOnSend callback ERROR: ' . $throwable->getMessage());
                     $this->error->exceptionHandler($throwable, false, false);
                     unset($throwable);
-                    break;
+                    continue;
                 }
 
                 foreach ($msg_list as $raw_msg) {
@@ -873,7 +864,7 @@ class SocketMgr extends Factory
         while (true) {
             $servers = $this->master_sock;
 
-            if (0 === stream_select($servers, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+            if (0 === (int)stream_select($servers, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
@@ -1082,7 +1073,7 @@ class SocketMgr extends Factory
             if ('udp' !== $this->sock_type) {
                 // WebSocket frame mode
                 if ($is_websocket && !isset($this->handshakes[$socket_id])) {
-                    $frame = $this->readWebSocketFrame($socket_id);
+                    $frame = $this->wsReadFrame($socket_id);
 
                     // If frame is not complete (fragmentation), wait silently
                     if (!$frame['is_complete']) {
@@ -1121,186 +1112,6 @@ class SocketMgr extends Factory
 
         unset($socket_id, $is_websocket);
         return $message;
-    }
-
-    /**
-     * @param string $socket_id
-     *
-     * @return array ['data' => string, 'opcode' => int, 'is_complete' => bool]
-     * @throws \Exception
-     */
-    public function readWebSocketFrame(string $socket_id): array
-    {
-        // Read frame header
-        $header = fread($this->connections[$socket_id], 2);
-
-        if (2 !== strlen($header)) {
-            throw new \Exception('Failed to read frame header', E_NOTICE);
-        }
-
-        $fin         = (ord($header[0]) >> 7) & 0x01;
-        $opcode      = ord($header[0]) & 0x0F;
-        $masked      = (ord($header[1]) >> 7) & 0x01;
-        $payload_len = ord($header[1]) & 0x7F;
-
-        unset($header);
-
-        if (126 === $payload_len) {
-            $extended = fread($this->connections[$socket_id], 2);
-
-            if (2 !== strlen($extended)) {
-                throw new \Exception('Failed to read extended length', E_NOTICE);
-            }
-
-            $payload_len = unpack('n', $extended)[1];
-
-            unset($extended);
-        } elseif (127 === $payload_len) {
-            $extended = fread($this->connections[$socket_id], 8);
-
-            if (8 !== strlen($extended)) {
-                throw new \Exception('Failed to read extended length', E_NOTICE);
-            }
-
-            // Use unpack('J') for 64-bit unsigned big-endian
-            $payload_len = unpack('J', $extended)[1];
-
-            unset($extended);
-        }
-
-        // Read mask key if present
-        if (1 === $masked) {
-            $mask_key = fread($this->connections[$socket_id], 4);
-
-            if (4 !== strlen($mask_key)) {
-                throw new \Exception('Failed to read mask key', E_NOTICE);
-            }
-        } else {
-            $mask_key = '';
-        }
-
-        // Read payload data in chunks
-        $payload    = '';
-        $remaining  = $payload_len;
-        $chunk_size = 65536; // 64KB per chunk
-
-        $write  = $except = [];
-        $client = [$this->connections[$socket_id]];
-
-        while (0 < $remaining) {
-            $read_size = min($remaining, $chunk_size);
-            $chunk     = fread($this->connections[$socket_id], $read_size);
-
-            if (false === $chunk) {
-                throw new \Exception('Failed to read payload data', E_NOTICE);
-            }
-
-            $len = strlen($chunk);
-
-            if (0 < $len) {
-                $payload   .= $chunk;
-                $remaining -= $len;
-
-                unset($read_size, $chunk, $len);
-                continue;
-            }
-
-            // No data available yet, wait for socket to become readable
-            $read   = $client;
-            $result = stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
-
-            if (false === $result) {
-                throw new \Exception('Stream select error while waiting for payload data', E_NOTICE);
-            }
-
-            if (0 === $result) {
-                throw new \Exception('Timeout waiting for payload data', E_NOTICE);
-            }
-        }
-
-        // Decode mask if needed
-        if (1 === $masked && 0 < $payload_len) {
-            for ($i = 0; $i < $payload_len; ++$i) {
-                $payload[$i] = $payload[$i] ^ $mask_key[$i % 4];
-            }
-        }
-
-        $this->activities[$socket_id][1] = time();
-
-        // Handle control frames (Ping/Pong/Close)
-        switch ($opcode) {
-            case 0x8:  // Close frame
-                $this->closeSocket($socket_id);
-                throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
-
-            case 0x9:  // Ping frame
-                $this->wsPong($socket_id);
-                return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
-
-            case 0xA:  // Pong frame
-                return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
-
-            case 0x0:  // Continuation frame
-            case 0x1:  // Text frame
-            case 0x2:  // Binary frame
-                // Handle fragmentation
-                if (0 === $fin) {
-                    // Not final frame, store in buffer
-                    if (!isset($this->data_frames[$socket_id])) {
-                        $this->data_frames[$socket_id] = [
-                            'opcode' => $opcode,
-                            'data'   => ''
-                        ];
-                    } elseif (0x0 === $opcode) {
-                        // Continuation frame, keep original opcode
-                    } else {
-                        // New frame before previous finished, reset buffer
-                        $this->data_frames[$socket_id] = [
-                            'opcode' => $opcode,
-                            'data'   => ''
-                        ];
-                    }
-
-                    $this->data_frames[$socket_id]['data'] .= $payload;
-                    $this->debug('Received fragment frame (fin=0), opcode=' . $opcode . ', length=' . $payload_len);
-
-                    return ['data' => '', 'opcode' => $opcode, 'is_complete' => false];
-                }
-
-                // Final frame (fin = 1)
-                if (isset($this->data_frames[$socket_id]) && !empty($this->data_frames[$socket_id]['data'])) {
-                    // Complete fragmented message
-                    $complete_data   = $this->data_frames[$socket_id]['data'] . $payload;
-                    $original_opcode = $this->data_frames[$socket_id]['opcode'];
-
-                    if (0x0 === $original_opcode) {
-                        $original_opcode = 0x1;
-                    }
-
-                    unset($this->data_frames[$socket_id]);
-
-                    $this->debug('All fragments received, reassembled ' . strlen($complete_data) . ' bytes');
-
-                    return ['data' => $complete_data, 'opcode' => $original_opcode, 'is_complete' => true];
-                }
-
-                if (0x0 === $opcode) {
-                    // Continuation frame as final but no previous data (protocol error)
-                    $this->debug('Warning: Continuation frame without previous data');
-                    unset($this->data_frames[$socket_id]);
-
-                    return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
-                }
-
-                // Single frame (no fragmentation)
-                return ['data' => $payload, 'opcode' => $opcode, 'is_complete' => true];
-
-            default:
-                $this->debug('Unsupported opcode: ' . $opcode);
-                return ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
-        }
-
-        unset($socket_id, $masked, $payload_len, $mask_key, $remaining, $chunk_size, $payload, $opcode, $fin);
     }
 
     /**
@@ -1364,7 +1175,7 @@ class SocketMgr extends Factory
             stream_socket_shutdown($this->connections[$socket_id], STREAM_SHUT_RDWR);
         }
 
-        unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id]);
+        unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id], $this->data_frames[$socket_id]);
 
         $this->debug('Connection closed: #' . $socket_id);
 
@@ -1376,6 +1187,53 @@ class SocketMgr extends Factory
                 $this->error->exceptionHandler($throwable, false, false);
                 unset($throwable);
             }
+        }
+
+        unset($socket_id);
+    }
+
+    /**
+     * @param array $resources
+     *
+     * @return array
+     */
+    public function getValidResources(array $resources): array
+    {
+        foreach ($resources as $socket_id => $resource) {
+            if (!is_resource($resource)) {
+                unset($resources[$socket_id]);
+
+                if (str_starts_with($socket_id, 'ext_')) {
+                    unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id);
+                } elseif (str_starts_with($socket_id, 'sock_') && $socket_id !== $this->master_id) {
+                    unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id], $this->data_frames[$socket_id]);
+                }
+            }
+        }
+
+        unset($socket_id, $resource);
+        return $resources;
+    }
+
+    /**
+     * @param string $socket_id
+     *
+     * @return void
+     */
+    public function runExternalCallback(string $socket_id): void
+    {
+        if (is_callable($this->external_callback[$socket_id])) {
+            try {
+                call_user_func($this->external_callback[$socket_id], $socket_id, $this->external_context[$socket_id]);
+            } catch (\Throwable $throwable) {
+                $this->debug('External callback ERROR: #' . $socket_id . ' -> ' . $throwable->getMessage());
+                unset($throwable);
+            }
+        }
+
+        if (isset($this->external_stream[$socket_id]) && feof($this->external_stream[$socket_id])) {
+            $this->closeExternalProc($socket_id);
+            $this->debug('External stream closed, cleaned: #' . $socket_id);
         }
 
         unset($socket_id);
@@ -1496,68 +1354,191 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $buffer
+     * @param string $socket_id
      *
-     * @return array
+     * @return array ['data' => string, 'opcode' => int, 'is_complete' => bool]
+     * @throws \Exception
      */
-    public function wsGetFrameCodes(string $buffer): array
+    public function wsReadFrame(string $socket_id): array
     {
-        $codes = [];
-        $char  = ord($buffer[0]);
+        // Read frame header
+        $header = fread($this->connections[$socket_id], 2);
 
-        $codes['fin']    = $char >> 7;
-        $codes['opcode'] = $char & 0x0F;
-        $codes['masked'] = ord($buffer[1]) >> 7;
+        if (2 !== strlen($header)) {
+            throw new \Exception('Failed to read frame header', E_NOTICE);
+        }
 
-        $payload_length          = (ord($buffer[1]) & 0x7F);
-        $codes['payload_length'] = $payload_length;
+        $fin         = (ord($header[0]) >> 7) & 0x01;
+        $opcode      = ord($header[0]) & 0x0F;
+        $masked      = (ord($header[1]) >> 7) & 0x01;
+        $payload_len = ord($header[1]) & 0x7F;
 
-        switch ($payload_length) {
-            case 126:
-                $codes['data_offset'] = 8;
-                $codes['data_length'] = ((ord($buffer[2]) & 0xFF) << 8) | (ord($buffer[3]) & 0xFF);
-                $codes['data_mask']   = substr($buffer, 4, 4);
+        unset($header);
+
+        if (126 === $payload_len) {
+            $extended = fread($this->connections[$socket_id], 2);
+
+            if (2 !== strlen($extended)) {
+                throw new \Exception('Failed to read extended length', E_NOTICE);
+            }
+
+            $payload_len = unpack('n', $extended)[1];
+
+            unset($extended);
+        } elseif (127 === $payload_len) {
+            $extended = fread($this->connections[$socket_id], 8);
+
+            if (8 !== strlen($extended)) {
+                throw new \Exception('Failed to read extended length', E_NOTICE);
+            }
+
+            // Use unpack('J') for 64-bit unsigned big-endian
+            $payload_len = unpack('J', $extended)[1];
+
+            unset($extended);
+        }
+
+        // Read mask key if present
+        if (1 === $masked) {
+            $mask_key = fread($this->connections[$socket_id], 4);
+
+            if (4 !== strlen($mask_key)) {
+                throw new \Exception('Failed to read mask key', E_NOTICE);
+            }
+        } else {
+            $mask_key = '';
+        }
+
+        // Read payload data in chunks
+        $payload    = '';
+        $remaining  = $payload_len;
+        $chunk_size = 65536; // 64KB per chunk
+
+        $write  = $except = [];
+        $client = [$this->connections[$socket_id]];
+
+        while (0 < $remaining) {
+            $read_size = min($remaining, $chunk_size);
+            $chunk     = fread($this->connections[$socket_id], $read_size);
+
+            if (false === $chunk) {
+                throw new \Exception('Failed to read payload data', E_NOTICE);
+            }
+
+            $len = strlen($chunk);
+
+            if (0 < $len) {
+                $payload   .= $chunk;
+                $remaining -= $len;
+
+                unset($read_size, $chunk, $len);
+                continue;
+            }
+
+            // No data available yet, wait for socket to become readable
+            $read   = $client;
+            $result = stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
+
+            if (false === $result) {
+                throw new \Exception('Stream select error while waiting for payload data', E_NOTICE);
+            }
+
+            if (0 === $result) {
+                throw new \Exception('Timeout waiting for payload data', E_NOTICE);
+            }
+        }
+
+        // Decode mask if needed
+        if (1 === $masked && 0 < $payload_len) {
+            for ($i = 0; $i < $payload_len; ++$i) {
+                $payload[$i] = $payload[$i] ^ $mask_key[$i % 4];
+            }
+        }
+
+        $this->activities[$socket_id][1] = time();
+
+        // Handle control frames (Ping/Pong/Close)
+        switch ($opcode) {
+            case 0x8:  // Close frame
+                $this->closeSocket($socket_id);
+                throw new \Exception('Connection closed by Client!', E_USER_NOTICE);
+
+            case 0x9:  // Ping frame
+                $this->wsPong($socket_id);
+                $result = ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
                 break;
 
-            case 127:
-                $codes['data_offset'] = 14;
-                // Use unpack('J') for 64-bit unsigned big-endian
-                $len_data             = substr($buffer, 2, 8);
-                $codes['data_length'] = unpack('J', $len_data)[1] ?? 0;
-                $codes['data_mask']   = substr($buffer, 10, 4);
+            case 0xA:  // Pong frame
+                $result = ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
+                break;
+
+            case 0x0:  // Continuation frame
+            case 0x1:  // Text frame
+            case 0x2:  // Binary frame
+                // Handle fragmentation
+                if (0 === $fin) {
+                    // Not final frame, store in buffer
+                    if (!isset($this->data_frames[$socket_id])) {
+                        $this->data_frames[$socket_id] = [
+                            'opcode' => $opcode,
+                            'data'   => ''
+                        ];
+                    } elseif (0x0 === $opcode) {
+                        // Continuation frame, keep original opcode
+                    } else {
+                        // New frame before previous finished, reset buffer
+                        $this->data_frames[$socket_id] = [
+                            'opcode' => $opcode,
+                            'data'   => ''
+                        ];
+                    }
+
+                    $this->data_frames[$socket_id]['data'] .= $payload;
+                    $this->debug('Received fragment frame (fin=0), opcode=' . $opcode . ', length=' . $payload_len);
+
+                    $result = ['data' => '', 'opcode' => $opcode, 'is_complete' => false];
+                    break;
+                }
+
+                // Final frame (fin = 1)
+                if (isset($this->data_frames[$socket_id]) && !empty($this->data_frames[$socket_id]['data'])) {
+                    // Complete fragmented message
+                    $complete_data   = $this->data_frames[$socket_id]['data'] . $payload;
+                    $original_opcode = $this->data_frames[$socket_id]['opcode'];
+
+                    if (0x0 === $original_opcode) {
+                        $original_opcode = 0x1;
+                    }
+
+                    unset($this->data_frames[$socket_id]);
+
+                    $this->debug('All fragments received, reassembled ' . strlen($complete_data) . ' bytes');
+
+                    $result = ['data' => $complete_data, 'opcode' => $original_opcode, 'is_complete' => true];
+                    break;
+                }
+
+                if (0x0 === $opcode) {
+                    // Continuation frame as final but no previous data (protocol error)
+                    $this->debug('Warning: Continuation frame without previous data');
+                    unset($this->data_frames[$socket_id]);
+
+                    $result = ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
+                    break;
+                }
+
+                // Single frame (no fragmentation)
+                $result = ['data' => $payload, 'opcode' => $opcode, 'is_complete' => true];
                 break;
 
             default:
-                $codes['data_offset'] = 6;
-                $codes['data_length'] = $payload_length;
-                $codes['data_mask']   = substr($buffer, 2, 4);
+                $this->debug('Unsupported opcode: ' . $opcode);
+                $result = ['data' => '', 'opcode' => $opcode, 'is_complete' => true];
                 break;
         }
 
-        unset($buffer, $char, $payload_length);
-        return $codes;
-    }
-
-    /**
-     * @param string $buffer
-     * @param string $mask
-     * @param int    $offset
-     * @param int    $length
-     *
-     * @return string
-     */
-    public function wsDecode(string $buffer, string $mask, int $offset, int $length): string
-    {
-        $message   = '';
-        $data_body = substr($buffer, $offset, $length);
-        $length    = strlen($data_body);
-
-        for ($i = 0; $i < $length; ++$i) {
-            $message .= $data_body[$i] ^ $mask[$i % 4];
-        }
-
-        unset($buffer, $mask, $offset, $length, $data_body, $i);
-        return $message;
+        unset($socket_id, $masked, $payload_len, $mask_key, $remaining, $chunk_size, $payload, $opcode, $fin);
+        return $result;
     }
 
     /**
