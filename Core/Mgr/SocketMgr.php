@@ -277,6 +277,7 @@ class SocketMgr extends Factory
         }
 
         unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id);
+        return $this;
     }
 
     /**
