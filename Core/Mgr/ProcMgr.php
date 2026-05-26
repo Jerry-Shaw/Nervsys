@@ -243,6 +243,11 @@ class ProcMgr extends Factory
             return 0;
         }
 
+        if ('Unknown' === get_resource_type($this->proc_list[$idx])) {
+            $this->close($idx);
+            return 0;
+        }
+
         if ($this->proc_job_done[$idx] >= $this->proc_max_executions) {
             if (0 === $this->proc_job_await[$idx]) {
                 $this->proc_status[$idx] = 0;
@@ -413,14 +418,20 @@ class ProcMgr extends Factory
      */
     public function close(int $idx = 0): void
     {
-        if (isset($this->proc_list[$idx])) {
+        if (isset($this->proc_stdin[$idx]) && is_resource($this->proc_stdin[$idx])) {
             fclose($this->proc_stdin[$idx]);
+        }
+        if (isset($this->proc_stdout[$idx]) && is_resource($this->proc_stdout[$idx])) {
             fclose($this->proc_stdout[$idx]);
+        }
+        if (isset($this->proc_stderr[$idx]) && is_resource($this->proc_stderr[$idx])) {
             fclose($this->proc_stderr[$idx]);
+        }
+        if (isset($this->proc_list[$idx]) && is_resource($this->proc_list[$idx])) {
             proc_close($this->proc_list[$idx]);
         }
 
-        unset($this->proc_list[$idx], $this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_idle['P' . $idx], $idx);
+        unset($this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_list[$idx], $this->proc_idle['P' . $idx], $idx);
     }
 
     /**
