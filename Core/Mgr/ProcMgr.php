@@ -239,7 +239,7 @@ class ProcMgr extends Factory
      */
     public function getStatus(int $idx = 0): int
     {
-        if (0 === $this->proc_status[$idx]) {
+        if (0 === ($this->proc_status[$idx] ?? 0)) {
             return 0;
         }
 
