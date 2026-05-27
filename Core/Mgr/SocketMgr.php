@@ -598,7 +598,7 @@ class SocketMgr extends Factory
      */
     public function serverOnHeartbeat(bool $is_websocket = false): void
     {
-        $active_timeout = (int)($this->alive_timeout / 1.5);
+        $client_timeout = $this->alive_timeout * 1.5;
 
         while (true) {
             $count    = 0;
@@ -610,11 +610,11 @@ class SocketMgr extends Factory
                     \Fiber::suspend();
                 }
 
-                if ($now_time - $active_times[0] < $active_timeout) {
+                if ($now_time - $active_times[0] < $this->alive_timeout) {
                     continue;
                 }
 
-                if ($now_time - $active_times[1] > $this->alive_timeout) {
+                if ($now_time - $active_times[1] > $client_timeout) {
                     $this->debug('Client heartbeat lost: #' . $socket_id);
                     $this->closeSocket($socket_id);
                     continue;
