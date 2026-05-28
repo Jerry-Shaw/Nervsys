@@ -78,19 +78,6 @@ class libOpenAI extends Factory
     }
 
     /**
-     * @param \Shmop $shmop
-     *
-     * @return $this
-     */
-    public function setShmop(\Shmop $shmop): static
-    {
-        $this->shmop = $shmop;
-
-        unset($shmop);
-        return $this;
-    }
-
-    /**
      * Set organization ID
      *
      * @param string $org_id
@@ -181,6 +168,41 @@ class libOpenAI extends Factory
         $this->httpStream->setTimeout($seconds);
 
         unset($seconds);
+        return $this;
+    }
+
+    /**
+     * @param \Shmop $shmop
+     *
+     * @return $this
+     */
+    public function setShmop(\Shmop $shmop): static
+    {
+        $this->shmop = $shmop;
+
+        unset($shmop);
+        return $this;
+    }
+
+    /**
+     * Abort stream output
+     *
+     * @return void
+     */
+    public function abortStream(): static
+    {
+        shmop_write($this->shmop, "\x01", 0);
+        return $this;
+    }
+
+    /**
+     * Resume stream output
+     *
+     * @return void
+     */
+    public function resumeStream(): static
+    {
+        shmop_write($this->shmop, "\x00", 0);
         return $this;
     }
 
@@ -433,7 +455,6 @@ class libOpenAI extends Factory
     private function sendStream(string $endpoint, array $payload): void
     {
         $this->sse_buffer = '';
-        shmop_write($this->shmop, "\x00", 0);
 
         $this->httpStream->setHttpMethod('POST');
         $this->httpStream->addData($payload);
@@ -465,6 +486,13 @@ class libOpenAI extends Factory
         $length = strlen($chunk);
 
         while (false !== ($event_end = strpos($this->sse_buffer, "\n\n"))) {
+            if ("\x01" === shmop_read($this->shmop, 0, 1)) {
+                $this->sse_buffer = '';
+                $this->callStreamCallbacks(['status' => 'aborted'], true);
+                unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);
+                return 0;
+            }
+
             $sse_event        = substr($this->sse_buffer, 0, $event_end);
             $this->sse_buffer = substr($this->sse_buffer, $event_end + 2);
             $this->sse_buffer = ltrim($this->sse_buffer, "\r\n");
@@ -497,13 +525,6 @@ class libOpenAI extends Factory
                     'message'   => 'JSON Decode Failed!',
                     'json_data' => $data_line
                 ], false);
-            }
-
-            if ("\x01" === shmop_read($this->shmop, 0, 1)) {
-                $this->sse_buffer = '';
-                $this->callStreamCallbacks(['status' => 'aborted'], true);
-                unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);
-                return 0;
             }
         }
 
