@@ -215,19 +215,22 @@ class libOpenAI extends Factory
     public function listModels(): array
     {
         $response = $this->httpNormal->setHttpMethod('GET')->fetch($this->api_url . '/models');
-        $result   = json_decode($response, true);
+        $models   = json_decode($response, true);
 
-        if (null !== $result) {
-            $result['success'] = true;
+        if (null !== $models) {
+            $result = [
+                'status' => 'success',
+                'data'   => $models['data']
+            ];
         } else {
             $result = [
-                'success' => false,
-                'error'   => 'JSON Decode Failed!',
-                'data'    => $response
+                'status' => 'error',
+                'error'  => 'JSON Decode Failed!',
+                'data'   => $response
             ];
         }
 
-        unset($response);
+        unset($response, $models);
         return $result;
     }
 
