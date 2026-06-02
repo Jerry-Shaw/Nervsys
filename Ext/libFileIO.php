@@ -173,11 +173,11 @@ class libFileIO extends Factory
             $filesize = $is_file ? filesize($filepath) : 0;
 
             $content_list[] = [
-                'filename' => basename($content),
-                'filepath' => $filepath,
-                'filesize' => $filesize,
-                'isFile'   => $is_file,
-                'urlPath'  => substr($filepath, strlen($path) + 1)
+                'name'          => basename($content),
+                'size'          => $filesize,
+                'is_file'       => $is_file,
+                'relative_path' => substr($filepath, strlen($path) + 1),
+                'absolute_path' => $filepath,
             ];
         }
 
