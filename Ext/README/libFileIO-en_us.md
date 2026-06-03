@@ -55,11 +55,11 @@ Gets directory contents with metadata.
 - **Parameters:**
     - `$path`: Directory path.
 - **Returns:** Array of files/directories with:
-    - `'filename'`: File name.
-    - `'filepath'`: Full path.
-    - `'filesize'`: File size in bytes (0 for dirs).
-    - `'isFile'`: Boolean indicating if it's a file.
-    - `'urlPath'`: Relative URL path.
+    - `'name'`: File name.
+    - `'size'`: File size in bytes (0 for dirs).
+    - `'is_file'`: Boolean indicating if it's a file.
+    - `'relative_path'`: Relative URL path.
+    - `'absolute_path'`: Full path.
 
 ### `copyDir(string $src, string $dst): int`
 

@@ -54,11 +54,11 @@
 - **参数:**
     - `$path`: 目录路径。
 - **返回:** 包含以下内容的文件/目录数组：
-    - `'filename'`: 文件名。
-    - `'filepath'`: 完整路径。
-    - `'filesize'`: 文件大小（字节），目录为 0。
-    - `'isFile'`: 布尔值，指示是否为文件。
-    - `'urlPath'`: 相对 URL 路径。
+    - `'name'`: 文件名。
+    - `'size'`: 文件大小（字节），目录为 0。
+    - `'is_file'`: 布尔值，指示是否为文件。
+    - `'relative_path'`: 相对 URL 路径。
+    - `'absolute_path'`: 完整路径。
 
 ### `copyDir(string $src, string $dst): int`
 
