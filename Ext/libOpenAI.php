@@ -176,7 +176,7 @@ class libOpenAI extends Factory
      *
      * @return $this
      */
-    public function setShmop(int $shm_key): static
+    public function openShmop(int $shm_key): static
     {
         $shmop = shmop_open($shm_key, 'c', 0644, 1);
 
