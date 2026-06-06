@@ -172,22 +172,28 @@ class libOpenAI extends Factory
     }
 
     /**
-     * @param \Shmop $shmop
+     * @param int $shm_key
      *
      * @return $this
      */
-    public function setShmop(\Shmop $shmop): static
+    public function setShmop(int $shm_key): static
     {
+        $shmop = shmop_open($shm_key, 'c', 0644, 1);
+
+        if (false === $shmop) {
+            throw new \RuntimeException('Failed to create shared memory');
+        }
+
         $this->shmop = $shmop;
 
-        unset($shmop);
+        unset($shm_key, $shmop);
         return $this;
     }
 
     /**
      * Abort stream output
      *
-     * @return void
+     * @return libOpenAI
      */
     public function abortStream(): static
     {
@@ -198,7 +204,7 @@ class libOpenAI extends Factory
     /**
      * Resume stream output
      *
-     * @return void
+     * @return libOpenAI
      */
     public function resumeStream(): static
     {
