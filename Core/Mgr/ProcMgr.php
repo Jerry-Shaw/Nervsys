@@ -130,11 +130,17 @@ class ProcMgr extends Factory
      *
      * @param int $idx
      *
-     * @return $this
+     * @return int
      * @throws \Exception
      */
-    public function run(int $idx = 0): static
+    public function run(int $idx = 0): int
     {
+        if (isset($this->proc_list[$idx])) {
+            return $this->run(++$idx);
+        }
+
+        $this->proc_list[$idx] = false;
+
         try {
             $proc = proc_open(
                 $this->command,
@@ -150,8 +156,9 @@ class ProcMgr extends Factory
             if (!is_resource($proc)) {
                 throw new \Exception('Failed to open "' . $this->getCmd() . '"', E_USER_ERROR);
             }
-        } catch (\Throwable) {
-            throw new \Exception('Failed to open "' . $this->getCmd() . '"', E_USER_ERROR);
+        } catch (\Throwable $throwable) {
+            unset($this->proc_list[$idx]);
+            throw new \Exception($throwable->getMessage(), E_USER_ERROR);
         }
 
         stream_set_blocking($pipes[0], false);
@@ -174,8 +181,8 @@ class ProcMgr extends Factory
 
         register_shutdown_function([$this, 'close'], $idx);
 
-        unset($idx, $proc, $pipes);
-        return $this;
+        unset($proc, $pipes);
+        return $idx;
     }
 
     /**
@@ -376,6 +383,7 @@ class ProcMgr extends Factory
     }
 
     /**
+     * @param int           $idx
      * @param callable|null $stdout_callback
      * @param callable|null $stderr_callback
      * @param callable|null ...$other_callbacks
@@ -383,10 +391,8 @@ class ProcMgr extends Factory
      * @return int
      * @throws \ReflectionException
      */
-    public function awaitProc(callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): int
+    public function awaitProc(int $idx, callable|null $stdout_callback = null, callable|null $stderr_callback = null, callable|null ...$other_callbacks): int
     {
-        $idx = key($this->proc_pid);
-
         while (0 < $this->getStatus($idx)) {
             foreach ($other_callbacks as $callback) {
                 try {
@@ -407,7 +413,9 @@ class ProcMgr extends Factory
         $status    = proc_get_status($this->proc_list[$idx]);
         $exit_code = !$status['running'] ? $status['exitcode'] : -1;
 
-        unset($stdout_callback, $stderr_callback, $other_callbacks, $idx, $callback, $argv, $status);
+        $this->close($idx);
+
+        unset($idx, $stdout_callback, $stderr_callback, $other_callbacks, $callback, $argv, $status);
         return $exit_code;
     }
 
