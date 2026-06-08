@@ -246,17 +246,22 @@ class SocketMgr extends Factory
         }
 
         $stdout_id = 'ext_' . get_resource_id($context['stdout']);
-        $stderr_id = 'ext_' . get_resource_id($context['stderr']);
 
         $this->external_stream[$stdout_id]   = $context['stdout'];
         $this->external_context[$stdout_id]  = $context;
         $this->external_callback[$stdout_id] = $output_callback;
 
-        $this->external_stream[$stderr_id]   = $context['stderr'];
-        $this->external_context[$stderr_id]  = $context;
-        $this->external_callback[$stderr_id] = $error_callback;
+        if (is_callable($error_callback)) {
+            $stderr_id = 'ext_' . get_resource_id($context['stderr']);
 
-        unset($proc_data, $output_callback, $error_callback, $context, $stdout_id, $stderr_id);
+            $this->external_stream[$stderr_id]   = $context['stderr'];
+            $this->external_context[$stderr_id]  = $context;
+            $this->external_callback[$stderr_id] = $error_callback;
+
+            unset($stderr_id);
+        }
+
+        unset($proc_data, $output_callback, $error_callback, $context, $stdout_id);
         return $this;
     }
 
