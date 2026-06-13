@@ -29,9 +29,9 @@
 
 设置默认模型名称（例如 `gpt-3.5-turbo`）。
 
-### `setMaxTokens(int $max_tokens): static`
+### `setMaxTokens(int $max_completion_tokens): static`
 
-设置补全请求的 `max_tokens` 参数。
+设置补全请求的 `max_completion_tokens` 参数。
 
 ### `setTemperature(float $temperature): static`
 

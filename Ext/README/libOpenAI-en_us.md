@@ -31,9 +31,9 @@ Sets the organization ID and reconfigures both HTTP instances.
 
 Sets the default model name (e.g., `gpt-3.5-turbo`).
 
-### `setMaxTokens(int $max_tokens): static`
+### `setMaxTokens(int $max_completion_tokens): static`
 
-Sets the `max_tokens` parameter for completion requests.
+Sets the `max_completion_tokens` parameter for completion requests.
 
 ### `setTemperature(float $temperature): static`
 
@@ -53,6 +53,7 @@ All three main methods accept an optional `$callback` parameter. When a callback
 enabled; otherwise, a non‑streaming request is performed and the parsed JSON result is returned (with `'success'` key).
 
 ###
+
 `completions(array $messages, string $model = '', array $options = [], callable $callback = null, string $callback_key = ''): array`
 
 Performs a chat completion request (POST `/chat/completions`).
@@ -73,6 +74,7 @@ Performs a chat completion request (POST `/chat/completions`).
 - Otherwise: returns parsed JSON array with `'success'` key.
 
 ###
+
 `responses(array $input, string $model = '', array $options = [], callable $callback = null, string $callback_key = ''): array`
 
 Performs a request to the Responses API (POST `/v1/responses`). The `$input` parameter can be a string or an array of
@@ -81,6 +83,7 @@ messages (depending on the API implementation).
 - Parameters have the same meaning as in `completions`.
 
 ###
+
 `messages(array $message, string $model = '', array $options = [], callable $callback = null, string $callback_key = ''): array`
 
 Sends a single message to the Assistants API (POST `/v1/messages`). The `$message` parameter should be an associative

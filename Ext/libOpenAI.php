@@ -24,9 +24,10 @@ use Nervsys\Core\Factory;
 
 class libOpenAI extends Factory
 {
-    public \Shmop  $shmop;
     public libHttp $httpNormal;
     public libHttp $httpStream;
+
+    public \Shmop|null $shmop = null;
 
     public string $org_id     = '';
     public string $api_url    = 'http://127.0.0.1:1234/v1';
@@ -36,11 +37,11 @@ class libOpenAI extends Factory
     public string $sse_buffer = '';
 
     public array $model_params = [
-        'temperature'       => 0.2,
-        'max_tokens'        => 16384,
-        'top_p'             => 1.0,
-        'frequency_penalty' => 0,
-        'presence_penalty'  => 0
+        'temperature'           => 0.2,
+        'max_completion_tokens' => 16384,
+        'top_p'                 => 1.0,
+        'frequency_penalty'     => 0,
+        'presence_penalty'      => 0
     ];
 
     public array $stream_callbacks = [];
@@ -111,17 +112,17 @@ class libOpenAI extends Factory
     }
 
     /**
-     * Set model max_tokens
+     * Set model max_completion_tokens
      *
-     * @param int $max_tokens
+     * @param int $max_completion_tokens
      *
      * @return $this
      */
-    public function setMaxTokens(int $max_tokens): static
+    public function setMaxTokens(int $max_completion_tokens): static
     {
-        $this->model_params['max_tokens'] = $max_tokens;
+        $this->model_params['max_completion_tokens'] = $max_completion_tokens;
 
-        unset($max_tokens);
+        unset($max_completion_tokens);
         return $this;
     }
 
@@ -267,7 +268,7 @@ class libOpenAI extends Factory
      *
      * @param array         $messages     List of messages (role/content pairs)
      * @param string        $model        Model name (optional, uses default if empty)
-     * @param array         $options      Additional parameters (temperature, max_tokens, tools, etc.)
+     * @param array         $options      Additional parameters (temperature, max_completion_tokens, tools, etc.)
      * @param callable|null $callback     Stream callback (if provided, enables streaming)
      * @param string        $callback_key Unique key for callback (auto‑generated if empty)
      *
@@ -314,7 +315,7 @@ class libOpenAI extends Factory
      *
      * @param array         $input        Input messages or text (structure depends on API)
      * @param string        $model        Model name (optional, uses default if empty)
-     * @param array         $options      Additional parameters (temperature, max_tokens, tools, etc.)
+     * @param array         $options      Additional parameters (temperature, max_completion_tokens, tools, etc.)
      * @param callable|null $callback     Stream callback (if provided, enables streaming)
      * @param string        $callback_key Unique key for callback (auto‑generated if empty)
      *
@@ -495,7 +496,7 @@ class libOpenAI extends Factory
         $length = strlen($chunk);
 
         while (false !== ($event_end = strpos($this->sse_buffer, "\n\n"))) {
-            if ("\x01" === shmop_read($this->shmop, 0, 1)) {
+            if (!is_null($this->shmop) && "\x01" === shmop_read($this->shmop, 0, 1)) {
                 $this->sse_buffer = '';
                 $this->callStreamCallbacks(['status' => 'aborted'], true);
                 unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);
