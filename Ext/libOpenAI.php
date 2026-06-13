@@ -37,11 +37,18 @@ class libOpenAI extends Factory
     public string $sse_buffer = '';
 
     public array $model_params = [
-        'temperature'           => 0.2,
-        'max_completion_tokens' => 16384,
-        'top_p'                 => 1.0,
+        'max_completion_tokens' => 32768,
+        'temperature'           => 1.0,
+        'min_p'                 => 0,
+        'top_p'                 => 0.95,
+        'top_k'                 => 40,
         'frequency_penalty'     => 0,
-        'presence_penalty'      => 0
+        'presence_penalty'      => 1,
+        'repetition_penalty'    => 1,
+        'stop'                  => [
+            '<|im_end|>',
+            '<|endoftext|>',
+        ]
     ];
 
     public array $stream_callbacks = [];
