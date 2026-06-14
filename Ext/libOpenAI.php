@@ -157,7 +157,7 @@ class libOpenAI extends Factory
      */
     public function setModelParams(array $params): static
     {
-        $this->model_params = array_merge($this->model_params, $params);
+        $this->model_params = $params;
 
         unset($params);
         return $this;
