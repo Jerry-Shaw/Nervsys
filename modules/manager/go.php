@@ -60,9 +60,10 @@ class go extends Factory
 
         $this->procMgr = ProcMgr::new()->setWorkDir($this->module_root);
 
-        $this->procMgr->command(['git', '-v'])->run();
+        $proc_idx = $this->procMgr->command(['git', '-v'])->run();
 
         $exit_code = $this->procMgr->awaitProc(
+            $proc_idx,
             function (string $output) use (&$git_ver): void
             {
                 if (str_starts_with($output, 'git version')) {
@@ -92,7 +93,7 @@ class go extends Factory
 
         $this->ssk_key = $this->findSshKey();
 
-        unset($git_ver, $exit_code, $env_data);
+        unset($git_ver, $proc_idx, $exit_code, $env_data);
     }
 
     /**
@@ -251,11 +252,11 @@ class go extends Factory
             $command[] = $url;
             $command[] = $this->module_root . $repo;
 
-            $this->procMgr
+            $proc_idx = $this->procMgr
                 ->command($command)
                 ->run();
 
-            $exit_code = $this->procMgr->awaitProc([$this, 'output'], [$this, 'output']);
+            $exit_code = $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
 
             if (0 !== $exit_code) {
                 $this->output('Failed to install ' . $repo);
@@ -270,7 +271,7 @@ class go extends Factory
             $this->installDependencies($metadata['dependencies']);
         }
 
-        unset($repo, $url, $tag, $metadata);
+        unset($repo, $url, $tag, $proc_idx, $exit_code, $metadata);
     }
 
     /**
@@ -288,34 +289,37 @@ class go extends Factory
 
         $path = $this->module_root . $repo;
 
-        $command = ['git', 'fetch', 'origin'];
-        $this->procMgr
+        $command  = ['git', 'fetch', 'origin'];
+        $proc_idx = $this->procMgr
             ->command($command)
             ->setWorkDir($path)
-            ->run()
-            ->awaitProc([$this, 'output'], [$this, 'output']);
+            ->run();
+
+        $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
 
         if ('' !== $tag) {
-            $command = ['git', 'checkout', $tag];
-            $this->procMgr
+            $command  = ['git', 'checkout', $tag];
+            $proc_idx = $this->procMgr
                 ->command($command)
                 ->setWorkDir($path)
-                ->run()
-                ->awaitProc([$this, 'output'], [$this, 'output']);
+                ->run();
+
+            $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
         }
 
-        $command   = ['git', 'pull'];
-        $exit_code = $this->procMgr
+        $command  = ['git', 'pull'];
+        $proc_idx = $this->procMgr
             ->command($command)
             ->setWorkDir($path)
-            ->run()
-            ->awaitProc([$this, 'output'], [$this, 'output']);
+            ->run();
+
+        $exit_code = $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
 
         if (0 !== $exit_code) {
             $this->output('Failed to update ' . $repo);
         }
 
-        unset($repo, $url, $tag, $path, $command, $exit_code);
+        unset($repo, $url, $tag, $path, $command, $proc_idx, $exit_code);
     }
 
     /**
@@ -417,9 +421,9 @@ class go extends Factory
             unset($output);
         };
 
-        $this->procMgr->command(['ssh', '-V'])->run();
+        $proc_idx = $this->procMgr->command(['ssh', '-V'])->run();
 
-        $exit_code = $this->procMgr->awaitProc($findSshVer, $findSshVer);
+        $exit_code = $this->procMgr->awaitProc($proc_idx, $findSshVer, $findSshVer);
 
         if (0 !== $exit_code || is_null($ssh_ver)) {
             $this->output('OpenSSH not installed.');
@@ -428,7 +432,7 @@ class go extends Factory
 
         $this->output('OpenSSH version: ' . $ssh_ver, true);
 
-        unset($user_home, $ssh_ver, $findSshVer, $exit_code);
+        unset($user_home, $ssh_ver, $findSshVer, $proc_idx, $exit_code);
         return $ssh_key_path;
     }
 

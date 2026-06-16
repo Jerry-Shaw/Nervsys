@@ -211,11 +211,16 @@ class libGit extends Factory
      */
     private function runCommand(array $commands): void
     {
-        ProcMgr::new()
+        $procMgr = ProcMgr::new();
+
+        $proc_idx = $procMgr
             ->setWorkDir($this->git_root)
             ->command(['git', ...$commands])
             ->readAt(0, 500)
-            ->run()
-            ->awaitProc([$this, 'displayLog'], [$this, 'displayLog']);
+            ->run();
+
+        $procMgr->awaitProc($proc_idx, [$this, 'displayLog'], [$this, 'displayLog']);
+
+        unset($commands, $procMgr, $proc_idx);
     }
 }
