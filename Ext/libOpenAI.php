@@ -228,14 +228,21 @@ class libOpenAI extends Factory
      */
     public function listModels(): array
     {
-        $response = $this->httpNormal->setHttpMethod('GET')->fetch($this->api_url . '/models');
-        $models   = json_decode($response, true);
+        $response  = $this->httpNormal->setHttpMethod('GET')->fetch($this->api_url . '/models');
+        $json_data = json_decode($response, true);
 
-        if (null !== $models) {
-            $result = [
-                'status' => 'success',
-                'data'   => $models['data']
-            ];
+        if (null !== $json_data) {
+            if (isset($json_data['data'])) {
+                $result = [
+                    'status' => 'success',
+                    'data'   => $json_data['data']
+                ];
+            } else {
+                $result = [
+                    'status' => 'error',
+                    'error'  => $json_data['error'] ?? $json_data,
+                ];
+            }
         } else {
             $result = [
                 'status' => 'error',
@@ -244,7 +251,7 @@ class libOpenAI extends Factory
             ];
         }
 
-        unset($response, $models);
+        unset($response, $json_data);
         return $result;
     }
 
