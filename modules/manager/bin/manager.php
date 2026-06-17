@@ -20,19 +20,37 @@
 
 declare(strict_types = 1);
 
+use Nervsys\Core\Lib\App;
 use Nervsys\Core\Lib\IOData;
+
+$dir = $_SERVER['argv'][1];
+$cwd = array_pop($_SERVER['argv']);
+unset($_SERVER['argv'][1]);
+
+$_SERVER['argv'] = array_values($_SERVER['argv']);
+
+if (count($_SERVER['argv']) < 3) {
+    echo 'Usage: mm [target_dir] <command> [args]' . PHP_EOL;
+    echo 'Example: mm modules install nervsys/logger@v1.0#git' . PHP_EOL;
+    exit(1);
+}
+
+$_SERVER['argv'][1] = strtr($_SERVER['argv'][1], '-', '_');
+
+if (!in_array($_SERVER['argv'][1], ['install', 'set_remote', 'init'], true)) {
+    echo 'Unknown command: ' . $_SERVER['argv'][1] . PHP_EOL;
+    exit(1);
+}
+
+$repo = $_SERVER['argv'][2];
 
 require __DIR__ . '/../../../NS.php';
 
 $ns = new Nervsys\NS();
 
-$root = end($_SERVER['argv']);
-
-reset($_SERVER['argv']);
-
-$ns->setRootPath($root);
-$ns->setApiDir(isset($_SERVER['argv'][4]) ? $_SERVER['argv'][3] : 'modules');
-$ns->setMode(\Nervsys\Core\Lib\App::MODE_MODULE);
+$ns->setRootPath($cwd);
+$ns->setApiDir($dir);
+$ns->setMode(App::MODE_MODULE);
 
 $ns->addCgiRouter(
     function (string $c): array
@@ -45,16 +63,9 @@ $ns->addCgiRouter(
 );
 
 $ns->addCliHandler(
-    function (IOData $IOData): void
+    function (IOData $IOData) use ($repo): void
     {
-        $path_array = array_reverse(array_slice($IOData->src_argv, 1));
-
-        if (1 === count($path_array)) {
-            $path_array[] = 'modules';
-        }
-
-        $IOData->src_input['repo'] = $IOData->src_argv[0];
-        $IOData->src_input['root'] = implode(DIRECTORY_SEPARATOR, $path_array);
+        $IOData->src_input['repo'] = $repo;
     }
 );
 

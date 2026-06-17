@@ -49,19 +49,18 @@ class go extends Factory
         $git_ver   = null;
         $this->app = App::new();
 
-        $this->config_file = __DIR__ . DIRECTORY_SEPARATOR . 'local.json';
         $this->module_root = $this->app->root_path . DIRECTORY_SEPARATOR . $this->app->api_dir . DIRECTORY_SEPARATOR;
 
-        try {
-            mkdir($this->module_root, 0777, true);
-        } catch (\Exception) {
-            // Module path exists
+        if (!is_dir($this->module_root)) {
+            try {
+                mkdir($this->module_root, 0777, true);
+            } catch (\Exception) {
+            }
         }
 
         $this->procMgr = ProcMgr::new()->setWorkDir($this->module_root);
 
-        $proc_idx = $this->procMgr->command(['git', '-v'])->run();
-
+        $proc_idx  = $this->procMgr->command(['git', '-v'])->run(getmypid());
         $exit_code = $this->procMgr->awaitProc(
             $proc_idx,
             function (string $output) use (&$git_ver): void
@@ -80,6 +79,13 @@ class go extends Factory
         }
 
         $this->output('Git version: ' . $git_ver, true);
+
+        $local_config_file = __DIR__ . DIRECTORY_SEPARATOR . 'local.json';
+        $this->config_file = $this->module_root . '.mm';
+
+        if (!is_file($this->config_file)) {
+            copy($local_config_file, $this->config_file);
+        }
 
         $env_data = json_decode(file_get_contents($this->config_file), true);
 
@@ -102,7 +108,7 @@ class go extends Factory
      * @return self
      * @throws \Exception
      */
-    public function setRemote(string $repo): self
+    public function set_remote(string $repo): self
     {
         if (!str_contains($repo, '://')) {
             $repo = 'https://' . $repo;
@@ -125,36 +131,33 @@ class go extends Factory
 
     /**
      * @param string $repo
-     * @param string $root
      *
      * @return void
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function init(string $repo, string $root = ''): void
+    public function init(string $repo): void
     {
         $libFileIO = libFileIO::new();
 
         $src_path = __DIR__ . DIRECTORY_SEPARATOR . 'demo_module';
-        $dst_path = $root . DIRECTORY_SEPARATOR . $repo;
+        $dst_path = $this->module_root . DIRECTORY_SEPARATOR . $repo;
 
         $libFileIO->copyDir($src_path, $dst_path);
 
         $this->output('Module "' . $repo . '" created successfully at: ' . $dst_path);
         $this->output('Next: Edit module.json → Write code in go.php → See README.md for details');
 
-        unset($repo, $root, $libFileIO, $src_path, $dst_path);
+        unset($repo, $libFileIO, $src_path, $dst_path);
     }
 
     /**
      * @param string $repo
-     * @param string $root
      *
      * @return void
      * @throws \ReflectionException
-     * @throws \Exception
      */
-    public function install(string $repo, string $root = ''): void
+    public function install(string $repo): void
     {
         if (!str_contains($repo, '/')) {
             $this->output('Invalid repository format. Expected "{user}/{repo}", "{user}/{repo}{@tag}", "{user}/{repo}{#source: https/git}" or "{user}/{repo}{@tag}{#source: https/git}".', true, true);
@@ -184,12 +187,10 @@ class go extends Factory
             $repo = substr($repo, 0, $pos_type);
         }
 
-        if ($this->app->is_cli && '' !== $root) {
-            $this->module_root = rtrim($root, '\\/') . DIRECTORY_SEPARATOR;
-            $this->procMgr->setWorkDir($this->module_root);
-        }
+        $this->procMgr->setWorkDir($this->module_root);
 
         [$user_name, $repo_name] = explode('/', $repo);
+
         $metadata = $this->getModuleMeta($repo_name);
 
         if (empty($metadata)) {
@@ -223,7 +224,7 @@ class go extends Factory
             }
         }
 
-        unset($repo, $root, $tag, $type, $pos_tag, $pos_type, $user_name, $repo_name, $metadata, $git_url);
+        unset($repo, $tag, $type, $pos_tag, $pos_type, $user_name, $repo_name, $metadata, $git_url);
     }
 
     /**
