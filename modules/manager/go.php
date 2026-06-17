@@ -355,10 +355,12 @@ class go extends Factory
      */
     public function output(string $message, bool $empty_line = false, bool $throw_exception = false): void
     {
-        echo $message . PHP_EOL;
+        if ($this->app->is_cli) {
+            echo $message . PHP_EOL;
 
-        if ($empty_line) {
-            echo PHP_EOL;
+            if ($empty_line) {
+                echo PHP_EOL;
+            }
         }
 
         if ($throw_exception) {
