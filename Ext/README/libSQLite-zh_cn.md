@@ -1,9 +1,8 @@
-## libMySQL 描述
+## libSQLite 描述
 
-`libMySQL` 是一个 MySQL 数据库扩展，提供流畅的查询构建器接口、事务管理、结果处理，以及 MySQL 特有的 `FOR UPDATE` 锁定和
-`FIELD()` 排序功能。此类继承自 `Factory`。
+`libSQLite` 是一个 SQLite 数据库扩展，提供流畅的查询构建器接口、事务管理和结果处理。此类继承自 `Factory`。
 
-**语言:** 中文 | [English Doc](./libMySQL-en_us.md)
+**语言:** 中文 | [English Doc](./libSQLite-en_us.md)
 
 ## 命名空间
 
@@ -54,15 +53,6 @@
 
 - **返回:** 当前实例。
 
-### `replace(array $data, bool $use_set = false): static`
-
-开始一个 `REPLACE` 查询（MySQL 的 `REPLACE INTO`）。
-
-- **参数:**
-    - `$data`: 列‑值对的关联数组。
-    - `$use_set`: 若为 `true`，使用 `REPLACE INTO ... SET` 语法；否则使用 `REPLACE INTO ... VALUES`。
-- **返回:** 当前实例。
-
 ### `where(array ...$conditions): static`
 
 添加 `WHERE` 条件。每个条件是一个数组：`[字段, 操作符, 值]` 或 `[字段, 值]`（默认操作符为 `=`）。
@@ -72,7 +62,7 @@
 
 ### `order(array $orders): static`
 
-添加 `ORDER BY` 子句。数组键为列名，值为 `'ASC'`/`'DESC'` 或用于 MySQL `FIELD()` 自定义排序的值列表。
+添加 `ORDER BY` 子句。数组键为列名，值为 `'ASC'`/`'DESC'` 或用于自定义排序的值列表。
 
 - **参数:** 列 → 排序方向的关联数组。
 - **返回:** 当前实例。
@@ -82,13 +72,6 @@
 添加 `LIMIT` 子句。
 
 - **参数:** `$offset`（起始行），`$length`（行数，0 表示不限制，即仅 `LIMIT offset`）。
-- **返回:** 当前实例。
-
-### `lock(string ...$modes): static`
-
-添加 `FOR UPDATE` 或 `FOR SHARE` 锁定子句（MySQL 特有）。模式可包括 `UPDATE`、`SHARE`、`NOWAIT`、`SKIP LOCKED` 等。
-
-- **参数:** 锁定模式关键字列表（如 `'UPDATE'`、`'NOWAIT'`）。
 - **返回:** 当前实例。
 
 ### `fetch(int $fetch_style = PDO::FETCH_ASSOC): array`
@@ -107,15 +90,15 @@
 
 ### `execute(): bool`
 
-执行已构建的 `INSERT`、`UPDATE`、`DELETE` 或 `REPLACE` 查询。
+执行已构建的 `INSERT`、`UPDATE` 或 `DELETE` 查询。
 
 - **返回:** 成功返回 `true`，失败返回 `false`。
 
 ### `begin(int $retry_times = 0): void`
 
-开始事务。嵌套调用将被忽略（只有最外层真正开始）。支持失败时自动重连。
+开始事务。嵌套调用将被忽略（只有最外层真正开始）。
 
-- **参数:** 重试次数。
+- **参数:** 重试次数（SQLite 忽略，仅为接口兼容）。
 - **返回:** void。
 
 ### `commit(): void`
@@ -130,61 +113,43 @@
 
 返回最后插入的自增列 ID。
 
-- **参数:** 序列名称（MySQL 忽略，仅为兼容）。
+- **参数:** 序列名称（SQLite 忽略，仅为兼容）。
 - **返回:** ID 整数值。
 
 ### `getAffectedRows(): int`
 
-返回最后执行的 `INSERT`、`UPDATE`、`DELETE` 或 `REPLACE` 所影响的行数。
-
-### `getLastFoundRows(): int`
-
-返回最后一次 `SELECT` 查询（无 `LIMIT`）本应返回的总行数，内部使用 `SELECT COUNT(*)` 实现。需要配合 `SQL_CALC_FOUND_ROWS`
-（不会自动设置）。
-
-### `explainSql(string $readable_sql): array`
-
-对给定的 SQL 语句运行 `EXPLAIN`，返回执行计划。
-
-- **参数:** 要解释的 SQL 字符串。
-- **返回:** `EXPLAIN` 输出的行数组。
+返回最后执行的 `INSERT`、`UPDATE` 或 `DELETE` 所影响的行数。
 
 ## 使用示例
 
 ```php
 use Nervsys\Ext\libPDO;
-use Nervsys\Ext\libMySQL;
+use Nervsys\Ext\libSQLite;
 
-// 建立 PDO 连接（MySQL）
-$pdo = new libPDO('mysql', 'localhost', 3306, 'root', 'password', 'my_db');
+// 建立 PDO 连接（SQLite 内存数据库）
+$pdo = new libPDO('sqlite', ':memory:');
 $pdo->connect();
 
-// 创建 libMySQL 实例并绑定 PDO
-$db = new libMySQL();
+// 创建 libSQLite 实例并绑定 PDO
+$db = new libSQLite();
 $db->bindLibPdo($pdo);
 
 // 插入一条记录
 $db->table('users')->insert(['name' => 'John', 'email' => 'john@example.com'])->execute();
 $userId = $db->getLastInsertId();
 
-// 带条件和锁定的查询
+// 带条件查询
 $users = $db->table('users')
             ->select('id', 'name')
             ->where(['status', '=', 1])
             ->order(['name' => 'ASC'])
             ->limit(0, 10)
-            ->lock('UPDATE', 'NOWAIT')
             ->fetchAll();
 
 // 更新
 $db->table('users')
    ->update(['email' => 'new@example.com'])
    ->where(['id', '=', $userId])
-   ->execute();
-
-// 替换（使用 SET 语法）
-$db->table('users')
-   ->replace(['id' => $userId, 'name' => 'John Doe', 'email' => 'john.doe@example.com'], true)
    ->execute();
 
 // 删除

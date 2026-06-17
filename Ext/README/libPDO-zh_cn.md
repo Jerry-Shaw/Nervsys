@@ -1,6 +1,6 @@
 ## libPDO 描述
 
-`libPDO` 是一个 PDO 数据库扩展，提供预处理语句、查询执行和结果处理的方法。此类继承自 `Factory`。
+`libPDO` 是一个 PDO 连接器类，负责构建 DSN、设置连接选项并建立 PDO 实例。它继承自 `Factory`。
 
 **语言:** 中文 | [English Doc](./libPDO-en_us.md)
 
@@ -8,78 +8,51 @@
 
 `Nervsys\Ext`
 
+## 公共属性
+
+### `public \PDO|null $pdo`
+
+底层的 PDO 实例。在调用 `connect()` 之前为 `null`。
+
+## 构造函数
+
+###
+`__construct(string $type = 'mysql', string $host = '127.0.0.1', int $port = 3306, string $user = 'root', string $pwd = '', string $db = '', int $timeout = 10, bool $persist = true, string $charset = 'utf8mb4')`
+
+创建新的 `libPDO` 实例，构建 DSN 和选项，但**不会立即连接**。
+
+- **参数:**
+    - `$type`: 数据库类型 – `mysql`, `mssql`, `pgsql`, `oci` 或 `sqlite`。
+    - `$host`: 主机名/IP（SQLite 中为文件路径或 `':memory:'`）。
+    - `$port`: 端口号（SQLite 不使用）。
+    - `$user`: 用户名（SQLite 不使用）。
+    - `$pwd`: 密码（SQLite 不使用）。
+    - `$db`: 数据库名（SQLite 不使用）。
+    - `$timeout`: 连接超时秒数（SQLite 中会转换为毫秒作为忙超时）。
+    - `$persist`: 启用持久连接。
+    - `$charset`: 字符集（SQLite 中用于 `PRAGMA encoding`；PostgreSQL 不使用）。
+
 ## 方法
 
-### `query(string $sql, array $params = []): bool|int|array|null`
+### `connect(): static`
 
-使用参数执行预处理的 SQL 语句。
+使用先前构建的 DSN 和选项创建实际的 PDO 连接。对于 SQLite，还会启用外键约束（`PRAGMA foreign_keys = ON`）。
 
-- **参数:**
-    - `$sql`: 带占位符的 SQL 语句（如 `:id`）。
-    - `$params`: 参数值的关联数组。
-- **返回:**
-    - 非 SELECT 查询为 `bool`。
-    - 受影响行数为 `int`。
-    - SELECT 查询的结果为 `array`。
+- **返回:** 当前实例（流畅接口）。
 
-### `insert(string $table, array $data): int`
-
-使用预处理语句插入一行。
-
-- **参数:**
-    - `$table`: 表名。
-    - `$data`: 列 - 值对的关联数组。
-- **返回:** 插入的 ID，失败为 0。
-
-### `update(string $table, array $data, string $where, array $params = []): int`
-
-使用预处理语句更新行。
-
-- **参数:**
-    - `$table`: 表名。
-    - `$data`: 要更新的列 - 值对的关联数组。
-    - `$where`: 带占位符的 WHERE 子句。
-    - `$params`: WHERE 子句的参数值。
-- **返回:** 受影响的行数，失败为 0。
-
-### `delete(string $table, string $where, array $params = []): int`
-
-使用预处理语句删除行。
-
-- **参数:**
-    - `$table`: 表名。
-    - `$where`: 带占位符的 WHERE 子句。
-    - `$params`: WHERE 子句的参数值。
-- **返回:** 已删除的行数，失败为 0。
-
-### `select(string $table, array $columns = ['*'], string $where = '', array $params = [], int $limit = 0): array`
-
-使用预处理语句选择行。
-
-- **参数:**
-    - `$table`: 表名。
-    - `$columns`: 列名数组或 `['*']`。
-    - `$where`: 带占位符的 WHERE 子句。
-    - `$params`: WHERE 子句的参数值。
-    - `$limit`: 返回的最大行数。
-- **返回:** 结果行数组。
-
-## 使用示例
+### 使用示例
 
 ```php
 use Nervsys\Ext\libPDO;
 
-$db = new libPDO();
+// MySQL
+$pdo = new libPDO('mysql', 'localhost', 3306, 'root', 'password', 'my_db');
+$pdo->connect();
+$dbh = $pdo->pdo; // 此时获得 PDO 对象
 
-// 预处理语句插入
-$userId = $db->insert('users', ['name' => 'John', 'email' => 'john@example.com']);
-
-// 参数化选择
-$users = $db->select('users', ['id', 'name'], "status = :status", ['status' => 1], 10);
-
-// 参数化更新
-$db->update('users', ['email' => 'new@example.com'], "id = :id", ['id' => $userId]);
-
-// 参数化删除
-$db->delete('users', "id = :id", ['id' => $userId]);
+// SQLite（内存数据库）
+$pdo = new libPDO('sqlite', ':memory:');
+$pdo->connect();
+// 使用 $pdo->pdo 进行原生 PDO 操作，
+// 或者将其传递给 libSQLite/libMySQL 以使用流畅查询构建器。
 ```

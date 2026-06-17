@@ -1,9 +1,9 @@
-## libMySQL Description
+## libSQLite Description
 
-`libMySQL` is a MySQL database extension that provides a fluent query builder interface, transaction management, result
-handling, and MySQL-specific features like `FOR UPDATE` locking and `FIELD()` ordering. It extends `Factory`.
+`libSQLite` is a SQLite database extension that provides a fluent query builder interface, transaction management, and
+result handling. It extends `Factory`.
 
-**Language:** English | [中文文档](./libMySQL-zh_cn.md)
+**Language:** English | [中文文档](./libSQLite-zh_cn.md)
 
 ## Namespace
 
@@ -54,15 +54,6 @@ Begins a `DELETE` query.
 
 - **Returns:** The current instance.
 
-### `replace(array $data, bool $use_set = false): static`
-
-Begins a `REPLACE` query (MySQL's `REPLACE INTO`).
-
-- **Parameters:**
-    - `$data`: Associative array of column‑value pairs.
-    - `$use_set`: If `true`, uses `REPLACE INTO ... SET` syntax; otherwise uses `REPLACE INTO ... VALUES`.
-- **Returns:** The current instance.
-
 ### `where(array ...$conditions): static`
 
 Adds `WHERE` conditions. Each condition is an array: `[field, operator, value]` or `[field, value]` (defaults to `=`).
@@ -72,8 +63,8 @@ Adds `WHERE` conditions. Each condition is an array: `[field, operator, value]` 
 
 ### `order(array $orders): static`
 
-Adds `ORDER BY` clause. The array keys are column names, values can be `'ASC'`/`'DESC'` or a list of values for MySQL's
-`FIELD()` custom ordering.
+Adds `ORDER BY` clause. The array keys are column names, values can be `'ASC'`/`'DESC'` or a list of values for custom
+ordering.
 
 - **Parameters:** Associative array of column → order/direction.
 - **Returns:** The current instance.
@@ -83,14 +74,6 @@ Adds `ORDER BY` clause. The array keys are column names, values can be `'ASC'`/`
 Adds a `LIMIT` clause.
 
 - **Parameters:** `$offset` (starting row), `$length` (number of rows; `0` means no limit, i.e. only `LIMIT offset`).
-- **Returns:** The current instance.
-
-### `lock(string ...$modes): static`
-
-Adds a `FOR UPDATE` or `FOR SHARE` lock clause (MySQL-specific). Modes can include `UPDATE`, `SHARE`, `NOWAIT`,
-`SKIP LOCKED`, etc.
-
-- **Parameters:** List of lock mode keywords (e.g., `'UPDATE'`, `'NOWAIT'`).
 - **Returns:** The current instance.
 
 ### `fetch(int $fetch_style = PDO::FETCH_ASSOC): array`
@@ -109,15 +92,15 @@ Executes the built `SELECT` query and returns all rows.
 
 ### `execute(): bool`
 
-Executes an `INSERT`, `UPDATE`, `DELETE`, or `REPLACE` query that was built.
+Executes an `INSERT`, `UPDATE`, or `DELETE` query that was built.
 
 - **Returns:** `true` on success, `false` on failure.
 
 ### `begin(int $retry_times = 0): void`
 
-Begins a transaction. Nested calls are ignored (only the first begins). Supports automatic reconnection on failure.
+Begins a transaction. Nested calls are ignored (only the first begins).
 
-- **Parameters:** Retry attempts.
+- **Parameters:** Retry attempts (ignored for SQLite, kept for interface compatibility).
 - **Returns:** void.
 
 ### `commit(): void`
@@ -132,61 +115,43 @@ Rolls back the current transaction (if it is the outermost level).
 
 Returns the last inserted ID from an auto‑increment column.
 
-- **Parameters:** Sequence name (ignored for MySQL, kept for compatibility).
+- **Parameters:** Sequence name (ignored for SQLite, kept for compatibility).
 - **Returns:** The ID as integer.
 
 ### `getAffectedRows(): int`
 
-Returns the number of rows affected by the last executed `INSERT`, `UPDATE`, `DELETE`, or `REPLACE`.
-
-### `getLastFoundRows(): int`
-
-Returns the total number of rows that would have been returned by the last `SELECT` query (without `LIMIT`), using
-`SELECT COUNT(*)` internally. Requires `SQL_CALC_FOUND_ROWS` or equivalent (not automatically set).
-
-### `explainSql(string $readable_sql): array`
-
-Runs `EXPLAIN` on a given SQL statement and returns the execution plan.
-
-- **Parameters:** The SQL string to explain.
-- **Returns:** Array of rows from `EXPLAIN` output.
+Returns the number of rows affected by the last executed `INSERT`, `UPDATE`, or `DELETE`.
 
 ## Usage Example
 
 ```php
 use Nervsys\Ext\libPDO;
-use Nervsys\Ext\libMySQL;
+use Nervsys\Ext\libSQLite;
 
-// Setup PDO connection (MySQL)
-$pdo = new libPDO('mysql', 'localhost', 3306, 'root', 'password', 'my_db');
+// Setup PDO connection (SQLite in-memory)
+$pdo = new libPDO('sqlite', ':memory:');
 $pdo->connect();
 
-// Create libMySQL instance and bind PDO
-$db = new libMySQL();
+// Create libSQLite instance and bind PDO
+$db = new libSQLite();
 $db->bindLibPdo($pdo);
 
 // Insert a record
 $db->table('users')->insert(['name' => 'John', 'email' => 'john@example.com'])->execute();
 $userId = $db->getLastInsertId();
 
-// Select with conditions and locking
+// Select with conditions
 $users = $db->table('users')
             ->select('id', 'name')
             ->where(['status', '=', 1])
             ->order(['name' => 'ASC'])
             ->limit(0, 10)
-            ->lock('UPDATE', 'NOWAIT')
             ->fetchAll();
 
 // Update
 $db->table('users')
    ->update(['email' => 'new@example.com'])
    ->where(['id', '=', $userId])
-   ->execute();
-
-// Replace (using SET syntax)
-$db->table('users')
-   ->replace(['id' => $userId, 'name' => 'John Doe', 'email' => 'john.doe@example.com'], true)
    ->execute();
 
 // Delete

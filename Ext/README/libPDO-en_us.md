@@ -1,7 +1,7 @@
 ## libPDO Description
 
-`libPDO` is a PDO database extension that provides methods for prepared statements, query execution, and result
-handling. It extends `Factory`.
+`libPDO` is a PDO connector class that builds a DSN, sets connection options, and establishes a PDO instance. It extends
+`Factory`.
 
 **Language:** English | [中文文档](./libPDO-zh_cn.md)
 
@@ -9,78 +9,52 @@ handling. It extends `Factory`.
 
 `Nervsys\Ext`
 
+## Public Properties
+
+### `public \PDO|null $pdo`
+
+The underlying PDO instance. `null` before calling `connect()`.
+
+## Constructor
+
+###
+`__construct(string $type = 'mysql', string $host = '127.0.0.1', int $port = 3306, string $user = 'root', string $pwd = '', string $db = '', int $timeout = 10, bool $persist = true, string $charset = 'utf8mb4')`
+
+Creates a new `libPDO` instance and builds the DSN and options, but does **not** connect immediately.
+
+- **Parameters:**
+    - `$type`: Database type – `mysql`, `mssql`, `pgsql`, `oci`, or `sqlite`.
+    - `$host`: Hostname/IP (for SQLite, this is the file path or `':memory:'`).
+    - `$port`: Port number (not used for SQLite).
+    - `$user`: Username (not used for SQLite).
+    - `$pwd`: Password (not used for SQLite).
+    - `$db`: Database name (not used for SQLite).
+    - `$timeout`: Connection timeout in seconds (for SQLite, converted to milliseconds for busy timeout).
+    - `$persist`: Enable persistent connection.
+    - `$charset`: Character set (for SQLite, used in `PRAGMA encoding`; not used for PostgreSQL).
+
 ## Methods
 
-### `query(string $sql, array $params = []): bool|int|array|null`
+### `connect(): static`
 
-Executes a prepared SQL statement with parameters.
+Creates the actual PDO connection using the previously built DSN and options. For SQLite, it also enables foreign key
+constraints (`PRAGMA foreign_keys = ON`).
 
-- **Parameters:**
-    - `$sql`: SQL statement with placeholders (e.g., `:id`).
-    - `$params`: Associative array of parameter values.
-- **Returns:**
-    - `bool` for non-select queries.
-    - `int` for affected rows.
-    - `array` of results for SELECT queries.
+- **Returns:** The current instance (fluent interface).
 
-### `insert(string $table, array $data): int`
-
-Inserts a row using prepared statement.
-
-- **Parameters:**
-    - `$table`: Table name.
-    - `$data`: Associative array of column-value pairs.
-- **Returns:** Inserted ID or 0 on failure.
-
-### `update(string $table, array $data, string $where, array $params = []): int`
-
-Updates rows using prepared statement.
-
-- **Parameters:**
-    - `$table`: Table name.
-    - `$data`: Associative array of column-value pairs to update.
-    - `$where`: WHERE clause with placeholders.
-    - `$params`: Parameter values for WHERE clause.
-- **Returns:** Number of affected rows or 0 on failure.
-
-### `delete(string $table, string $where, array $params = []): int`
-
-Deletes rows using prepared statement.
-
-- **Parameters:**
-    - `$table`: Table name.
-    - `$where`: WHERE clause with placeholders.
-    - `$params`: Parameter values for WHERE clause.
-- **Returns:** Number of deleted rows or 0 on failure.
-
-### `select(string $table, array $columns = ['*'], string $where = '', array $params = [], int $limit = 0): array`
-
-Selects rows using prepared statement.
-
-- **Parameters:**
-    - `$table`: Table name.
-    - `$columns`: Array of column names or `['*']`.
-    - `$where`: WHERE clause with placeholders.
-    - `$params`: Parameter values for WHERE clause.
-    - `$limit`: Maximum number of rows to return.
-- **Returns:** Array of result rows.
-
-## Usage Example
+### Usage Example
 
 ```php
 use Nervsys\Ext\libPDO;
 
-$db = new libPDO();
+// MySQL
+$pdo = new libPDO('mysql', 'localhost', 3306, 'root', 'password', 'my_db');
+$pdo->connect();
+$dbh = $pdo->pdo; // Now you have the PDO object
 
-// Insert with prepared statement
-$userId = $db->insert('users', ['name' => 'John', 'email' => 'john@example.com']);
-
-// Select with parameters
-$users = $db->select('users', ['id', 'name'], "status = :status", ['status' => 1], 10);
-
-// Update with parameters
-$db->update('users', ['email' => 'new@example.com'], "id = :id", ['id' => $userId]);
-
-// Delete with parameters
-$db->delete('users', "id = :id", ['id' => $userId]);
+// SQLite (in-memory)
+$pdo = new libPDO('sqlite', ':memory:');
+$pdo->connect();
+// Use $pdo->pdo for native PDO operations,
+// or pass it to libSQLite/libMySQL for fluent query builder.
 ```
