@@ -41,15 +41,17 @@ class go extends Factory
     public string $module_root = '';
 
     /**
+     * @param string $dirname
+     *
      * @throws \ReflectionException
      * @throws \Exception
      */
-    public function __construct()
+    public function __construct(string $dirname = '')
     {
         $git_ver   = null;
         $this->app = App::new();
 
-        $this->module_root = $this->app->root_path . DIRECTORY_SEPARATOR . $this->app->api_dir . DIRECTORY_SEPARATOR;
+        $this->module_root = $this->app->root_path . DIRECTORY_SEPARATOR . ('' !== $dirname ? $dirname : $this->app->api_dir) . DIRECTORY_SEPARATOR;
 
         if (!is_dir($this->module_root)) {
             try {
@@ -156,6 +158,7 @@ class go extends Factory
      *
      * @return void
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public function install(string $repo): void
     {
