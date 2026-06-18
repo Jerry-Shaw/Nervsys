@@ -46,11 +46,7 @@ $repo = $_SERVER['argv'][2];
 
 require __DIR__ . '/../../../NS.php';
 
-$ns = new Nervsys\NS();
-
-$ns->setRootPath($cwd);
-$ns->setApiDir($dir);
-$ns->setMode(App::MODE_MODULE);
+$ns = new Nervsys\NS($cwd, $dir, App::MODE_MODULE);
 
 $ns->addCgiRouter(
     function (string $c): array
@@ -66,6 +62,12 @@ $ns->addCliHandler(
     function (IOData $IOData) use ($repo): void
     {
         $IOData->src_input['repo'] = $repo;
+    }
+);
+
+$ns->setOutputHandler(
+    function (IOData $IOData)
+    {
     }
 );
 
