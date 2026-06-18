@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Nervsys Module Manager
+ * Nervsys Module Manager - CLI Wrapper
+ *
+ * This class provides the same external interface as the original go class,
+ * but internally delegates to the refactored core logic with real-time output.
  *
  * Copyright 2026 秋水之冰 <27206617@qq.com>
  *
@@ -22,330 +25,127 @@ namespace Nervsys\modules\manager;
 
 use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\App;
-use Nervsys\Core\Mgr\ProcMgr;
-use Nervsys\Ext\libFileIO;
+use Nervsys\modules\manager\lib\core;
 
 class go extends Factory
 {
-    const TAG_SEPARATOR  = '@';
-    const TYPE_SEPARATOR = '#';
-
-    public App     $app;
-    public ProcMgr $procMgr;
-
-    public array $local_env = [];
-
-    public string $ssk_key = '';
-
-    public string $config_file = '';
-    public string $module_root = '';
+    private App  $app;
+    private core $core;
 
     /**
-     * @param string $dirname
+     * Constructor – initializes the CLI wrapper and checks Git.
      *
-     * @throws \ReflectionException
+     * @param string $dirname Optional subdirectory under root; passed to core.
+     *
      * @throws \Exception
      */
     public function __construct(string $dirname = '')
     {
-        $git_ver   = null;
-        $this->app = App::new();
+        $this->app  = App::new();
+        $this->core = new core($dirname);
 
-        $this->module_root = $this->app->root_path . DIRECTORY_SEPARATOR . ('' !== $dirname ? $dirname : $this->app->api_dir) . DIRECTORY_SEPARATOR;
+        $git_result = $this->core->checkGit();
 
-        if (!is_dir($this->module_root)) {
-            try {
-                mkdir($this->module_root, 0777, true);
-            } catch (\Exception) {
-            }
+        if (!$git_result['success']) {
+            $this->output('Error: ' . $git_result['message'], true, true);
+        } else {
+            $this->output('Git version: ' . $git_result['version'], true);
         }
-
-        $this->procMgr = ProcMgr::new()->setWorkDir($this->module_root);
-
-        $proc_idx  = $this->procMgr->command(['git', '-v'])->run(getmypid());
-        $exit_code = $this->procMgr->awaitProc(
-            $proc_idx,
-            function (string $output) use (&$git_ver): void
-            {
-                if (str_starts_with($output, 'git version')) {
-                    $git_ver = substr($output, strlen('git version') + 1);
-                }
-
-                unset($output);
-            }
-        );
-
-        if (0 !== $exit_code || is_null($git_ver)) {
-            $this->output('Git not found. Please install Git and add it to your PATH environment variable.', true, true);
-            return;
-        }
-
-        $this->output('Git version: ' . $git_ver, true);
-
-        $local_config_file = __DIR__ . DIRECTORY_SEPARATOR . 'local.json';
-        $this->config_file = $this->module_root . '.mm';
-
-        if (!is_file($this->config_file)) {
-            copy($local_config_file, $this->config_file);
-        }
-
-        $env_data = json_decode(file_get_contents($this->config_file), true);
-
-        if (is_array($env_data)) {
-            if (!isset($env_data['git_source'])) {
-                $env_data['git_source'] = 'github.com';
-            }
-
-            $this->local_env = $env_data;
-        }
-
-        $this->ssk_key = $this->findSshKey();
-
-        unset($git_ver, $proc_idx, $exit_code, $env_data);
     }
 
     /**
-     * @param string $repo
+     * Set the remote Git source.
      *
-     * @return self
-     * @throws \Exception
-     */
-    public function set_remote(string $repo): self
-    {
-        if (!str_contains($repo, '://')) {
-            $repo = 'https://' . $repo;
-        }
-
-        $source_host  = parse_url($repo, PHP_URL_HOST);
-        $support_host = array_keys($this->local_env['git_platforms']);
-
-        if (!in_array($source_host, $support_host, true)) {
-            $this->output('Source url "' . $repo . '" is not supported. Supported hosts are: ' . implode(', ', $support_host), true, true);
-            return $this;
-        }
-
-        $this->local_env['git_source'] = $source_host;
-        $this->saveEnv();
-
-        unset($repo, $source_host, $support_host);
-        return $this;
-    }
-
-    /**
-     * @param string $repo
+     * @param string $repo Source host or URL
      *
      * @return void
-     * @throws \ReflectionException
+     * @throws \Exception
+     */
+    public function set_remote(string $repo): void
+    {
+        $result = $this->core->setRemote($repo);
+        $this->handleResult($result);
+    }
+
+    /**
+     * Initialize a new module skeleton.
+     *
+     * @param string $repo Module name
+     *
+     * @return void
      * @throws \Exception
      */
     public function init(string $repo): void
     {
-        $libFileIO = libFileIO::new();
-
-        $src_path = __DIR__ . DIRECTORY_SEPARATOR . 'demo_module';
-        $dst_path = $this->module_root . DIRECTORY_SEPARATOR . $repo;
-
-        $libFileIO->copyDir($src_path, $dst_path);
-
-        $this->output('Module "' . $repo . '" created successfully at: ' . $dst_path);
-        $this->output('Next: Edit module.json → Write code in go.php → See README.md for details');
-
-        unset($repo, $libFileIO, $src_path, $dst_path);
+        $result = $this->core->init($repo);
+        $this->handleResult($result);
     }
 
     /**
-     * @param string $repo
+     * Install or update a module and its dependencies with real-time output.
+     *
+     * @param string $repo Module specifier
      *
      * @return void
-     * @throws \ReflectionException
      * @throws \Exception
      */
     public function install(string $repo): void
     {
-        if (!str_contains($repo, '/')) {
-            $this->output('Invalid repository format. Expected "{user}/{repo}", "{user}/{repo}{@tag}", "{user}/{repo}{#source: https/git}" or "{user}/{repo}{@tag}{#source: https/git}".', true, true);
-            return;
-        }
+        $output_callback = function (string $msg, bool $error = false)
+        {
+            $this->output($msg, false);
+        };
 
-        $tag  = '';
-        $type = 'https';
+        $result = $this->core->install($repo, 0, $output_callback);
+        $this->handleResult($result);
+    }
 
-        $pos_tag  = strpos($repo, self::TAG_SEPARATOR);
-        $pos_type = strpos($repo, self::TYPE_SEPARATOR);
+    /**
+     * Handle the result array from the core and output accordingly.
+     *
+     * @param array $result
+     *
+     * @return void
+     * @throws \Exception
+     */
+    private function handleResult(array $result): void
+    {
+        if ($result['success']) {
+            $this->output($result['message'], true);
 
-        if (false !== $pos_tag && false !== $pos_type) {
-            if ($pos_tag >= $pos_type) {
-                $this->output('Invalid repository format. Expected "{user}/{repo}{@tag}{#source: https/git}" with tag before source.', true, true);
-                return;
+            if (isset($result['data'])) {
+                $data = $result['data'];
+
+                if (isset($data['path'])) {
+                    $this->output('Path: ' . $data['path']);
+                }
+
+                if (isset($data['module'])) {
+                    $this->output('Module: ' . $data['module']);
+                }
+
+                if (isset($data['source'])) {
+                    $this->output('Source: ' . $data['source']);
+                }
+
+                if (isset($data['git_version']) && $data['git_version'] !== '') {
+                    $this->output('Git version: ' . $data['git_version']);
+                }
+
+                if (isset($data['ssh_version']) && $data['ssh_version'] !== '') {
+                    $this->output('SSH version: ' . $data['ssh_version']);
+                }
             }
-
-            $tag  = substr($repo, $pos_tag + 1, $pos_type - $pos_tag - 1);
-            $type = substr($repo, $pos_type + 1);
-            $repo = substr($repo, 0, $pos_tag);
-        } elseif (false !== $pos_tag) {
-            $tag  = substr($repo, $pos_tag + 1);
-            $repo = substr($repo, 0, $pos_tag);
-        } elseif (false !== $pos_type) {
-            $type = substr($repo, $pos_type + 1);
-            $repo = substr($repo, 0, $pos_type);
-        }
-
-        $this->procMgr->setWorkDir($this->module_root);
-
-        [$user_name, $repo_name] = explode('/', $repo);
-
-        $metadata = $this->getModuleMeta($repo_name);
-
-        if (empty($metadata)) {
-            // Install module
-            $git_url = $this->local_env['git_platforms'][$this->local_env['git_source']]['git' === $type ? 'ssh_url' : 'https_url'];
-
-            $git_url = str_replace('{user}', $user_name, $git_url);
-            $git_url = str_replace('{repo}', $repo_name, $git_url);
-
-            $this->output('Installing "' . $repo_name . '" from ' . $git_url);
-
-            $this->installUrl($repo_name, $git_url, $tag);
         } else {
-            // Update module
-            $this->output('Updating ' . $repo_name . ' and dependencies...');
-
-            $metadata['repo']    ??= '';
-            $metadata['version'] ??= '';
-
-            if ('' !== $metadata['repo'] && '' !== $tag && $tag !== $metadata['version']) {
-                $pos_tag = strpos($metadata['repo'], self::TAG_SEPARATOR);
-                $git_url = false !== $pos_tag
-                    ? substr($metadata['repo'], 0, $pos_tag)
-                    : $metadata['repo'];
-
-                $this->updateUrl($repo_name, $git_url, $tag);
-            }
-
-            if (isset($metadata['dependencies']) && !empty($metadata['dependencies'])) {
-                $this->installDependencies($metadata['dependencies']);
-            }
+            $this->output('Error: ' . $result['message'], true, true);
         }
-
-        unset($repo, $tag, $type, $pos_tag, $pos_type, $user_name, $repo_name, $metadata, $git_url);
     }
 
     /**
-     * @param string $repo
-     * @param string $url
-     * @param string $tag
+     * Output a message (CLI only) and optionally throw an exception.
      *
-     * @return void
-     * @throws \ReflectionException
-     * @throws \Exception
-     */
-    public function installUrl(string $repo, string $url, string $tag = ''): void
-    {
-        $metadata = $this->getModuleMeta($repo);
-
-        if (empty($metadata)) {
-            $this->runSshCommand($url);
-
-            $command = ['git', 'clone'];
-
-            if ('' !== $tag) {
-                $command[] = '-b';
-                $command[] = $tag;
-            }
-
-            $command[] = $url;
-            $command[] = $this->module_root . $repo;
-
-            $proc_idx = $this->procMgr
-                ->command($command)
-                ->run();
-
-            $exit_code = $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
-
-            if (0 !== $exit_code) {
-                $this->output('Failed to install ' . $repo);
-                return;
-            }
-
-            $metadata = $this->getModuleMeta($repo);
-            unset($command, $exit_code);
-        }
-
-        if (isset($metadata['dependencies']) && !empty($metadata['dependencies'])) {
-            $this->installDependencies($metadata['dependencies']);
-        }
-
-        unset($repo, $url, $tag, $proc_idx, $exit_code, $metadata);
-    }
-
-    /**
-     * @param string $repo
-     * @param string $url
-     * @param string $tag
+     * This method mimics the original go::output() behavior.
      *
-     * @return void
-     * @throws \ReflectionException
-     * @throws \Exception
-     */
-    public function updateUrl(string $repo, string $url, string $tag = ''): void
-    {
-        $this->runSshCommand($url);
-
-        $path = $this->module_root . $repo;
-
-        $command  = ['git', 'fetch', 'origin'];
-        $proc_idx = $this->procMgr
-            ->command($command)
-            ->setWorkDir($path)
-            ->run();
-
-        $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
-
-        if ('' !== $tag) {
-            $command  = ['git', 'checkout', $tag];
-            $proc_idx = $this->procMgr
-                ->command($command)
-                ->setWorkDir($path)
-                ->run();
-
-            $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
-        }
-
-        $command  = ['git', 'pull'];
-        $proc_idx = $this->procMgr
-            ->command($command)
-            ->setWorkDir($path)
-            ->run();
-
-        $exit_code = $this->procMgr->awaitProc($proc_idx, [$this, 'output'], [$this, 'output']);
-
-        if (0 !== $exit_code) {
-            $this->output('Failed to update ' . $repo);
-        }
-
-        unset($repo, $url, $tag, $path, $command, $proc_idx, $exit_code);
-    }
-
-    /**
-     * @param array $repo_dependencies
-     *
-     * @return void
-     * @throws \ReflectionException
-     */
-    public function installDependencies(array $repo_dependencies): void
-    {
-        foreach ($repo_dependencies as $repo => $dependency) {
-            [$url, $tag] = str_contains($dependency, self::TAG_SEPARATOR)
-                ? explode(self::TAG_SEPARATOR, $dependency)
-                : [$dependency, ''];
-
-            $this->installUrl($repo, $url, $tag);
-        }
-
-        unset($repo_dependencies, $repo, $dependency, $url, $tag);
-    }
-
-    /**
      * @param string $message
      * @param bool   $empty_line
      * @param bool   $throw_exception
@@ -366,110 +166,5 @@ class go extends Factory
         if ($throw_exception) {
             throw new \Exception($message, E_USER_ERROR);
         }
-
-        unset($message, $empty_line);
-    }
-
-    /**
-     * @param string $repo
-     *
-     * @return array
-     */
-    private function getModuleMeta(string $repo): array
-    {
-        $module_path = $this->module_root . $repo;
-        $meta_file   = $module_path . DIRECTORY_SEPARATOR . 'module.json';
-
-        if (!is_file($meta_file)) {
-            return [];
-        }
-
-        $metadata = json_decode(file_get_contents($meta_file), true);
-
-        if (!isset($metadata['name']) || $metadata['name'] !== $repo) {
-            return [];
-        }
-
-        if (!isset($metadata['entry']) || !is_file($module_path . DIRECTORY_SEPARATOR . $metadata['entry'])) {
-            return [];
-        }
-
-        unset($repo, $module_path, $meta_file);
-        return $metadata;
-    }
-
-    /**
-     * @return string
-     * @throws \ReflectionException
-     * @throws \Exception
-     */
-    private function findSshKey(): string
-    {
-        $user_home    = getenv('WINNT' === PHP_OS ? 'USERPROFILE' : 'HOME');
-        $ssh_key_path = $user_home . DIRECTORY_SEPARATOR . '.ssh' . DIRECTORY_SEPARATOR . 'id_rsa';
-
-        if (!is_file($ssh_key_path)) {
-            $this->output('SSH Key NOT found.');
-            return '';
-        }
-
-        $this->output('SSH Key found: ' . $ssh_key_path);
-
-        $ssh_ver = null;
-        chmod($ssh_key_path, 0600);
-
-        $findSshVer = function (string $output) use (&$ssh_ver): void
-        {
-            if (str_starts_with($output, 'OpenSSH_')) {
-                $ssh_ver = $output;
-            }
-
-            unset($output);
-        };
-
-        $proc_idx = $this->procMgr->command(['ssh', '-V'])->run();
-
-        $exit_code = $this->procMgr->awaitProc($proc_idx, $findSshVer, $findSshVer);
-
-        if (0 !== $exit_code || is_null($ssh_ver)) {
-            $this->output('OpenSSH not installed.');
-            $ssh_key_path = '';
-        }
-
-        $this->output('OpenSSH version: ' . $ssh_ver, true);
-
-        unset($user_home, $ssh_ver, $findSshVer, $proc_idx, $exit_code);
-        return $ssh_key_path;
-    }
-
-    /**
-     * @param string $url
-     *
-     * @return void
-     * @throws \Exception
-     */
-    private function runSshCommand(string $url): void
-    {
-        if (str_starts_with($url, 'git@')) {
-            if ('' !== $this->ssk_key) {
-                putenv('GIT_SSH_COMMAND=ssh -T -i ' . escapeshellarg($this->ssk_key) . ' -o StrictHostKeyChecking=no');
-                unset($url);
-                return;
-            }
-
-            $this->output('SSH Key NOT found, or, OpenSSH NOT installed.');
-            $this->output('Skip installing module from ' . $url);
-        }
-
-        putenv('GIT_SSH_COMMAND=');
-        unset($url);
-    }
-
-    /**
-     * @return void
-     */
-    private function saveEnv(): void
-    {
-        file_put_contents($this->config_file, json_encode($this->local_env, JSON_PRETTY));
     }
 }
