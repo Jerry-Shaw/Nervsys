@@ -32,7 +32,7 @@ class libOpenAI extends Factory
     public string $org_id     = '';
     public string $api_url    = 'http://127.0.0.1:1234/v1';
     public string $api_key    = '';
-    public string $api_model  = 'qwen3.6-35b-a3b';
+    public string $api_model  = '';
     public string $end_marker = '[DONE]';
     public string $sse_buffer = '';
 
