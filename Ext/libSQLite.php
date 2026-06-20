@@ -473,6 +473,37 @@ class libSQLite extends Factory
     }
 
     /**
+     * @param array ...$conditions
+     *
+     * @return $this
+     */
+    public function match(array ...$conditions): static
+    {
+        foreach ($conditions as $condition) {
+            $connector = 'AND';
+
+            if (isset($condition[0]) && is_string($condition[0]) && in_array(strtoupper($condition[0]), ['AND', 'OR'], true)) {
+                $connector = strtoupper(array_shift($condition));
+            }
+
+            if (2 !== count($condition)) {
+                throw new \PDOException('MATCH condition must have exactly 2 elements: [column, keyword]', E_USER_ERROR);
+            }
+
+            $this->runtime_data['match'][] = [
+                'column'    => $condition[0],
+                'keyword'   => $condition[1],
+                'connector' => $connector
+            ];
+
+            $this->runtime_data['bind_match'][] = $condition[1];
+        }
+
+        unset($conditions, $condition, $connector);
+        return $this;
+    }
+
+    /**
      * Set having condition
      *
      * @param array ...$where
@@ -1228,6 +1259,35 @@ class libSQLite extends Factory
             $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'], $this->runtime_data['bind_where'] ?? []);
 
             $clause .= ' ' . implode(' ', $this->runtime_data['where']);
+        }
+
+        if (isset($this->runtime_data['match']) && !empty($this->runtime_data['match'])) {
+            $first   = true;
+            $matches = [];
+
+            foreach ($this->runtime_data['match'] as $item) {
+                $col = $this->escapeField($item['column']);
+
+                if ($first) {
+                    $matches[] = $col . ' MATCH ?';
+                    $first     = false;
+                } else {
+                    $matches[] = $item['connector'] . ' ' . $col . ' MATCH ?';
+                }
+            }
+
+            $match_sql = implode(' ', $matches);
+
+            if (isset($this->runtime_data['where']) && !empty($this->runtime_data['where'])) {
+                $clause .= ' AND (' . $match_sql . ')';
+            } else {
+                $clause .= ' WHERE ' . $match_sql;
+            }
+
+            $this->runtime_data['bind'] ??= [];
+            $this->runtime_data['bind'] = array_merge($this->runtime_data['bind'], $this->runtime_data['bind_match'] ?? []);
+
+            unset($first, $matches, $item, $col, $match_sql);
         }
 
         if (isset($this->runtime_data['group'])) {

@@ -61,6 +61,16 @@ Adds `WHERE` conditions. Each condition is an array: `[field, operator, value]` 
 - **Parameters:** Variable number of condition arrays.
 - **Returns:** The current instance.
 
+### `match(array ...$conditions): static`
+
+Adds a `MATCH` condition for FTS5 full-text search. Each condition is an array: `[column, keyword]`. Optionally, prepend
+`'AND'` or `'OR'` to the array to specify the logical connector (default is `AND`). Multiple conditions are combined
+using their respective connectors into a composite `MATCH` clause, automatically wrapped in parentheses to avoid
+conflicts with outer `WHERE` clauses.
+
+- **Parameters:** Variable number of condition arrays, each formatted as `[connector?, column, keyword]`.
+- **Returns:** The current instance for chaining.
+
 ### `order(array $orders): static`
 
 Adds `ORDER BY` clause. The array keys are column names, values can be `'ASC'`/`'DESC'` or a list of values for custom
