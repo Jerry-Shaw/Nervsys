@@ -46,16 +46,18 @@ class ProcMgr extends Factory
 
     public string|null $work_dir = null;
 
-    protected array $command       = [];
-    protected array $proc_pid      = [];
-    protected array $proc_list     = [];
-    protected array $proc_idle     = [];
-    protected array $proc_stdin    = [];
-    protected array $proc_stdout   = [];
-    protected array $proc_stderr   = [];
-    protected array $proc_status   = [];
-    protected array $proc_job_done = [];
+    protected array $command = [];
 
+    protected array $proc_pid    = [];
+    protected array $proc_idle   = [];
+    protected array $proc_status = [];
+
+    protected array $proc_stdin   = [];
+    protected array $proc_stdout  = [];
+    protected array $proc_stderr  = [];
+    protected array $proc_process = [];
+
+    protected array $proc_job_done   = [];
     protected array $proc_job_await  = [];
     protected array $proc_callbacks  = [];
     protected array $proc_end_marker = [];
@@ -135,11 +137,11 @@ class ProcMgr extends Factory
      */
     public function run(int $idx = 0): int
     {
-        if (isset($this->proc_list[$idx])) {
+        if (isset($this->proc_process[$idx])) {
             return $this->run(++$idx);
         }
 
-        $this->proc_list[$idx] = false;
+        $this->proc_process[$idx] = false;
 
         try {
             $proc = proc_open(
@@ -157,7 +159,7 @@ class ProcMgr extends Factory
                 throw new \Exception('Failed to open "' . $this->getCmd() . '"', E_USER_ERROR);
             }
         } catch (\Throwable $throwable) {
-            unset($this->proc_list[$idx]);
+            unset($this->proc_process[$idx]);
             throw new \Exception($throwable->getMessage(), E_USER_ERROR);
         }
 
@@ -168,11 +170,12 @@ class ProcMgr extends Factory
         $this->proc_idle['P' . $idx] = $idx;
 
         $this->proc_pid[$idx]    = proc_get_status($proc)['pid'];
-        $this->proc_list[$idx]   = $proc;
-        $this->proc_stdin[$idx]  = $pipes[0];
-        $this->proc_stdout[$idx] = $pipes[1];
-        $this->proc_stderr[$idx] = $pipes[2];
         $this->proc_status[$idx] = self::P_STDIN | self::P_STDOUT | self::P_STDERR;
+
+        $this->proc_stdin[$idx]   = $pipes[0];
+        $this->proc_stdout[$idx]  = $pipes[1];
+        $this->proc_stderr[$idx]  = $pipes[2];
+        $this->proc_process[$idx] = $proc;
 
         $this->proc_job_done[$idx]   = 0;
         $this->proc_job_await[$idx]  = 0;
@@ -225,18 +228,21 @@ class ProcMgr extends Factory
     }
 
     /**
-     * @param int $idx
+     * @param int    $idx
+     * @param string ...$pipes
      *
      * @return array
      */
-    public function getProc(int $idx = 0): array
+    public function getProc(int $idx = 0, string ...$pipes): array
     {
-        return [
-            'process' => $this->proc_list[$idx],
-            'stdin'   => $this->proc_stdin[$idx],
-            'stdout'  => $this->proc_stdout[$idx],
-            'stderr'  => $this->proc_stderr[$idx]
-        ];
+        $context = [];
+
+        foreach ($pipes as $pipe) {
+            $context[$pipe] = $this->{'proc_' . $pipe}[$idx];
+        }
+
+        unset($idx, $pipes, $pipe);
+        return $context;
     }
 
     /**
@@ -250,7 +256,7 @@ class ProcMgr extends Factory
             return 0;
         }
 
-        if ('Unknown' === get_resource_type($this->proc_list[$idx])) {
+        if ('Unknown' === get_resource_type($this->proc_process[$idx])) {
             $this->close($idx);
             return 0;
         }
@@ -266,7 +272,7 @@ class ProcMgr extends Factory
             }
         }
 
-        $proc_status = proc_get_status($this->proc_list[$idx]);
+        $proc_status = proc_get_status($this->proc_process[$idx]);
 
         if (!$proc_status['running'] && self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
             $this->proc_status[$idx] ^= self::P_STDIN;
@@ -410,7 +416,7 @@ class ProcMgr extends Factory
             $this->readIPC($stdout_callback, $stderr_callback);
         }
 
-        $status    = proc_get_status($this->proc_list[$idx]);
+        $status    = proc_get_status($this->proc_process[$idx]);
         $exit_code = !$status['running'] ? $status['exitcode'] : -1;
 
         $this->close($idx);
@@ -435,11 +441,11 @@ class ProcMgr extends Factory
         if (isset($this->proc_stderr[$idx]) && is_resource($this->proc_stderr[$idx])) {
             fclose($this->proc_stderr[$idx]);
         }
-        if (isset($this->proc_list[$idx]) && is_resource($this->proc_list[$idx])) {
-            proc_close($this->proc_list[$idx]);
+        if (isset($this->proc_process[$idx]) && is_resource($this->proc_process[$idx])) {
+            proc_close($this->proc_process[$idx]);
         }
 
-        unset($this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_list[$idx], $this->proc_idle['P' . $idx], $idx);
+        unset($this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_process[$idx], $this->proc_idle['P' . $idx], $idx);
     }
 
     /**
