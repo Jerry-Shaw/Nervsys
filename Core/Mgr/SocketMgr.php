@@ -244,7 +244,7 @@ class SocketMgr extends Factory
                 $ext_id = 'ext_' . get_resource_id($item);
 
                 $this->external_stream[$ext_id]   = $item;
-                $this->external_context[$ext_id]  = $proc_context;
+                $this->external_context[$ext_id]  = $proc_context + ['ext_id' => $ext_id];
                 $this->external_callback[$ext_id] = $pipe_callbacks[$key];
             }
         }
