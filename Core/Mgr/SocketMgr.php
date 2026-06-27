@@ -542,7 +542,14 @@ class SocketMgr extends Factory
                 }
 
                 if (str_starts_with($socket_id, 'sock_')) {
-                    //Process message only if connection exists
+                    // Close disconnected client
+                    if (feof($socket)) {
+                        $this->debug('Socket EOF detected, closing...');
+                        $this->closeSocket($socket_id);
+                        continue;
+                    }
+
+                    // Process message only if connection exists
                     if (isset($this->connections[$socket_id])) {
                         $this->serverProcessMessage($socket_id, $is_websocket);
                     }
@@ -972,6 +979,7 @@ class SocketMgr extends Factory
                 if (str_starts_with($socket_id, 'sock_')) {
                     if (feof($socket)) {
                         $this->debug('Socket EOF detected, reconnecting...');
+                        unset($this->master_sock[$this->master_id]);
                         $this->closeSocket($this->master_id);
                         $this->clientReconnect();
                         continue;
