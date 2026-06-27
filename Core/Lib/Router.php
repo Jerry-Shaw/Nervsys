@@ -113,11 +113,8 @@ class Router extends Factory
 
         $api_path = strtr($app->api_dir, '\\', '/');
         $api_path = trim($api_path, '/') . '/';
-        $cgi_cmd  = $this->getFullCgiCmd($api_path, $c, $app->is_cli);
-
-        $unit = App::MODE_MODULE === $app->mode
-            ? $this->getModuleFn($cgi_cmd, $api_path, $app->root_path)
-            : $this->getApiFn($cgi_cmd);
+        $cgi_cmd  = $this->getFullCgiCmd($api_path, $c, $app->mode, $app->root_path, $app->is_cli);
+        $unit     = $this->getApiFn($cgi_cmd);
 
         unset($c, $app, $api_path, $cgi_cmd);
         return $unit;
@@ -126,58 +123,28 @@ class Router extends Factory
     /**
      * @param string $api_dir
      * @param string $cmd_val
-     * @param bool   $cli_exec
+     * @param string $app_mode
+     * @param string $root_path
+     * @param bool   $is_cli
      *
      * @return string
      */
-    public function getFullCgiCmd(string $api_dir, string $cmd_val, bool $cli_exec = false): string
+    public function getFullCgiCmd(string $api_dir, string $cmd_val, string $app_mode, string $root_path, bool $is_cli): string
     {
         $cmd_val = strtr($cmd_val, '\\', '/');
 
-        $match_path = !$cli_exec
+        $is_safe = !$is_cli
             ? str_starts_with($cmd_val, $api_dir)
             : str_starts_with($cmd_val, '/') || str_starts_with($cmd_val, $api_dir);
 
         $cmd_val = trim($cmd_val, '/');
-        $cmd     = '/' . ($match_path ? $cmd_val : $api_dir . $cmd_val);
 
-        unset($api_dir, $cmd_val, $cli_exec, $match_path);
-        return $cmd;
-    }
-
-    /**
-     * @param string $cmd
-     *
-     * @return array
-     */
-    private function getApiFn(string $cmd): array
-    {
-        $fn_pos = strrpos($cmd, '/');
-
-        $fn = [
-            strtr(substr($cmd, 0, $fn_pos), '/', '\\'),
-            substr($cmd, $fn_pos + 1)
-        ];
-
-        unset($cmd, $fn_pos);
-        return $fn;
-    }
-
-    /**
-     * @param string $cmd
-     * @param string $api_path
-     * @param string $root_path
-     *
-     * @return array
-     */
-    private function getModuleFn(string $cmd, string $api_path, string $root_path): array
-    {
-        $api_path = '/' . $api_path;
-
-        if (str_starts_with($cmd, $api_path)) {
-            //Module calling
-            $module_cmd  = substr($cmd, strlen($api_path));
-            $module_unit = explode('/', $module_cmd);
+        if ($is_safe) {
+            $cmd = '/' . $cmd_val;
+        } elseif (App::MODE_API === $app_mode) {
+            $cmd = '/' . $api_dir . $cmd_val;
+        } else {
+            $module_unit = explode('/', $cmd_val);
             $module_unit = array_filter($module_unit,
                 function ($segment)
                 {
@@ -190,33 +157,48 @@ class Router extends Factory
             $module_unit = array_values($module_unit);
 
             if (count($module_unit) < 2) {
-                return [];
+                return '';
             }
 
-            $module_path = $root_path . $api_path . $module_unit[0];
+            $module_path = $root_path . DIRECTORY_SEPARATOR . $api_dir . $module_unit[0];
 
             if (!is_dir($module_path)) {
-                return [];
+                return '';
             }
 
             $metadata = $this->getModuleMetadata($module_unit[0], $module_path);
 
             if (empty($metadata)) {
-                return [];
+                return '';
             }
 
-            $fn = [
-                strtr($api_path . $module_unit[0] . '\\' . strstr($metadata['entry'], '.', true), '/', '\\'),
-                $module_unit[1]
-            ];
-
-            unset($module_cmd, $module_unit, $module_path, $metadata);
-        } else {
-            //Path calling
-            $fn = $this->getApiFn($cmd);
+            $cmd = '/' . $api_dir . $module_unit[0] . '/' . strstr($metadata['entry'], '.', true) . '/' . $module_unit[1];
+            unset($module_unit, $module_path, $metadata);
         }
 
-        unset($cmd, $api_path, $root_path);
+        unset($api_dir, $cmd_val, $app_mode, $root_path, $is_cli, $is_safe);
+        return $cmd;
+    }
+
+    /**
+     * @param string $cmd
+     *
+     * @return array
+     */
+    private function getApiFn(string $cmd): array
+    {
+        $fn_pos = strrpos($cmd, '/');
+
+        if (false === $fn_pos) {
+            return [];
+        }
+
+        $fn = [
+            strtr(substr($cmd, 0, $fn_pos), '/', '\\'),
+            substr($cmd, $fn_pos + 1)
+        ];
+
+        unset($cmd, $fn_pos);
         return $fn;
     }
 
