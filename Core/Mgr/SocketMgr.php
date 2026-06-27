@@ -254,13 +254,13 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $socket_id
+     * @param string $ext_id
      *
      * @return $this
      */
-    public function closeExternalProc(string $socket_id): static
+    public function closeExternalProc(string $ext_id): static
     {
-        foreach ($this->external_context[$socket_id] as $key => $item) {
+        foreach ($this->external_context[$ext_id] as $key => $item) {
             if (!is_resource($item)) {
                 continue;
             }
@@ -269,16 +269,40 @@ class SocketMgr extends Factory
 
             switch ($type) {
                 case 'stream':
-                    fclose($this->external_context[$socket_id][$key]);
+                    fclose($this->external_context[$ext_id][$key]);
                     break;
                 case 'process':
-                    proc_close($this->external_context[$socket_id][$key]);
+                    proc_close($this->external_context[$ext_id][$key]);
                     break;
             }
         }
 
-        unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id, $key, $item, $type);
+        unset($this->external_stream[$ext_id], $this->external_context[$ext_id], $this->external_callback[$ext_id], $ext_id, $key, $item, $type);
         return $this;
+    }
+
+    /**
+     * @param string $ext_id
+     *
+     * @return void
+     */
+    public function runExternalCallback(string $ext_id): void
+    {
+        if (is_callable($this->external_callback[$ext_id])) {
+            try {
+                call_user_func($this->external_callback[$ext_id], $ext_id, $this->external_context[$ext_id]);
+            } catch (\Throwable $throwable) {
+                $this->debug('External callback ERROR: #' . $ext_id . ' -> ' . $throwable->getMessage());
+                unset($throwable);
+            }
+        }
+
+        if (isset($this->external_stream[$ext_id]) && feof($this->external_stream[$ext_id])) {
+            $this->closeExternalProc($ext_id);
+            $this->debug('External stream closed, cleaned: #' . $ext_id);
+        }
+
+        unset($ext_id);
     }
 
     /**
@@ -1344,30 +1368,6 @@ class SocketMgr extends Factory
 
         unset($socket_id, $resource);
         return $resources;
-    }
-
-    /**
-     * @param string $socket_id
-     *
-     * @return void
-     */
-    public function runExternalCallback(string $socket_id): void
-    {
-        if (is_callable($this->external_callback[$socket_id])) {
-            try {
-                call_user_func($this->external_callback[$socket_id], $socket_id, $this->external_context[$socket_id]);
-            } catch (\Throwable $throwable) {
-                $this->debug('External callback ERROR: #' . $socket_id . ' -> ' . $throwable->getMessage());
-                unset($throwable);
-            }
-        }
-
-        if (isset($this->external_stream[$socket_id]) && feof($this->external_stream[$socket_id])) {
-            $this->closeExternalProc($socket_id);
-            $this->debug('External stream closed, cleaned: #' . $socket_id);
-        }
-
-        unset($socket_id);
     }
 
     /**
