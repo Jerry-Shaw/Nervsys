@@ -23,6 +23,7 @@ namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\Error;
+use Random\RandomException;
 
 class SocketMgr extends Factory
 {
@@ -231,37 +232,24 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param array         $proc_data
-     * @param callable      $output_callback
-     * @param callable|null $error_callback
+     * @param array $proc_context
+     * @param array $pipe_callbacks
      *
      * @return $this
      */
-    public function addExternalProc(array $proc_data, callable $output_callback, callable|null $error_callback = null): static
+    public function addExternalProc(array $proc_context, array $pipe_callbacks): static
     {
-        $context = [];
+        foreach ($proc_context as $key => $item) {
+            if (is_resource($item) && isset($pipe_callbacks[$key]) && is_callable($pipe_callbacks[$key])) {
+                $ext_id = 'ext_' . get_resource_id($item);
 
-        foreach ($proc_data as $key => $value) {
-            $context[$key] = $value;
+                $this->external_stream[$ext_id]   = $item;
+                $this->external_context[$ext_id]  = $proc_context;
+                $this->external_callback[$ext_id] = $pipe_callbacks[$key];
+            }
         }
 
-        $stdout_id = 'ext_' . get_resource_id($context['stdout']);
-
-        $this->external_stream[$stdout_id]   = $context['stdout'];
-        $this->external_context[$stdout_id]  = $context;
-        $this->external_callback[$stdout_id] = $output_callback;
-
-        if (is_callable($error_callback)) {
-            $stderr_id = 'ext_' . get_resource_id($context['stderr']);
-
-            $this->external_stream[$stderr_id]   = $context['stderr'];
-            $this->external_context[$stderr_id]  = $context;
-            $this->external_callback[$stderr_id] = $error_callback;
-
-            unset($stderr_id);
-        }
-
-        unset($proc_data, $output_callback, $error_callback, $context, $stdout_id);
+        unset($proc_context, $pipe_callbacks, $key, $item, $ext_id);
         return $this;
     }
 
@@ -272,20 +260,24 @@ class SocketMgr extends Factory
      */
     public function closeExternalProc(string $socket_id): static
     {
-        if (isset($this->external_context[$socket_id]['stdin']) && is_resource($this->external_context[$socket_id]['stdin'])) {
-            fclose($this->external_context[$socket_id]['stdin']);
-        }
-        if (isset($this->external_context[$socket_id]['stdout']) && is_resource($this->external_context[$socket_id]['stdout'])) {
-            fclose($this->external_context[$socket_id]['stdout']);
-        }
-        if (isset($this->external_context[$socket_id]['stderr']) && is_resource($this->external_context[$socket_id]['stderr'])) {
-            fclose($this->external_context[$socket_id]['stderr']);
-        }
-        if (isset($this->external_context[$socket_id]['process']) && is_resource($this->external_context[$socket_id]['process'])) {
-            proc_close($this->external_context[$socket_id]['process']);
+        foreach ($this->external_context[$socket_id] as $key => $item) {
+            if (!is_resource($item)) {
+                continue;
+            }
+
+            $type = get_resource_type($item);
+
+            switch ($type) {
+                case 'stream':
+                    fclose($this->external_context[$socket_id][$key]);
+                    break;
+                case 'process':
+                    proc_close($this->external_context[$socket_id][$key]);
+                    break;
+            }
         }
 
-        unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id);
+        unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id, $key, $item, $type);
         return $this;
     }
 
@@ -784,22 +776,31 @@ class SocketMgr extends Factory
     }
 
     /**
-     * @param string $address
+     * Connect to a server (TCP or WebSocket).
+     *
+     * @param string $address      Address to connect to (e.g., tcp://... or ws://...)
+     * @param bool   $is_websocket Whether this is a WebSocket connection
      *
      * @return void
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function connectTo(string $address): void
+    public function connectTo(string $address, bool $is_websocket = false): void
     {
         $this->address = $address;
-        $this->createClient($address);
 
-        $this->fiberMgr->async([$this, 'clientOnMessage']);
-        $this->fiberMgr->async([$this, 'clientOnHeartbeat']);
-        $this->fiberMgr->async([$this, 'clientOnSend']);
+        if ($is_websocket) {
+            $this->createWSClient($address);
+        } else {
+            $this->createClient($address);
+        }
 
+        $this->fiberMgr->async([$this, 'clientOnMessage'], [$is_websocket]);
+        $this->fiberMgr->async([$this, 'clientOnHeartbeat'], [$is_websocket]);
+        $this->fiberMgr->async([$this, 'clientOnSend'], [$is_websocket]);
         $this->fiberMgr->commit();
+
+        unset($address, $is_websocket);
     }
 
     /**
@@ -858,53 +859,155 @@ class SocketMgr extends Factory
     }
 
     /**
+     * Establish a WebSocket client connection (supports ws:// and wss://).
+     *
+     * @param string $address WebSocket URL
+     *
+     * @return void
+     * @throws \Exception
+     */
+    public function createWSClient(string $address): void
+    {
+        $parts = parse_url($address);
+
+        if (!isset($parts['host'])) {
+            throw new \Exception('Invalid WebSocket address');
+        }
+
+        $scheme = $parts['scheme'] ?? 'ws';
+        $host   = $parts['host'];
+        $port   = $parts['port'] ?? (('wss' === $scheme) ? 443 : 9222);
+        $path   = $parts['path'] ?? '/';
+
+        if (isset($parts['query'])) {
+            $path .= '?' . $parts['query'];
+        }
+
+        $transport = ('wss' === $scheme) ? 'ssl' : 'tcp';
+        $context   = stream_context_create();
+
+        if (!empty($this->options)) {
+            if (!stream_context_set_params($context, ['options' => $this->options])) {
+                throw new \Exception('Failed to set context options!', E_USER_ERROR);
+            }
+        }
+
+        $socket = stream_socket_client(
+            $transport . '://' . $host . ':' . $port,
+            $errno,
+            $errstr,
+            60,
+            STREAM_CLIENT_CONNECT,
+            $context
+        );
+
+        if (false === $socket) {
+            throw new \Exception('WebSocket connection failed: ' . $errstr . ' (' . $errno . ')');
+        }
+
+        stream_set_blocking($socket, true);
+
+        // WebSocket handshake
+        $ws_key  = base64_encode(random_bytes(16));
+        $request = 'GET ' . $path . ' HTTP/1.1' . "\r\n"
+            . 'Host: ' . $host . ':' . $port . "\r\n"
+            . 'Upgrade: websocket' . "\r\n"
+            . 'Connection: Upgrade' . "\r\n"
+            . 'Sec-WebSocket-Key: ' . $ws_key . "\r\n"
+            . 'Sec-WebSocket-Version: 13' . "\r\n"
+            . "\r\n";
+
+        fwrite($socket, $request);
+
+        $response = '';
+
+        while (false !== ($line = fgets($socket))) {
+            $response .= $line;
+            if ('' === trim($line)) {
+                break;
+            }
+        }
+
+        stream_set_blocking($socket, $this->block_mode);
+
+        if (!str_contains($response, '101')) {
+            fclose($socket);
+            throw new \Exception('WebSocket handshake failed');
+        }
+
+        $now = time();
+
+        $this->master_id   = 'sock_' . get_resource_id($socket);
+        $this->master_sock = [$this->master_id => $socket];
+        $this->connections = [$this->master_id => $socket];
+        $this->activities  = [$this->master_id => [$now, $now]];
+        // Mark as WebSocket client (handshakes = true)
+        $this->handshakes[$this->master_id] = true;
+
+        $this->debug('WebSocket client connected to ' . $address . '. ID: #' . $this->master_id);
+
+        unset($address, $parts, $scheme, $host, $port, $path, $transport, $context, $socket, $errno, $errstr, $ws_key, $request, $response, $line, $now);
+    }
+
+    /**
+     * @param bool $is_websocket
+     *
      * @return void
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function clientOnMessage(): void
+    public function clientOnMessage(bool $is_websocket = false): void
     {
         $write = $except = [];
 
         while (true) {
-            $servers = $this->master_sock;
+            $servers = $this->master_sock + $this->external_stream;
 
             if (0 === (int)stream_select($servers, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
                 \Fiber::suspend();
                 continue;
             }
 
-            try {
-                $is_binary = false;
-                $message   = $this->readMessage($this->master_id, false, $is_binary);
-            } catch (\Throwable $throwable) {
-                $this->debug('Read message failed: ' . $throwable->getMessage());
-                $this->clientReconnect();
-                unset($throwable);
-                \Fiber::suspend();
-                continue;
-            }
+            foreach ($servers as $socket_id => $socket) {
+                if (str_starts_with($socket_id, 'sock_')) {
+                    try {
+                        $is_binary = false;
+                        $message   = $this->readMessage($this->master_id, $is_websocket, $is_binary);
+                    } catch (\Throwable $throwable) {
+                        $this->debug('Read message failed: ' . $throwable->getMessage());
+                        $this->clientReconnect();
+                        unset($throwable);
+                        continue;
+                    }
 
-            $this->debug('Read message from server: ' . $message);
+                    $this->debug('Read message from server: ' . $message);
 
-            if (is_callable($this->callbacks['onMessage'])) {
-                try {
-                    call_user_func($this->callbacks['onMessage'], $this->master_id, $message, $is_binary);
-                } catch (\Throwable $throwable) {
-                    $this->debug('clientOnMessage callback ERROR: ' . $throwable->getMessage());
-                    $this->error->exceptionHandler($throwable, false, false);
-                    unset($throwable);
+                    if (is_callable($this->callbacks['onMessage'])) {
+                        try {
+                            call_user_func($this->callbacks['onMessage'], $this->master_id, $message, $is_binary);
+                        } catch (\Throwable $throwable) {
+                            $this->debug('Client message callback ERROR: ' . $throwable->getMessage());
+                            $this->error->exceptionHandler($throwable, false, false);
+                            unset($throwable);
+                        }
+                    }
+                } else {
+                    $this->runExternalCallback($socket_id);
                 }
             }
+
+            \Fiber::suspend();
         }
     }
 
     /**
+     * @param bool $is_websocket
+     *
      * @return void
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function clientOnHeartbeat(): void
+    public function clientOnHeartbeat(bool $is_websocket = false): void
     {
         $check_time = $this->alive_timeout / 2;
 
@@ -931,7 +1034,12 @@ class SocketMgr extends Factory
             }
 
             try {
-                $this->sendMessage($this->master_id, $heartbeat);
+                if ($is_websocket) {
+                    $this->wsPing($this->master_id);
+                } else {
+                    $this->sendMessage($this->master_id, $heartbeat);
+                }
+
                 $this->activities[$this->master_id][1] = $now_time;
                 $this->debug('Send heartbeat to server');
             } catch (\Throwable) {
@@ -941,11 +1049,13 @@ class SocketMgr extends Factory
     }
 
     /**
+     * @param bool $is_websocket
+     *
      * @return void
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    public function clientOnSend(): void
+    public function clientOnSend(bool $is_websocket = false): void
     {
         if (!is_callable($this->callbacks['onSendBinary']) && !is_callable($this->callbacks['onSendString'])) {
             return;
@@ -977,7 +1087,8 @@ class SocketMgr extends Factory
 
             foreach ($msg_list as $raw_msg) {
                 try {
-                    $this->sendMessage($this->master_id, $raw_msg);
+                    $to_send = $is_websocket ? $this->wsEncode($raw_msg, false, true) : $raw_msg;
+                    $this->sendMessage($this->master_id, $to_send);
                     $this->debug('Send message to server: ' . $raw_msg);
 
                     if (0 < $this->sending_gap) {
@@ -1548,25 +1659,38 @@ class SocketMgr extends Factory
 
     /**
      * @param string $message
-     * @param bool   $is_binary
+     * @param bool   $binary
+     * @param bool   $mask
      *
      * @return string
+     * @throws RandomException
      */
-    public function wsEncode(string $message, bool $is_binary = false): string
+    public function wsEncode(string $message, bool $binary = false, bool $mask = false): string
     {
-        $length = strlen($message);
-        $opcode = $is_binary ? 0x82 : 0x81;
+        $length   = strlen($message);
+        $opcode   = $binary ? 0x82 : 0x81;
+        $header   = chr($opcode);
+        $mask_bit = $mask ? 0x80 : 0x00;
 
         if ($length <= 125) {
-            $buff = chr($opcode) . chr($length) . $message;
+            $header .= chr($length | $mask_bit);
         } elseif ($length <= 65535) {
-            $buff = chr($opcode) . chr(126) . pack('n', $length) . $message;
+            $header .= chr(126 | $mask_bit) . pack('n', $length);
         } else {
-            $buff = chr($opcode) . chr(127) . pack('J', $length) . $message;
+            $header .= chr(127 | $mask_bit) . pack('J', $length);
         }
 
-        unset($message, $is_binary, $length, $opcode);
-        return $buff;
+        if ($mask) {
+            $mask_key = random_bytes(4);
+            $header   .= $mask_key;
+            for ($i = 0; $i < $length; ++$i) {
+                $message[$i] = $message[$i] ^ $mask_key[$i % 4];
+            }
+        }
+
+        $result = $header . $message;
+        unset($message, $binary, $mask, $length, $opcode, $mask_bit, $mask_key, $i);
+        return $result;
     }
 
     /**
