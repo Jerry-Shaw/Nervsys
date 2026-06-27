@@ -1226,19 +1226,30 @@ class SocketMgr extends Factory
     {
         try {
             if ('udp' !== $this->sock_type) {
-                // WebSocket frame mode
-                if ($is_websocket && !isset($this->handshakes[$socket_id])) {
-                    $frame = $this->wsReadFrame($socket_id);
+                if ($is_websocket) {
+                    // WebSocket frame mode
+                    if (!isset($this->handshakes[$socket_id]) || true === $this->handshakes[$socket_id]) {
+                        // Normal message
+                        $frame = $this->wsReadFrame($socket_id);
 
-                    // If frame is not complete (fragmentation), wait silently
-                    if (!$frame['is_complete']) {
-                        return '';
+                        if (!$frame['is_complete']) {
+                            return '';
+                        }
+
+                        $is_binary = (0x2 === $frame['opcode']);
+                        $message   = $frame['data'];
+
+                        unset($frame);
+                    } else {
+                        // Handshake message
+                        $message = '';
+
+                        while (false !== ($msg_line = fgets($this->connections[$socket_id]))) {
+                            $message .= $msg_line;
+                        }
+
+                        $this->activities[$socket_id][1] = time();
                     }
-
-                    $is_binary = (0x2 === $frame['opcode']);
-                    $message   = $frame['data'];
-
-                    unset($frame);
                 } else {
                     // TCP mode or WebSocket handshake
                     $message   = '';
