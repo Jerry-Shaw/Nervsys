@@ -970,6 +970,13 @@ class SocketMgr extends Factory
 
             foreach ($servers as $socket_id => $socket) {
                 if (str_starts_with($socket_id, 'sock_')) {
+                    if (feof($socket)) {
+                        $this->debug('Socket EOF detected, reconnecting...');
+                        $this->closeSocket($this->master_id);
+                        $this->clientReconnect();
+                        continue;
+                    }
+
                     try {
                         $is_binary = false;
                         $message   = $this->readMessage($this->master_id, $is_websocket, $is_binary);
