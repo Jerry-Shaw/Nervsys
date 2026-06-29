@@ -202,7 +202,7 @@ class WINNT
      */
     public function killProc(int $pid): void
     {
-        exec('taskkill -PID ' . $pid . ' -F');
+        exec('taskkill -PID ' . $pid . ' -F >nul 2>&1');
     }
 
     /**

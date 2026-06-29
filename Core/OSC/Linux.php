@@ -116,7 +116,7 @@ class Linux
      */
     public function killProc(int $pid): void
     {
-        exec('kill -9 ' . $pid);
+        exec('kill -9 ' . $pid . ' > /dev/null 2>&1');
     }
 
     /**
