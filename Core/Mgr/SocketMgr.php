@@ -32,6 +32,7 @@ class SocketMgr extends Factory
 
     public string $master_id = '';
 
+    public string $name      = '';
     public string $address   = '';
     public string $sock_type = '';
     public string $heartbeat = "\n";
@@ -71,10 +72,13 @@ class SocketMgr extends Factory
     /**
      * @throws \ReflectionException
      */
-    public function __construct()
+    public function __construct(string $name = '')
     {
+        $this->name     = $name;
         $this->error    = Error::new();
         $this->fiberMgr = FiberMgr::new();
+
+        unset($name);
     }
 
     /**
