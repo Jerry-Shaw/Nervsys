@@ -97,13 +97,23 @@ class OSMgr extends Factory
     }
 
     /**
+     * @param int $port
+     *
+     * @return array
+     */
+    public function findPidsByPort(int $port): array
+    {
+        return $this->lib_os->findPidsByPort($port);
+    }
+
+    /**
      * @param int $pid
      *
      * @return void
      */
-    public function killProc(int $pid): void
+    public function killPid(int $pid): void
     {
-        $this->lib_os->killProc($pid);
+        $this->lib_os->killPid($pid);
     }
 
     /**

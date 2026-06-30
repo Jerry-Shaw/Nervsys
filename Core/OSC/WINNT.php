@@ -196,11 +196,40 @@ class WINNT
     }
 
     /**
+     * @param int $port
+     *
+     * @return array
+     */
+    public function findPidsByPort(int $port): array
+    {
+        $pids = [];
+        $cmd  = 'netstat -ano | findstr :' . $port . ' ';
+
+        exec($cmd, $output, $status);
+
+        if (0 === $status && !empty($output)) {
+            foreach ($output as $line) {
+                $parts   = array_filter(explode(' ', trim($line)), 'strlen');
+                $pid_str = end($parts);
+
+                if (is_numeric($pid_str) && 0 < (int)$pid_str) {
+                    $pids[] = (int)$pid_str;
+                }
+            }
+        }
+
+        $pids = array_values(array_unique($pids));
+
+        unset($port, $cmd, $output, $status, $line, $parts, $pid_str);
+        return $pids;
+    }
+
+    /**
      * @param int $pid
      *
      * @return void
      */
-    public function killProc(int $pid): void
+    public function killPid(int $pid): void
     {
         exec('taskkill -PID ' . $pid . ' -F >nul 2>&1');
     }

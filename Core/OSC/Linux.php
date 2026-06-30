@@ -110,11 +110,37 @@ class Linux
     }
 
     /**
+     * @param int $port
+     *
+     * @return array
+     */
+    public function findPidsByPort(int $port): array
+    {
+        $pids = [];
+        $cmd  = 'ss -tulpn | grep \':\' ' . $port . ' \' | sed -n \'s/.*pid=\\([0-9]*\\).*/\\1/p\'';
+
+        exec($cmd, $output, $status);
+
+        if (0 === $status && !empty($output)) {
+            foreach ($output as $pid_str) {
+                if (is_numeric($pid_str) && 0 < (int)$pid_str) {
+                    $pids[] = (int)$pid_str;
+                }
+            }
+        }
+
+        $pids = array_values(array_unique($pids));
+
+        unset($port, $cmd, $output, $status, $pid_str);
+        return $pids;
+    }
+
+    /**
      * @param int $pid
      *
      * @return void
      */
-    public function killProc(int $pid): void
+    public function killPid(int $pid): void
     {
         exec('kill -9 ' . $pid . ' > /dev/null 2>&1');
     }
