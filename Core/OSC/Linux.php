@@ -118,28 +118,33 @@ class Linux
     }
 
     /**
-     * @param int $port
+     * @param int    $port
+     * @param string $state
      *
      * @return array
      */
-    public function findPidsByPort(int $port): array
+    public function findPidsByPortState(int $port, string $state): array
     {
         $pids = [];
-        $cmd  = 'ss -tulpn | grep \':\' ' . $port . ' \' | sed -n \'s/.*pid=\\([0-9]*\\).*/\\1/p\'';
+        $cmd  = 'ss -tulpn | grep ":' . $port . ' "';
 
         exec($cmd, $output, $status);
 
         if (0 === $status && !empty($output)) {
-            foreach ($output as $pid_str) {
-                if (is_numeric($pid_str) && 0 < (int)$pid_str) {
-                    $pids[] = (int)$pid_str;
+            foreach ($output as $line) {
+                if (false !== stripos($line, $state)) {
+                    if (preg_match_all('/pid=(\d+)/', $line, $matches)) {
+                        foreach ($matches[1] as $pid) {
+                            $pids[] = (int)$pid;
+                        }
+                    }
                 }
             }
         }
 
         $pids = array_values(array_unique($pids));
 
-        unset($port, $cmd, $output, $status, $pid_str);
+        unset($port, $state, $cmd, $output, $status, $line, $matches, $pid);
         return $pids;
     }
 

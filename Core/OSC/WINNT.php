@@ -215,31 +215,33 @@ class WINNT
     }
 
     /**
-     * @param int $port
+     * @param int    $port
+     * @param string $state
      *
      * @return array
      */
-    public function findPidsByPort(int $port): array
+    public function findPidsByPortState(int $port, string $state): array
     {
         $pids = [];
-        $cmd  = 'netstat -ano | findstr :' . $port . ' ';
+        $cmd  = 'netstat -ano | findstr :' . $port;
 
         exec($cmd, $output, $status);
 
         if (0 === $status && !empty($output)) {
             foreach ($output as $line) {
-                $parts   = array_filter(explode(' ', trim($line)), 'strlen');
-                $pid_str = end($parts);
-
-                if (is_numeric($pid_str) && 0 < (int)$pid_str) {
-                    $pids[] = (int)$pid_str;
+                if (false !== stripos($line, $state)) {
+                    $parts = array_values(array_filter(explode(' ', $line), 'strlen'));
+                    $pid   = end($parts);
+                    if (is_numeric($pid) && 0 < (int)$pid) {
+                        $pids[] = (int)$pid;
+                    }
                 }
             }
         }
 
         $pids = array_values(array_unique($pids));
 
-        unset($port, $cmd, $output, $status, $line, $parts, $pid_str);
+        unset($port, $state, $cmd, $output, $status, $line, $parts, $pid);
         return $pids;
     }
 

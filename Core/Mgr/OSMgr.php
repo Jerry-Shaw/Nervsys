@@ -105,13 +105,14 @@ class OSMgr extends Factory
     }
 
     /**
-     * @param int $port
+     * @param int    $port
+     * @param string $state
      *
      * @return array
      */
-    public function findPidsByPort(int $port): array
+    public function findPidsByPortState(int $port, string $state): array
     {
-        return $this->lib_os->findPidsByPort($port);
+        return $this->lib_os->findPidsByPortState($port, $state);
     }
 
     /**

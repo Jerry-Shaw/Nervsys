@@ -123,28 +123,33 @@ class Darwin
     }
 
     /**
-     * @param int $port
+     * @param int    $port
+     * @param string $state
      *
      * @return array
      */
-    public function findPidsByPort(int $port): array
+    public function findPidsByPortState(int $port, string $state): array
     {
         $pids = [];
-        $cmd  = 'lsof -i :' . $port . ' -t';
+        $cmd  = 'lsof -i :' . $port;
 
         exec($cmd, $output, $status);
 
         if (0 === $status && !empty($output)) {
-            foreach ($output as $pid_str) {
-                if (is_numeric($pid_str) && 0 < (int)$pid_str) {
-                    $pids[] = (int)$pid_str;
+            for ($i = 1; $i < count($output); ++$i) {
+                $line = $output[$i];
+                if (false !== stripos($line, $state)) {
+                    $parts = array_values(array_filter(explode(' ', $line), 'strlen'));
+                    if (isset($parts[1]) && is_numeric($parts[1])) {
+                        $pids[] = (int)$parts[1];
+                    }
                 }
             }
         }
 
         $pids = array_values(array_unique($pids));
 
-        unset($port, $cmd, $output, $status, $pid_str);
+        unset($port, $state, $cmd, $output, $status, $i, $line, $parts);
         return $pids;
     }
 
