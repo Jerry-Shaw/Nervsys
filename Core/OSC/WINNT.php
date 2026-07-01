@@ -65,6 +65,25 @@ class WINNT
 
     /**
      * @return string
+     */
+    public function getBootInfo(): string
+    {
+        $info = '';
+        $cmd  = 'net statistics workstation';
+
+        exec($cmd, $output, $status);
+
+        if (0 === $status && !empty($output)) {
+            $output = array_values(array_filter($output, 'strlen'));
+            $info   = $output[1] ?? '';
+        }
+
+        unset($cmd, $output, $status);
+        return $info;
+    }
+
+    /**
+     * @return string
      * @throws \Exception
      */
     public function getHwHash(): string

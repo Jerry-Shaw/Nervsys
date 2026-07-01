@@ -51,6 +51,24 @@ class Darwin
 
     /**
      * @return string
+     */
+    public function getBootInfo(): string
+    {
+        $info = '';
+        $cmd  = 'sysctl -n kern.boottime';
+
+        exec($cmd, $output, $status);
+
+        if (0 === $status && !empty($output)) {
+            $info = $output[0];
+        }
+
+        unset($cmd, $output, $status);
+        return $info;
+    }
+
+    /**
+     * @return string
      * @throws \Exception
      */
     public function getHwHash(): string

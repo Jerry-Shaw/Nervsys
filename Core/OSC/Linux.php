@@ -51,6 +51,14 @@ class Linux
 
     /**
      * @return string
+     */
+    public function getBootInfo(): string
+    {
+        return file_get_contents('/proc/sys/kernel/random/boot_id') ?: '';
+    }
+
+    /**
+     * @return string
      * @throws \Exception
      */
     public function getHwHash(): string

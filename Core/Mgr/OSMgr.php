@@ -72,6 +72,14 @@ class OSMgr extends Factory
 
     /**
      * @return string
+     */
+    public function getBootInfo(): string
+    {
+        return $this->lib_os->getBootInfo();
+    }
+
+    /**
+     * @return string
      * @throws \Exception
      */
     public function getHwHash(): string
