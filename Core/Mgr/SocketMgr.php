@@ -301,7 +301,10 @@ class SocketMgr extends Factory
             }
         }
 
-        if (isset($this->external_stream[$ext_id]) && feof($this->external_stream[$ext_id])) {
+        if (isset($this->external_stream[$ext_id])
+            && is_resource($this->external_stream[$ext_id])
+            && feof($this->external_stream[$ext_id])
+        ) {
             $this->closeExternalProc($ext_id);
             $this->debug('External stream closed, cleaned: #' . $ext_id);
         }
