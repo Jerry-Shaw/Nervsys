@@ -505,6 +505,25 @@ class libOpenAI extends Factory
      */
     private function handleStreamChunk(string $chunk): int
     {
+        if (!str_starts_with($chunk, 'data: ')) {
+            $data = json_decode(trim($chunk), true);
+
+            if (is_array($data)) {
+                $this->callStreamCallbacks($data, true);
+            } else {
+                $this->callStreamCallbacks([
+                    'status'    => 'error',
+                    'message'   => 'Invalid response format',
+                    'json_data' => $chunk
+                ], true);
+            }
+
+            $this->sse_buffer = '';
+
+            unset($data);
+            return strlen($chunk);
+        }
+
         $this->sse_buffer .= $chunk;
 
         $length = strlen($chunk);
