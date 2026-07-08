@@ -28,7 +28,7 @@ use Nervsys\Core\System;
 set_time_limit(0);
 ignore_user_abort(true);
 
-define('NS_VER', '8.3.30');
+define('NS_VER', '8.3.35');
 define('NS_NAME', 'Rocket');
 define('NS_ROOT', __DIR__);
 define('NS_NAMESPACE', __NAMESPACE__);
