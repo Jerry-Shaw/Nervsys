@@ -648,32 +648,6 @@ class libSQLite extends Factory
     }
 
     /**
-     * Build FIELD() equivalent for SQLite
-     *
-     * @param string $col
-     * @param string $values
-     *
-     * @return string
-     */
-    protected function buildFieldOrder(string $col, string $values): string
-    {
-        $case_parts = [];
-        $values_arr = explode(',', $values);
-
-        foreach ($values_arr as $idx => $val) {
-            $val = trim($val);
-
-            if (!is_numeric($val)) {
-                $val = '"' . str_replace('"', '""', $val) . '"';
-            }
-
-            $case_parts[] = 'WHEN ' . $col . ' = ' . $val . ' THEN ' . $idx;
-        }
-
-        return '(CASE ' . implode(' ', $case_parts) . ' ELSE ' . count($values_arr) . ' END)';
-    }
-
-    /**
      * Set SQL limitation
      *
      * @param int $offset
@@ -1065,6 +1039,32 @@ class libSQLite extends Factory
     }
 
     /**
+     * Build FIELD() equivalent for SQLite
+     *
+     * @param string $col
+     * @param string $values
+     *
+     * @return string
+     */
+    protected function buildFieldOrder(string $col, string $values): string
+    {
+        $case_parts = [];
+        $values_arr = explode(',', $values);
+
+        foreach ($values_arr as $idx => $val) {
+            $val = trim($val);
+
+            if (!is_numeric($val)) {
+                $val = '"' . str_replace('"', '""', $val) . '"';
+            }
+
+            $case_parts[] = 'WHEN ' . $col . ' = ' . $val . ' THEN ' . $idx;
+        }
+
+        return '(CASE ' . implode(' ', $case_parts) . ' ELSE ' . count($values_arr) . ' END)';
+    }
+
+    /**
      * Check where clause, avoid mistakes in UPDATE and DELETE
      *
      * @return void
@@ -1331,54 +1331,6 @@ class libSQLite extends Factory
     }
 
     /**
-     * @return string
-     */
-    private function getSqlSet(): string
-    {
-        $data = [];
-
-        foreach ($this->runtime_data['value'] as $col => $val) {
-            if (str_starts_with($val, $col)) {
-                $raw = str_replace(' ', '', $val);
-                $raw = substr($raw, strlen($col));
-
-                foreach (['+', '-', '*', '/', '|', '&', '^', '~', '<<', '>>'] as $opt) {
-                    if (!str_starts_with($raw, $opt)) {
-                        continue;
-                    }
-
-                    $raw = substr($raw, strlen($opt));
-
-                    if (!is_numeric($raw)) {
-                        break;
-                    }
-
-                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
-                    continue 2;
-                }
-
-                unset($opt);
-            }
-
-            $raw = $this->getSqlRaw($val);
-
-            if (is_string($raw)) {
-                $data[] = $col . '=' . $raw;
-                continue;
-            }
-
-            $data[] = $col . '=?';
-
-            $this->runtime_data['bind'][] = $val;
-        }
-
-        $sql = 'SET ' . implode(',', $data);
-
-        unset($data, $col, $val, $raw);
-        return $sql;
-    }
-
-    /**
      * Check raw SQL
      *
      * @param string $value
@@ -1430,5 +1382,53 @@ class libSQLite extends Factory
 
         unset($bind_params);
         return $runtime_sql;
+    }
+
+    /**
+     * @return string
+     */
+    private function getSqlSet(): string
+    {
+        $data = [];
+
+        foreach ($this->runtime_data['value'] as $col => $val) {
+            if (str_starts_with($val, $col)) {
+                $raw = str_replace(' ', '', $val);
+                $raw = substr($raw, strlen($col));
+
+                foreach (['+', '-', '*', '/', '|', '&', '^', '~', '<<', '>>'] as $opt) {
+                    if (!str_starts_with($raw, $opt)) {
+                        continue;
+                    }
+
+                    $raw = substr($raw, strlen($opt));
+
+                    if (!is_numeric($raw)) {
+                        break;
+                    }
+
+                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
+                    continue 2;
+                }
+
+                unset($opt);
+            }
+
+            $raw = $this->getSqlRaw($val);
+
+            if (is_string($raw)) {
+                $data[] = $col . '=' . $raw;
+                continue;
+            }
+
+            $data[] = $col . '=?';
+
+            $this->runtime_data['bind'][] = $val;
+        }
+
+        $sql = 'SET ' . implode(',', $data);
+
+        unset($data, $col, $val, $raw);
+        return $sql;
     }
 }

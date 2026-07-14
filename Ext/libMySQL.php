@@ -1256,54 +1256,6 @@ class libMySQL extends Factory
     }
 
     /**
-     * @return string
-     */
-    private function getSqlSet(): string
-    {
-        $data = [];
-
-        foreach ($this->runtime_data['value'] as $col => $val) {
-            if (str_starts_with($val, $col)) {
-                $raw = str_replace(' ', '', $val);
-                $raw = substr($raw, strlen($col));
-
-                foreach (['+', '-', '*', '/', '|', '&', '^', '~', '<<', '>>'] as $opt) {
-                    if (!str_starts_with($raw, $opt)) {
-                        continue;
-                    }
-
-                    $raw = substr($raw, strlen($opt));
-
-                    if (!is_numeric($raw)) {
-                        break;
-                    }
-
-                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
-                    continue 2;
-                }
-
-                unset($opt);
-            }
-
-            $raw = $this->getSqlRaw($val);
-
-            if (is_string($raw)) {
-                $data[] = $col . '=' . $raw;
-                continue;
-            }
-
-            $data[] = $col . '=?';
-
-            $this->runtime_data['bind'][] = $val;
-        }
-
-        $sql = 'SET ' . implode(',', $data);
-
-        unset($data, $col, $val, $raw);
-        return $sql;
-    }
-
-    /**
      * Check raw SQL
      *
      * @param string $value
@@ -1355,5 +1307,53 @@ class libMySQL extends Factory
 
         unset($bind_params);
         return $runtime_sql;
+    }
+
+    /**
+     * @return string
+     */
+    private function getSqlSet(): string
+    {
+        $data = [];
+
+        foreach ($this->runtime_data['value'] as $col => $val) {
+            if (str_starts_with($val, $col)) {
+                $raw = str_replace(' ', '', $val);
+                $raw = substr($raw, strlen($col));
+
+                foreach (['+', '-', '*', '/', '|', '&', '^', '~', '<<', '>>'] as $opt) {
+                    if (!str_starts_with($raw, $opt)) {
+                        continue;
+                    }
+
+                    $raw = substr($raw, strlen($opt));
+
+                    if (!is_numeric($raw)) {
+                        break;
+                    }
+
+                    $data[] = $col . '=' . $col . $opt . (string)(!str_contains($raw, '.') ? (int)$raw : (float)$raw);
+                    continue 2;
+                }
+
+                unset($opt);
+            }
+
+            $raw = $this->getSqlRaw($val);
+
+            if (is_string($raw)) {
+                $data[] = $col . '=' . $raw;
+                continue;
+            }
+
+            $data[] = $col . '=?';
+
+            $this->runtime_data['bind'][] = $val;
+        }
+
+        $sql = 'SET ' . implode(',', $data);
+
+        unset($data, $col, $val, $raw);
+        return $sql;
     }
 }
