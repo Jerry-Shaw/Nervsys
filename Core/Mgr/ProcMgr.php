@@ -268,14 +268,14 @@ class ProcMgr extends Factory
             }
 
             if (self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
-                $this->proc_status[$idx] ^= self::P_STDIN;
+                $this->proc_status[$idx] &= ~self::P_STDIN;
             }
         }
 
         $proc_status = proc_get_status($this->proc_process[$idx]);
 
         if (!$proc_status['running'] && self::P_STDIN === ($this->proc_status[$idx] & self::P_STDIN)) {
-            $this->proc_status[$idx] ^= self::P_STDIN;
+            $this->proc_status[$idx] &= ~self::P_STDIN;
         }
 
         $this->syncProcStatus($idx, self::P_STDOUT, $proc_status['running'], stream_get_meta_data($this->proc_stdout[$idx]));
@@ -652,7 +652,7 @@ class ProcMgr extends Factory
     {
         if ($const_def === ($this->proc_status[$idx] & $const_def)) {
             if ($stream_status['eof'] || (!$proc_running && 0 === $stream_status['unread_bytes'])) {
-                $this->proc_status[$idx] ^= $const_def;
+                $this->proc_status[$idx] &= ~$const_def;
             }
         }
 
