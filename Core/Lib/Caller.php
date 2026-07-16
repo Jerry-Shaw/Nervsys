@@ -94,7 +94,8 @@ class Caller extends Factory
                 ['socket', 'wb']
             ],
             $pipes,
-            '' !== $cwd_path ? $cwd_path : null
+            '' !== $cwd_path ? $cwd_path : null,
+            getenv()
         );
 
         if (!is_resource($proc)) {

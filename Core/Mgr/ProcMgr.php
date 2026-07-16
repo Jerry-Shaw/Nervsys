@@ -152,7 +152,8 @@ class ProcMgr extends Factory
                     [$this->ipc_descriptor, 'wb']
                 ],
                 $pipes,
-                $this->work_dir
+                $this->work_dir,
+                getenv()
             );
 
             if (!is_resource($proc)) {
