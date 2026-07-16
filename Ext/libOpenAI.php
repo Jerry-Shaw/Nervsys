@@ -491,6 +491,16 @@ class libOpenAI extends Factory
         );
 
         $this->httpStream->fetch($this->api_url . $endpoint);
+
+        if ('' !== $this->httpStream->curl_error) {
+            $this->handleStreamChunk(
+                json_encode([
+                    'error'     => $this->httpStream->curl_error,
+                    'http_code' => $this->httpStream->curl_info['http_code']
+                ], JSON_FORMAT)
+            );
+        }
+
         $this->httpStream->removeStreamCallback();
 
         unset($endpoint, $payload);
