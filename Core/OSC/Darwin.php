@@ -123,6 +123,26 @@ class Darwin
     }
 
     /**
+     * @param string $program
+     *
+     * @return array
+     */
+    public function findPath(string $program): array
+    {
+        $paths = [];
+        $cmd   = 'which -a ' . escapeshellarg($program);
+
+        exec($cmd, $output, $status);
+
+        if (0 === $status && !empty($output)) {
+            $paths = array_values(array_filter(array_map('trim', $output), 'strlen'));
+        }
+
+        unset($program, $cmd, $output, $status);
+        return $paths;
+    }
+
+    /**
      * @param int    $port
      * @param string $state
      *

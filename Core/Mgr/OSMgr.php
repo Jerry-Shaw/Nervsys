@@ -105,6 +105,16 @@ class OSMgr extends Factory
     }
 
     /**
+     * @param string $program
+     *
+     * @return array
+     */
+    public function findPath(string $program): array
+    {
+        return $this->lib_os->findPath($program);
+    }
+
+    /**
      * @param int    $port
      * @param string $state
      *
