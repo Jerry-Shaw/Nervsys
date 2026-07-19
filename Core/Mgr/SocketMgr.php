@@ -1362,15 +1362,13 @@ class SocketMgr extends Factory
      */
     public function closeSocket(string $socket_id): void
     {
-        if (!isset($this->connections[$socket_id])) {
-            return;
-        }
-
-        try {
-            fclose($this->connections[$socket_id]);
-        } catch (\Throwable) {
-            stream_socket_enable_crypto($this->connections[$socket_id], false);
-            stream_socket_shutdown($this->connections[$socket_id], STREAM_SHUT_RDWR);
+        if (is_resource($this->connections[$socket_id])) {
+            try {
+                fclose($this->connections[$socket_id]);
+            } catch (\Throwable) {
+                stream_socket_enable_crypto($this->connections[$socket_id], false);
+                stream_socket_shutdown($this->connections[$socket_id], STREAM_SHUT_RDWR);
+            }
         }
 
         unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id], $this->data_frames[$socket_id]);
@@ -1394,6 +1392,7 @@ class SocketMgr extends Factory
      * @param array $resources
      *
      * @return array
+     * @throws \ReflectionException
      */
     public function getValidResources(array $resources): array
     {
@@ -1402,14 +1401,15 @@ class SocketMgr extends Factory
                 unset($resources[$socket_id]);
 
                 if (str_starts_with($socket_id, 'ext_')) {
-                    unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id]);
+                    $this->closeExternalProc($socket_id);
                     $this->debug('External stream removed (invalid resource): #' . $socket_id);
                 } elseif (str_starts_with($socket_id, 'sock_') && $socket_id !== $this->master_id) {
-                    unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id], $this->data_frames[$socket_id]);
+                    $this->closeSocket($socket_id);
                     $this->debug('Client removed (invalid resource): #' . $socket_id);
                 }
             } elseif (str_starts_with($socket_id, 'ext_') && feof($resource)) {
-                unset($resources[$socket_id], $this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id]);
+                unset($resources[$socket_id]);
+                $this->closeExternalProc($socket_id);
                 $this->debug('External stream removed (EOF reached): #' . $socket_id);
             }
         }
