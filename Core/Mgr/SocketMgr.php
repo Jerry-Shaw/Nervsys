@@ -513,7 +513,15 @@ class SocketMgr extends Factory
             $read  = $this->master_sock + $this->connections + $this->external_stream;
             $read  = $this->getValidResources($read);
 
-            if (empty($read) || 0 === (int)stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+            $result = stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
+
+            if (false === $result) {
+                $this->debug('Select error, invalid stream may exist.');
+                \Fiber::suspend();
+                continue;
+            }
+
+            if (0 === $result) {
                 \Fiber::suspend();
                 continue;
             }
@@ -604,7 +612,15 @@ class SocketMgr extends Factory
             $read  = $this->connections + $this->external_stream;
             $read  = $this->getValidResources($read);
 
-            if (empty($read) || 0 === (int)stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+            $result = stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
+
+            if (false === $result) {
+                $this->debug('Select error, invalid stream may exist.');
+                \Fiber::suspend();
+                continue;
+            }
+
+            if (0 === $result) {
                 \Fiber::suspend();
                 continue;
             }
@@ -1000,8 +1016,17 @@ class SocketMgr extends Factory
 
         while (true) {
             $servers = $this->master_sock + $this->external_stream;
+            $servers = $this->getValidResources($servers);
 
-            if (0 === (int)stream_select($servers, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+            $result = stream_select($servers, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
+
+            if (false === $result) {
+                $this->debug('Server error while reading, reconnecting...');
+                $this->clientReconnect();
+                continue;
+            }
+
+            if (0 === $result) {
                 \Fiber::suspend();
                 continue;
             }
@@ -1378,11 +1403,14 @@ class SocketMgr extends Factory
 
                 if (str_starts_with($socket_id, 'ext_')) {
                     unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id]);
+                    $this->debug('External stream removed (invalid resource): #' . $socket_id);
                 } elseif (str_starts_with($socket_id, 'sock_') && $socket_id !== $this->master_id) {
                     unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id], $this->data_frames[$socket_id]);
+                    $this->debug('Client removed (invalid resource): #' . $socket_id);
                 }
             } elseif (str_starts_with($socket_id, 'ext_') && feof($resource)) {
                 unset($resources[$socket_id], $this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id]);
+                $this->debug('External stream removed (EOF reached): #' . $socket_id);
             }
         }
 
@@ -1591,11 +1619,11 @@ class SocketMgr extends Factory
             $result = stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1]);
 
             if (false === $result) {
-                throw new \Exception('Stream select error while waiting for payload data', E_NOTICE);
+                throw new \Exception('Read error while waiting for payload data', E_NOTICE);
             }
 
             if (0 === $result) {
-                throw new \Exception('Timeout waiting for payload data', E_NOTICE);
+                throw new \Exception('Timeout while waiting for payload data', E_NOTICE);
             }
         }
 
