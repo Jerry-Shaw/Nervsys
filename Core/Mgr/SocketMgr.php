@@ -1377,10 +1377,12 @@ class SocketMgr extends Factory
                 unset($resources[$socket_id]);
 
                 if (str_starts_with($socket_id, 'ext_')) {
-                    unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id], $socket_id);
+                    unset($this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id]);
                 } elseif (str_starts_with($socket_id, 'sock_') && $socket_id !== $this->master_id) {
                     unset($this->connections[$socket_id], $this->activities[$socket_id], $this->handshakes[$socket_id], $this->data_frames[$socket_id]);
                 }
+            } elseif (str_starts_with($socket_id, 'ext_') && feof($resource)) {
+                unset($resources[$socket_id], $this->external_stream[$socket_id], $this->external_context[$socket_id], $this->external_callback[$socket_id]);
             }
         }
 
