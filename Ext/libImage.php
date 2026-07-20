@@ -344,27 +344,31 @@ class libImage extends Factory
         $size['dst_height'] = $size['src_height'] = $img_height;
 
         //Incorrect width/height
-        if (0 >= $img_width || 0 >= $img_height) {
+        if (0 >= $img_width || 0 >= $img_height || 0 >= $to_width || 0 >= $to_height) {
+            return $size;
+        }
+
+        //Skip upscaling for small images
+        if ($to_width >= $img_width && $to_height >= $img_height) {
             return $size;
         }
 
         //Calculate new width and height
         $ratio_img  = $img_width / $img_height;
         $ratio_need = $to_width / $to_height;
-        $ratio_diff = round($ratio_img - $ratio_need, 2);
 
-        if (0 < $ratio_diff) {
+        if ($ratio_img > $ratio_need) {
             $size['dst_width']  = $to_width;
             $size['dst_height'] = (int)($to_width / $ratio_img);
-        } elseif (0 > $ratio_diff) {
+        } elseif ($ratio_img < $ratio_need) {
             $size['dst_height'] = $to_height;
             $size['dst_width']  = (int)($to_height * $ratio_img);
-        } elseif ($img_width !== $to_width || $img_height !== $to_height) {
+        } else {
             $size['dst_width']  = $to_width;
             $size['dst_height'] = $to_height;
         }
 
-        unset($img_width, $img_height, $to_width, $to_height, $ratio_img, $ratio_need, $ratio_diff);
+        unset($img_width, $img_height, $to_width, $to_height, $ratio_img, $ratio_need);
         return $size;
     }
 
