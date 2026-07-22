@@ -436,17 +436,40 @@ class ProcMgr extends Factory
         if (isset($this->proc_stdin[$idx]) && is_resource($this->proc_stdin[$idx])) {
             fclose($this->proc_stdin[$idx]);
         }
-        if (isset($this->proc_stdout[$idx]) && is_resource($this->proc_stdout[$idx])) {
-            fclose($this->proc_stdout[$idx]);
+
+        foreach (['proc_stdout', 'proc_stderr'] as $pipe_name) {
+            if (!isset($this->$pipe_name[$idx]) || !is_resource($this->$pipe_name[$idx])) {
+                continue;
+            }
+
+            $timeout = 30;
+            stream_set_blocking($this->$pipe_name[$idx], false);
+
+            while (0 < $timeout) {
+                $data = fread($this->$pipe_name[$idx], 8192);
+
+                if (false === $data || feof($this->$pipe_name[$idx])) {
+                    break;
+                }
+
+                if ('' === $data) {
+                    usleep(100000);
+                    --$timeout;
+                    continue;
+                }
+
+                $timeout = 30;
+            }
+
+            fclose($this->$pipe_name[$idx]);
         }
-        if (isset($this->proc_stderr[$idx]) && is_resource($this->proc_stderr[$idx])) {
-            fclose($this->proc_stderr[$idx]);
-        }
+
         if (isset($this->proc_process[$idx]) && is_resource($this->proc_process[$idx])) {
+            proc_terminate($this->proc_process[$idx], 9);
             proc_close($this->proc_process[$idx]);
         }
 
-        unset($this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_process[$idx], $this->proc_idle['P' . $idx], $idx);
+        unset($this->proc_stdin[$idx], $this->proc_stdout[$idx], $this->proc_stderr[$idx], $this->proc_process[$idx], $this->proc_idle['P' . $idx], $pipe_name, $timeout, $data, $idx);
     }
 
     /**

@@ -273,15 +273,35 @@ class SocketMgr extends Factory
 
             switch ($type) {
                 case 'stream':
+                    $timeout = 30;
+                    stream_set_blocking($this->external_context[$ext_id][$key], false);
+
+                    while (0 < $timeout) {
+                        $data = fread($this->external_context[$ext_id][$key], 8192);
+
+                        if (false === $data || feof($this->external_context[$ext_id][$key])) {
+                            break;
+                        }
+
+                        if ('' === $data) {
+                            usleep(100000);
+                            --$timeout;
+                            continue;
+                        }
+
+                        $timeout = 30;
+                    }
+
                     fclose($this->external_context[$ext_id][$key]);
                     break;
                 case 'process':
+                    proc_terminate($this->external_context[$ext_id][$key], 9);
                     proc_close($this->external_context[$ext_id][$key]);
                     break;
             }
         }
 
-        unset($this->external_stream[$ext_id], $this->external_context[$ext_id], $this->external_callback[$ext_id], $ext_id, $key, $item, $type);
+        unset($this->external_stream[$ext_id], $this->external_context[$ext_id], $this->external_callback[$ext_id], $ext_id, $key, $item, $type, $timeout, $data);
         return $this;
     }
 
