@@ -23,7 +23,6 @@ namespace Nervsys\Core\Mgr;
 
 use Nervsys\Core\Factory;
 use Nervsys\Core\Lib\Error;
-use Random\RandomException;
 
 class SocketMgr extends Factory
 {
@@ -1746,7 +1745,7 @@ class SocketMgr extends Factory
      * @param bool   $mask
      *
      * @return string
-     * @throws RandomException
+     * @throws \Random\RandomException
      */
     public function wsEncode(string $message, bool $binary = false, bool $mask = false): string
     {
