@@ -4,7 +4,7 @@
  * WINNT controller library
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  * Copyright 2021 take your time <704505144@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -100,96 +100,97 @@ class WINNT
             $query = $this->wmi->ExecQuery('SELECT * FROM Win32_Processor');
 
             foreach ($query as $object) {
-                $hw_info[] = $object->Name;
-                $hw_info[] = $object->Family;
-                $hw_info[] = $object->DeviceID;
-                $hw_info[] = $object->Manufacturer;
-                $hw_info[] = $object->Description;
-                $hw_info[] = $object->ProcessorId;
-                $hw_info[] = $object->Architecture;
-                $hw_info[] = $object->NumberOfCores;
-                $hw_info[] = $object->ProcessorType;
+                $hw_info[] = $object->Name
+                    . ' ' . $object->Family
+                    . ' ' . $object->DeviceID
+                    . ' ' . $object->Manufacturer
+                    . ' ' . $object->Description
+                    . ' ' . $object->ProcessorId
+                    . ' ' . $object->Architecture
+                    . ' ' . $object->NumberOfCores
+                    . ' ' . $object->ProcessorType;
             }
 
             $query = $this->wmi->ExecQuery('SELECT * FROM Win32_BaseBoard');
 
             foreach ($query as $object) {
-                $hw_info[] = $object->Manufacturer;
-                $hw_info[] = $object->Product;
-                $hw_info[] = $object->SerialNumber;
-                $hw_info[] = $object->Version;
+                $hw_info[] = $object->Manufacturer
+                    . ' ' . $object->Product
+                    . ' ' . $object->SerialNumber
+                    . ' ' . $object->Version;
             }
 
             $query = $this->wmi->ExecQuery('SELECT * FROM Win32_NetworkAdapter WHERE PhysicalAdapter = TRUE');
 
             foreach ($query as $object) {
-                $hw_info[] = $object->Name;
-                $hw_info[] = $object->MACAddress;
-                $hw_info[] = $object->PNPDeviceID;
-                $hw_info[] = $object->AdapterType;
+                if (!is_null($object->MACAddress) && '' !== $object->MACAddress) {
+                    $hw_info[] = $object->Name
+                        . ' ' . $object->MACAddress
+                        . ' ' . $object->PNPDeviceID
+                        . ' ' . $object->AdapterType;
+                }
             }
 
             $query = $this->wmi->ExecQuery('SELECT * FROM Win32_BIOS');
 
             foreach ($query as $object) {
-                $hw_info[] = $object->Manufacturer;
-                $hw_info[] = $object->SerialNumber;
-            }
-
-            $hw_info = array_values(array_filter($hw_info));
-
-            foreach ($hw_info as $key => $value) {
-                $hw_info[$key] = trim($value);
+                $hw_info[] = $object->Manufacturer
+                    . ' ' . $object->SerialNumber;
             }
 
             unset($query, $object);
         }
 
         if (empty($hw_info)) {
-            $ps_cmd = 'powershell -Command "';
-            $ps_cmd .= 'Get-WMIObject -class Win32_ComputerSystem | select Model | Format-List;';
-            $ps_cmd .= 'Get-WMIObject -class Win32_Processor | select Name, Family, DeviceID, Manufacturer, Description, ProcessorId, Architecture, NumberOfCores, ProcessorType | Format-List;';
-            $ps_cmd .= 'Get-WMIObject -class Win32_BaseBoard | select Manufacturer, Product, SerialNumber, Version | Format-List;';
-            $ps_cmd .= 'Get-NetAdapter -physical | select Name, MACAddress, PNPDeviceID, AdapterType | Format-List;';
-            $ps_cmd .= 'Get-WMIObject -class Win32_BIOS | select Manufacturer, SerialNumber | Format-List"';
+            $ps_cmd = 'powershell -Command "' .
+                '$out=@();' .
+                'Get-WmiObject -class Win32_ComputerSystem | ForEach-Object { $out += $_.Model };' .
+                'Get-WmiObject -class Win32_Processor | ForEach-Object { $out += "$($_.Name) $($_.Family) $($_.DeviceID) $($_.Manufacturer) $($_.Description) $($_.ProcessorId) $($_.Architecture) $($_.NumberOfCores) $($_.ProcessorType)" };' .
+                'Get-WmiObject -class Win32_BaseBoard | ForEach-Object { $out += "$($_.Manufacturer) $($_.Product) $($_.SerialNumber) $($_.Version)" };' .
+                'Get-NetAdapter -physical | Where-Object { $_.MACAddress } | ForEach-Object { $out += "$($_.Name) $($_.MACAddress) $($_.PNPDeviceID) $($_.AdapterType)" };' .
+                'Get-WmiObject -class Win32_BIOS | ForEach-Object { $out += "$($_.Manufacturer) $($_.SerialNumber)" };' .
+                '$out -join "`n"' .
+                '"';
 
             exec($ps_cmd, $hw_info, $status);
 
             if (0 !== $status) {
-                throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+                throw new \Exception(PHP_OS . ': Access denied!');
             }
 
-            foreach ($hw_info as $key => $value) {
-                if (!str_contains($value, ':')) {
-                    unset($hw_info[$key]);
-                    continue;
-                }
-
-                [$k, $v] = explode(':', $value, 2);
-
-                $k = trim($k);
-                $v = trim($v);
-
-                if ('' === $v) {
-                    unset($hw_info[$key]);
-                    continue;
-                }
-
-                $hw_info[$key] = $k . ':' . $v;
-            }
-
-            $hw_info = array_values($hw_info);
-
-            unset($ps_cmd, $status, $k, $v);
+            unset($ps_cmd, $status);
         }
 
         if (empty($hw_info)) {
-            throw new \Exception(PHP_OS . ': Failed to get hardware information!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Failed to get hardware information!');
         }
 
-        $hw_hash = hash('md5', trim(implode('/', $hw_info)));
+        $virtual = ['hotspot', 'hosted', 'tunnel', 'ipsec', 'ppp', 'tap', 'tun', 'vpn'];
 
-        unset($hw_info, $key, $value);
+        foreach ($hw_info as $key => $line) {
+            $line = trim($line);
+
+            if ('' === $line) {
+                unset($hw_info[$key]);
+                continue;
+            }
+
+            foreach ($virtual as $keyword) {
+                if (false !== stripos($line, $keyword)) {
+                    unset($hw_info[$key]);
+                    continue 2;
+                }
+            }
+        }
+
+        if (empty($hw_info)) {
+            throw new \Exception(PHP_OS . ': No valid hardware information collected!');
+        }
+
+        $hw_info = array_values($hw_info);
+        $hw_hash = hash('md5', trim(implode('|', $hw_info)));
+
+        unset($hw_info, $virtual, $key, $line, $keyword);
         return $hw_hash;
     }
 
@@ -203,11 +204,11 @@ class WINNT
         $php_path = trim(shell_exec($ps_cmd));
 
         if (!is_string($php_path)) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Access denied!');
         }
 
         if (!is_file($php_path)) {
-            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': PHP path ERROR!');
         }
 
         unset($ps_cmd);
