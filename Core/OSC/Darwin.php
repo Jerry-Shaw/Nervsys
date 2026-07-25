@@ -73,26 +73,44 @@ class Darwin
      */
     public function getHwHash(): string
     {
-        exec('system_profiler SPHardwareDataType SPMemoryDataType SPPCIDataType', $output, $status);
+        $cmd =
+            'sysctl -n hw.model 2>/dev/null; ' .
+            'printf "%s %s\n" "$(sysctl -n machdep.cpu.brand_string 2>/dev/null)" "$(sysctl -n hw.ncpu 2>/dev/null)"; ' .
+            'system_profiler SPHardwareDataType 2>/dev/null | grep -E "Boot ROM Version|System Firmware Version" | awk -F: \'{print $2}\' | sed "s/^ *//"; ' .
+            'networksetup -listallhardwareports 2>/dev/null | awk \'/Device:/{dev=$2} /Ethernet Address:/{print dev, $3}\'';
+
+        exec($cmd, $hw_info, $status);
 
         if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Failed to execute hardware detection command!');
         }
 
-        $hw_info = '';
+        $virtual = ['hotspot', 'hosted', 'tunnel', 'ipsec', 'ppp', 'tap', 'tun', 'vpn'];
 
-        foreach ($output as $value) {
-            $value = str_replace(' ', '', $value);
-            $value = trim($value);
+        foreach ($hw_info as $key => $line) {
+            $line = trim($line);
 
-            if ('' !== $value) {
-                $hw_info .= $value;
+            if ('' === $line) {
+                unset($hw_info[$key]);
+                continue;
+            }
+
+            foreach ($virtual as $keyword) {
+                if (false !== stripos($line, $keyword)) {
+                    unset($hw_info[$key]);
+                    continue 2;
+                }
             }
         }
 
-        $hw_hash = hash('md5', $hw_info);
+        if (empty($hw_info)) {
+            throw new \Exception(PHP_OS . ': No valid hardware information collected!');
+        }
 
-        unset($output, $status, $hw_info, $value);
+        $hw_info = array_values($hw_info);
+        $hw_hash = hash('md5', trim(implode('|', $hw_info)));
+
+        unset($cmd, $hw_info, $status, $virtual, $key, $line, $keyword);
         return $hw_hash;
     }
 
@@ -105,17 +123,17 @@ class Darwin
         exec('lsof -p ' . getmypid() . ' -Fn | awk "NR==5{print}" | sed "s/n\//\//"', $output, $status);
 
         if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Access denied!');
         }
 
         if (empty($output)) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': PHP path NOT found!');
         }
 
         $php_path = $output[0];
 
         if (!is_file($php_path)) {
-            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': PHP path ERROR!');
         }
 
         unset($output, $status);

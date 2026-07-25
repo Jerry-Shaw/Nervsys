@@ -63,31 +63,45 @@ class Linux
      */
     public function getHwHash(): string
     {
-        $queries = [
-            'lscpu | grep -E "Architecture|CPU|Thread|Core|Socket|Vendor|Model|Stepping|BogoMIPS|L1|L2|L3"',
-            'ip link show | awk \'{if($0~/^[0-9]+:/) printf("%s",$2); else print $2}\''
-        ];
+        $cmd =
+            'cat /sys/class/dmi/id/product_name 2>/dev/null; ' .
+            'lscpu 2>/dev/null | awk -F: \'/Architecture|CPU\\(s\\)|Thread\\(s\\) per core|Core\\(s\\) per socket|Socket\\(s\\)|Vendor ID|Model name|Stepping|BogoMIPS|L1d cache|L1i cache|L2 cache|L3 cache/ {gsub(/^[ \t]+/,"",$2); printf "%s ",$2} END {print ""}\'; ' .
+            'printf "%s %s %s %s\n" "$(cat /sys/class/dmi/id/board_vendor 2>/dev/null)" "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" "$(cat /sys/class/dmi/id/board_serial 2>/dev/null)" "$(cat /sys/class/dmi/id/board_version 2>/dev/null)"; ' .
+            'printf "%s %s\n" "$(cat /sys/class/dmi/id/bios_vendor 2>/dev/null)" "$(cat /sys/class/dmi/id/bios_version 2>/dev/null)"; ' .
+            'for iface in /sys/class/net/*; do [ -e "$iface/address" ] || continue; mac=$(cat "$iface/address" 2>/dev/null); [ -n "$mac" ] && [ "$mac" != "00:00:00:00:00:00" ] || continue; name=$(basename "$iface"); type=$(cat "$iface/type" 2>/dev/null); pci=$(readlink -f "$iface/device" 2>/dev/null | sed "s/.*\\///"); echo "$name $mac $type $pci"; done';
 
-        exec(implode(' && ', $queries), $output, $status);
+        exec($cmd, $hw_info, $status);
 
         if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Failed to execute hardware detection command!');
         }
 
-        $hw_info = '';
+        $virtual = ['hotspot', 'hosted', 'tunnel', 'ipsec', 'ppp', 'tap', 'tun', 'vpn'];
 
-        foreach ($output as $value) {
-            if (str_contains($value, '*-') || !str_contains($value, ':')) {
+        foreach ($hw_info as $key => $line) {
+            $line = trim($line);
+
+            if ('' === $line) {
+                unset($hw_info[$key]);
                 continue;
             }
 
-            [$k, $v] = explode(':', $value, 2);
-            $hw_info .= trim($k) . ':' . trim($v) . PHP_EOL;
+            foreach ($virtual as $keyword) {
+                if (false !== stripos($line, $keyword)) {
+                    unset($hw_info[$key]);
+                    continue 2;
+                }
+            }
         }
 
-        $hw_hash = hash('md5', trim($hw_info));
+        if (empty($hw_info)) {
+            throw new \Exception(PHP_OS . ': No valid hardware information collected!');
+        }
 
-        unset($queries, $output, $status, $hw_info, $value, $k, $v);
+        $hw_info = array_values($hw_info);
+        $hw_hash = hash('md5', trim(implode('|', $hw_info)));
+
+        unset($cmd, $hw_info, $status, $virtual, $key, $line, $keyword);
         return $hw_hash;
     }
 
@@ -100,17 +114,17 @@ class Linux
         exec('readlink -f /proc/' . getmypid() . '/exe', $output, $status);
 
         if (0 !== $status) {
-            throw new \Exception(PHP_OS . ': Access denied!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': Access denied!');
         }
 
         if (empty($output)) {
-            throw new \Exception(PHP_OS . ': PHP path NOT found!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': PHP path NOT found!');
         }
 
         $php_path = $output[0];
 
         if (!is_file($php_path)) {
-            throw new \Exception(PHP_OS . ': PHP path ERROR!', E_USER_ERROR);
+            throw new \Exception(PHP_OS . ': PHP path ERROR!');
         }
 
         unset($output, $status);
