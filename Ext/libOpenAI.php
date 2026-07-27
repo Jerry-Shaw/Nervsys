@@ -30,7 +30,7 @@ class libOpenAI extends Factory
     public \Shmop|null $shmop = null;
 
     public string $org_id     = '';
-    public string $api_url    = 'http://127.0.0.1:1234/v1';
+    public string $api_url    = '';
     public string $api_key    = '';
     public string $api_model  = '';
     public string $end_marker = '[DONE]';
@@ -60,29 +60,28 @@ class libOpenAI extends Factory
      * @param string $api_key    API key
      * @param string $end_marker API stream end marker, default: [DONE]
      */
-    public function __construct(string $api_url = '', string $api_key = '', string $end_marker = '')
+    public function __construct(string $api_url, string $api_key, string $end_marker = '', string $user_agent = '')
     {
-        if ('' !== $api_url) {
-            $this->api_url = rtrim($api_url, '/');
-        }
-
-        if ('' !== $api_key) {
-            $this->api_key = $api_key;
-        }
+        $this->api_url = rtrim($api_url, '/');
+        $this->api_key = $api_key;
 
         if ('' !== $end_marker) {
             $this->end_marker = $end_marker;
         }
 
+        if ('' === $user_agent) {
+            $user_agent = 'Nervsys/OpenAI';
+        }
+
         // Create two independent libHttp instances with different User-Agent and timeout
-        $this->httpNormal = new libHttp('Nervsys/OpenAI', 300);
-        $this->httpStream = new libHttp('Nervsys/OpenAI-Stream', 300);
+        $this->httpNormal = new libHttp($user_agent, 600);
+        $this->httpStream = new libHttp($user_agent . '/StreamWrapper', 600);
 
         // Configure common headers for both instances
         $this->configure($this->httpNormal);
         $this->configure($this->httpStream);
 
-        unset($api_url, $api_key, $end_marker);
+        unset($api_url, $api_key, $end_marker, $user_agent);
     }
 
     /**
