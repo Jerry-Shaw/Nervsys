@@ -85,6 +85,24 @@ class libOpenAI extends Factory
     }
 
     /**
+     * Add customer headers to both Normal/Stream instances
+     *
+     * @param array $headers
+     *
+     * @return $this
+     */
+    public function addHeader(array $headers): static
+    {
+        foreach ($headers as $key => $value) {
+            $this->httpNormal->addHeader([$key => $value]);
+            $this->httpStream->addHeader([$key => $value]);
+        }
+
+        unset($headers);
+        return $this;
+    }
+
+    /**
      * Set organization ID
      *
      * @param string $org_id
@@ -469,7 +487,7 @@ class libOpenAI extends Factory
     }
 
     /**
-     * Configure a libHttp instance with common headers and content type
+     * Configure a libHttp instance with common headers
      *
      * @param libHttp $http
      *
@@ -477,8 +495,6 @@ class libOpenAI extends Factory
      */
     private function configure(libHttp $http): void
     {
-        $http->setContentType(libHttp::CONTENT_TYPE_JSON);
-
         if ('' !== $this->api_key) {
             $http->addHeader(['Authorization' => 'Bearer ' . $this->api_key]);
         }
