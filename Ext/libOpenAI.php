@@ -231,7 +231,7 @@ class libOpenAI extends Factory
         $response  = $this->httpNormal->setHttpMethod('GET')->fetch($this->api_url . '/models');
         $json_data = json_decode($response, true);
 
-        if (null !== $json_data) {
+        if (is_array($json_data)) {
             if (isset($json_data['data'])) {
                 $result = [
                     'status' => 'success',
@@ -278,6 +278,59 @@ class libOpenAI extends Factory
     }
 
     /**
+     * Create image generation (POST /images/generations)
+     *
+     * @param string $prompt  Text description of the desired image(s)
+     * @param string $model   Model name ('dall-e-3', 'gpt-image-2', etc)
+     * @param array  $options Additional parameters: n, size, quality, style, response_format, user, etc.
+     *
+     * @return array Parsed JSON array with 'success' key
+     * @throws \ReflectionException
+     */
+    public function createImage(string $prompt, string $model, array $options = []): array
+    {
+        $payload = ['prompt' => $prompt, 'model' => $model];
+        $payload = array_merge($payload, $options);
+        $result  = $this->sendRequest('/images/generations', $payload);
+
+        unset($prompt, $model, $options, $payload);
+        return $result;
+    }
+
+    /**
+     * Create image edit (POST /images/edits)
+     *
+     * @param string $image   Path to the image file to edit
+     * @param string $prompt  Text description of the desired edit
+     * @param string $model   Model name ('dall-e-3', 'gpt-image-2', etc)
+     * @param string $mask    Mask image (optional, image path)
+     * @param array  $options Additional parameters: n, size, response_format, user, etc.
+     *
+     * @return array Parsed JSON array with 'success' key
+     * @throws \ReflectionException
+     * @throws \RuntimeException If image file does not exist or is unreadable
+     */
+    public function editImage(string $image, string $prompt, string $model, string $mask = '', array $options = []): array
+    {
+        if ('' === $image || !is_file($image) || !is_readable($image)) {
+            throw new \RuntimeException('Image file does not exist or is not readable: ' . $image);
+        }
+
+        $payload = ['prompt' => $prompt, 'model' => $model];
+        $payload = array_merge($payload, $options);
+
+        $images = [['image', $image]];
+        if ('' !== $mask && is_file($mask) && is_readable($mask)) {
+            $images[] = ['mask', $mask];
+        }
+
+        $result = $this->sendRequest('/images/edits', $payload, $images);
+
+        unset($image, $prompt, $model, $mask, $options, $payload, $images);
+        return $result;
+    }
+
+    /**
      * Chat completions (POST /chat/completions)
      *
      * @param array         $messages     List of messages (role/content pairs)
@@ -309,7 +362,7 @@ class libOpenAI extends Factory
 
         $result = [];
 
-        if (null !== $callback) {
+        if (!is_null($callback)) {
             $key = '' !== $callback_key ? $callback_key : 'completions_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
@@ -355,7 +408,7 @@ class libOpenAI extends Factory
 
         $result = [];
 
-        if (null !== $callback) {
+        if (!is_null($callback)) {
             $key = '' !== $callback_key ? $callback_key : 'responses_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
@@ -401,7 +454,7 @@ class libOpenAI extends Factory
 
         $result = [];
 
-        if (null !== $callback) {
+        if (!is_null($callback)) {
             $key = '' !== $callback_key ? $callback_key : 'messages_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
@@ -443,17 +496,34 @@ class libOpenAI extends Factory
      *
      * @param string $endpoint
      * @param array  $payload
+     * @param array  $files
      * @param string $method
      *
      * @return array  Array with 'success' key (true = parsed data, false = error)
      * @throws \ReflectionException
      */
-    private function sendRequest(string $endpoint, array $payload, string $method = 'POST'): array
+    private function sendRequest(string $endpoint, array $payload, array $files = [], string $method = 'POST'): array
     {
-        $response = $this->httpNormal->setHttpMethod($method)->addData($payload)->fetch($this->api_url . $endpoint);
+        $this->httpNormal->setHttpMethod($method);
+
+        if (!empty($payload)) {
+            $this->httpNormal->addData($payload);
+        }
+
+        if (!empty($files)) {
+            $this->httpNormal->setContentType(libHttp::CONTENT_TYPE_FORM_DATA);
+
+            foreach ($files as $values) {
+                $this->httpNormal->addFile(...$values);
+            }
+        } else {
+            $this->httpNormal->setContentType(libHttp::CONTENT_TYPE_JSON);
+        }
+
+        $response = $this->httpNormal->fetch($this->api_url . $endpoint);
         $result   = json_decode($response, true);
 
-        if (null !== $result) {
+        if (is_array($result)) {
             $result['success'] = true;
         } else {
             $result = [
@@ -463,7 +533,7 @@ class libOpenAI extends Factory
             ];
         }
 
-        unset($endpoint, $payload, $method, $response);
+        unset($endpoint, $payload, $files, $method, $response);
         return $result;
     }
 
