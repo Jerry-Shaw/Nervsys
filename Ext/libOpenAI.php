@@ -565,6 +565,7 @@ class libOpenAI extends Factory
     {
         $this->sse_buffer = '';
 
+        $this->httpStream->setContentType(libHttp::CONTENT_TYPE_JSON);
         $this->httpStream->setHttpMethod('POST');
         $this->httpStream->addData($payload);
 
