@@ -108,23 +108,17 @@ class libHttp extends Factory
             throw new \RuntimeException('File does not exist: ' . $file_path);
         }
 
-        $mime_type = mime_content_type($file_path);
-
-        if (false === $mime_type) {
-            $mime_type = null;
-        }
-
         if (!isset($this->requestFile[$key])) {
-            $this->requestFile[$key] = curl_file_create($file_path, $mime_type, $posted_filename);
+            $this->requestFile[$key] = curl_file_create($file_path, null, $posted_filename);
         } else {
             if (!is_array($this->requestFile[$key])) {
                 $this->requestFile[$key] = [$this->requestFile[$key]];
             }
 
-            $this->requestFile[$key][] = curl_file_create($file_path, $mime_type, $posted_filename);
+            $this->requestFile[$key][] = curl_file_create($file_path, null, $posted_filename);
         }
 
-        unset($key, $file_path, $posted_filename, $mime_type);
+        unset($key, $file_path, $posted_filename);
         return $this;
     }
 
