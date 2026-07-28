@@ -317,7 +317,7 @@ class libOpenAI extends Factory
     /**
      * Create image edit (POST /images/edits)
      *
-     * @param string $image   Path to the image file to edit
+     * @param array  $images  Path to the image files to edit
      * @param string $prompt  Text description of the desired edit
      * @param string $model   Model name ('dall-e-3', 'gpt-image-2', etc)
      * @param string $mask    Mask image (optional, image path)
@@ -325,25 +325,33 @@ class libOpenAI extends Factory
      *
      * @return array Parsed JSON array with 'success' key
      * @throws \ReflectionException
-     * @throws \RuntimeException If image file does not exist or is unreadable
      */
-    public function editImage(string $image, string $prompt, string $model, string $mask = '', array $options = []): array
+    public function editImage(array $images, string $prompt, string $model, string $mask = '', array $options = []): array
     {
-        if ('' === $image || !is_file($image) || !is_readable($image)) {
-            throw new \RuntimeException('Image file does not exist or is not readable: ' . $image);
+        $files = [];
+
+        foreach ($images as $image) {
+            if ('' === $image || !is_file($image) || !is_readable($image)) {
+                throw new \RuntimeException('Image file does not exist or is not readable: ' . $image);
+            }
+
+            $files[] = ['image', $image];
+        }
+
+        if ('' !== $mask && is_file($mask) && is_readable($mask)) {
+            $files[] = ['mask', $mask];
+        }
+
+        if (empty($files)) {
+            throw new \RuntimeException('No image files uploaded.');
         }
 
         $payload = ['prompt' => $prompt, 'model' => $model];
         $payload = array_merge($payload, $options);
 
-        $images = [['image', $image]];
-        if ('' !== $mask && is_file($mask) && is_readable($mask)) {
-            $images[] = ['mask', $mask];
-        }
+        $result = $this->sendRequest('/images/edits', $payload, $files);
 
-        $result = $this->sendRequest('/images/edits', $payload, $images);
-
-        unset($image, $prompt, $model, $mask, $options, $payload, $images);
+        unset($images, $prompt, $model, $mask, $options, $files, $image, $payload);
         return $result;
     }
 
