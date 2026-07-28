@@ -102,13 +102,29 @@ class libHttp extends Factory
     /**
      * Add upload file (temporary)
      */
-    public function addFile(string $key, string $filename, string $mime_type = '', string $posted_filename = ''): static
+    public function addFile(string $key, string $file_path, string $posted_filename = ''): static
     {
-        if (is_file($filename)) {
-            $this->requestFile[$key] = curl_file_create($filename, $mime_type, $posted_filename);
+        if (!is_file($file_path)) {
+            throw new \RuntimeException('File does not exist: ' . $file_path);
         }
 
-        unset($key, $filename, $mime_type, $posted_filename);
+        $mime_type = mime_content_type($file_path);
+
+        if (false === $mime_type) {
+            $mime_type = null;
+        }
+
+        if (!isset($this->requestFile[$key])) {
+            $this->requestFile[$key] = curl_file_create($file_path, $mime_type, $posted_filename);
+        } else {
+            if (!is_array($this->requestFile[$key])) {
+                $this->requestFile[$key] = [$this->requestFile[$key]];
+            }
+
+            $this->requestFile[$key][] = curl_file_create($file_path, $mime_type, $posted_filename);
+        }
+
+        unset($key, $file_path, $posted_filename, $mime_type);
         return $this;
     }
 
