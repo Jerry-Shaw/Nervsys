@@ -495,26 +495,6 @@ class libOpenAI extends Factory
     }
 
     /**
-     * Configure a libHttp instance with common headers
-     *
-     * @param libHttp $http
-     *
-     * @return void
-     */
-    private function configure(libHttp $http): void
-    {
-        if ('' !== $this->api_key) {
-            $http->addHeader(['Authorization' => 'Bearer ' . $this->api_key]);
-        }
-
-        if ('' !== $this->org_id) {
-            $http->addHeader(['OpenAI-Organization' => $this->org_id]);
-        }
-
-        unset($http);
-    }
-
-    /**
      * Send a normal (non-stream) request and return parsed JSON array with 'success' key
      *
      * @param string $endpoint
@@ -525,7 +505,7 @@ class libOpenAI extends Factory
      * @return array  Array with 'success' key (true = parsed data, false = error)
      * @throws \ReflectionException
      */
-    private function sendRequest(string $endpoint, array $payload, array $files = [], string $method = 'POST'): array
+    public function sendRequest(string $endpoint, array $payload, array $files = [], string $method = 'POST'): array
     {
         $this->httpNormal->setHttpMethod($method);
 
@@ -569,7 +549,7 @@ class libOpenAI extends Factory
      * @return void
      * @throws \ReflectionException
      */
-    private function sendStream(string $endpoint, array $payload): void
+    public function sendStream(string $endpoint, array $payload): void
     {
         $this->sse_buffer = '';
 
@@ -598,6 +578,26 @@ class libOpenAI extends Factory
         $this->httpStream->removeStreamCallback();
 
         unset($endpoint, $payload);
+    }
+
+    /**
+     * Configure a libHttp instance with common headers
+     *
+     * @param libHttp $http
+     *
+     * @return void
+     */
+    private function configure(libHttp $http): void
+    {
+        if ('' !== $this->api_key) {
+            $http->addHeader(['Authorization' => 'Bearer ' . $this->api_key]);
+        }
+
+        if ('' !== $this->org_id) {
+            $http->addHeader(['OpenAI-Organization' => $this->org_id]);
+        }
+
+        unset($http);
     }
 
     /**
