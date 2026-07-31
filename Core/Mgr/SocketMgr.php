@@ -1335,10 +1335,10 @@ class SocketMgr extends Factory
      * @param string $socket_id
      * @param string $message
      *
-     * @return void
+     * @return bool
      * @throws \ReflectionException
      */
-    public function sendMessage(string $socket_id, string $message): void
+    public function sendMessage(string $socket_id, string $message): bool
     {
         try {
             if ('udp' !== $this->sock_type) {
@@ -1354,9 +1354,11 @@ class SocketMgr extends Factory
             $this->debug('Send message ERROR: ' . $throwable->getMessage());
             $this->closeSocket($socket_id);
             unset($throwable);
+            return false;
         }
 
         unset($socket_id, $message);
+        return true;
     }
 
     /**
@@ -1364,6 +1366,7 @@ class SocketMgr extends Factory
      * @param string $message
      *
      * @return void
+     * @throws \Random\RandomException
      * @throws \ReflectionException
      */
     public function sendWsMessage(string $socket_id, string $message): void
