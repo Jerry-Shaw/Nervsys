@@ -83,13 +83,14 @@ class IOData extends Factory
      *
      * c: Command
      * w: Working dir
-     * d: Data package
+     * d: Data string (JSON/XML/UrlQuery)
+     * f: Data file path (data content: JSON/XML)
      * r: Return type (json/xml/plain, default: none, optional)
      * ... Other CLI params (optional)
      */
     public function readCli(): void
     {
-        $opt  = getopt('c:w:d:r::', [], $optind);
+        $opt  = getopt('c:w:d:f:r::', [], $optind);
         $argv = array_slice($_SERVER['argv'], $optind);
 
         if (!isset($opt['c']) && !empty($argv)) {
@@ -126,13 +127,26 @@ class IOData extends Factory
         }
 
         if (isset($opt['d'])) {
-            $input_data = $this->decodeData($opt['d']);
+            $this->content_type = 'application/json';
+            $raw_input_data     = $this->decodeData($opt['d']);
+            $this->src_input    = $this->readInput($raw_input_data);
 
-            if (empty($this->src_input = $this->readInput($input_data))) {
-                parse_str($input_data, $this->src_input);
+            if (empty($this->src_input)) {
+                parse_str($raw_input_data, $this->src_input);
             }
 
-            unset($input_data);
+            unset($raw_input_data);
+        }
+
+        if (isset($opt['f']) && is_file($opt['f'])) {
+            $this->content_type = 'application/json';
+            $raw_input_data     = file_get_contents($opt['f']);
+
+            if (is_string($raw_input_data)) {
+                $this->src_input += $this->readInput($raw_input_data);
+            }
+
+            unset($raw_input_data);
         }
 
         foreach ($this->cli_handler as $handler) {
