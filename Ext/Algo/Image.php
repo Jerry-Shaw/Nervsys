@@ -4,7 +4,7 @@
  * Algorithm: Image data algorithm
  *
  * Copyright 2016-2023 Jerry Shaw <jerry-shaw@live.com>
- * Copyright 2016-2023 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,10 @@ class Image extends Factory
      */
     public function intensityToGrayValue(int|float $intensity, int|float $min_value, int|float $max_value, int|float $signal_gain = 1): int
     {
+        if ((float)$max_value === (float)$min_value) {
+            return 0;
+        }
+
         $intensity *= $signal_gain;
 
         if ($intensity > $max_value) {
