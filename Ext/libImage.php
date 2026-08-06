@@ -3,7 +3,7 @@
 /**
  * Image Extension
  *
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,21 +59,43 @@ class libImage extends Factory
      * Create GDImage from file
      *
      * @param string $file
-     * @param bool   $alpha_blending
-     * @param bool   $save_alpha
      *
      * @return \GdImage
      * @throws \Exception
      */
-    public function createImageFrom(string $file, bool $alpha_blending = false, bool $save_alpha = true): \GdImage
+    public function createImageFrom(string $file): \GdImage
     {
-        $mime_type = $this->getImageMimeType($file);
-        $gd_image  = ('imagecreatefrom' . $mime_type)($file);
+        $img_type = $this->getImageType($file);
+        $gd_image = 'tiff' !== $img_type
+            ? ('imagecreatefrom' . $img_type)($file)
+            : $this->tiffToGdPng(file_get_contents($file));
 
-        imagealphablending($gd_image, $alpha_blending);
-        imagesavealpha($gd_image, $save_alpha);
+        unset($file, $img_type);
+        return $gd_image;
+    }
 
-        unset($file, $alpha_blending, $save_alpha, $mime_type);
+    /**
+     * Create GDImage from binary data
+     *
+     * @param string $binary
+     *
+     * @return \GdImage
+     * @throws \Exception
+     */
+    public function createImageFromBinary(string $binary): \GdImage
+    {
+        $img_info = getimagesizefromstring($binary);
+
+        if (false === $img_info) {
+            throw new \InvalidArgumentException('Image type not supported.');
+        }
+
+        $img_type = substr(image_type_to_mime_type($img_info[2]), 6);
+        $gd_image = 'tiff' !== $img_type
+            ? imagecreatefromstring($binary)
+            : $this->tiffToGdPng($binary);
+
+        unset($binary, $img_info, $img_type);
         return $gd_image;
     }
 
@@ -91,14 +113,13 @@ class libImage extends Factory
      */
     public function resize(string $img_src, string $img_dst, int $width, int $height, bool $crop = false): bool
     {
-        $mime_type = $this->getImageMimeType($img_src);
-
+        $img_type = $this->getImageType($img_src);
         $gd_image = $this->createImageFrom($img_src);
         $gd_image = $this->gd_resize($gd_image, $width, $height, $crop);
 
-        $result = ('image' . $mime_type)($gd_image, $img_dst);
+        $result = ('image' . $img_type)($gd_image, $img_dst);
 
-        unset($img_src, $img_dst, $width, $height, $crop, $mime_type, $gd_image);
+        unset($img_src, $img_dst, $width, $height, $crop, $img_type, $gd_image);
         return $result;
     }
 
@@ -120,10 +141,10 @@ class libImage extends Factory
                 $exif_data = exif_read_data($img_src);
 
                 if (false === $exif_data) {
-                    throw new \Exception('EXIF: File not supported!');
+                    throw new \Exception('Filetype not supported.');
                 }
             } catch (\Throwable) {
-                throw new \Exception('EXIF: File not supported!');
+                throw new \Exception('Filetype not supported.');
             }
 
             if (!isset($exif_data['Orientation'])) {
@@ -161,10 +182,10 @@ class libImage extends Factory
         imagecolortransparent($rotated_image, $color);
         imagefill($rotated_image, 0, 0, $color);
 
-        $gd_type = $this->getImageMimeType($img_src);
-        $result  = ('image' . $gd_type)($rotated_image, $img_dst);
+        $img_type = $this->getImageType($img_src);
+        $result   = ('image' . $img_type)($rotated_image, $img_dst);
 
-        unset($img_src, $img_dst, $angle, $fill_color, $gd_image, $color, $rotated_image, $gd_type);
+        unset($img_src, $img_dst, $angle, $fill_color, $gd_image, $color, $rotated_image, $img_type);
         return $result;
     }
 
@@ -373,6 +394,206 @@ class libImage extends Factory
     }
 
     /**
+     * Convert uncompressed TIFF binary to PNG binary
+     * Supports: 1-bit black/white, 8-bit grayscale, 24-bit RGB (chunky, no compression)
+     *
+     * @param string $tiff_data
+     *
+     * @return \GdImage
+     * @throws \Exception
+     */
+    public function tiffToGdPng(string $tiff_data): \GdImage
+    {
+        $data_length = strlen($tiff_data);
+
+        if (8 > $data_length) {
+            throw new \InvalidArgumentException('TIFF data too short.');
+        }
+
+        $little_endian = 'I' === $tiff_data[0];
+
+        $read_int = fn(int $offset, int $size): int => match ($size) {
+            2 => $little_endian ? unpack('v', $tiff_data, $offset)[1] : unpack('n', $tiff_data, $offset)[1],
+            4 => $little_endian ? unpack('V', $tiff_data, $offset)[1] : unpack('N', $tiff_data, $offset)[1],
+        };
+
+        if (42 !== $read_int(2, 2)) {
+            throw new \InvalidArgumentException('Invalid TIFF file.');
+        }
+
+        $ifd_offset = $read_int(4, 4);
+        if ($ifd_offset >= $data_length) {
+            throw new \InvalidArgumentException('IFD offset out of bounds.');
+        }
+
+        $ifd_cnt       = $read_int($ifd_offset, 2);
+        $spp           = 1;
+        $img_width     = 0;
+        $img_height    = 0;
+        $compressed    = 1;
+        $planar_conf   = 1;
+        $photo_interp  = 1;
+        $bps           = [];
+        $strip_bytes   = [];
+        $strip_offsets = [];
+
+        for ($entry_index = 0, $entry_offset = $ifd_offset + 2; $entry_index < $ifd_cnt; ++$entry_index, $entry_offset += 12) {
+            if ($entry_offset + 12 > $data_length) {
+                throw new \InvalidArgumentException('IFD entry truncated.');
+            }
+
+            $ifd_tag     = $read_int($entry_offset, 2);
+            $field_type  = $read_int($entry_offset + 2, 2);
+            $value_count = $read_int($entry_offset + 4, 4);
+
+            $field_length = $value_count * match ($field_type) {
+                    1, 2 => 1,    // BYTE / ASCII
+                    3 => 2,       // SHORT
+                    4, 13 => 4,   // LONG / IFD
+                    5, 10 => 8,   // RATIONAL / SRATIONAL
+                    default => throw new \InvalidArgumentException('Unsupported field type: ' . $field_type . '.'),
+                };
+
+            if (4 >= $field_length) {
+                $raw_data = substr($tiff_data, $entry_offset + 8, $field_length);
+            } else {
+                $ext_offset = $read_int($entry_offset + 8, 4);
+
+                if ($ext_offset + $field_length > $data_length) {
+                    throw new \InvalidArgumentException('Field data out of bounds.');
+                }
+
+                $raw_data = substr($tiff_data, $ext_offset, $field_length);
+            }
+
+            $parsed_values = match ($field_type) {
+                1, 2 => array_values(unpack('C*', $raw_data)),
+                3 => $little_endian ? array_values(unpack('v*', $raw_data)) : array_values(unpack('n*', $raw_data)),
+                4, 13 => $little_endian ? array_values(unpack('V*', $raw_data)) : array_values(unpack('N*', $raw_data)),
+                5, 10 => (function () use ($raw_data, $value_count, $little_endian): array
+                {
+                    $rat_values = [];
+
+                    for ($rat_index = 0; $rat_index < $value_count; ++$rat_index) {
+                        $num = $little_endian ? unpack('V', $raw_data, $rat_index * 8)[1] : unpack('N', $raw_data, $rat_index * 8)[1];
+                        $den = $little_endian ? unpack('V', $raw_data, $rat_index * 8 + 4)[1] : unpack('N', $raw_data, $rat_index * 8 + 4)[1];
+
+                        $rat_values[] = $den ? $num / $den : 0;
+                    }
+
+                    return $rat_values;
+                })(),
+            };
+
+            match ($ifd_tag) {
+                256 => $img_width = (3 === $field_type || 4 === $field_type) ? $parsed_values[0] : 0,
+                257 => $img_height = (3 === $field_type || 4 === $field_type) ? $parsed_values[0] : 0,
+                258 => $bps = $parsed_values,
+                259 => $compressed = $parsed_values[0],
+                262 => $photo_interp = $parsed_values[0],
+                277 => $spp = $parsed_values[0],
+                284 => $planar_conf = $parsed_values[0],
+                273 => $strip_offsets = $parsed_values,
+                279 => $strip_bytes = $parsed_values,
+                default => null,
+            };
+        }
+
+        if (1 !== $compressed) {
+            throw new \InvalidArgumentException('Only uncompressed TIFF is supported.');
+        }
+        if (1 !== $planar_conf) {
+            throw new \InvalidArgumentException('Planar configuration not supported.');
+        }
+        if (0 >= $img_width || 0 >= $img_height) {
+            throw new \InvalidArgumentException('Invalid image dimensions.');
+        }
+        if ([] === $strip_offsets || count($strip_offsets) !== count($strip_bytes)) {
+            throw new \InvalidArgumentException('Strip offsets/byte counts mismatch.');
+        }
+
+        $image_data = '';
+        foreach ($strip_offsets as $strip_index => $strip_offset) {
+            $strip_length = $strip_bytes[$strip_index];
+
+            if ($strip_offset + $strip_length > $data_length) {
+                throw new \InvalidArgumentException('Strip data out of bounds.');
+            }
+
+            $image_data .= substr($tiff_data, $strip_offset, $strip_length);
+        }
+
+        $row_bytes = (1 === $spp && [1] === $bps) ? (int)ceil($img_width / 8) : 0;
+
+        $exp_length = match (true) {
+            3 === $spp && [8, 8, 8] === $bps => $img_width * $img_height * 3,
+            1 === $spp && [8] === $bps => $img_width * $img_height,
+            1 === $spp && [1] === $bps => $img_height * $row_bytes,
+            default => throw new \InvalidArgumentException('Unsupported format: spp=' . $spp . ' bps=' . implode(',', $bps ?? []) . '.'),
+        };
+
+        if (strlen($image_data) < $exp_length) {
+            throw new \InvalidArgumentException('Incomplete pixel data.');
+        }
+
+        $gd_image = match (true) {
+            (3 === $spp && [8, 8, 8] === $bps), (1 === $spp && [8] === $bps) => imagecreatetruecolor($img_width, $img_height),
+            (1 === $spp && [1] === $bps) => imagecreate($img_width, $img_height),
+            default => null,
+        };
+
+        if (null === $gd_image) {
+            throw new \RuntimeException('Failed to create GD image.');
+        }
+
+        if (3 === $spp) {
+            // 24-bit RGB
+            for ($row = 0, $pixel_position = 0; $row < $img_height; ++$row) {
+                for ($column = 0; $column < $img_width; ++$column) {
+                    $red   = ord($image_data[$pixel_position++]);
+                    $green = ord($image_data[$pixel_position++]);
+                    $blue  = ord($image_data[$pixel_position++]);
+                    imagesetpixel($gd_image, $column, $row, ($red << 16) | ($green << 8) | $blue);
+                }
+            }
+        } elseif (1 === $spp && 8 === $bps[0]) {
+            // 8-bit grayscale
+            for ($row = 0, $pixel_position = 0; $row < $img_height; ++$row) {
+                for ($column = 0; $column < $img_width; ++$column) {
+                    $gray = ord($image_data[$pixel_position++]);
+                    imagesetpixel($gd_image, $column, $row, ($gray << 16) | ($gray << 8) | $gray);
+                }
+            }
+        } else {
+            // 1-bit black/white
+            $current_byte = 0;
+            $black_index  = imagecolorallocate($gd_image, 0, 0, 0);
+            $white_index  = imagecolorallocate($gd_image, 255, 255, 255);
+            $color_map    = (0 === $photo_interp) ? [0 => $white_index, 1 => $black_index] : [0 => $black_index, 1 => $white_index];
+
+            for ($row = 0, $pixel_position = 0; $row < $img_height; ++$row) {
+                for ($column = 0, $byte_index = 0; $column < $img_width; ++$column) {
+                    if (0 === $column % 8) {
+                        $current_byte = ord($image_data[$pixel_position + $byte_index]);
+                    }
+
+                    $curr_bit = ($current_byte >> (7 - $column % 8)) & 1;
+                    imagesetpixel($gd_image, $column, $row, $color_map[$curr_bit]);
+
+                    if (0 === ($column + 1) % 8) {
+                        ++$byte_index;
+                    }
+                }
+
+                $pixel_position += $row_bytes;
+            }
+        }
+
+        unset($tiff_data, $data_length, $little_endian, $read_int, $ifd_offset, $ifd_cnt, $spp, $img_width, $img_height, $compressed, $planar_conf, $photo_interp, $bps, $strip_bytes, $strip_offsets, $entry_index, $entry_offset, $ifd_tag, $field_type, $value_count, $field_length, $raw_data, $ext_offset, $parsed_values, $image_data, $strip_index, $strip_offset, $strip_length, $row_bytes, $exp_length, $row, $pixel_position, $column, $red, $green, $blue, $gray, $current_byte, $black_index, $white_index, $color_map, $byte_index, $curr_bit);
+        return $gd_image;
+    }
+
+    /**
      * @param \GdImage $gd_image
      * @param int      $width
      * @param int      $height
@@ -389,8 +610,7 @@ class libImage extends Factory
 
         $gd_width  = imagesx($gd_image);
         $gd_height = imagesy($gd_image);
-
-        $img_size = $crop
+        $img_size  = $crop
             ? $this->getCropSize($gd_width, $gd_height, $width, $height)
             : $this->getZoomSize($gd_width, $gd_height, $width, $height);
 
@@ -470,22 +690,20 @@ class libImage extends Factory
      * @return string
      * @throws \Exception
      */
-    public function getImageMimeType(string $file): string
+    public function getImageType(string $file): string
     {
         try {
             $image_type = exif_imagetype($file);
 
             if (false === $image_type) {
-                throw new \Exception('libImage: Image type not supported!');
+                throw new \Exception('Image type not supported.');
             }
         } catch (\Throwable) {
-            throw new \Exception('libImage: Image type not supported!');
+            throw new \Exception('Image type not supported.');
         }
 
-        $mime_type = substr(image_type_to_mime_type($image_type), 6);
-
-        unset($file, $image_type);
-        return $mime_type;
+        unset($file);
+        return substr(image_type_to_mime_type($image_type), 6);
     }
 
     /**
