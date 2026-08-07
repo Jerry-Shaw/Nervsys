@@ -75,7 +75,6 @@ class Factory
      *
      * @return array
      * @throws \ReflectionException
-     * @throws \Exception
      */
     public static function buildArgs(array $param_reflects, array $data_package): array
     {
@@ -84,6 +83,7 @@ class Factory
         foreach ($param_reflects as $param_reflect) {
             $param_info  = Reflect::getParameterInfo($param_reflect);
             $param_exist = array_key_exists($param_info['name'], $data_package);
+            $param_types = array_keys($param_info['type']);
 
             if ($param_info['is_variadic']) {
                 $args[] = $param_exist ? (array)$data_package[$param_info['name']] : [];
@@ -103,7 +103,7 @@ class Factory
                     continue;
                 }
 
-                $diff[] = 'Missing arguments: Expected ' . implode('|', array_keys($param_info['type'])) . ' with "' . $param_info['name'] . '"';
+                $diff[] = 'Missing argument "' . $param_info['name'] . '"' . ([] !== $param_types ? ', expected ' . implode('|', $param_types) . '.' : '.');
                 continue;
             }
 
@@ -122,7 +122,6 @@ class Factory
             } elseif ([] === $param_info['type'] || array_key_exists('mixed', $param_info['type'])) {
                 $args[] = $data_package[$param_info['name']];
             } else {
-                $expected = implode('|', array_keys($param_info['type']));
                 $detected = gettype($data_package[$param_info['name']]);
 
                 if (in_array($detected, ['integer', 'double', 'string'], true)) {
@@ -137,15 +136,15 @@ class Factory
                     $param_value = '(' . $detected . ')';
                 }
 
-                $diff[] = 'Invalid argument type for "' . $param_info['name'] . '": expected ' . $expected . ', got ' . $detected;
+                $diff[] = 'Invalid type for "' . $param_info['name'] . '", expected ' . implode('|', $param_types) . ', got ' . $detected . '.';
             }
         }
 
         if ([] !== $diff) {
-            throw new \Exception(implode('. ', $diff), E_ERROR);
+            throw new \InvalidArgumentException(implode(' ', $diff));
         }
 
-        unset($param_reflects, $data_package, $diff, $param_reflect, $param_info, $param_exist, $object_name, $expected, $detected, $param_value);
+        unset($param_reflects, $data_package, $diff, $param_reflect, $param_info, $param_exist, $param_types, $object_name, $detected, $param_value);
         return $args;
     }
 
