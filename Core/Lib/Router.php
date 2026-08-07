@@ -43,7 +43,7 @@ class Router extends Factory
         foreach ($this->cli_router_stack as $router) {
             $cmd_data = $this->process($router, $c);
 
-            if (!empty($cmd_data)) {
+            if ([] !== $cmd_data) {
                 break;
             }
         }
@@ -65,7 +65,7 @@ class Router extends Factory
         foreach ($this->cgi_router_stack as $router) {
             $cmd_data = $this->process($router, $c);
 
-            if (!empty($cmd_data)) {
+            if ([] !== $cmd_data) {
                 break;
             }
         }
@@ -168,7 +168,7 @@ class Router extends Factory
 
             $metadata = $this->getModuleMetadata($module_unit[0], $module_path);
 
-            if (empty($metadata)) {
+            if ([] === $metadata) {
                 return '';
             }
 
@@ -219,7 +219,7 @@ class Router extends Factory
 
             $metadata = json_decode(file_get_contents($meta_file), true);
 
-            if (is_null($metadata)) {
+            if (null === $metadata) {
                 return [];
             }
 

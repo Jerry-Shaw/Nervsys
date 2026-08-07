@@ -73,7 +73,7 @@ class WINNT
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             $output = array_values(array_filter($output, 'strlen'));
             $info   = $output[1] ?? '';
         }
@@ -90,7 +90,7 @@ class WINNT
     {
         $hw_info = [];
 
-        if (!is_null($this->wmi)) {
+        if (null !== $this->wmi) {
             $query = $this->wmi->ExecQuery('Select * from Win32_ComputerSystem');
 
             foreach ($query as $object) {
@@ -123,7 +123,7 @@ class WINNT
             $query = $this->wmi->ExecQuery('SELECT * FROM Win32_NetworkAdapter WHERE PhysicalAdapter = TRUE');
 
             foreach ($query as $object) {
-                if (!is_null($object->MACAddress) && '' !== $object->MACAddress) {
+                if (null !== $object->MACAddress && '' !== $object->MACAddress) {
                     $hw_info[] = $object->Name
                         . ' ' . $object->MACAddress
                         . ' ' . $object->PNPDeviceID
@@ -141,7 +141,7 @@ class WINNT
             unset($query, $object);
         }
 
-        if (empty($hw_info)) {
+        if ([] === $hw_info) {
             $ps_cmd = 'powershell -Command "' .
                 '$out=@();' .
                 'Get-WmiObject -class Win32_ComputerSystem | ForEach-Object { $out += $_.Model };' .
@@ -161,7 +161,7 @@ class WINNT
             unset($ps_cmd, $status);
         }
 
-        if (empty($hw_info)) {
+        if ([] === $hw_info) {
             throw new \Exception(PHP_OS . ': Failed to get hardware information!');
         }
 
@@ -183,7 +183,7 @@ class WINNT
             }
         }
 
-        if (empty($hw_info)) {
+        if ([] === $hw_info) {
             throw new \Exception(PHP_OS . ': No valid hardware information collected!');
         }
 
@@ -227,7 +227,7 @@ class WINNT
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             $paths = array_values(array_filter(array_map('trim', $output), 'strlen'));
         }
 
@@ -248,7 +248,7 @@ class WINNT
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             foreach ($output as $line) {
                 if (false !== stripos($line, $state)) {
                     $parts = array_values(array_filter(explode(' ', $line), 'strlen'));

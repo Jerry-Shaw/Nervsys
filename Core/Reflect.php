@@ -151,7 +151,7 @@ class Reflect
         $param_info['has_default']   = $has_default;
         $param_info['default_value'] = $has_default ? $parameter->getDefaultValue() : null;
 
-        if (!is_null($reflect_type)) {
+        if (null !== $reflect_type) {
             $param_types = $reflect_type instanceof \ReflectionUnionType
                 ? $reflect_type->getTypes()
                 : [$reflect_type];

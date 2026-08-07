@@ -76,7 +76,7 @@ class libSignature extends Factory
         callable|null $error_handler = null
     ): bool
     {
-        if (is_null($input_data)) {
+        if (null === $input_data) {
             $input_data = IOData::new()->getInputData();
         }
 
@@ -191,7 +191,7 @@ class libSignature extends Factory
     protected function filterData(array $data): array
     {
         foreach ($data as $k => $v) {
-            if (is_array($v) || is_null($v)) {
+            if (is_array($v) || null === $v) {
                 unset($data[$k]);
             }
         }

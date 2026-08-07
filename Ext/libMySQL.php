@@ -261,7 +261,7 @@ class libMySQL extends Factory
      */
     public function getLastFoundRows(): int
     {
-        if (empty($this->select_count)) {
+        if ([] === $this->select_count) {
             return 0;
         }
 
@@ -377,7 +377,7 @@ class libMySQL extends Factory
     {
         $this->isReady();
 
-        if (empty($column)) {
+        if ([] === $column) {
             $column = ['*'];
         }
 
@@ -439,7 +439,7 @@ class libMySQL extends Factory
      */
     public function on(array ...$where): static
     {
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
@@ -464,7 +464,7 @@ class libMySQL extends Factory
 
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
@@ -488,7 +488,7 @@ class libMySQL extends Factory
 
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
@@ -509,13 +509,13 @@ class libMySQL extends Factory
     {
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
         $cond = $this->parseCond($where, 'and');
 
-        array_unshift($cond, !empty($this->runtime_data[$this->runtime_data['stage']]) ? 'AND (' : '(');
+        array_unshift($cond, [] !== $this->runtime_data[$this->runtime_data['stage']] ? 'AND (' : '(');
 
         $cond[] = ')';
 
@@ -536,13 +536,13 @@ class libMySQL extends Factory
     {
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
         $cond = $this->parseCond($where, 'or');
 
-        array_unshift($cond, !empty($this->runtime_data[$this->runtime_data['stage']]) ? 'OR (' : '(');
+        array_unshift($cond, [] !== $this->runtime_data[$this->runtime_data['stage']] ? 'OR (' : '(');
 
         $cond[] = ')';
 
@@ -599,7 +599,7 @@ class libMySQL extends Factory
                 //By FIELD()
                 if (is_string($val)) {
                     $order[] = 'FIELD(' . $col . ', ' . $val . ')';
-                } elseif (!empty($val)) {
+                } elseif ([] !== $val) {
                     $last_val = strtoupper(end($val));
 
                     if (!in_array($last_val, ['ASC', 'DESC'], true)) {
@@ -1030,7 +1030,7 @@ class libMySQL extends Factory
             return;
         }
 
-        if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
+        if (!isset($this->runtime_data['where']) || [] === $this->runtime_data['where']) {
             $this->force_execute = true;
 
             throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->debugSql($this->buildSql(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
@@ -1069,7 +1069,7 @@ class libMySQL extends Factory
         //option
         if (in_array($option, ['on', 'where', 'having'], true)) {
             $in_group    = true;
-            $cond_list[] = (empty($this->runtime_data[$option]) ? strtoupper($option) : 'AND') . ' (';
+            $cond_list[] = ([] === $this->runtime_data[$option] ? strtoupper($option) : 'AND') . ' (';
         }
 
         foreach ($where as $value) {
@@ -1116,7 +1116,7 @@ class libMySQL extends Factory
             }
 
             //Avoid errors when data is missing
-            if (empty($value)) {
+            if ([] === $value) {
                 continue;
             }
 

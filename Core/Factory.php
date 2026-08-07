@@ -119,7 +119,7 @@ class Factory
                 $args[] = $data_package[$param_info['name']];
             } elseif (array_key_exists('object', $param_info['type']) && is_object($data_package[$param_info['name']])) {
                 $args[] = $data_package[$param_info['name']];
-            } elseif (empty($param_info['type']) || array_key_exists('mixed', $param_info['type'])) {
+            } elseif ([] === $param_info['type'] || array_key_exists('mixed', $param_info['type'])) {
                 $args[] = $data_package[$param_info['name']];
             } else {
                 $expected = implode('|', array_keys($param_info['type']));
@@ -141,7 +141,7 @@ class Factory
             }
         }
 
-        if (!empty($diff)) {
+        if ([] !== $diff) {
             throw new \Exception(implode('. ', $diff), E_ERROR);
         }
 

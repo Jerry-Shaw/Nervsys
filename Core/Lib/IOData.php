@@ -57,12 +57,12 @@ class IOData extends Factory
         $this->src_input = $this->readHttp();
         $this->src_input += $this->readInput(file_get_contents('php://input'));
 
-        if (!empty($this->header_keys)) {
+        if ([] !== $this->header_keys) {
             $this->src_input = array_diff_key($this->src_input, array_flip($this->header_keys));
             $this->src_input += $this->readHeader();
         }
 
-        if (!empty($this->cookie_keys)) {
+        if ([] !== $this->cookie_keys) {
             $this->src_input = array_diff_key($this->src_input, array_flip($this->cookie_keys));
             $this->src_input += $this->readCookie();
         }
@@ -93,11 +93,11 @@ class IOData extends Factory
         $opt  = getopt('c:w:d:f:r::', [], $optind);
         $argv = array_slice($_SERVER['argv'], $optind);
 
-        if (!isset($opt['c']) && !empty($argv)) {
+        if (!isset($opt['c']) && [] !== $argv) {
             $opt['c'] = array_shift($argv);
         }
 
-        if (!empty($argv)) {
+        if ([] !== $argv) {
             $this->src_argv = $argv;
         }
 
@@ -131,7 +131,7 @@ class IOData extends Factory
             $raw_input_data     = $this->decodeData($opt['d']);
             $this->src_input    = $this->readInput($raw_input_data);
 
-            if (empty($this->src_input)) {
+            if ([] === $this->src_input) {
                 parse_str($raw_input_data, $this->src_input);
             }
 
@@ -183,20 +183,20 @@ class IOData extends Factory
      */
     public function output(): void
     {
-        if (!empty($this->output_handler)) {
+        if ([] !== $this->output_handler) {
             call_user_func(current($this->output_handler), $this);
             return;
         }
 
         !headers_sent() && header('Content-Type: ' . $this->content_type . '; charset=utf-8');
 
-        $data = !empty($this->src_msg)
+        $data = [] !== $this->src_msg
             ? $this->src_msg + ['data' => $this->src_output]
             : $this->src_output;
 
         switch ($this->content_type) {
             case 'application/json':
-                if (is_array($data) && empty($data)) {
+                if ([] === $data) {
                     $data = (object)$data;
                 }
 

@@ -166,7 +166,7 @@ class libCaptcha extends Factory
     public function get(int $life = 60): array
     {
         //Validate code types
-        $types = !empty($this->types) ? array_intersect($this->types, self::TYPES) : self::TYPES;
+        $types = [] !== $this->types ? array_intersect($this->types, self::TYPES) : self::TYPES;
 
         //Generate Auth Code
         $codes = $this->{'build' . ucfirst($types[mt_rand(0, count($types) - 1)])}();
@@ -338,7 +338,7 @@ class libCaptcha extends Factory
 
             $json = json_decode($res, true);
 
-            if (is_null($json) || !isset($json['life']) || !isset($json['hash']) || $json['life'] < time()) {
+            if (!is_array($json) || !isset($json['life']) || !isset($json['hash']) || $json['life'] < time()) {
                 return '';
             }
 

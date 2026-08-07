@@ -490,7 +490,7 @@ class SocketMgr extends Factory
     {
         $context = stream_context_create();
 
-        if (!empty($this->options)) {
+        if ([] !== $this->options) {
             if (!stream_context_set_params($context, ['options' => $this->options])) {
                 throw new \Exception('Failed to set context options!', E_USER_ERROR);
             }
@@ -739,7 +739,7 @@ class SocketMgr extends Factory
             $count   = 0;
             $clients = array_diff_key($this->connections, $this->handshakes);
 
-            if (empty($clients)) {
+            if ([] === $clients) {
                 \Fiber::suspend();
                 continue;
             }
@@ -886,7 +886,7 @@ class SocketMgr extends Factory
     {
         $context = stream_context_create();
 
-        if (!empty($this->options)) {
+        if ([] !== $this->options) {
             if (!stream_context_set_params($context, ['options' => $this->options])) {
                 throw new \Exception('Failed to set context options!', E_USER_ERROR);
             }
@@ -959,7 +959,7 @@ class SocketMgr extends Factory
         $transport = ('wss' === $scheme) ? 'ssl' : 'tcp';
         $context   = stream_context_create();
 
-        if (!empty($this->options)) {
+        if ([] !== $this->options) {
             if (!stream_context_set_params($context, ['options' => $this->options])) {
                 throw new \Exception('Failed to set context options!', E_USER_ERROR);
             }
@@ -1702,7 +1702,7 @@ class SocketMgr extends Factory
                 }
 
                 // Final frame (fin = 1)
-                if (isset($this->data_frames[$socket_id]) && !empty($this->data_frames[$socket_id]['data'])) {
+                if (isset($this->data_frames[$socket_id]) && [] !== $this->data_frames[$socket_id]['data']) {
                     // Complete fragmented message
                     $complete_data   = $this->data_frames[$socket_id]['data'] . $payload;
                     $original_opcode = $this->data_frames[$socket_id]['opcode'];

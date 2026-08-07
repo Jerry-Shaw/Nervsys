@@ -76,7 +76,7 @@ class libLog extends Factory
         $date = date('Ymd');
 
         if (!isset($handle[$this->log_name][$date])) {
-            if (isset($handle[$this->log_name]) && !empty($handle[$this->log_name])) {
+            if (isset($handle[$this->log_name]) && [] !== $handle[$this->log_name]) {
                 foreach ($handle[$this->log_name] as $log_handler) {
                     fclose($log_handler);
                 }

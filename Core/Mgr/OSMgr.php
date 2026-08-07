@@ -51,7 +51,7 @@ class OSMgr extends Factory
      */
     public function getIPv4(): array
     {
-        if (empty($this->ip_v4)) {
+        if ([] === $this->ip_v4) {
             $this->ip_v4 = $this->lib_os->getIPv4();
         }
 
@@ -63,7 +63,7 @@ class OSMgr extends Factory
      */
     public function getIPv6(): array
     {
-        if (empty($this->ip_v6)) {
+        if ([] === $this->ip_v6) {
             $this->ip_v6 = $this->lib_os->getIPv6();
         }
 

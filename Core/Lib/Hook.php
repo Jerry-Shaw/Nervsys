@@ -131,6 +131,6 @@ class Hook extends Factory
         $result = call_user_func($hook_fn, ...$params);
 
         unset($hook_fn, $params);
-        return is_null($result) || true === $result;
+        return null === $result || true === $result;
     }
 }

@@ -518,7 +518,9 @@ class ProcMgr extends Factory
             $job_data = json_decode($job_json, true);
 
             try {
-                if (!is_array($job_data) || !isset($job_data['c']) || empty($cmd = $router->parseCgi($job_data['c']))) {
+                $cmd = $router->parseCgi($job_data['c']);
+
+                if (!is_array($job_data) || !isset($job_data['c']) || [] === $cmd) {
                     throw new \Exception('Process worker data ERROR: ' . $job_json, E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
@@ -572,7 +574,9 @@ class ProcMgr extends Factory
             $job_json = trim($job_json);
             $job_data = json_decode($job_json, true);
 
-            if (is_array($job_data) && isset($job_data['c']) && !empty($cmd = $router->parseCgi($job_data['c']))) {
+            $cmd = $router->parseCgi($job_data['c']);
+
+            if (is_array($job_data) && isset($job_data['c']) && [] !== $cmd) {
                 try {
                     $caller->runApiFn($cmd, $job_data, false);
                     flush();
@@ -617,7 +621,7 @@ class ProcMgr extends Factory
                 $idx = (int)$idx;
 
                 while ('' !== ($output = trim(fgets($stream)))) {
-                    if (empty($stdio_callbacks)) {
+                    if ([] === $stdio_callbacks) {
                         $end_marker = $this->proc_end_marker[$idx][count($this->proc_end_marker[$idx]) - 1] ?? '';
 
                         if ('' === $end_marker || $output === $end_marker) {
@@ -690,7 +694,7 @@ class ProcMgr extends Factory
      */
     protected function getIdleProcIdx(): int
     {
-        if (empty($this->proc_idle)) {
+        if ([] === $this->proc_idle) {
             $this->readIPC();
 
             return $this->getIdleProcIdx();

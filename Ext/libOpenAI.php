@@ -342,7 +342,7 @@ class libOpenAI extends Factory
             $files[] = ['mask', $mask];
         }
 
-        if (empty($files)) {
+        if ([] === $files) {
             throw new \RuntimeException('No image files uploaded.');
         }
 
@@ -387,7 +387,7 @@ class libOpenAI extends Factory
 
         $result = [];
 
-        if (!is_null($callback)) {
+        if (null !== $callback) {
             $key = '' !== $callback_key ? $callback_key : 'completions_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
@@ -433,7 +433,7 @@ class libOpenAI extends Factory
 
         $result = [];
 
-        if (!is_null($callback)) {
+        if (null !== $callback) {
             $key = '' !== $callback_key ? $callback_key : 'responses_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
@@ -479,7 +479,7 @@ class libOpenAI extends Factory
 
         $result = [];
 
-        if (!is_null($callback)) {
+        if (null !== $callback) {
             $key = '' !== $callback_key ? $callback_key : 'messages_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
@@ -509,11 +509,11 @@ class libOpenAI extends Factory
     {
         $this->httpNormal->setHttpMethod($method);
 
-        if (!empty($payload)) {
+        if ([] !== $payload) {
             $this->httpNormal->addData($payload);
         }
 
-        if (!empty($files)) {
+        if ([] !== $files) {
             $this->httpNormal->setContentType(libHttp::CONTENT_TYPE_FORM_DATA);
 
             foreach ($files as $values) {
@@ -629,7 +629,7 @@ class libOpenAI extends Factory
         $this->sse_buffer .= $chunk;
 
         while (false !== ($event_end = strpos($this->sse_buffer, "\n\n"))) {
-            if (!is_null($this->shmop) && "\x01" === shmop_read($this->shmop, 0, 1)) {
+            if (null !== $this->shmop && "\x01" === shmop_read($this->shmop, 0, 1)) {
                 $this->sse_buffer = '';
                 $this->callStreamCallbacks(['status' => 'aborted'], true);
                 unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);

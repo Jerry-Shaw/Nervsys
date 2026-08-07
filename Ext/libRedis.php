@@ -188,7 +188,7 @@ class libRedis extends Factory
      */
     public function __call(string $name, array $arguments): mixed
     {
-        if (is_null($this->redis)) {
+        if (null === $this->redis) {
             $this->connect();
         }
 

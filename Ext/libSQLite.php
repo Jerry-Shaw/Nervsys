@@ -259,7 +259,7 @@ class libSQLite extends Factory
      */
     public function getLastFoundRows(): int
     {
-        if (empty($this->select_count)) {
+        if ([] === $this->select_count) {
             return 0;
         }
 
@@ -375,7 +375,7 @@ class libSQLite extends Factory
     {
         $this->isReady();
 
-        if (empty($column)) {
+        if ([] === $column) {
             $column = ['*'];
         }
 
@@ -437,7 +437,7 @@ class libSQLite extends Factory
      */
     public function on(array ...$where): static
     {
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
@@ -462,7 +462,7 @@ class libSQLite extends Factory
 
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
@@ -517,7 +517,7 @@ class libSQLite extends Factory
 
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
@@ -538,13 +538,13 @@ class libSQLite extends Factory
     {
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
         $cond = $this->parseCond($where, 'and');
 
-        array_unshift($cond, !empty($this->runtime_data[$this->runtime_data['stage']]) ? 'AND (' : '(');
+        array_unshift($cond, [] !== $this->runtime_data[$this->runtime_data['stage']] ? 'AND (' : '(');
 
         $cond[] = ')';
 
@@ -565,13 +565,13 @@ class libSQLite extends Factory
     {
         $where = array_filter($where);
 
-        if (empty($where)) {
+        if ([] === $where) {
             return $this;
         }
 
         $cond = $this->parseCond($where, 'or');
 
-        array_unshift($cond, !empty($this->runtime_data[$this->runtime_data['stage']]) ? 'OR (' : '(');
+        array_unshift($cond, [] !== $this->runtime_data[$this->runtime_data['stage']] ? 'OR (' : '(');
 
         $cond[] = ')';
 
@@ -628,7 +628,7 @@ class libSQLite extends Factory
                 //By FIELD() - SQLite uses custom order via CASE WHEN
                 if (is_string($val)) {
                     $order[] = $this->buildFieldOrder($col, $val);
-                } elseif (!empty($val)) {
+                } elseif ([] !== $val) {
                     $last_val = strtoupper(end($val));
 
                     if (!in_array($last_val, ['ASC', 'DESC'], true)) {
@@ -1076,7 +1076,7 @@ class libSQLite extends Factory
             return;
         }
 
-        if (!isset($this->runtime_data['where']) || empty($this->runtime_data['where'])) {
+        if (!isset($this->runtime_data['where']) || [] === $this->runtime_data['where']) {
             $this->force_execute = true;
 
             throw new \PDOException('WARNING: WHERE clause is missing in SQL: ' . $this->debugSql($this->buildSql(), $this->runtime_data['bind'] ?? []) . '. Using force() to bypass security checking.', E_USER_ERROR);
@@ -1115,7 +1115,7 @@ class libSQLite extends Factory
         //option
         if (in_array($option, ['on', 'where', 'having'], true)) {
             $in_group    = true;
-            $cond_list[] = (empty($this->runtime_data[$option]) ? strtoupper($option) : 'AND') . ' (';
+            $cond_list[] = ([] === $this->runtime_data[$option] ? strtoupper($option) : 'AND') . ' (';
         }
 
         foreach ($where as $value) {
@@ -1162,7 +1162,7 @@ class libSQLite extends Factory
             }
 
             //Avoid errors when data is missing
-            if (empty($value)) {
+            if ([] === $value) {
                 continue;
             }
 
@@ -1261,7 +1261,7 @@ class libSQLite extends Factory
             $clause .= ' ' . implode(' ', $this->runtime_data['where']);
         }
 
-        if (isset($this->runtime_data['match']) && !empty($this->runtime_data['match'])) {
+        if (isset($this->runtime_data['match']) && [] !== $this->runtime_data['match']) {
             $first   = true;
             $matches = [];
 
@@ -1278,7 +1278,7 @@ class libSQLite extends Factory
 
             $match_sql = implode(' ', $matches);
 
-            if (isset($this->runtime_data['where']) && !empty($this->runtime_data['where'])) {
+            if (isset($this->runtime_data['where']) && [] !== $this->runtime_data['where']) {
                 $clause .= ' AND (' . $match_sql . ')';
             } else {
                 $clause .= ' WHERE ' . $match_sql;
@@ -1318,10 +1318,6 @@ class libSQLite extends Factory
 
         if (isset($this->runtime_data['limit'])) {
             $clause .= ' LIMIT ' . $this->runtime_data['limit'];
-        }
-
-        if (isset($this->runtime_data['lock']) && !empty($this->runtime_data['lock'])) {
-            // SQLite doesn't support FOR UPDATE/SHARE, ignored for compatibility
         }
 
         $sql .= $clause;

@@ -95,7 +95,7 @@ class Error extends Factory
         $log = date('Y-m-d H:i:s') . "\r\n";
 
         $log .= ucfirst($err_lv) . ': ' . $message . "\r\n";
-        $log .= !empty($context) ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
+        $log .= [] !== $context ? json_encode($context, JSON_PRETTY) . "\r\n\r\n" : "\r\n";
 
         unset($err_lv, $message, $context);
         return $log;
@@ -123,7 +123,7 @@ class Error extends Factory
     {
         $error = error_get_last();
 
-        if (!is_null($error)) {
+        if (null !== $error) {
             throw new \ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']);
         }
 

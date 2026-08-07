@@ -82,7 +82,7 @@ class Peak extends Factory
     {
         $keys = array_keys($this->diff_trend, $diff_val, true);
 
-        if (empty($keys)) {
+        if ([] === $keys) {
             return [];
         }
 

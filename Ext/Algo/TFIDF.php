@@ -59,7 +59,7 @@ class TFIDF extends Factory
      */
     public function getTf(string $gram): int
     {
-        if (empty($this->dst_tf)) {
+        if ([] === $this->dst_tf) {
             $this->dst_tf = array_count_values($this->src_grams);
         }
 

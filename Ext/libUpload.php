@@ -219,7 +219,7 @@ class libUpload extends Factory
             $save_name = $upload_result['name'];
         }
 
-        if (!empty($this->allowed_ext)) {
+        if ([] !== $this->allowed_ext) {
             if (!in_array($this->libFileIO->getExt($save_name), $this->allowed_ext, true)
                 || !in_array($this->mime_types[$upload_result['type']] ?? 'tmp', $this->allowed_ext, true)
             ) {
@@ -280,7 +280,7 @@ class libUpload extends Factory
      */
     public function mergeSlice(string $ticket_id, string $save_dir, string $save_name): array
     {
-        if (!empty($this->allowed_ext) && !in_array($this->libFileIO->getExt($save_name), $this->allowed_ext, true)) {
+        if ([] !== $this->allowed_ext && !in_array($this->libFileIO->getExt($save_name), $this->allowed_ext, true)) {
             unset($ticket_id, $save_dir, $save_name);
             return $this->getResult($this->upload_result, 5);
         }
@@ -288,7 +288,7 @@ class libUpload extends Factory
         $tmp_path = $this->libFileIO->mkPath($this->temp_dir . DIRECTORY_SEPARATOR . $ticket_id, $this->upload_path);
         $tmp_list = $this->libFileIO->getFiles($tmp_path, $ticket_id . '_*.tmp');
 
-        if (empty($tmp_list)) {
+        if ([] === $tmp_list) {
             unset($ticket_id, $save_dir, $save_name, $tmp_path, $tmp_list);
             return $this->getResult($this->upload_result, UPLOAD_ERR_NO_FILE);
         }

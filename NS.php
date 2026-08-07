@@ -121,7 +121,7 @@ class NS
             $cli_cmd = $this->router->parseCli($this->IOData->src_cmd);
             $this->profiler->end('NS_CLI_ROUTER');
 
-            if (!empty($cli_cmd)) {
+            if ([] !== $cli_cmd) {
                 try {
                     $this->caller->runProgram(
                         $cli_cmd,
@@ -140,7 +140,7 @@ class NS
         $cgi_cmd = $this->router->parseCgi($this->IOData->src_cmd);
         $this->profiler->end('NS_CGI_ROUTER');
 
-        if (!empty($cgi_cmd)) {
+        if ([] !== $cgi_cmd) {
             try {
                 $full_cmd = strtr($cgi_cmd[0] . '/' . $cgi_cmd[1], '\\', '/');
 

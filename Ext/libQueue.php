@@ -181,7 +181,7 @@ class libQueue extends Factory
 
         $proc_data = ['name' => $this->queue_name, 'redis' => $this->proc_redis_conf, 'cycles' => $cycle_jobs] + $this->proc_env_variable;
 
-        if (!empty($this->proc_data_overrides)) {
+        if ([] !== $this->proc_data_overrides) {
             $proc_data['dataset'] = $this->proc_data_overrides;
         }
 
@@ -238,7 +238,7 @@ class libQueue extends Factory
             unset($QProc_key, $proc_id);
         }, $this->QProc_key, $proc_id);
 
-        while (!empty($job = $this->redis->brPop([$this->realtime_key], 10))) {
+        while ([] !== ($job = $this->redis->brPop([$this->realtime_key], 10))) {
             $this->redis->expire($this->QProc_key, 60);
 
             $job_data = json_decode($job[1], true);
@@ -257,7 +257,9 @@ class libQueue extends Factory
                     }
                 }
 
-                if (!isset($job_data['@']) || empty($cmd = $router->parseCgi($job_data['@']))) {
+                $cmd = $router->parseCgi($job_data['@']);
+
+                if (!isset($job_data['@']) || [] === $cmd) {
                     throw new \Exception('Queue CMD ERROR!', E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
@@ -350,7 +352,7 @@ class libQueue extends Factory
     {
         $job_key_list = $this->redis->zRangeByScore($this->delay_set_key, 0, time());
 
-        if (empty($job_key_list)) {
+        if ([] === $job_key_list) {
             return;
         }
 

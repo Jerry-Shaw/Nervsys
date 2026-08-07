@@ -44,7 +44,7 @@ class FiberMgr extends Factory
     {
         $await_fiber = new \Fiber($callable);
 
-        if (!empty($arguments) && !array_is_list($arguments)) {
+        if ([] !== $arguments && !array_is_list($arguments)) {
             $arguments = parent::buildArgs(Reflect::getCallable($callable)->getParameters(), $arguments);
         }
 
@@ -90,7 +90,7 @@ class FiberMgr extends Factory
      */
     public function commit(): void
     {
-        while (!empty($this->fibers)) {
+        while ([] !== $this->fibers) {
             foreach ($this->fibers as $fiber_key => $fiber_proc) {
                 if ($fiber_proc[0]->isSuspended()) {
                     $fiber_proc[0]->resume();
@@ -171,7 +171,7 @@ class FiberMgr extends Factory
 
         $stack = &$this->stacks[$stack_id];
 
-        if (empty($stack['tasks'])) {
+        if ([] === $stack['tasks']) {
             return false;
         }
 

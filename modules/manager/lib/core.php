@@ -192,7 +192,7 @@ class core extends Factory
         $this->ProcMgr->setWorkDir($this->module_root);
         $metadata = $this->getModuleMeta($parsed['data']['repo']);
 
-        $install_result = empty($metadata)
+        $install_result = [] === $metadata
             ? $this->installModule(
                 $parsed['data']['repo'],
                 $parsed['data']['user'],
@@ -486,7 +486,7 @@ class core extends Factory
         $key = ('git' === $type) ? 'ssh_url' : 'https_url';
         $url = $platforms[$source][$key] ?? null;
 
-        if (is_null($url)) {
+        if (null === $url) {
             return '';
         }
 
@@ -555,7 +555,7 @@ class core extends Factory
 
         $metadata = $this->getModuleMeta($repo);
 
-        if (!empty($metadata['dependencies'])) {
+        if ([] !== $metadata['dependencies']) {
             $dep_result = $this->installDependencies($metadata['dependencies'], $depth + 1, $output);
 
             if (!$dep_result['success']) {
@@ -649,7 +649,7 @@ class core extends Factory
             unset($git_result, $path);
         }
 
-        if (!empty($metadata['dependencies'])) {
+        if ([] !== $metadata['dependencies']) {
             $dep_result = $this->installDependencies($metadata['dependencies'], $depth + 1, $output);
 
             if (!$dep_result['success']) {
@@ -682,7 +682,7 @@ class core extends Factory
 
             $metadata = $this->getModuleMeta($repo);
 
-            if (empty($metadata)) {
+            if ([] === $metadata) {
                 if (is_callable($output)) {
                     $output('Installing dependency "' . $repo . '" from ' . $url . ('' !== $tag ? ' (tag: ' . $tag . ')' : ''));
                 }
@@ -720,7 +720,7 @@ class core extends Factory
                 $metadata = $this->getModuleMeta($repo);
             }
 
-            if (!empty($metadata['dependencies'])) {
+            if ([] !== $metadata['dependencies']) {
                 $dep_result = $this->installDependencies($metadata['dependencies'], $depth + 1, $output);
 
                 if (!$dep_result['success']) {

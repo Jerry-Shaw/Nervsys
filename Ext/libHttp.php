@@ -55,8 +55,8 @@ class libHttp extends Factory
     protected array $curl_options = [];
 
     // Temporary data (cleared after each request)
-    protected array $requestData = [];
-    protected array $requestFile = [];
+    protected array $request_data  = [];
+    protected array $request_files = [];
 
     // Raw and parsed data (results)
     public string $raw_header  = '';
@@ -93,7 +93,7 @@ class libHttp extends Factory
      */
     public function addData(array $data): static
     {
-        $this->requestData = array_merge($this->requestData, $data);
+        $this->request_data = array_merge($this->request_data, $data);
 
         unset($data);
         return $this;
@@ -108,14 +108,14 @@ class libHttp extends Factory
             throw new \RuntimeException('File does not exist: ' . $file_path);
         }
 
-        if (!isset($this->requestFile[$key])) {
-            $this->requestFile[$key] = curl_file_create($file_path, null, $posted_filename);
+        if (!isset($this->request_files[$key])) {
+            $this->request_files[$key] = curl_file_create($file_path, null, $posted_filename);
         } else {
-            if (!is_array($this->requestFile[$key])) {
-                $this->requestFile[$key] = [$this->requestFile[$key]];
+            if (!is_array($this->request_files[$key])) {
+                $this->request_files[$key] = [$this->request_files[$key]];
             }
 
-            $this->requestFile[$key][] = curl_file_create($file_path, null, $posted_filename);
+            $this->request_files[$key][] = curl_file_create($file_path, null, $posted_filename);
         }
 
         unset($key, $file_path, $posted_filename);
@@ -450,8 +450,8 @@ class libHttp extends Factory
         }
 
         // Clear temporary data
-        $this->requestData = [];
-        $this->requestFile = [];
+        $this->request_data  = [];
+        $this->request_files = [];
 
         unset($url, $to_file, $reset_options, $url_unit, $request_config, $curl_options, $curl_handle, $response);
         return $output;
@@ -581,9 +581,9 @@ class libHttp extends Factory
         }
 
         // Merge temporary data (data + file)
-        $config['data'] = array_merge($this->requestData, $this->requestFile);
+        $config['data'] = array_merge($this->request_data, $this->request_files);
 
-        if (!empty($this->requestFile)) {
+        if ([] !== $this->request_files) {
             $config['http_content_type'] = self::CONTENT_TYPE_FORM_DATA;
         }
 
@@ -648,7 +648,7 @@ class libHttp extends Factory
         }
 
         // Request body
-        if (!empty($request_config['data'])) {
+        if ([] !== $request_config['data']) {
             if ('GET' === $request_config['http_method']) {
                 $request_config['http_method'] = 'POST';
             }

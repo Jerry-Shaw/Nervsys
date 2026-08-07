@@ -94,7 +94,7 @@ class Linux
             }
         }
 
-        if (empty($hw_info)) {
+        if ([] === $hw_info) {
             throw new \Exception(PHP_OS . ': No valid hardware information collected!');
         }
 
@@ -117,7 +117,7 @@ class Linux
             throw new \Exception(PHP_OS . ': Access denied!');
         }
 
-        if (empty($output)) {
+        if ([] === $output) {
             throw new \Exception(PHP_OS . ': PHP path NOT found!');
         }
 
@@ -143,7 +143,7 @@ class Linux
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             $paths = array_values(array_filter(array_map('trim', $output), 'strlen'));
         }
 
@@ -164,7 +164,7 @@ class Linux
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             foreach ($output as $line) {
                 if (false !== stripos($line, $state)) {
                     if (preg_match_all('/pid=(\d+)/', $line, $matches)) {

@@ -108,7 +108,7 @@ class libLock extends Factory
      */
     public function clear(): void
     {
-        if (!empty($this->locks)) {
+        if ([] !== $this->locks) {
             call_user_func([$this->redis, 'del'], ...$this->locks);
             $this->locks = [];
         }

@@ -59,7 +59,7 @@ class Darwin
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             $info = $output[0];
         }
 
@@ -103,7 +103,7 @@ class Darwin
             }
         }
 
-        if (empty($hw_info)) {
+        if ([] === $hw_info) {
             throw new \Exception(PHP_OS . ': No valid hardware information collected!');
         }
 
@@ -126,7 +126,7 @@ class Darwin
             throw new \Exception(PHP_OS . ': Access denied!');
         }
 
-        if (empty($output)) {
+        if ([] === $output) {
             throw new \Exception(PHP_OS . ': PHP path NOT found!');
         }
 
@@ -152,7 +152,7 @@ class Darwin
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             $paths = array_values(array_filter(array_map('trim', $output), 'strlen'));
         }
 
@@ -173,7 +173,7 @@ class Darwin
 
         exec($cmd, $output, $status);
 
-        if (0 === $status && !empty($output)) {
+        if (0 === $status && [] !== $output) {
             for ($i = 1; $i < count($output); ++$i) {
                 $line = $output[$i];
                 if (false !== stripos($line, $state)) {
