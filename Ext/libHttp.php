@@ -75,15 +75,13 @@ class libHttp extends Factory
      * @param string $user_agent
      * @param int    $timeout
      */
-    public function __construct(string $user_agent = '', int $timeout = 0)
+    public function __construct(string $user_agent = '', int $timeout = 60)
     {
         if ('' !== $user_agent) {
             $this->curl_options[CURLOPT_USERAGENT] = $user_agent;
         }
 
-        if (0 < $timeout) {
-            $this->curl_options[CURLOPT_TIMEOUT] = $timeout;
-        }
+        $this->curl_options[CURLOPT_TIMEOUT] = $timeout;
 
         unset($user_agent, $timeout);
     }
