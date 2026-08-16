@@ -245,7 +245,7 @@ class libOpenAI extends Factory
      */
     public function listModels(): array
     {
-        $response  = $this->httpNormal->setHttpMethod('GET')->fetch($this->api_url . '/models');
+        $response  = $this->httpNormal->setHttpMethod('GET')->fetch($this->api_url . '/v1/models');
         $json_data = json_decode($response, true);
 
         if (is_array($json_data)) {
@@ -281,9 +281,10 @@ class libOpenAI extends Factory
      * @return array  Parsed JSON array with 'success' key
      * @throws \ReflectionException
      */
-    public function createEmbedding(string $input, string $model = 'text-embedding-bge-reranker-v2-m3'): array
+    public function createEmbedding(string $input, string $model): array
     {
-        $result = $this->sendRequest('/embeddings',
+        $result = $this->sendRequest(
+            '/v1/embeddings',
             [
                 'input' => $input,
                 'model' => $model
@@ -295,7 +296,7 @@ class libOpenAI extends Factory
     }
 
     /**
-     * Create image generation (POST /images/generations)
+     * Create image generation (POST /v1/images/generations)
      *
      * @param string $prompt  Text description of the desired image(s)
      * @param string $model   Model name ('dall-e-3', 'gpt-image-2', etc)
@@ -308,14 +309,14 @@ class libOpenAI extends Factory
     {
         $payload = ['prompt' => $prompt, 'model' => $model];
         $payload = array_merge($payload, $options);
-        $result  = $this->sendRequest('/images/generations', $payload);
+        $result  = $this->sendRequest('/v1/images/generations', $payload);
 
         unset($prompt, $model, $options, $payload);
         return $result;
     }
 
     /**
-     * Create image edit (POST /images/edits)
+     * Create image edit (POST /v1/images/edits)
      *
      * @param array  $images  Path to the image files to edit
      * @param string $prompt  Text description of the desired edit
@@ -349,14 +350,14 @@ class libOpenAI extends Factory
         $payload = ['prompt' => $prompt, 'model' => $model];
         $payload = array_merge($payload, $options);
 
-        $result = $this->sendRequest('/images/edits', $payload, $files);
+        $result = $this->sendRequest('/v1/images/edits', $payload, $files);
 
         unset($images, $prompt, $model, $mask, $options, $files, $image, $payload);
         return $result;
     }
 
     /**
-     * Chat completions (POST /chat/completions)
+     * Chat completions (POST /v1/chat/completions)
      *
      * @param array         $messages     List of messages (role/content pairs)
      * @param string        $model        Model name (optional, uses default if empty)
@@ -391,11 +392,11 @@ class libOpenAI extends Factory
             $key = '' !== $callback_key ? $callback_key : 'completions_stream_' . uniqid('', true);
 
             $this->stream_callbacks[$key] = $callback;
-            $this->sendStream('/chat/completions', $payload);
+            $this->sendStream('/v1/chat/completions', $payload);
 
             unset($this->stream_callbacks[$key], $key);
         } else {
-            $result = $this->sendRequest('/chat/completions', $payload);
+            $result = $this->sendRequest('/v1/chat/completions', $payload);
         }
 
         unset($messages, $model, $options, $callback, $callback_key, $payload);
