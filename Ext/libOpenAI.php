@@ -360,6 +360,7 @@ class libOpenAI extends Factory
      * Chat completions (POST /v1/chat/completions)
      *
      * @param array         $messages     List of messages (role/content pairs)
+     * @param string        $system       System prompt (string content)
      * @param string        $model        Model name (optional, uses default if empty)
      * @param array         $options      Additional parameters (temperature, max_completion_tokens, tools, etc.)
      * @param callable|null $callback     Stream callback (if provided, enables streaming)
@@ -370,12 +371,23 @@ class libOpenAI extends Factory
      */
     public function completions(
         array         $messages,
+        string        $system = '',
         string        $model = '',
         array         $options = [],
         callable|null $callback = null,
         string        $callback_key = ''
     ): array
     {
+        if ('' !== $system) {
+            array_unshift(
+                $messages,
+                [
+                    'role'    => 'system',
+                    'content' => $system
+                ]
+            );
+        }
+
         $payload = array_merge(
             $this->model_params,
             $options,
@@ -399,7 +411,7 @@ class libOpenAI extends Factory
             $result = $this->sendRequest('/v1/chat/completions', $payload);
         }
 
-        unset($messages, $model, $options, $callback, $callback_key, $payload);
+        unset($messages, $system, $model, $options, $callback, $callback_key, $payload);
         return $result;
     }
 
@@ -407,6 +419,7 @@ class libOpenAI extends Factory
      * Responses API (POST /v1/responses)
      *
      * @param array         $input        Input messages or text (structure depends on API)
+     * @param string        $instructions instructions (string content)
      * @param string        $model        Model name (optional, uses default if empty)
      * @param array         $options      Additional parameters (temperature, max_completion_tokens, tools, etc.)
      * @param callable|null $callback     Stream callback (if provided, enables streaming)
@@ -417,6 +430,7 @@ class libOpenAI extends Factory
      */
     public function responses(
         array         $input,
+        string        $instructions = '',
         string        $model = '',
         array         $options = [],
         callable|null $callback = null,
@@ -432,6 +446,10 @@ class libOpenAI extends Factory
             ]
         );
 
+        if ('' !== $instructions) {
+            $payload['instructions'] = $instructions;
+        }
+
         $result = [];
 
         if (null !== $callback) {
@@ -445,7 +463,7 @@ class libOpenAI extends Factory
             $result = $this->sendRequest('/v1/responses', $payload);
         }
 
-        unset($input, $model, $options, $callback, $callback_key, $payload);
+        unset($input, $instructions, $model, $options, $callback, $callback_key, $payload);
         return $result;
     }
 
@@ -453,6 +471,7 @@ class libOpenAI extends Factory
      * Messages API (POST /v1/messages) – Assistants
      *
      * @param array         $message      Single message (role/content)
+     * @param string        $system       System prompt (string content)
      * @param string        $model        Model name (optional, uses default if empty)
      * @param array         $options      Additional parameters (thread_id, temperature, etc.)
      * @param callable|null $callback     Stream callback (if provided, enables streaming)
@@ -463,6 +482,7 @@ class libOpenAI extends Factory
      */
     public function messages(
         array         $message,
+        string        $system = '',
         string        $model = '',
         array         $options = [],
         callable|null $callback = null,
@@ -478,6 +498,10 @@ class libOpenAI extends Factory
             ]
         );
 
+        if ('' !== $system) {
+            $payload['system'] = $system;
+        }
+
         $result = [];
 
         if (null !== $callback) {
@@ -491,7 +515,7 @@ class libOpenAI extends Factory
             $result = $this->sendRequest('/v1/messages', $payload);
         }
 
-        unset($message, $model, $options, $callback, $callback_key, $payload);
+        unset($message, $system, $model, $options, $callback, $callback_key, $payload);
         return $result;
     }
 
