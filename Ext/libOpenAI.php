@@ -162,21 +162,6 @@ class libOpenAI extends Factory
     }
 
     /**
-     * Set model parameters
-     *
-     * @param array $params
-     *
-     * @return $this
-     */
-    public function setModelParams(array $params): static
-    {
-        $this->model_params = $params;
-
-        unset($params);
-        return $this;
-    }
-
-    /**
      * Set timeout (seconds) for both instances
      *
      * @param int $seconds
@@ -203,6 +188,31 @@ class libOpenAI extends Factory
 
         unset($end_marker);
         return $this;
+    }
+
+    /**
+     * Set model parameters
+     *
+     * @param array $params
+     *
+     * @return $this
+     */
+    public function setModelParams(array $params): static
+    {
+        $this->model_params = $params;
+
+        unset($params);
+        return $this;
+    }
+
+    /**
+     * Get model parameters
+     *
+     * @return array
+     */
+    public function getModelParams(): array
+    {
+        return $this->model_params;
     }
 
     /**
