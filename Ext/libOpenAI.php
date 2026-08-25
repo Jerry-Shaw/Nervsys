@@ -438,6 +438,7 @@ class libOpenAI extends Factory
     ): array
     {
         $payload = array_merge(
+            $this->model_params,
             $options,
             [
                 'model'  => '' === $model ? $this->api_model : $model,
@@ -490,6 +491,7 @@ class libOpenAI extends Factory
     ): array
     {
         $payload = array_merge(
+            $this->model_params,
             $options,
             [
                 'model'   => '' === $model ? $this->api_model : $model,
