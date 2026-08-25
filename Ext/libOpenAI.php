@@ -33,7 +33,7 @@ class libOpenAI extends Factory
     public string $api_url    = '';
     public string $api_key    = '';
     public string $api_model  = '';
-    public string $end_marker = '[DONE]';
+    public string $end_marker = '';
     public string $sse_buffer = '';
 
     public array $model_params = [
@@ -58,16 +58,12 @@ class libOpenAI extends Factory
      *
      * @param string $api_url    API base URL
      * @param string $api_key    API key
-     * @param string $end_marker API stream end marker, default: [DONE]
+     * @param string $user_agent User-Agent string
      */
-    public function __construct(string $api_url, string $api_key, string $end_marker = '', string $user_agent = '')
+    public function __construct(string $api_url, string $api_key, string $user_agent = '')
     {
         $this->api_url = rtrim($api_url, '/');
         $this->api_key = $api_key;
-
-        if ('' !== $end_marker) {
-            $this->end_marker = $end_marker;
-        }
 
         if ('' === $user_agent) {
             $user_agent = 'Nervsys/OpenAI';
@@ -81,7 +77,7 @@ class libOpenAI extends Factory
         $this->configure($this->httpNormal);
         $this->configure($this->httpStream);
 
-        unset($api_url, $api_key, $end_marker, $user_agent);
+        unset($api_url, $api_key, $user_agent);
     }
 
     /**
