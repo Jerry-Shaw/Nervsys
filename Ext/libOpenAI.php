@@ -197,6 +197,19 @@ class libOpenAI extends Factory
     }
 
     /**
+     * @param string $end_marker
+     *
+     * @return $this
+     */
+    public function setEndMarker(string $end_marker): static
+    {
+        $this->end_marker = $end_marker;
+
+        unset($end_marker);
+        return $this;
+    }
+
+    /**
      * @param int $shm_key
      *
      * @return $this
@@ -689,6 +702,12 @@ class libOpenAI extends Factory
             if (is_array($data)) {
                 $data['status'] = 'success';
                 $this->callStreamCallbacks($data, false);
+
+                if (isset($data['type']) && $data['type'] === $this->end_marker) {
+                    $this->callStreamCallbacks([], true);
+                    $this->sse_buffer = '';
+                    break;
+                }
             } else {
                 $this->callStreamCallbacks([
                     'status'    => 'error',
