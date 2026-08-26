@@ -308,6 +308,7 @@ class SocketMgr extends Factory
      * @param string $ext_id
      *
      * @return void
+     * @throws \ReflectionException
      */
     public function runExternalCallback(string $ext_id): void
     {
@@ -316,6 +317,7 @@ class SocketMgr extends Factory
                 call_user_func($this->external_callback[$ext_id], $ext_id, $this->external_context[$ext_id]);
             } catch (\Throwable $throwable) {
                 $this->debug('External callback ERROR: #' . $ext_id . ' -> ' . $throwable->getMessage());
+                $this->error->exceptionHandler($throwable, false, false);
                 unset($throwable);
             }
         }
@@ -840,7 +842,6 @@ class SocketMgr extends Factory
             } catch (\Throwable $throwable) {
                 $this->debug('serverOnMessage callback ERROR: ' . $throwable->getMessage());
                 $this->error->exceptionHandler($throwable, false, false);
-
                 unset($throwable);
             }
         }
