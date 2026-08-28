@@ -148,7 +148,7 @@ class Darwin
     public function findPath(string $program): array
     {
         $paths = [];
-        $cmd   = 'which -a ' . escapeshellarg($program) . ' 2 > /dev/null';
+        $cmd   = 'which -a ' . escapeshellarg($program) . ' 2>/dev/null';
 
         exec($cmd, $output, $status);
 
@@ -198,7 +198,7 @@ class Darwin
      */
     public function killPid(int $pid): void
     {
-        exec('kill -9 ' . $pid . ' > /dev/null 2>&1');
+        exec('kill -9 ' . $pid . ' >/dev/null 2>&1');
     }
 
     /**
@@ -208,7 +208,7 @@ class Darwin
      */
     public function buildBackgroundCmd(string $command): string
     {
-        return 'screen ' . $command . ' > /dev/null 2>&1 &';
+        return 'screen ' . $command . ' >/dev/null 2>&1 &';
     }
 
     /**

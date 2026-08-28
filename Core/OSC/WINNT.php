@@ -223,7 +223,7 @@ class WINNT
     public function findPath(string $program): array
     {
         $paths = [];
-        $cmd   = 'where ' . escapeshellarg($program) . ' 2 > nul';
+        $cmd   = 'where ' . escapeshellarg($program) . ' 2>nul';
 
         exec($cmd, $output, $status);
 
@@ -283,7 +283,7 @@ class WINNT
      */
     public function buildBackgroundCmd(string $command): string
     {
-        return 'start "" /B ' . $command . ' > nul 2>&1';
+        return 'start "" /B ' . $command . ' >nul 2>&1';
     }
 
     /**
