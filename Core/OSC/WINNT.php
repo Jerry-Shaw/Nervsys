@@ -223,7 +223,7 @@ class WINNT
     public function findPath(string $program): array
     {
         $paths = [];
-        $cmd   = 'where ' . escapeshellarg($program);
+        $cmd   = 'where ' . escapeshellarg($program) . ' 2 > nul';
 
         exec($cmd, $output, $status);
 

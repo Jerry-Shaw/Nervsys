@@ -148,7 +148,7 @@ class Darwin
     public function findPath(string $program): array
     {
         $paths = [];
-        $cmd   = 'which -a ' . escapeshellarg($program);
+        $cmd   = 'which -a ' . escapeshellarg($program) . ' 2 > /dev/null';
 
         exec($cmd, $output, $status);
 
