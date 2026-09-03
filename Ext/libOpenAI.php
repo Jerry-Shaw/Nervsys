@@ -24,10 +24,9 @@ use Nervsys\Core\Factory;
 
 class libOpenAI extends Factory
 {
+    public \Shmop  $shmop;
     public libHttp $httpNormal;
     public libHttp $httpStream;
-
-    public \Shmop|null $shmop = null;
 
     public string $org_id     = '';
     public string $api_url    = '';
@@ -76,6 +75,8 @@ class libOpenAI extends Factory
         // Configure common headers for both instances
         $this->configure($this->httpNormal);
         $this->configure($this->httpStream);
+
+        $this->shmop = $this->openShmop(getmypid());
 
         unset($api_url, $api_key, $user_agent);
     }
@@ -216,43 +217,50 @@ class libOpenAI extends Factory
     }
 
     /**
-     * @param int $shm_key
+     * @param int $pid
      *
-     * @return $this
+     * @return \Shmop
      */
-    public function openShmop(int $shm_key): static
+    public function openShmop(int $pid): \Shmop
     {
-        $shmop = shmop_open($shm_key, 'c', 0644, 1);
+        $key   = crc32($pid) & 0x7FFFFFFF;
+        $shmop = shmop_open($key, 'c', 0644, 1);
 
         if (false === $shmop) {
             throw new \RuntimeException('Failed to create shared memory');
         }
 
-        $this->shmop = $shmop;
-
-        unset($shm_key, $shmop);
-        return $this;
+        unset($pid, $key);
+        return $shmop;
     }
 
     /**
      * Abort stream output
      *
+     * @param int $pid
+     *
      * @return libOpenAI
      */
-    public function abortStream(): static
+    public function abortStream(int $pid): static
     {
-        shmop_write($this->shmop, "\x01", 0);
+        shmop_write($this->openShmop($pid), "\x01", 0);
+
+        unset($pid);
         return $this;
     }
 
     /**
      * Resume stream output
      *
+     * @param int $pid
+     *
      * @return libOpenAI
      */
-    public function resumeStream(): static
+    public function resumeStream(int $pid): static
     {
-        shmop_write($this->shmop, "\x00", 0);
+        shmop_write($this->openShmop($pid), "\x00", 0);
+
+        unset($pid);
         return $this;
     }
 
@@ -675,7 +683,7 @@ class libOpenAI extends Factory
         $this->sse_buffer .= $chunk;
 
         while (false !== ($event_end = strpos($this->sse_buffer, "\n\n"))) {
-            if (null !== $this->shmop && "\x01" === shmop_read($this->shmop, 0, 1)) {
+            if ("\x01" === shmop_read($this->shmop, 0, 1)) {
                 $this->sse_buffer = '';
                 $this->callStreamCallbacks(['status' => 'aborted'], true);
                 unset($chunk, $event_end, $sse_event, $data_pos, $data_line, $data);
