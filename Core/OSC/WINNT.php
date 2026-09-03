@@ -42,7 +42,7 @@ class WINNT
      */
     public function getIPv4(): array
     {
-        exec('powershell -Command "Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $(Get-NetConnectionProfile | Select-Object -ExpandProperty InterfaceIndex) | Select-Object -ExpandProperty IPAddress"', $output, $status);
+        exec('powershell -Command "ipconfig | findstr \'IPv4\' | ForEach-Object { $_ -replace \'.*: \', \'\' }"', $output, $status);
 
         $ip_v4 = 0 === $status ? array_filter($output) : [];
 
@@ -55,7 +55,7 @@ class WINNT
      */
     public function getIPv6(): array
     {
-        exec('powershell -Command "Get-NetIPAddress -AddressFamily IPv6 -PrefixOrigin RouterAdvertisement -SuffixOrigin Link | Select-Object -ExpandProperty IPAddress"', $output, $status);
+        exec('powershell -Command "ipconfig | findstr \'IPv6\' | ForEach-Object { $_ -replace \'.*: \', \'\' }"', $output, $status);
 
         $ip_v6 = 0 === $status ? array_filter($output) : [];
 
