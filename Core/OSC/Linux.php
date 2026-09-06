@@ -65,10 +65,10 @@ class Linux
     {
         $cmd =
             'cat /sys/class/dmi/id/product_name 2>/dev/null; ' .
-            'lscpu 2>/dev/null | awk -F: \'/Architecture|CPU\\(s\\)|Thread\\(s\\) per core|Core\\(s\\) per socket|Socket\\(s\\)|Vendor ID|Model name|Stepping|BogoMIPS|L1d cache|L1i cache|L2 cache|L3 cache/ {gsub(/^[ \t]+/,"",$2); printf "%s ",$2} END {print ""}\'; ' .
+            'lscpu 2>/dev/null | awk -F: \'/Architecture|CPU\\(s\\)|Thread\\(s\\) per core|Core\\(s\\) per socket|Socket\\(s\\)|Vendor ID|Model name|Stepping/ {gsub(/^[ \t]+/,"",$2); printf "%s ",$2} END {print ""}\'; ' .
             'printf "%s %s %s %s\n" "$(cat /sys/class/dmi/id/board_vendor 2>/dev/null)" "$(cat /sys/class/dmi/id/board_name 2>/dev/null)" "$(cat /sys/class/dmi/id/board_serial 2>/dev/null)" "$(cat /sys/class/dmi/id/board_version 2>/dev/null)"; ' .
             'printf "%s %s\n" "$(cat /sys/class/dmi/id/bios_vendor 2>/dev/null)" "$(cat /sys/class/dmi/id/bios_version 2>/dev/null)"; ' .
-            'for iface in /sys/class/net/*; do [ -e "$iface/address" ] || continue; mac=$(cat "$iface/address" 2>/dev/null); [ -n "$mac" ] && [ "$mac" != "00:00:00:00:00:00" ] || continue; name=$(basename "$iface"); type=$(cat "$iface/type" 2>/dev/null); pci=$(readlink -f "$iface/device" 2>/dev/null | sed "s/.*\\///"); echo "$name $mac $type $pci"; done';
+            'for iface in /sys/class/net/*; do [ -e "$iface/address" ] || continue; mac=$(cat "$iface/address" 2>/dev/null); [ -n "$mac" ] && [ "$mac" != "00:00:00:00:00:00" ] || continue; name=$(basename "$iface"); type=$(cat "$iface/type" 2>/dev/null); pci=$(readlink -f "$iface/device" 2>/dev/null | sed "s/.*\///"); echo "$name $mac $type $pci"; done';
 
         exec($cmd, $hw_info, $status);
 
