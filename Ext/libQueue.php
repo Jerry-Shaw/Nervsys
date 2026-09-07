@@ -3,7 +3,7 @@
 /**
  * Queue Extension (on Redis)
  *
- * Copyright 2016-2025 秋水之冰 <27206617@qq.com>
+ * Copyright 2016-2026 秋水之冰 <27206617@qq.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,6 +151,26 @@ class libQueue extends Factory
 
         unset($cmd, $data, $run_at, $unique_hash, $unique_ttl, $pass_unique);
         return $result;
+    }
+
+    /**
+     * @param array  $data
+     * @param int    $run_at
+     * @param string $unique_hash
+     *
+     * @return int
+     */
+    public function delDelay(array $data, int $run_at, string $unique_hash = ''): int
+    {
+        $this->redis->zRem($this->delay_set_key, $run_at, $run_at);
+        $delete = $this->redis->lrem($this->delay_job_key . $run_at, json_encode($data, JSON_FORMAT), 1);
+
+        if ('' !== $unique_hash) {
+            $this->redis->del($this->getUniqueKey($unique_hash));
+        }
+
+        unset($data, $run_at, $unique_hash);
+        return $delete;
     }
 
     /**
