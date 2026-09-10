@@ -527,7 +527,7 @@ class SocketMgr extends Factory
      */
     public function serverOnTCPChange(bool $is_websocket = false): void
     {
-        $write = $except = [];
+        $write = $except = null;
 
         while (true) {
             $count = 0;
@@ -626,7 +626,7 @@ class SocketMgr extends Factory
      */
     public function serverOnUDPMessage(): void
     {
-        $write = $except = [];
+        $write = $except = null;
 
         while (true) {
             $count = 0;
@@ -1032,7 +1032,7 @@ class SocketMgr extends Factory
      */
     public function clientOnMessage(bool $is_websocket = false): void
     {
-        $write = $except = [];
+        $write = $except = null;
 
         while (true) {
             $servers = $this->master_sock + $this->external_stream;
@@ -1343,11 +1343,32 @@ class SocketMgr extends Factory
     {
         try {
             if ('udp' !== $this->sock_type) {
-                if (false === fwrite($this->connections[$socket_id], $message)) {
-                    throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
+                $sent  = 0;
+                $total = strlen($message);
+
+                while ($sent < $total) {
+                    $bytes = fwrite($this->connections[$socket_id], $sent > 0 ? substr($message, $sent) : $message);
+
+                    if (false === $bytes) {
+                        throw new \Exception($socket_id . ' lost connection!', E_USER_NOTICE);
+                    }
+
+                    if (0 === $bytes) {
+                        $read  = $except = null;
+                        $write = [$this->connections[$socket_id]];
+
+                        if (false === stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
+                            throw new \Exception($socket_id . ' write blocked!', E_USER_NOTICE);
+                        }
+
+                        continue;
+                    }
+
+                    $sent += $bytes;
                 }
 
                 $this->activities[$socket_id][1] = time();
+                unset($sent, $total, $bytes, $read, $write, $except);
             } else {
                 stream_socket_sendto($this->connections[$socket_id], $message);
             }
@@ -1616,7 +1637,7 @@ class SocketMgr extends Factory
         $remaining  = $payload_len;
         $chunk_size = 65536; // 64KB per chunk
 
-        $write  = $except = [];
+        $write  = $except = null;
         $client = [$this->connections[$socket_id]];
 
         while (0 < $remaining) {
@@ -1635,6 +1656,10 @@ class SocketMgr extends Factory
 
                 unset($read_size, $chunk, $len);
                 continue;
+            }
+
+            if (feof($this->connections[$socket_id])) {
+                throw new \Exception('Connection closed by Client while reading payload', E_NOTICE);
             }
 
             // No data available yet, wait for socket to become readable
