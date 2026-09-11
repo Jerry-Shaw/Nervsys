@@ -1343,8 +1343,9 @@ class SocketMgr extends Factory
     {
         try {
             if ('udp' !== $this->sock_type) {
-                $sent  = 0;
-                $total = strlen($message);
+                $sent     = 0;
+                $total    = strlen($message);
+                $deadline = time() + 3;
 
                 while ($sent < $total) {
                     $bytes = fwrite($this->connections[$socket_id], $sent > 0 ? substr($message, $sent) : $message);
@@ -1354,6 +1355,10 @@ class SocketMgr extends Factory
                     }
 
                     if (0 === $bytes) {
+                        if (time() >= $deadline) {
+                            throw new \Exception($socket_id . ' write timeout!', E_USER_NOTICE);
+                        }
+
                         $read  = $except = null;
                         $write = [$this->connections[$socket_id]];
 
@@ -1368,7 +1373,7 @@ class SocketMgr extends Factory
                 }
 
                 $this->activities[$socket_id][1] = time();
-                unset($sent, $total, $bytes, $read, $write, $except);
+                unset($sent, $total, $deadline, $bytes, $read, $write, $except);
             } else {
                 stream_socket_sendto($this->connections[$socket_id], $message);
             }
