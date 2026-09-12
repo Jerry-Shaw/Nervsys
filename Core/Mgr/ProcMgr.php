@@ -311,9 +311,10 @@ class ProcMgr extends Factory
      */
     public function writeProc(int $idx, string $content): void
     {
-        $written = 0;
-        $content .= $this->argv_end_char;
-        $length  = strlen($content);
+        $written  = 0;
+        $content  .= $this->argv_end_char;
+        $length   = strlen($content);
+        $deadline = time() + 3;
 
         while ($written < $length) {
             $result = fwrite($this->proc_stdin[$idx], substr($content, $written));
@@ -323,6 +324,10 @@ class ProcMgr extends Factory
             }
 
             if (0 === $result) {
+                if (time() >= $deadline) {
+                    throw new \Exception('Write to proc pipe timeout');
+                }
+
                 usleep($this->read_microseconds);
                 continue;
             }
@@ -331,7 +336,7 @@ class ProcMgr extends Factory
         }
 
         fflush($this->proc_stdin[$idx]);
-        unset($idx, $content, $written, $length, $result);
+        unset($idx, $content, $written, $length, $deadline, $result);
     }
 
     /**
@@ -356,25 +361,27 @@ class ProcMgr extends Factory
      * @param string        $end_marker
      *
      * @return self
+     * @throws \ReflectionException
+     * @throws \Exception
      */
     public function putJob(string $job_argv, callable|null $stdout_callback = null, callable|null $stderr_callback = null, string $end_marker = ''): static
     {
-        try {
-            $idx = $this->getIdleProcIdx();
+        $idx     = $this->getIdleProcIdx();
+        $content = $job_argv . $this->argv_end_char;
+        $written = fwrite($this->proc_stdin[$idx], $content);
 
-            fwrite($this->proc_stdin[$idx], $job_argv . $this->argv_end_char);
-
-            array_unshift($this->proc_end_marker[$idx], $end_marker);
-            array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
-
-            $this->proc_job_await[$idx] = 1;
-
-            unset($idx);
-        } catch (\Throwable) {
-            $this->putJob($job_argv, $stdout_callback, $stderr_callback);
+        if (false === $written || $written < strlen($content)) {
+            $this->close($idx);
+            $this->run($idx);
+            throw new \RuntimeException('Failed to write job or partial write job to proc stdin');
         }
 
-        unset($job_argv, $stdout_callback, $stderr_callback, $end_marker);
+        array_unshift($this->proc_end_marker[$idx], $end_marker);
+        array_unshift($this->proc_callbacks[$idx], [$stdout_callback, $stderr_callback]);
+
+        $this->proc_job_await[$idx] = 1;
+
+        unset($job_argv, $stdout_callback, $stderr_callback, $end_marker, $idx, $content, $written);
         return $this;
     }
 
@@ -697,7 +704,9 @@ class ProcMgr extends Factory
         if ([] === $this->proc_idle) {
             $this->readIPC();
 
-            return $this->getIdleProcIdx();
+            if ([] === $this->proc_idle) {
+                throw new \RuntimeException('No idle proc available');
+            }
         }
 
         $idx    = array_shift($this->proc_idle);
