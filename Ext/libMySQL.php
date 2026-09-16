@@ -1092,6 +1092,14 @@ class libMySQL extends Factory
                 continue;
             }
 
+            //Nested group: after the connector, the first remaining element is an array
+            if ([] !== $value && is_array($value[0])) {
+                $cond_list[] = '(';
+                $cond_list   = array_merge($cond_list, $this->parseCond($value, 'group'));
+                $cond_list[] = ')';
+                continue;
+            }
+
             //Field
             $cond_list[] = $this->escapeField(array_shift($value));
 
