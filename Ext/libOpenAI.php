@@ -225,22 +225,17 @@ class libOpenAI extends Factory
     {
         $key = crc32($pid) & 0x7FFFFFFF;
 
-        $shmop = shmop_open($key, 'n', 0644, 1);
-        if (false !== $shmop) {
-            register_shutdown_function(
-                function () use ($shmop): void
-                {
-                    shmop_delete($shmop);
-                }
-            );
-
-            return $shmop;
-        }
-
-        $shmop = shmop_open($key, 'w', 0, 0);
+        $shmop = shmop_open($key, 'c', 0644, 1);
         if (false === $shmop) {
-            throw new \RuntimeException('Failed to open shared memory');
+            throw new \RuntimeException('Failed to create shared memory');
         }
+
+        register_shutdown_function(
+            function () use ($shmop): void
+            {
+                shmop_delete($shmop);
+            }
+        );
 
         unset($pid, $key);
         return $shmop;
