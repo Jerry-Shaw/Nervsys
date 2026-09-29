@@ -165,16 +165,19 @@ class libOpenAI extends Factory
     /**
      * Set timeout (seconds) for both instances
      *
-     * @param int $seconds
+     * @param int $timeout
+     * @param int $connect_timeout
+     * @param int $low_speed_limit
+     * @param int $low_speed_time
      *
      * @return $this
      */
-    public function setTimeout(int $seconds): static
+    public function setTimeout(int $timeout, int $connect_timeout = 10, int $low_speed_limit = 1, int $low_speed_time = 60): static
     {
-        $this->httpNormal->setTimeout($seconds);
-        $this->httpStream->setTimeout($seconds);
+        $this->httpNormal->setTimeout($timeout, $connect_timeout, $low_speed_limit, $low_speed_time);
+        $this->httpStream->setTimeout($timeout, $connect_timeout, $low_speed_limit, $low_speed_time);
 
-        unset($seconds);
+        unset($timeout, $connect_timeout, $low_speed_limit, $low_speed_time);
         return $this;
     }
 
