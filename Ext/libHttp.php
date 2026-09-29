@@ -45,7 +45,10 @@ class libHttp extends Factory
         'accept_type'       => 'application/json;q=0.9,application/xml;q=0.8,text/plain;q=0.7,text/html;q=0.6,*/*;q=0.5',
         'user_agent'        => 'Mozilla/5.0 (Nervsys ' . NS_VER . '; ' . NS_NAME . ')',
         'with_body'         => true,
-        'timeout'           => 60
+        'timeout'           => 60,
+        'connect_timeout'   => 10,
+        'low_speed_limit'   => 1,
+        'low_speed_time'    => 30
     ];
 
     // Persistent user configuration (string keys that are not direct cURL options)
@@ -81,7 +84,7 @@ class libHttp extends Factory
             $this->curl_options[CURLOPT_USERAGENT] = $user_agent;
         }
 
-        $this->curl_options[CURLOPT_TIMEOUT] = $timeout;
+        $this->setTimeout($timeout);
 
         unset($user_agent, $timeout);
     }
@@ -266,11 +269,14 @@ class libHttp extends Factory
     /**
      * Set timeout (direct cURL option)
      */
-    public function setTimeout(int $timeout): static
+    public function setTimeout(int $timeout, int $connect_timeout = 10, int $low_speed_limit = 1, int $low_speed_time = 30): static
     {
-        $this->curl_options[CURLOPT_TIMEOUT] = $timeout;
+        $this->curl_options[CURLOPT_TIMEOUT]         = $timeout;
+        $this->curl_options[CURLOPT_CONNECTTIMEOUT]  = $connect_timeout;
+        $this->curl_options[CURLOPT_LOW_SPEED_LIMIT] = $low_speed_limit;
+        $this->curl_options[CURLOPT_LOW_SPEED_TIME]  = $low_speed_time;
 
-        unset($timeout);
+        unset($timeout, $connect_timeout, $low_speed_limit, $low_speed_time);
         return $this;
     }
 
