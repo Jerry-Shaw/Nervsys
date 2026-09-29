@@ -48,7 +48,7 @@ class libHttp extends Factory
         'timeout'           => 60,
         'connect_timeout'   => 10,
         'low_speed_limit'   => 1,
-        'low_speed_time'    => 30
+        'low_speed_time'    => 60
     ];
 
     // Persistent user configuration (string keys that are not direct cURL options)
@@ -269,7 +269,7 @@ class libHttp extends Factory
     /**
      * Set timeout (direct cURL option)
      */
-    public function setTimeout(int $timeout, int $connect_timeout = 10, int $low_speed_limit = 1, int $low_speed_time = 30): static
+    public function setTimeout(int $timeout, int $connect_timeout = 10, int $low_speed_limit = 1, int $low_speed_time = 60): static
     {
         $this->curl_options[CURLOPT_TIMEOUT]         = $timeout;
         $this->curl_options[CURLOPT_CONNECTTIMEOUT]  = $connect_timeout;
