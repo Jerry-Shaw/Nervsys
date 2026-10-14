@@ -186,6 +186,19 @@ trait System
     }
 
     /**
+     * @param string $locale
+     *
+     * @return $this
+     */
+    public function setLocale(string $locale): self
+    {
+        $this->app->setLocale($locale);
+
+        unset($locale);
+        return $this;
+    }
+
+    /**
      * @param string $timezone
      *
      * @return $this
