@@ -99,7 +99,10 @@ class libPDO extends Factory
 
         // SQLite does not require username/password
         if (str_starts_with($this->dsn, 'sqlite:')) {
-            $this->pdo = parent::getObj(\PDO::class, [$this->dsn, null, null, $this->opt]);
+            $this->pdo = version_compare(PHP_VERSION, '8.4.0', '>=')
+                ? parent::getObj(\PDO\Sqlite::class, [$this->dsn, null, null, $this->opt])
+                : parent::getObj(\PDO::class, [$this->dsn, null, null, $this->opt]);
+
             // Enable foreign key constraints for SQLite
             $this->pdo->exec('PRAGMA foreign_keys = ON');
         } else {
