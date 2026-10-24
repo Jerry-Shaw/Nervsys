@@ -40,14 +40,15 @@ class SocketMgr extends Factory
     public bool $debug_mode = false;
 
     public array $callbacks = [
-        'onConnect'    => null,  //callback(string $socket_id): string, response message back to client
-        'onHandshake'  => null,  //callback(string $socket_id, string $ws_proto): bool, true to allow, otherwise reject.
-        'onHeartbeat'  => null,  //callback(string $socket_id): string, heartbeat message send to $socket_id
-        'onMessage'    => null,  //callback(string $socket_id, string $message, bool $is_binary): void
-        'onSendBinary' => null,  //callback(string $socket_id): array[binary], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onSendString' => null,  //callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
-        'onSendFailed' => null,  //callback(string $socket_id, string $message): void
-        'onClose'      => null   //callback(string $socket_id): void
+        'onConnect'    => null,  // callback(string $socket_id): string, response message back to client
+        'onUserFunc'   => null,  // callback(\SocketMgr $SocketMgr): void
+        'onHandshake'  => null,  // callback(string $socket_id, string $ws_proto): bool, true to allow, otherwise reject.
+        'onHeartbeat'  => null,  // callback(string $socket_id): string, heartbeat message send to $socket_id
+        'onMessage'    => null,  // callback(string $socket_id, string $message, bool $is_binary): void
+        'onSendBinary' => null,  // callback(string $socket_id): array[binary], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendString' => null,  // callback(string $socket_id): array[string], message list send to $socket_id, [msg1, msg2, msg3, ...]
+        'onSendFailed' => null,  // callback(string $socket_id, string $message): void
+        'onClose'      => null   // callback(string $socket_id): void
     ];
 
     public array $options     = [];
@@ -61,12 +62,15 @@ class SocketMgr extends Factory
     public array $external_context  = [];
     public array $external_callback = [];
 
-    public array $connect_opt  = [3, 10]; //retry_times: -1 means always try to connect, 0 means don't reconnect after disconnected
+    public array $connect_opt  = [3, 10]; // retry_times: -1 means always try to connect, 0 means don't reconnect after disconnected
     public array $read_timeout = [0, 500000];
 
     public int $sending_gap     = 0;
     public int $alive_timeout   = 60;
     public int $max_num_in_loop = 2000;
+
+    public int $user_func_last_run_at  = 0;  // Last UserFunc run timestamp.
+    public int $user_func_run_interval = 60; // UserFunc run interval in seconds.
 
     /**
      * @throws \ReflectionException
@@ -131,6 +135,19 @@ class SocketMgr extends Factory
         $this->read_timeout = [$seconds, $microseconds];
 
         unset($seconds, $microseconds);
+        return $this;
+    }
+
+    /**
+     * @param int $seconds
+     *
+     * @return $this
+     */
+    public function setUserFuncInterval(int $seconds): static
+    {
+        $this->user_func_run_interval = $seconds;
+
+        unset($seconds);
         return $this;
     }
 
@@ -370,6 +387,19 @@ class SocketMgr extends Factory
      *
      * @return $this
      */
+    public function onUserFunc(callable $callback_func): static
+    {
+        $this->callbacks['onUserFunc'] = $callback_func;
+
+        unset($callback_func);
+        return $this;
+    }
+
+    /**
+     * @param callable $callback_func
+     *
+     * @return $this
+     */
     public function onHandshake(callable $callback_func): static
     {
         $this->callbacks['onHandshake'] = $callback_func;
@@ -476,6 +506,7 @@ class SocketMgr extends Factory
             $this->fiberMgr->async([$this, 'serverOnUDPMessage']);
         }
 
+        $this->fiberMgr->async([$this, 'serverOnUserFunc'], [$is_websocket]);
         $this->fiberMgr->async([$this, 'serverOnHeartbeat'], [$is_websocket]);
         $this->fiberMgr->async([$this, 'serverOnSend'], [$is_websocket]);
 
@@ -657,6 +688,37 @@ class SocketMgr extends Factory
                 } else {
                     $this->runExternalCallback($socket_id);
                 }
+            }
+        }
+    }
+
+    /**
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function serverOnUserFunc(): void
+    {
+        if (!is_callable($this->callbacks['onUserFunc'])) {
+            return;
+        }
+
+        while (true) {
+            $now_time = time();
+
+            if ($now_time - $this->user_func_last_run_at <= $this->user_func_run_interval) {
+                \Fiber::suspend();
+            }
+
+            $this->user_func_last_run_at = $now_time;
+
+            try {
+                $this->debug('serverOnUserFunc: Calling user function.');
+                call_user_func($this->callbacks['onUserFunc'], $this);
+            } catch (\Throwable $throwable) {
+                $this->debug('serverOnUserFunc callback ERROR: ' . $throwable->getMessage());
+                $this->error->exceptionHandler($throwable, false, false);
+                unset($throwable);
             }
         }
     }
