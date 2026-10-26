@@ -1405,6 +1405,7 @@ class SocketMgr extends Factory
     {
         try {
             if ('udp' !== $this->sock_type) {
+                $read     = $except = null;
                 $sent     = 0;
                 $total    = strlen($message);
                 $deadline = time() + 3;
@@ -1421,7 +1422,6 @@ class SocketMgr extends Factory
                             throw new \Exception($socket_id . ' write timeout!', E_USER_NOTICE);
                         }
 
-                        $read  = $except = null;
                         $write = [$this->connections[$socket_id]];
 
                         if (false === stream_select($read, $write, $except, $this->read_timeout[0], $this->read_timeout[1])) {
@@ -1435,7 +1435,7 @@ class SocketMgr extends Factory
                 }
 
                 $this->activities[$socket_id][1] = time();
-                unset($sent, $total, $deadline, $bytes, $read, $write, $except);
+                unset($read, $except, $sent, $total, $deadline, $bytes, $write);
             } else {
                 stream_socket_sendto($this->connections[$socket_id], $message);
             }

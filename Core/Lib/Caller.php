@@ -104,7 +104,7 @@ class Caller extends Factory
         }
 
         $result = '';
-        $write  = $except = [];
+        $write  = $except = null;
 
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
