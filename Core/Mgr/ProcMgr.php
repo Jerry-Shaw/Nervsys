@@ -168,6 +168,10 @@ class ProcMgr extends Factory
         stream_set_blocking($pipes[1], false);
         stream_set_blocking($pipes[2], false);
 
+        stream_set_write_buffer($pipes[0], 0);
+        stream_set_write_buffer($pipes[1], 0);
+        stream_set_write_buffer($pipes[2], 0);
+
         $this->proc_idle['P' . $idx] = $idx;
 
         $this->proc_pid[$idx]    = proc_get_status($proc)['pid'];
@@ -311,24 +315,36 @@ class ProcMgr extends Factory
      */
     public function writeProc(int $idx, string $content): void
     {
+        $read     = $except = null;
         $written  = 0;
         $content  .= $this->argv_end_char;
         $length   = strlen($content);
-        $deadline = time() + 3;
+        $deadline = time() + 5;
 
         while ($written < $length) {
             $result = fwrite($this->proc_stdin[$idx], substr($content, $written));
 
             if (false === $result) {
-                throw new \Exception('Failed to write to pipe');
+                throw new \RuntimeException('Write to pipe #' . $idx . ' failed');
             }
 
             if (0 === $result) {
-                if (time() >= $deadline) {
-                    throw new \Exception('Write to proc pipe timeout');
+                $remain = $deadline - time();
+
+                if ($remain <= 0) {
+                    throw new \RuntimeException('Write to pipe #' . $idx . ' timeout');
                 }
 
-                usleep($this->read_microseconds);
+                $write  = [$this->proc_stdin[$idx]];
+                $select = stream_select($read, $write, $except, $remain);
+
+                if (false === $select) {
+                    throw new \RuntimeException('Pipe #' . $idx . ' select failed');
+                }
+                if (0 === $select) {
+                    throw new \RuntimeException('Write to pipe #' . $idx . ' timeout');
+                }
+
                 continue;
             }
 
@@ -336,7 +352,7 @@ class ProcMgr extends Factory
         }
 
         fflush($this->proc_stdin[$idx]);
-        unset($idx, $content, $written, $length, $deadline, $result);
+        unset($idx, $content, $read, $except, $written, $length, $deadline, $result, $remain, $write, $select);
     }
 
     /**
@@ -609,9 +625,8 @@ class ProcMgr extends Factory
      */
     public function readIPC(callable|null ...$stdio_callbacks): void
     {
-        $write   = [];
-        $except  = [];
         $streams = [];
+        $write   = $except = null;
 
         foreach ($this->proc_stdout as $key => $value) {
             $streams['out_' . $key] = $value;
