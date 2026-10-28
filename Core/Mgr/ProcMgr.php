@@ -147,7 +147,7 @@ class ProcMgr extends Factory
             $proc = proc_open(
                 $this->command,
                 [
-                    ['pipe', 'rb'],
+                    [$this->ipc_descriptor, 'rb'],
                     [$this->ipc_descriptor, 'wb'],
                     [$this->ipc_descriptor, 'wb']
                 ],
