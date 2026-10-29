@@ -530,14 +530,17 @@ class ProcMgr extends Factory
         $caller = Caller::new();
         $router = Router::new();
         $write  = $except = null;
+        $is_win = PHP_OS === 'WINNT';
 
         while (true) {
-            $read  = [STDIN];
-            $ready = stream_select($read, $write, $except, null);
+            if (!$is_win) {
+                $read  = [STDIN];
+                $ready = stream_select($read, $write, $except, null);
 
-            if (false === $ready || 0 === $ready) {
-                usleep(10000);
-                continue;
+                if (false === $ready || 0 === $ready) {
+                    usleep(10000);
+                    continue;
+                }
             }
 
             $job_line = fgets(STDIN);
@@ -588,7 +591,7 @@ class ProcMgr extends Factory
             unset($read, $ready, $job_line, $job_data, $cmd, $result);
         }
 
-        unset($caller, $router, $write, $except);
+        unset($caller, $router, $write, $except, $is_win);
         exit(0);
     }
 
