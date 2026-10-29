@@ -529,22 +529,36 @@ class ProcMgr extends Factory
     {
         $caller = Caller::new();
         $router = Router::new();
+        $write  = $except = null;
 
         while (true) {
-            $job_json = fgets(STDIN);
+            $read  = [STDIN];
+            $ready = stream_select($read, $write, $except, null);
 
-            if (false === $job_json) {
-                break;
+            if (false === $ready || 0 === $ready) {
+                usleep(10000);
+                continue;
             }
 
-            $job_json = trim($job_json);
-            $job_data = json_decode($job_json, true);
+            $job_line = fgets(STDIN);
+
+            if (false === $job_line) {
+                if (feof(STDIN)) {
+                    break;
+                }
+
+                usleep(10000);
+                continue;
+            }
+
+            $job_line = trim($job_line);
+            $job_data = json_decode($job_line, true);
 
             try {
                 $cmd = $router->parseCgi($job_data['c']);
 
                 if (!is_array($job_data) || !isset($job_data['c']) || [] === $cmd) {
-                    throw new \Exception('Process worker data ERROR: ' . $job_json, E_USER_NOTICE);
+                    throw new \Exception('Process worker data ERROR: ' . $job_line, E_USER_NOTICE);
                 }
             } catch (\Throwable $throwable) {
                 $this->error->exceptionHandler($throwable, false, false);
@@ -571,10 +585,10 @@ class ProcMgr extends Factory
             flush();
             fflush(STDOUT);
 
-            unset($job_json, $job_data, $cmd, $result);
+            unset($read, $ready, $job_line, $job_data, $cmd, $result);
         }
 
-        unset($caller, $router);
+        unset($caller, $router, $write, $except);
         exit(0);
     }
 
